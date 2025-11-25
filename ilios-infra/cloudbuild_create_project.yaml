@@ -1,0 +1,129 @@
+steps:
+  - id: "Clone Repo"
+    name: gcr.io/cloud-builders/git
+    secretEnv:
+      - GITHUB_TOKEN
+    entrypoint: /bin/sh
+    args:
+      - '-c'
+      - |
+        github_token="$(echo "$$GITHUB_TOKEN")"
+        rm -rf * .git .gitignore .bumpversion .github .pre-commit-config.yaml .bumpversion.cfg
+        git clone https://$github_token@github.com/GH-50513/ilios-infra.git .
+        git checkout $BRANCH_NAME
+
+  - id: 'Preparation'
+    name: 'python:3.12'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        cd /workspace/ilios-infra/
+        # File name of the terraform.tfvars
+        TFVARS_FILE="terraform.tfvars"
+
+        folder_name=$(echo ${_ENVIRONMENT} | tr '[:lower:]' '[:upper:]')
+        project=$(echo ${_ENVIRONMENT} | tr '[:upper:]' '[:lower:]')
+        echo $folder_name $$project
+
+        # Add Environment folder if not exists in nested_names
+        if ! grep -q "$folder_name" "$$TFVARS_FILE"; then
+            #awk '/nested_names = \[/{print;print "      \"$folder_name\",";next}1' $$TFVARS_FILE > tmp && mv tmp $$TFVARS_FILE
+            awk -v folder="$folder_name" '/nested_names = \[/{print;print "      \"" folder "\", ";next}1' $$TFVARS_FILE > tmp && mv tmp $$TFVARS_FILE
+        fi
+
+        # Add the project under the 'projects' block
+        if ! grep -q "$folder_name" "$$TFVARS_FILE"; then
+            sed -i "/projects = {/a \ \ $folder_name = {\n    project_name      = \"prj-$project-base\"\n    folder_root       = \"Environments\"\n    folder_belong     = \"$folder_name\"\n    create_project_sa = false\n    api_list = [\n      \"pubsub.googleapis.com\",\n      \"cloudfunctions.googleapis.com\",\n      \"cloudscheduler.googleapis.com\",\n      \"appengine.googleapis.com\",\n      \"sqladmin.googleapis.com\",\n      \"logging.googleapis.com\",\n      \"compute.googleapis.com\",\n      \"iam.googleapis.com\",\n      \"secretmanager.googleapis.com\",\n      \"cloudbuild.googleapis.com\",\n      \"servicenetworking.googleapis.com\",\n      \"cloudresourcemanager.googleapis.com\"\n    ]\n  }," $$TFVARS_FILE
+        fi
+
+        cat terraform.tfvars
+
+  - id: 'Create Project'
+    name: hashicorp/terraform
+    waitFor:
+      - 'Preparation'
+    secretEnv:
+      - TF_SA_KEY
+    args:
+      - '-c'
+      - |
+        #project=$(echo ${_ENVIRONMENT} | tr '[:upper:]' '[:lower:]')
+        #project_id=$(gcloud projects list | grep PROJECT_ID: | grep $project | awk '{print $2}')
+        ##echo $$TF_SA_KEY > tf_sa_key.json &&
+        cd /workspace/ilios-infra/ &&
+        terraform init 
+        #-backend-config="bucket=$_STATE_BUCKET" \
+        ##-backend-config="credentials=/workspace/tf_sa_key.json" &&
+        #terraform plan 
+        ##-var "project_id=$_TARGET_PROJECT"
+        terraform apply -auto-approve
+        ##-var "project_id=$_TARGET_PROJECT" -auto-approve
+    entrypoint: /bin/sh
+
+  - id: 'Configure Project'
+    name: 'gcr.io/cloud-builders/gcloud'
+    waitFor:
+      - 'Create Project'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        sleep 10
+        project=$(echo ${_ENVIRONMENT} | tr '[:upper:]' '[:lower:]')
+        echo $project
+        project_id=$(gcloud projects list | grep $project | awk '{print $1}')
+        echo $project_id
+        cp -r /workspace/ilios-infra/template /workspace/ilios-infra/$project
+
+        # Using sed to replace values in variable.tf
+        sed -i "s/default\s*=\s*proj_id/default = \"$project_id\"/" /workspace/ilios-infra/$project/variables.tf
+        sed -i "s/default\s*=\s*env/default = \"$project\"/" /workspace/ilios-infra/$project/variables.tf
+        sed -i "s/environment\s*=\s*lab/environment = \"$project\"/" /workspace/ilios-infra/$project/variables.tf
+        #sed -i "s/env/\"$project\"/" /workspace/ilios-infra/$project/backend.tf
+        sed -i "s/env/$project/g" /workspace/ilios-infra/$project/backend.tf
+        cat /workspace/ilios-infra/$project/variables.tf
+        cat /workspace/ilios-infra/$project/backend.tf
+
+  - id: 'Apply Project Configuration'
+    name: hashicorp/terraform
+    waitFor: 
+      - 'Configure Project'
+    secretEnv:
+      - TF_SA_KEY
+    args:
+      - '-c'
+      - |
+        project=$(echo ${_ENVIRONMENT} | tr '[:upper:]' '[:lower:]')
+        cd /workspace/ilios-infra/$project
+        terraform init 
+        #terraform plan 
+        terraform apply -auto-approve
+    entrypoint: /bin/sh
+
+  - id: "Git PUSH"
+    name: 'python:3.12'
+    secretEnv:
+      - GITHUB_TOKEN
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        git config --global user.email "org-terraform@prj-admin-p-base-a82f.iam.gserviceaccount.com"
+        git config --global user.name "GCP Cloud Build"
+        github_token="$(echo "$$GITHUB_TOKEN")"
+        git add .
+        git commit -m "Environment added $(echo $${_ENVIRONMENT})"
+        git push https://$github_token@github.com/GH-50513/ilios-infra.git
+
+
+    #secretEnv:
+      #- TF_SA_KEY
+availableSecrets:
+  secretManager:
+    - versionName: projects/prj-secret-22f2/secrets/tf-sa-creds-dev/versions/latest
+      env: TF_SA_KEY
+    - versionName: projects/prj-secret-22f2/secrets/GH-Token/versions/latest
+      env: GITHUB_TOKEN
+options:
+  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
