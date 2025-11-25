@@ -1,0 +1,64 @@
+steps:
+  - id: "Clone Repo"
+    name: gcr.io/cloud-builders/git
+    secretEnv:
+      - GITHUB_TOKEN
+    entrypoint: /bin/sh
+    args:
+      - '-c'
+      - |
+        github_token="$(echo "$$GITHUB_TOKEN")"
+        rm -rf * .eslintignore .eslintrc .git .gitignore .prettierrc .bumpversion .github .pre-commit-config.yaml .bumpversion.cfg
+        git clone https://$github_token@github.com/GH-50513/rea-investment-fe.git .
+        git checkout $BRANCH_NAME
+
+  - id: "front-build"
+    name: 'gcr.io/cloud-builders/npm'
+    entrypoint: 'bash'
+    secretEnv:
+    - FRONT_VALUES_CREDS
+    args:
+    - -c
+    - |
+      printf "%b\n" "$$FRONT_VALUES_CREDS" > .env
+      cat .env
+      npm install
+      #npm run start
+      npm run build
+
+  - id: "copy-files"
+    name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+    - -c
+    - |
+      ls -l
+      gsutil -m rm -r "gs://${_ENVIRONMENT}-ilios-bucket/*"
+      gsutil -m cp -r /workspace/build/* gs://${_ENVIRONMENT}-ilios-bucket
+      gsutil ls gs://${_ENVIRONMENT}-ilios-bucket
+    waitFor:
+    - "front-build"
+
+  - id: "Tag"
+    name: 'python:3.12'
+    secretEnv:
+      - GITHUB_TOKEN
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        github_token="$(echo "$$GITHUB_TOKEN")"
+        git_tag=$(echo Deployed_To_$(echo ${_ENVIRONMENT} | tr '[:lower:]' '[:upper:]')_$(date +"%Y.%m.%d")_$SHORT_SHA)
+        echo "TAG: $git_tag"
+        git tag $(echo $git_tag)
+        git push https://$github_token@github.com/GH-50513/rea-investment-fe.git $(echo $git_tag)
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/${PROJECT_ID}/secrets/front-values-creds/versions/latest
+      env: FRONT_VALUES_CREDS
+    - versionName: projects/${PROJECT_ID}/secrets/GH-Token/versions/latest
+      env: 'GITHUB_TOKEN'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

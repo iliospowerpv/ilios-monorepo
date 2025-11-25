@@ -1,0 +1,27 @@
+{
+    "[POST]/login": {
+        "id": 2,
+        "firstName": "default",
+        "lastName": "user",
+        "email": "default_user@example.com",
+        "status": 11,
+        "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+        "roles": [
+            {
+                "id": 2,
+                "name": "admin",
+                "subname": "admin"
+            },
+            {
+                "id": 7,
+                "name": "visitor",
+                "subname": "visitor"
+            },
+            {
+                "id": 10,
+                "name": "reviewer",
+                "subname": "reviewer"                
+            }
+        ]
+    }
+}
