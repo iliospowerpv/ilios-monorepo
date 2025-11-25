@@ -1,0 +1,31 @@
+steps:
+- id: deploy
+  name: gcr.io/google.com/cloudsdktool/cloud-sdk
+  entrypoint: /bin/bash
+  dir: telemetry
+  env:
+  - 'SERVICE=retrieve_device_info_service'
+  args:
+  - '-c'
+  - |
+      mkdir deploy
+      cp -rl "services/$$SERVICE" deploy
+      gcloud functions deploy "$$SERVICE" \
+        --region=$LOCATION \
+        --gen2 \
+        --trigger-http \
+        --no-allow-unauthenticated \
+        --runtime=python312 \
+        --memory=256Mi \
+        --cpu=250m \
+        --timeout=15 \
+        --min-instances=0 \
+        --max-instances=16 \
+        --concurrency=1 \
+        --entry-point="$$SERVICE" \
+        --source="./deploy/$$SERVICE" \
+        --set-env-vars=LOG_EXECUTION_ID=true \
+        --set-build-env-vars=GIT_BRANCH=$BRANCH_NAME,GIT_COMMIT=$COMMIT_SHA
+
+options:
+  logging: CLOUD_LOGGING_ONLY

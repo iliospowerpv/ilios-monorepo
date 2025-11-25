@@ -1,0 +1,59 @@
+steps:
+- id: build
+  name: gcr.io/cloud-builders/docker
+  dir: '$_WORKDIR'
+  args: ['build', '-t', '$_IMAGE', '.']
+
+- id: push
+  name: gcr.io/cloud-builders/docker
+  args: ['push', '$_IMAGE']
+
+- id: template
+  name: gcr.io/google.com/cloudsdktool/cloud-sdk
+  dir: '$_WORKDIR'
+  entrypoint: gcloud
+  args:
+  - dataflow
+  - flex-template
+  - build
+  - 'gs://$_BUCKET/flex-templates/$_JOB.json'
+  - --sdk-language=PYTHON
+  - '--image=$_IMAGE'
+  - '--staging-location=gs://$_BUCKET/stg/'
+  - '--temp-location=gs://$_BUCKET/tmp/'
+  - --additional-experiments=streaming_mode_at_least_once
+  - --metadata-file=metadata.json
+  - --worker-machine-type=n2-highcpu-2
+  - --max-workers=64
+
+- id: run
+  name: gcr.io/google.com/cloudsdktool/cloud-sdk
+  entrypoint: gcloud
+  args:
+  - dataflow
+  - flex-template
+  - run
+  - '$_JOB'
+  - '--project=$PROJECT_ID'
+  - '--region=$LOCATION'
+  - '--template-file-gcs-location=gs://$_BUCKET/flex-templates/$_JOB.json'
+  - '--parameters=subscription_id=projects/$PROJECT_ID/subscriptions/$_SUBSCRIPTION'
+  - '--parameters=dataset_id=$PROJECT_ID:telemetry_raw'
+  - '--parameters=staging_location=gs://$_BUCKET/stg/'
+  - '--parameters=temp_location=gs://$_BUCKET/tmp/'
+  - '--parameters=sdk_container_image=$_IMAGE'
+  - --update
+
+substitutions:
+  _IDX: '2'
+  _JOB: ingest-telemetry-data-job
+  _IMAGE: '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/dataflow-flex-templates/${_JOB}:${SHORT_SHA}'
+  _BUCKET: '${PROJECT_ID}-dataflow'
+  _SUBSCRIPTION: '${_JOB%-*}-subscription'
+  _WORKDIR: 'telemetry/jobs/${_IDX}_${_JOB//-/_}'
+
+images: ['$_IMAGE']
+
+options:
+  dynamicSubstitutions: true
+  logging: CLOUD_LOGGING_ONLY

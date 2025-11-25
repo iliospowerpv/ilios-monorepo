@@ -1,0 +1,4 @@
+__pycache__/
+.env
+cloudbuild.yaml
+README.md

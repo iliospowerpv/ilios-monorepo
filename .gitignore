@@ -1,0 +1,8 @@
+# Define top-level ignore patterns.
+/.deploy/
+/.idea/
+/venv/
+
+# Define nested ignore patterns.
+__pycache__/
+.env

@@ -1,0 +1,23 @@
+CREATE OR REPLACE TABLE FUNCTION reporting_{{ environment }}.site_performance_report_monthly(
+    start_ts TIMESTAMP,
+    end_ts TIMESTAMP,
+    tz STRING
+)
+RETURNS TABLE <
+    site_id INT64,
+    actual_generation FLOAT64,
+    expected_generation FLOAT64,
+    estimated_generation FLOAT64,
+    availability FLOAT64,
+    report_date DATE
+> AS (
+    SELECT
+        site_id,
+        SUM(actual_generation) AS actual_generation,
+        SUM(expected_generation) AS expected_generation,
+        SUM(estimated_generation) AS estimated_generation,
+        AVG(availability) AS availability,
+        DATE_TRUNC(report_date, MONTH) AS report_date
+    FROM reporting_{{ environment }}.site_performance_report_daily(start_ts, end_ts, tz)
+    GROUP BY site_id, report_date
+);

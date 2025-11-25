@@ -1,0 +1,290 @@
+CREATE OR REPLACE TABLE FUNCTION platform_{{ environment }}.site_energy_actual_vs_expected_daily(
+    start_ts TIMESTAMP,
+    end_ts TIMESTAMP,
+    tz STRING
+)
+RETURNS TABLE <
+    site_id INTEGER,
+    site_energy_actual ARRAY<STRUCT<value NUMERIC, ts DATETIME>>,
+    site_energy_expected ARRAY<STRUCT<value NUMERIC, ts DATETIME>>
+> AS (
+    WITH id_ts_grid AS (
+        SELECT DISTINCT
+            internal.site_id AS site_id,
+            DATETIME_TRUNC(point_data_ts, DAY) AS point_data_ts
+        FROM telemetry_rfn.id_map
+        CROSS JOIN (
+            SELECT
+                DATETIME(point_data_ts, tz) AS point_data_ts
+            FROM UNNEST(
+                GENERATE_TIMESTAMP_ARRAY(
+                    start_ts,
+                    end_ts - (INTERVAL 1 MICROSECOND),  /* inclusive -> exclusive */
+                    INTERVAL 1 DAY
+                )
+            ) AS point_data_ts
+        )
+        WHERE internal.environment = '{{ environment }}'
+    ),
+    points_mapped AS (
+        SELECT
+            internal.site_id AS site_id,
+            internal.device_id AS device_id,
+            point_tag,
+            point_data_value,
+            DATETIME(point_data_ts, tz) AS point_data_ts
+        FROM telemetry_rfn.points(start_ts, end_ts)
+        JOIN telemetry_rfn.id_map
+        ON external.data_provider = data_provider
+        AND external.site_id = site_id
+        AND external.device_id = device_id
+        AND internal.environment = '{{ environment }}'
+    ),
+    points_binned AS (
+        SELECT
+            site_id,
+            device_id,
+            point_tag,
+            point_data_value,
+            DATETIME_TRUNC(point_data_ts, HOUR) + (INTERVAL 15 MINUTE) * DIV(EXTRACT(MINUTE FROM point_data_ts), 15) AS point_data_ts
+        FROM points_mapped
+    ),
+    site_power_actual_stg_0 AS (  /* device-level AVG */
+        SELECT
+            site_id,
+            device_id,
+            AVG(point_data_value) AS point_data_value,
+            point_data_ts
+        FROM points_binned
+        WHERE point_tag = 'site_power_ac'
+        GROUP BY site_id, device_id, point_data_ts
+    ),
+    site_power_actual_stg_1 AS (  /* site-level AVG */
+        SELECT
+            site_id,
+            AVG(point_data_value) AS point_data_value,
+            point_data_ts
+        FROM site_power_actual_stg_0
+        GROUP BY site_id, point_data_ts
+    ),
+    site_energy_actual_stg_0 AS (  /* daily SUM */
+        SELECT
+            site_id,
+            SUM(point_data_value * 0.25) AS point_data_value,  /* 15 minutes = 0.25 hours */
+            DATETIME_TRUNC(point_data_ts, DAY) AS point_data_ts
+        FROM site_power_actual_stg_1
+        GROUP BY site_id, point_data_ts
+    ),
+    site_energy_actual AS (  /* final */
+        SELECT
+            site_id,
+            point_data_value,
+            point_data_ts
+        FROM id_ts_grid
+        LEFT JOIN site_energy_actual_stg_0
+        USING (site_id, point_data_ts)
+    ),
+    site_irradiance_stg_0 AS (  /* device-level AVG */
+        SELECT
+            site_id,
+            device_id,
+            AVG(point_data_value) AS point_data_value,
+            point_data_ts
+        FROM points_binned
+        WHERE point_tag = 'site_irradiance'
+        GROUP BY site_id, device_id, point_data_ts
+    ),
+    site_irradiance_stg_1 AS (  /* site-level AVG */
+        SELECT
+            site_id,
+            AVG(point_data_value) AS point_data_value,
+            point_data_ts
+        FROM site_irradiance_stg_0
+        GROUP BY site_id, point_data_ts
+    ),
+    site_cell_temperature_stg_0 AS (  /* device-level AVG */
+        SELECT
+            site_id,
+            device_id,
+            AVG(point_data_value) AS point_data_value,
+            point_data_ts
+        FROM points_binned
+        WHERE point_tag = 'site_cell_temperature'
+        GROUP BY site_id, device_id, point_data_ts
+    ),
+    site_cell_temperature_stg_1 AS (  /* site-level AVG */
+        SELECT
+            site_id,
+            AVG(point_data_value) AS point_data_value,
+            point_data_ts
+        FROM site_cell_temperature_stg_0
+        GROUP BY site_id, point_data_ts
+    ),
+    site_cell_temperature_stg_2 AS (
+        SELECT
+            site_id,
+            (point_data_value - 32) / 1.8 AS point_data_value,  /* °F -> °C */
+            point_data_ts
+        FROM site_cell_temperature_stg_1
+    ),
+    site_power_expected_stg_0 AS (
+        SELECT
+            site_id,
+            module_wattage * module_quantity / 1000 AS dc_system_nameplate,  /* W -> kW */
+            inverter_wattage * inverter_quantity AS ac_nameplate,
+            permission_to_operate,
+            1 - dc_ohmic_wiring_loss / 100 AS dc_voltage_drop,
+            1 - (ac_ohmic_wiring_loss + medium_voltage_transfo_loss + mv_line_ohmic_loss) / 100 AS ac_voltage_drop
+        FROM platform_{{ environment }}.site_characteristics
+    ),
+    site_power_expected_stg_1 AS (
+        SELECT
+            site_id,
+            AVG(thermal_coefficient_of_power) / 100 AS thermal_coefficient_of_power,
+            1 + AVG(power_tolerance_min) / 100 AS power_tolerance,
+            AVG(year_1_degradation) / 100 AS year_1_degradation,
+            AVG(annual_degradation) / 100 AS annual_degradation,
+            AVG(cec_efficiency) / 100 AS inverter_efficiency
+        FROM platform_{{ environment }}.device_characteristics
+        GROUP BY site_id
+    ),
+    site_power_expected_stg_2 AS (
+        SELECT
+            site_id,
+            dc_system_nameplate,
+            ac_nameplate,
+            power_tolerance,
+            1 AS soiling_factor,
+            permission_to_operate,
+            year_1_degradation,
+            annual_degradation,
+            dc_voltage_drop,
+            inverter_efficiency,
+            ac_voltage_drop,
+            thermal_coefficient_of_power
+        FROM site_power_expected_stg_0
+        JOIN site_power_expected_stg_1
+        USING (site_id)
+    ),
+    site_power_expected_stg_3 AS (
+        SELECT
+            site_id,
+            1000 AS irradiance_baseline,
+            site_irradiance.point_data_value AS irradiance_current,
+            25 AS cell_temperature_baseline,
+            site_cell_temperature.point_data_value AS cell_temperature_current,
+            point_data_ts
+        FROM site_irradiance_stg_1 AS site_irradiance
+        JOIN site_cell_temperature_stg_2 AS site_cell_temperature
+        USING (site_id, point_data_ts)
+    ),
+    site_power_expected_stg_4 AS (
+        SELECT
+            site_id,
+            dc_system_nameplate,
+            ac_nameplate,
+            power_tolerance,
+            soiling_factor,
+            IF(
+                point_data_ts >= permission_to_operate,
+                EXTRACT(YEAR FROM point_data_ts) - EXTRACT(YEAR FROM permission_to_operate)
+                - IF(
+                    EXTRACT(MONTH FROM point_data_ts) < EXTRACT(MONTH FROM permission_to_operate)
+                    OR (
+                        EXTRACT(MONTH FROM point_data_ts) = EXTRACT(MONTH FROM permission_to_operate)
+                        AND EXTRACT(DAY FROM point_data_ts) < EXTRACT(DAY FROM permission_to_operate)
+                    ),
+                    1,
+                    0
+                ),
+                NULL
+            ) AS age,
+            year_1_degradation,
+            annual_degradation,
+            dc_voltage_drop,
+            inverter_efficiency,
+            ac_voltage_drop,
+            irradiance_current / irradiance_baseline AS irradiance_factor,
+            1 + thermal_coefficient_of_power * (cell_temperature_current - cell_temperature_baseline) AS temperature_factor,
+            point_data_ts
+        FROM site_power_expected_stg_2
+        JOIN site_power_expected_stg_3
+        USING (site_id)
+    ),
+    site_power_expected_stg_5 AS (
+        SELECT
+            site_id,
+            dc_system_nameplate,
+            ac_nameplate,
+            power_tolerance,
+            soiling_factor,
+            IF(age >= 0, 1 - (year_1_degradation * IF(age >= 1, 1, 0) + annual_degradation * IF(age >= 2, age - 1, 0)), NULL) AS age_factor,
+            dc_voltage_drop,
+            inverter_efficiency,
+            ac_voltage_drop,
+            irradiance_factor,
+            temperature_factor,
+            point_data_ts
+        FROM site_power_expected_stg_4
+    ),
+    site_power_expected_stg_6 AS (
+        SELECT
+            site_id,
+            dc_system_nameplate,
+            ac_nameplate,
+            power_tolerance * soiling_factor * age_factor * dc_voltage_drop * inverter_efficiency * ac_voltage_drop AS system_derate_factor,
+            irradiance_factor,
+            temperature_factor,
+            point_data_ts
+        FROM site_power_expected_stg_5
+    ),
+    site_power_expected_stg_7 AS (
+        SELECT
+            site_id,
+            dc_system_nameplate,
+            ac_nameplate,
+            system_derate_factor * irradiance_factor * temperature_factor AS total_derate_factor,
+            point_data_ts
+        FROM site_power_expected_stg_6
+    ),
+    site_power_expected_stg_8 AS (
+        SELECT
+            site_id,
+            IF(dc_system_nameplate * total_derate_factor <= ac_nameplate, dc_system_nameplate * total_derate_factor, ac_nameplate) AS point_data_value,
+            point_data_ts
+        FROM site_power_expected_stg_7
+    ),
+    site_energy_expected_stg_0 AS (  /* daily SUM */
+        SELECT
+            site_id,
+            SUM(point_data_value * 0.25) AS point_data_value,  /* 15 minutes = 0.25 hours */
+            DATETIME_TRUNC(point_data_ts, DAY) AS point_data_ts
+        FROM site_power_expected_stg_8
+        GROUP BY site_id, point_data_ts
+    ),
+    site_energy_expected AS (  /* final */
+        SELECT
+            site_id,
+            CAST(point_data_value AS NUMERIC) AS point_data_value,
+            point_data_ts
+        FROM id_ts_grid
+        LEFT JOIN site_energy_expected_stg_0
+        USING (site_id, point_data_ts)
+    )
+    SELECT
+        site_id,
+        ARRAY_AGG(
+            STRUCT(site_energy_actual.point_data_value AS value, site_energy_actual.point_data_ts AS ts)
+            ORDER BY site_energy_actual.point_data_ts
+        ) AS site_energy_actual,
+        ARRAY_AGG(
+            STRUCT(site_energy_expected.point_data_value AS value, site_energy_expected.point_data_ts AS ts)
+            ORDER BY site_energy_expected.point_data_ts
+        ) AS site_energy_expected
+    FROM id_ts_grid
+    JOIN site_energy_actual
+    USING (site_id, point_data_ts)
+    JOIN site_energy_expected
+    USING (site_id, point_data_ts)
+    GROUP BY site_id
+);

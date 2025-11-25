@@ -1,0 +1,103 @@
+CREATE OR REPLACE TABLE FUNCTION platform_{{ environment }}.device_availability_metrics(
+    start_ts TIMESTAMP,
+    end_ts TIMESTAMP,
+    tz STRING
+)
+RETURNS TABLE <
+    device_id INTEGER,
+    uptime_hours INTEGER,
+    downtime_hours INTEGER,
+    breakdowns INTEGER,
+    mtbf NUMERIC,
+    mttr NUMERIC
+> AS (
+    WITH id_ts_grid AS (
+        SELECT DISTINCT
+            internal.device_id AS device_id,
+            DATETIME_TRUNC(point_data_ts, HOUR) AS point_data_ts
+        FROM telemetry_rfn.id_map
+        CROSS JOIN (
+            SELECT
+                DATETIME(point_data_ts, tz) AS point_data_ts
+            FROM UNNEST(
+                GENERATE_TIMESTAMP_ARRAY(
+                    start_ts,
+                    end_ts - (INTERVAL 1 MICROSECOND),  /* inclusive -> exclusive */
+                    INTERVAL 1 HOUR
+                )
+            ) AS point_data_ts
+        )
+        WHERE internal.environment = '{{ environment }}'
+    ),
+    points_mapped AS (
+        SELECT
+            internal.device_id AS device_id,
+            point_data_value,
+            DATETIME(point_data_ts, tz) AS point_data_ts
+        FROM telemetry_rfn.points(start_ts, end_ts)
+        JOIN telemetry_rfn.id_map
+        ON external.data_provider = data_provider
+        AND external.site_id = site_id
+        AND external.device_id = device_id
+        AND internal.environment = '{{ environment }}'
+    ),
+    points_binned AS (
+        SELECT
+            device_id,
+            IF(COUNT(point_data_value) > 0, 1, 0) AS point_data_value,
+            DATETIME_TRUNC(point_data_ts, HOUR) AS point_data_ts
+        FROM points_mapped
+        GROUP BY device_id, point_data_ts
+    ),
+    device_availability_metrics_stg_0 AS (
+        SELECT
+            device_id,
+            IFNULL(point_data_value, 0) AS point_data_value,
+            point_data_ts
+        FROM id_ts_grid
+        LEFT JOIN points_binned
+        USING (device_id, point_data_ts)
+    ),
+    device_availability_metrics_stg_1 AS (
+        SELECT
+            device_id,
+            SUM(IF(point_data_value = 1, 1, 0)) AS uptime_hours,
+            SUM(IF(point_data_value = 0, 1, 0)) AS downtime_hours
+        FROM device_availability_metrics_stg_0
+        GROUP BY device_id
+    ),
+    device_availability_metrics_stg_2 AS (
+        SELECT
+            device_id,
+            point_data_value,
+            LEAD(point_data_value) OVER (PARTITION BY device_id ORDER BY point_data_ts) AS next_point_data_value
+        FROM device_availability_metrics_stg_0
+    ),
+    device_availability_metrics_stg_3 AS (
+        SELECT
+            device_id,
+            SUM(IF(point_data_value = 0 AND IFNULL(next_point_data_value, 1) != 0, 1, 0)) AS breakdowns
+        FROM device_availability_metrics_stg_2
+        GROUP BY device_id
+    ),
+    device_availability_metrics AS (  /* final */
+        SELECT
+            device_id,
+            uptime_hours,
+            downtime_hours,
+            breakdowns,
+            CAST(uptime_hours / GREATEST(breakdowns, 1) AS NUMERIC) AS mtbf,
+            CAST(downtime_hours / GREATEST(breakdowns, 1) AS NUMERIC) AS mttr
+        FROM device_availability_metrics_stg_1
+        JOIN device_availability_metrics_stg_3
+        USING (device_id)
+    )
+    SELECT
+        device_id,
+        uptime_hours,
+        downtime_hours,
+        breakdowns,
+        mtbf,
+        mttr
+    FROM device_availability_metrics
+);

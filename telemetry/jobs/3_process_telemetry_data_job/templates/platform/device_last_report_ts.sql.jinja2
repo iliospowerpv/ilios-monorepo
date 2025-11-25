@@ -1,0 +1,20 @@
+CREATE OR REPLACE TABLE FUNCTION platform_{{ environment }}.device_last_report_ts(
+    start_ts TIMESTAMP,
+    end_ts TIMESTAMP,
+    tz STRING
+)
+RETURNS TABLE <
+    device_id INTEGER,
+    device_last_report_ts DATETIME
+> AS (
+    SELECT
+        internal.device_id AS device_id,
+        DATETIME(MAX(point_data_ts), tz) AS device_last_report_ts
+    FROM telemetry_rfn.points(start_ts, end_ts)
+    JOIN telemetry_rfn.id_map
+    ON external.data_provider = data_provider
+    AND external.site_id = site_id
+    AND external.device_id = device_id
+    AND internal.environment = '{{ environment }}'
+    GROUP BY device_id
+);
