@@ -1,0 +1,2 @@
+TASK_UNDEFINED_STATUS = "Undefined"
+TASK_DELETED_USER = "Deleted User"

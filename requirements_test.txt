@@ -1,0 +1,12 @@
+pytest==8.0.0
+pytest-runner==6.0.1
+pytest-cov==4.1.0
+pytest-html==4.1.1
+pytest-mock==3.12.0
+pytest-freezer==0.4.8
+setuptools==70.0.0
+pytest-lazy-fixtures==1.1.1
+
+# load tests
+locust==2.32.9
+python-dotenv==1.0.1

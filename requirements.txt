@@ -1,0 +1,40 @@
+# the main framework
+fastapi==0.115.6
+fastapi-filter==1.1.0
+pydantic-settings==2.1.0
+pydantic[email]==2.6.4
+email-validator==2.1.1
+uvicorn[standard]==0.27.0
+httpx==0.26.0
+requests==2.32.2
+python-dateutil==2.9.0
+humanize==4.11.0
+
+# DB related libs
+SQLAlchemy==2.0.25
+alembic==1.13.1
+psycopg2-binary==2.9.9
+alembic-postgresql-enum==1.1.1  # special lib to support PSQL enums in alembic migrations
+
+# version control utility
+bump2version==0.5.11
+
+# auth-related
+pyjwt==2.8.0
+bcrypt==4.1.1
+
+# GCP hosting related
+gunicorn==23.0.0
+
+# Files management
+python-multipart==0.0.18
+google-cloud-storage==2.16.0
+
+# GCP secret manager
+google-cloud-secret-manager==2.20.2
+google_cloud_firestore==2.18.0
+
+# GCP BigQuery related
+google-cloud-bigquery==3.27.0
+pytz==2024.2
+redis==5.2.1
