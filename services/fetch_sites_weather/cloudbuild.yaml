@@ -1,0 +1,32 @@
+steps:
+- id: deploy
+  name: gcr.io/google.com/cloudsdktool/cloud-sdk
+  entrypoint: /bin/bash
+  dir: services
+  env:
+  - 'SERVICE=fetch_sites_weather'
+  args:
+  - '-c'
+  - |
+      mkdir deploy
+      cp -rl "$$SERVICE" deploy
+      gcloud functions deploy "$$SERVICE" \
+        --region=$LOCATION \
+        --gen2 \
+        --trigger-http \
+        --no-allow-unauthenticated \
+        --run-service-account=$PROJECT_ID@appspot.gserviceaccount.com \
+        --runtime=python312 \
+        --memory=1Gi \
+        --cpu=1 \
+        --timeout=60 \
+        --min-instances=0 \
+        --max-instances=1 \
+        --concurrency=1 \
+        --entry-point="$$SERVICE" \
+        --source="./deploy/$$SERVICE" \
+        --set-env-vars=LOG_EXECUTION_ID=true \
+        --set-secrets=/etc/secrets:/app_values_creds.yaml=projects/$PROJECT_NUMBER/secrets/app-values-creds:latest
+
+options:
+  logging: CLOUD_LOGGING_ONLY

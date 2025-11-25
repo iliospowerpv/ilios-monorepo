@@ -1,0 +1,24 @@
+[tool.black]
+line-length = 121
+target-version = ['py312']
+include = '\.pyi?$'
+
+[tool.flake8]
+max-line-length = 121
+# main codebase exclusions:
+# F401 (Module imported but unused) - ignore it to have ability to use init file as an entrypoint
+# FNE008 (Name of functions ends with it's first argument name) - ignore since such naming pattern is common practice
+# tests codebase exclusions:
+# U100 (Unused argument <arg name>) - allow us to include fixtures
+# CFQ002 (Function <func name> has <func args count> arguments that exceeds max allowed 8) - tests might require many params as an input
+# VNE002 (variable name <var name> should be clarified) - some of the variables matched the build-in names
+# CFQ001 (Function <func name> has length <func len> that exceeds max allowed length 100) - test functions can be longer
+max-expression-complexity=8
+per-file-ignores = "*/__init__.py: F401, F403 app/db/base.py: F401 *_test.py: U100, CFQ002, VNE002, CFQ001 *_documents_enum.py: E800  tests/fixtures/*: U100"
+extend-ignore = "VNE003,FNE008"
+max-returns-amount = 5
+max-parameters-amount = 8
+
+[tool.isort]
+line_length = 121
+profile = "black"
