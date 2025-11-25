@@ -1,0 +1,134 @@
+{
+    "site_level_details": {
+        "name": "Demo Site 1235",
+        "address": "110 Shawmut Road",
+        "city": "Canton",
+        "state": "MA",
+        "county": "",
+        "zip_code": "84101",
+        "system_size_ac": 462.0,
+        "system_size_dc": 646.0,
+        "das": "LocusNOC",
+        "lon_lat_url": "34.134078, -118.321695",
+        "project_id": "",
+        "status": "Placed in Service",
+        "pvsyst": "link",
+        "greenhouse_gas_offset": "",
+        "incentive_program": "",
+        "year_one_expected_production": 1200,
+        "degradation_amount": 0.5,
+        "capacity_as_percent_of_total_portfolio": 10.5
+    },
+    "asset_overview": {
+        "module_quantity": 4,
+        "inverter_quantity": 4,
+        "project_type": "Ground",
+        "mount_type": "Fixed tilt Ground Mount",
+        "battery_storage": "Yes"
+    },
+    "ownership": {
+        "ownership_structure": "Tax Equity Only",
+        "hold_co": "Shawmut Solar Holdings, LLC",
+        "project_co": "",
+        "guarantor": "",
+        "tax_credit_fund": ""
+    },
+    "tax_equity": {
+        "tax_equity_fund": "AZ-REA TCF2, LLC",
+        "tax_equity_provider": "",
+        "tax_equity_buyout_amount": 460874.97,
+        "tax_equity_buyout_date": "12/31/26",
+        "tax_equity_pref_rate": 2.73,
+        "smartsheet_data_tape": "($XX.XX)"
+    },
+    "key_dates": {
+        "Mechanical_Completion_Date": "12/27/18",
+        "Substantial_Completion_Date": "02/14/19",
+        "Final_Completion_Date": "03/25/19",
+        "Permission_to_Operate": "01/07/25",
+        "Placed_in_Service_Date": "01/04/20",
+        "Financial_Close_Date": "01/07/25"
+    },
+    "o_and_m": {
+        "provider": "Novel Energy Solutions L.L.C",
+        "agreement_effective_date": "01/07/22",
+        "o_and_m_rate": "",
+        "o_and_m_escalator": 2.0,
+        "production_guarantee": "",
+        "contact": "1500 19th Ave. SW Byron, MN 55920",
+        "contact_name": "John Starks",
+        "contact_email": "johnstarks@gmail.com",
+        "contact_phone": "5733455671"
+    },
+    "interconnection": {
+        "provider": "",
+        "ppa_term": 20,
+        "ppa_effective_date": "12/14/2022",
+        "production_guarantee": "NA",
+        "interconnection_agreement_effective_date": "01/07/22",
+        "utility_rate": "",
+        "contact": "60 Campanelli Drive, Braintree, MA",
+        "contact_name": "Stan Mcbride",
+        "contact_email": "stanmcbride@gmail.com",
+        "contact_phone": "6043455671",
+        "remaining_ppa_term": "18 years, 4 months"
+    },
+    "epc_contractor": {
+        "provider": "SunRaise Development, LLC",
+        "agreement_effective_date": "01/07/22",
+        "contact": "1503 Country Club Rd SE, Byron, MN 55920",
+        "contact_name": "Collin Drake",
+        "contact_email": "collindr@gmail.com",
+        "contact_phone": "6043455671"
+    },
+    "community_solar_manager": {
+        "provider": "PowerMarket",
+        "contact": "21 Alpha Road, Chelmsford, MA 01824",
+        "contact_name": "Collin Snow",
+        "contact_email": "collinsnow@gmail.com",
+        "contact_phone": "6043455671",
+        "community_solar_management_fee": 24.45,
+        "escalator": 35.45,
+        "escalator_effective": "05/12/2024"
+    },
+    "insurance_provider": {
+        "provider": "Chubb Insurance",
+        "contact": "100 Enterprise Ave, Gardiner, ME 04345"
+    },
+    "site_lease": {
+        "landlord": "Brixmor Holdings 1 SPE, LLC",
+        "tenant": "GreenLife Solar, LLC d/b/a Shine Development Partners",
+        "property_size": 24.6257,
+        "effective_date": "01/07/25",
+        "rent_commencement": "01/07/24",
+        "rent_amount": 24625.7,
+        "rent_escalator": 2.0,
+        "rent_escalator_effective_date": "01/07/26",
+        "payment_due_date": "25 years from COD",
+        "lease_payment_method": "Check",
+        "lease_payment_frequency": "Monthly",
+        "initial_term": "20 years beginning on the date the Permission to Operate was issued",
+        "renewal_terms": "Three (3) additional five (5) year periods with written notice ninety (90) days prior to the expiration",
+        "landlord_contact_phone": "6045685678"
+    },
+    "vegetation_vendor": {
+        "company": "Acme Corporation",
+        "name": "John Doe",
+        "phone": "5551234567",
+        "email": "john.doe@acmecorp.com"
+    },
+    "offtaker": {
+        "name": "Sunshine Energy",
+        "type": "Community Solar",
+        "credit_rating": "BB+",
+        "rating_agency": "Standard & Poor’s",
+        "date_of_rating": "01/07/24"
+    },
+    "compliance": {
+        "entity": "Global Compliance Services",
+        "bank": "Regulatory Bank Corp.",
+        "report_due_date": "August 15, 2024",
+        "fiscal_year_end": "December 31, 2024",
+        "tax_return_deadline": "April 30, 2025"
+    }
+}

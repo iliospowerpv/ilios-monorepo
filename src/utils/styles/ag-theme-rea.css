@@ -1,0 +1,111 @@
+.ag-theme-quartz {
+    --ag-background-color: #ffffff;
+    --ag-odd-row-background-color: #ffffff;
+    --ag-even-row-background-color: #ffffff;
+    --ag-header-background-color: #1D1D1D;
+    --ag-header-foreground-color: #ffffff;
+
+    --ag-header-icon-color: #E0E0E0;
+
+    --ag-border-radius: 0;
+
+    --ag-font-family: 'Lato', sans-serif;
+
+    --ag-header-hover-background-color: #333333;
+}
+
+.ag-theme-quartz .ag-header-cell-label .ag-header-icon {
+    color: #E0E0E0;
+}
+
+.ag-theme-quartz .ag-root-wrapper,
+.ag-theme-quartz .ag-root-wrapper-body,
+.ag-theme-quartz .ag-root,
+.ag-theme-quartz .ag-header-container,
+.ag-theme-quartz .ag-header-cell,
+.ag-theme-quartz .ag-header-group-cell,
+.ag-theme-quartz .ag-panel,
+.ag-theme-quartz .ag-row {
+    border-radius: 0 !important;
+}
+
+.ag-theme-quartz .ag-header-cell .ag-icon {
+    fill: #E0E0E0 !important;
+    color: #E0E0E0 !important;
+}
+
+.ag-theme-quartz .ag-header-cell .ag-checkbox-input-wrapper {
+    background-color: transparent;
+}
+
+.ag-header-container .ag-header-cell {
+    border-right: 1px solid #2E2E2E;
+}
+
+.ag-header-cell-resize::after {
+    background-color: #E0E0E0;
+}
+
+.ag-header-row:not(:first-child) .ag-header-cell:not(.ag-header-span-height.ag-header-span-total) {
+    border-color: #2E2E2E;
+}
+
+.ag-header-group-cell {
+    border-right: 1px solid #2E2E2E;
+}
+
+.ag-row .ag-cell {
+    border-right: 1px solid #E0E0E0;
+}
+
+.full-width-grid {
+    width: 100%;
+}
+
+.ag-paging-panel {
+    justify-content: space-between;
+}
+
+.ag-row-hover {
+    background-color: transparent !important;
+    cursor: pointer !important;
+}
+
+.no-borders .ag-row .ag-cell {
+    border-right: 0;
+}
+
+.no-borders .ag-header-group-cell {
+    border-right: 0;
+}
+
+.no-borders .ag-header-container .ag-header-cell {
+    border-right: 0;
+}
+
+.no-hover .ag-row-hover,
+.no-hover .ag-row-hover:not(.ag-full-width-row)::before,
+.no-hover .ag-row-hover.ag-full-width-row.ag-row-group::before {
+    background-color: transparent !important;
+    cursor: default !important;
+}
+
+.ag-cell-focus,
+.ag-cell.ag-cell-range-selected {
+    outline: none !important;
+    border-color: transparent !important;
+}
+
+.ag-popup .ag-tooltip {
+    background-color: #333;
+    color: #fff;
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 14px;
+    max-width: 250px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.ag-popup .ag-tooltip .ag-tooltip-value {
+    font-weight: 500;
+}

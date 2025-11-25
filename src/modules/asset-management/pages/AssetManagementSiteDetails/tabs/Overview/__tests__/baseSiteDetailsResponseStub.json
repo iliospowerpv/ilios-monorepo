@@ -1,0 +1,24 @@
+{
+    "name": "Demo Site 1235",
+    "address": "110 Shawmut Road",
+    "city": "Canton",
+    "state": "MA",
+    "county": "",
+    "zip_code": "84101",
+    "system_size_ac": 462.0,
+    "system_size_dc": 646.0,
+    "das": "LocusNOC",
+    "lon_lat_url": "34.134078, -118.321695",
+    "id": 4,
+    "company": {
+        "name": "Demo Company C",
+        "email": "yulianterletssdkyi@gmail.com",
+        "phone": "3123123120",
+        "address": "55 North 300123123123",
+        "company_type": "Project/Site Owner",
+        "id": 2
+    },
+    "account": "DAS account",
+    "username": "DAS username",
+    "password": "12345678"
+}

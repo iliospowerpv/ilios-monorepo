@@ -1,0 +1,122 @@
+{
+    "general_info": {
+        "asset_id": "123123123",
+        "status": "Decommissioned",
+        "name": "New Device (updated)",
+        "category": "Inverter",
+        "type": "Power Optimizers",
+        "manufacturer": "NEP",
+        "model": "fdfdsar",
+        "serial_number": "sdfdfs342234fdws43feef21aar",
+        "warranty_effective_date": "2025-06-19",
+        "warranty_term": "no-no",
+        "gateway_id": "12312313412",
+        "function_id": "9842133123",
+        "driver": "ver 2",
+        "install_date": "2024-06-19",
+        "decommissioned_date": "2026-06-19",
+        "last_updated_date": "2024-06-19"
+    },
+    "technical_details": {
+        "power": {
+            "dc_power": null,
+            "dc_max_input": 5344.0,
+            "ac_power": 700.0,
+            "ac_max_output": 3452.0,
+            "standby_power": 343455.0,
+            "rated_output": 233451.0
+        },
+        "communication": {
+            "ip_address": "123.123.123.123",
+            "port": 4343,
+            "serial_mode": "asdsa",
+            "baud": 34344.0
+        },
+        "array": {
+            "number_of_strings": 234531.0,
+            "modules_per_string": 2531.0,
+            "integrated_combiners": "No",
+            "yearly_degradation": 2531.0,
+            "derate": 233451.0
+        },
+        "module": {
+            "watts_per_module": 253.0,
+            "mpp_voltage": 234531.0,
+            "mpp_current": 2533.0,
+            "mpp_watts": 23351.0,
+            "temperature_coefficient": 23351.0
+        }
+    },
+    "documents": [
+        {
+            "category": "Warranty",
+            "items": [
+                {
+                    "id": 118,
+                    "filename": "pngtree-cat-standing-like-human-png-image_15328247 (1) (1) (1).png",
+                    "author": "Yulian Terletskyi",
+                    "extension": "png",
+                    "created_at": "2024-07-31T20:49:29.962505"
+                },
+                {
+                    "id": 10,
+                    "filename": "50MB-TESTFILE.ORG (1).pdf",
+                    "author": "Yulian Terletskyi",
+                    "extension": "pdf",
+                    "created_at": "2024-06-18T11:23:50.842689"
+                },
+                {
+                    "id": 9,
+                    "filename": "dovidka (2) (1).docx",
+                    "author": "Deleted User",
+                    "extension": "docx",
+                    "created_at": "2024-06-18T08:19:01.779138"
+                }
+            ]
+        },
+        {
+            "category": "Specifications",
+            "items": [
+                {
+                    "id": 121,
+                    "filename": "c6awgm54.png",
+                    "author": "Yulian Terletskyi",
+                    "extension": "png",
+                    "created_at": "2024-07-31T21:02:43.535119"
+                },
+                {
+                    "id": 120,
+                    "filename": "Nature_Images_Free_Download_(172096539) (1).jpeg",
+                    "author": "Yulian Terletskyi",
+                    "extension": "jpeg",
+                    "created_at": "2024-07-31T21:01:50.423316"
+                },
+                {
+                    "id": 119,
+                    "filename": "Starship_SN16 (1).jpeg",
+                    "author": "Yulian Terletskyi",
+                    "extension": "jpeg",
+                    "created_at": "2024-07-31T20:52:37.875406"
+                },
+                {
+                    "id": 7,
+                    "filename": "30MB-TESTFILE.ORG (2).pdf",
+                    "author": "Deleted User",
+                    "extension": "pdf",
+                    "created_at": "2024-06-17T13:15:35.233225"
+                }
+            ]
+        }
+    ],
+    "service_detail": {
+        "lifetime": "324",
+        "warranty_period": "Active",
+        "next_scheduled_service_date": "2024-06-29",
+        "test_interval": "60 days",
+        "failure_rate": "3.5 / 4",
+        "mtbr": "137 / 112",
+        "mttr": "1 / 0.3",
+        "availability": "80% / 92%",
+        "open_repair_tickets_count": 0
+    }
+}
