@@ -1,0 +1,39 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+    -   id: end-of-file-fixer # fixes missing EOF line
+        exclude: .bumpversion.cfg
+    -   id: trailing-whitespace # fixes trailing whitespace (removes it)
+    -   id: check-ast # checks py code validity and compilation
+    -   id: no-commit-to-branch # Prevents commits directly to main/develop
+    -   id: check-merge-conflict # checks for files that contain merge conflict strings
+    -   id: check-yaml # checks yaml files (if changed) for parseable syntax
+    -   id: check-toml # checks toml files (if changed) for parseable syntax
+    -   id: debug-statements # checks for debugger imports and py37+ `breakpoint()` calls in python source
+-   repo: local
+    hooks:
+    -   id: black # use it rather than native black hook as we have configs in .toml and pre-commit can't work with it
+        name: black
+        entry: bash -c "make black"
+        language: system
+        types: [ python ]
+        pass_filenames: false
+        always_run: true
+        verbose: true
+    -   id: flake8 # use it rather than native flake8 hook as we have configs in .toml and pre-commit can't work with it
+        name: flake8
+        entry: bash -c "make lint"
+        language: system
+        types: [ python ]
+        pass_filenames: false
+        always_run: true
+        verbose: true
+    -   id: unit-tests
+        name: unit-tests
+        entry: bash -c "make test"
+        language: system
+        types: [python]
+        pass_filenames: false
+        always_run: true
+        verbose: true

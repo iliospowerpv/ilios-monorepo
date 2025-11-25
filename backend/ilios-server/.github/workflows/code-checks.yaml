@@ -1,0 +1,124 @@
+name: Code checks
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  black:
+    name: Black
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python version
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install requirements
+        run: |
+          python -m venv venv
+          source ./venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements_dev.txt
+
+      - name: Run Black code check
+        run: |
+          source ./venv/bin/activate
+          make black
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python version
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install requirements
+        run: |
+          python -m venv venv
+          source ./venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements_dev.txt
+
+      - name: Run Flake8 code analysis
+        run: |
+          source ./venv/bin/activate
+          make lint
+
+  migrations-order:
+    name: Validate migrations order
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python version
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install requirements
+        run: |
+          python -m venv venv
+          source ./venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Migrations order check
+        run: |
+          chmod +x dev_scripts/setup_env_variables.sh
+          ./dev_scripts/setup_env_variables.sh
+          source ./venv/bin/activate
+          export PYTHONPATH=:`pwd`/app
+          make validate-migrations
+
+  unit-tests:
+    name: Unit-tests
+    needs: [ black, lint, migrations-order ]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        env:
+          POSTGRES_USER: ilios_test_user
+          POSTGRES_PASSWORD: ilios_test_pass
+          POSTGRES_DB: ilios_test_db
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout
+        run: |
+          chmod +x dev_scripts/setup_env_variables.sh
+          ./dev_scripts/setup_env_variables.sh
+
+      - name: Set up Python version
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install requirements
+        run: |
+          python -m venv venv
+          source ./venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements_test.txt
+
+      - name: Run Pytest
+        run: |
+          source ./venv/bin/activate
+          pytest

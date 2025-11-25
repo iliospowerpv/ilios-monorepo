@@ -1,0 +1,30 @@
+{
+  "Asset Management": {
+    "edit": false,
+    "view": false
+  },
+  "Diligence": {
+    "edit": false,
+    "view": false
+  },
+  "O&M (Production Monitoring)": {
+    "edit": false,
+    "view": false
+  },
+  "Investor Dashboard": {
+    "edit": false,
+    "view": false
+  },
+  "Role-based Homepage/Tab": {
+    "edit": false,
+    "view": false
+  },
+  "Settings Page": {
+    "edit": false,
+    "view": false
+  },
+  "Reports": {
+    "edit": false,
+    "view": false
+  }
+}

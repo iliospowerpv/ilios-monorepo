@@ -1,0 +1,20 @@
+name: Check project version is updated
+
+on:
+  push:
+    branches-ignore:
+      - 'develop'
+      - 'main'
+
+jobs:
+  bump-version:
+    name: Bump-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Check version is updated
+        run: |
+          git fetch origin develop
+          git diff --name-only HEAD..origin/develop | grep .bumpversion.cfg

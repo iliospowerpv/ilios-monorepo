@@ -1,0 +1,97 @@
+steps:
+  - id: "Clone Repo"
+    name: gcr.io/cloud-builders/git
+    secretEnv:
+      - APP_VALUES_CREDS
+      - GITHUB_TOKEN
+    entrypoint: /bin/sh
+    args:
+      - '-c'
+      - |
+        github_token="$(echo "$$GITHUB_TOKEN")"
+        rm -rf * .git .gitignore .bumpversion .github .pre-commit-config.yaml .bumpversion.cfg
+        git clone https://$github_token@github.com/GH-50513/ilios-server.git .
+        git checkout $_GIT_REF
+
+  - id: "Update DB"
+    name: 'python:3.12'
+    secretEnv:
+      - APP_VALUES_CREDS
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        if [ -z "${_ALEMBIC_REF}" ]; then
+            echo "Alembic head is not set!"
+            exit 1
+        fi
+
+        printf "%b\n" "$$APP_VALUES_CREDS" >> app.yaml
+        cat app_$(echo ${_ENVIRONMENT} | tr '[:upper:]' '[:lower:]').yaml
+        echo "############"
+        apt-get update
+        apt-get install -y postgresql-client 
+        while IFS= read -r line; do
+          key=$(echo "$line" | awk -F": " '{print $1}')
+          value=$(echo "$line" | awk -F": " '{$1=""; print substr($0, 3)}' | sed "s/^'//;s/'$//")
+          eval export $key=\"$value\"
+        done < <(awk -F": " '/env_variables:/{f=1;next} f && NF {print $0}' app.yaml)
+        export
+        echo "############"
+
+        python3 -m venv env
+        source env/bin/activate  
+        pip install --upgrade pip
+        pip install -r requirements.txt
+
+        head=$_ALEMBIC_REF
+        current=$(alembic current | awk '{print $1}')
+        echo "head ${head}"
+        echo "current ${current}"
+        while [ "$head" != "$current" ]
+        do
+            alembic downgrade -1
+            current=$(alembic current | awk '{print $1}') # Update the current revision after each upgrade
+        done
+
+  - id: "Deploy APP"
+    name: gcr.io/cloud-builders/gcloud
+    secretEnv:
+      - APP_VALUES_CREDS
+      - APP_KEY
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        git checkout $COMMIT_SHA
+        echo $$APP_KEY > key.json
+        cat app.yaml &&
+        gcloud app deploy --version=backend-$SHORT_SHA app.yaml
+
+  - id: "Tag"
+    name: 'python:3.12'
+    secretEnv:
+      - APP_VALUES_CREDS
+      - GITHUB_TOKEN
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        github_token="$(echo "$$GITHUB_TOKEN")"
+        git_tag=$(echo Deployed_To_$(echo ${_ENVIRONMENT} | tr '[:lower:]' '[:upper:]')_$(date +"%Y.%m.%d")_$SHORT_SHA)
+        echo "TAG: $git_tag"
+        git tag $(echo $git_tag)
+        git push https://$github_token@github.com/GH-50513/ilios-server.git $(echo $git_tag)
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/${PROJECT_ID}/secrets/app-values-creds/versions/latest
+      env: APP_VALUES_CREDS
+    - versionName: projects/${PROJECT_ID}/secrets/GH-Token/versions/latest
+      env: 'GITHUB_TOKEN'
+    - versionName: projects/${PROJECT_ID}/secrets/app-sa-key/versions/latest
+      env: 'APP_KEY'
+options:
+  logging: CLOUD_LOGGING_ONLY
+  pool:
+    name: 'projects/${PROJECT_ID}/locations/us-central1/workerPools/privat-pool'

@@ -1,0 +1,51 @@
+{
+  "Effective Date": {
+    "PPA - Power Purchase Agreement": "Effective Date",
+    "Site Lease": "Effective Date",
+    "Operations and Maintenance (O&M) & Production Guarantee Agreement": "Effective Date",
+    "Engineering, Procurement, Construction (EPC) Agreement": "Effective Date",
+    "Interconnection Agreement and Amendments": "Effective Date"
+  },
+  "Term": {
+    "PPA - Power Purchase Agreement": "Term",
+    "Site Lease": "Initial Term",
+    "Operations and Maintenance (O&M) & Production Guarantee Agreement": "Term",
+    "Interconnection Agreement and Amendments": "Term"
+  },
+  "Renewal Terms": {
+    "PPA - Power Purchase Agreement": "Renewal Terms",
+    "Site Lease": "Renewal Terms",
+    "Operations and Maintenance (O&M) & Production Guarantee Agreement": "Renewal"
+  },
+  "Provider": {
+    "PPA - Power Purchase Agreement": "Provider",
+    "Interconnection Agreement and Amendments": "Interconnection Utility Company"
+  },
+  "Commencement Date": {
+    "Operations and Maintenance (O&M) & Production Guarantee Agreement": "Commencement Date",
+    "Site Lease": "Rent Commencement"
+  },
+  "Offtaker": {
+    "PPA - Power Purchase Agreement": "Offtaker",
+    "Site Lease": "Lessee (Tenant) Entity Name",
+    "Operations and Maintenance (O&M) & Production Guarantee Agreement": "Customer",
+    "Engineering, Procurement, Construction (EPC) Agreement": "Owner",
+    "Interconnection Agreement and Amendments": "Interconnection Customer"
+  },
+  "Nameplate Capacity": {
+    "PPA - Power Purchase Agreement": "Nameplate Capacity",
+    "Operations and Maintenance (O&M) & Production Guarantee Agreement": "Nameplate Capacity",
+    "Engineering, Procurement, Construction (EPC) Agreement": "System Size",
+    "Interconnection Agreement and Amendments": "Nameplate Capacity (System Size)"
+  },
+  "Nameplate Capacity Limits": {
+    "Interconnection Agreement and Amendments": "Nameplate Capacity Limits",
+    "PPA - Power Purchase Agreement": "Nameplate Capacity",
+    "Operations and Maintenance (O&M) & Production Guarantee Agreement": "Nameplate Capacity",
+    "Engineering, Procurement, Construction (EPC) Agreement": "System Size"
+  },
+  "Projected Production": {
+    "PPA - Power Purchase Agreement": "Projected Production",
+    "Operations and Maintenance (O&M) & Production Guarantee Agreement": "Year 1 Production"
+  }
+}

@@ -1,0 +1,50 @@
+steps:
+  - name: 'python:3.12'
+    entrypoint: bash
+    secretEnv:
+      - APP_VALUES_CREDS
+    args:
+      - '-c'
+      - |
+        printf "%b\n" "$$APP_VALUES_CREDS" > app_dev.yaml
+        echo "############"
+        apt-get update
+        apt-get install -y postgresql-client 
+        while IFS= read -r line; do
+          key=$(echo "$line" | awk -F": " '{print $1}')
+          value=$(echo "$line" | awk -F": " '{$1=""; print substr($0, 3)}' | sed "s/^'//;s/'$//")
+          eval export $key=\"$value\"
+        done < <(awk -F": " '/env_variables:/{f=1;next} f && NF {print $0}' app_dev.yaml)
+        export
+        echo "############"
+
+        python3 -m venv env
+        source env/bin/activate  
+        pip install --upgrade pip
+        pip install -r requirements.txt
+
+        head=$(alembic heads)
+        current=$(alembic current)
+        while [ "$head" != "$current" ]
+        do
+            alembic upgrade +1
+            current=$(alembic current) # Update the current revision after each upgrade
+        done
+
+        alembic upgrade head
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/${PROJECT_ID}/secrets/app-values-creds/versions/latest
+      env: APP_VALUES_CREDS
+
+options:
+  pool:
+    name: 'projects/${PROJECT_ID}/locations/us-central1/workerPools/privat-pool'
+
+substitutions:
+  _DB_USER: ilios
+  _DB_PASSWORD: iliOS@2024
+  _DB_NAME: ilios
+  _DB_HOST: 10.204.0.2
+  
