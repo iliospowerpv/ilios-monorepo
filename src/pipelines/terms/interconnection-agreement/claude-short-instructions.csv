@@ -1,0 +1,964 @@
+Key Items,Instructions,Definitions
+Effective Date,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Effective Date from the text in this format:
+<example>
+Text:
+```
+3.1- Effective upon execution...
+```
+Data retrieved:
+October 1, 2015</example>
+
+
+<example>
+Text:
+```
+IN WITNESS WHEREOF, the Parties have caused this Agreement to be signed by their respective duly authorized representatives.
+...
+```
+Data retrieved:
+August 8, 2019</example>
+
+
+<example>
+Text:
+```
+1.1	This Agreement shall become effective when executed by both Parties and shall continue in effect until terminated....
+```
+Data retrieved:
+August 16, 2019</example>
+
+",The date in which the agreement is deemed effective
+Interconnection Utility Company,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Interconnection Utility Company from the text in this format:
+<example>
+Text:
+```
+This Interconnection Agreement (""Agreement"") is made and entered into this 8th day of August, 2019, by Jersey Central Power & Light Company, (""Electric Distribution Company"" or ""JCP&L""), and Mount Kem...
+```
+Data retrieved:
+Jersey Central Power & Light Company (""JCP&L"")</example>
+
+
+<example>
+Text:
+```
+This Agreement is made and entered into this 9th day of November 2020 by and between PWH Properties LLC, (""Interconnection Customer"") located at 35 Edmunds Road, Canton, Maine, and Central Maine Power...
+```
+Data retrieved:
+Central Maine Power Company</example>
+
+
+<example>
+Text:
+```
+Duke Energy Carolinas, LLC...
+```
+Data retrieved:
+Duke Energy Carolinas, LLC</example>
+
+",The provider that allows you to connect to the grid
+Interconnection Customer,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Interconnection Customer from the text in this format:
+<example>
+Text:
+```
+This Interconnection Agreement (""Agreement"") is made and entered into this 8th day of August, 2019, by Jersey Central Power & Light Company, (""Electric Distribution Company"" or ""JCP&L""), and Mount Kem...
+```
+Data retrieved:
+Mount Kemble Morristown</example>
+
+
+<example>
+Text:
+```
+This Agreement is made and entered into this 9th day of November 2020 by and between PWH Properties LLC, (""Interconnection Customer"") located at 35 Edmunds Road, Canton, Maine, and Central Maine Power...
+```
+Data retrieved:
+PWH Properties LLC</example>
+
+
+<example>
+Text:
+```
+233 Randolph 74 Solar I, LLC...
+```
+Data retrieved:
+233 Randolph 74 Solar I, LLC</example>
+
+",The owner of the project wanting to provide power and connect to the grid
+Nameplate Capacity (System Size),"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Nameplate Capacity (System Size) from the text in this format:
+<example>
+Text:
+```
+Exhibit 9- 3.00 MW...
+```
+Data retrieved:
+3.00 MW</example>
+
+
+<example>
+Text:
+```
+A nameplate capacity of 2 MW or less...
+```
+Data retrieved:
+2 MW</example>
+
+
+<example>
+Text:
+```
+2.6 - 592.47 kW...
+```
+Data retrieved:
+592.47 kW</example>
+
+",Size of the solar project
+Nameplate Capacity Limits,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Nameplate Capacity Limits from the text in this format:
+<example>
+Text:
+```
+Interconnection Requirements for new distributed generation units with a nameplate capacity of 2 MW or less...
+```
+Data retrieved:
+Not to exceed 2 MW</example>
+
+
+<example>
+Text:
+```
+Interconnection Customer is proposing to develop a Small Generator Facility, consisting of 3.000 MW of photovoltaic (PV), limited to 3.000 MW of total export,...
+```
+Data retrieved:
+Not to exceed 3 MW</example>
+
+",The limits of the system size -- not to exceed amount
+Term,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Term from the text in this format:
+<example>
+Text:
+```
+1.1	Term: This Agreement shall become effective when executed by both Parties and shall continue in effect until terminated....
+```
+Data retrieved:
+Perpetual</example>
+
+
+<example>
+Text:
+```
+14.1 - becomes effective when signed by both parties and shall remain in effect thereafter from month to month unless terminated by either party on 30 days' prior written notice in accordance with Sec...
+```
+Data retrieved:
+The agreement becomes effective when signed by both parties and shall remain in effect unless terminated by either party on 30 days' prior written notice</example>
+
+
+<example>
+Text:
+```
+3.2 This Agreement shall become effective on the Effective Date and shall remain in effect for a period of ten years from the Effective Date or such other longer period as the Interconnection Customer...
+```
+Data retrieved:
+10 years from October 1, 2015. Auto renewed annually</example>
+
+",Defined terms in an agreement
+Mechanical Completion Date,"Retrieve Mechanical Completion Date from the text.
+Definitions: Mechanical Completion Date - Date by which system must be mechanically complete in the IA.(should be calendared with at least one month out as a tickler).
+",Date by which system must be mechanically complete in the IA.(should be calendared with at least one month out as a tickler)
+Commercial Operation Date,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Commercial Operation Date from the text in this format:
+<example>
+Text:
+```
+2.8 - anticipated 4/30/21...
+```
+Data retrieved:
+Anticipated 4/30/21</example>
+
+",The date that the project is connected to the gird and able to sell power
+Deadline to Interconnect Date,"Retrieve Deadline to Interconnect Date from the text.
+Definitions: Deadline to Interconnect Date - Date by which system must be interconnected, tested and have permission to operate (should be calendared with a tickler out at least three months).
+","Date by which system must be interconnected, tested and have permission to operate (should be calendared with a tickler out at least three months)"
+Amendments and/or Assignments,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Amendments and/or Assignments from the text in this format:
+<example>
+Text:
+```
+The Parties may amend this Agreement by a written instrument duly executed by
+both Parties....
+```
+Data retrieved:
+Section 9.2</example>
+
+
+<example>
+Text:
+```
+24)	Amendments: There will be no changes or amendments to this form of Agreement unless specifically agreed to by all Parties in writing prior to the interconnection application being deemed complete....
+```
+Data retrieved:
+Amendments if agreed to by both parties and only necessary due to status of customer as public entity</example>
+
+
+<example>
+Text:
+```
+11.5 - neither Party may assign without the prior written consent of the other Party...
+```
+Data retrieved:
+11</example>
+
+","Amendments (i.e. formally agreed upon changes to the agreement between the parties) and/or transfers of rights, duties, and interests of the agreement to other parties"
+Default by Provider,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Default by Provider from the text in this format:
+<example>
+Text:
+```
+6.6.1 No Default shall exist where such failure to discharge an obligation (other than the payment of money) is the result of a Force Majeure Event as defined in this Agreement, or the result of an ac...
+```
+Data retrieved:
+6.6</example>
+
+
+<example>
+Text:
+```
+7.6.1	No Default shall exist where such failure to discharge an obligation (other than the payment of money) is the result of a Force Majeure Event as defined in this Agreement or the result of an act...
+```
+Data retrieved:
+Section 7.6</example>
+
+",Provider's failure to fulfill its key obligations under the agreement
+Default by Customer,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Default by Customer from the text in this format:
+<example>
+Text:
+```
+7.6.1	No Default shall exist where such failure to discharge an obligation (other than the payment of money) is the result of a Force Majeure Event as defined in this Agreement or the result of an act...
+```
+Data retrieved:
+Section 7.6</example>
+
+
+<example>
+Text:
+```
+6.6.1 No Default shall exist where such failure to discharge an obligation (other than the payment of money) is the result of a Force Majeure Event as defined in this Agreement, or the result of an ac...
+```
+Data retrieved:
+6.6</example>
+
+",Customer's failure to fulfill its key obligations under the agreement
+Termination by Customer,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Termination by Customer from the text in this format:
+<example>
+Text:
+```
+15) a)	By Customer-Generator. The Customer-Generator may terminate this Application/Agreement by providing written notice to JCP&L....
+```
+Data retrieved:
+By written notice to utility</example>
+
+
+<example>
+Text:
+```
+a.	The Customer may terminate this Agreement at any time, by giving the Utility sixty (60) days' written notice.
+
+b.		Failure by the Customer to seek final acceptance by the Utility within twelve (1...
+```
+Data retrieved:
+1.2 a - At any time with 60 days notice;
+b - failure by Customer to seek final acceptance from utility within 12 months of utility construction process - automatic termination
+c- 60 days after notice of event of default to utility</example>
+
+
+<example>
+Text:
+```
+14.1- Either Party on 30 days' prior written notice in accordance with Section 12 can terminate this Agreement.
+14.2- Agreement can be terminated without notice upon:
+(a) termination of the electric...
+```
+Data retrieved:
+Section 14.1</example>
+
+",Rights to terminate the agreement by the project owner (Interconnection Customer)
+Termination by Provider,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Termination by Provider from the text in this format:
+<example>
+Text:
+```
+14.1- Either Party on 30 days' prior written notice in accordance with Section 12 can terminate this Agreement....
+```
+Data retrieved:
+Section 14.1</example>
+
+
+<example>
+Text:
+```
+c.		Either Party may, by giving the other Party at least sixty (60) days' prior written notice, terminate this Agreement in the event that the other Party is in default of any of the material terms an...
+```
+Data retrieved:
+1.2 c - 60 days after notice of event of default given
+d - For cause with at least 60 days prior written notice</example>
+
+
+<example>
+Text:
+```
+3.32 Either Party may terminate this Agreement after Default pursuant to Article 6.6...
+```
+Data retrieved:
+Event of Defaut</example>
+
+",Rights to terminate the agreement by the utility company (Interconnection Utility Provider)
+Terms for Disconnection,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Terms for Disconnection from the text in this format:
+<example>
+Text:
+```
+5.1 - SDG&E may require customer to interupt or reduce output of its facility under the following circumstances:
+(a) necessary in SDG&E's sole judgment to construct, intsall, maintain, repair, replac...
+```
+Data retrieved:
+Section 5.1</example>
+
+
+<example>
+Text:
+```
+4.1	Emergency Disconnection: The Utility may disconnect the Unit, without prior notice to the Customer (a) to eliminate conditions that constitute a potential hazard to Utility personnel or the genera...
+```
+Data retrieved:
+4.1.  Utility may disconnect wihtout prior notice in event of emergency
+4.2   Utillity may disconnect after reasonable notice fi the Customer fails to make certain records available, if the system interferes with other systems, the Unit adversely affects the quality of service of adjoining customers
+4.3  Customer may disconnect at any time.</example>
+
+
+<example>
+Text:
+```
+3.33 3.33		Upon termination of this Agreement, the Small Generator Facility will be disconnected from T & D Utility's Electric Distribution System...
+```
+Data retrieved:
+Upon termination, facility will be disconnected.</example>
+
+","In the event a system is to be disconnect (either temporarily or permanently), there are steps that must be taken. This section outlines such requirements"
+Assignment – Customer,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Assignment – Customer from the text in this format:
+<example>
+Text:
+```
+18 The rights granted to the Customer-Generator under this Application/Agreement shall not survive the transfer of ownership of the Customer-Generator Facility to a new owner unless the new owner agre...
+```
+Data retrieved:
+Assignee must accept the responsibilities under agreemetn and notify utilty within 15 days</example>
+
+
+<example>
+Text:
+```
+6.1 Assignment
+This Agreement may be assigned by either Party upon fifteen (15) Business Days
+prior written notice, and with the opportunity to object by the other Party. When required, consent to ass...
+```
+Data retrieved:
+upon fifteen (15) Business Days prior written notice, and with the opportunity to object by the other Party</example>
+
+
+<example>
+Text:
+```
+.7.1.2	The Interconnection Customer shall have the right to assign this Agreement, without the consent of the Utility, for collateral security purposes to aid in providing financing for the Generating...
+```
+Data retrieved:
+7.1.2- Can assign for collateral security purposes to aid in providing financing for the Generating Facility without consent</example>
+
+","Customer's ability to assign (i.e. transfer its rights, duties, and obligations of the agreement) to someone else"
+Assignment – Provider,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Assignment – Provider from the text in this format:
+<example>
+Text:
+```
+6.1 Assignment
+This Agreement may be assigned by either Party upon fifteen (15) Business Days
+prior written notice, and with the opportunity to object by the other Party. When required, consent to ass...
+```
+Data retrieved:
+upon fifteen (15) Business Days prior written notice, and with the opportunity to object by the other Party</example>
+
+
+<example>
+Text:
+```
+11.5- Neither Party shall voluntarily assign this Agreement or any of its rights or duties hereunder without the written consent of the other Party, which consent shall not be unreasonably withheld....
+```
+Data retrieved:
+Must have written consent</example>
+
+","Provider's ability to assign (i.e. transfer its rights, duties, and obligations of the agreement) to someone else"
+Force Maejure,"Retrieve Force Maejure from the text.
+Definitions: Force Maejure - nan.
+",
+Insurance Requirements,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Insurance Requirements from the text in this format:
+<example>
+Text:
+```
+Exhibit 4
+Insurance Requirement: The customer is responsible for having insurance for their interconnection. Please see below requirements of insurance and provide an updated insurance certificate ann...
+```
+Data retrieved:
+Liability Insurance</example>
+
+
+<example>
+Text:
+```
+7.1	The Customer is not required to provide general liability insurance coverage as part of this Agreement, the SIR, or any other Utility requirement. Due to the risk of incurring damages however, the...
+```
+Data retrieved:
+General liability coverage</example>
+
+
+<example>
+Text:
+```
+Section 8
+8.4- General liability insurance with a combined single limit of not less than:
+(a)- $2,000,000 for each occurrence if the Gross Nameplate Rating is greater than 100 kW.
+(b)- $1,000,000 f...
+```
+Data retrieved:
+See Section 8</example>
+
+",Overview of the insurance coverage that is required
+Taxes,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Taxes from the text in this format:
+<example>
+Text:
+```
+11.1	The Parties agree to follow all applicable tax laws and regulations, consistent with North Carolina and federal policy and revenue requirements.
+
+11.2	Each Party shall cooperate with the other to...
+```
+Data retrieved:
+Section 11</example>
+
+",Amount of property taxes due on the physical property and projected amount once the solar facility is constructed
+Summary of Economic Terms,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Summary of Economic Terms from the text in this format:
+<example>
+Text:
+```
+4.1- The Interconnection Customer shall pay for the cost of the Interconnection Facilities itemized in Appendix 2 of this Agreement.
+4.1.2- The Interconnection Customer shall be responsible for its sh...
+```
+Data retrieved:
+Customer is responsible for all cost incurred.</example>
+
+",Costs and other payments made from one party to another
+Cost Responsibility for Interconnection,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Cost Responsibility for Interconnection from the text in this format:
+<example>
+Text:
+```
+5.1.1 T & D Utility shall bill the Interconnection Customer for the design, engineering, construction, and procurement costs of T & D Utility provided Interconnection Facilities and Distribution Upgra...
+```
+Data retrieved:
+Customer</example>
+
+
+<example>
+Text:
+```
+3.6	Costs of Dedicated Facilities: During the term of this Agreement, the Utility shall design, construct and install the Dedicated Facilities. The Customer shall be responsible for paying the increme...
+```
+Data retrieved:
+Customer</example>
+
+
+<example>
+Text:
+```
+6.1.1	The Utility shall bill the Interconnection Customer for the design, engineering, construction, and procurement costs of Interconnection Facilities and Upgrades contemplated by this Agreement on ...
+```
+Data retrieved:
+Customer</example>
+
+",Party that will pay for the connection to the grid
+Cost Responsibility for System Upgrades,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Cost Responsibility for System Upgrades from the text in this format:
+<example>
+Text:
+```
+5.1.1 T & D Utility shall bill the Interconnection Customer for the design, engineering, construction, and procurement costs of T & D Utility provided Interconnection Facilities and Distribution Upgra...
+```
+Data retrieved:
+Customer</example>
+
+
+<example>
+Text:
+```
+11) Customer-Generator Billing and Payment:
+a) Payment for Interconnection Facilities: The Customer-Generator shall pay for the cost of the Interconnection Facilities itemized in Attachment D of this ...
+```
+Data retrieved:
+Customer</example>
+
+
+<example>
+Text:
+```
+5.2 The Utility shall design, procure, construct, install, and own the Network Upgrades described in Appendix 6 of this Agreement. If the Utility and the Interconnection Customer agree, the Interconne...
+```
+Data retrieved:
+Customer (unless Utility volunteers)</example>
+
+",Party that will pay for system upgrades
+Prevailing Party Provision,"Retrieve Prevailing Party Provision from the text.
+Definitions: Prevailing Party Provision - Whether prevailing party in any dispute and/or litigation gets its legal costs covered by non prevailing party.
+",Whether prevailing party in any dispute and/or litigation gets its legal costs covered by non prevailing party
+Governing Law,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Governing Law from the text in this format:
+<example>
+Text:
+```
+9.1 Governing Law, Regulatory Authority, and Rules The validity, interpretation and enforcement of this Agreement and each of its provisions shall be governed by the laws of the State of Maine, withou...
+```
+Data retrieved:
+Maine</example>
+
+
+<example>
+Text:
+```
+23)	Governing Law and Regulatory Authority. This Agreement shall be governed by, interpreted, construed, and enforced in accordance with the laws of the State of New Jersey...
+```
+Data retrieved:
+New Jersey</example>
+
+
+<example>
+Text:
+```
+8.5 Applicable Law: This Agreement shall be governed by and construed in accordance with the law of the State of New York....
+```
+Data retrieved:
+New York</example>
+
+",The laws of the jurisdiction that the agreement is to be enforced
+Warranty,"Retrieve Warranty from the text.
+Definitions: Warranty - nan.
+",
+Access Rights,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Access Rights from the text in this format:
+<example>
+Text:
+```
+2.4 Right of Access At reasonable hours, and upon reasonable notice, or at any time without notice in the event of an emergency or hazardous condition, Company shall have access to Customer's premises...
+```
+Data retrieved:
+Utiilty can access at reasonable hours and upon reasonable notice; or at any time during emergency or hazardous conditions</example>
+
+
+<example>
+Text:
+```
+7)	Access. JCP&L shall have access to the metering equipment and the disconnecting means of the Customer-Generator Facility at all times. JCP&L shall provide reasonable notice to the Customer-Generato...
+```
+Data retrieved:
+Utility must be able to access at all times.</example>
+
+
+<example>
+Text:
+```
+6 - SDG&E may enter premises at all reasonable hours without notice for following purposes:
+(a) inspect protective devices and read or test meters;
+(b) disconnect Facility if a hazardous condition e...
+```
+Data retrieved:
+6</example>
+
+",Ability of the utility to enter the premises
+Other Dates/Deadlines Referenced,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Other Dates/Deadlines Referenced from the text in this format:
+<example>
+Text:
+```
+5.1.1 T & D Utility shall bill the Interconnection Customer for the design, engineering, construction, and procurement costs of T & D Utility provided Interconnection Facilities and Distribution Upgra...
+```
+Data retrieved:
+""5.1.1 Customer must pay all invoices within 30 days of receipt
+5.1.2 Final Bill from Utility to Customer - within 90 days of construction and installation completion
+5.2 50% deposit due to utility 20 business days before commencement""</example>
+
+
+<example>
+Text:
+```
+11 b)		Scope of Cost for Interconnection Facilities: JCP&L shall bill the Customer­ Generator for the design, engineering, procurement, construction, and commissioning costs of JCP&L provided intercon...
+```
+Data retrieved:
+All bills from utility payable within 30 days of receipt; True up of actual costs within 120 days of construction completion</example>
+
+
+<example>
+Text:
+```
+Appendix 2.  The charges are contingent upon the installation of the Company's facilities being underway by close of business on August 7, 2016. A delay beyond this date will result in revised charges...
+```
+Data retrieved:
+Faciliites must be underway by 8/7/16;
+6.1.1 All customer payments due within 30 days of receipt of bill from utility;
+6.1.2 Utility must provide final accounting to Customer within three months of construction completion</example>
+
+","Any other specific dates that are called out in the agreement that need to be brought to our attention (i.e. milestones, payments, notice requirements, reporting, etc.)"
+Responsible Party for Metering,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Responsible Party for Metering from the text in this format:
+<example>
+Text:
+```
+1.7 The Interconnection Customer shall be responsible for the Utility's reasonable and necessary cost for the purchase, installation, operation, maintenance, testing, repair, and replacement of meteri...
+```
+Data retrieved:
+Customer</example>
+
+
+<example>
+Text:
+```
+3 d)		Metering: Revenue quality metering equipment shall be installed and tested by JCP&L. JCP&L may choose to schedule the Witness Test also at this time. The Customer-Generator may be responsible fo...
+```
+Data retrieved:
+Utility</example>
+
+
+<example>
+Text:
+```
+4.1.2 The Interconnection Customer shall be responsible for its share of all\nreasonable expenses, including overheads, associated with (1) owning,\noperating, maintaining, repairing, and replacing it...
+```
+Data retrieved:
+Provider/Utility Company</example>
+
+",Party that will pay for the telemetry date. Metering lets you know how much power is being produced
+Recurring Monthly Costs,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Recurring Monthly Costs from the text in this format:
+<example>
+Text:
+```
+3.6 All costs associated with the operation and maintenance of the Dedicated Facilities after the Unit first produces energy shall be the responsibility of the Utility....
+```
+Data retrieved:
+Utility</example>
+
+
+<example>
+Text:
+```
+[probably need to check rate schedules referenced above]...
+```
+Data retrieved:
+4</example>
+
+
+<example>
+Text:
+```
+Metering O&M Charge for Metering Equipment (Schedule Dj:
+This EXHIBIT 2 is based on estimates from the Impact Study. The parties agree that
+this exhibit will be amended once actual costs have been det...
+```
+Data retrieved:
+Exhibit 2</example>
+
+",Any other costs that are recurring (not a one time fee associated with the build of the solar project)
+Workflow Questions,"Retrieve Workflow Questions from the text.
+Definitions: Workflow Questions - nan.
+",
+"Does System Size tie to PPA, EPC, O&M, and PV Syst?","Retrieve Does System Size tie to PPA, EPC, O&M, and PV Syst? from the text.
+Definitions: Does System Size tie to PPA, EPC, O&M, and PV Syst? - nan.
+",

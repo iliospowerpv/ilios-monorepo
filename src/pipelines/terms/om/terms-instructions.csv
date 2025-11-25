@@ -1,0 +1,990 @@
+,Key Items,Instructions
+0,Effective Date,"## Finding the Effective Date in a Solar Energy O&M agreement:
+
+**Keywords to look for:**
+
+*   ""Effective Date"" 
+*   ""Agreement Date""
+*   ""Execution Date""
+*   ""Commencement Date""
+
+**Patterns to identify:**
+
+*   Dates formatted as MM/DD/YYYY or DD/MM/YYYY, often enclosed in parentheses and followed by the term ""Effective Date"" 
+*   Phrases like ""as of,"" ""entered into as of,"" or ""made and entered into as of"" preceding the date.
+
+**Sections to focus on:**
+
+*   **First few pages of the agreement:** The effective date is often defined early in the document, sometimes on the first page or in the introductory sections.
+*   **Signature page:** The effective date might be mentioned near the signatures, especially if it's defined as the date of the last signature.
+*   **Definitions section:** Look for a section that defines key terms used in the agreement, as ""Effective Date"" might be explicitly defined there."
+1,Provider,"## Finding the ""Provider"" in a Solar O&M agreement:
+
+**Keywords to Look for:**
+
+*   ""O&M Provider"" 
+*   ""Operator""
+*   ""Contractor""
+*   ""Maintenance"" 
+*   ""Operations""
+*   Company names ending in: ""LLC"", ""Inc."", ""Corporation""
+
+**Patterns to Identify:**
+
+*   **Company Name**, a **State** (e.g., California) **legal designation** (e.g., corporation, limited liability company) 
+*   **""Agreement""**  between **[Company Name]** (""**Owner**"") and **[Company Name]** (""**Provider**"") 
+
+**Sections to Focus On:**
+
+*   **Definitions Section:** Often located at the beginning of the agreement, this section explicitly defines key terms like ""Operator"" or ""O&M Provider"" and their roles.
+*   **Signature Block:**  Look for the names of the parties involved and their designated roles (e.g., Owner, Operator) near the end of the document.
+*   **Body of the Agreement:**  Search for sections related to maintenance, operations, or responsibilities, as these often identify the Provider."
+2,Customer,"## Finding Customer Information in Solar O&M Agreement:
+
+**Keywords to Look for:**
+
+*   ""Customer""
+*   ""Owner""
+*   ""Developer"" 
+*   ""Applicant""
+*   Company names followed by identifiers like ""LLC,"" ""Inc.,"" ""Corp."" 
+
+**Patterns to Identify:**
+
+*   **Company Name and Structure:** Look for company names followed by their legal structure identifiers such as LLC, Inc., Corp., etc. 
+*   **Party Introductions:**  Search for sections introducing the involved parties, often found at the beginning of the agreement.
+*   **Defined Terms:** Check the definitions section for terms like ""Customer,"" ""Owner,"" or similar, which will clarify the specific terminology used in the agreement.
+*   **Signature Blocks:**  Scan the signature block at the end of the document for company names and titles of authorized representatives.
+
+**Sections to Focus On:**
+
+*   **Recitals or Whereas Clauses:** Often found at the beginning, these sections provide context and may identify the Customer.
+*   **Definitions:** This section defines key terms used throughout the agreement, including ""Customer"" or its equivalent.
+*   **Parties to the Agreement:** This section explicitly names and describes the involved parties, including the Customer.
+**Additional Tips:**
+
+*   Pay attention to variations in terminology. While ""Customer"" is common, the agreement might use ""Owner,"" ""Developer,"" or ""Applicant"" to refer to the same entity.
+*   Look for clues in the context. The Customer is typically the entity responsible for the solar facility and receiving services. 
+"
+3,Commencement Date,"## Finding the Commencement Date in a Solar O&M:
+
+**Keywords and Patterns:**
+
+*   ""Commencement Date"" 
+*   ""Effective Date""
+*   ""System Commencement Date""
+*   ""Services Commencement Date""
+*   Dates following phrases like:
+    *   ""Agreement shall commence on...""
+    *   ""term of this Agreement shall commence on...""
+    *   ""obligations set forth herein shall not commence until...""
+
+**Sections to Focus On:**
+
+*   **Section 1 / Article 1:** This section often outlines the agreement's start date and key definitions.
+*   **Section 8 / Article 8:** Look for clauses related to the term and termination of the agreement, as the commencement date is often defined here.
+*   **Exhibit A or Schedule 1:** These sections may contain specific details about the project timeline, including the commencement date.
+
+**Instructions:**
+
+1. **Scan the document for the keywords and patterns listed above.** Pay close attention to the context surrounding these terms to ensure you're identifying the correct date.
+2. **Focus your search on Sections 1 and 8, as well as any exhibits or schedules related to the project timeline.**
+3. **Look for definitions of ""Commencement Date"" or similar terms.** These definitions will clarify the specific conditions that trigger the start of the agreement.
+4. **Identify any dates associated with the commencement of services or the agreement's effective date.** 
+5. **Note any conditions or triggers associated with the commencement date.** For example, the agreement may commence upon written notice, commercial operation, or the start of energy delivery. 
+6. **If multiple dates or terms are mentioned, determine the relevant date based on the context of the agreement and the definitions provided.** 
+"
+4,Utility Company,""
+5,Term,"## Finding the Term in O&M Agreement:
+
+**Keywords and Patterns:**
+
+*   **Explicit terms:** ""Term"", ""Agreement Term"", ""Duration"", ""Period"", ""Effective Date"", ""Commencement Date"", ""Initial Term"", ""Extension Term""
+*   **Numbers and units:** Look for mentions of years (e.g., ""5 years""), months, or specific dates.
+*   **Renewal language:** Phrases like ""automatic renewal"", ""extend"", ""renewal period"", ""subsequent term"".
+*   **Termination language:** Phrases like ""termination"", ""early termination"", ""notice of termination"".
+
+**Sections to Focus On:**
+
+*   **Agreement Introduction or Definitions:** The term is often defined early in the agreement.
+*   **Term and Termination Clause:** This section explicitly outlines the duration and conditions for ending the agreement. Look for sections titled ""Term"", ""Term of Agreement"", or ""Termination"".
+*   **Operational Clauses:** Sections related to service commencement, system operation, or key milestones might indirectly reference the term.
+
+**Examples of Search Queries:**
+
+*   Search for the exact word ""Term"" within the document.
+*   Search for phrases like ""Term of Agreement"" or ""Agreement Term"".
+*   Search for sections titled ""Term"" or ""Termination"".
+*   Search for dates or timeframes (e.g., ""5 years"", ""annual"").
+*   Search for keywords related to renewal or extension (e.g., ""automatic renewal"", ""extend"").
+
+**Extracting Information:**
+
+Once you've located the relevant sections, carefully read the language to understand:
+
+*   The starting date of the agreement (Effective Date or Commencement Date).
+*   The initial duration of the agreement (e.g., 5 years).
+*   Whether there are automatic renewals or extension options.
+*   The conditions for termination (e.g., notice period, specific events).
+
+**Remember:** The specific wording and structure of interconnection agreements can vary. Adapt your search based on the specific document you're reviewing. 
+"
+6,Renewal,"## Finding Renewal Clauses in O&M Agreement:
+
+**Keywords:**
+
+*   Renewal
+*   Extend
+*   Term
+*   Automatic extension
+*   Option to extend
+*   Additional period
+*   Anniversary
+
+**Patterns:**
+
+*   ""Term shall be extended...""
+*   ""Option to extend the Term...""
+*   ""Agreement may be renewed...""
+*   ""Automatic renewal for...""
+*   ""Unless terminated, the Agreement will renew...""
+
+**Sections:**
+
+*   **Term of Agreement:** This section typically outlines the initial term and any provisions for renewal or extension. Look for clauses discussing the duration of the agreement and conditions for extending it.
+*   **Termination:** While focusing on ending the agreement, this section might also mention conditions for renewal or automatic extensions if termination is not initiated.
+
+**Examples of how clauses might appear:**
+
+*   ""The Term shall automatically be extended annually for one (1) additional year...""
+*   ""The Term may be extended upon mutual written agreement of the Parties for one or more additional five (5) year periods...""
+*   ""This Agreement will be subject to an automatic extension for consecutive one (1) year periods...""
+
+**Process:**
+
+1.  **Locate relevant sections:** Use the table of contents or headings within the document to find sections related to ""Term of Agreement"" or ""Termination.""
+2.  **Scan for keywords and patterns:** Within these sections, look for the keywords and patterns listed above. Pay close attention to language surrounding the term ""Term"" and any mentions of extensions or renewals.
+3.  **Identify renewal clauses:** Once you find potential clauses, carefully read and understand the conditions for renewal, including the length of the extension, any required notices, and whether it's automatic or requires mutual agreement. 
+4.  **Extract examples:** Copy the exact wording of the renewal clauses you find, including the section number for reference. 
+"
+7,Maintenance Service Fee,"## Finding Maintenance Service Fees in O&M agreement:
+
+**Keywords and Patterns:**
+
+*   **Explicit terms:** ""Maintenance Service Fee,"" ""O&M Fee,"" ""Quarterly Fee,"" ""Annual Maintenance Services Fee""
+*   **Related terms:** ""Maintenance Services,"" ""Covered Services,"" ""Operational tasks""
+*   **Fee structures:** ""$/kW,"" ""% of gross project revenue,"" fixed dollar amounts
+*   **Schedule indicators:** ""Schedule 2,"" ""Exhibit C,"" ""Exhibit A""
+*   **Payment terms:** ""Quarterly,"" ""Annually""
+*   **Escalation clauses:** Look for mentions of percentage increases over time.
+
+**Sections to Focus On:**
+
+*   **Exhibits:** Pay close attention to exhibits labeled ""C"" or ""A,"" as they often contain detailed fee schedules.
+*   **Operational sections:** Sections discussing maintenance responsibilities and provider obligations (often numbered around 7 or 1.3).
+*   **Compensation sections:** Sections outlining payment terms and fee structures.
+
+**Examples of How to Find the Information:**
+
+1.  **Search for keywords:** Use the ""find"" function in your document viewer to search for the keywords listed above.
+2.  **Scan exhibits and schedules:** Look for tables or lists that present fee structures and calculations.
+3.  **Review payment clauses:** Identify sections that discuss payment terms and schedules for maintenance services.
+4.  **Follow cross-references:** If a section mentions a schedule or exhibit, navigate to it for detailed fee information. 
+5.  **Look for escalation clauses:** Check for language indicating periodic increases in the maintenance fee.
+
+Once you've located relevant sections, extract the specific text that defines the Maintenance Service Fee, including:
+
+*   **Fee amount:** The actual cost, whether a fixed sum, a rate per kW, or a percentage of revenue.
+*   **Payment frequency:** How often the fee is paid (e.g., quarterly, annually).
+*   **Escalation terms:** If applicable, note any provisions for fee increases over time. 
+"
+8,Escalator,"## Finding Escalator Clauses in Solar O&M Agreement:
+
+**Keywords:**
+
+*   Escalator
+*   Increase
+*   Annual
+*   Anniversary
+*   Inflation
+*   Adjustment
+*   Maintenance Services Fee
+*   O&M Fee
+
+**Patterns:**
+
+*   Percentage increase (e.g., 2%, 3%)
+*   Specific dates for increase (e.g., anniversary of Commencement Date, calendar day of the month)
+*   Reference to sections or exhibits (e.g., Exhibit C, Section 1.3)
+
+**Sections to Focus On:**
+
+*   **Maintenance or O&M Fee Schedule/Exhibit:** This section typically outlines the costs associated with maintaining the solar energy system and often includes details about escalators.
+*   **Term and Termination:**  Escalator clauses might be mentioned here, especially if they are tied to specific contract anniversaries or renewal periods.
+*   **Definitions:** Look for definitions of terms like ""Maintenance Services Fee"" or ""O&M Fee"" as they might contain information about how these fees are adjusted over time.
+
+**Examples of How to Find Escalator Clauses:**
+
+1. **Search for keywords:** Use the ""find"" function in your document viewer to search for keywords like ""escalator,"" ""increase,"" or ""anniversary."" This will help you quickly identify sections that are likely to contain information about escalators.
+2. **Scan section headings:** Look for sections titled ""Maintenance,"" ""O&M,"" ""Fees,"" or ""Term and Termination."" These sections are likely to contain information about escalators.
+3. **Review exhibits and schedules:** Pay close attention to any exhibits or schedules that are referenced in the agreement, especially those related to fees or maintenance. 
+4. **Look for percentage increases and dates:** Once you have identified a potential escalator clause, look for specific details about the percentage increase and the date on which the increase will take effect. 
+"
+9,Payment Terms,"## Finding Payment Terms in O&M Agreement:
+
+**Keywords:**
+
+*   ""Payment Terms""
+*   ""Invoice""
+*   ""Due Date""
+*   ""Finance Charge""
+*   ""Late Payment""
+*   ""Interest""
+*   ""Fees""
+*   ""Compensation""
+
+**Patterns:**
+
+*   Look for sections with numerical headings like ""7.1,"" ""8.d,"" or ""2.3.""
+*   Search for phrases indicating timeframes, such as ""within X days,"" ""quarterly,"" or ""monthly.""
+*   Identify clauses mentioning consequences of late payments, like ""finance charge"" or ""interest.""
+
+**Sections:**
+
+*   Payment terms are often found in dedicated sections titled ""Payment Terms,"" ""Fees,"" or ""Compensation.""
+*   They may also appear within sections related to specific services, such as ""Operation and Maintenance"" or ""Additional Services.""
+
+**Additional Tips:**
+
+*   Pay attention to the context surrounding the keywords and patterns. 
+*   Cross-reference information with other sections of the agreement, such as definitions or exhibits, for clarification. 
+"
+10,Services Warranty Terms,"## Finding Services Warranty Terms in a Solar Energy O&M Agreement:
+
+**Keywords to Look for:**
+
+*   ""warranty""
+*   ""workmanship""
+*   ""materials""
+*   ""defects""
+*   ""guarantee""
+*   ""services""
+*   ""non-covered services""
+*   ""period""
+*   ""duration""
+
+**Patterns to Identify:**
+
+*   Numbered sections (e.g., 2.2, 10.1) followed by descriptions of warranties.
+*   Sentences containing the keyword combinations: 
+    *   ""warranty"" and ""services""
+    *   ""free from defects"" and ""workmanship""
+    *   ""period"" and ""year""
+
+**Sections to Focus On:**
+
+*   **Article/Section on Services:** This section typically outlines the scope of services provided by the contractor and may include subsections dedicated to warranties.
+*   **Article/Section on Warranties and Guarantees:** Some agreements might have a dedicated section specifically addressing warranties for both equipment and services.
+
+**Examples of How the Term Might Appear:**
+
+*   Directly labeled as ""Services Warranty""
+*   Within a clause titled ""Warranty of Work"" or ""Workmanship Warranty""
+*   As part of a broader section on ""Contractor Obligations"" or ""Performance Guarantees"" 
+"
+11,Year 1 Production,"## Finding ""Year 1 Production"" in a Solar Interconnection Agreement:
+
+**Keywords and Patterns:**
+
+*   **Exact Match:** ""Year 1 Production"", ""First Year Production"", ""Initial Year Production""
+*   **Partial Match:** ""Year [Number] Production"" (Look for sections with production estimates for multiple years)
+*   **Units:** ""MWh"", ""kWh"", ""kW"" (These units often accompany production figures)
+*   **Software:** ""PVsyst"", ""PV F-Chart"" (These are common software tools used for solar production estimates)
+
+**Sections to Focus On:**
+
+*   **Exhibits:** Look for exhibits labeled ""PVsyst Report"", ""Production Estimates"", or similar. These often contain detailed production data. 
+*   **Performance Guarantee Sections:** Sections discussing performance guarantees and penalties for underperformance may reference Year 1 Production as a baseline. Look for sections numbered around ""14"" as shown in the examples.
+*   **Technical Specifications:** Sections outlining the technical specifications of the solar facility may include estimated production figures.
+
+**Examples of How to Find the Information:**
+
+1.  **Search for Exact Matches:** Use the search function in your document viewer and search for the exact phrases like ""Year 1 Production"".
+2.  **Scan Exhibits:** Open exhibits related to production estimates and look for tables or figures that explicitly state ""Year 1"" or ""First Year"" production. Pay attention to the units of measurement.
+3.  **Review Performance Guarantee Sections:**  Carefully read sections related to performance guarantees, looking for clauses that define how ""Year 1 Production"" is calculated or used as a benchmark for performance evaluation.
+4.  **Analyze Technical Specifications:**  Within the technical specifications, search for tables or paragraphs that provide estimated production figures for the solar facility. Look for mentions of specific software used for calculations, such as PVsyst. 
+5.  **Follow References:** If the agreement mentions specific reports or studies containing production estimates, try to locate and review those documents for the relevant information. 
+
+**Additional Notes:**
+
+*   The specific wording and organization of interconnection agreements can vary. Be prepared to adapt your search based on the specific document you are reviewing.
+*   Pay attention to the context of the information. Ensure that the figures you find are indeed referring to the first year of operation and not another timeframe. 
+"
+12,Production Guarantee,"## Finding Production Guarantees in a Solar O&M Agreement:
+
+**Keywords/Patterns:**
+
+*   ""Production Guarantee""
+*   ""Actual Production""
+*   ""Projected Production""
+*   ""Performance Guarantee""
+*   ""Energy Yield"" 
+*   ""Minimum Production""
+*   Percentage thresholds (e.g., 90%) related to production
+*   Formulas or references to calculations for projected production
+
+**Sections to Focus On:**
+
+*   **Definitions Section:** Look for definitions of key terms like ""Actual Production,"" ""Projected Production,"" and ""Production Guarantee Term.""
+*   **Performance Guarantees Section:** This section may be explicitly titled as such or may be part of a broader section on Operations and Maintenance.
+*   **Technical Exhibits:**  Look for tables or graphs that outline projected production values over time.
+
+**Examples of How to Locate Relevant Text:**
+
+1. **Search for Keywords:** Use the ""find"" function in your document viewer and search for the keywords listed above. This will help you quickly identify sections that are likely to contain information about production guarantees.
+2. **Scan Headings and Subheadings:**  Review the table of contents or headings within the document to identify sections related to performance, operations, or technical specifications.
+3. **Review Definitions:** Pay close attention to the definitions section to understand how key terms related to production guarantees are defined within the agreement.
+4. **Look for Formulas and Calculations:**  Identify any formulas or calculations used to determine projected production or assess compliance with the production guarantee. 
+
+**Extracting Examples:**
+
+Once you've located sections related to production guarantees, look for specific clauses or sentences that:
+
+*   Define the guaranteed production level (e.g., 90% of Projected Production).
+*   Specify the duration of the guarantee (e.g., Production Guarantee Term).
+*   Outline the consequences of failing to meet the guarantee.
+*   Describe the methodology for calculating projected production. 
+*   Reference any relevant technical exhibits with production estimates. "
+13,Production Guarantee Term,"## Finding the Production Guarantee Term in a Solar O&M Agreement:
+
+**Keywords to Search:**
+
+*   Production Guarantee Term
+*   Production Guaranty Term
+*   Guarantee Year
+*   Annual Production Guarantee Agreement
+*   Term (in the context of production guarantees)
+
+**Patterns to Look For:**
+
+*   Numerical duration (e.g., 5 years) associated with the keywords above.
+*   Dates or references to specific events (e.g., Commencement Date, Commercial Operations) that define the start and end of the term.
+*   Clauses outlining the conditions under which the term might end earlier than expected (e.g., termination of the agreement).
+
+**Sections to Focus On:**
+
+*   **Definitions Section:** Look for definitions of terms like ""Production Guarantee Term,"" ""Guarantee Year,"" or similar wording.
+*   **Production Guarantee Section:** This section will likely detail the specifics of the guarantee, including its duration. 
+*   **Term and Termination Section:** This section might mention the duration of the production guarantee within the broader context of the agreement's term.
+
+**Examples of How the Term Might Appear:**
+
+*   Directly stated as ""The Production Guarantee Term is 5 years.""
+*   Defined in relation to specific dates, such as ""commencing on the Commencement Date and ending on the fifth anniversary thereof.""
+*   Expressed through the definition of ""Guarantee Year"" and the number of such years covered under the agreement. 
+"
+14,Production Estimate - Definition,""
+15,Degradation,"## Finding Degradation Clauses in a Solar O&M Agreement:
+
+**Keywords to Look for:**
+
+*   Degradation
+*   Performance guarantee
+*   Output degradation
+*   Annual production guarantee
+*   Energy yield decline
+*   Reduction factor
+*   Wear and tear
+
+**Patterns to Identify:**
+
+*   Formulas calculating a decrease in production over time.
+*   Percentage decrease associated with specific time intervals (e.g., annually).
+*   Guarantees with declining thresholds over the years.
+
+**Sections to Focus On:**
+
+*   **Definitions:** Look for the definition of ""degradation"" or related terms to understand the specific context within the agreement.
+*   **Performance Guarantees:** Sections outlining the expected performance of the solar facility, often including degradation rates or guaranteed production levels.
+*   **Operation and Maintenance (O&M):** Sections detailing O&M responsibilities might mention degradation and procedures to address it.
+*   **Term and Termination:** Clauses related to the agreement's duration might include provisions for degradation and its impact on the contract.
+
+**Additional Tips:**
+
+*   Pay attention to the units used (e.g., kWhs/DCkW/Year) to ensure you're comparing similar metrics.
+*   Consider the timeframe over which degradation is calculated (e.g., from the Commencement Date or Placed in Service Date). 
+"
+16,Production Factor,"## Finding ""Production Factor"" in a Solar O&M Agreement:
+
+Defined as a coefficient used to adjust the expected production based on actual conditions.
+
+**Keywords to Search:**
+
+*   ""Production Factor"" (exact match)
+*   ""P50"" (often associated with projected insolation)
+*   ""insolation""
+*   ""performance ratio"" (potential synonym)
+*   ""adjustment factor"" (potential synonym)
+
+**Patterns to Identify:**
+
+*   **Equations or ratios involving insolation:** Look for formulas that compare actual insolation to expected or P50 insolation.
+*   **Definitions or explanations of adjustments to energy production:** The document may describe how the Production Factor is used to modify initial production estimates based on real-world conditions.
+*   **Tables or figures displaying insolation data:** These visuals might present P50 insolation values or showcase the calculation of the Production Factor.
+
+**Additional Tips:**
+
+*   Pay attention to the context surrounding the keywords. Ensure the reference is related to adjusting energy production based on insolation, not a different concept.
+*   If the document has a table of contents or index, use it to quickly navigate to relevant sections. 
+*   Consider using the search function within your document viewer to efficiently locate instances of the keywords. 
+"
+17,Adjustments - Production Loss,"## Finding ""Adjustments - Production Loss"" Clauses in Solar O&M Agreement:
+
+**Keywords:**
+
+*   ""Production Loss""
+*   ""Adjustments""
+*   ""Limitations on Guaranty""
+*   ""Projected Production""
+*   ""Average Daily Projected Power Production""
+*   ""Downtime""
+*   ""Performance Guarantee""
+*   ""Actual kWh""
+*   ""Guarantee Year""
+*   ""Penalty""
+*   ""Compensation""
+*   ""Deficiency""
+
+**Patterns:**
+
+*   Look for sections discussing calculations or adjustments related to energy production.
+*   Focus on clauses mentioning specific events or circumstances that might lead to reduced energy generation (e.g., equipment failure, weather events).
+*   Identify sections outlining procedures for measuring and verifying actual energy production against projected or guaranteed levels.
+*   Pay attention to clauses detailing consequences of failing to meet production guarantees, such as penalties or compensation mechanisms.
+
+**Additional Tips:**
+
+*   **Context is crucial:** Always consider the specific context of each clause and its relation to the overall agreement.
+*   **Cross-reference definitions:** Look for definitions of key terms within the agreement to ensure accurate interpretation.
+*   **Consider variations in terminology:** Different agreements might use slightly different terms to convey similar concepts. 
+"
+18,Statement of Guarantee,"## Finding Statement of Guarantee Clauses in Solar O&M Agreement:
+
+**Keywords to Look For:**
+
+*   **Guarantee**: This is the most obvious keyword and will likely be present in the relevant sections. Look for variations like ""Guaranty,"" ""Performance Guarantee,"" ""Production Guarantee,"" or ""Annual Production Guarantee.""
+*   **Performance**: Often paired with ""Guarantee,"" indicating sections dealing with system performance standards and potential penalties.
+*   **Production**: Look for terms like ""Actual Production,"" ""Estimated Production,"" ""Production Shortfall,"" which directly relate to energy generation guarantees.
+*   **Measurement Period**: This indicates the timeframe used to assess the system's performance against the guaranteed levels.
+*   **kWh**:  This unit of energy will be present in clauses detailing production levels and shortfall calculations.
+
+**Patterns to Identify:**
+
+*   **Numerical thresholds**: Look for percentages associated with production guarantees (e.g., 90% of estimated production).
+*   **Calculation formulas**: Sections outlining how production shortfalls or performance penalties are calculated.
+*   **Payment terms**: Clauses specifying who pays whom in case of underperformance and the timeframe for such payments.
+*   **Consequences of underperformance**: Look for terms like ""Penalty,"" ""Liquidated Damages,"" or specific actions to be taken if the system fails to meet guaranteed levels.
+
+**Examples of How to Apply These Instructions:**
+
+1.  **Search for Keywords:** Use the ""Find"" function in your document viewer and search for keywords like ""Guarantee,"" ""Performance,"" and ""Production."" This will help you quickly locate relevant sections.
+2.  **Scan for Patterns:** Once you've found potential sections, look for patterns like numerical thresholds, calculation formulas, and payment terms. These patterns are strong indicators of Statement of Guarantee clauses.
+3.  **Review Specific Sections:** Pay close attention to sections that are likely to contain guarantee clauses, such as Section 2 (Definitions) and sections with titles related to performance or production guarantees.
+4.  **Check Exhibits:** If the agreement references exhibits related to performance guarantees, review them for detailed information and calculations.
+
+**Remember:** The specific wording and structure of interconnection agreements can vary. Use these instructions as a guide and adapt your approach based on the specific document you are reviewing. 
+"
+19,Production Shortfall Rate,"## Finding the Production Shortfall Rate in a Solar O&M Agreement:
+
+**Keywords to Search:**
+
+*   Production Shortfall Rate
+*   Performance Guarantee
+*   Penalty
+*   Compensation
+*   kWh
+*   Guarantee Year
+*   Annual Production Guarantee
+*   Actual kWh
+
+**Patterns to Identify:**
+
+*   **Formulas or equations:** Look for formulas that calculate the penalty or compensation based on the difference between the actual kWh produced and the guaranteed production level.
+*   **Dollar amounts per kWh:** The Production Shortfall Rate is typically expressed as a dollar amount per kilowatt-hour. 
+*   **References to specific exhibits or sections:** The document may refer to other sections or exhibits where the Production Shortfall Rate is defined or calculated.
+
+**Examples of How the Information Might Appear:**
+
+*   A table in Exhibit F directly stating the Production Shortfall Rate (e.g., ""$0.2653/kWh"").
+*   A formula in Section 14.1 calculating the Annual Penalty Difference based on the Production Shortfall Rate and the difference between Actual kWh and guaranteed production.
+*   A statement in Section 14 describing the compensation mechanism for production shortfalls, referencing the Production Shortfall Rate. 
+"
+20,Guarantee Limitations,"## Finding Guarantee Limitations in Solar O&M Agreement:
+
+**Keywords:**
+
+*   Production Guaranty
+*   Performance Guarantee
+*   Energy Yield
+*   Guarantee Exclusions
+*   Force Majeure
+
+**Patterns:**
+
+*   Numbered sections, often within Article 2 (e.g., 2.3(h))
+*   Lists of exclusions introduced by phrases like ""shall not apply"" or ""not responsible for""
+*   References to specific events (e.g., vandalism, utility outages, equipment failure)
+
+**Sections:**
+
+*   **Article: Project Operation and Maintenance** - This section typically outlines the responsibilities of both parties regarding the solar project's operation and upkeep. Look for subsections related to performance guarantees or production guarantees.
+*   **Exhibits or Schedules** -  Sometimes, guarantee limitations are detailed in separate exhibits or schedules attached to the main agreement. Look for titles like ""Performance Guarantee Schedule"" or ""Exclusions from Production Guarantee.""
+
+**Additional Tips:**
+
+*   Pay attention to the definitions section of the agreement, as it may clarify the meaning of key terms like ""Force Majeure"" or ""Equipment.""
+*   Consider the context of the agreement and the specific project when interpreting guarantee limitations. 
+"
+21,Reporting (Proactive and Reactive),"## Finding Reporting Requirements in O&M Agreement:
+
+**Keywords to Look For:**
+
+*   **Report, Reporting, Reports**
+*   **Log, Logs, Logging**
+*   **Monitoring**
+*   **Performance**
+*   **Maintenance**
+*   **Inspection**
+*   **Data**
+*   **Information**
+*   **Frequency**
+*   **Schedule**
+*   **Submit, Provide, Furnish**
+*   **Quarterly, Monthly, Annually**
+
+**Patterns to Identify:**
+
+*   **Timeframes:** Look for mentions of specific timeframes like days, months, quarters, or years, often following verbs like ""submit,"" ""provide,"" or ""furnish.""
+*   **Report Types:** Identify keywords related to the content of reports, such as ""performance,"" ""maintenance,"" ""inspection,"" or ""operation.""
+*   **Triggers:**  Notice phrases indicating specific events that trigger reporting, such as ""completion of service,"" ""unplanned outage,"" or ""end of quarter.""
+
+**Section Numbers (Common Locations):**
+
+*   **Operations and Maintenance (O&M) Sections:** These sections often detail reporting requirements related to system performance, maintenance activities, and inspections.
+*   **Exhibit:** exhibit frequently outlines specific reporting formats, contents, and schedules.
+*   **General Terms or Definitions Sections:** Look for definitions of terms like ""Monthly Report"" or ""Performance Report"" which can point to relevant sections.
+
+**Examples of How to Apply These Instructions:**
+
+1.  **Search for Keywords:** search for keywords like ""report"" or ""monthly."" This will highlight sections potentially related to reporting requirements.
+2.  **Scan for Patterns:** Once you've located relevant sections, look for patterns like timeframes (""within 5 days""), report types (""performance report""), and triggers (""following completion of service"").
+3.  **Check Common Sections:** Pay close attention to sections titled ""Operations and Maintenance,"" ""Reporting,"" or similar. Review ""Exhibit A"" for detailed reporting formats and schedules.
+
+**Remember:** The specific location and wording of reporting requirements may vary depending on the agreement. Use these instructions as a guide to efficiently locate the information you need. 
+"
+22,Insurance Requirements,"## Finding Insurance Requirements in O&M Agreement:
+
+**Keywords and Patterns:**
+
+*   **Section Titles:** Look for sections explicitly titled ""Insurance,"" ""Insurance Requirements,"" or ""Indemnification and Insurance.""
+*   **Keywords within Sections:** Scan for terms like ""liability insurance,"" ""workers' compensation,"" ""commercial general liability,"" ""automobile liability,"" ""umbrella insurance,"" ""professional liability,"" ""coverage,"" ""limits,"" ""deductibles,"" ""aggregate,"" ""occurrence,"" and ""policy.""
+*   **Numerical Values:** Pay attention to numerical values representing coverage limits (e.g., ""$1,000,000 per occurrence"").
+*   **Insurance Types:** Look for specific types of insurance mentioned, such as CGL, auto liability, workers' compensation, and umbrella liability.
+*   **Exhibit References:** Check if the agreement mentions an Exhibit (e.g., ""Exhibit D"") that might contain detailed insurance requirements.
+
+**Sections to Focus On:**
+
+*   **Article/Section:** While numbering can vary, common locations for insurance requirements include:
+    *   Indemnification and Insurance
+    *   Workers' Compensation
+    *   CGL Insurance
+    *   Auto Liability Insurance
+    *   Umbrella Excess Liability Insurance
+    *   Operator Insurance
+    *   Insurance Provisions
+
+**Examples of How to Extract Information:**
+
+1.  **Locate the Relevant Section:**  Find the section titled ""Insurance Requirements"" or similar.
+2.  **Identify Insurance Types:** Look for headings or paragraphs specifying the types of insurance required (e.g., CGL, auto liability).
+3.  **Extract Coverage Limits:** Note the numerical values associated with each type of insurance and the corresponding coverage description (e.g., ""$1,000,000 per occurrence"").
+4.  **Deductibles and Specifics:** Look for information on deductibles, self-insured retentions, and any specific requirements or limitations mentioned.
+5.  **Additional Insured Parties:** Check if the agreement specifies who should be named as additional insured on the policies.
+
+**Remember:** The specific wording and organization of insurance requirements will vary between agreements. Use the keywords, patterns, and section guidance to effectively locate and extract the necessary information. 
+"
+23,Termination - Provider,"## Finding Termination Clauses in O&M Agreement:
+
+**Keywords:**
+
+*   Termination
+*   Default
+*   Breach
+*   Insolvency
+*   Bankruptcy
+*   Cure Period
+*   Notice Period
+
+**Patterns:**
+
+*   Section headings like ""Termination,"" ""Default,"" or ""Term and Termination""
+*   Numbered clauses within sections (e.g., 9.a, 3.1(b))
+*   References to specific events triggering termination (e.g., bankruptcy, non-payment)
+*   Timeframes for notice and cure periods (e.g., 30 days, 15 days)
+
+**Sections:**
+
+*   Focus on sections explicitly labeled ""Termination"" or similar.
+*   Review sections related to ""Term"" or ""Agreement Duration"" as they might contain termination clauses.
+*   Check sections outlining obligations of both parties, as breaches of these obligations often lead to termination rights.
+
+**Examples of Specific Phrases:**
+
+*   ""Either Party may terminate this Agreement...""
+*   ""Provider may terminate this Agreement in the event of...""
+*   ""If Owner fails to comply with...""
+*   ""...upon written notice...""
+*   ""...material breach...""
+*   ""...cure period...""
+
+**Additional Tips:**
+
+*   Pay attention to the specific language used to define events triggering termination.
+*   Note the required notice periods and procedures for termination.
+*   Identify any consequences of termination, such as financial liabilities or ongoing obligations. 
+"
+24,Termination - Customer,"## Finding Termination Clauses for Customers in O&M Agreement:
+
+**Keywords and Patterns:**
+
+*   **Section Titles:** Look for sections titled ""Termination,"" ""Term and Termination,"" ""Default,"" ""Breach,"" ""Events of Default,"" or similar.
+*   **Keywords within Sections:** Scan for keywords like ""terminate,"" ""cancellation,"" ""end,"" ""breach,"" ""default,"" ""insolvency,"" ""bankruptcy,"" ""failure to perform,"" ""cure period,"" ""notice,"" and ""written notice.""
+*   **Party Names:** Identify references to the customer, which might be labeled as ""Customer,"" ""Subscriber,"" ""Interconnection Customer,"" ""Owner,"" or similar.
+*   **Triggering Events:** Look for specific events that allow the customer to terminate, such as:
+    *   Breach of contract by the other party (e.g., utility company)
+    *   Failure to meet performance standards
+    *   Changes in law or regulation
+    *   Force majeure events
+    *   Bankruptcy or insolvency of the other party
+    *   Convenience (unilateral termination right)
+
+**Sections to Focus On:**
+
+*   **Termination Clause:** This section explicitly outlines the conditions and procedures for termination by either party.
+*   **Default and Remedies:** This section may detail events of default and the remedies available, including termination rights.
+*   **Force Majeure:** This section may specify events beyond the parties' control that could excuse performance or allow for termination.
+*   **Term and Renewal:** This section may include provisions for termination at the end of the agreement term or upon renewal.
+
+**Examples of Text to Extract:**
+
+*   The entire termination clause or relevant subsections related to customer termination rights.
+*   Specific sentences outlining triggering events for customer termination.
+*   Notice periods and procedures required for customer-initiated termination.
+*   Consequences of termination, such as applicable fees or liabilities.
+
+**Additional Tips:**
+
+*   Pay attention to cross-references to other sections or exhibits within the agreement.
+*   Consider the context of the agreement and the specific relationship between the parties.
+*   If the agreement is complex, consider seeking legal advice for interpretation. 
+"
+25,Termination - Maximum Liability,""
+26,Default - Provider,"## Finding ""Default - Provider"" Clauses in O&M Agreement:
+
+**Keywords to Look for:**
+
+*   ""Default""
+*   ""Event of Default""
+*   ""Termination""
+*   ""Breach""
+*   ""Failure to Perform""
+*   ""Cure Period""
+*   ""Notice""
+
+**Patterns to Identify:**
+
+*   Sections outlining the consequences of the provider failing to meet their obligations.
+*   Clauses mentioning specific timeframes for remedying breaches (e.g., 30 days).
+*   References to written notices and cure periods.
+*   Sections detailing termination rights due to provider's non-compliance.
+
+**Section Numbers to Focus On:**
+
+While section numbering can vary, prioritize sections titled:
+
+*   **Default**
+*   **Termination**
+*   **Provider Obligations**
+*   **Remedies**
+
+**Examples of Relevant Clauses (Similar to the ones provided):**
+
+*   Clauses stating the provider's failure to perform obligations within a specific timeframe constitutes default, especially if not remedied after written notice.
+*   Clauses mentioning termination rights if the provider breaches material terms and fails to cure within a defined period.
+*   Clauses specifying that failure to maintain required insurance is a material breach leading to potential liability.
+*   Clauses allowing termination with immediate effect if the provider's breach remains uncured after a certain period. 
+"
+27,Default - Customer,"## Finding ""Customer Default"" Clauses in O&M Agreement:
+
+Defined as conditions under which party (Customer / Operator) can terminate the agreement.
+
+**Keywords and Patterns:**
+
+*   **Section Titles:** Look for sections titled ""Default,"" ""Events of Default,"" ""Termination,"" ""Suspension,"" or similar.
+*   **Keywords within Sections:** Search for keywords like ""breach,"" ""failure,"" ""non-payment,"" ""non-compliance,"" ""remedy,"" ""cure period,"" ""notice,"" ""terminate,"" ""suspend.""
+*   **Specific Phrases:** Look for phrases like ""Customer materially breaches,"" ""fails to comply with,"" ""fails to pay,"" ""written notice,"" ""cure period,"" ""termination,"" ""suspension.""
+
+**Instructions:**
+
+1.  **Locate Relevant Sections:** Use the table of contents or headings within the document to identify sections with titles or keywords mentioned above.
+2.  **Scan for Keywords and Phrases:** Within identified sections, scan for the listed keywords and phrases to pinpoint specific clauses related to customer default.
+3.  **Analyze Clauses:** Carefully read and understand the identified clauses, paying attention to:
+    *   **Specific events constituting default:** This could include non-payment, breach of agreement terms, failure to meet operational requirements, etc.
+    *   **Cure periods:** Note the timeframe provided to the customer to remedy the default before consequences occur.
+    *   **Consequences of default:** Identify the actions the provider can take, such as suspension of services, termination of the agreement, or other penalties.
+4.  **Extract Examples:** Once you locate clauses defining customer default and its consequences, extract the relevant text as examples, including the section and subsection numbers for reference (e.g., 3.1(b)(ii)). 
+"
+28,Assignment - Provider,"## Finding Assignment Clauses in O&M Agreement:
+
+**Keywords and Patterns:**
+
+*   **Explicit Keywords:** ""Assignment,"" ""Transfer,"" ""Delegate,"" ""Subcontract,"" ""Successors,"" ""Assigns"" 
+*   **Section Titles:** Look for sections titled ""Assignment,"" ""Transfer of Rights,"" ""Subcontracting,"" or similar.
+*   **Consent Clauses:** Phrases like ""prior written consent,"" ""reasonable withholding of consent,"" or ""conditions for assignment.""
+*   **Affiliate/Successor Language:** Mentions of ""affiliates,"" ""subsidiaries,"" ""parent companies,"" ""mergers,"" ""acquisitions,"" or ""change of control.""
+
+**Sections to Focus On:**
+
+*   **General Provisions:** Often contain clauses related to assignment and transfer of rights.
+*   **Term and Termination:** May specify conditions for assignment upon termination or expiration of the agreement.
+*   **Miscellaneous Provisions:**  May include clauses addressing assignment rights.
+
+**Examples and Variations:**
+
+The provided examples illustrate common ways assignment clauses are phrased. Look for variations like:
+
+*   **Mutual vs. Unilateral Assignment:** Whether both parties or only one party has the right to assign the agreement.
+*   **Conditions for Consent:**  Reasons for which consent to assignment might be withheld (e.g., financial instability of the assignee).
+*   **Automatic Assignment:**  Instances where assignment is permitted without consent (e.g., to affiliates or successors).
+*   **Liability after Assignment:** Whether the assigning party retains any liability after transferring its obligations.
+
+**Additional Tips:**
+
+*   **Context is Key:**  Carefully read the surrounding text to understand the specific conditions and limitations of the assignment clause.
+*   **Cross-Reference Definitions:**  Check if the agreement defines terms like ""affiliate"" or ""successor"" to ensure accurate interpretation. 
+"
+29,Assignment - Customer,"## Finding Assignment Clauses in O&M Agreement:
+
+Here's how to identify and extract ""Assignment - Customer"" clauses from solar energy O&M Agreement:
+
+**Keywords:**
+
+*   ""assign""
+*   ""transfer""
+*   ""assignment""
+*   ""consent""
+*   ""affiliate""
+*   ""successor""
+*   ""merger""
+*   ""acquisition""
+*   ""financing""
+
+**Patterns:**
+
+*   Look for sections that discuss the transfer of rights or obligations under the agreement.
+*   Pay attention to clauses that mention conditions or limitations on assignment.
+*   Identify instances where the customer can assign the agreement without the provider's consent.
+
+**Section Numbers:**
+
+While section numbering can vary, common locations for assignment clauses include:
+
+*   **General Provisions:** Often labeled as ""Miscellaneous,"" ""General,"" or similar.
+*   **Term and Termination:** This section may address assignment rights upon termination or expiration of the agreement.
+*   **Assignment:** Some agreements have a dedicated section specifically for assignment rights.
+
+**Examples of Specific Phrases:**
+
+*   ""Customer may assign this Agreement...""
+*   ""Neither Party may assign...""
+*   ""Assignment by Customer shall require...""
+*   ""Without the need for consent from Provider...""
+*   ""Subject to the prior written consent of...""
+
+**Additional Tips:**
+
+*   Pay attention to the context of the clause to ensure it specifically addresses the customer's right to assign the agreement.
+*   Consider the overall structure and language of the agreement to identify relevant sections. 
+*   Use the ""find"" function in your document viewer to quickly search for keywords. 
+"
+30,Force Majeure,"## Finding Force Majeure Clauses in O&M Agreement:
+
+**Keywords:**
+
+*   Force Majeure
+*   Acts of God
+*   Unforeseeable event
+*   Beyond reasonable control
+*   Excuse from performance
+
+**Patterns:**
+
+*   Look for sections titled ""Force Majeure"" or similar headings like ""Excusable Delays"" or ""Events Beyond Control.""
+*   Search for phrases like ""neither party shall be liable"" or ""obligations shall be suspended"" in conjunction with the keywords above.
+*   Identify lists of specific events like natural disasters, labor strikes, or government actions.
+
+**Examples of Text to Extract:**
+
+1.  **Definition of Force Majeure:** The specific definition of what constitutes a Force Majeure event according to the agreement. 
+2.  **List of Force Majeure Events:** The specific examples of events considered Force Majeure, such as natural disasters, labor strikes, or government actions.
+3.  **Impact of Force Majeure:** The consequences of a Force Majeure event, such as suspension of obligations, notice requirements, and mitigation efforts.
+4.  **Exclusions:** Any events specifically excluded from the definition of Force Majeure, such as economic hardship. 
+5.  **Duration and Termination:** Clauses related to the duration of the Force Majeure event and potential termination of the agreement under specific circumstances. 
+"
+31,Prevailing Party,"## Finding ""Prevailing Party"" Clauses in O&M Agreement:
+
+**Keywords to Search:**
+
+*   ""Prevailing Party"" 
+*   ""attorneys' fees""
+*   ""costs and expenses""
+*   ""legal proceeding""
+*   ""dispute resolution""
+
+**Patterns to Identify:**
+
+*   Sentences awarding fees and costs to the winning party in a legal dispute.
+*   Clauses outlining the process of dispute resolution, often mentioning ""prevailing party"" in the context of awarding fees.
+
+**Sections to Focus On:**
+
+*   **Dispute Resolution Clause:** This section typically outlines the process for resolving disagreements between parties, often including provisions for awarding fees to the prevailing party.
+*   **Default and Remedies Clause:** This section details the consequences of breaching the agreement, which may include provisions for recovering legal fees.
+*   **Miscellaneous Provisions:**  This section can sometimes contain clauses related to dispute resolution and fee awards.
+
+**Examples of How Clauses May Appear:**
+
+*   ""The prevailing party in any legal proceeding related to this Agreement shall be entitled to payment of reasonable attorney’s fees and expert costs.""
+*   ""If Contractor prevails in any action to enforce the terms of this Agreement, it shall be entitled to recover its reasonable attorneys' fees and costs incurred in connection with such action."" 
+*   ""In the event of a dispute arising under this Agreement, the prevailing party shall be entitled to recover its reasonable attorneys' fees and costs."" 
+"
+32,Nameplate Capacity,"## Finding Nameplate Capacity in Solar O&M Agreement:
+
+**Keywords and Patterns:**
+
+*   **Explicit Keywords:** ""Nameplate Capacity"", ""System Size"", ""Size kW DC"", ""kWp"", ""MWDC""
+*   **Units:** Look for values associated with units like ""kW"", ""MW"", ""kWp"" (kilowatt-peak), or ""MWDC"" (megawatt direct current).
+*   **Contextual Clues:** Search for sections related to project or system descriptions, equipment specifications, or site details.
+
+**Sections to Explore:**
+
+*   **Exhibits:** Pay close attention to exhibits, especially those labeled ""System Description"", ""Project Information"", or similar titles. These often contain tables or lists with relevant data.
+*   **Schedules:** Schedules, particularly those related to project summaries or equipment lists, may provide Nameplate Capacity figures.
+*   **Master Agreements:** The main body of the agreement might mention Nameplate Capacity in sections discussing system specifications, performance guarantees, or limitations.
+
+**Examples of Where to Look:**
+
+*   **Exhibit:** This exhibit frequently includes tables outlining project details, often with columns explicitly labeled ""Nameplate Capacity"" or using synonymous terms.
+*   **Schedule:** Look for tables listing project information, potentially with columns indicating system size or capacity in kW or MW.
+*   **Master Solar PV Operation and Maintenance Agreement:** Within Exhibit A of this agreement, search for tables detailing site and system information, often including columns for ""Size kW DC"" or similar terms."
+33,Liens,"## Finding Lien Provisions in O&M Agreement:
+
+**Keywords:**
+
+*   ""Lien""
+*   ""Encumbrance""
+*   ""Security Interest""
+*   ""Charge""
+*   ""Claim""
+
+**Patterns:**
+
+*   ""Free and clear of all liens""
+*   ""Will not result in the imposition of any lien""
+*   ""Discharge of any lien""
+*   ""Keep and maintain the System free of liens""
+
+**Section Numbers:**
+
+While section numbers can vary, focus on sections related to:
+
+*   **Representations and Warranties:** Look for sections where each party makes assurances about the status of their assets and obligations. (e.g., 6.1(e), 6.2(e))
+*   **Operation and Maintenance:**  Search for clauses outlining responsibilities for maintaining the system and addressing potential liens. (e.g., 3.6)
+*   **Default and Remedies:**  Examine sections detailing consequences of breaching the agreement, which may include provisions for addressing liens. "
+34,PPA Net Energy Rate,""
+35,Summary of Economic Terms,"## Finding Summary of Economic Terms in O&M Agreement:
+
+**Keywords and Patterns:**
+
+*   **Explicit mentions:** ""Summary of Economic Terms"", ""Financial Summary"", ""Economic Overview"", ""Compensation"", ""Fees"", ""Rates"", ""Payment Schedule"", ""Billing"", ""Invoicing""
+*   **Exhibit and Schedule references:** Look for references to exhibits or schedules containing economic details, such as ""Exhibit A"", ""Schedule 2"", ""Exhibit C - Fee Schedule""
+*   **Monetary values and calculations:** Search for numerical values representing costs, fees, rates, percentages, and formulas used to calculate payments.
+*   **Payment terms:** Look for keywords like ""quarterly"", ""annually"", ""monthly"", ""per kWh"", ""fixed fee"", ""variable fee"", ""escalation"", ""incentives""
+
+**Sections to Focus On:**
+
+*   **Exhibits and Schedules:** Pay close attention to any exhibits or schedules specifically dedicated to fees, rates, or payment schedules. These often contain detailed breakdowns of costs and calculations.
+*   **Operational and Maintenance Sections:** Sections related to O&M often outline fees associated with maintaining the solar energy system. Look for clauses mentioning ""Maintenance Fees"", ""O&M Costs"", ""Quarterly Fees"", etc.
+*   **Payment and Invoicing Sections:** Sections dedicated to payment terms and invoicing procedures will provide information on payment frequency, methods, and deadlines. 
+*   **Compensation and Revenue Sharing Sections:** If applicable, sections dealing with revenue sharing or compensation structures between involved parties will contain relevant economic terms."
+36,Scope & Services,"## Finding ""Scope & Services"" in a Solar Energy O&M Agreement:
+
+**Keywords and Patterns:**
+
+*   **Section Titles:** Look for sections explicitly titled ""Scope of Services,"" ""Maintenance Scope of Services,"" ""Exhibit B,"" or similar variations. 
+*   **Keywords:** Search for keywords like ""services,"" ""maintenance,"" ""operation,"" ""responsibilities,"" ""testing,"" ""inspection,"" ""monitoring,"" ""reporting,"" ""inventory,"" ""DC systems,"" ""AC systems,"" ""DAS/SCADA,"" ""emergency,"" ""material malfunction.""
+*   **Numbered Lists:** Pay attention to numbered lists or tables outlining specific services and their frequencies.
+*   **Exhibit References:** Look for references to exhibits, particularly ""Exhibit B,"" which often contains detailed service descriptions.
+
+**Sections to Focus On:**
+
+*   **Operational Services:** This section typically outlines the day-to-day tasks related to operating and maintaining the solar energy system.
+*   **Maintenance Services:** This section details the specific maintenance activities, their frequencies, and any associated procedures.
+*   **Testing and Inspection:** Look for sections dedicated to testing and inspection protocols for various system components.
+*   **Monitoring and Reporting:** This section describes the monitoring systems used and the reporting requirements for performance and incidents.
+
+**Examples of Text to Extract:**
+
+*   **Direct Quotes:** Extract the exact wording describing the scope of services, including any limitations or exclusions.
+*   **Numbered Lists:** Copy the numbered lists or tables outlining specific services and their frequencies.
+*   **Exhibit References:** Note the exhibit references and locate the corresponding exhibits for detailed service descriptions.
+*   **Performance Standards:** Extract any performance standards or metrics used to evaluate the quality of services.
+
+**Additional Tips:**
+
+*   **Context is Key:** Pay attention to the context surrounding the keywords and patterns to ensure you're capturing the relevant information.
+*   **Cross-Reference:** Use the table of contents and headings to navigate the document efficiently.
+*   **Read Carefully:** Thoroughly read the relevant sections to fully understand the scope of services and any associated terms and conditions. 
+"
+37,Noncovered Service - Rate Schedule,"## Finding Non-Covered Service Rate Schedules in O&M Agreement:
+
+**Keywords to Look for:**
+
+*   Non-Covered Services
+*   Exhibit B (often associated with Non-Covered Services)
+*   Rate Schedule
+*   Additional Services
+*   Time and Materials
+*   Billing Rates
+
+**Patterns to Identify:**
+
+*   Sections with titles like ""Exhibit B"" or similar, often dedicated to outlining costs for services outside the agreement's scope.
+*   Tables or lists detailing hourly rates for different labor categories (e.g., Electrician, Engineer).
+*   Mention of markups on materials or subcontractor charges.
+*   Descriptions of minimum charges, dispatch fees, or travel expense reimbursement.
+*   Escalation clauses indicating periodic rate increases.
+
+**Sections to Focus On:**
+
+*   **Exhibits:** Pay close attention to exhibits, particularly ""Exhibit B,"" as they frequently contain detailed breakdowns of Non-Covered Service costs.
+*   **Schedule of Fees or Charges:** Look for sections outlining the pricing structure for various services, including potential additional charges.
+*   **Definitions:** The definitions section may clarify the distinction between covered and non-covered services.
+
+**Examples of How to Locate the Information:**
+
+1.  **Search for ""Exhibit"":**  Many O&M Agreement use ""Exhibit"" to specifically detail Non-Covered Services and their associated costs. Locate this exhibit for a comprehensive breakdown of charges.
+2.  **Scan for Keywords:**  Search the document for keywords like ""Non-Covered Services,"" ""Rate Schedule,"" or ""Additional Services"" to identify relevant sections.
+3.  **Review Fee Schedules:**  Look for sections titled ""Schedule of Fees"" or similar, which may include pricing for both covered and non-covered services.
+4.  **Check Definitions:**  Read through the definitions section to understand the scope of covered services and identify what falls outside of it. 
+"

@@ -1,0 +1,326 @@
+Key Items,Instructions,use_pvsyst_prompt,use_first_n_pages,check_for_references
+Provider,"# RETRIEVE SECTIONS SIMILAR TO EXAMPLES.
+
+## LOOK FOR THESE KEYWORDS:
+    * ""Provider""
+    * ""Program Manager""
+    * ""Operator"" (especially in conjunction with terms like ""system"" or ""project"")
+    * Managing the community solar garden
+    * Enrolling subscribers
+    * Maintaining the solar garden
+    * Billing and customer service for subscribers
+    * Interfacing with the utility company
+        * LLC (Limited Liability Company)
+        * Inc. (Incorporated)
+        * Corporation
+        * Trust
+
+# RETRIEVE SECTIONS SIMILAR TO EXAMPLES:
+## DO NOT RETRIEVE THE EXAMPLES ITSELF.
+<examples>
+>This SUBSCRIBER MANAGEMENT AGREEMENT is made and entered into as of [DATE] (""Effective Date"") by and between [Customer], LLC, an Oregon Limited Liability Company (""Owner""), and Neighbourhood Power OR, LLC, an Oregon Limited Liability Company (""Operator""). Each of owner and Operator shall be referred to herein as a ""Party"" and collectively, as the ""Parties"".
+
+>""**This Master Services Agreement (the “Agreement”) dated as
+of the [DATE] (the “Effective Date”) is
+between [Provider], a [Provider] corporation (“Ampion”),
+and [Customer], LLC, a Delaware limited
+liability company (“Client”). All capitalized terms used
+herein shall have the meanings ascribed in the Glossary
+attached hereto.**""
+
+>""**This Master Services Agreement (the “Agreement”) dated as of the [DATE] (the “Effective Date”) is between [Provider], LLC, a [Provider] limited liability company, doing business as “SunCentral” (“Company”), and
+[Customer], LLC, a New York limited liability company (“Client”). Company and Client shall each individually be
+referred to hereafter as a “Party” and collectively as the “Parties”.**""
+</examples>",1,1,0
+Customer,"## Finding the Customer in a Community Solar Agreement
+
+Given a community solar agreement, identify and extract section of the text that define the entity of the Customer, it would be one of the party in the agreement, usually in the first page clauses.
+
+* Look for phrases like:
+    * ""This Agreement"" or ""This [Document Type]""
+    * ""Subscriber""
+    * ""Customer""
+    * ""Beneficiary"" (especially if related to energy credits)
+    * ""Owner""
+* Identify company names, often followed by identifiers such as:
+    * LLC (Limited Liability Company)
+    * limited liability company
+    * Inc. (Incorporated)
+    * Corporation
+    * Trust
+    * Individual names
+* Look for addresses associated with the company or individual names.
+* Pay attention to quotation marks surrounding names or titles, and parentheses often containing additional information.
+* Look for patterns like:
+    * **[Company Name], a [State] [Company Type], with an address at [Address] (the ""Customer"")**
+    * **between [Company/Individual Name] (the ""Company"") and [Company/Individual Name] (the ""Customer"")**
+
+**Example:**
+
+>This SUBSCRIBER MANAGEMENT AGREEMENT is made and entered into as of [DATE] (""Effective Date"") by and between [Customer], LLC, an Oregon Limited Liability Company (""Owner""), and Neighbourhood Power OR, LLC, an Oregon Limited Liability Company (""Operator""). Each of owner and Operator shall be referred to herein as a ""Party"" and collectively, as the ""Parties"".
+
+>""**This Master Services Agreement (the “Agreement”) dated as
+of the [DATE] (the “Effective Date”) is
+between [Provider], a [Provider] corporation (“Ampion”),
+and [Customer], LLC, a Delaware limited
+liability company (“Client”). All capitalized terms used
+herein shall have the meanings ascribed in the Glossary
+attached hereto.**""
+
+>""**This Master Services Agreement (the “Agreement”) dated as of the [DATE] (the “Effective Date”) is between [Provider], LLC, a [Provider] limited liability company, doing business as “SunCentral” (“Company”), and
+[Customer], LLC, a New York limited liability company (“Client”). Company and Client shall each individually be
+referred to hereafter as a “Party” and collectively as the “Parties”.**""",1,1,0
+Term,"## Finding the Term of Agreement in a document
+
+**Prompt:**
+
+Given a legal document related to a community solar garden, identify and extract the section that defines the ""Term"" of the agreement. This refers to the duration during which the Provider manages the community solar garden and the Customer subscribes to it.
+
+**Keywords and Patterns:**
+
+* Look for headings or sections titled:
+    * ""Term""
+    * ""Agreement Term""
+    * ""Duration""
+    * ""Term of Agreement""
+* Look for phrases like:
+    * ""This Agreement shall commence on...""
+    * ""The term of this Agreement shall continue for a period of...""
+    * ""unless the Parties mutually agree to terminate...""
+    * ""subject to early termination pursuant to Section...""
+* Identify specific time periods mentioned, such as:
+    * Number of years (e.g., 5 years, 20 years)
+* Pay attention to clauses discussing:
+    * Commencement date (e.g., ""Effective Date"")
+    * Termination conditions
+    * Extension possibilities
+
+**Example:**
+
+In the phrase:
+
+>""**8.1 Term. The term of this Agreement shall commence on the Effective Date, and shall continue for a period of Twenty (20) years unless the Parties mutually agree to terminate prior to the end of the period or subject to early termination pursuant to Section 8.2.**""
+>""**1.1 Agreement Term. This Agreement shall commence on the Effective Date and will continue until the third (3rd) anniversary ...
+* ""8.1 Term"" clearly labels the section as defining the Term.
+
+* ""The term of this Agreement shall commence on the Effective Date"" specifies the start date.
+* ""continue for a period of Twenty (20) years"" explicitly states the duration.
+* ""unless the Parties mutually agree to terminate"" and ""subject to early termination pursuant to Section 8.2"" highlight conditions for ending the agreement before the 20-year period.",0,0,1
+Penalty ($ per kWh),"# RETRIEVE SECTIONS SIMILAR TO EXAMPLES.
+
+## LOOK FOR THESE KEYWORDS:
+ * Under-delivery
+ * Penalty
+ * Per kWh
+ * Contracted Amount
+ * Late Payment
+ * Fees
+ * Interest Rate
+ * Per Annum
+ * Amendment
+ * Subscription Percentage
+ * Management Fee Waiver
+ * Subscriber Agreements
+ * Notify Owner
+ * Reimburse
+ * Delayed Payments
+ * Missed Payments
+ * Fully Subscribed
+ * Subscriber Payments
+ * Replacement
+ * Guarantee
+
+# RETRIEVE SECTIONS SIMILAR TO EXAMPLES:
+## DO NOT RETRIEVE THE EXAMPLES ITSELF.
+<examples>
+>""In the event of under-delivery, the Provider shall pay to the Utility a penalty of $0.05 per kWh for …
+> ""4(e) of SOW: Late Payment. Any fees, payments, or other amounts due to either Party pursuant to this SOW that are not paid when due will bear interest at the rate of five percent (5%) per annum, calculated from the date such amount was due until the date payment is received by the Party to whom such amount is owed.""
+> First Amendment: Operator guarantees that 90% will be subscribed in 60 days from the date of this Amendment. If that does not occur, ?> Operator waives their management fee until 90% is reached. Operator has an additional 30 days …
+> Exhibit C Section C: Operator must notify owner within two (2) business days if subscriptions fall below 95%. Operator must replace any Subscriber Agreements …
+</examples>",0,0,0
+Guarantee (%),"# RETRIEVE SECTIONS SIMILAR TO EXAMPLES.
+
+## LOOK FOR THESE KEYWORDS:
+Exhibit C
+Section C
+Operator
+Project's solar garden
+Subscription (95% subscribed)
+Subscriber Agreements
+Business days (two)
+Replace subscribers
+Subscription Guarantee
+Reimburse Owner
+Delayed subscriber payments
+Collections guarantee (85%)
+Community solar subscription payments
+Non-anchor subscribers (low income, residential, small commercial)
+Waiver (credit checks, business length requirements)
+Management fee waiver
+Subscription milestones (90% in 60 days)
+Additional 30 days to fill remaining 10%
+Termination for cause
+Full Allocation
+Estimated Annual kWh Production
+Customer acquisition milestones
+Small Subscriber Requirement (60%)
+
+# RETRIEVE SECTIONS SIMILAR TO EXAMPLES:
+## DO NOT RETRIEVE THE EXAMPLES ITSELF.
+<examples>
+>3bii of SOW: Ampion shall begin performance of exclusive CAS to Client for each applicable Subject Asset upon the later of (a) the issuance ...
+>Exhibit C (Second Amendment): Operator agrees to maintain the Project�s solar garden at least 95% subscribed at all times and to ensure that the payments made ...
+>Table 3: Site: Small Subscriber Requirement(%) - 60
+</examples>",0,0,0
+Payment Remittance,"## Finding Payment Remittance Clauses in a Document
+
+**Prompt:**
+
+Given a contract, identify and extract sections of text that detail the payment remittance process, including payment terms, schedules, methods, and any related financial handling procedures. 
+
+**Keywords and Patterns:**
+
+* **General Payment Terms:**
+    * ""Payment""
+    * ""Fee(s)""
+    * ""Invoice""
+    * ""Compensation""
+    * ""Remittance""
+    * ""Payment Terms""
+    * ""Payment Schedule""
+    * ""Method of Payment""
+    * ""Wire Transfer""
+    * ""ACH Payment""
+    * ""Check""
+    * ""Electronic Payment""
+* **Timeframes:**
+    * ""Due Date""
+    * ""Net [Number] Days"" (e.g., Net 30 Days)
+    * ""Monthly""
+    * ""Quarterly""
+    * ""Annually""
+    * ""In Arrears""
+    * ""Upon Receipt""
+    * ""Within [Number] Days""
+* **Specific Clauses:**
+    * Look for headings or sections titled:
+        * ""Payment Terms""
+        * ""Payment of Fees""
+        * ""Invoicing and Payment""
+        * ""Financial Terms""
+        * ""Compensation""
+* **Examples:**
+    * ""Contractor shall invoice Client monthly for services rendered.""
+    * ""Payment is due within 30 days of receipt of invoice.""
+    * ""All payments shall be made via electronic funds transfer.""
+
+**Focus on:**
+
+* Identify the parties responsible for making and receiving payments.
+* Extract specific details about payment amounts, due dates, and acceptable payment methods.
+* Look for clauses outlining late payment penalties or consequences of non-payment. 
+
+**Example:**
+
+In the phrase:
+
+>""**4.2.1 Payment Mechanics. Company shall provide Client with an invoice for the One-Time Fee... Company shall not initiate any work... until the One-Time Fee is paid in-full... Company will provide Client with an electronic invoice for the Recurring Fee...**""
+
+* ""Payment Mechanics"" clearly indicates this section relates to payment procedures.
+* ""Company"" and ""Client"" are identified as the parties involved in the transaction.
+* ""One-Time Fee"" and ""Recurring Fee"" suggest different payment types or schedules.
+* ""Invoice,"" ""paid in-full,"" and ""electronic invoice"" provide details about the invoicing and payment process.",0,0,0
+Termination Clause,"# RETRIEVE SECTIONS SIMILAR TO EXAMPLES.
+
+## LOOK FOR THESE KEYWORDS:
+Termination for convenience
+Written notice
+SOW (Statement of Work)
+Material breach
+Insolvency
+Bankruptcy
+Force Majeure Event
+Client's right to terminate
+Company's right to terminate
+Infringement claim
+Non-infringing system or services
+Prepaid amounts refund
+Investor Member consent
+Termination for cause
+Disputed payment amounts
+Subscription (95% subscribed)
+Delayed subscriber payments
+Subscriber Agreements
+Applicable Law violation
+Insolvency Event
+Custodian, receiver, trustee
+Corporate action
+Termination
+Suspension
+Termination by Mutual Agreement
+Mutual written consent
+Termination for Insolvency
+Insolvency
+Bankruptcy
+Receiver
+Assignment for benefit of creditors
+Solvent Party
+Termination for Default
+Event of Default
+Force majeure
+Material breach
+Terms and conditions
+Termination for Convenience
+Effective Date
+Thirty (30) days' notice
+Breach
+Cure
+Exhibit C
+Second Amendment
+Operator
+Subscriber Agreements
+Subscriptions
+95% threshold
+Reimburse Owner
+Payments
+Fully subscribed
+Delayed subscriber payments
+Payment allocation
+Solar garden
+Ninety (90) days
+Terminate for cause
+No penalty
+
+# RETRIEVE SECTIONS FROM ORIGINAL TEXT SIMILAR TO EXAMPLES:
+# ANSWER OFTEN INCLUDES SECTION 8.1, SECTION 8.2, EXHIBIT C, ALSO IT CAN INCLUDE OTHER SECTIONS LIKE SECTION X., SECTION 6., SECTION 13., SECTION 10.
+# DO NOT MISS SECTIONS IF THEY ARE PRESENT IN THE DOCUMENT AND ARE RELEVANT.
+# SECTION 8.1, SECTION 8.2, EXHIBIT C, SECTION X. ARE VERY IMPORTANT.
+# SECTION X., IS VERY IMPORTANT.
+## RETRIEVE EXACTLY SECTIONS THAT ARE MENTIONED IF THEY ARE RELEVANT AND PRESENT IN THE DOCUMENT.
+## RETRIEVE ADDITIONALLY OTHER SECTIONS IF THEY ARE RELEVANT.
+## RETRIEVE ONLY TEXT FROM DOCUMENT. DO NOT RETRIEVE EXAMPLES TEXT.
+## DO NOT OUTPUT <tags>. STRUCTURE TEXT A BEAUTIFUL WAY.
+# EXAMPLES OF CORRECT ANSWERS:
+<example>
+> Section 8.1 As long as Investor Member is a member in the Owner, the Agreement will not be terminated without ...
+> Section 8.2 Owner or its Investor Member may terminate this Agreement for cause at any time. Operator may ...
+> Exhibit C (Second Amendment):Operator must replace any Subscriber Agreements if subscriptions fall below...
+</example>
+<example>
+> X. Termination and Suspension.
+    (a) Termination by Mutual Agreement....
+    (b) Termination for Insolvency....
+    (c) Termination for Default....
+    (d) Termination for Convenience....
+</example>
+<example>
+> Section 6.2 Client's Right to Terminate. Client may terminate this Agreement upon the occurrence ...
+> Section 6.3 Ampion's Right to Terminate. Ampion may terminate this Agreement upon the occurrence ...
+> Section 13.3. If a Force Majeure...
+</example>
+<example>
+> Section 6.1.1 Convenience by Client or Company. Either party may terminate this ...
+> Section 6.1.2 Material Breach by Client or Company. Client may terminate this Agreement ...
+> Section 6.1.3 Company's Discretion for Concern of Infringement. If the System or Services become,...
+> Section 10.11 Force Majeure Event. Upon the occurrence of any Force Majeure Event, ...
+</example>",0,0,0

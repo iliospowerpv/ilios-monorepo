@@ -1,0 +1,60 @@
+steps:
+- id: run-script
+  name: gcr.io/cloud-builders/docker
+  entrypoint: '/bin/bash'
+  args:
+    - '-c'
+    - |
+      export PYTHONPATH=/app,
+      export PWD=/app,
+      export PROJECT_ID=602280418311
+      export LOCATION=$LOCATION
+      export DOC_AI_LOCATION=us
+      export DOC_AI_PROCESSOR_ID=e977fdd46ee23308
+      export GCS_BUCKET=doc_ai_storage
+      export GCS_VECTOR_STORE_BUCKET=chatbot_docs
+      export ENV=$_ENV
+      export LOG_LEVEL=DEBUG
+      export BACKEND_URL=$_BACKEND_URL
+      export AI_APP_VERSION=0.0.29
+      export AWS_ACCESS_KEY_ID=projects/602280418311/secrets/aws-access-key-id:latest
+      export AWS_SECRET_ACCESS_KEY=projects/602280418311/secrets/aws-secret-access-key:latest
+      export GOOGLE_API_KEY=projects/602280418311/secrets/google-api-key:latest
+      export BACKEND_API_KEY=backend-api-key:latest
+      export MLFLOW_TRACKING_URI="https://mlflow-gzpg2zq5pa-uc.a.run.app/"
+      export MLFLOW_TRACKING_USERNAME="admin"
+      export MLFLOW_TRACKING_PASSWORD=projects/602280418311/secrets/mlflow-tracking-password:latest
+      ./src/validation_test/run_model_testing.sh
+
+- id: build
+  name: gcr.io/cloud-builders/docker
+  args: ['build', '-f', 'src/deployment/cloud_run_job/key_value_extraction/Dockerfile', '-t', 'us-east1-docker.pkg.dev/prj-ilios-ai/docai-registry/docai-poc-cloud-run:$SHORT_SHA', '.']
+
+- id: push
+  name: gcr.io/cloud-builders/docker
+  args: ['push', 'us-east1-docker.pkg.dev/prj-ilios-ai/docai-registry/docai-poc-cloud-run:$SHORT_SHA']
+
+- id: deploy
+  name: gcr.io/google.com/cloudsdktool/cloud-sdk
+  entrypoint: gcloud
+  args:
+  - run
+  - jobs
+  - deploy
+  - key-value-extraction-job
+  - '--image=us-east1-docker.pkg.dev/prj-ilios-ai/docai-registry/docai-poc-cloud-run:$SHORT_SHA'
+  - '--region=$LOCATION'
+  - --cpu=1
+  - --memory=4Gi
+  - '--service-account=$PROJECT_ID@appspot.gserviceaccount.com'
+  - --binary-authorization=default
+  - --max-retries=2
+  - --task-timeout=30m
+  - '--set-env-vars=PYTHONPATH=/app,PWD=/app,PROJECT_ID=602280418311,LOCATION=$LOCATION,DOC_AI_LOCATION=us,DOC_AI_PROCESSOR_ID=e977fdd46ee23308,GCS_BUCKET=doc_ai_storage,GCS_VECTOR_STORE_BUCKET=chatbot_docs,ENV=$_ENV,LOG_LEVEL=DEBUG,BACKEND_URL=$_BACKEND_URL,AI_APP_VERSION=0.0.71'
+  - --set-secrets=AWS_ACCESS_KEY_ID=projects/602280418311/secrets/aws-access-key-id:latest,AWS_SECRET_ACCESS_KEY=projects/602280418311/secrets/aws-secret-access-key:latest,GOOGLE_API_KEY=projects/602280418311/secrets/google-api-key:latest,BACKEND_API_KEY=backend-api-key:latest
+
+images:
+- 'us-east1-docker.pkg.dev/prj-ilios-ai/docai-registry/docai-poc-cloud-run:$SHORT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
