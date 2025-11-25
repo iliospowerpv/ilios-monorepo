@@ -1,0 +1,20 @@
+steps:
+  - name: hashicorp/terraform
+    args:
+      - '-c'
+      - |
+        echo $$GOOGLE_CREDENTIALS > tf_sa_key.json &&
+        cd /workspace/ilios-infra/${_ENVIRONMENT}/ &&
+        terraform init -backend-config="bucket=$_STATE_BUCKET" \
+        -backend-config="credentials=/workspace/tf_sa_key.json" &&
+        #terraform plan -var "project_id=$_TARGET_PROJECT"
+        terraform apply -var "project_id=$_TARGET_PROJECT" -auto-approve
+    entrypoint: /bin/sh
+    secretEnv:
+      - GOOGLE_CREDENTIALS
+availableSecrets:
+  secretManager:
+    - versionName: projects/501547961443/secrets/tf-sa-creds-dev/versions/1
+      env: GOOGLE_CREDENTIALS
+options:
+  logging: CLOUD_LOGGING_ONLY
