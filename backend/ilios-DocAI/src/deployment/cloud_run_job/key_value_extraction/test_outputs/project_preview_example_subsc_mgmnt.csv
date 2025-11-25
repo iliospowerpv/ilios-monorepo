@@ -1,0 +1,38 @@
+key_item,value,legal_term,poison_pill,poison_pill_detailed,is_poison_pill
+Provider,"Neighborhood Power OR, LLC","The relevant section identifying the ""Provider"" or ""Operator"" is:
+
+""Operator"" has the meaning set forth in the introductory paragraph hereto.
+
+The introductory paragraph states:
+
+""This SUBSCRIBER MANAGEMENT AGREEMENT (this ""Agreement"") is made and entered into as of July 16, 2020 (""Effective Date"") by and between Mt. Hope Solar, LLC, an Oregon Limited Liability Company (""Owner""), and Neighborhood Power OR, LLC an Oregon Limited Liability Company (""Operator"").""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,N/A,0
+Customer,"OR Foss 2019 Solar Holdings, LLC","The relevant section containing the term ""Customer"" is:
+
+""OWNER:
+By: OR Foss 2019 Solar Holdings, LLC, its
+Manager
+By: RSP OR, LLC, its Manager
+By: Renewable Energy Alternatives, LLC, its
+Manager
+By: _
+Name: Natalie Riley
+Title: Manager""
+
+This section identifies ""OR Foss 2019 Solar Holdings, LLC"" as the Owner, which can be interpreted as the Customer in this community solar agreement.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,N/A,0
+Term,20 years. May extend by mutual agreement. Requires Investor Member's consent for termination.,"The relevant section containing the term ""Term"" is:
+
+Section 8.1 Term. The term of this Agreement shall commence on the Effective Date, and shall continue for a period of Twenty (20) unless the Parties mutually agree to terminate prior to the end of the period or subject to early termination pursuant to Section 8.2. Parties may extend the term with mutual agreement, as needed. As long as Investor Member is a member in the Owner, the Agreement will not be terminated without written consent of the Investor Member.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,N/A,0
+Penalty ($ per kWh),N/A,,N/A,N/A,1
+Guarantee (%),N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,N/A,0
+Payment Remittance,Monthly within fifteen days after the invoice is approved (ten day review period for Owner after submitted). Late payments accrue interest at the lesser of Prime Rate + 2% or the maximum rate permitted by law.,"Here are the relevant excerpts from the document containing information about ""Payment Remittance"":
+
+Section 7.1 Compensation. ""Owner shall compensate Operator for the performance of the Services as described herein. At the end of each month, Operator shall prepare and deliver to Owner an invoice setting forth the Monthly Fee. Owner shall have ten (10) business days to review and approve the invoice or the invoice shall be deemed accepted and approved. Except for any disputed portions of the invoice, Owner shall pay the invoice within fifteen (15) days of delivery of the invoice to Owner.""
+
+Section 7.2 Late Payment. ""Amounts owed to Operator more than forty-five (45) days beyond any due date shall accrue interest each day such invoice is not paid from such due date at the lesser of (i) an annual interest rate equal to Prime Rate plus two percent (2%) (for purposes hereof, the ""Prime Rate"" shall mean the rate of interest from time to time publicly announced by Chase, at its principal office, presently located at One Chase Manhattan Plaza, New York, NY 10081) as its prime commercial lending rate, determined for each obligation to pay interest, at the time such obligation arises, and (ii) the maximum rate permitted by applicable law.""", No poison rules violations are present because the poison rules do not apply to the situation.,N/A,0
+Termination Clause,"- Owner or its Investor Member may terminate this Agreement for cause at any time.
+- Operator may terminate this Agreement for cause upon 30 days written notice if dispute not resolved in 6 months.
+- Failure to obtain and maintain the insurance required under the Agreement shall constitute a material breach and could result in termination.","The relevant section containing the termination clause is:
+
+Section 8.2 Termination. Owner or its Investor Member may terminate this Agreement for cause at any time. Operator may terminate this Agreement for cause-upon 30 days written notice-if Parties cannot come to agreement on disputed payment amounts within 6 months.
+
+Section 9.3 Failure to Obtain and Maintain Insurance. Failure to obtain and maintain the insurance required under the Agreement shall constitute a material breach of the Agreement and Operator will be liable for any and all costs, liabilities, and damages, (including attorney's fees, court costs, and settlement expenses) resulting to Owner from such breach, and could result in termination of this Agreement.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,N/A,0

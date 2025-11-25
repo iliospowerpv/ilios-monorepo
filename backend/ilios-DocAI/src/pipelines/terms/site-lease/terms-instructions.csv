@@ -1,0 +1,1384 @@
+Key Items,Instructions
+Lessor (Landlord) Entity Name,"## Finding Parties in a Site Lease Document
+
+**Prompt:**
+
+Given a site lease document, identify and extract sections of text that define the involved parties, specifically the Landlord and Tenant (or Lessor and Lessee). Use the following guidelines:
+
+**Keywords and Patterns:**
+
+* Look for phrases like:
+    * ""by and between""
+    * ""this Lease"" or ""this Agreement""
+    * ""Landlord"" and ""Tenant"" (or ""Lessor"" and ""Lessee"")
+    * ""Party"" and ""Parties""
+* Identify company names, often followed by identifiers such as:
+    * LLC (Limited Liability Company)
+    * Inc. (Incorporated)
+    * Corporation
+    * Trust
+    * Individual names, possibly followed by titles like Trustee
+* Look for addresses associated with the company or individual names.
+* Pay attention to quotation marks surrounding names or titles, and parentheses often containing additional information like state of incorporation.
+* Look for patterns like:
+    * **[Company Name], a [State] [Company Type], with an address at [Address] (""[Landlord/Tenant/Lessor/Lessee]"")**
+    * **between [Company/Individual Name] (the ""[Landlord/Lessor]"") and [Company/Individual Name] (the ""[Tenant/Lessee]"")**
+
+**Example:**
+
+In the phrase:
+>""**By and between HEELSTONE LAND HOLDINGS, LLC, a Delaware limited liability company (the “Landlord”) and 233 RANDOLPH 74 SOLAR I, LLC, a North Carolina limited liability company (the “Tenant”).**""
+
+* ""By and between"" indicates the start of the relevant section.
+* ""HEELSTONE LAND HOLDINGS, LLC"" and ""233 RANDOLPH 74 SOLAR I, LLC"" are the company names.
+* ""Delaware limited liability company"" and ""North Carolina limited liability company"" identify the company types.
+* ""(the “Landlord”)"" and ""(the “Tenant”)"" explicitly label the roles of each party.
+
+Term to look for: Lessor (Landlord) Entity Name
+Definition of term: The individual or entity who holds title to the property and is leasing to REA controlled entity
+Examples of answers:
+```
+By and between PWH Properties, LLC (""Owner""), and Canton G LC Solar, LLC a Maine limited liability company (""Tenant"").
+```
+```
+Harju Brothers Cranberries, Inc., a Massachusetts corporation, having a mailing address of 801 Plymouth St., Middleboro, MA 02346 (“Owner”),
+```"
+Lessee (Tenant) Entity Name,"## Finding Parties in a Site Lease Document
+
+**Prompt:**
+
+Given a site lease document, identify and extract sections of text that define the involved parties, specifically the Landlord and Tenant (or Lessor and Lessee). Use the following guidelines:
+
+**Keywords and Patterns:**
+
+* Look for phrases like:
+    * ""by and between""
+    * ""this Lease"" or ""this Agreement""
+    * ""Landlord"" and ""Tenant"" (or ""Lessor"" and ""Lessee"")
+    * ""Party"" and ""Parties""
+* Identify company names, often followed by identifiers such as:
+    * LLC (Limited Liability Company)
+    * Inc. (Incorporated)
+    * Corporation
+    * Trust
+    * Individual names, possibly followed by titles like Trustee
+* Look for addresses associated with the company or individual names.
+* Pay attention to quotation marks surrounding names or titles, and parentheses often containing additional information like state of incorporation.
+* Look for patterns like:
+    * **[Company Name], a [State] [Company Type], with an address at [Address] (""[Landlord/Tenant/Lessor/Lessee]"")**
+    * **between [Company/Individual Name] (the ""[Landlord/Lessor]"") and [Company/Individual Name] (the ""[Tenant/Lessee]"")**
+
+**Example:**
+
+In the phrase:
+>""**By and between HEELSTONE LAND HOLDINGS, LLC, a Delaware limited liability company (the “Landlord”) and 233 RANDOLPH 74 SOLAR I, LLC, a North Carolina limited liability company (the “Tenant”).**""
+
+* ""By and between"" indicates the start of the relevant section.
+* ""HEELSTONE LAND HOLDINGS, LLC"" and ""233 RANDOLPH 74 SOLAR I, LLC"" are the company names.
+* ""Delaware limited liability company"" and ""North Carolina limited liability company"" identify the company types.
+* ""(the “Landlord”)"" and ""(the “Tenant”)"" explicitly label the roles of each party.
+
+Term to look for: Lessee (Tenant) Entity Name
+Definition of term: The individual that is renting the property and pays fee to the Landlord
+Examples of answers:
+```
+By and between PWH Properties, LLC (""Owner""), and Canton G LC Solar, LLC a Maine limited liability company (""Tenant"").
+```
+```
+SunRaise Development, LLC, a New Hampshire limited liability company having place of business at 200 Marcy Street, Suite 102, Portsmouth, NH 03801 (“Tenant”).
+```"
+Effective Date,"## Finding Effective Dates and Lease Agreement Titles in Lease Documents
+
+**Objective** Find an Effective Date in the Lease agreement and return an exact date in the format provided. If the date is not explicitly mentioned return a piece of information that mention the Effective Date.
+
+Based on the samples you provided, here's a breakdown of the common structure, keywords, and features to look for when searching for effective dates and lease agreement titles:
+
+**Common Structure:**
+
+* **Date format:** The effective date is typically written in month-day-year format (e.g., July 25, 2019).
+* **Parenthetical clarification:**  The date is usually followed by the phrase ""(the “Effective Date”)"" within parentheses.
+* **Lease agreement title:** Look for phrases like ""GROUND LEASE AGREEMENT,"" ""SITE LEASE AGREEMENT,"" ""SOLAR LEASE,"" or similar variations. These titles are often capitalized and enclosed in quotation marks.
+* **Agreement alias:** The title is often followed by an alias enclosed in parentheses and quotation marks, such as ""(this “Lease”)"" or ""(this “Agreement”)"".
+* **""Made and entered into"" phrase:** This phrase typically precedes the date and signifies the beginning of the agreement.
+
+**Keywords:**
+
+* ""Effective Date""
+* ""Lease""
+* ""Agreement""
+* Variations of ""Lease Agreement"" like ""Ground Lease Agreement"", ""Site Lease Agreement"", etc.
+* Dates written in month-day-year format
+
+**Features of Text:**
+
+* Capitalization of the lease agreement title.
+* Use of quotation marks for both the title and the alias.
+* Consistent structure with date, title, and ""made and entered into"" phrase.
+
+## Prompt for Gemini LLM:
+
+**Given a lease document, extract the following information:**
+
+1. **Effective Date:** Locate the date identified as ""Effective Date"" and present it in month-day-year format.
+2. **Lease Agreement Title:** Identify the full title of the lease agreement, including any specific terms like ""Ground,"" ""Site,"" or ""Solar.""
+
+**Instructions:**
+
+* Search for text segments that match the patterns described above.
+* Prioritize sections containing the keywords ""Effective Date"" and variations of ""Lease Agreement.""
+* Look for dates written in month-day-year format and enclosed in parentheses following the phrase ""(the “Effective Date”)"".
+* Extract the full title of the agreement, including any descriptive terms, that appears before the alias (e.g., ""(this “Lease”)"").
+* If multiple potential matches are found, use contextual clues and the document's structure to identify the most likely correct option.
+
+"
+Property Size,"## Finding Property Size in Lease agreement:
+
+**Objective:** Identify and extract sections within a lease document that describe the physical attributes, size and location of the leased property.
+
+**Instructions:**
+
+1. **Keywords:** Prioritize sections containing keywords like:
+    * **Exhibit**: Pay close attention to sections labeled as exhibits, especially ""Exhibit A"" or ""Exhibit B,"" as these often contain detailed property descriptions.
+    * **Parcel**: Look for mentions of ""parcel,"" ""parcel number,"" or ""tax lot number,"" which are unique identifiers of the property.
+    * **Acres**:  Search for numerical values followed by ""acres"" to identify the size of the leased area.
+    * **Location**: Look for information like addresses, city, county, state, township, and nearby landmarks to pinpoint the property's location.
+    * **Description of Lease Area**: This phrase explicitly indicates a section dedicated to detailing the leased property.
+
+2. **Structure:**
+    * **Headings and Subheadings:** Look for headings or subheadings related to the property description, such as ""Premises,"" ""Leased Property,"" or ""Property Description.""
+    * **Lease Clauses:** Identify clauses that initiate the lease agreement, often containing phrases like ""Landlord hereby leases to Tenant..."" or ""demises and leases to Tenant..."" These clauses often precede the property description.
+    * **Table of Contents:** If available, utilize the table of contents to navigate directly to sections related to the property description.
+
+3. **Features:**
+    * **Numerical Values:** Look for numbers representing acreage, square footage, or parcel numbers.
+    * **Legal Descriptions:** Be aware of formal legal descriptions containing metes and bounds, bearings, and distances. These might require additional interpretation.
+    * **Maps or Site Plans:** Check for attached maps or site plans, often labeled as exhibits, that visually depict the leased property and its boundaries.
+
+4. **Examples:** Use the provided samples as references for the types of text sections to extract. Pay attention to the variations in formatting and language used to describe the leased property.
+
+**Output:**
+
+* Extract the identified text sections verbatim, ensuring you capture the full context of the description.
+* If relevant, include information about the location of the extracted text within the document (e.g., exhibit name, section heading, page number).
+* If the document includes maps or site plans, indicate their presence and relevance to the property description.
+
+**Additional Notes:**
+
+* Adapt your search based on the specific structure and language used in each lease document.
+* If certain keywords or features are more prevalent in a particular document, prioritize your search accordingly.
+* If you encounter ambiguity or difficulty in identifying relevant sections, feel free to request clarification or additional information.
+"
+Initial Term,"## Finding Initial Term clauses in Lease agreement:
+
+**Objective:** Identify and extract text sections within a lease document that define the duration and conditions of the lease term.
+
+**Key Features to Look for:**
+
+* **Keywords:** Term, Lease Term, Initial Term, Operational Term, Commencement Date, Expiration Date, Effective Date, Renewal Term, Option Term, Primary Term, anniversary, years, months.
+* **Numbered Sections/Exhibits:** Pay close attention to sections labeled with numbers or titles like ""Term,"" ""Lease Term,"" or ""Article [Number].""
+* **Defined Terms:** Look for capitalized terms like ""Term,"" ""Commencement Date,"" or ""Expiration Date,"" often placed within quotation marks and defined within the document.
+* **Date and Time References:** Phrases indicating specific dates or times, such as ""11:59 P.M. local time"" or ""the twenty-fifth (25th) anniversary.""
+* **Trigger Events:**  Identify clauses mentioning events that initiate or terminate the lease, like ""Commercial Operation Date"" or ""Notice to Operate.""
+
+**Instructions for Gemini:**
+
+1. **Scan the document:** Analyze the entire lease document for the keywords and features mentioned above.
+2. **Identify potential sections:** Locate sections likely containing lease term information based on the identified features.
+3. **Extract relevant text:** Once potential sections are identified, extract the specific text portions that explicitly define:
+    * **The start and end date of the lease term (including any extensions or renewals).**
+    * **Conditions or events that may affect the lease term.**
+    * **Terminology related to different phases of the lease (e.g., Option Term, Primary Term).**
+4. **Present the results:** Provide the extracted text sections as direct quotes, clearly indicating the source (e.g., section number or title) within the lease document.
+
+**Additional Tips:**
+
+* Pay attention to the context surrounding the identified keywords and features.
+* Be aware of variations in terminology and phrasing across different lease documents.
+* Consider potential sub-clauses or subsections within broader sections dealing with the lease term.
+
+By following these instructions and focusing on the identified features, Gemini should effectively locate and extract the relevant lease term clauses from the provided document.
+"
+Rent Commencement,"## Finding Rent Commencement in Lease Agreements:
+
+**Objective:** Identify and extract sections within a lease document that define rent commencement, payment terms, and key dates related to the lease term and operation.
+
+**Instructions:**
+
+1. **Keywords and Phrases:** Focus on the following keywords and phrases that typically appear near the relevant sections:
+    * **Rent Commencement Date:** Look for explicit mentions of ""Rent Commencement Date,"" or variations like ""Lease Commencement Date,"" ""Commencement Date,"" and phrases indicating the start of rent payments, such as ""Commencing on...""
+    * **Commercial Operation Date (COD):** Search for ""Commercial Operation Date,"" ""COD,"" or similar phrases that signify the date the leased property/project becomes operational.
+    * **Term:** Identify sections discussing the lease term, including ""Primary Term,"" ""Operating Term,"" ""Initial Term,"" and durations mentioned in years or months.
+    * **Rent Payment Terms:**  Look for keywords like ""Rent,"" ""annual rent,"" ""quarterly installments,"" ""escalator,"" and any numerical values representing rent amounts.
+
+2. **Structure and Formatting:**
+    * **Numbered or Lettered Sections:** Pay attention to numbered or lettered sections (e.g., 1.04, 2.2, 3a) as they often contain specific lease terms and conditions.
+    * **Defined Terms:** Look for capitalized terms followed by definitions in quotation marks (e.g., ""Rent Commencement Date"" shall mean...). These definitions clarify the meaning of key terms used throughout the document.
+    * **Dates and Timeframes:** Identify specific dates or timeframes mentioned, such as ""January 1, 2017,"" ""three (3) years,"" ""249th full calendar month,"" as they often relate to rent commencement, lease terms, or operational milestones.
+
+3. **Contextual Clues:**
+    * **Trigger Events:** Look for clauses describing events that trigger the start of rent payments or the commencement of the lease term, such as obtaining permits, achieving mechanical completion, or reaching commercial operation.
+    * **Payment Conditions:** Analyze the language surrounding rent payment terms to understand the frequency, amount, and any escalation clauses associated with the rent.
+
+**Example Prompts:**
+
+* ""Find the section that defines the 'Rent Commencement Date' and explain the conditions for rent to begin.""
+* ""Locate the clause specifying the 'Commercial Operation Date' and its significance in the lease agreement.""
+* ""Extract the details of the 'Primary Term,' including its duration and any rent escalation clauses.""
+* ""Identify the section outlining the annual rent amount and payment schedule.""
+
+**Additional Tips:**
+
+* Use the search function within the document to quickly locate keywords.
+* Pay attention to cross-references between sections.
+* Consider the overall context of the lease agreement to understand the relationship between different clauses and terms.
+
+By following these instructions and using the provided prompts, Gemini LLM should be able to effectively locate and extract the relevant sections within a lease agreement related to rent commencement, payment terms, and key dates.
+"
+Renewal Terms,"## Finding Lease Extension Clauses / Renewal Terms
+
+**Objective:** Locate and extract clauses within a lease document that pertain to the tenant's option to extend the lease term.
+
+**Keywords and Patterns:**
+
+* **Trigger Words:** ""extend"", ""renewal"", ""option"", ""right"", ""term""
+* **Numerical Patterns:** Look for mentions of specific numbers of years (e.g., ""five (5) years"", ""two (2) additional periods"") and notice periods (e.g., ""sixty (60) days"", ""twelve (12) months"").
+* **Section Headings:** Pay attention to sections labeled as ""Term"", ""Options to Extend"", ""Renewal Rights"", etc.
+* **Capitalized Terms:**  Identify defined terms like ""Renewal Term"", ""Initial Term"", ""Expiration Date"", etc.
+
+**Instructions:**
+
+1. **Scan the document for the keywords and numerical patterns mentioned above.** This can be done by searching within the document or visually scanning for relevant sections.
+2. **Pay close attention to sections with headings related to lease term or renewal options.** These sections are likely to contain the information you seek.
+3. **Identify capitalized terms related to lease extensions and locate their definitions within the document.** Understanding these definitions will clarify the specific conditions and procedures for extending the lease.
+4. **Extract the full clauses or sentences that describe the tenant's options to extend the lease term.** This should include the number of possible extensions, the length of each extension period, notice requirements, and any other relevant conditions.
+
+**Example Prompt:**
+
+> ""Gemini, please analyze the provided lease document and extract all clauses related to the tenant's option to extend the lease term. Focus on keywords such as 'extend', 'renewal', 'option', and pay attention to numerical patterns indicating the length of extensions and notice periods.  Identify any defined terms related to lease extensions and ensure you capture the complete clauses outlining the process and conditions for extending the lease.""
+
+**Additional Tips:**
+
+* If the document is lengthy or complex, consider using a text search tool to locate relevant keywords quickly.
+* Once you have identified potential clauses, carefully read the surrounding text to understand the context and ensure you are capturing the complete information.
+* If there are multiple clauses related to lease extensions, organize them by section or topic to maintain clarity.
+
+**By following these instructions and utilizing the provided prompt, Gemini should be able to effectively locate and extract the desired lease extension clauses within the document.**
+"
+Rent Calculation,"## Finding Rent Calculation in Lease Documents:
+
+**Objective:** Identify and extract sections within a lease document that define the rent amount, escalation clauses, and payment terms.
+
+**Keywords and Patterns:**
+
+* **Section Identifiers:** Look for sections labeled with numbers and letters (e.g., 2a, 5.b, Exhibit 5) often followed by titles like ""Rent,"" ""Primary Term Rent,"" ""Renewal Term Rent,"" etc.
+* **Rent Amount:** Search for numerical values representing the rent amount, typically followed by the currency symbol (e.g., $1,000, $2,500.00). Pay attention to the units mentioned (per acre, per year).
+* **Escalation Clauses:** Look for terms like ""escalate,"" ""increase,"" ""annual adjustment,"" and percentages (e.g., 2.00%, 1% per annum) that indicate changes in rent over time.
+* **Payment Terms:** Identify phrases that specify the frequency and timing of rent payments (e.g., ""in advance,"" ""annual installment,"" ""payable to Lessor"").
+* **Dates:** Look for dates or references to specific timeframes related to rent payments or escalation (e.g., ""Lease Commencement Date,"" ""Renewal Term,"" ""anniversary"").
+* **Definitions:** Pay attention to defined terms like ""Lease Rate,"" ""Net Acreage,"" and ""Premises"" which are often crucial in understanding the context of the rent clauses.
+
+**Instructions:**
+
+1. **Scan the document:** Analyze the lease agreement for the keywords and patterns mentioned above.
+2. **Locate potential rent sections:** Identify sections that contain a combination of these indicators.
+3. **Extract the relevant text:** Once a potential rent section is identified, extract the entire paragraph or section containing the rent details, including the surrounding context for clarity.
+4. **Analyze and interpret:** Review the extracted text to understand the specific rent amount, escalation clauses, payment terms, and any relevant conditions or exceptions.
+
+**Additional Tips:**
+
+* Pay attention to the overall structure and formatting of the document. Rent clauses may be found within specific sections dedicated to financial terms or may be interspersed throughout the agreement.
+* Consider using keyword search functions within your document viewer to quickly locate relevant sections.
+* Be aware of variations in language and terminology used across different lease documents.
+
+**Example:**
+
+Based on the provided samples, here's how you might identify a rent section:
+
+> **5.a - Primary Term Rent** - $1,000/acre of the Premises per year, in advance in one annual installment, which shall escalate at a rate of 2.00% beginning on the eighth anniversary of the Lease Commencement Date and continuing each year after.
+
+This section clearly indicates a rent clause due to the presence of:
+
+* **Section Identifier:** ""5.a"" followed by the title ""Primary Term Rent""
+* **Rent Amount:** ""$1,000/acre""
+* **Payment Terms:** ""per year, in advance in one annual installment""
+* **Escalation Clause:** ""escalate at a rate of 2.00%"" with specific timing details
+
+By following these instructions and utilizing the provided keywords and patterns, Gemini should be able to effectively identify and extract rent-related information from lease documents.
+"
+Rent Amount,"## Finding the Rent Amount Text Sections in Lease Agreements:
+
+**Objective:** Identify and extract sections within a lease agreement document that specifically pertain to rent payment details, including:
+
+* **Rent types:** Base rent, additional rent, percentage rent, pre-construction rent, etc.
+* **Rent amounts:** Specific dollar values associated with each rent type.
+* **Payment schedules:** Frequency (e.g., monthly, quarterly, annually) and due dates.
+* **Escalation clauses:** Provisions for rent increases over time.
+* **Commencement triggers:** Events that initiate specific rent payments (e.g., Commercial Operation Date, Commencement of Construction).
+* **Land area calculations:** Rent based on acreage or square footage.
+
+**Search Strategies:**
+
+1. **Keywords:** Look for keywords like ""rent,"" ""payment,"" ""fee,"" ""due,"" ""escalation,"" ""per annum,"" ""monthly,"" ""quarterly,"" ""Commercial Operation Date,"" ""Commencement of Construction,"" ""acre,"" ""square footage,"" etc.
+2. **Section Headings:** Pay close attention to section titles or headings that explicitly mention rent, such as ""Rent,"" ""Payment of Rent,"" ""Additional Rent,"" etc.
+3. **Numerical Values:** Scan for numerical values combined with currency symbols (e.g., $, €) or terms like ""dollars,"" ""per year,"" ""per month,"" etc. This helps identify specific rent amounts and calculations.
+4. **Dates and Timelines:**  Identify dates and timelines like ""Effective Date,"" ""Commercial Operation Date,"" ""Commencement of Construction,"" and specific months or days related to payment schedules.
+5. **Defined Terms:**  Look for capitalized terms that might be defined elsewhere in the document and relate to rent types or calculations (e.g., ""Base Rent,"" ""Percentage Rent,"" ""Net Acreage"").
+
+**Output:**
+
+* Extract the relevant text sections that meet the above criteria.
+* Organize the extracted information by rent type and present it in a clear and concise format.
+* If possible, create a table summarizing the different rent types, amounts, schedules, and escalation clauses.
+
+**Additional Tips:**
+
+* Be aware of variations in terminology and phrasing across different lease agreements.
+* Consider the context of the surrounding text to ensure accurate interpretation of rent-related information.
+* If the document is lengthy or complex, consider using keyword search functions or other tools to expedite the process.
+
+**Example Output:**
+
+Based on the provided samples, the output might look like:
+
+**Rent Types and Details:**
+
+| Rent Type          | Amount                                     | Schedule              | Escalation Clause | Commencement Trigger           |
+| ------------------ | ------------------------------------------ | --------------------- | ------------------ | ------------------------------- |
+| Initial Pre-Construction Rent | $5,000 for the first 4 months              | Monthly               | N/A                | Effective Date                 |
+| Pre-Construction Rent | $3,000 per month                           | Monthly               | N/A                | After Initial Pre-Construction Rent |
+| Storage and Staging Area Rent | $5,000 per month                           | Monthly               | N/A                | Commencement of Construction     |
+| Base Rent           | $15,500 per annum (based on Expected Capacity) | Annually              | 2% per year      | Commercial Operation Date        |
+| Percentage Rent      | 5% of Gross Revenues from Solar System     | Semi-annually         | N/A                | Commercial Operation Date        |
+
+**Note:** This is just an example, and the specific output will vary depending on the individual lease agreement content.
+"
+Payment Terms,"## Finding Rent Payment Sections in Lease Documents:
+
+**Objective:** Identify and extract text sections within a lease document that describe rent payment terms, including amount, frequency, due dates, and escalation clauses.
+
+**Keywords and Patterns to Look For:**
+
+* **Section Headings:** Look for sections titled ""Rent,"" ""Base Rent,"" ""Payments,"" ""Term,"" or similar variations.
+* **Dates:** Identify mentions of ""Commercial Operation Date,"" ""Rent Commencement Date,"" ""Lease Commencement Date,"" specific dates, or anniversaries.
+* **Frequency terms:**  Search for ""annual,"" ""monthly,"" ""quarterly,"" ""bi-annual,"" ""installment,"" ""payment,"" ""due,"" or related terms.
+* **Monetary amounts:**  Look for numerical values representing dollar amounts, often with symbols like ""$"" or written out terms like ""Dollars.""
+* **Escalation clauses:**  Identify phrases like ""annual escalator,"" ""increase,"" ""adjusted,"" ""CPI,"" or other terms suggesting rent adjustments over time.
+* **Payment terms:**  Look for phrases like ""payable in advance,"" ""payable in arrears,"" ""without demand,"" ""setoff,"" and similar terms.
+* **Cross-references:** Pay attention to references to other sections within the document, like ""as set forth in Section II.A.1a""
+* **Common phrases:**  Be aware of phrases like ""Tenant shall pay Landlord,"" ""Lessee shall pay Lessor,"" and other variations that indicate payment obligations.
+
+**Instructions:**
+
+1. **Scan the document:** Quickly scan the lease document for the keywords and patterns mentioned above.
+2. **Identify relevant sections:**  Focus on sections that contain a concentration of these keywords and patterns. These sections are likely to describe rent payment terms.
+3. **Extract text sections:** Once you have identified relevant sections, extract the specific paragraphs or sentences that explicitly detail the rent payment terms. This may include information on:
+    * **Rent amount:** The specific dollar amount of the rent, either as a total annual figure or broken down by payment frequency.
+    * **Payment frequency:** How often the rent is due (e.g., annually, quarterly, monthly).
+    * **Due dates:** The specific dates on which rent payments are due.
+    * **Escalation clauses:**  Any provisions for rent increases over time.
+    * **Payment methods:**  How the rent should be paid (e.g., check, electronic transfer).
+4. **Contextual understanding:** Use your understanding of the overall lease agreement to interpret the extracted text sections and ensure they accurately represent the rent payment terms.
+
+**Additional Tips:**
+
+* Pay attention to formatting cues like bold text, italics, and bullet points, as these may highlight important information.
+* Be aware of legal jargon and terminology commonly used in lease agreements.
+* If the document has a table of contents, use it to quickly navigate to relevant sections.
+* If the document is lengthy or complex, consider using a search function to find specific keywords.
+
+**By following these instructions and utilizing your language processing capabilities, you should be able to effectively locate and extract rent payment terms from lease documents.**
+"
+First Payment Due,"## Finding First Payment Due Sections in Lease Agreements:
+
+**Objective:** Locate and extract sections within a lease agreement document that specifically detail rent payment terms, including amounts, due dates, escalation clauses, and any relevant dates like Commencement Date or Commercial Operation Date. Focus on first payment due date in the answer.
+
+**Instructions:**
+
+1. **Keywords and Phrases:** Prioritize sections containing the following keywords and phrases:
+    * Rent, Base Rent, Annual Rent, Lease Rate, Rent Rate
+    * Payment, Payable, Due, Installments
+    * Commencement Date, Commercial Operation Date, Rent Commencement Date, Effective Date
+    * Escalation, Increase, Percentage
+    * Term, Operating Term, Development Period
+    * Dollar amounts ($) and numerical percentages (%)
+2. **Section Identification:** Pay close attention to section headers, numbers, or labels (e.g., II.A.1b., 2.2, 5a.) that might indicate rent-related information.
+3. **Dates and Timelines:** Identify and analyze dates and timelines mentioned within the text to understand the context and schedule of rent payments. Look for phrases like ""Commencing on,"" ""Beginning on,"" ""Anniversary,"" and specific dates.
+4. **Structure and Formatting:** Be aware of common structural elements used to present rent details, such as:
+    * Bullet points or numbered lists outlining payment amounts and schedules
+    * Separate paragraphs dedicated to specific rent types (e.g., Base Rent, Additional Rent)
+    * Tables or schedules showcasing rent escalation over time
+5. **Contextual Clues:** Analyze the surrounding text to ensure the identified section truly refers to rent payments and not other financial terms or fees.
+6. **Extract and Summarize:** Once a relevant section is identified, extract the key information including:
+    * Rent amount and currency
+    * Payment frequency (e.g., annual, quarterly, monthly)
+    * Due dates or specific payment schedule
+    * Escalation clauses and percentages
+    * Relevant dates and timelines (e.g., Commencement Date, Commercial Operation Date)
+
+**Example Output:**
+
+Based on the analysis, provide a clear and concise summary of the rent payment terms, similar to the examples you have been provided. For instance:
+
+* **""Rent commences on the Commercial Operation Date at $17,000 per year, payable annually with a 1% escalation starting on the first anniversary.""**
+* **""Base Rent is $1,000 per acre per year, payable in monthly installments, with a 2% escalation beginning on the 8th anniversary of the Lease Commencement Date.""**
+
+**Additional Notes:**
+
+* Adapt your search based on the specific structure and language used in each lease agreement.
+* If the document is lengthy or complex, consider using search functions within your document viewer to locate relevant keywords quickly.
+* Pay attention to potential variations in terminology or phrasing.
+
+By following these instructions, Gemini should be able to effectively identify and extract rent payment information from various lease agreement documents.
+"
+Expiration Date,"## Finding the Expiration Date in Lease agreement:
+
+**Objective:** Locate and extract sections within a lease document that define the duration and key dates of the lease agreement. Search for Expiration Date, which is the date when the site lease agreement expires.
+
+**Instructions:**
+
+1. **Identify Sections with Term-Related Keywords:** Search for sections containing keywords such as ""term,"" ""lease term,"" ""operating term,"" ""development period,"" ""commencement date,"" ""expiration date,"" ""effective date,"" ""anniversary,"" ""renewal,"" ""extension,"" ""primary term,"" ""option term,"" ""decommissioning period,"" and similar variations.
+2. **Focus on Numerical References:** Pay close attention to sections that include numerical values representing durations, typically in years, months, or specific dates. Examples include ""twenty (20) years,"" ""fifteenth (15th) anniversary,"" or ""December 31, 2045.""
+3. **Look for Defined Terms:** Identify instances where specific terms like ""Commencement Date,"" ""Commercial Operation Date,"" or ""Effective Date"" are defined within the context of the lease duration.
+4. **Analyze Clause Structure:** Common structures for lease term clauses include:
+    * **Simple declaration:** ""The term of this Lease shall be twenty (20) years.""
+    * **Defined periods:** ""The Lease Term shall consist of a Development Period of two (2) years and an Operating Period of twenty (20) years.""
+    * **Commencement and expiration dates:** ""The Lease shall commence on January 1, 2024, and expire on December 31, 2043.""
+    * **Anniversary-based expiration:** ""This Agreement shall expire on the twentieth (20th) anniversary of the Commencement Date.""
+5. **Consider Contextual Clues:**
+    * Look for sections discussing rent commencement, construction timelines, or operational milestones, as these often relate to the lease term.
+    * Identify clauses outlining renewal or extension options, which provide further details about the potential duration of the lease.
+
+**Output:**
+
+Extract the specific text sections from the lease document that define the lease term, including commencement date, expiration date, and any relevant sub-periods or renewal options.
+
+**Additional Notes:**
+
+* Be aware of variations in language and formatting across different lease documents.
+* Prioritize sections that explicitly define the ""Term"" or ""Lease Term.""
+* If multiple sections seem relevant, extract them all and note any potential discrepancies or ambiguities.
+"
+Renewal Notice Term,"## Analysis of Lease Extension Clauses:
+
+Both samples clearly relate to **lease extension options** within a lease agreement.  Let's break down the common elements and patterns to look for:
+
+**Keywords:**
+
+*   ""extend""
+*   ""Renewal Term"" (often capitalized and sometimes abbreviated as ""RT"")
+*   ""Term"" (often capitalized and referring to the overall lease duration)
+*   ""Expiration Date""
+*   ""written notice""
+
+**Structure:**
+
+1. **Trigger:**  Look for clauses starting with phrases like:
+    *   ""Tenant shall have the right to...""
+    *   ""Tenant may elect to...""
+    *   ""Option to Extend...""
+
+2. **Action:** The clause will then detail the action needed to extend, usually:
+    *   Providing ""written notice"" to the landlord.
+    *   Specifying a timeframe for this notice (e.g., ""prior to the Expiration Date"").
+
+3. **Duration:** The clause will define the length of the extension:
+    *   Specific number of years (e.g., ""five (5) years"").
+    *   Reference to ""Renewal Term"" which may be defined elsewhere.
+
+4. **Limitations:**  There might be limitations on the number of extensions or conditions for exercising the option.
+
+**Additional Features:**
+
+*   Clauses might be numbered or lettered (e.g., ""1b."")
+*   Dates and numbers are typically written in both numerical and written form (e.g., ""two hundred and forty (240)"").
+*   Defined terms like ""Renewal Term"" might be capitalized and have a plural form defined (e.g., ""Renewal Terms"").
+
+## Prompt for Gemini LLM:
+
+**Instruction:** Locate and extract the sections within the lease document that discuss the tenant's option to extend the lease term.
+
+**Keywords to search for:**  extend, Renewal Term, Term, Expiration Date, written notice
+
+**Additional instructions:**
+
+*   Focus on sections that begin with phrases indicating tenant rights or options.
+*   Identify the specific requirements for exercising the extension option, such as notice period and form of notice.
+*   Extract the length of the extension period and any limitations on the number of extensions.
+*   Pay attention to defined terms and their plural forms.
+"
+Site Lease Prepayment (Y/N),"## Analyzing Lease Document Text Samples:
+
+** Objective ** Identify if there is a Prepayment mentioned in the provided context for Site Lease and answer YES or NO.
+Based on the provided sample:
+
+**Common Structure:**
+
+* **Numbered Lists:** The text appears to be part of a numbered list (e.g., ""3.""). This indicates a structured format for different clauses or sections within the lease agreement.
+
+**Keyword Patterns:**
+
+* **Monetary Values:**  Look for numerical values representing dollar amounts (e.g., ""$2,500.00"").
+* **Payment Terms:** Words like ""Down Payment,"" ""Deposit,"" ""Payment,"" or similar terms indicating financial transactions.
+* **Agreement References:** Phrases like ""Option Agreement"" or references to other sections of the lease document.
+
+**Text Features:**
+
+* **Formal Language:** The sentence structure is formal and legalistic.
+* **Specific Terminology:**  Presence of terms like ""parties"" and ""acknowledge"" suggest legal context.
+* **Dates and Time References:** Look for mentions of specific dates or timeframes related to payments.
+
+## Prompt for Gemini LLM:
+
+**Objective:** Locate sections within the lease document that describe down payments or similar upfront financial obligations.
+
+**Instructions:**
+
+1. **Identify Numbered Lists:** Scan the document for numbered lists (e.g., ""1."", ""2."", ""3."" etc.).
+2. **Search for Keywords:** Within the numbered lists, prioritize sections containing keywords like:
+    * ""Down Payment""
+    * ""Deposit""
+    * ""Payment upon execution""
+    * Dollar amounts (e.g., ""$[amount]"")
+3. **Analyze Context:**  Read the surrounding sentences to ensure the identified section discusses an upfront payment related to the lease agreement.
+4. **Extract Relevant Information:** Once a matching section is found, extract the details regarding the down payment amount, due date, and any referenced agreements.
+
+**Example Prompt:**
+
+> ""Search for sections in the lease document that describe a down payment or similar upfront financial obligation. Look for numbered lists and keywords such as 'Down Payment,' 'Deposit,' 'Payment upon execution,' and dollar amounts. Extract the details about the amount, due date, and any related agreements.""
+"
+Site Lease Prepayment (Amount),"## Analyzing Lease Document Text Samples:
+
+Based on the provided sample:
+
+**Common Structure:**
+
+* **Numbered List:** The text starts with a number (""3."") indicating a list item within a larger agreement.
+* **Descriptive Title:**  A clear title like ""Down Payment"" follows the number, specifying the topic of the section.
+* **Amount:** A specific dollar amount is mentioned, often with both numerical and written representation (e.g., ""$2,500.00"" and ""Two Thousand, Five Hundred Dollars"").
+* **Reference to Agreement or Action:** The text may refer to a specific agreement or action related to the payment, like ""execution of Option Agreement"".
+
+**Keywords Patterns:**
+
+* **Numbers:** Look for numerical values, especially those with dollar signs, indicating payments or financial details.
+* **Payment Terms:** Words like ""Down Payment,"" ""Deposit,"" ""Payment,"" ""Fee,"" or similar terms often precede the amounts.
+* **Agreement References:**  Keywords like ""Agreement,"" ""Lease,"" ""Contract,"" or specific agreement names (e.g., ""Option Agreement"") might be present.
+* **Action Verbs:** Words like ""paid,"" ""executed,"" ""due,"" or similar action verbs often describe the transaction or event related to the payment.
+
+**Features of Text:**
+
+* **Formal Language:** The text uses formal language typical of legal documents.
+* **Precise Amounts:**  The amounts are stated clearly and accurately with both numerical and written forms.
+* **References to Other Sections or Documents:** The text may refer to other sections of the lease document or related agreements.
+
+## Prompt for Gemini LLM:
+
+**Objective:** Locate sections in the lease document that describe specific payments or financial obligations.
+
+**Instructions:**
+
+1. **Identify Numbered Lists:** Search for numbered lists within the document, as they often indicate different clauses or sections of the agreement.
+2. **Focus on Payment Titles:**  Pay close attention to titles or headings following the numbers, such as ""Down Payment,"" ""Security Deposit,"" ""Monthly Rent,"" etc.
+3. **Extract Amounts:** Locate and extract the specific dollar amounts mentioned in these sections, including both numerical and written representations.
+4. **Note Related Agreements or Actions:** Identify any references to related agreements (e.g., ""Option Agreement"") or actions (e.g., ""upon signing"").
+5. **Contextualize the Information:** Provide surrounding text or the entire section for better understanding of the payment's purpose and conditions.
+
+**Example Prompts:**
+
+* ""Find all sections in the document that discuss a down payment, including the amount and any related agreements.""
+* ""Extract the dollar amount specified for the security deposit and the conditions for its return.""
+* ""Identify any sections mentioning monthly rent, including the due date and late payment penalties.""
+
+**Additional Tips:**
+
+* You can refine the search by providing specific keywords or amounts.
+* Use proximity search features to find keywords that appear near each other.
+* If the document is lengthy, consider dividing it into sections for easier analysis.
+"
+Removal Timeline & Expectations,"## Finding Removal Timeline & Expectations
+
+**Objective:**
+
+Locate and extract sections within a lease document that pertain to the removal of tenant property/systems upon lease termination or expiration.
+
+**Keywords and Patterns:**
+
+* **Termination/Expiration:** Look for sections containing terms like ""termination,"" ""expiration,"" ""end of term,"" ""renewal term,"" ""final term.""
+* **Removal:** Search for terms related to removal of property like ""remove,"" ""removal obligations,"" ""decommissioning,"" ""restore,"" ""vacate.""
+* **Property/System:** Identify terms specifying the property in question, such as ""system,"" ""solar facility,"" ""equipment,"" ""tangible property,"" ""trade fixtures,"" ""personal property.""
+* **Timeframes:** Pay attention to clauses mentioning specific timeframes for removal like ""within [number] days,"" ""[number]-day period,"" ""on or before [date].""
+* **Costs:**  Look for mentions of who bears the cost of removal - ""at tenant's expense,"" ""at lessee's sole cost,"" ""developer shall be obligated.""
+* **Consequences of Non-Compliance:** Identify any penalties for failure to remove property, like ""rent increase,"" ""financial penalties,"" ""liability for damages.""
+
+**Sections/Clauses to Target:**
+
+* **Termination Clauses:** Sections outlining conditions and processes for ending the lease agreement.
+* **Removal Obligations:** Specific clauses detailing the tenant's responsibility to remove property.
+* **Restoration Clauses:**  Sections addressing the restoration of the premises to its original condition.
+* **Holdover Provisions:** Clauses outlining consequences for failing to vacate or remove property on time.
+* **Exhibit/Schedule References:** Look for references to exhibits or schedules that might contain specific details about removal procedures or timelines.
+
+**Instructions for Gemini:**
+
+1. **Analyze the provided lease document.**
+2. **Identify sections containing the keywords and patterns mentioned above.**
+3. **Extract the relevant paragraphs or clauses related to removal obligations upon lease termination or expiration.**
+4. **Present the extracted sections with clear headings or labels indicating their context (e.g., ""Removal Timeframe,"" ""Cost Responsibility,"" ""Penalties for Non-Compliance"").**
+
+**Additional Tips:**
+
+* Be aware of synonyms and variations of keywords.
+* Consider the context and overall structure of the lease agreement.
+* Pay attention to defined terms and their usage within the document.
+* If the document is lengthy, consider using search functions or text analysis tools to expedite the process.
+
+**By following these guidelines, Gemini should be able to effectively locate and extract the desired information from the lease document.**
+"
+Fee Simple Owner (Y/N),"## Identifying Fee Simple Owner(Y/N)
+
+**Objective:** Identify sections within a lease document that confirm the Lessor's ownership of the property, specifically focusing on fee simple title and potential encumbrances. Answer YES or NO.
+
+**Instructions:**
+
+1. **Keywords:** Prioritize sections containing the following keywords or their variations:
+    * **Ownership Indicators:** ""fee simple,"" ""title,"" ""owner,"" ""lessor,"" ""landlord""
+    * **Property Identifiers:** ""premises,"" ""property,"" ""parcel,"" ""tract,"" along with potential exhibit or attachment references (e.g., ""Exhibit A,"" ""Attachment B"").
+    * **Encumbrance Indicators:** ""liens,"" ""encumbrances,"" ""mortgage,"" ""subordination.""
+
+2. **Section Titles & Headings:** Pay close attention to sections titled or labeled with:
+    * ""Title""
+    * ""Ownership""
+    * ""Representations and Warranties""
+    * Recitals (often labelled with letters, e.g., ""Recital A"")
+    * Exhibit or Schedule headings referencing the property
+
+3. **Common Structures:** Look for these common sentence structures:
+    * ""Lessor/Owner is the fee simple owner of...""
+    * ""Lessor/Owner represents and warrants that it holds fee simple title to...""
+    * Descriptions of the property's location and any identifying information.
+    * Clauses discussing the presence or absence of liens and encumbrances.
+
+4. **Exhibit/Schedule References:** Investigate any exhibits or schedules mentioned in the identified sections, particularly those labeled as:
+    * ""Exhibit A""
+    * Property Descriptions or Surveys
+    * Title documents
+
+5. **Contextual Clues:** Consider the surrounding context of potential ownership clauses. Look for sections discussing:
+    * The Lessor's right to lease the property.
+    * Restrictions on the Lessor's ability to further encumber the property.
+    * Consequences of title defects or encumbrances.
+
+**Output:**
+
+* Provide the exact text of the located sections.
+* Note the section number/title or exhibit reference for each located section.
+* Highlight any identified keywords or relevant phrases within the text.
+* If the document structure allows, provide the surrounding context for each located section.
+
+**Additional Notes:**
+
+* Adapt the search based on variations in terminology and document structure.
+* If the initial search yields limited results, broaden the keyword search or explore sections related to property descriptions and use rights.
+"
+Rent Escalator (Y/N),"## Finding Rent Escalator in lease agreement
+
+The answer should be either YES or NO - if the rent can escalate the answer should be YES, otherwise NO. If it is not provided return ""Not provided"" string.
+
+**Common Structures and Keywords:**
+
+* **Rent escalation clauses:** Look for phrases like ""annual escalation,"" ""increase over the prior year,"" ""escalate at the rate of,"" and ""anniversary date.""
+* **Specific dates or triggers:**  Identify terms like ""Commercial Operation Date,"" ""COD,"" ""Lease Commencement Date,"" ""Second Rent Payment Date,"" and specific anniversary dates.
+* **Monetary values and percentages:**  Search for dollar amounts (e.g., $28,500.00), percentages (e.g., 2%), and references to ""Base Rent"" or other named rent types.
+* **Payment conditions and calculations:** Look for clauses outlining conditions for rent adjustments, such as ""Tenant shall provide proof of payment"" or references to external factors affecting rent calculations.
+
+**Additional Features:**
+
+* **Section numbering and lettering:** The samples use a combination of Roman numerals, capital letters, and numbers to organize sections and subsections (e.g., II. A. 1a.). This structure can help narrow down the search within the document.
+* **Defined terms:** Phrases like ""Base Rent"" and ""Expected Capacity"" are often capitalized and defined earlier in the document. Look for these defined terms to understand the context of the rent calculations.
+
+**Prompt for Gemini LLM:**
+
+**Objective:** Locate and extract all sections of the lease document that discuss rent escalation or adjustments.
+
+**Instructions:**
+
+1. **Keywords:** Search for the following keywords and related phrases:
+    * ""annual escalation,"" ""increase,"" ""escalate,"" ""anniversary date""
+    * ""Commercial Operation Date,"" ""COD,"" ""Lease Commencement Date""
+    * Dollar amounts, percentages, ""Base Rent""
+    * ""proof of payment,"" conditions affecting rent
+2. **Section Structure:** Pay close attention to section numbering and lettering (e.g., II. A. 1a.) to identify relevant sections.
+3. **Defined Terms:** Identify and interpret capitalized terms like ""Base Rent"" to understand rent calculations.
+4. **Context:** Ensure the extracted sections specifically discuss rent adjustments and not other financial terms.
+5. **Output:** Provide the extracted text sections with their corresponding section identifiers (e.g., II. A. 1a.)
+
+**Additional Notes:**
+
+* You may need to adjust the keywords and instructions based on the specific language and structure of the lease document.
+* Consider providing Gemini with relevant sections of the lease agreement defining key terms to improve accuracy.
+
+By combining keyword searches with structural analysis and contextual understanding, Gemini should be able to effectively locate the desired rent escalation clauses within the lease document.
+"
+Rent Escalator (Amount),"# RETRIEVE SECTIONS SIMILAR TO EXAMPLES.
+
+## LOOK FOR THESE KEYWORDS:
+    * ""Rent Escalator""
+    * ""Rent Increase""
+    * ""Escalation"" or ""Escalate""
+    * ""Annual Rent"" or ""Rent"" followed by terms like ""increased by"" or ""plus""
+    * Percentage (%)
+    * Dollar amount ($)
+    * ""per annum"" or ""annually""
+    * ""Year"" or ""Years"" followed by a range or specific year numbers
+    * **Annual Rent increased by [Percentage] (per annum/annually)**
+    * **Rent shall be [Dollar Amount] with an escalator of [Percentage] (per annum/annually)**
+    * **[Dollar Amount] additional per [Time Period] pursuant to [Section Reference]**
+
+# RETRIEVE SECTIONS SIMILAR TO EXAMPLES:
+## DO NOT RETRIEVE THE EXAMPLES ITSELF.
+<examples>
+1. ""**Annual Rent for Years 3-20: Previous year Annual Rent increased by 2%...**""
+    * ""Annual Rent"" and ""increased by 2%"" indicate a rent escalator amount of 2% per year.
+    * ""Years 3-20"" specifies the time period for this escalation.
+
+2. ""**Rent shall be calculated as two thousand five hundred and 00/100 dollars ($2,500.00) per acre per annum during the Lease Term with an escalator of 1% per annum....**""
+    * ""Rent shall be"" and ""$2,500.00"" indicate the base rent amount.
+    * ""escalator of 1% per annum"" specifies the rent escalator amount of 1% annually.
+
+3. ""**5.a and 5.b, then additional $100/acre/year in Final year pursuant to 5.c...**""
+    * ""additional $100/acre/year"" indicates a rent escalator amount of $100 per acre per year.
+    * ""in Final year"" and ""pursuant to 5.c"" specify the time period and section reference for this escalation.
+
+4. Exhibit 5: 4a. The Primary Term Rent shall escalate...
+</examples>"
+Rent Escalator Effective Date,"## Finding Rent Escalation Clauses in Lease Documents:
+
+Based on the provided samples, here's how to identify rent escalation clauses within a lease document and a prompt for Gemini LLM to assist you:
+
+**Common Structures and Keywords:**
+
+* **Numbered or Lettered Sections/Subsections:** Look for sections specifically dealing with ""Rent,"" ""Payments,"" or ""Term,"" often with subsections outlining escalation details (e.g., 5.a, II.A.1a).
+* **Keywords:**
+    * **Escalation/Increase:** Words like ""escalate,"" ""increase,"" ""adjustment,"" or ""annual escalator"" often signal rent changes.
+    * **Anniversary Dates:** Phrases like ""anniversary of,"" ""commencing on,"" or specific dates (e.g., ""3rd anniversary"") indicate when the escalation takes effect.
+    * **Percentage or Fixed Amount:** Look for percentage values (e.g., 2%) or fixed amounts ($) that denote the escalation amount.
+    * **Term References:**  Phrases like ""Primary Term,"" ""Renewal Term,"" ""Operations Term,"" or specific year ranges (e.g., ""Years 3-20"") define the period of the escalation.
+
+**Features of the Text:**
+
+* **Formulas or Calculations:**  Clauses may include formulas for calculating rent increases, often referencing previous rent amounts or base rates.
+* **Dates and Timelines:** Look for specific dates or timelines that define when the rent escalations begin and how they progress.
+* **Conditions or Triggers:** Some clauses might have conditions for the escalation, such as reaching a specific milestone or achieving certain performance metrics.
+
+**Prompt for Gemini LLM:**
+
+**Objective:** Locate and extract all sections within the lease document that describe rent escalation clauses.
+
+**Instructions:**
+
+1. **Identify Sections:** Search for sections titled ""Rent,"" ""Payments,"" ""Term,"" or similar headings likely to contain rent escalation information.
+2. **Keyword Search:** Within identified sections, search for keywords like ""escalate,"" ""increase,"" ""anniversary,"" ""percentage,"" ""term,"" and variations thereof.
+3. **Analyze Context:**  Evaluate the surrounding text to confirm the presence of rent escalation clauses. Look for formulas, dates, timelines, and conditions related to rent increases.
+4. **Extract Clauses:**  Once confirmed, extract the complete text of each rent escalation clause, including any relevant calculations, dates, and conditions.
+
+**Additional Considerations:**
+
+* Pay attention to the overall structure and organization of the lease agreement.
+* Look for definitions of terms used in the escalation clauses.
+* Be aware of any exceptions or exclusions to the escalation clauses.
+
+By following these guidelines and using the provided prompt, you and Gemini can effectively identify and understand rent escalation clauses within lease documents.
+"
+Termination & Removal - Lessee,"## Finding Termination & Removal - Lessee in Lease agreements
+
+**Objective:** Locate and extract sections of text within a lease agreement document that pertain to the termination rights of the lessee (tenant).
+
+**Keywords and Patterns:**
+
+* **Explicit Termination Clauses:**
+    * Look for sections explicitly labeled as ""Termination"", ""Lessee's Termination Rights"", ""Right to Terminate"", or similar headings.
+    * Identify phrases like ""Lessee may terminate"", ""Tenant shall have the right to terminate"", ""right to terminate this Lease"", etc.
+* **Conditional Termination Clauses:**
+    * Search for phrases indicating conditions under which the lessee can terminate, such as:
+        * ""If Lessee determines...""
+        * ""In the event that...""
+        * ""Failure to...""
+        * ""Upon the occurrence of...""
+        * ""Subject to...""
+* **Specific Triggering Events:**
+    * Pay attention to keywords related to common termination triggers, including:
+        * ""Commercially unreasonable""
+        * ""Force Majeure""
+        * ""Condemnation""
+        * ""Eminent domain""
+        * ""Governmental taking""
+        * ""Default"" (by either party)
+        * ""Permits"" or ""Approvals"" (denial, revocation, inability to obtain)
+        * ""Environmental or technical problems""
+        * ""Economic feasibility""
+        * ""Hazardous Substances""
+        * ""Damage or destruction"" of the property
+* **Additional Clues:**
+    *  Numbered or lettered subsections (e.g., 1(c), 4(a), 16(b), etc.)
+    *  References to specific timeframes or deadlines (e.g., ""within 30 days"", ""prior to construction"", ""after Lease Commencement Date"", etc.)
+    *  Mention of specific documents or agreements (e.g., ""power purchase agreement"", ""interconnection agreement"", ""Title Report"", etc.)
+
+**Instructions:**
+
+1. **Analyze the provided lease agreement document.**
+2. **Identify and extract sections of text that match the keywords and patterns mentioned above.**
+3. **Prioritize sections with explicit termination clause headings or clear termination language.**
+4. **Consider the context of each section to ensure it accurately reflects the lessee's termination rights.**
+5. **Present the extracted sections in a clear and organized manner, preserving the original formatting and numbering (if applicable).**
+
+**Example Prompts:**
+
+* ""**Find all sections in the document that discuss the Lessee's right to terminate the Lease.**""
+* ""**Extract any clauses related to termination due to Force Majeure events.**""
+* ""**Identify any instances where the Lessee can terminate if permits are denied or revoked.**""
+* ""**Show me the section that explains the termination process due to Lessor default.**""
+
+**By following these instructions and using the provided keywords and patterns, Gemini should be able to effectively locate and extract termination clauses within a lease agreement document.**
+"
+Termination & Removal - Lessor,"## Finding Termination & Removal - Lessor in Lease agreements
+
+**Objective:** Locate and extract sections of the lease document that pertain to the termination of the lease due to a tenant's default, including details about the process, timelines, and potential actions by the landlord.
+
+**Keywords and Patterns to Look For:**
+
+* **Termination Clauses:** Search for sections explicitly labeled ""Termination,"" ""Default,"" or with similar titles.
+* **Triggering Events:**  Identify phrases like ""Event of Default,"" ""Lessee default,"" ""Tenant’s default,"" or descriptions of specific actions or omissions that constitute a breach of the lease agreement.
+* **Landlord's Rights:**  Look for phrases indicating the landlord's options upon tenant default, such as ""right to terminate,"" ""option to terminate,"" ""take possession,"" ""re-enter,"" or ""cure the default.""
+* **Notice Periods:**  Pay attention to mentions of specific timeframes, like ""30 days' notice,"" ""60 days after receipt of notice,"" or references to ""cure periods.""
+* **Removal and Restoration:**  Identify sections discussing the tenant's responsibility for removing equipment, fixtures, or structures and restoring the premises to its original condition upon lease termination. Look for terms like ""remove,"" ""restore,"" ""abandonment,"" ""remediation,"" or specific mentions of equipment like ""solar panels"" or ""system.""
+
+**Examples of Relevant Sections:**
+
+* Sections numbered or labeled with terms like ""Termination,"" ""Default,"" ""Events of Default,"" or similar headings.
+* Clauses mentioning specific consequences of default, such as the landlord's right to terminate the lease, take possession of the property, or charge the tenant for damages.
+* Sections outlining procedures for providing notice of default, cure periods, and the process of terminating the lease.
+* Clauses detailing the tenant's obligations for removal of property and restoration of the premises upon termination.
+
+**Instructions:**
+
+1. Analyze the provided lease document.
+2. Identify and extract sections that match the keywords and patterns described above.
+3.  Prioritize sections explicitly dealing with lease termination due to tenant default.
+4.  Provide the extracted sections as output, along with their corresponding section numbers or titles for reference.
+5. If the document lacks clear section titles or numbering, use your judgment to identify and extract relevant paragraphs based on the keywords and context.
+
+**Additional Notes:**
+
+* The specific language and structure of termination clauses may vary across lease documents. Adapt your search based on the specific terminology and style used in the document.
+*  Pay attention to cross-references between sections, as important details might be spread across multiple clauses.
+* If you encounter ambiguity or uncertainty, err on the side of caution and include potentially relevant sections for further review.
+"
+Termination - Notice Requirements,"## Finding Termination - Notice Requirements in Lease agreements
+
+**Objective:** Identify sections within a lease agreement that pertain to termination rights and procedures for both lessee and lessor.
+
+**Keywords and Patterns to Look for:**
+
+* **Termination Terminology:** ""terminate,"" ""termination,"" ""end,"" ""cancel,"" ""right to terminate,"" ""early termination""
+* **Notice Periods:** Look for mentions of specific timeframes like ""30 days,"" ""90 days,"" ""180 days,"" etc., often associated with providing notice before termination.
+* **Conditions or Triggers:** Identify clauses mentioning specific events or reasons that allow for termination, such as:
+    * **Default or Breach:** Look for phrases like ""default event,"" ""breach of contract,"" ""failure to comply,"" etc.
+    * **Contingencies:**  Search for phrases like ""failure to obtain permits,"" ""environmental issues,"" ""loss of funding,"" etc.
+    * **Option Clauses:** Pay attention to phrases like ""at Lessee's option,"" ""at Lessor's discretion,"" ""right to terminate for convenience,"" etc.
+* **Party Identification:** Note who has the right to terminate, whether it's the ""Lessee,"" ""Tenant,"" ""Lessor,"" or ""Landlord.""
+* **Section Titles:**  Look for section headings like ""Termination,"" ""Termination Rights,"" ""Default,"" ""Early Termination,"" etc.
+* **Notice Procedures:** Identify instructions on how notice should be delivered (e.g., ""written notice,"" ""certified mail"").
+
+**Instructions:**
+
+1. Analyze the lease document and identify sections containing the keywords and patterns mentioned above.
+2. Extract the full text of those sections, including relevant details such as notice periods, conditions, and procedures.
+3. Pay close attention to the specific rights and obligations of both parties regarding termination.
+4. If possible, identify the sections by their numbering or titles for easier reference (e.g., ""Section 13: Termination"").
+
+**Example Output:**
+
+Based on the analysis, the following sections in the lease agreement appear to address termination:
+
+* **Lessee's Termination Rights:** This section outlines the Lessee's right to terminate the agreement with 30 days' notice for any reason.
+* **Termination:** This section details the Tenant's right to terminate under specific conditions, including failure to obtain permits or the presence of hazardous substances.
+
+**Additional Tips:**
+
+* Pay attention to the overall structure and language style of the lease agreement to better identify relevant sections.
+* Consider using the search function within the document viewer to quickly locate keywords.
+* If there's ambiguity or complexity in the termination clauses, consider seeking legal advice for clarification.
+"
+Default,"## Finding Default in Lease agreements
+
+**Objective:** Identify and extract sections within a lease agreement that define and address events of default, remedies, and cure periods for both parties involved.
+
+**Keywords and Patterns to Look For:**
+
+* **Section Titles:** ""Default,"" ""Events of Default,"" ""Remedies,"" ""Cure Period""
+* **Terminology:** ""Defaulting Party,"" ""Non-Defaulting Party,"" ""Breach,"" ""Material Breach,"" ""Insolvency,"" ""Bankruptcy""
+* **Numerical References:** Look for mentions of specific timeframes in days (e.g., 30 days, 60 days, 90 days) associated with cure periods or notice requirements.
+* **Actionable Language:** ""Terminate,"" ""Cure,"" ""Remedies,"" ""Offset,"" ""Damages,"" ""Notice""
+* **Specific Events:**
+    * Non-payment of rent or other financial obligations
+    * Failure to perform material obligations under the lease
+    * Misrepresentation or breach of warranties
+    * Insolvency or bankruptcy
+    * Actions preventing the intended use of the leased property
+
+**Instructions:**
+
+1. **Scan the document:** Begin by quickly scanning the lease agreement for sections or headings that explicitly mention ""Default,"" ""Events of Default,"" or similar keywords. This will provide a starting point for your analysis.
+2. **Analyze identified sections:** Within the located sections, carefully examine the language and structure for the following:
+    * **Definitions of Default:** Look for clear definitions of what constitutes an event of default for each party (Lessor/Landlord and Lessee/Tenant).
+    * **Cure Periods:** Identify the timeframes provided for each party to remedy or cure an event of default. Pay attention to variations in cure periods depending on the nature of the default (e.g., monetary vs. non-monetary).
+    * **Remedies:** Determine the available remedies for the non-defaulting party in case of an uncured default. This may include termination of the lease, financial compensation, or other legal actions.
+    * **Notice Provisions:**  Analyze the procedures for providing notice of default, including the required content and timeframe for delivering such notices.
+3. **Consider additional clauses:**  Explore other sections that may indirectly relate to default, such as sections discussing representations and warranties, obligations of each party, or termination of the agreement.
+4. **Extract relevant text:** Once you have identified the relevant sections and analyzed their content, extract the specific paragraphs or clauses that provide a comprehensive understanding of the default provisions within the lease agreement.
+
+**Additional Tips:**
+
+* Pay attention to the specific language used in the lease agreement, as terminology may vary.
+* Be aware of cross-references to other sections within the document that may provide additional details about default provisions.
+* Consider the overall context of the lease agreement and the nature of the leased property when interpreting the default clauses.
+
+**By following these instructions and analyzing the provided keywords and patterns, you can effectively locate and extract the essential information regarding default provisions within a lease agreement.**
+"
+Assignment by Lessee,"## Finding Assignment by Lessee in Lease agreements
+
+**Objective:** Identify and extract sections within a lease agreement document that pertain to the assignment of rights and obligations by either the tenant or the landlord.
+
+**Key Features to Look For:**
+
+* **Section Headings:**
+    * Look for sections explicitly labeled as ""Assignment,"" ""Subletting,"" or similar terms.
+    * Pay attention to numbered or lettered sections (e.g., ""IX. A,"" ""24 a-"").
+* **Keywords:**
+    * Focus on keywords such as ""assign,"" ""sublet,"" ""transfer,"" ""convey,"" ""mortgage,"" ""pledge,"" ""security interest,"" and ""financing.""
+    * Look for phrases like ""consent of,"" ""approval by,"" ""without the prior written consent,"" ""subject to,"" ""obligations under this Lease,"" and ""assume all of Tenant's/Landlord's obligations.""
+* **Parties Involved:**
+    * Identify mentions of ""Tenant,"" ""Landlord,"" ""Lessor,"" ""Lessee,"" ""Owner,"" ""Developer,"" ""Affiliate,"" ""Financing Party,"" ""Subsequent Owner,"" and ""Permitted Assignee.""
+* **Conditions and Restrictions:**
+    * Look for clauses that outline conditions or restrictions on assignment, such as requirements for prior consent, assignee qualifications, assumption of obligations, or limitations on the type of assignee.
+* **Special Cases:**
+    * Be aware of exceptions or special cases for assignment, such as those related to financing transactions, mergers and acquisitions, or transfers to affiliates.
+
+**Instructions:**
+
+1. **Analyze the provided lease agreement document.**
+2. **Identify and extract sections that meet the criteria described above.**
+3. **Present the extracted sections, ensuring to maintain the original formatting and numbering for context.**
+4. **If possible, provide a brief summary of the key points within each extracted section regarding the assignment terms and conditions.**
+
+**Additional Notes:**
+
+* The specific wording and structure of assignment clauses may vary across different lease agreements.
+* Pay close attention to the context and surrounding text to accurately interpret the meaning of each clause.
+* Consider potential variations in terminology (e.g., ""Lessor/Lessee"" vs. ""Landlord/Tenant"").
+"
+Assignment by Lessor,"## Finding Assignment by Lessor in Lease agreements
+
+**Objective:** Identify and extract sections within a lease document that pertain to the assignment of rights and obligations by either the Landlord or Tenant.
+
+**Keywords and Patterns to Look for:**
+
+* **Explicit Section Titles:**
+    * ""Assignment""
+    * ""Transfer""
+    * ""Conveyance""
+* **Keywords within Text:**
+    * ""Assign""
+    * ""Sublet""
+    * ""Transfer""
+    * ""Convey""
+    * ""Successor""
+    * ""Affiliate""
+    * ""Lender""
+    * ""Financing""
+    * ""Mortgage""
+* **Common Phrases:**
+    * ""Right to assign""
+    * ""Subject to the terms of this Lease""
+    * ""With the consent of""
+    * ""Without the consent of""
+    * ""Assumption of obligations""
+    * ""Release from liability""
+* **Numbered Sections:** Pay attention to sections explicitly labeled with Roman numerals (e.g., IX, XIV) or numerical figures (e.g., 6, 15, 24) combined with keywords related to assignment.
+
+**Additional Features:**
+
+* Look for clauses that specify conditions or limitations on assignment, such as:
+    * Requirement for prior written consent
+    * Restrictions on the type of assignee
+    * Obligations of the assignee (e.g., assuming existing obligations)
+    * Notice periods for informing the other party of an assignment
+* Be aware of terms like ""Permitted Assignee"" which might define specific categories of entities allowed for assignment.
+
+**Instructions for Gemini:**
+
+1. **Analyze the provided lease document.**
+2. **Identify sections that contain the keywords and patterns mentioned above.**
+3. **Extract the full text of these sections.**
+4. **Present the extracted sections, clearly indicating their location within the document (e.g., section number, page number).**
+5. **If possible, provide a brief summary of each extracted section, highlighting key points like restrictions, conditions, and parties involved.**
+
+**By following these instructions and analyzing the text structure and patterns, Gemini should be able to effectively locate and present the assignment clauses within the lease document.**
+"
+Removal Requirements,"## Finding Removal Requirements in Lease Documents:
+
+**Objective:** Identify and extract clauses within a lease agreement related to the removal of tenant installations and restoration of the property upon lease termination or expiration.
+
+**Keywords and Patterns:**
+
+* **Trigger Words:** Termination, Expiration, Removal, Restore, Decommissioning, Final Term
+* **Subject Phrases:** System, Solar Facility, Equipment, Property, Premises, Land
+* **Action Verbs:** Remove, Restore, Return, Repair, Decommission
+* **Timeframes:** Specific number of days for removal/restoration (e.g., 180 days)
+* **Conditions:** Phrases like ""at Lessee's expense,"" ""sole cost and expense,"" ""normal wear and tear excepted""
+* **Security:** Mention of performance bonds, letters of credit, or other financial guarantees related to decommissioning
+
+**Instructions:**
+
+1. Scan the lease agreement for sections containing the keywords and patterns mentioned above.
+2. Pay close attention to clauses with headings like ""Termination,"" ""Expiration,"" ""Removal,"" ""Restoration,"" or ""Decommissioning.""
+3. Identify sections outlining the responsibilities of the lessee (tenant) regarding the removal of installations and restoration of the property.
+4. Extract the specific text of the relevant clauses, including any details about timeframes, costs, and required actions.
+5. If available, note the section numbers or headings for easier reference.
+
+**Additional Tips:**
+
+* Pay attention to cross-references within the document, as relevant clauses may be mentioned in other sections.
+* Consider the context of the lease agreement and the nature of the property and installations involved.
+* If the document is lengthy or complex, consider using keyword search functions to help locate relevant sections.
+"
+Site Access Rights,"## Finding Site Access Rights in Lease Documents:
+
+**Definition** Site Access Rights -> Ability to access the project (may have to cross over another parcel, etc.)
+
+**Objective:** Identify and extract sections within a lease document that pertain to access rights, permitted uses of the premises, and installation/operation of equipment (specifically solar energy systems).
+
+**Instructions:**
+
+1. **Keywords:** Search for sections containing keywords related to:
+    * **Access:** access, ingress, egress, entry, 24/7, easements, parking, restrictions, limitations, permission.
+    * **Permitted Use:** use, utilize, operate, occupy, purpose, solar, energy, system, construction, installation, maintenance, repair, removal.
+    * **Installation/Operation:** equipment, lines, wires, conduit, infrastructure, interconnection, electric, utility, system, construction, maintenance, repair.
+2. **Section Identification:** Pay close attention to:
+    * **Numbered sections/articles:** Look for sections labeled with Roman numerals (e.g., III, IV), letters (e.g., A, B), and numbers (e.g., 1, 2, 3).
+    * **Headings and subheadings:** Identify sections titled with relevant keywords like ""Access"", ""Use of Premises"", ""Permitted Use"", ""Solar System Installation"", ""Operation and Ownership"", etc.
+3. **Contextual Clues:**
+    * **Parties involved:** Look for mentions of ""Tenant"", ""Landlord"", ""Lessee"", ""Lessor"", ""Owner"", ""Developer"" in relation to access rights and usage permissions.
+    * **Timeframes:** Note any specific timeframes mentioned for access or permitted use, such as ""during the Term"", ""Business Days"", specific hours, etc.
+    * **Conditions and limitations:** Identify any restrictions or conditions placed on access, use, or installation/operation of equipment.
+4. **Output:**
+    * **Extract the relevant text sections:** Provide the exact text of the sections identified using the above criteria.
+    * **Cite the location:** Include the section number, heading, or any other identifying information to specify where the extracted text is found within the document.
+
+**Additional Notes:**
+
+* Be aware of synonyms and variations of keywords.
+* Consider the context of the keywords to ensure relevance to the objective.
+* If the document has a table of contents, use it to quickly navigate to potentially relevant sections.
+"
+Quiet Enjoyment,"## Finding Quiet Enjoyment Clauses in Lease Agreements: A Guide for Gemini
+
+**Definition** Quiet Enjoyment -> the right to inhabit or use certain property without disturbance.
+
+**Objective:** Locate and analyze clauses related to ""quiet enjoyment"" within a lease agreement.
+
+**Keywords and Patterns:**
+
+* **Section Titles:** Look for sections explicitly titled ""Quiet Enjoyment,"" ""Title and Quiet Possession,"" or similar variations.
+* **Keywords:** Search for keywords such as ""quiet enjoyment,"" ""peaceable possession,"" ""hindrance,"" ""interference,"" ""molestation,"" ""claim of superior title,"" and ""right to possess.""
+* **Covenants and Warranties:** Identify clauses where the landlord (lessor/owner) provides covenants and warranties regarding the tenant's (lessee/developer) right to undisturbed use and possession of the premises.
+* **Conditions:** Pay attention to any conditions associated with the quiet enjoyment right, such as the tenant being current on rent and fulfilling their obligations under the lease.
+* **Duration:** Note the duration of the quiet enjoyment right, typically spanning the entire lease term.
+
+**Process:**
+
+1. **Section Titles:** Begin by scanning the document's table of contents or headings for relevant section titles directly mentioning ""quiet enjoyment"" or related terms.
+2. **Keyword Search:** If no specific sections are found, perform a keyword search using the terms listed above. Analyze the context of each result to determine its relevance.
+3. **Analyze Clauses:** Carefully read the identified clauses to understand the specific rights and obligations related to quiet enjoyment. Pay attention to any limitations or conditions.
+4. **Compare Clauses:** If multiple clauses address quiet enjoyment, compare their wording and scope to identify any potential inconsistencies or areas requiring clarification.
+
+**Additional Tips:**
+
+* **Context Matters:** Consider the overall context of the lease agreement and the specific nature of the leased property when interpreting quiet enjoyment clauses.
+* **Legal Advice:**  While this guide can help you locate relevant clauses, seeking legal advice is crucial for a comprehensive understanding of your rights and obligations under the lease agreement.
+
+Please analyze the provided lease agreement and identify all clauses related to the tenant's right to quiet enjoyment of the premises. Highlight the specific sections, keywords, and any relevant conditions or limitations associated with this right.
+"
+Non-Disturbance Requirements,"## Finding Non-Disturbance Agreement Clauses
+
+**Definition** Non-disturbance Requirements -> Ensures that a rental agreement between the tenant and the landlord will continue under any circumstances
+
+**Objective:** Locate and extract sections within a lease document that pertain to Non-Disturbance Agreements (NDAs) or similar provisions protecting the tenant's occupancy rights in case of property ownership changes.
+
+**Keywords and Patterns to Look For:**
+
+* **Section Titles:**
+    * ""Non-Disturbance Agreement""
+    * ""Subordination and Non-Disturbance""
+    * Similar titles mentioning tenant rights, lender agreements, or ownership changes.
+* **Key Terms:**
+    * ""Non-disturbance""
+    * ""Agreement""
+    * ""Mortgage"" / ""Deed of Trust""
+    * ""Lienholder""
+    * ""Beneficiary""
+    * ""Subordination""
+    * ""Attornment""
+    * ""Foreclosure""
+    * ""Tenant's rights""
+    * ""Landlord's successor""
+* **Contextual Clues:**
+    * Clauses discussing the landlord's obligation to obtain agreements from lenders or other parties with superior interests in the property.
+    * Clauses outlining the tenant's rights and protections in case of property sale, foreclosure, or transfer of ownership.
+    * Agreements ensuring the lease remains valid and enforceable even if the property ownership changes.
+
+**Instructions for Gemini:**
+
+1. **Scan the document:** Analyze the lease document and identify sections containing the keywords and patterns mentioned above.
+2. **Extract relevant sections:** Once identified, extract the full text of each section that appears to address Non-Disturbance Agreements or similar tenant protection clauses.
+3. **Present the findings:** Provide the extracted sections as output, clearly indicating the corresponding section titles or numbers for easier reference within the lease document.
+4. **Additional considerations:**
+    * Be aware of variations in terminology and phrasing.
+    * The specific location (section number) and titles may differ across lease documents.
+    * Consider the context to ensure the extracted sections truly pertain to Non-Disturbance Agreements.
+"
+SNDA,""
+Eminent Domain,"## Finding Condemnation Clauses in Lease Agreements
+
+**Definition** Eminent domain - the right of a government or its agent to expropriate private property for public use, with payment of compensation.
+
+**Objective:** Locate and analyze sections within a lease document that address condemnation, eminent domain, or governmental taking of the leased property.
+
+**Key Indicators:**
+
+* **Section Titles:** Look for sections explicitly titled ""Condemnation,"" ""Eminent Domain,"" ""Governmental Taking,"" or similar variations.
+* **Keywords:** Search for keywords such as ""condemnation,"" ""eminent domain,"" ""taking,"" ""governmental action,"" ""public utility,"" ""title transfer,"" ""compensation,"" ""proceeds,"" ""termination,"" ""partial taking,"" ""total taking,"" and ""relocation.""
+* **Defined Terms:** Pay attention to defined terms like ""Taking,"" ""Total Taking,"" ""Partial Taking,"" and their corresponding definitions within the document.
+* **Triggering Events:** Identify clauses outlining the specific events that trigger the condemnation provisions, such as a governmental entity acquiring the property or the property becoming unsuitable for the intended use due to the taking.
+* **Termination Rights:** Analyze clauses detailing the conditions under which the lease can be terminated due to condemnation, including options for partial termination or continuation for the unaffected portion of the property.
+* **Compensation and Proceeds Allocation:**  Examine how the document addresses the distribution of compensation or proceeds resulting from the condemnation, specifically the allocation between lessor and lessee. This may involve considerations of fair market value, improvements made by the lessee, and business interruption losses.
+* **Participation Rights:** Look for clauses that grant the lessee the right to participate in condemnation proceedings and any limitations or requirements associated with such participation.
+
+**Additional Tips:**
+
+* **Cross-Referencing:** Pay attention to cross-references within the lease agreement that may point to relevant sections related to condemnation.
+* **Contextual Clues:** Analyze the overall context of the lease agreement and the nature of the leased property to better understand the potential impact of condemnation and the related clauses.
+
+**Prompt for Gemini:**
+
+> ""Analyze the provided lease agreement and identify all sections related to condemnation, eminent domain, or governmental taking of the leased property. Extract the relevant text sections and provide a summary of the key provisions, including termination rights, compensation allocation, and participation rights for the lessee.""
+"
+Force Majeure,"## Instruction on how to locate Force Majeure Clauses:
+
+**Objective:** Identify and extract sections within a lease document that pertain to ""Force Majeure"" clauses.
+
+**Instructions:**
+
+1. **Keyword Search:** Begin by searching for the keywords ""Force Majeure,"" ""ForceMajeure,"" ""Event of Force Majeure,"" and ""Force Majeure Event"" within the document.
+2. **Section Identification:** Look for these keywords within section headings, subheadings, or numbered clauses. Common formats include:
+    * **Headings:** ""SECTION [NUMBER]. FORCE MAJEURE,"" ""Article [NUMBER] - Force Majeure""
+    * **Subheadings:** ""[Number]. Force Majeure""
+3. **Contextual Clues:** Analyze the surrounding text for contextual clues that indicate a Force Majeure clause. Look for:
+    * **Definitions:** Phrases like ""means,"" ""defined as,"" or a list of events following the keyword.
+    * **Conditions:**  Sentences describing events beyond the reasonable control of either party, including acts of God, natural disasters, war, strikes, government actions, etc.
+    * **Consequences:** Explanations of how Force Majeure events impact the parties' obligations, such as excused performance, extensions of time, or termination options.
+4. **Extract Text:** Once you identify a potential Force Majeure clause, extract the entire section, including the heading, definition, conditions, and consequences.
+
+**Additional Tips:**
+
+* Pay attention to variations in terminology, such as ""Event of Force Majeure"" or ""Force Majeure Event.""
+* Be aware of potential exceptions or limitations within the clause.
+* If the document has a table of contents, use it to quickly navigate to relevant sections.
+
+**Output:**
+
+Provide the extracted text of each identified Force Majeure clause, including its location within the document (e.g., section number, page number).
+"
+Property Tax ($),"## Analyzing Lease Document Samples for Property Tax key
+
+Property Tax key is the amount of property taxes for operational and valuation purposes.
+
+To extract this key you need to look for everything related to property tax."
+Purchase Options (Y/N),"## Purchase Option Keywords:
+
+**General Keywords:**
+
+* Purchase option
+* Option to purchase
+* Right of first refusal
+* Buy-out option
+* Call option
+* Acquisition option
+
+**Lease Agreement Specific Keywords:**
+
+* Lease-to-own
+* Lease with option to purchase
+* Lease purchase agreement
+* Land purchase option agreement
+* Option exercise
+* Option period
+* Option fee
+* Exercise price
+* Purchase price
+* Fair market value
+* Appraisal
+
+**Parties Involved:**
+
+* Lessor/Landlord/Owner
+* Lessee/Tenant/Buyer
+
+**Additional Keywords:**
+
+* Equity
+* Ownership
+* Property rights
+* Title transfer
+* Closing
+* Financing
+
+Find text that describes possible purchase options, ability for Lessee to have an option to buy the land from the Lessor. If this text is in the document."
+Liens,"## Instruction on how to extract Liens sections from Lease Documents:
+
+**Objective:** Locate and extract sections of text within a lease document related to liens and encumbrances on the property.
+
+**Keywords and Phrases:**
+
+*   Liens
+*   Encumbrances
+*   Mortgage
+*   Pledge
+*   Security Interest
+*   Charge
+*   Mechanics Lien
+*   Fee Simple Title
+*   Subordination
+*   Non-Disturbance Agreement
+*   Permitted Mortgage
+*   Waiver of Lien Rights
+
+**Structural Clues:**
+
+*   Numbered sections or clauses (e.g., Liens)
+*   Subsections labeled with letters (e.g., a. Mechanics Lien)
+*   References to exhibits
+*   Indentation and formatting changes to signify different levels of information
+
+**Contextual Features:**
+
+*   Focus on ownership rights and limitations
+*   Discussion of financial obligations and liabilities
+*   Protection of lessee's interests in the property
+*   Conditions for granting mortgages or other encumbrances
+
+**Instructions:**
+
+1. **Scan the lease document for the keywords and phrases listed above.** Pay attention to section headings, subheadings, and any formatting that might indicate relevant information.
+2. **Identify sections discussing ownership of the property and any limitations or encumbrances on that ownership.** Look for terms like ""fee simple title,"" ""liens,"" and ""encumbrances.""
+3. **Pay close attention to clauses that address the creation or existence of future liens.**  This may involve language discussing the lessor's obligations to prevent liens, notify the lessee of liens, or discharge existing liens.
+4. **Extract paragraphs that specifically address the following topics:**
+    *   Permitted mortgages and the conditions under which they may be granted.
+    *   Mechanics liens and the lessee's responsibility for addressing them.
+    *   The lessor's waiver of lien rights on the property or specific improvements.
+    *   Subordination agreements and their role in protecting the lessee's interests.
+5. **Compile the extracted text sections and present them in a clear and organized manner.**
+
+**Additional Tips:**
+
+*   Consider using a search function within your document viewer to quickly locate instances of the keywords.
+*   Pay attention to the overall context of the document and the specific lease agreement.
+*   If the lease document is lengthy or complex, you may need to break down the search process into smaller sections.
+"
+Amendments and/or Estoppels,"## Instructions on finding the Amendments and Estoppels in lease agreements.
+
+**Look for Keywords**
+
+* Amendment
+* Estoppel
+* Assignment
+
+**Additional Tips:**
+
+* **Provide context:** If possible, give me information about the type of lease and property.
+* **Start broad, then refine:** Begin with a general prompt and then refine it based on the results.
+* **Use quotation marks for exact phrases:** If you're looking for a specific phrase, enclose it in quotation marks."
+Prevailing Party Provision (Y/N),"## Finding Attorneys' Fees Clauses in Lease Agreements
+
+The answer needs to be YES or NO based on the provided agreement sections related to prevailing party provision.
+YES - Whether prevailing party in any dispute and/or litigation gets its legal costs covered by non prevailing party.
+NO - when the prevailing party does not have cost covered by non-prevailing party.
+
+Based on the provided samples, here's how to identify sections related to attorneys' fees in lease documents:
+
+**Keywords and Patterns:**
+
+* **""Prevailing Party"":** This term is consistently used to indicate who is entitled to collect fees.
+* **""attorneys' fees"":**  This is the key phrase indicating the subject matter.
+* **""costs and expenses""**: Often accompanies ""attorneys' fees"", indicating additional recoverable expenses.
+* **""dispute"", ""lawsuit"", ""action"", ""proceeding""**: These terms signify the context in which fees become relevant.
+* **""enforce""**:  Indicates the clause pertains to enforcement of the agreement.
+* **Location:** Look for these keywords within clauses numbered or lettered sections.
+
+**Additional Features:**
+
+* **Context:** These clauses typically appear within sections dealing with defaults, disputes, or remedies.
+* **Sentence Structure:**  The sentence often starts with ""The prevailing party..."" and ends with ""...entitled to reasonable attorneys' fees and costs.""
+
+**Objective:** Locate clauses related to awarding attorneys' fees in a lease agreement.
+
+**Instructions:**
+
+1. **Scan the document** for sections containing keywords such as ""prevailing party,"" ""attorneys' fees,"" ""costs,"" ""dispute,"" ""action,"" or ""enforce.""
+2. **Focus on clauses** where the sentence structure resembles ""The prevailing party...entitled to reasonable attorneys' fees and costs.""
+3. **Identify the specific conditions** under which attorneys' fees are awarded (e.g., breach of contract, legal action).
+4. **Extract the relevant section** of text and present it as a result.
+
+**Additional Tips:**
+
+* You can modify the keywords to include variations like ""legal fees,"" ""litigation costs,"" or ""counsel fees.""
+* Look for clauses mentioning alternative dispute resolution methods like arbitration, as they may also address fee allocation.
+* Pay attention to any limitations or exceptions regarding the awarding of fees.
+
+By following these guidelines and using the provided prompt, you can effectively utilize Gemini to identify and analyze attorneys' fees clauses within lease agreements.
+"
+Governing Law,"## Finding Governing Law Sections in Lease Documents:
+
+**Objective:** Locate and extract the section within a lease document that defines the governing law for the agreement.
+
+**Instructions:**
+
+1. **Keyword Search:** Begin by searching for the following keywords and phrases that commonly appear in governing law clauses:
+    * ""Governing Law""
+    * ""Choice of Law""
+    * ""construed in accordance with the laws of""
+    * ""governed by the laws of""
+    * ""without regard to conflict of laws principles""
+
+2. **Section Identification:**  Look for these keywords within section headers, numbered lists, or paragraphs that seem separate from the main body text. Governing law clauses often appear as subsections with labels like:
+    * Numbered sections (e.g., ""Section 12.1"", ""28.d."")
+    * Labeled subsections (e.g., ""X.E."", ""24h."")
+    * Subheadings within sections (e.g., ""Miscellaneous Provisions"")
+
+3. **Contextual Clues:**  The governing law section typically:
+    * Mentions a specific state or jurisdiction whose laws will govern the lease.
+    * May explicitly exclude consideration of ""conflict of laws principles.""
+    * Is relatively short and concise, often contained within a single paragraph.
+
+4. **Examples:** Based on the provided samples, here are some patterns to look for:
+    * **Direct Statements:** ""This Lease shall be construed and enforced in accordance with the laws of the State of [State Name].""
+    * **Choice of Law Clauses:** ""The law of the State of [State Name] shall govern this Lease without giving effect to conflict of laws principles.""
+    * **Location-Based Clauses:** ""This Agreement shall be governed by and construed in accordance with the laws of the state in which the Property is located...""
+
+5. **Output:** Once you've identified the governing law section, extract the entire text of that section, including the section label or number if present.
+
+**Additional Tips:**
+
+* Be aware of variations in phrasing and formatting across different lease documents.
+* If multiple potential sections are found, prioritize those with clearer language and more specific references to governing law.
+* If no clear governing law section is found, note this observation in your output.
+"

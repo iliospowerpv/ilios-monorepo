@@ -1,0 +1,736 @@
+Key Items,Instructions,use_pvsyst_prompt,unit,old_names
+Author,"## Finding the Author in a Document Header
+
+**Prompt:**
+
+Given a document header, identify and extract the author's name or the name of the entity responsible for creating the document.
+
+**Keywords and Patterns:**
+
+* **Look for phrases like:**
+    * ""Prepared by""
+    * ""Authored by""
+    * ""Created by""
+    * ""Copyright"" or ""©"" followed by a name or year
+    * ""Document Owner""
+* **Identify company names, often followed by identifiers such as:**
+    * LLC (Limited Liability Company)
+    * Inc. (Incorporated)
+    * Corporation
+    * Trust
+* **Look for patterns like:**
+    * **Prepared for:** [Company/Individual Name]
+    * **Author:** [Company/Individual Name]
+    * **Copyright © [Year] [Company/Individual Name]**
+
+**Example:**
+
+In the phrase:
+
+>""**Prepared for: StraightUp Solar**""
+
+* ""Prepared for"" indicates the purpose of the document and the following text likely reveals the author.
+* ""StraightUp Solar"" is likely the name of the author or the entity who commissioned the document.
+
+**In the phrase:**
+
+>""**Copyright © 2023 Westwood Professional Services**""
+
+* ""Copyright ©"" followed by the year and name strongly suggests the author.
+* ""Westwood Professional Services"" is likely the author or rights holder of the document.",0,,Author
+System Type,"## Finding System Type in a document
+
+**Prompt:**
+
+Given a solar site lease document, identify and extract the **System Type** from the ""Simulation parameters"" section.
+
+**Keywords and Patterns:**
+
+* Look for a section explicitly titled ""Simulation parameters"" or similar wording like ""Project Information"", ""Technical Specifications"", ""System Design"".
+* Within this section, search for headings or labels like:
+    * ""System Type""
+    * ""Mounting Type""
+    * ""Tracker Type""
+    * ""Installation Type""
+* Identify phrases or terms commonly used to describe solar panel systems:
+    * ""Fixed Tilt""
+    * ""Single Axis Tracker""
+    * ""Dual Axis Tracker""
+    * ""Ground Mount""
+    * ""Roof Mount""
+    * ""Building Integrated""
+* Pay attention to descriptions involving:
+    *  The orientation of the solar panels (e.g., fixed, tracking the sun).
+    *  The location of the solar panels (e.g., on the ground, rooftop, integrated into the building).
+
+**Examples:**
+
+* **""System Type: Single Axis Tracker""** - This clearly indicates a system that tracks the sun on one axis.
+* **""Mounting Type: Fixed Tilt, South Facing""** - This describes a system with panels fixed at an angle, facing south.
+* **""The Project will utilize a ground-mounted, single-axis tracking system.""** - This sentence within the ""Simulation parameters"" section describes the system type.
+
+**Term to look for:** System Type
+**Definition of term:**  The type of solar panel system being installed, specifically how it is mounted and whether it tracks the sun.",0,,System Type
+Module Model,"## Finding Module Model in a Solar Agreement
+
+**Prompt:**
+
+Given a solar site lease or interconnection agreement, identify and extract the Module Model used in the project. Focus on sections related to technical specifications, equipment lists, or project descriptions.
+
+**Keywords and Patterns:**
+
+* Look for sections titled:
+    * ""PV Array Characteristics""
+    * ""Main System Parameters""
+    * ""Equipment List""
+    * ""Technical Specifications""
+    * ""Project Description""
+* Look for keywords:
+    * ""Module"" or ""Panel""
+    * ""Model"" or ""Type""
+    * ""Manufacturer"" or ""Brand""
+* Identify alphanumeric strings that resemble module model names, often including:
+    * Brand names (e.g., ""Canadian Solar"", ""Trina"", ""Jinko"")
+    * Numbers indicating wattage or efficiency (e.g., ""370"", ""345"", ""400"")
+    * Letters indicating specific features or variations (e.g., ""WSM"", ""BMH"", ""TP2S"")
+
+**Example:**
+
+In the phrase:
+
+>""The System will utilize [Number] of [Manufacturer] [Module Model] photovoltaic modules with a total rated capacity of [Wattage] kW DC.""
+
+* ""[Manufacturer]"" and ""[Module Model]"" are likely to contain the information you need.
+* Pay attention to the surrounding context to confirm it refers to the module model.
+
+**Term to look for:** Module Model
+**Definition of term:** The specific model name or identifier of the solar panel used in the project.",0,,Module Model
+Module Manufacturer,"## Finding the Module Manufacturer in a document
+
+**Prompt:**
+
+Given a solar document, identify and extract the Module Manufacturer primarily from the ""PV Array Characteristics"" or ""Main System Parameters"" sections.
+
+**Keywords and Patterns:**
+
+* **Section headings:** Look for sections titled:
+    * ""PV Array Characteristics""
+    * ""Main System Parameters""
+    * ""Module Specifications""
+    * ""Equipment List""
+* **Keywords:** Search for keywords within these sections like:
+    * ""Module Manufacturer""
+    * ""Module Make""
+    * ""Module Model""
+    * ""Panel Manufacturer""
+    * ""Panel Make""
+    * ""Panel Model""
+* **Brand Names:**  Be on the lookout for common solar module brand names, such as:
+    * ""Canadian Solar""
+    * ""Jinko Solar""
+    * ""Trina Solar""
+    * ""First Solar""
+    * ""SunPower""
+    * ""LG Solar""
+    * ""Panasonic""
+    * ""REC Solar""
+    * ""Silfab""
+    * ""Q Cells""
+* **Formatting:** Pay attention to:
+    * **Tables:** Module Manufacturer information is often presented in a tabular format.
+    * **Bold or Italics:** The manufacturer name might be highlighted using bold or italics.
+
+**Example:**
+
+In a section titled ""PV Array Characteristics"", you might find:
+
+| Characteristic | Value |
+|---|---|
+| **Module Manufacturer** | **REC Solar** |
+| Module Model | REC400AA |
+
+Here, ""REC Solar"" is clearly identified as the Module Manufacturer.
+
+**Important Note:** If the Module Manufacturer is not explicitly stated, you may need to rely on the Module Model and research the manufacturer independently.",0,,Module Manufacturer
+Module Wattage,"## Finding Module Wattage in a document
+
+**Prompt:**
+
+Given a solar site lease document, identify and extract the Module Wattage value.
+
+**Keywords and Patterns:**
+
+* Look for sections titled:
+    * ""PV Array Characteristics""
+    * ""Main System Parameters""
+* Look for tables with columns like:
+    * ""Module""
+    * ""Type""
+    * ""Wattage""
+    * ""Power""
+* Look for values following keywords:
+    * ""Module Wattage:""
+    * ""Panel Wattage:""
+* Pay attention to units:
+    * Watts (W)
+    * Kilowatts (kW) -  Remember to convert to Watts by multiplying by 1000.
+
+**Example:**
+
+In the phrase:
+>""**Module Wattage: 370 W**""
+
+* ""Module Wattage:"" is the keyword.
+* ""370 W"" is the value and unit.
+
+In the table:
+
+| Module  | Type | Wattage |
+| ------------- | ------------- | ------------- |
+| Trina Solar  | TSM-400  | 400 W |
+
+* ""Wattage"" is the relevant column header.
+* ""400 W"" is the value and unit.",0,Wp,Module Wattage
+Module Quantity,"## Finding Module Quantity in a Solar Site Lease Agreement
+
+**Prompt:**
+
+Given a solar site lease document, identify and extract the Module Quantity value. Use the following guidelines:
+
+**Keywords and Patterns:**
+
+* Look for sections titled:
+    * ""PV Array Characteristics""
+    * ""Main System Parameters""
+    * ""Technical Specifications""
+    * ""Exhibit [Letter]"" (e.g., ""Exhibit A"") containing technical specifications
+* Look for tables or lists within these sections.
+* Search for keywords near the target value:
+    * ""Module Quantity""
+    * ""Number of Modules""
+    * ""Total Modules""
+    * ""Module Count""
+    * ""DC Capacity"" (often accompanied by ""kWp"" or ""kW DC"")
+* The value will likely be a whole number, potentially large (e.g., hundreds or thousands).
+* Pay attention to units:
+    * The value might be directly followed by ""modules"" or no unit at all.
+
+**Example:**
+
+In the table excerpt:
+
+| Parameter | Value |
+|---|---|
+| Module Type | Example SolarPanel 550W |
+| Module Quantity | **3744** |
+| DC Capacity | 2059.2 kWp |
+
+* The table is found within a section titled ""PV Array Characteristics.""
+* The row header ""Module Quantity"" clearly indicates the target value.
+* The extracted value is ""**3744**"".
+
+**Additional Notes:**
+
+* The document might use abbreviations like ""Qty"" for ""Quantity.""
+* If the exact term ""Module Quantity"" isn't present, analyze the context of other values and table headers to identify the correct information.",0,,Module Quantity
+Inverter Model,"## Finding Inverter Model in a Solar Agreement
+
+**Prompt:**
+
+Given a solar lease or power purchase agreement, identify and extract the Inverter Model used in the solar energy system.
+
+**Keywords and Patterns:**
+
+* **Section headings:** Look for sections titled:
+    * ""PV Array Characteristics""
+    * ""Main System Parameters""
+    * ""Equipment Specifications""
+    * ""Technical Specifications""
+    * ""Exhibit [Letter/Number]"" (Check exhibits for relevant information)
+* **Keywords:** Search for terms like:
+    * ""Inverter""
+    * ""Model""
+    * ""Manufacturer""
+    * ""Make""
+    * ""Type""
+* **Patterns:**
+    * **[Manufacturer Name] [Model Name]** (e.g., ""SMA Sunny Boy"")
+    * **[Model Name] ([Manufacturer Name])** (e.g., ""Sunny Boy (SMA)"")
+    * **[Acronym]-[Model Code]** (e.g., ""CPS SCA50KTL-DO/US-480 V2.0"")
+
+**Example:**
+
+In the phrase:
+
+>""The System shall utilize [Quantity]  [Manufacturer Name] [Model Name] inverters...""
+
+* ""System"" and ""inverters"" suggest this sentence contains relevant information.
+* ""[Manufacturer Name]"" and ""[Model Name]"" directly provide the needed details.
+
+**Note:** Inverter models can be presented in various formats. Pay close attention to the context and surrounding information to accurately identify the model.",0,,Inverter Model
+Inverter Manufacturer,"## Finding Inverter Manufacturer in a document
+
+**Prompt:**
+
+Given a solar project document, identify and extract the Inverter Manufacturer. Focus your search on sections related to ""PV Array Characteristics"" and ""Main System Parameters"".
+
+**Keywords and Patterns:**
+
+* **Section Titles:** Look for sections explicitly titled:
+    * ""PV Array Characteristics""
+    * ""Main System Parameters""
+    * ""Equipment List""
+    * ""Major Equipment Summary""
+* **Keywords:** Scan for keywords within these sections:
+    * ""Inverter""
+    * ""Manufacturer""
+    * ""Make""
+    * ""Model""
+* **Patterns:** Identify potential manufacturer names by looking for:
+    * Company names, often followed by identifiers such as:
+        * LLC (Limited Liability Company)
+        * Inc. (Incorporated)
+        * Corporation
+        * Ltd. (Limited)
+        * GmbH (Gesellschaft mit beschränkter Haftung)
+        * SA (Société Anonyme)
+    * Brand names commonly associated with inverters.
+* **Tables:** Pay close attention to tables within these sections, as they often list equipment specifications with dedicated columns for ""Manufacturer"" or ""Make"".
+
+**Example:**
+
+In a table within the ""PV Array Characteristics"" section:
+
+| Component | Manufacturer | Model | Quantity |
+|---|---|---|---|
+| PV Module | Canadian Solar Inc. | CS3W-400MS | 10,000 |
+| Inverter | **SMA** | Sunny Central 2500A | 4 |
+
+The ""Manufacturer"" column clearly identifies **SMA** as the Inverter Manufacturer.",0,,Inverter Manufacturer
+Inverter Wattage,"## Finding Inverter Wattage Unit Nom. Power in a document
+
+**Prompt:**
+
+Given a solar site lease document, identify and extract the inverter wattage Unit Nom. Power value.
+
+**Keywords and Patterns:**
+
+* Look for sections titled:
+    * ""PV Array Characteristics""
+    * ""Main System Parameters""
+    * ""Equipment Specifications""
+    * ""Unit Nom. Power""
+* Look for tables with columns like:
+    * ""Component"" and ""Rating""
+    * ""Description"" and ""Value""
+    * ""Unit Nom. Power""
+* Search for keywords near numerical values:
+    * ""Inverter""
+    * ""kW"" (kilowatts)
+    * ""DC"" (direct current)
+    * ""AC"" (alternating current)
+    * ""Unit Nom. Power""
+* Pay attention to units: Inverter wattage Unit Nom. Power is typically measured in kW.
+
+**Example:**
+
+In the table row:
+
+| Component | Rating |
+|---|---|
+| Inverter | 66 kW |
+
+* ""Inverter"" identifies the relevant component.
+* ""66 kW"" provides the inverter wattage value, with ""kW"" indicating kilowatts.
+
+**Additional Notes:**
+
+* There may be multiple inverters listed. Extract all instances of inverter wattage.
+* The format of the information may vary, so be flexible in your search.",0,kWac,Inverter Wattage
+Inverter Quantity,"## Finding Inverter Quantity in a document
+
+**Prompt:**
+
+Given a solar site lease document, identify and extract the Inverter Quantity. Use the following guidelines:
+
+**Keywords and Patterns:**
+
+* Look for sections titled:
+    * ""PV Array Characteristics""
+    * ""Main system parameters""
+* Look for tables with columns like:
+    * ""Component"" / ""Equipment""
+    * ""Description""
+    * ""Quantity""
+* Within these tables, search for rows containing:
+    * ""Inverter""
+* The corresponding ""Quantity"" value is the target information.
+
+**Example:**
+
+In a table structured like this:
+
+| Component | Description | Quantity |
+|---|---|---|
+| PV Module | Example Module Model X | 1000 |
+| Inverter | Example Inverter Model Y | **20** |
+
+* The ""Inverter Quantity"" would be **20**.
+
+**Additional Notes:**
+
+* The Inverter Quantity may be expressed as a whole number.
+* There might be multiple inverter types listed; extract the quantity for each.
+* If the document contains multiple sections matching the above criteria, extract the information from each relevant section.",0,,Inverter Quantity
+Inverter Total Power (AC),"## Finding kW AC in a document
+
+**Prompt:**
+
+Given a solar site lease document, identify and extract the numerical value associated with ""kW AC"".  Focus your search within sections related to ""PV Array Characteristics"" or ""Main System Parameters"".
+
+**Keywords and Patterns:**
+
+* **kW AC**:  This term, often representing the system's maximum alternating current power output, is the primary target.
+* **Numerical Values**: Look for numbers, potentially with decimals, directly preceding or following ""kW AC"".
+* **Units**: Pay attention to units like ""kW"" (kilowatts) to confirm the relevance of the numerical value.
+* **Section Headings**: Prioritize information found within sections explicitly titled ""PV Array Characteristics"" or ""Main System Parameters"".
+* **Table Data**: The target information might be presented within tables. If so, identify row and column headers like ""kW AC"", ""System Size"", or ""Capacity"".
+
+**Example:**
+
+In the text excerpt:
+>""**PV Array Characteristics:**
+>
+>Total Capacity: 3251 kW AC""
+
+* ""PV Array Characteristics"" confirms the relevance of the section.
+* ""Total Capacity"" provides context for the numerical value.
+* ""3251 kW AC"" contains the target information: the numerical value ""3251"" directly associated with the unit ""kW AC"".
+
+**Term to look for:** kW AC
+**Definition of term:**  The maximum alternating current power output of the solar panel system, typically measured in kilowatts (kW).",0,kW,kW AC
+Module Total Power (DC),"## Finding kW DC in a Solar Site Lease
+
+**Prompt:**
+
+Given a solar site lease document, identify and extract the ""kW DC"" value, representing the maximum system capacity in kilowatts of direct current.
+
+**Keywords and Patterns:**
+
+* Look for sections titled:
+    * ""PV Array Characteristics""
+    * ""Main System Parameters""
+    * ""Project Capacity""
+    * ""Technical Specifications""
+* Look for tables or lists with headings like:
+    * ""kW DC"" or ""kWp"" (kilowatt peak)
+    * ""System Size""
+    * ""Maximum Capacity""
+    * ""DC Capacity""
+* Pay attention to units:
+    * Values followed by ""kW DC"", ""kWp"", or similar units are likely relevant.
+* Numbers in the hundreds or thousands are more likely to be the kW DC value.
+
+**Example:**
+
+In a table like this:
+
+| Parameter | Value |
+|---|---|
+| **System Size (kW DC)** | **1385** |
+| Module Type | ... |
+| Inverter Type | ... |
+
+* The ""System Size (kW DC)"" row clearly indicates the relevant value.
+* The value ""1385"" followed by ""kW DC"" confirms it as the desired information.
+
+**Other Potential Formats:**
+
+* The text might state: ""The system will have a maximum capacity of **2502 kW DC**.""
+* Or: ""The total DC capacity of the solar array shall be **226 kW DC**.""
+
+**Note:**
+
+* Prioritize values explicitly labeled as ""kW DC"" or similar.
+* If multiple values are found, choose the one most likely representing the overall system capacity.",0,kW,kW DC
+Year 1 Estimated Energy AC,"## Finding MWh/year values in a document
+
+**Prompt:**
+
+Given a document, identify and extract the numerical values associated with ""MWh/year"" within the ""Main simulation results"" section.
+
+**Keywords and Patterns:**
+
+* Look for the phrase ""MWh/year"", which stands for Megawatt-hours per year.
+* The desired numerical value will be located near the phrase ""MWh/year"".
+* The value may be presented:
+    * Directly before or after ""MWh/year""
+    * Within the same sentence
+    * In a table or list format within the ""Main simulation results"" section.
+
+**Example:**
+
+In the phrase:
+>""The projected energy output is estimated to be 4813 MWh/year, based on...""
+
+* ""MWh/year"" is the target phrase.
+* ""4813"" is the numerical value associated with ""MWh/year"", representing the estimated energy output in megawatt-hours per year.
+
+**Additional Notes:**
+
+* Ignore any instances of ""MWh/year"" that are not associated with a numerical value.
+* If multiple values are present within the ""Main simulation results"" section, extract all of them.",0,MWh/year,MWh/year
+Year 1 Estimated Energy AC Per kW DC,"## Finding kWh/kWp/year in a document
+
+**Prompt:**
+
+Given a document containing information about solar energy production, identify and extract the value for kWh/kWp/year. Use the following guidelines:
+
+**Keywords and Patterns:**
+
+* Look for a section titled ""Main simulation results"" or similar.
+* Within this section, search for the following:
+    * ""kWh/kWp/year""
+    * ""Specific yield""
+    * ""Energy yield""
+    * A numerical value followed by the unit ""kWh/kWp/year""
+* The value may be presented in a table or directly within the text.
+
+**Example:**
+
+In the phrase:
+>""**The simulated annual energy yield of the PV system is 1316 kWh/kWp/year.**""
+
+* ""annual energy yield"" and ""kWh/kWp/year"" clearly indicate the relevant information.
+* ""1316"" is the extracted value.
+
+**Or:**
+
+In a table with the following header:
+
+| Parameter | Value |
+|---|---|
+| Specific yield | 1374 kWh/kWp/year |
+
+* ""Specific yield"" and ""kWh/kWp/year"" identify the relevant row.
+* ""1374"" is the extracted value.",0,kWh/kWp/year,kWh/kWp/year
+January Estimated Production (Year 1),Retrieve only on NUMBER - E_Grid mWh for month Jan,1,MWh,E_Grid mWh Jan
+February Estimated Production (Year 1),Retrieve only on NUMBER - E_Grid mWh for month Feb,1,MWh,E_Grid mWh Feb
+March Estimated Production (Year 1),Retrieve only on NUMBER - E_Grid mWh for month Mar,1,MWh,E_Grid mWh Mar
+April Estimated Production (Year 1),Retrieve only on NUMBER - E_Grid mWh for month Apr,1,MWh,E_Grid mWh Apr
+May Estimated Production (Year 1),Retrieve only on NUMBER - E_Grid mWh for month May,1,MWh,E_Grid mWh May
+June Estimated Production (Year 1),Retrieve only on NUMBER - E_Grid mWh for month Jun,1,MWh,E_Grid mWh Jun
+July Estimated Production (Year 1),Retrieve only on NUMBER - E_Grid mWh for month Jul,1,MWh,E_Grid mWh Jul
+August Estimated Production (Year 1),Retrieve only on NUMBER - E_Grid mWh for month Aug,1,MWh,E_Grid mWh Aug
+September Estimated Production (Year 1),Retrieve only on NUMBER - E_Grid mWh for month Sep,1,MWh,E_Grid mWh Sep
+October Estimated Production (Year 1),Retrieve only on NUMBER - E_Grid mWh for month Oct,1,MWh,E_Grid mWh Oct
+November Estimated Production (Year 1),Retrieve only on NUMBER - E_Grid mWh for month Nov,1,MWh,E_Grid mWh Nov
+December Estimated Production (Year 1),Retrieve only on NUMBER - E_Grid mWh for month Dec,1,MWh,E_Grid mWh Dec
+Estimated Production (Year 1),E_Grid MWh Annual,1,MWh,E_Grid MWh Annual
+January Estimated GHI Irradiance Per Meter Squared,GlobHor kWh/m2 Jan,1,kWh/m²,GlobHor kWh/m2 Jan
+February Estimated GHI Irradiance Per Meter Squared,GlobHor kWh/m2 Feb,1,kWh/m²,GlobHor kWh/m2 Feb
+March Estimated GHI Irradiance Per Meter Squared,GlobHor kWh/m2 Mar,1,kWh/m²,GlobHor kWh/m2 Mar
+April Estimated GHI Irradiance Per Meter Squared,GlobHor kWh/m2 Apr,1,kWh/m²,GlobHor kWh/m2 Apr
+May Estimated GHI Irradiance Per Meter Squared,GlobHor kWh/m2 May,1,kWh/m²,GlobHor kWh/m2 May
+June Estimated GHI Irradiance Per Meter Squared,GlobHor kWh/m2 Jun,1,kWh/m²,GlobHor kWh/m2 Jun
+July Estimated GHI Irradiance Per Meter Squared,GlobHor kWh/m2 Jul,1,kWh/m²,GlobHor kWh/m2 Jul
+August Estimated GHI Irradiance Per Meter Squared,GlobHor kWh/m2 Aug,1,kWh/m²,GlobHor kWh/m2 Aug
+September Estimated GHI Irradiance Per Meter Squared,GlobHor kWh/m2 Sep,1,kWh/m²,GlobHor kWh/m2 Sep
+October Estimated GHI Irradiance Per Meter Squared,GlobHor kWh/m2 Oct,1,kWh/m²,GlobHor kWh/m2 Oct
+November Estimated GHI Irradiance Per Meter Squared,GlobHor kWh/m2 Nov,1,kWh/m²,GlobHor kWh/m2 Nov
+December Estimated GHI Irradiance Per Meter Squared,GlobHor kWh/m2 Dec,1,kWh/m²,GlobHor kWh/m2 Dec
+Annual Estimated GHI Irradiance Per Meter Squared,GlobHor kWh/m2 Annual,1,kWh/m²,GlobHor kWh/m2 Annual
+Statistical Standard (P50 or P90),"## Finding Statistical Standard (P50 or P90) in a document
+
+**Prompt:**
+
+Given a document related to energy production, specifically within the ""Evaluation of the Production probability forecast"" section, identify and extract the defined Statistical Standard used for probability calculations.
+
+**Keywords and Patterns:**
+
+* Look for the abbreviations ""P50"" or ""P90"" within the document.
+* Search for phrases like:
+    * ""Statistical Standard of [P-value]""
+    * ""Probability level of [P-value]""
+    * ""Confidence level of [P-value]""
+    * ""[P-value] probability of exceedance""
+    * ""using a [P-value] confidence interval""
+* Pay attention to numerical values associated with probability, often expressed as percentages (e.g., 50%, 90%).
+
+**Example:**
+
+In the phrase:
+>""The production forecast is based on a P50 probability of exceedance, representing the median case scenario.""
+
+* ""P50"" is the identified Statistical Standard.
+* ""probability of exceedance"" clarifies the context of the P-value.
+* ""median case scenario"" provides additional information about the chosen Statistical Standard.
+
+**Term to look for:** Statistical Standard (P50 or P90)
+**Definition of term:** The specific probability level used in the evaluation of production forecasts, indicating the likelihood of achieving or exceeding a certain production level. P50 represents a 50% probability, while P90 represents a 90% probability.",0,,Statistical Standard (P50 or P90)
+P50 MWh,"## Extracting P50 MWh Value from a Document
+
+**Prompt:**
+
+This prompt will guide you to extract the P50 MWh value from a document related to energy production forecasts.
+
+**Guidelines:**
+
+* **Locate the ""Evaluation of the Production Probability Forecast"" Section:**  Begin by identifying the section within the document that specifically discusses or evaluates the production probability forecast. This section is likely to contain the P50 MWh value.
+* **Look for Numerical Values in MWh or Related Units:** Search for numerical values presented in megawatt-hours (MWh). Variations like ""MWh/year"" or similar units might be used, indicating annual production.
+* **Identify Contextual Clues:** Pay close attention to the text surrounding the numerical values. Look for phrases like:
+    * ""P50"" or ""P-50""
+    * ""50th percentile""
+    * ""median production""
+    * ""expected energy production""
+    *  ""base case scenario""
+* **Consider Tables and Figures:** The P50 MWh value might be presented within tables or figures illustrating the production probability forecast. Analyze the labels and captions of these visual elements carefully.
+
+**Example:**
+
+In a phrase like:
+
+>""The P50 energy production forecast for the project is estimated at 4813 MWh/year.""
+
+* ""P50 energy production forecast"" clearly indicates the relevant value.
+* ""4813 MWh/year"" provides the numerical value in the expected unit (MWh) and timeframe (year).
+
+**Output:**
+
+Extract the identified P50 MWh value and present it in the following format:
+
+""P50 MWh: [Extracted Value] [Unit]""
+
+For example:
+
+""P50 MWh: 4813 MWh/year""",0,MWh,P50 MWh
+P90 MWh,"## Finding P90 MWh in a document
+
+**Prompt:**
+
+Given a document about energy production forecasts, identify and extract the sections of text that define or refer to ""P90 MWh"". Use the following guidelines:
+
+**Keywords and Patterns:**
+
+* Look for the exact phrase ""P90 MWh"".
+* Search for variations like ""P90"" followed by units of energy such as ""MWh"", ""megawatt-hours"", or similar.
+* Look for mentions of ""Production probability forecast"", ""P90 production forecast"", or similar phrases in proximity to the term.
+* Identify any numerical values associated with ""P90 MWh"", often representing energy estimates.
+* Pay attention to tables, figures, or charts that might visually represent ""P90 MWh"" data.
+
+**Example:**
+
+In the phrase:
+>""The P90 MWh production forecast for the next year is projected to be 10,000 MWh, representing a conservative estimate of energy generation.""
+
+* ""P90 MWh"" is directly mentioned and defined as the ""production forecast"".
+* ""10,000 MWh"" is the numerical value associated with the P90 MWh forecast.
+* The phrase ""conservative estimate of energy generation"" provides context for the meaning of P90 MWh in this context.
+
+**Term to look for:** P90 MWh
+**Definition of term:**  In the ""Evaluation of the Production probability forecast"" section, P90 MWh represents a specific statistical measure (90th percentile) of the projected energy production in megawatt-hours.",0,MWh,P90 MWh
+Weather Forecasting Model,"## Finding Weather Forecasting Model Used in a document
+
+**Prompt:**
+
+Given a document about solar energy, identify and extract the name of the Weather Forecasting Model Used. Use the following guidelines:
+
+**Keywords and Patterns:**
+
+* Look for a section titled ""Evaluation of the Production probability forecast"" or similar.
+* Look for phrases like:
+    * ""Weather Forecasting Model Used""
+    * ""Weather data source""
+    * ""Meteorological model""
+    * ""Solar resource data""
+* Identify acronyms related to weather forecasting or solar resource databases, such as:
+    * NREL (National Renewable Energy Laboratory)
+    * NSRDB (National Solar Radiation Database)
+    * TMY (Typical Meteorological Year)
+    * PSM (Probability of Exceedance)
+* Pay attention to version numbers, which often indicate specific models.
+* Look for patterns like:
+    * **[Organization] [Database] [Model Name] [Version]**
+    * **[Model Name] ([Acronym])**
+
+**Example:**
+
+In the phrase:
+>""The evaluation of the production probability forecast used the NREL NSRDB TMY3 data as input.""
+
+* ""NREL NSRDB TMY3"" refers to the National Renewable Energy Laboratory's National Solar Radiation Database, specifically the Typical Meteorological Year version 3 data set, indicating the weather forecasting model used.",0,,Weather Forecasting Model Used
+Weather Forecasting Model Type,"## Finding Weather Forecasting Model Type Used in a document
+
+**Prompt:**
+
+Given a document about a solar or energy project, identify and extract the specific type(s) of weather forecasting models used in the ""Evaluation of the Production probability forecast"" section.
+
+**Keywords and Patterns:**
+
+* Look for phrases like:
+    * ""Weather forecasting model""
+    * ""Forecasting methodology""
+    * ""Model type""
+    * ""Data source""
+* Identify common weather model acronyms:
+    * GFS (Global Forecast System)
+    * ECMWF (European Centre for Medium-Range Weather Forecasts)
+    * NAM (North American Mesoscale Model)
+    * WRF (Weather Research and Forecasting Model)
+* Look for descriptions of model resolution:
+    * ""Spatial resolution""
+    * ""Temporal resolution""
+    * ""Grid spacing""
+* Pay attention to mentions of specific years or periods:
+    * ""Historical data""
+    * ""Multi-year average""
+    * ""Typical meteorological year (TMY)""
+
+**Example:**
+
+In the phrase:
+>""The Evaluation of the Production probability forecast used a combination of the Global Forecast System (GFS) and the Weather Research and Forecasting Model (WRF) to simulate meteorological parameters...""
+
+* ""Evaluation of the Production probability forecast"" indicates the relevant section.
+* ""Global Forecast System (GFS)"" and ""Weather Research and Forecasting Model (WRF)"" explicitly identify the model types used.
+
+Term to look for: Weather Forecasting Model Type Used
+Definition of term: The specific weather forecasting model or combination of models employed to generate meteorological data for the project's production probability forecast.",0,,Weather Forecasting Model Type Used
+Simulation Date,Simulation Date,0,,Simulation Date
+# of Trackers,"## Finding # of Trackers in a Solar Site Lease Agreement
+
+**Prompt:**
+
+Given a solar site lease document, identify and extract the number of solar trackers present on the leased premises.
+
+**Keywords and Patterns:**
+
+* **Explicit Mentions:**
+    * ""# of Trackers""
+    * ""Number of Trackers""
+    * ""Quantity of Trackers""
+    * ""Tracker Count""
+* **Contextual Clues:**
+    * Look for sections discussing the solar equipment or system specifications.
+    * Search for numerical values near terms like:
+        * ""trackers""
+        * ""single-axis"" or ""dual-axis"" (common tracker types)
+        * ""tracking system""
+        * ""solar modules"" or ""PV modules"" (trackers typically hold multiple modules)
+* **Consider Units:**
+    * The number might be followed by units like ""trackers"" or simply listed as a standalone numeral.
+* **Eliminate Irrelevant Information:**
+    * Ignore references to ""Fixed Tilt"" or ""Sheds on ground"" systems, as these don't utilize trackers.
+    * Disregard numbers related to other equipment like inverters, transformers, or meteorological stations.
+
+**Example:**
+
+In the phrase:
+>""The System will consist of 85 single-axis trackers, each equipped with...""
+
+* ""85"" is the number of trackers.
+* ""single-axis"" confirms the equipment type as trackers.
+
+**Important Note:**
+
+The document might not explicitly state ""# of Trackers."" Use your best judgment based on the context and keywords provided to identify the most likely numerical value representing the tracker count.",0,,# of Trackers

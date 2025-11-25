@@ -1,0 +1,419 @@
+Key Items,Instructions
+Effective Date,"# RETRIEVE ONLY DATA FROM TEXT IN THE SAME FORMAT AS IN THE TEXT:
+##EXAMPLES:
+<example>
+Text:
+```
+This Amended and Restated Operating Agreement of Blue Sky Utility Portfolio II 2020, LLC, a Delaware limited liability company (the Company”), dated as of December 28, 2020 (the “Effective Date”), is ...
+```
+Data retrieved:
+December 28, 2020</example>
+
+
+<example>
+Text:
+```
+This Amended and Restated Operating Agreement ... dated as of February 21, 2022 (the “Effective Date”)......
+```
+Data retrieved:
+February 21, 2022</example>
+
+
+<example>
+Text:
+```
+This Operating Agreement of Lakeville Community Solar Holdco LLC, a New York limited liability company (the “Company”), dated as of December 21, 2020 (the “Effective Date”), is made by and between Lak...
+```
+Data retrieved:
+December 21, 2020</example>
+# RETRIEVE ONLY DATA FROM TEXT IN THE SAME FORMAT AS IN THE TEXT:"
+Term,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Term from the text in this format:
+<example>
+Text:
+```
+2.4: The term of the Company commenced on the Formation Date and shall continue until such date that the Company is dissolved in accordance with the terms hereof or as otherwise provided by law....
+```
+Data retrieved:
+Commenced on the Formation Date and shall continue until the Company is dissolved</example>
+
+
+<example>
+Text:
+```
+2.4: The term of the Company commenced on the Formation Date and shall continue until such date that the Company is dissolved in accordance with the terms hereof or as otherwise provided by law....
+```
+Data retrieved:
+Commenced on the Formation Date and shall continue until the Company is dissolved.</example>
+
+
+<example>
+Text:
+```
+2.4: The term of the Company commenced on the Formation Date and shall continue until such date that the Company is dissolved in accordance with the terms hereof or as otherwise provided by law...
+```
+Data retrieved:
+Commenced on the Formation Date and shall continue until such date that the Company is dissolved.</example>
+
+"
+Assignments,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Assignments from the text in this format:
+<example>
+Text:
+```
+9.1: Without the consent of the remaining Members, no Member may sell, transfer, assign, convey, pledge, mortgage, encumber, hypothecate or otherwise dispose of all or any part of its Membership Inter...
+```
+Data retrieved:
+Can't assign membership interest without consent</example>
+
+
+<example>
+Text:
+```
+Without the consent of the remaining Members, no Member may sell, transfer, assign, convey, pledge, mortgage, encumber, hypothecate or otherwise dispose of all or any part of its Membership Interests ...
+```
+Data retrieved:
+Can't assign membership interest without consent</example>
+
+
+<example>
+Text:
+```
+9.1: Without the consent of the remaining Members, no Member may sell, transfer, assign, convey, pledge, mortgage, encumber, hypothecate or otherwise dispose of all or any part of its Membership Inter...
+```
+Data retrieved:
+Can't assign membership interest without consent.</example>
+
+"
+Parties,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Parties from the text in this format:
+<example>
+Text:
+```
+This Amended and Restated Operating Agreement of Blue Sky Utility Portfolio II 2020, LLC, a Delaware limited liability company (the Company”), dated as of December 28, 2020 (the “Effective Date”), is ...
+```
+Data retrieved:
+Blue Sky Utility Holding LLC and Providence-REA TCF, LLC.</example>
+
+
+<example>
+Text:
+```
+This Amended and Restated Operating Agreement of Hills Energy Holding, LLC, a Delaware limited liability company (the “Company”), dated as of February 21, 2022 (the “Effective Date”), is made by and b...
+```
+Data retrieved:
+Goldenrod Holding, LLC and AZ-REA TCF3, LLC</example>
+
+
+<example>
+Text:
+```
+This Operating Agreement of Lakeville Community Solar Holdco LLC, a New York limited liability company (the “Company”), dated as of December 21, 2020 (the “Effective Date”), is made by and between Lak...
+```
+Data retrieved:
+Lakeville Solar Holdings LLC and STL-REA TCF, LLC.</example>
+
+"
+Named Manager,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Named Manager from the text in this format:
+<example>
+Text:
+```
+8.2: The Manager shall be the Person or Persons designated to act as such hereunder from time to time in accordance with the provisions of this Section 8.2 (the “Manager”).
+(a) The initial Manager sha...
+```
+Data retrieved:
+Lakeville Solar Holdings LLC</example>
+
+
+<example>
+Text:
+```
+8.2: The Manager shall be the Person or Persons designated to act as such hereunder from time to time in accordance with the provisions of this Section 8.2 (the “Manager”).
+(a) The initial Manager sha...
+```
+Data retrieved:
+Blue Sky Utility Holding LLC</example>
+
+
+<example>
+Text:
+```
+8.2: The Manager shall be the Person or Persons designated to act as such hereunder from time to time in accordance with the provisions of this Section 8.2 (the “Manager”). 
+(a) The initial Manager sh...
+```
+Data retrieved:
+Goldenrod Holding, LLC</example>
+
+"
+Manager Removal Terms,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Manager Removal Terms from the text in this format:
+<example>
+Text:
+```
+8.5: (a) The Investor Member shall have the right to remove the Manager for (i) Cause, (ii) the filing of a bankruptcy proceeding by the Manager or a Bankruptcy filing against the Manager that is not ...
+```
+Data retrieved:
+Investor Member can remove the Manager for (i) cause, (ii) the filing of a bankruptcy proceeding by Manager, (iii) constituting an event of withdrawal by the Manager under the Act (iv) imposing liability on the investor member other than capital contribution payment (v) causing the termination of the Company for federal income tax purposes or (vi) causing the Company for federal tax purposes to be treated as an association taxable as a corporation.</example>
+
+
+<example>
+Text:
+```
+8.5: (a) The Investor Member shall have the right to remove the Manager for (i) Cause, (ii) the filing of a bankruptcy proceeding by the Manager or a Bankruptcy filing against the Manager that is not ...
+```
+Data retrieved:
+Investor Member can remove the Manager for (i) cause, (ii) the filing of a bankruptcy proceeding by Manager, (iii) constituting an event of withdrawal by the Manager under the Act (iv) imposing liability on the investor member other than capital contribution payment (v) causing the termination of the Company for federal income tax purposes or (vi) causing the Company for federal tax purposes to be treated as an association taxable as a corporation.</example>
+
+
+<example>
+Text:
+```
+8.5:(a) The Investor Member shall have the right to remove the Manager for (i) Cause, (ii) Bankruptcy of the Manager, or (iii) action or inaction by the Manager or any Manager Affiliate that (A) const...
+```
+Data retrieved:
+Investor Member can remove the Manager for (i) cause, (ii) the filing of a bankruptcy proceeding by Manager, (iii) constituting an event of withdrawal by the Manager under the Act (iv) imposing liability on the investor member other than capital contribution payment (v) causing the termination of the Company for federal income tax purposes or (vi) causing the Company for federal tax purposes to be treated as an association taxable as a corporation.</example>
+
+"
+Voting Rights,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Voting Rights from the text in this format:
+<example>
+Text:
+```
+Exhibit A:
+1. Blue Sky Utility Holding LLC
+Fiscal Year 2020 – 1.0%
+Fiscal Year 2021 through Flip
+Date – 30%
+Post Flip Date – 95%
+
+2. Providence-REA TCF, LLC
+Fiscal Year 2020 – 99%
+Fiscal Year 2021 thr...
+```
+Data retrieved:
+1. Blue Sky Utility Holding LLC
+Fiscal Year 2020 – 1.0%
+Fiscal Year 2021 through Flip
+Date – 30%
+Post Flip Date – 95%
+
+2. Providence-REA TCF, LLC
+Fiscal Year 2020 – 99%
+Fiscal Year 2021 through Flip
+Date – 70%
+Post Flip Date – 5%</example>
+
+
+<example>
+Text:
+```
+Exhibit A:
+1. Goldenrod Holding, LLC
+Fiscal Years 2022-2023 – 1.0%
+Fiscal Year 2024 through Flip
+Date – 30%
+Post Flip Date – 95%
+
+2. AZ-REA TCF3, LLC
+Fiscal Years 2022-2023 – 99%
+Fiscal Year 2024 thro...
+```
+Data retrieved:
+1. Goldenrod Holding, LLC
+Fiscal Years 2022-2023 – 1.0%
+Fiscal Year 2024 through Flip
+Date – 30%
+Post Flip Date – 95%
+
+2. AZ-REA TCF3, LLC
+Fiscal Years 2022-2023 – 99%
+Fiscal Year 2024 through Flip
+Date – 70%
+Post Flip Date – 5%</example>
+
+
+<example>
+Text:
+```
+Exhibit A:
+1. Lakeville Solar Holdings LLC
+Fiscal Year 2020 – 1.0%
+Fiscal Year 2021 through Flip
+Date – 30%
+Post Flip Date – 95%
+
+2. STL-REA TCF, LLC
+Fiscal Year 2020 – 99%
+Fiscal Year 2021 through Fl...
+```
+Data retrieved:
+1. Lakeville Solar Holdings LLC
+Fiscal Year 2020 – 1.0%
+Fiscal Year 2021 through Flip
+Date – 30%
+Post Flip Date – 95%
+
+2. STL-REA TCF, LLC
+Fiscal Year 2020 – 99%
+Fiscal Year 2021 through Flip
+Date – 70%
+Post Flip Date – 5%</example>
+
+"
+Major Decisions,"1. You have a task for due diligence company, working with solar projects.
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms.
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term.
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Major Decisions
+(Define what constitutes this/What are the requirements) from the text in this format:
+<example>
+Text:
+```
+1.1: (a) Acquisition of any PV System, other than pursuant to the MIPA;(b) Sale, lease or disposition of any Company or Project Company assets, other than the transfer of an asset with a fair market v...
+```
+Data retrieved:
+- Acquisition of any PV System.
+- Sale, lease or disposition of any Company or Project Company's assets other than FMV less than $ 25,000.
+- Merger or consolidation.
+- Pledging or granting any security interest.
+- Entering into expense or expense sharing agreement.
+- Guaranteeing or incurring in the name or on behalf of the Company or the Project Companies obligations to pay money.
+- Settling any claim, litigation or arbitration with an amount in controversy that equals or exceeds $25,000.
+- Incurrence of any debt on behalf of the Company or a Project Company in excess of $25,000.
+- Amendment or cancellation of the Articles of Organization.
+- Admission of any additional member .
+- Making any capital expenditures in excess of $25,000.
+- Changing the tax classification of the Company or Project Companies.
+- Amending, canceling, suspending, renewing or terminating any Transaction Document.
+- Changing the Company’s or Project Companies’ tax elections, methods of accounting or accounting policies and procedures.
+- Confessing a judgment against the Company.
+- Causing the Company or the Project Companies to enter into any contract or agreement with the Manager, or any Affiliate.
+- Admitting any other entity as a manager or managing member.
+- Causing the Company to file suit against any party.
+- Changing the Company’s purpose.
+- Causing or permitting the Company or the Project Companies to lend any funds to any Person.
+- Performing any act in contravention of this Agreement or Applicable Law.
+- Causing the Company to make any investments other than in the Project Companies.
+- Taking or causing the Company or the Project Companies to take any action that will result in a material recapture or reduction in ITC.
+- Causing the Company or the Project Companies to pay any compensation, profits distributions or allocations to the Manager in addition to the amounts permitted.
+- Taking or filing any action or instituting any proceedings in Bankruptcy on behalf of the Company or Project Companies.
+- Dissolving or winding up of the Company or Project Companies.</example>
+
+
+<example>
+Text:
+```
+1.1:(a) Acquisition of any Project, other than pursuant to the MIPA;(b) Sale, lease or disposition of any Company or Project Company assets, other than(i) sales of electric power, (ii) the transfer of...
+```
+Data retrieved:
+- Acquisition of any PV System.
+- Sale, lease or disposition of any Company or Project Company's assets other than FMV less than $ 25,000.
+- Merger or consolidation.
+- Pledging or granting any security interest.
+- Causing or permitting the Company or any Project Company to enter into any agreement with the Manager or any Affiliate of the Manager unless reasonable compensation paid or reasonable goods or services furnished.
+- Guaranteeing or incurring in the name or on behalf of the Company or the Project Companies obligations to pay money.
+- Settling any claim, litigation or arbitration with an amount in controversy that equals or exceeds $25,000.
+- Incurrence of any debt on behalf of the Company or a Project Company in excess of $25,000.
+- Causing or permitting the Company or any Project Company to incur any indebtedness secured by the assets.
+- Permitting any Affiliate of the Manager to incur indebtedness secured by a pledge of the Manager’s direct or indirect interest.
+- Amendment or cancellation of the Articles of Organization.
+- Admission of any additional member .
+- Making any capital expenditures in excess of $25,000.
+- Changing the tax classification of the Company or Project Companies.
+- Amending, canceling, suspending, renewing or terminating any Transaction Document.
+- Waiving material obligations or any right under any Transactional Documents.
+- Changing the Company’s or Project Companies’ tax elections, methods of accounting or accounting policies and procedures.
+- Confessing a judgment against the Company.
+- Causing the Company or the Project Companies to enter into any contract or agreement with the Manager, or any Affiliate.
+- Admitting any other entity as a manager or managing member.
+- Causing the Company to file suit against any party.
+- Changing the Company’s purpose.
+- Causing or permitting the Company or the Project Companies to lend any funds to any Person.
+- Performing any act in contravention of this Agreement or Applicable Law.
+- Causing the Company to make any investments other than in the Project Companies.
+- Taking or causing the Company or the Project Companies to take any action that will result in a material recapture or reduction in ITC.
+- Causing the Company or the Project Companies to pay any compensation, profits distributions or allocations to the Manager in addition to the amounts permitted.
+- Taking or filing any action or instituting any proceedings in Bankruptcy on behalf of the Company or Project Companies.
+- Dissolving or winding up of the Company or Project Companies.</example>"

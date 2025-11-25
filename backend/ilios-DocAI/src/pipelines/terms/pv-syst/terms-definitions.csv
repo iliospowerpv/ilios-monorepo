@@ -1,0 +1,48 @@
+Key Items,Definitions,use_pvsyst_prompt
+Author,"In the ""Header"" section.",0
+System Type,"In the ""Simulation parameters"" section.",0
+Module Model,"In the "" PV Array Characteristics"", ""Main system parameters"", sections.",0
+Module Manufacturer,"In the "" PV Array Characteristics"", ""Main system parameters"", sections.",0
+Module Wattage,"In the "" PV Array Characteristics"", ""Main system parameters"", sections.",0
+Module Quantity,"In the "" PV Array Characteristics"", ""Main system parameters"", sections.",0
+Inverter Model,"In the "" PV Array Characteristics"", ""Main system parameters"", sections.",0
+Inverter Manufacturer,"In the "" PV Array Characteristics"", ""Main system parameters"", sections.",0
+Inverter Wattage,"In the "" PV Array Characteristics"", ""Main system parameters"", sections.",0
+Inverter Quantity,"In the "" PV Array Characteristics"", ""Main system parameters"", sections.",0
+Inverter Total Power (AC),"In the "" PV Array Characteristics"", ""Main system parameters"", sections.",0
+Module Total Power (DC),"In the "" PV Array Characteristics"", ""Main system parameters"", sections.",0
+Year 1 Estimated Energy AC,"In the ""Main simulation results"" section.",0
+Year 1 Estimated Energy AC Per kW DC,"In the ""Main simulation results"" section.",0
+January Estimated Production (Year 1),"In a table in the unnamed section after the ""Main simulation results"" section.",1
+February Estimated Production (Year 1),"In a table in the unnamed section after the ""Main simulation results"" section.",1
+March Estimated Production (Year 1),"In a table in the unnamed section after the ""Main simulation results"" section.",1
+April Estimated Production (Year 1),"In a table in the unnamed section after the ""Main simulation results"" section.",1
+May Estimated Production (Year 1),"In a table in the unnamed section after the ""Main simulation results"" section.",1
+June Estimated Production (Year 1),"In a table in the unnamed section after the ""Main simulation results"" section.",1
+July Estimated Production (Year 1),"In a table in the unnamed section after the ""Main simulation results"" section.",1
+August Estimated Production (Year 1),"In a table in the unnamed section after the ""Main simulation results"" section.",1
+September Estimated Production (Year 1),"In a table in the unnamed section after the ""Main simulation results"" section.",1
+October Estimated Production (Year 1),"In a table in the unnamed section after the ""Main simulation results"" section.",1
+November Estimated Production (Year 1),"In a table in the unnamed section after the ""Main simulation results"" section.",1
+December Estimated Production (Year 1),"In a table in the unnamed section after the ""Main simulation results"" section.",1
+Estimated Production (Year 1),"In a table in the unnamed section after the ""Main simulation results"" section.",1
+January Estimated GHI Irradiance Per Meter Squared,"In a table in the unnamed section after the ""Main simulation results"" section.",1
+February Estimated GHI Irradiance Per Meter Squared,"In a table in the unnamed section after the ""Main simulation results"" section.",1
+March Estimated GHI Irradiance Per Meter Squared,"In a table in the unnamed section after the ""Main simulation results"" section.",1
+April Estimated GHI Irradiance Per Meter Squared,"In a table in the unnamed section after the ""Main simulation results"" section.",1
+May Estimated GHI Irradiance Per Meter Squared,"In a table in the unnamed section after the ""Main simulation results"" section.",1
+June Estimated GHI Irradiance Per Meter Squared,"In a table in the unnamed section after the ""Main simulation results"" section.",1
+July Estimated GHI Irradiance Per Meter Squared,"In a table in the unnamed section after the ""Main simulation results"" section.",1
+August Estimated GHI Irradiance Per Meter Squared,"In a table in the unnamed section after the ""Main simulation results"" section.",1
+September Estimated GHI Irradiance Per Meter Squared,"In a table in the unnamed section after the ""Main simulation results"" section.",1
+October Estimated GHI Irradiance Per Meter Squared,"In a table in the unnamed section after the ""Main simulation results"" section.",1
+November Estimated GHI Irradiance Per Meter Squared,"In a table in the unnamed section after the ""Main simulation results"" section.",1
+December Estimated GHI Irradiance Per Meter Squared,"In a table in the unnamed section after the ""Main simulation results"" section.",1
+Annual Estimated GHI Irradiance Per Meter Squared,"In a table in the unnamed section after the ""Main simulation results"" section.",1
+Statistical Standard (P50 or P90),"In the ""Evaluation of the Production probability forecast"" section.",0
+P50 MWh,"In the ""Evaluation of the Production probability forecast"" section.",0
+P90 MWh,"In the ""Evaluation of the Production probability forecast"" section.",0
+Weather Forecasting Model,"In the ""Evaluation of the Production probability forecast"" section.",0
+Weather Forecasting Model Type,"In the ""Evaluation of the Production probability forecast"" section.",0
+Simulation Date,"In the ""Simulation Variant"" section.",0
+# of Trackers,"Information not present in a ""Fixed Tilt"" or ""Sheds on gound"" system Type.",0

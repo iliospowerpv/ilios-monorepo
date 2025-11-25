@@ -1,0 +1,3 @@
+/.envrc
+/notebooks/.ipynb_checkpoints/
+/src/deployment/cloud_function/key_value_extraction/src/vectordb/chromadb/db/backup/

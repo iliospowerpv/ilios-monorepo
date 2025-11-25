@@ -1,0 +1,63 @@
+Key Items,Definitions
+Effective Date,The date on which the terms and conditions of the contract become enforceable.
+Owner,The entity that owns the project site and enters into the contract with the EPC contractor for the construction of the solar energy facility.
+EPC Contractor Name,"The name of the contractor responsible for engineering, procurement, and construction services under the agreement."
+System Size,"The total capacity of the solar power system to be installed, usually measured in megawatts (MW) or kilowatts (kW)."
+Address,The physical location where the solar power facility is to be constructed.
+Construction Status,"Current phase of the construction process, typically described as planned, in progress, or completed."
+Term,The duration for which the EPC agreement is valid and enforceable.
+Mechanical Completion - Definition,"The point at which the installation of all major equipment is completed and the system is capable of operating in a standalone mode, although it may not yet be connected to the grid."
+Substantial Completion - Definition,"The stage at which the solar facility is deemed sufficiently complete, according to the contract specifications, to begin functional operation, pending minor finishing works."
+Final Completion - Definition,"The stage at which all construction activities have been completed, all systems are operational, final inspections have been passed, and all contractual obligations are fulfilled."
+Mechanical Completion Date,The scheduled date by which mechanical completion is expected to be achieved as per the contract.
+Is Substantial Completion Date within 3 months of Mechanical Completion Date?,"Indicates whether the substantial completion date falls within three months after the mechanical completion date, as specified in the contract."
+Substantial Completion Date,The scheduled date by which substantial completion is expected to be achieved as outlined in the contract.
+Are Liquidated Damages Associated with Substantial Completion Date?,Specifies whether there are financial penalties (liquidated damages) associated for failing to meet the substantial completion date.
+Commercial Operation Date,The date on which the solar facility starts commercial operation after successful testing and commissioning.
+Final Completion Date,The date when the final completion is achieved as per the contractual terms.
+Default - Owner,"Circumstances under which the owner may be considered in default, such as failure to make payments or provide necessary permissions."
+Default - Contractor,"Circumstances under which the contractor may be considered in default, such as delays, failure to meet specifications, or non-compliance with safety standards."
+Termination - Owner,Conditions under which the owner has the right to terminate the contract.
+Termination - Contractor,Conditions under which the contractor has the right to terminate the contract.
+Warranties,"Details of any guarantees provided by the contractor on materials, labor, and system performance."
+Guaranties,Formal assurances or promises regarding certain aspects of the project such as system performance or completion timelines.
+Force Majeure,"Clauses that release both parties from liability or obligation when an extraordinary event or circumstance beyond the control of the parties, such as a natural disaster, prevents one or both parties from fulfilling their contractual obligations."
+Assignment - Owner,Conditions under which the owner can transfer their rights and obligations under the contract to another party.
+Assignment - Contractor,Conditions under which the contractor can transfer their rights and obligations under the contract to another party.
+Liens,"Details regarding any legal right or interest that the contractor or others may have on the property, until certain debts arising out of the construction are cleared."
+Summary of Economic Terms,"A comprehensive overview of the financial aspects of the project, including payment terms, pricing structure, and cost allocation."
+Taxes,"Details of taxes applicable to the project, who is responsible for them, and how they are to be handled."
+Notification and Approval Procedures / Requirements,
+Mechanical Completion,
+Mechanical Completion - Notification to REA by Developer,Procedure for notifying the relevant energy authority by the developer once mechanical completion is achieved.
+Mechanical Completion - Review Period,The time period allowed for the energy authority or the owner to review and assess the mechanical completion before giving approval.
+Mechanical Completion - Acceptance,Process by which mechanical completion is formally accepted by the owner or the authority.
+Mechanical Completion - Rejection,Conditions and process for rejection of the mechanical completion if it does not meet the specified standards or requirements.
+Substantial Completion,
+Substantial Completion - Notification to REA by Developer,Procedure for notifying the relevant energy authority by the developer once substantial completion is achieved.
+Substantial Completion - Review Period,The time period allowed for the energy authority or the owner to review and assess the substantial completion before giving approval.
+Substantial Completion - Acceptance,Process by which substantial completion is formally accepted by the owner or the authority.
+Substantial Completion - Rejection,Conditions and process for rejection of the substantial completion if it does not meet the specified standards or requirements.
+Final Completion,
+Final Completion - Notification to REA by Developer,Procedure for notifying the relevant energy authority by the developer once final completion is achieved.
+Final Completion - Review Period,The time period allowed for the energy authority or the owner to review and assess the final completion before giving approval.
+Final Completion - Acceptance,Process by which final completion is formally accepted by the owner or the authority.
+Final Completion - Rejection,Conditions and process for rejection of the final completion if it does not meet the specified standards or requirements.
+EPC Milestones,
+Pre Contract Module Procurement Payment,Advance payment that may be required before contract signing for securing module procurement.
+EPC Agreement Execution / LNTP,Date of execution of the EPC agreement or issuance of the Letter of Notice to Proceed.
+LNTP #2,"Issuance of the second Letter of Notice to Proceed if applicable, marking another phase of project progression."
+Notice to Proceed,Formal notice given by the owner to the contractor to begin or continue work according to the contract terms.
+Site Preparation Completion,The date by which the site preparation is expected to be completed.
+Delivery of Racking to Site,Scheduled date for the delivery of racking systems to the project site.
+Delivery of Modules to Site,Scheduled date for the delivery of solar modules to the project site.
+Delivery of Inverters & Energy Storage Unit to Site,Scheduled date for the delivery of inverters and any associated energy storage units to the project site.
+Racking Installation,The process and timeline for the installation of racking systems that will hold the solar panels.
+Module Installation,The process and timeline for the installation of solar modules onto the racking systems.
+Inverters & Energy Storage Unit Installation,The process and timeline for the installation of inverters and any energy storage units.
+Mechanical Completion,Confirmation that all mechanical components of the solar project have been installed and are ready for testing.
+Witness Test,Testing conducted in the presence of both parties (or their representatives) to verify that the system meets the contractual and operational specifications.
+PTO,Permission to Operate - official approval from the relevant authorities allowing the solar facility to be connected to the grid and start operations.
+PV Substantial Completion,The point at which the photovoltaic components of the project are considered substantially complete.
+ESS Substantial Completion,The point at which the energy storage system (if applicable) is considered substantially complete.
+Final Completion,"The date or condition under which the project is considered fully complete, with all contractual obligations fulfilled."

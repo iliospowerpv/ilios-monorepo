@@ -1,0 +1,23 @@
+steps:
+- id: deploy
+  name: gcr.io/google.com/cloudsdktool/cloud-sdk
+  entrypoint: gcloud
+  dir: src/deployment/cloud_function/key_value_extraction_trigger
+  args:
+  - functions
+  - deploy
+  - key_value_extraction_trigger
+  - --gen2
+  - --runtime=python310
+  - '--region=$LOCATION'
+  - --source=.
+  - --entry-point=cloud_run_trigger
+  - --memory=256MiB
+  - --timeout=30
+  - --trigger-http
+  - --allow-unauthenticated
+  - '--service-account=$PROJECT_ID@appspot.gserviceaccount.com'
+  - '--set-env-vars=PROJECT_NUMBER=$PROJECT_NUMBER,LOCATION=$LOCATION'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

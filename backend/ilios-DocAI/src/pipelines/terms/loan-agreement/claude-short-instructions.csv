@@ -1,0 +1,531 @@
+Key Items,Instructions,Definitions
+Construction Lender,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Construction Lender from the text in this format:
+<example>
+Text:
+```
+M1 Bank, a Missouri chartered bank...
+```
+Data retrieved:
+M1 Bank</example>
+
+
+<example>
+Text:
+```
+Crestmark, a division of MetaBank, National Association...
+```
+Data retrieved:
+Crestmark</example>
+
+",The financial institution or entity providing the loan for the construction phase of the project.
+Customer,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Customer from the text in this format:
+<example>
+Text:
+```
+Enterprise Ave Gardiner Solar, LLC, a Delaware limited liability company...
+```
+Data retrieved:
+Enterprise Ave Gardiner Solar, LLC</example>
+
+
+<example>
+Text:
+```
+233 Randolph 74 Solar I, LLC, a North Carolina limited liability company...
+```
+Data retrieved:
+233 Randolph 74 Solar I, LLC</example>
+
+
+<example>
+Text:
+```
+Canton GLC Solar, LLC, a Maine limited liability company...
+```
+Data retrieved:
+Canton GLC Solar, LLC</example>
+
+",The individual or entity receiving the loan and responsible for repaying it according to the agreement.
+Effective Date,"1. You have a task for due diligence company, working with solar projects.
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms.
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term.
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Effective Date from the text in this format:
+<example>
+Text:
+```
+This Loan Agreement, dated as of September 7, 2021, is by and between 233 Randolph 74 Solar I,
+LLC, a North Carolina limited liability company (the ""Borrower""), and Crestmark, a division of MetaBank,...
+```
+Data retrieved:
+September 7, 2021,</example>
+
+
+<example>
+Text:
+```
+""This Loan Agreement, dated as of the 20th day of January, 2022, is by and between Canton
+GLC Solar, LLC, a Maine limited liability company (the ""Borrower""), and M1 Bank, a Missouri
+chartered bank (th...
+```
+Data retrieved:
+20th of January, 2022</example>
+
+
+<example>
+Text:
+```
+This Construction Loan Agreement, dated as of the 3rd of November, 2020...
+```
+Data retrieved:
+3rd of November, 2020</example>",""
+Loan Amount,"1. You have a task for due diligence company, working with solar projects.
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms.
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term.
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Loan Amount from the text in this format:
+<example>
+Text:
+```
+2.01 Loan. Subject to the terms and conditions of this Agreement, Lender agrees to make disbursements under the Loan to Borrower from the Closing Date to and including the date that is five (5) Busine...
+```
+Data retrieved:
+$123,456,789</example>
+
+
+
+",The total amount of money that the Construction Lender agrees to lend to the Customer for the project.
+Term,"Retrieve Term from the text.
+Definitions: Term - The duration over which the loan must be repaid, including any interest and fees..
+","The duration over which the loan must be repaid, including any interest and fees."
+Draw Schedule,"1. You have a task for due diligence company, working with solar projects.
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms.
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term.
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Draw Schedule from the text in this format:
+<example>
+Text:
+```
+""4.01 - Conditions for Closing and First and Second Disbursement. The Lender shall not be obligated to make the first and second disbursements of the Loan (the “Initial Disbursement”) until the Borrow...
+```
+Data retrieved:
+Article IV</example>
+
+
+<example>
+Text:
+```
+""4.01 - Conditions for Closing and First and Second Disbursement. The Lender shall not be obligated to make the first and second disbursements of the Loan (the “Initial Disbursement”) until the Borrow...
+```
+Data retrieved:
+Article IV</example>
+
+",A timetable outlining specific milestones at which the Customer can draw funds from the loan.
+Commitment Fee / Origination Fee,"1. You have a task for due diligence company, working with solar projects.
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Commitment Fee from the text in this format:
+<example>
+Text:
+```
+2.06 Commitment Fee. With respect to the Loan, Borrower will pay to the Lender at Closing a non-refundable, fully-earned loan fee with respect to the Loan in the amount of Eighty Two Thousand Two Hund...
+```
+Data retrieved:
+$82,250.00</example>
+
+
+<example>
+Text:
+```
+2.06 Commitment Fee. With respect to the Loan, Borrower will pay to the Lender at Closing a non-refundable, fully-earned loan fee with respect to the Loan in the amount of Eighty Two Thousand Two Hund...
+```
+Data retrieved:
+$25,321.20</example>
+
+
+<example>
+Text:
+```
+2.04(f) Commitment Fee. The Borrower will pay to the Lender on the Closing Date a non-refundable, fully earned loan fee with respect to the Loan in an amount equal to one percent (1%) of the Commitmen...
+```
+Data retrieved:
+$32,765.38</example>
+
+",A fee charged by the Construction Lender to the Customer for reserving the loan funds.
+Closing Costs,"1. You have a task for due diligence company, working with solar projects.
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Closing Costs from the text in this format:
+<example>
+Text:
+```
+4.01 (b) Payment of the Commitment Fee and all reimbursable costs and expenses pursuant to the Loan Documents, including without limitation all reasonable and documented fees, charges and disbursement...
+```
+Data retrieved:
+Borrower Responsibility</example>
+
+
+<example>
+Text:
+```
+5.05 repayment of Borrower’s payments to acquire the Membership Interests pursuant to the terms of the MIPA which payments will be used to fund
+the construction of the Project, and (c) the payment of ...
+```
+Data retrieved:
+Paid by Borrower from loan funds</example>
+
+
+<example>
+Text:
+```
+4.01(b)...
+```
+Data retrieved:
+Borrower</example>
+
+","Expenses incurred during the finalization of the loan agreement, including legal fees, appraisal fees, and other associated costs."
+Interest Rate,"1. You have a task for due diligence company, working with solar projects.
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Interest Rate from the text in this format:
+<example>
+Text:
+```
+2.04(a) - From and after the Closing Date until the Maturity Date, the Loans shall bear interest at a rate per annum equal to the Prime Rate, determined as of the Closing Date and as adjusted on the f...
+```
+Data retrieved:
+Shall pay equal to the prime rate plus 1% subject to a floor of 5.00%</example>
+
+
+<example>
+Text:
+```
+2.02 Interest Rate. From and after the Closing Date until and including the Maturity Date, the Loan shall bear interest at a fixed rate equal to 4.75% (as adjusted pursuant to the terms of this Agreem...
+```
+Data retrieved:
+4.75%</example>
+
+
+<example>
+Text:
+```
+2.04(a) - Interest. Borrower shall pay interest on the Loan at a rate per annum equal to the Prime Rate plus I% subject to a floor of 4.75%.
+....
+```
+Data retrieved:
+Shall pay equal to the prime rate plus 1% subject to a floor of 4.75%</example>
+
+",The percentage charged on the loan amount by the Construction Lender as the cost of borrowing.
+Maturity Date,"1. You have a task for due diligence company, working with solar projects.
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Maturity Date from the text in this format:
+<example>
+Text:
+```
+Maturity Date means September 7, 2022. The Borrower may elect to extend the Maturity Date of the Loan by up to three (3) months upon certain conditions laid down in section 2.08....
+```
+Data retrieved:
+September 7, 2022</example>
+
+
+<example>
+Text:
+```
+“Maturity Date” means July 20, 2023...
+```
+Data retrieved:
+July 20, 2023</example>
+
+
+<example>
+Text:
+```
+“Maturity Date” means earlier of (a) November 3, 2021 (twelve (12) months from the Closing Date), as such date may be extended pursuant to Section 2.10, or (b) date that Permanent Lender Loan Commitme...
+```
+Data retrieved:
+November 3, 2021</example>
+
+","The date by which the loan must be fully repaid, including principal and any accrued interest."
+Borrower,"1. You have a task for due diligence company, working with solar projects.
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms.
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term.
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Borrower from the text in this format:
+<example>
+Text:
+```
+Canton GLC Solar, LLC, a Maine limited liability company...
+```
+Data retrieved:
+Canton GLC Solar, LLC</example>
+
+
+<example>
+Text:
+```
+233 Randolph 74 Solar I, LLC, a North Carolina limited liability company...
+```
+Data retrieved:
+233 Randolph 74 Solar I, LLC</example>
+
+
+<example>
+Text:
+```
+Enterprise Ave Gardiner Solar, LLC, a Delaware limited liability company...
+```
+Data retrieved:
+Enterprise Ave Gardiner Solar, LLC</example>
+
+",The entity or individual that receives the loan and is obligated to repay it under the terms of the agreement.
+Default - Borrower,"Retrieve Default (Borrower) from the text.
+Definitions: Default (Borrower) - A condition where the borrower fails to meet the financial or other contractual obligations stipulated in the Loan / Security Agreement, such as missed payments, breach of terms, or failure to achieve mapped milestones, potentially leading to legal and financial consequences..
+","A condition where the borrower fails to meet the financial or other contractual obligations stipulated in the Loan / Security Agreement, such as missed payments, breach of terms, or failure to achieve mapped milestones, potentially leading to legal and financial consequences."
+Guarantors,"1. You have a task for due diligence company, working with solar projects.
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms.
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term.
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Guarantors from the text in this format:
+<example>
+Text:
+```
+REA Investments, LLC, a Missouri limited liability company, GLD-REA, LLC, a Delaware limited liability company, Green Lantern Development, LLC, a Vermont limited liability company, Stephen W. Holden, ...
+```
+Data retrieved:
+REA Investments, LLC, GLD-REA, LLC, Green Lantern Development,
+LLC, Stephen W. Holden, Matthew Mills, Michael Mills, Natalie Riley and Luke Shullenberger.</example>
+
+
+<example>
+Text:
+```
+Guarantor means, individually or collectively as the context may require, (a) Borrower Parent, (b) Golden Joules Holdings I, LLC, a Delaware limited liability company, and, (c) Hep Sunflower Holding
+...
+```
+Data retrieved:
+(a) the Borrower Parent, (b) Golden Joules Holdings I, LLC and, (c) Hep Sunflower Holding
+I, Inc.</example>
+
+
+<example>
+Text:
+```
+Guarantor"" means, individually or collectively as the context may require, (a) the Borrower Parent, (b) the Manager, (c) SunRaise Investments, LLC, a New Hampshire limited liability company, (d) Steph...
+```
+Data retrieved:
+(a) the Borrower Parent, (b) the Manager, (c) SunRaise Investments, LLC (d) Stephen W. Holden (e)
+Matthew A. Mills, (f) Michael W. Mills (f) Natalie D. Riley.</example>
+
+",Individuals or entities that agree to repay the loan if the Borrower defaults.
+Reporting Requirements,"1. You have a task for due diligence company, working with solar projects.
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Reporting Requirements from the text in this format:
+<example>
+Text:
+```
+5.01(a)- Annual Financial statements: As soon as practicable after the end of each fiscal year of Borrower, and in any event within 120 days thereafter, unaudited Financial Statements of Borrower, Bor...
+```
+Data retrieved:
+- Annual financial statement within 120 after the end of fiscal year.
+- Interim financial statement within 60 days after the end of each fiscal quarter.
+- Copy of federal income tax return, including all schedules and attachments within 120 days after the end of each calendar year.
+- Notify within 5 business days of (i) any material breach or default under any project documents, (ii) material default of any material agreement affecting the project.
+- Forward copies of all notices, progress reports, status reports, inspection reports, annual reports, material requests from third parties and material correspondence with third parties promptly upon receipt.
+- Shall deliver copies of any items delivered to the Borrower Parent, and/or the Tax Equity Investor in connection with the TEI Equity Contribution promptly after becoming available.
+- Within 45 days after each of March 31, June 30, September 30, and December 31, commencing with the first full half-year after Commercial
+Operation, the Borrower shall provide the Lender with an energy production report.
+- Promptly after becoming available, the Borrower shall submit the Operating Budget for such year with regard to the Project.</example>
+
+
+<example>
+Text:
+```
+7.01(a) As soon as practicable after the end of each fiscal year of Borrower, and in any event within 90 days thereafter, reviewed Financial Statements of Borrower, Borrower Parent and each Guarantor ...
+```
+Data retrieved:
+- Annual financial statement within 90 after the end of fiscal year.
+- Interim financial statement within 45 days after the end of each fiscal quarter.
+- Copy of federal income tax return, including all schedules and attachments within 120 days after the end of each calendar year.
+- Notify within 5 business days of (i) any material breach or default under any project documents, (ii) material default of any material agreement affecting the project and (iii) execution and delivery of project documents.
+-  Within 120 days after request, shall provide evidence of all Project expenses paid by such Borrower out of the proceeds of any Loan or the capital contributions.
+- Forward copies of all notices, progress reports, status reports, inspection reports, annual reports, material requests from third parties and material correspondence with third parties promptly upon receipt.
+- Shall deliver copies of any items delivered to the Borrower Parent, and/or the Tax Equity Investor in connection with the TEI Equity Contribution promptly after becoming available.
+- Financial statements of SH REA Trust, 4M Trust, MWM REA Trust, 5R REA Trust and Michael W. Mills, LLC (collectively, REA Parties) by December 31, 2020.
+Operation, the Borrower shall provide the Lender with an energy production report.
+- Promptly after becoming available, the Borrower shall submit the Operating Budget for such year with regard to the Project.
+- Annual net worth certificate of REA Parties by December 31 of each calendar year.</example>
+
+
+<example>
+Text:
+```
+5.01(a) As soon as available, but not more than 150 days after the end of the fiscal year of Borrower, the audited Financial Statements of Borrower and Guarantor for such fiscal year.
+(b) As soon as ...
+```
+Data retrieved:
+- Annual financial statement within 150 after the end of fiscal year.
+- Interim financial statement within 90 days after the end of each fiscal quarter.
+- Notify within 5 business days of (i) any material breach or default under any project documents, (ii) material default of any material agreement affecting the project and (iii) execution and delivery of project documents.
+-  Within 5 business days after request, shall provide evidence of all Project expenses paid by such Borrower out of the proceeds of any Loan or the capital contributions.
+- Forward copies of all notices, progress reports, status reports, inspection reports, annual reports, material requests from third parties and material correspondence with third parties promptly upon receipt.
+- Shall deliver copies of any items delivered to Tax Equity Investor in connection with the payment of any capital contribution promptly after becoming available.
+- Shall furnish to the Lender a quarterly covenant compliance certificate within 45 days after the end of each calendar quarter.
+- Shall deliver monthly reports detailing the construction progress of the Project.
+- Shall deliver promptly, upon knowledge, written notice to the Lender of a) any Default or Event of Default, (b) any litigation filed by or against any Loan Party that would have a Material Adverse Effect, or (c) any event which might result in a Material Adverse Effect with respect to any relevant Loan Party.</example>
+
+",The obligations of the Borrower to provide regular updates and financial reports to the Construction Lender.
+Forebarence Agreement (Y/N),"1. You have a task for due diligence company, working with solar projects.
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms.
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term.
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Forebarence Agreement (Y/N) from the text in this format:
+<example>
+Text:
+```
+“Forbearance Agreement” means that certain Forbearance Agreement to be entered into by and among Tax Equity Investor, Borrower, Borrower Parent, and Lender with regard to Lender’s ability to exercise ...
+```
+Data retrieved:
+Yes</example>
+
+
+<example>
+Text:
+```
+“Forbearance Agreement” means that certain Forbearance Agreement by and among Tax Equity Investor, Borrower, Borrower Parent, and Lender with regard to Lender’s ability to exercise remedies under the ...
+```
+Data retrieved:
+Yes.</example>
+
+","Indicates whether a forebearance agreement is included as part of the Subscriber Manager Agreement; 'Y' for yes, there is a forebearance agreement, 'N' for no, there is not"

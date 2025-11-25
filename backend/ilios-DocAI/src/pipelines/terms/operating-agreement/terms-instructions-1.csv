@@ -1,0 +1,250 @@
+Key Items,Instructions,use_pvsyst_prompt,use_first_n_pages,check_for_references
+Effective Date,"## RETRIEVE FULL SECTION OF SIMILAR TEXT AS IN EXAMPLES:
+
+* Look for keywords and Patterns:
+    * ""by and between""
+    * ""this Lease"" or ""this Agreement""
+    * ""Party"" and ""Parties""
+    * LLC (Limited Liability Company)
+    * Inc. (Incorporated)
+    * Corporation
+    * Trust
+    * LP (Limited Partnership)
+## RETRIEVE FULL SECTION OF SIMILAR TEXT AS IN EXAMPLES:
+
+> ""This Amended and Restated Operating Agreement of [Company] II 2020, LLC, a Delaware limited liability company (the Company”), dated as of December 28, 2020 (the “Effective Date”), is made by and between [FUND] LLC, a Delaware limited liability company (“Blue Sky”) and Providence-REA TCF, LLC, a Missouri limited liability company (“Fund”).""
+> ""This Operating Agreement of [Company] LLC, a New York limited liability company (the “Company”), dated as of December 21, 2020 (the “Effective Date”), is made by and between [FUND] LLC, a New York limited liability company (“Lakeville Solar”) and STL-REA TCF, LLC, a Missouri limited liability company (“Fund”).""",1,1,0
+Term,"## Finding the Term of an Agreement
+
+**Prompt:**
+
+Given a legal document, identify and extract the section of text that defines the ""Term"" of the agreement. This refers to the duration or period for which the agreement is in effect.
+
+**Keywords and Patterns:**
+
+* **Explicit Phrases:**
+    * ""Term of this Agreement""
+    * ""Duration""
+    * ""Effective Period""
+    * ""Commencement Date"" and ""Termination Date"" or ""Expiration Date""
+* **Time-related Language:**
+    * Specific dates (e.g., ""January 1, 2024"")
+    * Time periods (e.g., ""five (5) years,"" ""twelve (12) months"")
+    * Renewal or extension clauses (e.g., ""This Agreement shall automatically renew..."")
+* **Contextual Clues:**
+    * Look for sections discussing the beginning and end of the agreement's validity.
+    * Pay attention to clauses outlining conditions for early termination or extension.
+
+**Example:**
+
+In the phrase:
+
+>""2.4: **The term of the Company commenced on the Formation Date and shall continue until such date that the Company is dissolved** in accordance with the terms hereof or as otherwise provided by law....""
+
+* ""The term of the Company commenced"" clearly indicates the start of the term definition.
+* ""Formation Date"" specifies the beginning of the term.
+* ""shall continue until such date that the Company is dissolved"" outlines the condition for termination, defining the term's endpoint.",0,0,0
+Assignments,"## Finding Assignment Clauses in a Legal Document
+
+**Prompt:**
+
+Given a legal document, identify and extract sections of text that pertain to the assignment of rights, obligations, or interests by any party involved.
+
+**Keywords and Patterns:**
+
+* **Explicit Assignment Language:**
+    * ""assign"" and ""assigns""
+    * ""assignment""
+    * ""transfer"" and ""transfers""
+    * ""convey"" and ""conveys""
+    * ""dispose of""
+    * ""grant"" and ""grants""
+    * ""sell""
+* **Related Concepts:**
+    * ""change of control""
+    * ""merger""
+    * ""acquisition""
+    * ""successor"" and ""assigns""
+    * ""permitted assignment""
+    * ""consent to assignment""
+    * ""prior written consent""
+    * ""third party""
+* **Common Phrases:**
+    * ""This Agreement may not be assigned...""
+    * ""Neither party may assign this Agreement without...""
+    * ""Subject to [Conditions], this Agreement may be assigned...""
+    * ""Any assignment in violation of this Section...""
+
+**Context is Key:**
+
+* Look for sections that discuss the ability or inability to transfer rights or obligations under the agreement.
+* Pay attention to any conditions or restrictions placed on assignments, such as requiring consent from other parties.
+* Note any consequences of an invalid or unauthorized assignment.
+
+**Example:**
+
+In the phrase:
+
+>""**9.1 Assignment. This Agreement may not be assigned by either party without the prior written consent of the other party, which consent shall not be unreasonably withheld or delayed.**""
+
+* ""Assignment"" as a section header indicates the topic.
+* ""This Agreement may not be assigned"" clearly states a restriction.
+* ""without the prior written consent of the other party"" outlines a condition for assignment.
+
+Let me know if you'd like me to refine this prompt further or focus on specific aspects of assignment clauses.",0,0,0
+Parties,"## RETRIEVE FULL SECTION OF SIMILAR TEXT AS IN EXAMPLES:
+
+* Look for keywords and Patterns:
+    * ""by and between""
+    * ""this Lease"" or ""this Agreement""
+    * ""Party"" and ""Parties""
+    * LLC (Limited Liability Company)
+    * Inc. (Incorporated)
+    * Corporation
+    * Trust
+    * LP (Limited Partnership)
+## RETRIEVE FULL SECTION OF SIMILAR TEXT AS IN EXAMPLES:
+
+> ""This Amended and Restated Operating Agreement of [Company] II 2020, LLC, a Delaware limited liability company (the Company”), dated as of December 28, 2020 (the “Effective Date”), is made by and between [FUND] LLC, a Delaware limited liability company (“Blue Sky”) and Providence-REA TCF, LLC, a Missouri limited liability company (“Fund”).""
+> ""This Operating Agreement of [Company] LLC, a New York limited liability company (the “Company”), dated as of December 21, 2020 (the “Effective Date”), is made by and between [FUND] LLC, a New York limited liability company (“Lakeville Solar”) and STL-REA TCF, LLC, a Missouri limited liability company (“Fund”).""",1,1,0
+Named Manager,"## Finding the Named Manager in a Legal Document
+## RETRIEVE FULL SECTION OF SIMILAR TEXT AS IN EXAMPLES:
+
+This document outlines an agreement.  Find and extract the sections of text that identify the ""Named Manager,""  often referred to simply as ""Manager."" This individual or entity will be responsible for specific duties within the agreement.
+
+**Keywords and Patterns:**
+
+* Look for sections labeled or numbered similarly to:
+    * ""Section X.Y: Management""
+    * ""Article [Number]: Manager""
+    * Headings or Subheadings containing the words ""Manager"" or ""Management""
+* Within these sections, prioritize finding:
+    * The phrase ""Named Manager""
+    * The term ""Manager"" defined in parentheses, like ""(the “Manager”).""
+    * Phrases like ""shall be,"" ""will be,"" or ""designated as"" to indicate the Manager's identity.
+* Look for proper nouns (like company names or individual names) following the identifying phrases above. These could be:
+    * Company names, often followed by identifiers like LLC, Inc., Corporation, etc.
+    * Individual names, potentially followed by titles.
+
+## RETRIEVE FULL SECTION OF SIMILAR TEXT AS IN EXAMPLES:
+**Example:**
+
+>""8.2: The Manager shall be the Person or Persons designated to act as such hereunder from time to time in accordance with the provisions of this Section 8.2 (the “Manager”).
+(a) The initial Manager shall be [Named Manager].""",0,0,0
+Manager Removal Terms,"## RETRIEVE SECTIONS SIMILAR TO EXAMPLES
+
+**Keywords and Patterns:**
+* Investor Member
+* Manager
+* Cause
+* Bankruptcy
+* Manager Affiliate
+* Event of withdrawal
+* Act
+* Liability
+* Capital Contributions
+* Agreement
+* Termination of the Company
+* Federal income tax purposes
+* Association taxable as a corporation
+* Removal of Manager
+* Section 8.2
+
+## RETRIEVE SECTIONS SIMILAR TO EXAMPLES
+
+**Examples:**
+
+>""8.5: (a) The Investor Member shall have the right to remove the Manager for (i) Cause, (ii) the filing of a bankruptcy proceeding by the Manager...""
+>""8.2. Manager. The Manager shall be the Person or Persons designated to act as such hereunder from time to time by the provisions of this Section 8.2""
+",0,0,1
+Voting Rights,"## Identifying Voting Rights Allocations in an Agreement
+
+**Prompt:**
+
+Given a legal document, identify and extract sections that outline voting rights allocations, particularly related to different entities or classes of ownership.
+
+**Keywords and Patterns:**
+
+* Look for sections titled or referring to:
+    * ""Voting Rights""
+    * ""Ownership and Voting""
+    * ""Governance""
+    * ""Control""
+    * ""Exhibit A"" (or similar exhibits) often contain tabular data.
+* Identify entity names, often followed by identifiers such as:
+    * LLC (Limited Liability Company)
+    * Inc. (Incorporated)
+    * Corporation
+    * Trust
+* Look for percentage values (""%"") associated with each entity, indicating ownership or voting stake.
+* Pay attention to phrases like:
+    * ""Fiscal Year"" followed by year values (e.g., ""Fiscal Year 2023"")
+    * ""Flip Date"" which may indicate a change in voting rights structure.
+    * ""Pre-Flip"" and ""Post-Flip"" signifying periods before and after a significant event.
+* Look for patterns like:
+    * **[Entity Name]**: **[Percentage]%** (for straightforward allocations)
+    * **[Entity Name]**: **[Fiscal Year] - [Percentage]%** (for time-based allocations)
+    * Tables with columns like ""Entity,"" ""Fiscal Year,"" and ""Voting Rights""
+
+**Example:**
+
+In the text:
+
+```
+Exhibit A:
+1. Blue Sky Utility Holding LLC
+Fiscal Year 2020 – 1.0%
+Fiscal Year 2021 through Flip
+Date – 30%
+Post Flip Date – 95%
+
+2. Providence-REA TCF, LLC
+Fiscal Year 2020 – 99%
+Fiscal Year 2021 through Flip
+Date – 70%
+Post Flip Date – 5%...
+```
+
+* ""Exhibit A"" suggests a structured presentation of data.
+* ""Blue Sky Utility Holding LLC"" and ""Providence-REA TCF, LLC"" are likely the entities with voting rights.
+* ""Fiscal Year"" followed by year values and percentages indicate voting allocations over time.
+* ""Flip Date"" suggests a change in voting rights structure at a specific point.
+* The percentages (1.0%, 99%, 30%, 95%, etc.) represent the voting stake of each entity.",0,0,0
+Major Decisions,"## Finding Major Decisions in a Legal Agreement
+
+Given a legal agreement, identify and extract sections that outline WHAT ARE major decisions requiring approval from specific parties or governing bodies.
+
+**Keywords and Patterns:**
+
+* **Approval/Consent/Authorization:** Look for phrases like:
+    * ""requires the approval of""
+    * ""subject to the consent of""
+    * ""shall be authorized by""
+    * ""must be agreed to by""
+* **Specific Parties/Entities:** Identify references to:
+    * ""the Parties"" (referring to those involved in the agreement)
+    * Specific party names mentioned in the agreement (e.g., ""Landlord,"" ""Tenant,"" ""Board of Directors"")
+    * Governing bodies (e.g., ""Shareholder Meeting,"" ""Management Committee"")
+* **Actions/Transactions:** Look for descriptions of:
+    * Acquisitions, mergers, consolidations, or other business combinations
+    * Sales, leases, dispositions, or encumbrances of assets
+    * Incurrence of debt or issuance of equity
+    * Amendments or modifications to the agreement itself
+    * Capital expenditures exceeding a certain threshold
+* **Formatting:** Pay attention to:
+    * Numbered or lettered lists (e.g., (a), (b), (c)) often used to enumerate specific decisions requiring approval
+    * Bold or italicized text emphasizing key terms or phrases
+    * Defined terms capitalized throughout the agreement (refer back to the definitions section for clarification)
+
+# WHAT ARE major decisions:
+**Examples:**
+
+>""**1.1 Major Decisions.  The following actions shall require the prior written consent of the Administrative Committee:**
+
+>(a) Acquisition of any PV System, other than pursuant to the MIPA;
+
+>(b) Sale, lease or disposition of any Company or Project Company assets, other than the transfer of an asset with a fair market value less than $25,000. in the ordinary course of business;
+
+>(c) Any merger or consolidation or other business combination of or involving the Company or Project Companies...""
+
+RETRIEVE FULL CITATION OF SECTION 1.1 WITHOUT FORMATTING FOR FIRST POIT (a) TO THE LAST (z or other)",0,0,0

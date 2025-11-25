@@ -1,0 +1,171 @@
+Key Items,Definitions,Instructions,Use_first_page
+Who is this addressed to,,"## Identifying ""Who is this addressed to"" in an Environmental Site Assessment Report
+
+**Prompt:**
+
+Given an Environmental Site Assessment (ESA) report, identify and extract the section that specifies the individual or entity to whom the report is addressed. This is typically a stakeholder such as an investor, lender, or regulatory body.
+
+**Keywords and Patterns:**
+
+* Look for phrases like:
+    * ""Prepared for""
+    * ""Addressed to""
+    * ""Submitted to""
+    * ""Attention:"" or ""Attn:""
+* Identify company or organization names, often followed by identifiers such as:
+    * LLC (Limited Liability Company)
+    * Inc. (Incorporated)
+    * Corporation
+    * Trust
+    * Government agencies (e.g., EPA, State environmental agency)
+* Look for individual names, potentially followed by titles like:
+    * President
+    * CEO
+    * Project Manager
+    * Loan Officer
+* Pay attention to addresses, phone numbers, and email addresses that might be associated with the recipient.
+
+**Example:**
+
+In the phrase:
+
+>""**Prepared for: DuQuoin Solar, LLC
+>718 W Business Highway 60
+>Dexter, Missouri 63841**""
+
+* ""Prepared for:"" clearly indicates the intended recipient of the report.
+* ""DuQuoin Solar, LLC"" is the company name.
+* The following lines provide the company's address. 
+
+This approach helps identify the intended recipient of the ESA report by focusing on common phrases and patterns used to denote the addressee and their associated information.",1
+RECs (Y/N and $ amount),,"## Finding RECs (Y/N and $ amount) in a document
+
+**Prompt:**
+
+Given an environmental assessment document, identify and extract sections of text that indicate whether Recognized Environmental Conditions (RECs) are involved and, if so, their monetary value. 
+
+**Keywords and Patterns:**
+
+* **Existence of RECs:**
+    * Look for explicit mentions of ""RECs"" or ""Recognized Environmental Conditions""
+    * Search for phrases indicating the presence or absence of RECs, such as:
+        * ""evidence of RECs""
+        * ""no RECs identified""
+        * ""RECs in connection with the property""
+        * ""no evidence of recognized environmental conditions.""
+    * Pay attention to variations in capitalization and phrasing.
+* **Monetary Value:**
+    * If RECs are mentioned, look for numerical values and currency symbols (e.g., $, €) that might indicate their value.
+    * Search for phrases like:
+        * ""value of RECs""
+        * ""RECs valued at""
+        * ""cost of RECs""
+    * Consider that the monetary value might be expressed as a total sum, a price per unit, or a range.
+
+**Examples:**
+
+* **Example 1 (RECs - No, Value - N/A):** ""This assessment has revealed no evidence of RECs, CRECS or HRECS in connection with the Property.""
+* **Example 2 (RECs - No, Value - N/A):** ""This assessment has revealed no evidence of recognized environmental conditions..""
+* **Example 3 (RECs - Yes, Value - To be determined):** ""The project will generate RECs, the value of which will be determined at a later stage."" 
+
+**Output:**
+
+Provide the extracted text that answers both:
+
+1. **RECs (Y/N):**  Indicate ""Yes"" if RECs are mentioned as present or potentially present. Indicate ""No"" if the document explicitly states there are no RECs or provides no mention of them.
+2. **$ amount:**  If a specific monetary value is mentioned, extract the relevant text. If no specific value is given, indicate ""Not specified"" or ""N/A"".",0
+Address of Assessment,,"## Finding the Address of Assessment in a document
+
+**Prompt:**
+
+Given an Environmental Site Assessment (ESA) document, identify and extract the Address of Assessment, which is the specific physical location where the assessment was conducted. 
+
+**Keywords and Patterns:**
+
+* Look for phrases like:
+    * ""Property located at""
+    * ""Site located on""
+    * ""Address of the property""
+    * ""(the ""subject property"")"" 
+* Identify potential street addresses:
+    * Search for numerical and street name combinations (e.g., ""123 Main Street"")
+* Look for city, state, and zip code information:
+    * Often following the street address
+    * May be separated by commas or parentheses
+* Pay attention to the context surrounding these keywords and patterns, ensuring they relate to the assessment location.
+
+**Example:**
+
+In the phrase:
+
+>""AEI Consultants (AEI) was retained by Neighborhood Power Corporation to conduct a Phase I ESA in conformance with AEI's contract and the scope and limitations of ASTM Standard Practice E1527-13 and the EPA Standards and Practices for All Appropriate Inquiries (40 CFR Part 312) for the property located at **32998 South Highway 213, Molalla, Clackamas County, Oregon** (the ""subject property"").""
+
+* ""Property located at"" clearly indicates the following text refers to the assessment location.
+* ""32998 South Highway 213"" is identified as a potential street address.
+* ""Molalla, Clackamas County, Oregon"" provides the city, county, and state information.
+* ""(the ""subject property"")"" further confirms this is the address of assessment.",1
+Report Date,,"## Finding the Report Date in an Environmental Site Assessment
+
+**Prompt:**
+
+Given an Environmental Site Assessment (ESA) document, identify and extract the report date. This is the date the ESA report was finalized and issued. 
+
+**Keywords and Patterns:**
+
+* **Dates:** Look for complete dates in various formats, including:
+    * Month Day, Year (e.g., June 20, 2019)
+    * Month Year (e.g., June 2019)
+* **Keywords:** Search for keywords near dates, such as:
+    * ""Report Date""
+    * ""Dated""
+    * ""Submitted on""
+    * ""Finalized on""
+    * ""Issued on""
+    * ""Prepared on""
+* **Report Sections:** Focus on these sections:
+    * Title page
+    * Cover letter
+    * Executive summary
+    * Report header/footer
+
+**Examples:**
+
+* **Example 1:** ""Phase I Environmental Site Assessment Report **dated May 15, 2019**..."" 
+* **Example 2:**  ""**June 20, 2019**..."" (Look for standalone dates, especially at the beginning or end of sections)
+* **Example 3:** ""**PROJECT NUMBER T121333  SUBMITTED ON July 19, 2021**..."" (Pay attention to capitalized headings near dates) 
+
+**Instructions:**
+
+1. Prioritize extracting dates found near the keywords mentioned above.
+2. If no keywords are present, extract any standalone dates from the report's early sections (title page, cover letter, executive summary).
+3. If multiple dates are found, prioritize dates closest to the beginning of the document.",1
+Date of Site Lease,,,
+Date of Lease Commencement,,,
+Date of Field Work Completed on ESA,,"## Finding Date of Field Work Completed on ESA in a document
+
+**Prompt:**
+
+Given an Environmental Site Assessment (ESA) document, identify and extract the date on which all field work required for the ESA was completed at the site. It should be connected to Site reconnaissance, Site inspection, Property inspection pieces in the document - ideally there would be a date of such reconnaisance mentioned. Date of FIeld work completion should be metioned in Summary Report section, possibly connected to inspections and final recommendations.
+
+**Keywords and Patterns:**
+
+* Look for phrases like:
+    * Site Reconnaissance
+    * Phase I ESA or Phase II ESA
+    * Field work
+    * Site visit
+    * Property inspection
+    * Report Summary
+    * Executive Summary
+* Look for dates in close proximity to these phrases.
+* Pay attention to dates mentioned in the context of activities like:
+    * Visual observation of the property
+    * Collection of soil, water, or air samples
+    * Interviews with site representatives
+* Consider the context of the entire sentence and surrounding sentences to ensure the date refers to the completion of field work and not just the start date or a specific activity.
+
+**Examples:**
+
+Example 1.: ""A site reconnaissance was performed by [NAME AND SURNAME]... to document existing site conditions. The site reconnaissance was conducted on **[MM DD, YYYY]**, from approximately 11:00 a.m. to 11:50 a.m....""
+Example 2: ""On [MM DD, YYYY], Ms. [NAME AND SURNAME] conducted a site reconnaissance of the Property. [NAME AND SURNAME] walked around the perimeter of the Property, and systematically inspected the exterior of the Property.""
+Example 3: ""Site Reconnaissance Date [MM DD, YYYY]""",0
