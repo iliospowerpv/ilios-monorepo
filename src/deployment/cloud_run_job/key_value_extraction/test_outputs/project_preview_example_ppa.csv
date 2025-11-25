@@ -1,0 +1,180 @@
+key_item,value,legal_term,poison_pill,is_poison_pill,poison_pill_detailed
+Effective Date,"December 14, 2022","The relevant section containing the term ""Effective Date"" is:
+
+""This Agreement is effective when fully executed by the Parties (the ""Effective Date"").""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Term,construction period - 24 months; Delivery period 20 years,"The relevant section containing information about the term ""Term"" is:
+
+ARTICLE III: TERM AND EFFECTIVE DATE
+
+This Agreement has two periods that together comprise the Term of the Agreement. 
+The Company shall issue this Agreement within 10 Business Days of either (i) the execution of the
+Interconnection Agreement for the Facility, or (ii) for a Facility that does not have an interconnection
+agreement but has an interconnection queue position, and the Customer has provided to the Company
+documentation that it has attained Financial Interest for at least ninety percent (90%) of the Facility
+capacity, output, or other form of participation or subscription. The Company shall execute this
+Agreement within fifteen (15) Business Days of receiving this Agreement signed by the Customer.
+This Agreement is effective when fully executed by the Parties (the ""Effective Date"").
+
+(a) The Construction Period commences on the Effective Date and ends on the Commercial
+Operation Date. Customer shall provide notice to the Company a minimum of ten (10) Business
+Days in advance of the Commercial Operation Date. The Construction Period must be completed
+within 24 months of the Effective Date. Customer may seek an extension of the Construction Period
+for an interconnection-related delay or circumstances beyond Customer's control, or as consented to
+by the Company, with consent not being unreasonably withheld.
+
+(b) The Delivery Period of the Agreement, with respect to applying Bill Credits, begins on
+the Commercial Operation Date of the Facility and continues through the twentieth (20th) anniversary
+of the Commercial Operation Date.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Offtaker,Customers listed in Exhibit 1 or Exhibit 2 having a financial interest in the Facility,"The relevant section from the document is:
+
+""Customers"" are those customers of the Company having a financial interest in the Facility, as identified in Exhibit 1 or Exhibit 2 to this Agreement (as they may be updated or amended from time to time).
+
+This section suggests that the ""Customers"" or ""Offtakers"" are the entities listed in Exhibit 1 or Exhibit 2 that have a financial interest in the Facility and will be purchasing/using the power generated.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Provider,Standard Offer Provider,"Based on the document, the relevant text identifying the ""Provider"" or entity selling the power is:
+
+""Standard Offer Provider"" is the provider(s) of standard offer service chosen pursuant to Chapter 301 of the Rules.
+
+This definition from the ""Definitions"" section indicates that the ""Standard Offer Provider"" is the entity providing or selling the power to customers.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Power Purchase Agreement Rate,The document does not appear to contain the specific Power Purchase Agreement Rate.,"The relevant section containing information about the ""Power Purchase Agreement Rate"" is:
+
+""Unused Credits"" are Credits that, in accordance with this Agreement, remain after Credits are applied to all customer accounts for the current Billing Period. Unused Credits do not include any Credits that have been eliminated in accordance with the provisions of paragraph (D) of Article IV.
+
+However, this section does not directly state or provide the actual Power Purchase Agreement Rate. The document does not appear to contain the specific Power Purchase Agreement Rate.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Power Purchase Agreement End Date,20th anniversary of the Commercial Operation Date,"The document does not appear to contain the exact term ""Power Purchase Agreement End Date"". However, it mentions details related to the term and duration of the agreement in the following sections:
+
+ARTICLE III: TERM AND EFFECTIVE DATE
+""(b) The Delivery Period of the Agreement, with respect to applying Bill Credits, begins on the Commercial Operation Date of the Facility and continues through the twentieth (20th) anniversary of the Commercial Operation Date.""
+
+ARTICLE XII: BREACH; TERMINATION
+""If the Facility produces zero (0) kilowatt-hours during any period of twelve (12) consecutive Billing Periods after the Commercial Operation Date, the Company may also terminate this Agreement. The Company shall not be liable to the Customers for damages resulting from a termination pursuant to this paragraph.""
+
+These sections suggest that the agreement term/duration is 20 years from the Commercial Operation Date, and that the agreement can be terminated by the Company if the Facility produces no energy for 12 consecutive billing periods after the Commercial Operation Date. However, the document does not explicitly state a specific ""Power Purchase Agreement End Date"".", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Renewal Terms,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Commercial Operation Date Definition,Date Project is commercially operational,"The relevant section containing the definition of ""Commercial Operation Date"" is:
+
+""Commercial Operation Date"" means the date on which the Project is commercially operational, placed into service, and interconnection operations have commenced. The Commercial Operation Date cannot be before the date as stated on the Certificate of Completion or other written permission to operate or authority to interconnect the Facility provided by the T&D Utility.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Commercial Operation Date,"The Commercial Operation Date is the date on which the Project is commercially operational, placed into service, and interconnection operations have commenced. It cannot be before the date stated on the Certificate of Completion or other written permission to operate or authority to interconnect the Facility provided by the T&D Utility.","The relevant text from the document is:
+
+""(a) The Construction Period commences on the Effective Date and ends on the Commercial Operation Date. Customer shall provide notice to the Company a minimum of ten (10) Business Days in advance of the Commercial Operation Date.""
+
+""(b) The Delivery Period of the Agreement, with respect to applying Bill Credits, begins on the Commercial Operation Date of the Facility and continues through the twentieth (20th) anniversary of the Commercial Operation Date.""
+
+The term ""Commercial Operation Date"" is defined in the document as:
+
+""Commercial Operation Date"" means the date on which the Project is commercially operational, placed into service, and interconnection operations have commenced. The Commercial Operation Date cannot be before the date as stated on the Certificate of Completion or other written permission to operate or authority to interconnect the Facility provided by the T&D Utility.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Mechanical Completion Date,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Other Dates/Deadlines Referenced,"Construction Period - within 24 months of Effective Date
+
+Delivery Period - 20 years from Commercial Operation Date","The relevant text from the document is:
+
+""(a) The Construction Period commences on the Effective Date and ends on the Commercial Operation Date. Customer shall provide notice to the Company a minimum of ten (10) Business Days in advance of the Commercial Operation Date. The Construction Period must be completed within 24 months of the Effective Date. Customer may seek an extension of the Construction Period for an interconnection-related delay or circumstances beyond Customer's control, or as consented to by the Company, with consent not being unreasonably withheld.""
+
+""(b) The Delivery Period of the Agreement, with respect to applying Bill Credits, begins on the Commercial Operation Date of the Facility and continues through the twentieth (20th) anniversary of the Commercial Operation Date.""
+
+These sections mention the Commercial Operation Date, Construction Period, and Delivery Period as other dates/deadlines referenced in the agreement.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Buyout Option,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Buyout Amount,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Nameplate Capacity,5.0 MW,"The relevant section containing the term ""Nameplate Capacity"" is:
+
+""The eligibility qualifications for net energy billing among Shared financial Interest Customers under Chapter 313 of the Rules and Regulations of the Maine Public Utilities Commission require that (i) the Facility use a renewable fuel or technology as specified in 35-A M.R.S.A. § 3210(2) (B-3), (ii) the Facility has an installed capacity of less than 5.0 MW, (iii) the Facility is located in the service territory of the Company and (iv) the Customers each have a legally enforceable financial interest in the Facility and have the rights to the benefits of the output of the Facility.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Projected Production,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Degradation Amount,N/A,,,,
+Production Guarantee,No production guarantee or minimum energy output requirements specified.,"The term ""Production Guarantee"" is not explicitly mentioned in the given document. There does not appear to be any text directly referring to a production guarantee or minimum energy output requirements for the solar facility.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Metering Adjustment,Billing adjustments due to meter inaccuracies or errors will be corrected within 1 billing period. True-up for under/over-allocated credits in the next billing period. Credits expire in 12 months. Dispute resolution process available.,"The relevant section containing the term ""Metering Adjustment"" is:
+
+ARTICLE IX: BILLING ADJUSTMENTS
+
+In the event that billing adjustments are required as the result of meter inaccuracies or any other error, the Company and the Customer (or Project Sponsor or Project Sponsor's designated agent, as applicable) will work together to correct the billing. Company and Customer (or Project Sponsor or Project Sponsor's designated agent, as applicable) shall work together in good faith to make the billing adjustment as soon as practicable and shall make every attempt to correct the billing within one (1) Billing Period from identification of the need for the billing adjustment.
+
+If Credits allocated were found to be lower than they should have been, the Company will perform a true-up and allocate the previously un-allocated Credits during the next Billing Period. The Credits will expire 12 months from the date they were allocated to the Customer(s).  
+
+If Credits allocated were found to be higher than they should have been, the Company will perform a true-up and reduce the Credits during the next Billing Period by the previously over-allocated Credit amount.
+
+If the Company and Customer (or Project Sponsor or Project Sponsor's designated agent, as applicable) cannot resolve the billing adjustment to their mutual satisfaction, they may commence the dispute resolution process in Article XVI below.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Summary of Economic Terms (PPA Rate Table),N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation.,0,
+Insurance Requirements,N/A,,,,
+Prevailing Party Provision,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Governing Law,Maine,"The relevant section containing the term ""Governing Law"" is:
+
+ARTICLE XV: APPLICABLE LAWS
+This Agreement is made in accordance with the laws of the State of Maine and shall be
+construed and interpreted in accordance with the laws of Maine, notwithstanding any choice of
+law or rules that may direct the application of the laws of another jurisdiction.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Default - Offtaker,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Default - Provider,Standard Offer Provider,"Here are the relevant excerpts from the document containing information about ""Default - Provider"":
+
+""Standard Offer Provider"" is the provider(s) of standard offer service chosen pursuant to Chapter 301 of the Rules.
+
+ARTICLE IV: NET ENERGY BILLING
+...
+(ii) electric generation service provided by either the Standard Offer Provider or a Customers' Competitive Electricity Provider. If any individual customer's Competitive Electricity Provider provides the individual customer with a separate bill for generation service, the Company shall timely provide the necessary data and information to the Competitive Electricity Provider to compute net energy billing charges but the Company shall not in any way be responsible for computing the charges or performing any netting for this separate generation service bill.", No poison rules violations are present because the poison rules do not apply to the situation.,0,
+Termination - Offtaker,"In the event of breach not remedied within 30 days; in the event of bankruptcy proceedings; if Facility exceeds 4.999 MW; if Facility produces zero kilowatt-hours for 12 consecutive billing periods; if rights/obligations materially altered due to change in laws/regulations and Parties unable to amend Agreement, by providing 60 days notice.","Here are the relevant excerpts from the document regarding termination clauses for the Offtaker:
+
+ARTICLE XII: BREACH; TERMINATION
+In the event of breach of any terms or conditions of this Agreement, if the breach has not
+been remedied within thirty (30) days following receipt of written notice thereof from the other
+Party (provided that, if the breaching Party has commenced and is diligently pursuing efforts to
+cure such breach, then such 30-day period shall be extended until the earlier of (i) 30 additional
+days or (ii) end of diligent efforts to cure the breach). In the event of any proceedings by or
+against any Party in bankruptcy, insolvency or for appointment of any receiver or trustee or any
+general assignment for the benefit of creditors, the other Party may terminate this Agreement.
+
+If the Customers increase the capability or the capacity of the Facility to exceed 4.999
+MW, this Agreement shall immediately terminate. The Company shall not be liable to the
+Customer for damages resulting from a termination pursuant to this paragraph.
+
+If the Facility produces zero (0) kilowatt-hours during any period of twelve (12)
+consecutive Billing Periods after the Commercial Operation Date, the Company may also
+terminate this Agreement. The Company shall not be liable to the Customers for damages
+resulting from a termination pursuant to this paragraph.
+
+If, after the execution of this Agreement, any right or obligation of either Party under this
+Agreement is materially altered as the result of any change in applicable laws or regulations, the
+Parties agree to negotiate in good faith to amend this Agreement to conform to the revised law or
+regulation. If the Parties are unable to come to an agreement as to the appropriate amendment of
+this Agreement in the event of a change in applicable laws or regulations, then the Party whose
+right or obligation is materially altered as a result of such change in law or regulations may
+terminate this Agreement by providing the other Party with sixty (60) days prior written notice,
+in which case the Parties respective rights and obligations will governed by the applicable
+revised law or regulation after such termination of this Agreement.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Termination - Provider,In the event of breach not remedied within 30 days; in the event of bankruptcy proceedings by Provider; if the facility produces 0 KWH of power during any period of 12 consecutive billing cycles; if capacity exceeds 4.999 MW,"Here are the relevant excerpts from the document regarding the Provider's right to terminate the agreement:
+
+ARTICLE XII: BREACH; TERMINATION
+In the event of breach of any terms or conditions of this Agreement, if the breach has not been remedied within thirty (30) days following receipt of written notice thereof from the other Party (provided that, if the breaching Party has commenced and is diligently pursuing efforts to cure such breach, then such 30-day period shall be extended until the earlier of (i) 30 additional days or (ii) end of diligent efforts to cure the breach). In the event of any proceedings by or against any Party in bankruptcy, insolvency or for appointment of any receiver or trustee or any general assignment for the benefit of creditors, the other Party may terminate this Agreement.
+
+If the Customers increase the capability or the capacity of the Facility to exceed 4.999 MW, this Agreement shall immediately terminate. The Company shall not be liable to the Customer for damages resulting from a termination pursuant to this paragraph.
+
+If the Facility produces zero (0) kilowatt-hours during any period of twelve (12) consecutive Billing Periods after the Commercial Operation Date, the Company may also terminate this Agreement. The Company shall not be liable to the Customers for damages resulting from a termination pursuant to this paragraph."," Yes, the provided text contains clauses that allow the Company to unilaterally terminate the contract in certain situations, while the Customer does not have the same right, violating the rule against unilateral termination.",1,"**Bullet points explaining why the text is a violation of the rules:**
+
+* **Unbalanced Termination Rights:** The contract grants the Company the right to unilaterally terminate the agreement in specific situations (e.g., Customer exceeding capacity, lack of production) while not providing the Customer with the same rights, directly violating the rule against one-sided termination clauses. 
+* **Lack of Customer Cure Period:** The Company can terminate the contract if the Customer exceeds capacity or fails to produce energy without granting the Customer a grace period to rectify the situation, creating an unfair advantage for the Company.
+* **Unclear Reciprocity for Insolvency:** The contract allows the Company to terminate if the Customer faces insolvency but lacks clarity on whether the Customer has a reciprocal right if the Company experiences similar financial distress, further contributing to the imbalance in termination rights. 
+"
+Assignment - Offtaker,Requires written consent of Provider unless to an affiliate,"The relevant section containing information about ""Assignment - Offtaker"" is:
+
+ARTICLE XI: ASSIGNMENT
+This Agreement shall not be assigned, pledged or transferred by any of the Customers (or Project Sponsor, if Project Sponsor is counterparty) or the Company without the written consent of the non-assigning Party, which consent shall not be untimely or unreasonably withheld: provided that either Party may assign this Agreement to an affiliate of said Party without prior written consent of the non-assigning Party. All assignees, pledgees or transferees shall assume all obligations of the Party assigning the Agreement. If this Agreement is assigned without the written consent of the non-assigning Party (except as otherwise provided above), the non- assigning Party may terminate the Agreement as to that Customer(s) only.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Assignment - Provider,"Requires written consent of non-assigning Party, except for assignment to affiliate","The relevant section containing information about ""Assignment - Provider"" is:
+
+ARTICLE XI: ASSIGNMENT
+This Agreement shall not be assigned, pledged or transferred by any of the Customers (or Project Sponsor, if Project Sponsor is counterparty) or the Company without the written consent of the non-assigning Party, which consent shall not be untimely or unreasonably withheld: provided that either Party may assign this Agreement to an affiliate of said Party without prior written consent of the non-assigning Party. All assignees, pledgees or transferees shall assume all obligations of the Party assigning the Agreement. If this Agreement is assigned without the written consent of the non-assigning Party (except as otherwise provided above), the non- assigning Party may terminate the Agreement as to that Customer(s) only.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Force Majeure,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Amendments and/or Estoppels,"Amendments must be in writing and signed by both parties
+
+May be amended if laws or regulations change and rights or obligations of the parties are altered as a result","The relevant sections containing information about ""Amendments and/or Estoppels"" are:
+
+ARTICLE XIV: MODIFICATION
+No modification to this Agreement shall be valid unless it is in writing and signed by all
+Parties hereto.
+
+ARTICLE XV: APPLICABLE LAWS
+If, after the execution of this Agreement, any right or obligation of either Party under this
+Agreement is materially altered as the result of any change in applicable laws or regulations, the
+Parties agree to negotiate in good faith to amend this Agreement to conform to the revised law or
+regulation. If the Parties are unable to come to an agreement as to the appropriate amendment of
+this Agreement in the event of a change in applicable laws or regulations, then the Party whose
+right or obligation is materially altered as a result of such change in law or regulations may
+terminate this Agreement by providing the other Party with sixty (60) days prior written notice,
+in which case the Parties respective rights and obligations will governed by the applicable
+revised law or regulation after such termination of this Agreement.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Tax Responsibilities,N/A,,,,

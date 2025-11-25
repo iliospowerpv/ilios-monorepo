@@ -1,0 +1,506 @@
+Key Items,Instructions
+Construction Lender,"## Find the Construction Lender in a document
+**Keywords and Patterns:**
+
+* **Loan Agreement:** Look for mentions of a ""Loan Agreement,"" ""Construction Loan Agreement,"" or similar phrases, as these sections often identify the lender.
+* **Financial Institution Names:** Look for names of banks, financial institutions, or lending companies, often followed by identifiers such as:
+    * Bank
+    * National Association
+    * Credit Union
+    * Financial
+    * Lending
+    * Capital
+* **Lender-Specific Terms:** Pay attention to terms commonly associated with lenders, such as:
+    * ""Lender""
+    * ""Creditor""
+    * ""Mortgagee"" (in the context of construction financing)
+    * ""Beneficiary"" (especially if a deed of trust is involved)
+* **Loan-Related Verbs:** Look for verbs that indicate a lending relationship, such as:
+    * ""Loaned""
+    * ""Financed""
+    * ""Provided financing""
+    * ""Funded""
+* **Parentheses and Quotes:** Pay attention to information enclosed in parentheses or quotation marks, as it may further identify the lender or provide additional details.
+
+RETURN THE NAME OF THE BANK OR COMPANY THA LEND THE MONEY"
+Customer,"## Finding the Customer in a Loan Agreement
+
+Given a loan agreement document, identify and extract sections of text that say who is the the ""Customer"" or the entity receiving the loan and responsible for repayment.
+
+**Keywords and Patterns:**
+
+* **Direct Identification:**
+    * Look for phrases like:
+        * ""the Customer""
+        * ""the Borrower""
+        * ""the Debtor"" 
+        * ""the Loan Recipient""
+* **Contextual Clues:**
+    *  Phrases indicating obligation to repay:
+        *  ""agrees to repay""
+        *  ""shall pay""
+        *  ""indebted to""
+    * Phrases related to receiving loan funds:
+        * ""loan is made to""
+        * ""funds disbursed to""
+* **Entity Identification:**
+    * Identify company names, often followed by identifiers such as:
+        * LLC (Limited Liability Company)
+        * Inc. (Incorporated)
+        * Corporation
+        * Trust
+    * Individual names, possibly followed by titles.
+
+Return the NAME OF THE COMPANY or a PERSON who borrows the money"
+Loan Amount,"## Finding the Loan Amount in a Loan Agreement
+
+Given a loan agreement document, identify and extract the section of text that defines the Loan Amount.
+Retrieve Principal Amount.
+
+* Look for sections with headings like:
+    * ""Loan Amount""
+    * ""The Loan""
+    * ""Commitment""
+    * ""Advances""
+    * ""Disbursements""
+* Look for phrases like:
+    * ""Lender agrees to lend""
+    * ""Borrower agrees to borrow""
+    * ""principal amount""
+    * ""aggregate principal amount""
+    * ""not to exceed""
+* Identify numerical values potentially representing the loan amount, often accompanied by currency symbols (e.g., $, €) or words like ""dollars,"" ""euros,"" etc.
+* Pay attention to clauses outlining any limitations or conditions related to the maximum loan amount.
+
+**Example:**
+
+>""2.01 Loan. Subject to the terms and conditions of this Agreement, Lender agrees to make disbursements under the Loan to Borrower from the Closing Date to and including the date that is five (5) Business Days prior to the Maturity Date, **in an aggregate principal amount not to exceed the lesser of (i) the Commitment or (ii) so much as is to be advanced pursuant to Articles IV and V.**""
+
+* ""aggregate principal amount"" is a strong indicator of the loan amount being defined.
+* ""not to exceed"" suggests a potential cap or limitation on the loan amount.
+* ""(i) the Commitment"" and ""(ii) so much as is to be advanced pursuant to Articles IV and V"" likely refer to other sections in the agreement that further define the loan amount or conditions related to it.
+
+> ""FOR VALUE RECEIVED, the undersigned, 233 Randolph 74 Solar I, LLC, a North Carolina limited liability company (hereinafter referred to as “Borrower”), promises to pay to the order of Crestmark, a division of MetaBank, National Association, whose address is 5480 Corporate Drive, Suite 350, Troy, Michigan 48098 (hereinafter referred to as the “Lender”), the principal sum of THREE MILLION TWO HUNDRED SEVENTY-SIX THOUSAND FIVE HUNDRED THIRTY-EIGHT AND 00/100 DOLLARS ($AMOUNT), with interest on such amount of principal as may be outstanding from time to time as provided herein."""
+Term,"## Finding the Loan Term in a Loan Agreement
+
+**Prompt:**
+
+Given a loan agreement document, identify and extract the section of text that defines the Loan Term. 
+
+**Keywords and Patterns:**
+
+* **Duration Keywords:**
+    * ""Term of the Loan""
+    * ""Loan Term""
+    * ""Repayment Period""
+    * ""Maturity Date""
+    * ""Term"" (in close proximity to words like ""loan,"" ""repayment,"" or ""maturity"")
+* **Time Units:**
+    * Years 
+    * Months
+    * Days
+* **Numerical Values:** Look for numbers that represent the duration, often followed by time units.
+* **Prepositions:**
+    * ""for a period of""
+    * ""commencing on"" ... and ""ending on""
+    * ""from"" ... ""to""
+
+**Example:**
+
+In the phrase:
+
+>""This Loan Agreement shall have a **Term** of **five (5) years**, commencing on the Closing Date.""
+
+* ""Term"" is used in direct relation to the loan.
+* ""five (5) years"" clearly indicates the duration of the loan.
+* ""commencing on the Closing Date"" provides additional context about the start date of the loan term. 
+
+**Note:** The Loan Term might be expressed as a single duration (e.g., 5 years) or as a period with a defined start and end date."
+Draw Schedule,"## Extracting Draw Schedule from a Loan Agreement
+
+**Prompt:**
+
+This prompt will guide you to extract information regarding the **Draw Schedule** from a loan agreement. The Draw Schedule outlines the specific milestones or conditions that must be met before the borrower can access portions of the loan funds. 
+
+**Keywords and Patterns:**
+
+* **Section Headings:** Look for sections with titles like:
+    * ""Draw Schedule""
+    * ""Disbursement Schedule""
+    * ""Funding Schedule""
+    * ""Loan Advances""
+    * ""Conditions Precedent to Disbursement""
+* **Keywords:** Pay close attention to the following keywords and phrases:
+    * ""Disbursement""
+    * ""Advance""
+    * ""Draw""
+    * ""Funding""
+    * ""Conditions""
+    * ""Milestones""
+    * ""Upon satisfaction of""
+    * ""Delivery of""
+    * ""Completion of""
+* **Numbering/Lists:** Draw schedules are often presented in numbered or bulleted lists, outlining each stage of disbursement and its corresponding conditions. 
+* **Dates:** Be aware of specific dates or timeframes mentioned in relation to each disbursement.
+* **Percentages:** Look for percentages of the total loan amount that will be disbursed at each stage.
+
+**Example:**
+
+Given the following text:
+
+>""**4.01 - Conditions for Closing and First and Second Disbursement.** The Lender shall not be obligated to make the first and second disbursements of the Loan (the “Initial Disbursement”) until the Borrower shall have furnished to the Lender (unless otherwise waived by the Lender in writing) at such Borrower’s own cost and expense the following:
+>(a) - (g)
+>**4.02 - Conditions for 3rd Disbursement** - (a)...""
+
+* **Section Headings:** ""Conditions for Closing and First and Second Disbursement"" and ""Conditions for 3rd Disbursement"" clearly indicate this section relates to the Draw Schedule.
+* **Keywords:**  ""Disbursement"", ""Conditions"", and ""furnished to the Lender"" suggest conditions need to be met for each disbursement.
+* **Numbering/Lists:** The use of numbered sections (4.01, 4.02) and lists (a)-(g) indicates a structured approach to outlining disbursement stages and their conditions.
+
+**Output:** 
+
+Extract the relevant text passages that make up the complete Draw Schedule, including all conditions and milestones. If possible, structure the output in a clear and organized manner to showcase the different disbursement stages and their requirements."
+Commitment Fee / Origination Fee,"## Finding Commitment Fee Information in a Loan Document
+
+**Prompt:**
+
+Given a loan document, identify and extract sections of text that define and provide details about the Commitment Fee.
+
+**Keywords and Patterns:**
+
+* Look for headings or sections titled:
+    * ""Commitment Fee""
+    * ""Loan Fees""
+    * ""Closing Costs""
+* Look for phrases like:
+    * ""Borrower will pay""
+    * ""Lender a non-refundable""
+    * ""fully-earned loan fee""
+    * ""Commitment amount""
+    * ""good faith deposit""
+* Identify numerical values expressed as percentages or dollar amounts, which may indicate:
+    * The percentage of the loan amount that constitutes the Commitment Fee.
+    * The fixed dollar amount of the Commitment Fee.
+* Pay attention to parentheses often containing additional information or definitions.
+
+**Example:**
+
+In the phrase:
+
+>""2.06 **Commitment Fee**. With respect to the Loan, Borrower will pay to the Lender at Closing a non-refundable, fully-earned loan fee with respect to the Loan in the amount of Eighty Two Thousand Two Hundred Fifty and NO/100 dollars ($82,250.00)...""
+
+* ""Commitment Fee"" is the heading, clearly indicating the relevant section.
+* ""Borrower will pay"" and ""Lender"" identify the parties involved in the transaction.
+* ""non-refundable"" and ""fully-earned loan fee"" describe the nature of the fee.
+* ""$82,250.00"" specifies the amount of the Commitment Fee."
+Closing Costs,"## Finding Closing Costs in a document
+
+**Prompt:**
+
+Given a loan or real estate agreement, identify and extract sections of text that define or refer to ""Closing Costs"". Use the following guidelines:
+
+**Keywords and Patterns:**
+
+* **Direct Mentions:**
+    * ""Closing Costs""
+    * ""Closing Fees""
+    * ""Settlement Costs""
+* **Related Phrases:**
+    * ""Costs and expenses of closing""
+    * ""Fees and disbursements in connection with closing""
+    * ""Payment of the Commitment Fee""
+    * ""Reimbursable costs and expenses""
+* **Specific Examples:** (Often listed as examples within a broader definition of Closing Costs)
+    * ""Legal fees""
+    * ""Appraisal fees""
+    * ""Title insurance""
+    * ""Survey fees""
+    * ""Recording fees""
+    * ""Loan origination fees""
+    * ""Escrow fees""
+    * ""Prepaid interest""
+    * ""Property taxes""
+* **Contextual Clues:**
+    * Look for sections discussing the ""Closing Date"" or ""Settlement Date.""
+    * Pay attention to clauses outlining payment responsibilities of the borrower or seller.
+    * Look for numerical lists or itemized breakdowns that might include Closing Costs.
+
+**Examples:**
+
+* **Direct Mention:** ""The Borrower shall be responsible for all Closing Costs associated with the loan.""
+* **Related Phrase:** ""The Seller agrees to pay all reasonable and customary costs and expenses of closing.""
+* **Specific Example:** ""Closing Costs shall include, but not be limited to, legal fees, appraisal fees, and loan origination fees.""
+* **Contextual Clue:** ""On the Closing Date, the Borrower shall deliver to the Escrow Agent a cashier's check in the amount of the Closing Costs."""
+Interest Rate,"## Finding Interest Rate in a document
+
+**Prompt:**
+
+Given a loan or financing document, identify and extract sections of text that define the Interest Rate. Use the following guidelines:
+
+**Keywords and Patterns:**
+
+* Look for phrases like:
+    * ""Interest Rate""
+    * ""Interest shall accrue""
+    * ""rate per annum""
+    * ""interest at a rate""
+    * ""bear interest at""
+* Identify numerical percentages, often formatted with a ""%"" symbol.
+* Look for references to indices like ""Prime Rate"" or ""LIBOR"" often followed by a ""+"" and additional percentage points.
+* Pay attention to terms like ""fixed rate"" or ""floating rate"" to determine the nature of the interest.
+* Look for clauses describing interest rate adjustments, caps, or floors.
+* Look for patterns like:
+    * ""The Loan shall bear interest at a rate per annum equal to [Interest Rate].""
+    * ""The Interest Rate shall be [Interest Rate].""
+    * ""Interest shall accrue at a rate of [Interest Rate].""
+
+**Example:**
+
+In the phrase:
+
+>""2.04(a) - From and after the Closing Date until the Maturity Date, the Loans shall bear interest at a rate per annum equal to the Prime Rate, determined as of the Closing Date and as adjusted on the first (1st) day of each calendar month, plus 1.00%. Notwithstanding the foregoing, the Interest Rate on the Loan shall be subject to a floor equal to 5.00%.""
+
+* ""Interest Rate"" is explicitly mentioned.
+* ""bear interest at a rate per annum"" signals the definition of the interest rate.
+* ""Prime Rate, determined as of the Closing Date and as adjusted on the first (1st) day of each calendar month, plus 1.00%"" describes how the interest rate is calculated.
+* ""floor equal to 5.00%"" indicates a minimum interest rate. 
+
+**Term to look for:** Interest Rate
+**Definition of term:** The percentage charged on the loan amount by the Construction Lender as the cost of borrowing."
+Maturity Date,"## Finding Maturity Date in a document
+
+**Prompt:**
+
+Given a loan or financing document, identify and extract sections of text that define the Maturity Date. 
+
+**Keywords and Patterns:**
+
+* Look for phrases like:
+    * ""Maturity Date""
+    * ""maturity date"" (case insensitive)
+    * ""final payment date""
+    * ""loan term"" 
+    * ""date of final payment""
+* Identify specific dates, often in formats like:
+    * Month DD, YYYY (e.g., September 7, 2022)
+    * YYYY-MM-DD (e.g., 2023-07-20)
+* Look for language indicating extension options:
+    * ""may be extended""
+    * ""subject to extension""
+    * ""unless extended""
+* Pay attention to sections discussing:
+    * Loan terms
+    * Repayment schedule
+    * Default or acceleration clauses"
+Borrower,"## Finding the Borrower in a Loan Agreement
+
+**Prompt:**
+
+Given a loan agreement document, identify and extract sections of text that define the Borrower – the entity or individual receiving the loan and obligated to repay it. 
+
+**Keywords and Patterns:**
+
+* **Direct Identification:**
+    * Look for phrases like:
+        * ""This Loan Agreement"" or ""this Agreement""
+        * ""Borrower"" 
+        * ""made and entered into as of [DATE], by and between""
+* **Contextual Clues:**
+    * Identify company names, often followed by identifiers such as:
+        * LLC (Limited Liability Company)
+        * Inc. (Incorporated)
+        * Corporation
+        * Trust
+        * Individual names
+    * Look for phrases indicating the receiving party of the loan:
+        * ""[Borrower] shall borrow...""
+        * ""Lender agrees to lend to [Borrower]...""
+        * ""Repayment by [Borrower]...""
+* **Formatting:**
+    * Pay attention to quotation marks surrounding names or titles.
+    * Parentheses often contain additional information like state of incorporation.
+* **Common Patterns:**
+    * **This Loan Agreement... between [Lender Name] and [Borrower Name], a [State] [Company Type], with a principal place of business at [Address]**
+    * **[Borrower Name], a [State] [Company Type], with an address at [Address] (the ""Borrower"")** 
+
+**Example:**
+
+In the phrase:
+
+>""This Loan Agreement (this “Agreement”) is made and entered into as of February 1, 2023, by and between Canton GLC Solar, LLC, a Maine limited liability company, with a principal place of business at [Address] (the “Borrower”), and...”
+
+* ""This Loan Agreement"" indicates the type of document.
+* ""made and entered into"" suggests the beginning of party definitions.
+* ""Canton GLC Solar, LLC"" is likely the company name.
+* ""Maine limited liability company"" identifies the company type.
+* ""(the “Borrower”)"" explicitly labels the role of the party."
+Default - Borrower,"## Finding Default (Borrower) Clauses in Loan Documents
+
+Given a loan or security agreement, identify and EXTRACT FULL SECTION OF TEXT that define ""Default"" or ""Event of Default"" specifically related to the Borrower's obligations.
+
+* **Headings and Sections:** Look for sections with titles like:
+    * ""Events of Default""
+    * ""Default""
+    * ""Remedies"" (often includes consequences of default)
+    * ""Breach""
+* **Keywords:** Search for phrases containing:
+    * ""Default""
+    * ""Event of Default""
+    * ""Breach""
+    * ""Failure""
+    * ""Non-payment""
+    * ""Insolvency""
+    * ""Bankruptcy""
+    * ""Material Adverse Change"" (often abbreviated as ""MAC"")
+    * ""Representation"" and ""Warranty"" (breach of these can trigger default)
+* **Borrower-Specific Language:** Focus on clauses that explicitly mention:
+    * ""Borrower""
+    * ""Obligations""
+    * ""Covenants""
+    * ""Payment"" (especially ""due date,"" ""timely payment,"" ""failure to pay"")
+    * ""Financial Condition""
+* **Examples of Default Scenarios:**
+    * ""Failure to make any payment of principal or interest when due.""
+    * ""Breach of any representation or warranty...""
+    * ""Filing for bankruptcy or insolvency proceedings.""
+    * ""Failure to maintain financial ratios...""
+    * ""Failure to achieve milestones...""
+
+**Example:**
+
+>""**Events of Default.**  An Event of Default shall occur if the Borrower: (a) fails to pay any principal amount of this Loan when due...""
+
+* ""Events of Default"" clearly signals a relevant section.
+* ""Borrower"" explicitly connects the clause to the borrower's actions.
+* ""fails to pay any principal amount"" describes a specific action constituting default.
+* ""when due"" further clarifies the condition of default.
+
+EXTRACT FULL SECTION! RETRIEVE ALL SUBSECTIONS!
+
+7.01 (a) The Borrower or Guarantor shall fail to pay (i) within five (5) Business Days after the due date thereof any principal amount of the Obligations or (ii) within five (5) Business Days after the due date thereof, any interest, fees or other amounts constituting Obligations or otherwise owed pursuant
+to this Agreement, the Note, any of the other Loan Documents.
+(b) Any representation or warranty made by any Loan Party under this Agreement or any other Loan Document or any material statement made by any Loan Party in any financial statement, certificate, report, exhibit or document furnished by such Person to the Lender pursuant to this Agreement or any other Loan Document or any Project Document or any Tax Equity Investor Document shall prove to have been false or misleading in any material respect as of the time made.
+(c) Any Security Document shall for any reason cease to constitute a valid and perfected first priority and exclusive Lien on the Collateral purported to be covered thereby, subject in each case to Liens permitted pursuant to Section 6.01.
+(d) Any Loan Party shall default in the performance or observance of any applicable covenant, agreement or duty under this Agreement or any other Loan Document to which it is a party, including any covenant, agreement or duty contained in Article V or Article VI, and such default shall continue unremedied for thirty 30 days after the earlier of (i) such Loan Party’s Knowledge of such default and (ii) such Loan Party’s receipt of notice from Lender of such default.
+
+
+**Term to look for:** Default (Borrower)
+**Definition of term:** A condition where the Borrower fails to meet the financial or other contractual obligations stipulated in the Loan / Security Agreement, such as missed payments, breach of terms, or failure to achieve mapped milestones, potentially leading to legal and financial consequences.
+
+EXTRACT FULL SECTION! RETRIEVE ALL SUBSECTIONS!"
+Guarantors,"## Finding Guarantors in a document
+
+**Prompt:**
+
+Given a lease or loan document, identify and extract sections of text that define the Guarantors. Use the following guidelines:
+
+**Keywords and Patterns:**
+
+* Look for phrases like:
+    * ""Guarantor"" or ""Guarantors""
+    * ""agree to repay""
+    * ""in the event of default""
+    * ""jointly and severally liable""
+* Identify company names, often followed by identifiers such as:
+    * LLC (Limited Liability Company)
+    * Inc. (Incorporated)
+    * Corporation
+    * Trust
+* Identify individual names, possibly followed by titles or identifiers like:
+    * resident of
+    * an individual
+* Look for addresses associated with the company or individual names.
+* Pay attention to quotation marks surrounding names or titles, and parentheses often containing additional information like state of incorporation.
+* Look for patterns like:
+    * **""Guarantor"" means, individually or collectively...**
+    * **[Company Name], a [State] [Company Type], ... [Individual Name], a resident of [State]**
+
+**Example:**
+
+In the phrase:
+
+>""**""Guarantor"" means, individually or collectively as the context may require, (a) the Borrower Parent, (b) the Manager, (c) SunRaise Investments, LLC, a New Hampshire limited liability company, (d) Stephen W. Holden, an individual resident of the State of Florida**""
+
+* ""Guarantor"" means"" clearly indicates the definition of the term.
+* ""(a)"", ""(b)"", ""(c)"", and ""(d)"" enumerate the different Guarantors.
+* ""the Borrower Parent"" and ""the Manager"" are likely defined terms within the document.
+* ""SunRaise Investments, LLC, a New Hampshire limited liability company"" identifies a company Guarantor.
+* ""Stephen W. Holden, an individual resident of the State of Florida"" identifies an individual Guarantor."
+Reporting Requirements,"## Extracting Reporting Requirements from a Loan Agreement
+
+**Prompt:**
+
+Given a loan agreement document, identify and extract sections of text that outline the Reporting Requirements, specifically focusing on the Borrower's obligations to provide financial reports and updates to the Lender. 
+
+**Keywords and Patterns:**
+
+* **Section Headings:** Look for headings and subheadings like:
+    * ""Reporting Requirements""
+    * ""Financial Reporting""
+    * ""Covenants"" (often Reporting Requirements are included within covenants)
+    * ""Financial Statements""
+    * ""Notices""
+* **Keywords:** Pay close attention to these words and phrases:
+    * ""Borrower shall furnish""
+    * ""Borrower shall deliver""
+    * ""Borrower shall provide""
+    * ""Lender shall receive""
+    * ""Financial Statements"" (audited, unaudited, reviewed, consolidated, etc.)
+    * ""Annual""
+    * ""Quarterly""
+    * ""Monthly""
+    * ""within [number] days"" 
+    * ""after the end of [fiscal year/quarter/month]""
+* **Context:** The extracted text should:
+    * Specify the type of report or financial statement (e.g., audited financial statements, unaudited financial statements, compliance certificates).
+    * Indicate the frequency of reporting (e.g., annually, quarterly, upon request).
+    * State the deadline for delivery (e.g., within 90 days after the end of the fiscal year).
+    * Identify the recipient of the reports (e.g., Lender, Agent).
+
+**Examples:**
+
+Look for patterns similar to these examples:
+
+* ""The **Borrower shall furnish** to the Lender **annual**, **audited financial statements** within **90 days after the end of** each **fiscal year**.""
+* ""**Within 45 days** following the end of each fiscal quarter, the **Borrower shall deliver** to the Lender **unaudited** interim **financial statements**.""
+* ""The **Borrower shall**, upon the Lender's request, provide the Lender with [specific reports]."" 
+
+**Important Note:** 
+
+The specific language and structure of Reporting Requirements can vary significantly between loan agreements. Be flexible in your search and consider variations in wording while maintaining focus on the core elements of reporting obligations."
+Forebarence Agreement (Y/N),"## Finding Forebearance Agreement in a document
+
+**Prompt:**
+
+Given a Subscriber Manager Agreement document, identify and extract sections of text that define if a Forebearance Agreement is mentioned. Use the following guidelines:
+
+**Keywords and Patterns:**
+
+* Look for phrases like:
+    * ""Forebearance Agreement""
+    * ""Forbearance""
+    * ""entered into by and among"" 
+    * ""exercise remedies""
+    * ""Loan Documents""
+* Identify if the phrase ""Forebearance Agreement"" is followed by a definition or explanation.
+* Pay attention to the context surrounding the phrase ""Forebearance Agreement"" to determine if it refers to an actual agreement that is part of the Subscriber Manager Agreement.
+
+**Output:**
+
+Based on the presence or absence of the ""Forebearance Agreement"" keywords and patterns, classify the document as either:
+
+* **Y** -  If the document includes a ""Forebearance Agreement"" definition or a clear mention of its existence within the agreement's context.
+* **N** - If the document does not mention a ""Forebearance Agreement"" or its related terms. 
+
+**Example 1:**
+
+In the phrase:
+>""“Forbearance Agreement” means that certain Forbearance Agreement to be entered into by and among Tax Equity Investor, Borrower, Borrower Parent, and Lender with regard to Lender’s ability to exercise remedies under the Loan Documents....""
+
+* The presence of the phrase ""Forebearance Agreement"" along with its definition and context indicating its relation to the agreement makes it a **Y**.
+
+**Example 2:**
+
+In the phrase:
+>""The Subscriber Manager Agreement outlines the terms and conditions of the services provided, payment schedules, and termination clauses....""
+
+* The absence of the phrase ""Forebearance Agreement"" or any related terms makes it a **N**."

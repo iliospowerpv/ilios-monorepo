@@ -1,0 +1,97 @@
+key_item,value,legal_term,poison_pill,poison_pill_detailed,is_poison_pill
+Construction Lender,MI Bank,"The relevant text from the document is:
+
+""LENDER:
+By: MI BANK, a Missouri chartered bank
+McLane Poteet, Chief Credit Officer""
+
+This section identifies MI Bank as the lender providing the construction loan.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,N/A,0
+Customer,Novel Bartel Solar LLC,"Based on the document, the relevant text identifying the ""Customer"" or entity receiving the loan and responsible for repayment is:
+
+""Novel Bartel Solar LLC, a Minnesota limited liability company (the ""Borrower"")""
+
+This is found in multiple sections of the document, including:
+
+""THIS CASH MANAGEMENT AND SECURITY AGREEMENT (this ""Agreement"") is made as of October 28, 2019, by and among, Renewable Energy Alternatives, LLC, a Missouri limited liability company (""Borrower Parent""), Novel Bartel Solar LLC, a Minnesota limited liability company (the ""Borrower""), and M1 Bank, a Missouri chartered bank (the ""Lender"").""
+
+""This Security Agreement (this ""Agreement""), dated as of October 28, 2019, is made by Novel Bartel Solar LLC, a Minnesota limited liability company (the ""Grantor""), in favor of M1 Bank, a Missouri chartered bank (the ""Lender""), pursuant to that certain Loan Agreement, dated as of the date hereof, by and between the Borrower and the Lender (as amended, restated, supplemented, or otherwise modified from time to time, the ""Loan Agreement"").""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,N/A,0
+Loan Amount,"$5,987,432.00","The relevant section containing the term ""Loan Amount"" is:
+
+""2.01 Loan. Subject to and upon the terms and conditions herein set forth, Lender agrees to make, and Borrower agrees to accept the Loan in the Loan Amount in the form of a single advance on the Closing Date to the Borrower.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,N/A,0
+Term,"Based on the provided text, the relevant term for ""Term"" in relation to the loan is:
+
+""Any outstanding principal and accrued interest shall be due and payable in full on the Maturity Date or upon acceleration of the Loan.""
+
+This indicates that the ""Term"" or duration over which the loan must be repaid, including any interest and fees, is until the Maturity Date, unless the loan is accelerated (meaning it becomes due earlier).","The relevant section containing the term ""Term"" in relation to the loan is:
+
+""2.03 Repayment of Loan. Interest on the principal amount of the Loan shall accrue from and including the date the Loan is made but excluding the date of any repayment thereof. Interest on the Loan shall be payable quarterly in arrears on the last day of each calendar quarter commencing on December 31, 2019 and on the Maturity Date. Interest on any Loan which is repaid or prepaid shall be payable on the date of such repayment or prepayment (on the amount repaid or prepaid) thereof. Any outstanding principal and accrued interest shall be due and payable in full on the Maturity Date or upon acceleration of the Loan.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,N/A,0
+Draw Schedule,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,N/A,0
+Commitment Fee / Origination Fee,"$12,467.00","The relevant section containing information about the Commitment Fee is:
+
+""2.06 Commitment Fee. With respect to the Loan, Borrower will pay to the Lender at Closing a non-refundable, fully-earned loan fee with respect to the Loan in the amount of Twelve Thousand Four Hundred Sixty-Seven and 00/100 dollars ($12,467.00) (the ""Commitment Fee"").""", No poison rules violations are present because the poison rules do not apply to the situation.,N/A,0
+Closing Costs,Borrower Responsibility,"The relevant section containing mentions of ""Closing Costs"" is:
+
+""Loan Documents"" means this Agreement, the Note, the Guaranty, the Security Documents, the Landlord Agreement, the Forbearance Agreement, all consents to the collateral assignment of the Assigned Contracts, all estoppel certificates, all indemnification agreements, all subordination agreements, and all other documents, instruments, certificates and agreements now or hereafter executed in connection with or related to the Loan, as the same may be amended, modified, replaced, restated or supplemented from time to time.
+
+""Obligations"" means, collectively, ... (b) all fees, costs and expenses including, without limitation, to the extent permitted by law and this Agreement, attorneys' fees and legal expenses incurred by the Lender in the collection of any of the indebtedness referred to in clause (a) above in amounts due and owing to the Lender under this Agreement or the other Loan Documents; ...
+
+2.06 Commitment Fee. With respect to the Loan, Borrower will pay to the Lender at Closing a non-refundable, fully-earned loan fee with respect to the Loan in the amount of Twelve Thousand Four Hundred Sixty-Seven and 00/100 dollars ($12,467.00) (the ""Commitment Fee"").", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,N/A,0
+Interest Rate,5.75%,"The relevant sections containing the term ""Interest Rate"" are:
+
+""2.02 Interest Rate. From and after the Closing Date until and including the Maturity Date, the Loan shall bear interest at a fixed rate equal to 5.75% (as adjusted pursuant to the terms of this Agreement, the ""Interest Rate"").""
+
+""1. Interest Rate. From and after the Closing Date until and including [Date] (the ""Maturity Date""), the Loan shall bear interest at a fixed rate equal to 5.75% (as adjusted pursuant to the terms of this Agreement, the ""Interest Rate"").""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,N/A,0
+Maturity Date,"December 31, 2019","The relevant section containing the term ""Maturity Date"" is:
+
+""2. Repayment of Loan. Interest on the prineipal amount of the Loan shall accrue from
+and including the date the Loan is made but excluding the date of any repayment thereof. Interest
+on the Loan shall be payable quarterly in arrears on the last day of each calendar quarter
+commencing on December 31, 2019 and on the Maturity Date. Interest on any Loan which is
+repaid or prepaid shall be payable on the date of such repayment or prepayment (on the amount
+repaid or prepaid) thereof. Any outstanding principal and accrued interest shall be due and payable
+in full on the Maturity Date or upon acceleration of the Loan.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,N/A,0
+Borrower,Novel Bartel Solar LLC,"The term ""Borrower"" is defined and referenced in multiple sections of the document, including:
+
+From the Loan Agreement:
+""Novel Bartel Solar LLC, a Minnesota limited liability company (the ""Borrower""), and M1 Bank, a Missouri chartered bank (the ""Lender"").""
+
+""WHEREAS, the Borrower has requested that the Lender provide a loan to the Borrower in the Loan Amount to finance the operation of the Project; and""
+
+From the Guaranty Agreement:
+""THIS GUARANTY AGREEMENT (this ""Agreement""), dated as of October 28, 2019, is made by Renewable Energy Alternatives, LLC, a Missouri limited liability company, Holden Family, L.L.C., a Missouri limited liability company, Matthew Mills, a resident of the State of Missouri, Michael Mills, a resident of the State of Missouri, and Natalie Riley, a resident of the State of Missouri (collectively, the ""Guarantor"") in favor of MI Bank, a Missouri chartered bank (the ""Lender""), pursuant to that certain Loan Agreement, dated as of the date hereof, between Novel Bartel Solar LLC, a Minnesota limited liability company (the ""Borrower""), and the Lender (as amended, restated, supplemented, or otherwise modified from time to time, the ""Loan Agreement"").""
+
+From the Pledge Agreement:
+""THIS PLEDGE AGREEMENT (this ""Agreement""), dated as of October 28, 2019, is made by [Manager], LLC, a [State] limited liability company (the ""Pledgor""), in favor of M1 Bank, a Missouri chartered bank (the ""Lender"") pursuant to that certain Loan Agreement, dated as of the date hereof, between Novel Bartel Solar LLC, a Minnesota limited liability company (the ""Borrower""), and the Lender (as amended, restated, supplemented, or otherwise modified from time to time, the ""Loan Agreement"").""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,N/A,0
+Default - Borrower,"From the given text, the relevant definition for ""Default (Borrower)"" is:
+
+""The occurrence of any one or more of the following events shall constitute an ""Event of Default"" under this Agreement:
+...
+(b) The Borrower shall fail to pay any principal, interest or other amount payable by it under this Agreement, the Note or any other Loan Document when due...""
+
+This section outlines that a failure by the Borrower to pay any principal, interest, or other amount due under the loan agreement, note, or other loan documents constitutes an ""Event of Default"" by the Borrower.","The relevant sections containing the term ""Default (Borrower)"" are:
+
+""7.01 Events of Default. The occurrence of any one or more of the following events shall constitute an ""Event of Default"" under this Agreement:
+...
+(b) The Borrower shall fail to pay any principal, interest or other amount payable by it under this Agreement, the Note or any other Loan Document when due...""
+
+""5.01 Events of Default. An ""Event of Default"" hereunder shall include (i) the existence or occurrence of any ""Event of Default"" as provided under the terms of the Loan Agreement or (ii) any material default by the Pledgor under this Agreement which remains uncured for ten (10) Business Days, provided that if such cure is being diligently pursued, such Person shall have such additional reasonable period of time to pursue such cure, not to exceed thirty (30) days.""
+
+""7.02 Remedies. If any event or circumstance shall occur, the giving of notice of which or lapse of time would result in an Event of Default, Lender may, at its option and without notice to Borrower, withhold further loans and other extensions of credit to Borrower and notwithstanding anything herein or in any Loan Document to the contrary (but subject to the Forbearance Agreement), exercise any and all rights and remedies it has at law or in equity. Upon the occurrence of any one or more of the Events of Default, at the Lender's option, all obligations on the Lender's part to make the Loan, or to make any further disbursements hereunder shall cease and terminate, and the Loan and all sums then or thereafter due under any and all of the Loan Documents shall thereupon become immediately due and payable.""", No poison rules violations are present because the poison rules do not apply to the situation.,N/A,0
+Guarantors,"Renewable Energy Alternatives, LLC, Holden Family, L.L.C., Matthew Mills, Michael Mills, Natalie Riley.","The relevant section containing the term ""Guarantor"" is:
+
+""Guarantor"" means, collectively, Renewable Energy Alternatives, LLC, a Missouri limited liability company, Holden Family, L.L.C., a Missouri limited liability company, Matthew Mills, a resident of the State of Missouri, Michael Mills, a resident of the State of Missouri, and Natalie Riley, a resident of the State of Missouri.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,N/A,0
+Reporting Requirements,"- Annual financial statement within 120 after the end of fiscal year.
+- Interim financial statement within 45 days after the end of each fiscal quarter (commencing with the first full fiscal quarter after Commercial Operation).
+- Copy of federal income tax return, including all schedules and attachments within 120 days after the end of each calendar year.
+- Notify within 5 business days of (i) any material breach or default under any project documents or Tax Equity Investor Document, (ii) material default of any material agreement affecting the project, and (iii) execution and delivery of any project document, Borrower Parent Operating Agreement, Borrower Operating Agreement, or Tax Equity Investor Document.
+- Notify within 5 business days after knowledge of receipt of any capital contributions from equity holders.
+- Forward copies of notices, permits, authorizations, rights, licenses and material correspondence promptly upon receipt.","The relevant section containing information about the Reporting Requirements is Section 5.01, which states:
+
+(a) Annual Financial Statements. As soon as practicable after the end of each fiscal year of Borrower, and in any event within 120 days thereafter, accountant-reviewed Financial Statements of Borrower, Borrower Parent and the Guarantor at the end of such fiscal year. With delivery of such financial statement, the Guarantor shall furnish to the Lender copies of such other documents necessary to verify the Guarantor's liquidity, current contingent liabilities, and rcal estate holdings,
+
+(b) Interim Financial Statements. As soon as practicable, and in any event within 45 days after the end of each fiscal quarter of Borrower (commencing with the first full fiscal quarter after Commercial Operation), the Borrower shall furnish to the Lender the Financial Statements for such fiscal quarter, all in reasonable detail and certified by an Authorized Officer of Borrower as presenting fairly Borrower's financial position.
+
+(c) Income Tax Returns. As soon as practicable and in any cvcnt within 120 days after the end of cach calendar year or promptly after any applicable extension period, the Borrower shall cause Borrower and Guarantor to furnish to the Lender a copy of its fedcral income tax return, including all schedules and attachments filed with sueh returns, and any extensions filed in eonnection therewith within 15 days of the filing thereof, which shall be prepared by a certified public accountant reasonably acceptable to the Lender.
+
+(d) Certain Notices. Within five (5) Business Days after knowledge of receipt by Borrower and/or any of its Affiliates, the Borrower shall notify the Lender of, and deliver all supporting information related to such Person's reeeipt of, any eapital contributions from such Person's equity holders. Promptly, and in any event within five (5) Business Days, the Borrower shall notify the Lender of (i) any material breach, default or event of default under any Project Document or Tax Equity Investor Document or any termination of any Project Doeument or Tax Equity Investor Document, (ii) a material default under any other material agreement to which the Borrower, Borrower Parent, Manager or Guarantor is a party relating to or affecting the Project, and (iii) the execution and delivery of any Project Document, Borrower Parent Operating Agreement, Borrower Operating Agreement, or Tax Equity Investor Document (or a material amendment or modification thereto) entered into after the Closing Date or any permit, authorization, right or license (or material amendment or modification thereto) obtained after the Closing Date and which is not obtained in the ordinary course of business (together with a copy thereof) and, if applicable, use reasonable commereial efforts to obtain the written consent of any other party to such additional Project Document to the collateral assignment thereof to the extent not previously delivered to Lender. Notice may be delivered pursuant to this Section 5.01(d) by electronic mail.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,N/A,0
+Forebarence Agreement (Y/N),No.,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,N/A,0

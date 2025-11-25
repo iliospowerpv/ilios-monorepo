@@ -1,0 +1,106 @@
+Document Name,Key Name,Document Name,Key Name,Condition
+PPA,Effective Date,Site Lease,Effective Date,Equal
+PPA,Effective Date,O&M,Effective Date,Equal
+PPA,Effective Date,EPC,Effective Date,Equal
+PPA,Effective Date,Interconnection Agreement,Effective Date,Equal
+PPA,Effective Date,Production Guarantee,Effective Date,Equal
+PPA,Effective Date,Subscriber Management,Effective Date,Equal
+Site Lease,Effective Date,O&M,Effective Date,Equal
+Site Lease,Effective Date,EPC,Effective Date,Equal
+Site Lease,Effective Date,Interconnection Agreement,Effective Date,Equal
+Site Lease,Effective Date,Production Guarantee,Effective Date,Equal
+Site Lease,Effective Date,Subscriber Management,Effective Date,Equal
+O&M,Effective Date,EPC,Effective Date,Equal
+O&M,Effective Date,Interconnection Agreement,Effective Date,Equal
+O&M,Effective Date,Production Guarantee,Effective Date,Equal
+O&M,Effective Date,Subscriber Management,Effective Date,Equal
+EPC,Effective Date,Interconnection Agreement,Effective Date,Equal
+EPC,Effective Date,Production Guarantee,Effective Date,Equal
+EPC,Effective Date,Subscriber Management,Effective Date,Equal
+Interconnection Agreement,Effective Date,Production Guarantee,,Equal
+Interconnection Agreement,Effective Date,Subscriber Management,Effective Date,Equal
+Production Guarantee,Effective Date,Subscriber Management,Effective Date,Equal
+PPA,Term,Site Lease,Initial Term,Equal
+PPA,Term,O&M,Term,Equal
+PPA,Term,EPC,Term,Equal
+PPA,Term,Interconnection Agreement,Term,Equal
+PPA,Term,Production Guarantee,Production Guarantee Term,Equal
+PPA,Term,Subscriber Management,Term,Comparison Needed
+Site Lease,Initial Term,O&M,Term,Equal
+Site Lease,Initial Term,EPC,Term,Equal
+Site Lease,Initial Term,Interconnection Agreement,Term,Equal
+Site Lease,Initial Term,Production Guarantee,Production Guarantee Term,Equal
+Site Lease,Initial Term,Subscriber Management,Term,Comparison Needed
+O&M,Term,EPC,Term,Equal
+O&M,Term,Interconnection Agreement,Term,Equal
+O&M,Term,Production Guarantee,Production Guarantee Term,Equal
+O&M,Term,Subscriber Management,Term,Comparison Needed
+EPC,Term,Interconnection Agreement,Term,Equal
+EPC,Term,Production Guarantee,Production Guarantee Term,Equal
+EPC,Term,Subscriber Management,Term,Comparison Needed
+Interconnection Agreement,Term,Production Guarantee,Production Guarantee Term,Equal
+Interconnection Agreement,Term,Subscriber Management,Term,Comparison Needed
+Production Guarantee,Production Guarantee Term,Subscriber Management,Term,Comparison Needed
+PPA,Renewal Terms,Site Lease,Renewal Terms,Equal
+PPA,Renewal Terms,O&M,Renewal,Equal
+Site Lease,Renewal Terms,O&M,Renewal,Equal
+PPA,End Date,Site Lease,Expiration Date,Equal
+PPA,End Date,O&M,,Equal
+PPA,End Date,Production Guarantee,,Equal
+PPA,End Date,Subscriber Management,,Equal
+Site Lease,Expiration Date,O&M,,Equal
+Site Lease,Expiration Date,Production Guarantee,,Equal
+Site Lease,Expiration Date,Subscriber Management,,Equal
+O&M,,Production Guarantee,,Equal
+O&M,,Subscriber Management,,Equal
+Production Guarantee,,Subscriber Management,,Equal
+PPA,Provider,Interconnection Agreement,Interconnection Utility Company,Equal
+PPA,Power Purchase Agreement Rate,O&M,PPA Net Energy Rate,Equal
+PPA,Renewal Terms,Site Lease,Renewal Terms,Equal
+PPA,Renewal Terms,O&M,Renewal,Equal
+Site Lease,Renewal Terms,O&M,Renewal,Equal
+PPA,Degredation,Production Guarantee,Degredation,Equal
+PPA,Degredation,O&M,Degredation,Equal
+Production Guarantee,Degredation,O&M,Degredation,Equal
+PPA,Commencement Date,Site Lease,Rent Commencement,Equal
+PPA,Commencement Date,O&M,Commencement Date,Equal
+PPA,Commencement Date,Production Guarantee,Production Guarantee Commencement Date,Equal
+PPA,Commencement Date,Subscriber Management,Effective Date,Equal
+Site Lease,Rent Commencement,O&M,Commencement Date,Equal
+Site Lease,Rent Commencement,Production Guarantee,Production Guarantee Commencement Date,Equal
+Site Lease,Rent Commencement,Subscriber Management,Effective Date,Equal
+O&M,Commencement Date,Production Guarantee,Production Guarantee Commencement Date,Equal
+O&M,Commencement Date,Subscriber Management,Effective Date,Equal
+Production Guarantee,Production Guarantee Commencement Date,Subscriber Management,Effective Date,Equal
+PPA,Offtaker,Site Lease,Lessee (Tenant) Entity Name,Equal
+PPA,Offtaker,O&M,Customer,Equal
+PPA,Offtaker,EPC,Owner,Equal
+PPA,Offtaker,Interconnection Agreement,Interconnection Customer,Equal
+PPA,Offtaker,Production Guarantee,Customer,Equal
+PPA,Offtaker,Subscriber Management,Customer,Equal
+PPA,Offtaker,Phase 1 ESA,Who is this addressed to,Equal
+PPA,Offtaker,Loan Agreement,Customer,Equal
+PPA,Nameplate Capacity,O&M,Nameplate Capacity,Equal
+PPA,Nameplate Capacity,EPC,System Size,Equal
+PPA,Nameplate Capacity,Interconnection Agreement,Nameplate Capacity (System Size),Equal
+PPA,Nameplate Capacity,Interconnection Agreement,Nameplate Capacity Limits,Comparison Needed
+PPA,Nameplate Capacity,PV Syst (All Files),Pnom Total kWp,Equal
+PPA,Nameplate Capacity,Subscriber Management,System Size,Equal
+O&M,Nameplate Capacity,EPC,System Size,Equal
+O&M,Nameplate Capacity,Interconnection Agreement,Nameplate Capacity (System Size),Equal
+O&M,Nameplate Capacity,Interconnection Agreement,Nameplate Capacity Limits,Comparison Needed
+O&M,Nameplate Capacity,PV Syst (All Files),Pnom Total kWp,Equal
+O&M,Nameplate Capacity,Subscriber Management,System Size,Equal
+EPC,System Size,Interconnection Agreement,Nameplate Capacity (System Size),Equal
+EPC,System Size,Interconnection Agreement,Nameplate Capacity Limits,Comparison Needed
+EPC,System Size,PV Syst (All Files),Pnom Total kWp,Equal
+EPC,System Size,Subscriber Management,System Size,Equal
+Interconnection Agreement,Nameplate Capacity (System Size),Interconnection Agreement,Nameplate Capacity Limits,Comparison Needed
+Interconnection Agreement,Nameplate Capacity (System Size),PV Syst (All Files),Pnom Total kWp,Equal
+Interconnection Agreement,Nameplate Capacity (System Size),Subscriber Management,System Size,Equal
+Interconnection Agreement,Nameplate Capacity Limits,PV Syst (All Files),Pnom Total kWp,Comparison Needed
+Interconnection Agreement,Nameplate Capacity Limits,Subscriber Management,System Size,Comparison Needed
+PV Syst (All Files),Pnom Total kWp,Subscriber Management,System Size,Equal
+PPA,Projected Production,O&M,Year 1 Production,Equal
+PPA,Projected Production,PV Syst (All Files),E_Grid MWh Annual,Equal
+O&M,Year 1 Production,PV Syst (All Files),E_Grid MWh Annual,Equal

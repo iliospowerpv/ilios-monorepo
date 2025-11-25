@@ -1,0 +1,752 @@
+file_name,key_item,Legal Terms,Predicted Legal Terms,levenshtein_distance,levenshtein_distance_scaled,cosine_similarity
+,,,,423.22857142857146,0.7464972998323519,0.7394227980465302
+,Amendments and/or Estoppels,,,,,
+,Assignment by Lessee,,,,,
+,Assignment by Lessor,,,,,
+,Co-terminus with PPA (Y/N),,,,,
+,Default,,,,,
+,Effective Date,,,107.33333333333333,0.7687182436966733,0.7027565944478544
+,Eminent Domain,,,,,
+,Expiration Date,,,,,
+,Fee Simple Lessor  (Y/N),,,,,
+,Fee Simple Owner (Y/N),,,82.5,0.8207777071413436,0.6588083060113938
+,First Payment Due,,,,,
+,Force Majeure,,,,,
+,Governing Law,,,,,
+,Initial Term,,,225.25,0.5813789364168421,0.8271690121338615
+,Lessee (Tenant) Entity Name,,,,,
+,Lessor (Landlord) Entity Name,,,185.33333333333334,0.7992925463375954,0.5875578271464906
+,Liens,,,886.5,0.7516833554789386,0.8740195481904078
+,Non-Disturbance Requirements,,,,,
+,Payment Terms,,,404.3333333333333,0.8455465810444166,0.6246314224532239
+,"Per Per ($/kWH, $/kW, $/MW, $/MWh, etc.)",,,,,
+,Prevailing Party Provision (Y/N),,,187.0,0.7824267782426778,0.6651429244442448
+,Property Size,,,,,
+,Property Tax ($),,,,,
+,Purchase Options,,,194.0,0.8151260504201681,0.6183405789908221
+,Purchase Options (Y/N),,,,,
+,Quiet Enjoyment,,,,,
+,Removal Requirements,,,1828.0,0.7424857839155159,0.9292033299103228
+,Removal Timeline & Expectations,,,1456.0,0.8084312316374755,0.8753617482074358
+,Renewal Terms,,,70.0,0.1715686274509804,0.9906742305693736
+,Rent Amount,,,339.3333333333333,0.8819740080298925,0.6331493249062595
+,Rent Calculation,,,,,
+,Rent Commencement,,,203.0,0.7930266269932098,0.6753837932723511
+,Rent Escalator (Amount),,,,,
+,Rent Escalator (Y/N),,,,,
+,Rent Escalator Effective Date,,,139.5,0.7576987099459009,0.6746576569706186
+,SNDA,,,,,
+,Site Access Rights,,,527.0,0.6076828895010713,0.9091906428656661
+,Site Control Terms,,,,,
+,Site Lease Prepayment (Amount),,,294.0,0.7736842105263158,0.7682178633161046
+,Site Lease Prepayment (Y/N),,,185.0,0.7429718875502008,0.7450523097575786
+,Summary of Economic Terms,,,,,
+,Termination & Removal - Lessee,,,,,
+,Termination & Removal - Lessor,,,,,
+,Termination - Notice Requirements,,,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,,,,542.2857142857143,0.7593183293818532,0.7228371057089445
+Site Lease - GLD - Canton (ES).pdf,,,,348.54545454545456,0.7433524404067043,0.7159582179664472
+Site Lease - GLD - Hi Lo Biddy.pdf,,,,407.54545454545456,0.7224941887963119,0.7608900490614126
+Site Lease - Shine - DuQuoin.pdf,,,,450.0,0.781310711204361,0.7624345423932488
+Site Lease - Blue Sky- Felicita Town Center.pdf,Amendments and/or Estoppels,,"From time to time, upon written request, by either Tenant or its Solar Lender or
+Landlord or its Lender, made pursuant to Paragraph X.B of this Lease, Landlord or Tenant, as
+applicable, shall, within thirty (30) days after receipt of said written request, provide an estoppel
+certificate certifying, to Landlord's or Tenant's respective knowledge as applicable, Tenant's or
+Landlord's, as applicable, compliance with the terms of this Lease or setting forth any known
+issues of noncompliance, and making such other representations, warranties and accommodations
+reasonably requested by a Lender or Solar Lender",,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Assignment by Lessee,Section IX Page 37,,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Assignment by Lessor,Section IX Page 37,,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Co-terminus with PPA (Y/N),,This document does not contain any information regarding the term of the lease and PPA running concurrently.,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Default,,,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Effective Date,"THIS SITE LEASE AGREEMENT), (“Leasé”)) is made and entered into as of this 30 day of September 2019 (the ""Effective Date"")","""Effective Date"" is defined in the preamble of this Lease.",93.0,0.7622950819672131,0.7981135029897197
+Site Lease - Blue Sky- Felicita Town Center.pdf,Eminent Domain,,"If the whole or substantially the whole of the Buildings,
+Improvements or the Premises should be taken for any public or quasi-public use, by right of
+eminent domain or otherwise, or should be sold in lieu of condemnation, then this Lease shall
+terminate as of the date when physical possession of the Buildings, Improvements or the Premises
+is taken by the condemning authority. If less than the whole or substantially the whole of the
+Buildings, Improvements or the Premises is thus taken or sold, Landlord (whether or not the
+Premises is affected thereby) may in its reasonable discretion terminate this Lease by giving
+written notice thereof to Tenant in which event this Lease shall terminate as of the date when
+physical possession of such portion of the Buildings, Improvements or Premises is taken by the
+condemning authority. In the event that the Premises is not affected by the taking, then Landlord
+or Tenant may terminate this Lease only in the event that in the reasonable determination of
+whichever of Landlord or Tenant is so terminating this Lease, the Buildings or Improvements
+require demolition or substantial rehabilitation. If twenty-five percent (25%) of the Premises or
+twenty (20%) percent or more of the Solar System is thus taken or sold, Tenant may terminate this
+Lease by giving written notice thereof to Landlord in which event this Lease shall terminate as of
+the date when physical possession of such portion of the Property is taken by the condemning
+authority. If this Lease is not so terminated upon any such taking or sale, the Base Rent payable
+hereunder shall be equitably adjusted by multiplying the annual Base Rent then in affect by a
+fraction, the numerator of which is the size of the Solar System in kW after the taking and the
+denominator of which is the size of the Solar System in kW prior to such taking, and Landlord
+shall, to the extent Landlord reasonably deems feasible, restore the Buildings and the Premises to
+substantially their former condition. All amounts awarded upon a taking of any part or all of the
+Property shall belong to Landlord or the Lender holding any Lender Lien affecting the Property,
+and Tenant shall not be entitled to and expressly waives all claim to any such compensation
+including, without limitation, any claim for the value of the unexpired portion of this Lease",,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Expiration Date,,,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Fee Simple Owner (Y/N),,This document does not contain any information regarding fee simple ownership.,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,First Payment Due,"b. Commencing on the Commercial Operation Date, Tenant shall pay the Landlord the Base Rent in equal monthly  installments, equal to the amount, set forth in Section IL.A.1a of this Lease, of the Base Rent for the particular year of the Term, as such Base Rent may be reduced from time to time as set forth in Section I.E, divided by twelve (“Base Rent Installments”), commencing on the Commercial Operation Date and payable on the'first’ calendar day of each calendar month thereafter (“Base Rent Due Date”) throughout the Term. The Base Rent Installments shall be payable in arrears throughout the Term.",,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Force Majeure,,"""Event of Force Majeure"" under this Lease, means: any acts of God, fire, volcano,
+earthquake, hurricane, blizzard, prolonged severe weather conditions, infectious disease,
+technological disaster, catastrophe, large scale infestation of any type, tremors, flood, explosion,
+release of nuclear radiation, release of biotoxic or of biochemical agent(s), the elements, war,
+blockade, riots, mob violence or civil disturbance, any act or acts of terrorism, an inability to
+procure goods or services or a general shortage of labor, equipment, facilities, energy, materials or
+supplies in the open market, failure of transportation, strikes, walkouts, actions of labor unions,
+governmentally imposed moratoriums or court orders. Performance under this Lease shall be
+excused by an Event of Force Majeure for the length of the delay caused by the Event of Force
+Majeure",,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Governing Law,This Lease shall be construed in accordance with the laws of the State of California (without regard to its conflicts.of law principles).,,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Initial Term,The term (“Term”) of this Lease shall commence on the Effective Date and end on the Year 25 Termination Date or on such earlier date as this Lease may be terminated in accordance with the provisions of this Lease.,"""Term and Earlier Termination.
+D.
+1.
+Term. The term (“Term”) of this Lease shall commence on the Effective
+Date and end on the Year 25 Termination Date or on such earlier date as this Lease may be
+terminated in accordance with the provisions of this Lease.""",46.0,0.17898832684824903,0.9498367291735973
+Site Lease - Blue Sky- Felicita Town Center.pdf,Lessee (Tenant) Entity Name,"by and between Blue Sky Utility Holding, LLC, a California limited liability company with an address at P.O.Box 5571, Napa, CA 94581 (""Tenant"") and Brixmor Felicita Town Center LLC, a Delaware limited liability company, with an address c/o Brixmor Property Group, 450 Lexington Avenue, 13th Floor, New York, New York 10017 (""Landlord"").",,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Lessor (Landlord) Entity Name,"by and between Blue Sky Utility Holding, LLC, a California limited liability company with an address at P.O.Box 5571, Napa, CA 94581 (""Tenant"") and Brixmor Felicita Town Center LLC, a Delaware limited liability company, with an address c/o Brixmor Property Group, 450 Lexington Avenue, 13th Floor, New York, New York 10017 (""Landlord"").",This document does not contain any information regarding the term specified.,287.0,0.8541666666666666,0.5825579988520594
+Site Lease - Blue Sky- Felicita Town Center.pdf,Liens,,"12. Liens. Tenant shall not place and shall not permit any Tenant Parties to
+place any security interests, mortgages, mechanics liens, materialmens' liens, notices of liens,
+judgments and/or stop notices on the Property. A breach of this Subparagraph VB.12 by Tenant
+shall be deemed a Tenant Event of Default under Subparagraph VI.A.1 of this Lease",,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Non-Disturbance Requirements,,This document does not contain any information regarding Non-Disturbance Requirements.,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Payment Terms,"b. Commencing on the Commercial Operation Date, Tenant shall pay the Landlord the Base Rent in equal monthly  installments, equal to the amount, set forth in Section IL.A.1a of this Lease, of the Base Rent for the particular year of the Term, as such Base Rent may be reduced from time to time as set forth in Section I.E, divided by twelve (“Base Rent Installments”), commencing on the Commercial Operation Date and payable on the'first’ calendar day of each calendar month thereafter (“Base Rent Due Date”) throughout the Term. The Base Rent Installments shall be payable in arrears throughout the Term.",This document does not contain the requested information.,554.0,0.915702479338843,0.5176559635277155
+Site Lease - Blue Sky- Felicita Town Center.pdf,"Per Per ($/kWH, $/kW, $/MW, $/MWh, etc.)",,This document does not contain any information regarding the term you specified.,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Prevailing Party Provision (Y/N),,This document does not contain any information regarding the prevailing party provision.,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Property Size,,,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Property Tax ($),,This document does not contain the requested information.,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Purchase Options,,This document does not contain any information regarding the ability for Lessee to have an option to buy the land from the Lessor.,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Quiet Enjoyment,,"2. Landlord's Interest in Premises/Tenant's Quiet Enjoyment. Landlord
+represents, warrants and covenants that Landlord (check appropriate box) [X] is the fee title owner
+of the Property or [_] has a leasehold interest in the Property, in which event Landlord represents,
+warrants and covenants that Landlord has a valid leasehold interest in the Property and that
+Landlord is not in default of its lease. Landlord represents, warrants and covenants that Landlord
+has lawful authorization to use and occupy the Premises and that Tenant, subject to all of the
+terms and conditions of this Lease, and provided that Tenant has not committed or suffered to be
+22
+committed a Tenant Event of Default, shall have quiet and peaceful possession of the Premises
+for the permitted Use, free from any claim of any Person of superior title thereto without
+hindrance to or interference with or molestation of Tenant's quiet enjoyment thereof, throughout
+the Term",,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Removal Requirements,,"**Removal Requirements**
+
+**VII. REMOVAL AND RELOCATION.**
+
+**A.**
+
+1. If this Lease has not terminated earlier pursuant to Subparagraph I.D.2 or Paragraph I.F of this Lease, then on the Year 25 Termination Date, Tenant shall, at its sole cost and expense, remove the Solar System from the Premises and restore the License Areas in accordance with all Removal Obligations. This Paragraph VII.A and the Removal Obligations survive the termination of this Lease until said Removal Obligations are fully completed. Tenant shall complete the Removal Obligations within sixty (60) days of the Year 25 Termination Date.
+
+**I.D.2.a.**
+
+(i) During the Default Removal Period Tenant shall, at its sole cost and expense, diligently remove the Solar System and/or all partially installed portions thereof from the Premises in accordance with all Approvals, all Final Approvals, if applicable, and all Applicable Laws and shall obtain all additional Governmental Agency and Local Utility approvals required by Applicable Laws for such removal (""Removal Approvals"") (contingent upon Landlord signing application forms, if required by the applicable Governmental Agency, at no cost and expense to Landlord, required to obtain the Removal Approvals), shall comply with all Removal Approvals and shall repair all damage and remove all alterations to the Property, including, but not limited to, the Buildings and the Roofs, caused by said installation and/or partial installation of the Solar System, in accordance with all Applicable Laws, such that the Property, including, but not limited to the Buildings and the Roofs, is in the same condition as it was in prior to the commencement of any installation and/or partial installation of the Solar System, normal wear and tear excepted, referred to collectively in this Lease as the ""Removal Obligations."" The Removal Obligations also include the obligation to remove all equipment and materials from all License Areas and to restore all License Areas to the same condition that they were in prior to the placement of any materials in connection with the Solar System, the removal thereof and/or the commencement of any installation, partial installation and/or removal of the Solar System, normal wear and tear excepted.",,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Removal Timeline & Expectations,"Tenant shall complete the Removal Obligations within sixty (60) days of the Year 25 Termination Date. Upon Tenant's completion of the Removal Obligations, the Landlord and Tenant shall have no further obligations to each other by reason of this Lease","**Removal Timeline & Expectations**
+
+""Upon a Default Termination, Tenant shall have access to the Premises and the License Areas for up to ninety (90) days from the date of the Default Termination Notice (“Default Removal Period”) to remove the Solar System from the Premises in accordance with this Subsection I.D.2.a(i) During the Default Removal Period Tenant shall, at its sole cost and expense, diligently remove the Solar System and/or all partially installed portions thereof from the Premises in accordance with all Approvals, all Final Approvals, if applicable, and all Applicable Laws and shall obtain all additional Governmental Agency and Local Utility approvals required by Applicable Laws for such removal (""Removal Approvals"") (contingent upon Landlord signing application forms, if required by the applicable Governmental Agency, at no cost and expense to Landlord, required to obtain the Removal Approvals), shall comply with all Removal Approvals and shall repair all damage and remove all alterations to the Property, including, but not limited to, the Buildings and the Roofs, caused by said installation and/or partial installation of the Solar System, in accordance with all Applicable Laws, such that the Property, including, but not limited to the Buildings and the Roofs, is in the same condition as it was in prior to the commencement of any installation and/or partial installation of the Solar System, normal wear and tear excepted, referred to collectively in this Lease as the ""Removal Obligations."" The Removal Obligations also include the obligation to remove all equipment and materials from all License Areas and to restore all License Areas to the same condition that they were in prior to the placement of any materials in connection with the Solar System, the removal thereof and/or the commencement of any installation, partial installation and/or removal of the Solar System, normal wear and tear excepted.""",1730.0,0.8890030832476875,0.8432341167153793
+Site Lease - Blue Sky- Felicita Town Center.pdf,Renewal Terms,,This document does not contain any information regarding renewal terms or the ability to extend the lease beyond the initial term without having to amend the lease.,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Rent Amount,"Tenant shall pay the Landlord five thousand dollars ($5,000) for the first four (4) months of
+the Term (“Initial Pre-Construction Rent”) and then three thousand dollars ($3,000) per month
+thereafter (“Pre-Construction Rent”) for the Premises until Commencement of Construction.
+Tenant shall notify Landlord of Commencement of Construction, no later than fourteen (14) days
+prior to the Commencement of Construction date. From Commencement of Construction until the
+Commercial Operation Date, Tenant shall pay the Landlord five thousand dollars ($5,000) per
+month for site access, equipment storage and rental of the construction staging areas (“Storage and
+Staging Area Rent”). Commencing on the Commercial Operation Date and for each year of the
+Term thereafter, Tenant shall pay Landlord Twenty Eight Thousand and Five Hundered Dollars
+($28,500.00) per annum (“Base Rent”), based on the Expected Capacity, with an annual escalation
+of 2% percent.",I could not find any information regarding the rent amount in the provided document.,871.0,0.9187763713080169,0.6786837824440182
+Site Lease - Blue Sky- Felicita Town Center.pdf,Rent Calculation,,"This context does not mention anything about Rent Calculation or Price, so I cannot extract the requested data from the provided context.",,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Rent Commencement,,"""Commencing on the Commercial Operation Date and for each year of the
+Term thereafter, Tenant shall pay Landlord Twenty Eight Thousand and Five Hundered Dollars
+($28,500.00) per annum (""Base Rent""), based on the Expected Capacity, with an annual escalation
+of 2% percent""",,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Rent Escalator (Amount),"Commencing on the Commercial Operation Date and for each year of the Term thereafter, Tenant shall pay Landlord Twenty Eight Thousand and Five Hundered Dollars ($28,500.00) per annum (“Base Rent”), based on the Expected Capacity, with an annual escalation of 2% percent.",,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Rent Escalator (Y/N),"Commencing on the Commercial Operation Date and for each year of the Term thereafter, Tenant shall pay Landlord Twenty Eight Thousand and Five Hundered Dollars ($28,500.00) per annum (“Base Rent”), based on the Expected Capacity, with an annual escalation of 2% percent.",,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Rent Escalator Effective Date,"Commencing on the Commercial Operation Date and for each year of the Term thereafter, Tenant shall pay Landlord Twenty Eight Thousand and Five Hundered Dollars ($28,500.00) per annum (“Base Rent”), based on the Expected Capacity, with an annual escalation of 2% percent.",This document does not contain any information regarding a rent escalator effective date.,215.0,0.7962962962962963,0.6897776462601218
+Site Lease - Blue Sky- Felicita Town Center.pdf,SNDA,,"""SNDA"" means a subordination, non-disturbance and attornment agreement from a
+Lender. Such SNDA shall:
+acknowledge and consent to the Tenant's rights in the Premises and License Areas,
+b. acknowledge that such Lender has no interest in the Solar System and
+Environmental Attributes and shall not gain any interest in the Solar System and Environmental
+Attributes by virtue of the Landlord's or the Tenant's performance or breach of this Lease, and
+a.",,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Site Access Rights,,This document does not contain any information regarding Site Access Rights.,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Site Control Terms,,"This document does not contain any information regarding the term ""Site Control Terms"" or ""DEFINITION: Allows us to actually construct and operate a project, making any decisions and changes"".",,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Site Lease Prepayment (Amount),,This document does not contain any information regarding a front-loaded payment early in the lease term.,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Site Lease Prepayment (Y/N),,This document does not contain any information regarding a front-loaded payment early in the lease term.,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Summary of Economic Terms,,"This context does not contain any information about the term ""Summary of Economic Terms"" or the definition ""Costs and other payments made from one party to another"". Therefore, I cannot extract the requested data from the provided context.",,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Termination & Removal - Lessee,"If this Lease has not terminated earlier pursuant to Subparagraph l.D.2 or Paragraph I.F of this Lease, then on the Year 25 Termination Date, Tenant shall, at its sole cost and expense, remove the Solar System from the Premises and restore the License Areas in accordance with all Removal Obligations. This Paragraph VII.A and the Removal Obligations survive the termination of this Lease until said Removal Obligations are fully completed. Tenant shall complete the Removal Obligations within sixty (60) days of the Year 25 Termination Date. Upon Tenant's completion of the Removal Obligations, the Landlord and Tenant shall have no further obligations to each other by reason of this Lease.",,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Termination & Removal - Lessor,,,,,
+Site Lease - Blue Sky- Felicita Town Center.pdf,Termination - Notice Requirements,,,,,
+Site Lease - GLD - Canton (ES).pdf,Amendments and/or Estoppels,,"(a) Owner or Tenant shall from time to time, within ten (10) days after receipt of the other
+party's written request therefor, deliver a written statement addressed to the requesting party and/or to any
+Financing Entity (as specified by Tenant) (each an “Estoppel Certificate”) certifying all or some of the
+below:
+(i) That the Agreement is unmodified and in full force and effect (or if modified, a
+brief description of such modification and that this Agreement as so modified is in full force and
+effect);
+(ii) That the Agreement attached to the Estoppel Certificate is a true and correct copy
+of this Agreement, and all amendments hereto, and constitutes the entire agreement between Owner
+and Tenant relating to the Solar Facility;
+(iii) That to the knowledge of Owner, Tenant has not previously assigned or
+hypothecated its rights or interests under this Agreement, except as described in such Estoppel
+Certificate with as much specificity as Owner is able to provide;
+(iv) The term of this Agreement and the Annual Rent then in effect and any additional
+charges pursuant to this Lease;
+(v)
+The date through which Tenant has paid the Rent;
+(vi)
+Neither party to the Agreement is in default nor has either breached the Agreement
+and, to the best of Owner's knowledge, no facts or circumstances exist which, with the passage of
+time or the giving of notice or both, would constitute a default or breach by either such party under
+this Agreement;",,,
+Site Lease - GLD - Canton (ES).pdf,Assignment by Lessee,"Upon notice to Owner, Tenant shall have the right to assign or transfer its rights under this Agreement, in whole or in part, to any person or any business entity at any time, subject to the assignee assuming all of Tenant's obligations hereunder. A",,,,
+Site Lease - GLD - Canton (ES).pdf,Assignment by Lessor,Owner may assign its rights and obligations under this Agreement to its successor in interest in and to the Property without the prior consent of Tenant.,,,,
+Site Lease - GLD - Canton (ES).pdf,Co-terminus with PPA (Y/N),,This document does not contain any information regarding the term of the lease and PPA running concurrently.,,,
+Site Lease - GLD - Canton (ES).pdf,Default,,,,,
+Site Lease - GLD - Canton (ES).pdf,Effective Date,,"""Effective Date"" is defined in the preamble of this Lease",,,
+Site Lease - GLD - Canton (ES).pdf,Eminent Domain,,"If the whole or substantially the whole of the Buildings,
+Improvements or the Premises should be taken for any public or quasi-public use, by right of
+eminent domain or otherwise, or should be sold in lieu of condemnation, then this Lease shall
+terminate as of the date when physical possession of the Buildings, Improvements or the Premises
+is taken by the condemning authority. If less than the whole or substantially the whole of the
+Buildings, Improvements or the Premises is thus taken or sold, Landlord (whether or not the
+Premises is affected thereby) may in its reasonable discretion terminate this Lease by giving
+written notice thereof to Tenant in which event this Lease shall terminate as of the date when
+physical possession of such portion of the Buildings, Improvements or Premises is taken by the",,,
+Site Lease - GLD - Canton (ES).pdf,Expiration Date,"Expiring on the twentieth (20th) anniversary of the Commencement D ate, unless otherwise terminated at an earlier date in accordance with
+the terms of this Agreement.",,,,
+Site Lease - GLD - Canton (ES).pdf,Fee Simple Lessor  (Y/N),Owner is the fee owner of the Premises and the Easements and the lands immediately adjacent,,,,
+Site Lease - GLD - Canton (ES).pdf,Fee Simple Owner (Y/N),,This document does not contain any information regarding fee simple ownership of land.,,,
+Site Lease - GLD - Canton (ES).pdf,First Payment Due,"Starting on the Commencement Date, Tenant shall pay to Owner an annual base rent (""Annual Rent"") as set forth below.",,,,
+Site Lease - GLD - Canton (ES).pdf,Force Majeure,,"""Event of Force Majeure"" under this Lease, means: any acts of God, fire, volcano,
+earthquake, hurricane, blizzard, prolonged severe weather conditions, infectious disease,
+technological disaster, catastrophe, large scale infestation of any type, tremors, flood, explosion,
+release of nuclear radiation, release of biotoxic or of biochemical agent(s), the elements, war,
+blockade, riots, mob violence or civil disturbance, any act or acts of terrorism, an inability to
+procure goods or services or a general shortage of labor, equipment, facilities, energy, materials or
+supplies in the open market, failure of transportation, strikes, walkouts, actions of labor unions,
+governmentally imposed moratoriums or court orders. Performance under this Lease shall be
+excused by an Event of Force Majeure for the length of the delay caused by the Event of Force
+Majeure",,,
+Site Lease - GLD - Canton (ES).pdf,Governing Law,,,,,
+Site Lease - GLD - Canton (ES).pdf,Initial Term,"The operating term of this Agreement (the ""Operations Term"") shall be twenty (20) years, commencing on the date that Central Maine Power (""CMP"") issues the Permission to Operate (PTO) or the final analogous permit or approval allowing the Project to begin delivering electrical output to the grid at its rated capacity (the ""Commencement Date"")","D. Term and Earlier Termination.
+1. Term. The term (“Term”) of this Lease shall commence on the Effective Date and end on the Year 25 Termination Date or on such earlier date as this Lease may be terminated in accordance with the provisions of this Lease.",243.0,0.7063953488372093,0.742913712069569
+Site Lease - GLD - Canton (ES).pdf,Lessee (Tenant) Entity Name,"By and between PWH Properties, LLC (""Owner""), and Canton G LC Solar, LLC a Maine limited liability company (""Tenant"").",,,,
+Site Lease - GLD - Canton (ES).pdf,Lessor (Landlord) Entity Name,"By and between PWH Properties, LLC (""Owner""), and Canton G LC Solar, LLC a Maine limited liability company (""Tenant"").",This document does not contain any information regarding the term specified.,89.0,0.7542372881355932,0.5456647446945222
+Site Lease - GLD - Canton (ES).pdf,Liens,"4(e)- Tenant shall have the right to discharge all liens indicated in the title report and deduct the cost thereof from the Rent.
+16(b)- Owner hereby waives any and all lien rights and/or security interests it may have, statutory or otherwise, in or otherwise with regard to the Solar Facility.","(e) If the state of title to the Property as set forth in the Title Report indicates any liens, claims
+or encumbrances which may interfere with Tenant's use and operation of the Premises and/or the
+Easements, Tenant shall have the right but not the obligation to either (i) discharge such liens, claims and/or
+encumbrances, if possible, and deduct the cost thereof from the Rent to become due hereunder, or (ii)
+terminate this Lease by providing written notice thereof to Owner. Provided, however, the Owner shall
+have thirty (30) days upon receipt of notice to clear any title issues prior to any action by Tenant. Upon and
+after such termination, neither Owner nor Tenant shall have any further obligation or liability under this
+Agreement except as otherwise expressly provided herein; for the avoidance of doubt, in the event that
+Tenant determines not to construct the Facility pursuant to this subparagraph, then the Tenant Project
+Documents will be assigned to Owner or its assigns at no additional cost to Owner",803.0,0.788027477919529,0.8971549316317105
+Site Lease - GLD - Canton (ES).pdf,Non-Disturbance Requirements,,"""SNDA"" means a subordination, non-disturbance and attornment agreement from a
+Lender. Such SNDA shall:
+a. acknowledge and consent to the Tenant's rights in the Premises and License Areas,
+b. acknowledge that such Lender has no interest in the Solar System and
+Environmental Attributes and shall not gain any interest in the Solar System and Environmental
+Attributes by virtue of the Landlord's or the Tenant's performance or breach of this Lease, and
+c. provide that the Lender shall not disturb Tenant's possession of the Premises and License
+Areas, and shall attorn to any successor in interest of Tenant in the event of a transfer of Tenant's
+interest in the Premises and License Areas, and shall not interfere with Tenant's quiet enjoyment of
+the Premises and License Areas, so long as Tenant is not in default under this Lease.",,,
+Site Lease - GLD - Canton (ES).pdf,Payment Terms,"3. Tenant shall pay to Owner an annual base rent (""Annual Rent"") as set forth below. Except as otherwise specifically provided in this Lease, all
+rent shall be paid in equal quarterly installments in advance, without demand or setoff, no later than the first day of each January, April, July and October of each lease year;",This context does not contain any information about the amount owed for annual lease payments.,264.0,0.8148148148148148,0.69885529666681
+Site Lease - GLD - Canton (ES).pdf,"Per Per ($/kWH, $/kW, $/MW, $/MWh, etc.)",,This document does not contain any information regarding the term you specified.,,,
+Site Lease - GLD - Canton (ES).pdf,Prevailing Party Provision (Y/N),The prevailing party in any action or proceeding in court to enforce the terms of this Agreement shall be entitled to receive its reasonable attorneys' fees and other reasonable enforcement costs and expenses from the non-prevailing party.,This document does not contain any information regarding the prevailing party provision.,187.0,0.7824267782426778,0.6651429244442448
+Site Lease - GLD - Canton (ES).pdf,Property Size,"Hereby demises and leases to Tenant, and Tenant hereby leases from Owner, for the purposes described herein, ±19.9 acres thereof (the ""Premises""),",,,,
+Site Lease - GLD - Canton (ES).pdf,Property Tax ($),,"Section 8. Taxes. As of the Effective Date, Tenant agrees to pay or cause to be paid when due all
+state and local personal property taxes, real estate taxes, municipal charges and assessments due against the
+Solar Facility. Nothing in this Section 8 shall be construed as limiting Tenant's right to contest, appeal or
+challenge any tax assessment. If property taxes associated solely with the Premises cannot be reasonably
+determined, property taxes shall be pro-rated based on land area and the value of the land improvements as
+shown on the assessment records of the town. Property taxes, including personal property taxes levied solely
+on the Project on the Premises associated with the Project, shall be paid by the Tenant",,,
+Site Lease - GLD - Canton (ES).pdf,Purchase Options,"Upon Owner's exercise of the right of first offer, Owner shall thereupon enter into a purchase and sale agreement with the Tenant upon the offered terms and conditions and the conveyance shall be required to close within thirty (30) days.",This document does not contain any information regarding purchase options.,194.0,0.8151260504201681,0.6183405789908221
+Site Lease - GLD - Canton (ES).pdf,Quiet Enjoyment,,"2. Landlord's Interest in Premises/Tenant's Quiet Enjoyment. Landlord
+represents, warrants and covenants that Landlord (check appropriate box) [X] is the fee title owner
+of the Property or [_] has a leasehold interest in the Property, in which event Landlord represents,
+warrants and covenants that Landlord has a valid leasehold interest in the Property and that
+Landlord is not in default of its lease. Landlord represents, warrants and covenants that Landlord
+has lawful authorization to use and occupy the Premises and that Tenant, subject to all of the
+terms and conditions of this Lease, and provided that Tenant has not committed or suffered to be
+22
+committed a Tenant Event of Default, shall have quiet and peaceful possession of the Premises
+for the permitted Use, free from any claim of any Person of superior title thereto without
+hindrance to or interference with or molestation of Tenant's quiet enjoyment thereof, throughout
+the Term",,,
+Site Lease - GLD - Canton (ES).pdf,Removal Requirements,,"**VII. REMOVAL AND RELOCATION.**
+
+**A.**
+
+1. If this Lease has not terminated earlier pursuant to Subparagraph I.D.2 or Paragraph I.F of this Lease, then on the Year 25 Termination Date, Tenant shall, at its sole cost and expense, remove the Solar System from the Premises and restore the License Areas in accordance with all Removal Obligations. This Paragraph VII.A and the Removal Obligations survive the termination of this Lease until said Removal Obligations are fully completed. Tenant shall complete the Removal Obligations within sixty (60) days of the Year 25 Termination Date
+
+**B.**
+
+During the time period that Tenant is removing or causing to be removed the Solar System from the Property pursuant to the terms of this Lease, the Tenant Parties can enter onto the Premises with persons and equipment for the purpose of said removal subject to all of the requirements and limitations set forth in Paragraph IV.A above of this Lease and also subject to the requirement that Tenant obtain and comply with all Removal Approvals.
+
+**C.**
+
+For Design, Engineering and Approval
+
+**Section 9. Removal of Solar Facility.** Subject to the terms and conditions of this section, Tenant shall remove the Solar Facility at the end or termination of the Lease, as it may be renewed. Tenant shall provide Owner with a minimum of thirty (60) days’ notice of its intent to remove the Solar Facility (""Tenant's Removal Notice"")",,,
+Site Lease - GLD - Canton (ES).pdf,Removal Timeline & Expectations,"Tenant shall provide Owner with a minimum of thirty (60) days' notice of its intent to remove the Solar Facility (""Tenant's Removal Notice"").","**VII. REMOVAL AND RELOCATION.**
+
+**A.**
+
+1. If this Lease has not terminated earlier pursuant to Subparagraph I.D.2 or Paragraph I.F of this Lease, then on the Year 25 Termination Date, Tenant shall, at its sole cost and expense, remove the Solar System from the Premises and restore the License Areas in accordance with all Removal Obligations. This Paragraph VII.A and the Removal Obligations survive the termination of this Lease until said Removal Obligations are fully completed. Tenant shall complete the Removal Obligations within sixty (60) days of the Year 25 Termination Date.
+
+**a.** If Owner elects not to waive the Tenant's obligation to undertake such removal, then all personal property and trade fixtures of Tenant, specifically including, but not limited to, the Solar Facility, shall be removed by Tenant from the Premises within One Hundred Eighty (180) days after the expiration or earlier termination of this Agreement. Notwithstanding anything to the contrary set forth herein, upon the expiration or earlier termination of this Agreement, Tenant shall, at its sole cost and expense, reasonably restore the Property to its original condition, provided that it is understood that it would not be reasonable to expect that any structures and mature trees removed in conjunction with the Project be replaced with equivalent structures or mature trees. Tenant shall have the right at any time during the Term of this Lease to remove the Solar Facility from the Premises without the consent of the Owner; provided, however, that such removal of the Solar Facility does not itself serve to terminate this Lease; Tenant shall be responsible for all payments under the Lease until the expiration of the term or other termination in conformance with this Agreement.",1649.0,0.9269252388982574,0.8453639336515347
+Site Lease - GLD - Canton (ES).pdf,Renewal Terms,"Tenant shall have three (3) options to extend this Lease, each option being for a tenn of five (5) years (each, a ""Renewal Term""). Tenant shall exercise such extension option, if at all, by giving written notice to Owner not more than twelve (12) months nor less than three (3) months prior to the expiration of the then current term of the Lease.","Provided Tenant is not in default of the terms of this Lease, Tenant shall have three (3) options to extend
+this Lease, each option being for a term of five (5) years (each, a “Renewal Term”). Tenant shall exercise
+such extension option, if at all, by giving written notice to Owner not more than twelve (12) months nor
+less than three (3) months prior to the expiration of the then current term of the Lease",70.0,0.1715686274509804,0.9906742305693736
+Site Lease - GLD - Canton (ES).pdf,Rent Amount,Section 3.,This document does not contain any information regarding the rent amount.,65.0,0.8904109589041096,0.5598459910924528
+Site Lease - GLD - Canton (ES).pdf,Rent Calculation,,This request cannot be fulfilled because the provided text does not contain any information about rent calculation or price.,,,
+Site Lease - GLD - Canton (ES).pdf,Rent Commencement,"Commencing on the date that Central Maine Power (""CMP"") issues the Permission to Operate (PTO) or the final analogous permit or approval allowing the Project to begin delivering electrical output to the grid at its rated capacity (the ""Commencement Date"")",This document does not contain a definition for Rent Commencement.,206.0,0.807843137254902,0.6520463861387641
+Site Lease - GLD - Canton (ES).pdf,Rent Escalator (Amount),Annual Rent for Years 3-20: Previous year Annual Rent increased by 2%,,,,
+Site Lease - GLD - Canton (ES).pdf,Rent Escalator (Y/N),,,,,
+Site Lease - GLD - Canton (ES).pdf,Rent Escalator Effective Date,Annual Rent for Years 3-20: Previous year Annual Rent increased by 2%,This document does not contain any information regarding a rent escalator effective date.,64.0,0.7191011235955056,0.6595376676811155
+Site Lease - GLD - Canton (ES).pdf,SNDA,,"""SNDA"" means a subordination, non-disturbance and attornment agreement from a
+Lender. Such SNDA shall:
+acknowledge and consent to the Tenant's rights in the Premises and License Areas,
+b. acknowledge that such Lender has no interest in the Solar System and
+Environmental Attributes and shall not gain any interest in the Solar System and Environmental
+Attributes by virtue of the Landlord's or the Tenant's performance or breach of this Lease, and
+a.",,,
+Site Lease - GLD - Canton (ES).pdf,Site Access Rights,,"(g) Tenant shall have 24-hours-a-day, 7-days-a-week access to the Premises and the Easements
+(the ""Access"") at all times during the Feasibility and Permitting Period, and Operations Term of this Lease
+and any Renewal Term; access to the rights of way designated as ""temporary"" in Exhibit B shall terminate
+no more than 180 days following issuance of the PTO unless specifically designated as having a longer
+period in Exhibit B. Tenant shall have the right to park its vehicles on Owner's Property when Tenant is
+constructing, removing, replacing and/or servicing its Solar Facility, provided that such parking does not
+unreasonably interfere with Owner's use of the Property; such parking is limited to those areas depicted on
+the plan attached as Exhibit B. Tenant hereby grants Owner the nonexclusive right to access the perimeter
+of the Leased Premises, including operation of vehicles and maintenance of the area outside of the fencing
+of the Facility but within the boundaries of the Leased Premises. This grant is not revocable during the
+term of the Lease as it may be renewed",,,
+Site Lease - GLD - Canton (ES).pdf,Site Control Terms,,"(a) During the period commencing on the Effective Date and terminating twelve (12) months
+thereafter (as the same may be extended pursuant to Section 4(c) hereof) (the “Feasibility and Permitting
+Period""), Tenant, and its agents and contractors, are hereby granted the right, at Tenant's sole cost and
+expense, to enter upon the Property and conduct such analyses, tests, reviews, inspections and studies
+(collectively, the “Tests"") as Tenant deems necessary to determine the Property's suitability for Tenant's
+intended use thereof and to obtain any and all permits, licenses, agreements and entitlements necessary for
+Tenant's intended use of the Property. Tenant shall provide a copy of permit applications to Owner upon
+filing and shall provide updates upon Owner's reasonable request. An anticipated list of tenant permits is
+attached as Schedule 4(a). Such Tests may include, but are not limited to, surveys, soil tests, environmental
+evaluations, solar assessments, and such other Tests as Tenant deems necessary or desirable. In addition,
+Tenant may obtain an abstract or preliminary title report regarding the Property from a title insurance
+company of its choice (the ""Title Report""). Owner shall within sixty (60) days of the Effective Date provide
+Tenant with any and all local, state or federal permits, approvals, authorizations, registrations, and licenses
+applicable to the Property (""Owner Permits""), which shall be set forth in Schedule 4(a) hereto. The parties
+hereto covenant and agree that notwithstanding anything to the contrary set forth herein, Tenant shall not
+be liable to Owner or any third party on account of or otherwise with regard to any pre-existing defect,
+condition or encumbrance on or with respect to the Property, title to the Property and/or any improvements
+located on the Property, regardless of whether or such defect, condition or encumbrance is disclosed by the
+Tests or the Title Report or Owner Permits
+
+(d) If prior to the Construction Commencement Date as defined below, in the sole and absolute
+discretion of Tenant, the Property is not suitable for Tenant's intended use thereof, or Tenant determines
+that the construction and operation of the Project on the Property would not be in Tenant's best interest, or
+Tenant is unsuccessful in obtaining the permits necessary for Tenant's intended use of the Property, then
+Tenant shall have the right at any time prior to the Construction Commencement Date to terminate this
+Agreement by providing written notice thereof to Owner. Upon and after such termination, neither Owner
+nor Tenant shall have any further obligation or liability under this Agreement except as otherwise expressly
+provided herein; for the avoidance of doubt, in the event that Tenant determines not to construct the Facility
+pursuant to this subparagraph, then all project documents including without limitation the wetlands
+characterization, permits, approvals, CMP authority, the interconnection agreement, the net energy billing
+agreement and surveys and plans obtained or in the possession of Tenant or Green Lantern Development,
+LLC (""Tenant Project Documents"") will be assigned to Owner or its assigns at no additional cost to Owner",,,
+Site Lease - GLD - Canton (ES).pdf,Site Lease Prepayment (Amount),,This document does not contain any information regarding a front-loaded payment early in the lease term.,,,
+Site Lease - GLD - Canton (ES).pdf,Site Lease Prepayment (Y/N),,This document does not contain any information regarding a front-loaded payment early in the lease term.,,,
+Site Lease - GLD - Canton (ES).pdf,Summary of Economic Terms,,"This request cannot be fulfilled because the provided document does not contain any information regarding the term ""Summary of Economic Terms"" or ""DEFINITION: Costs and other payments made from one party to another"".",,,
+Site Lease - GLD - Canton (ES).pdf,Termination & Removal - Lessee,,,,,
+Site Lease - GLD - Canton (ES).pdf,Termination & Removal - Lessor,,,,,
+Site Lease - GLD - Canton (ES).pdf,Termination - Notice Requirements,,,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Amendments and/or Estoppels,,"(a) Owner or Tenant shall from time to time, within ten (10) days after receipt of the other party's written request therefor, deliver a written statement addressed to the requesting party and/or to any Financing Entity (as specified by Tenant) (each an “Estoppel Certificate”) certifying all or some of the below:
+
+(i) That the Agreement is unmodified and in full force and effect (or if modified, a brief description of such modification and that this Agreement as so modified is in full force and effect);
+
+(ii) That the Agreement attached to the Estoppel Certificate is a true and correct copy of this Agreement, and all amendments hereto, and constitutes the entire agreement between Owner and Tenant relating to the Solar Facility;
+
+(iii) That to the knowledge of Owner, Tenant has not previously assigned or hypothecated its rights or interests under this Agreement, except as described in such Estoppel Certificate with as much specificity as Owner is able to provide;
+
+(iv) The term of this Agreement and the Annual Rent then in effect and any additional charges pursuant to this Lease;
+
+(v) The date through which Tenant has paid the Rent;
+
+(vi) Neither party to the Agreement is in default nor has either breached the Agreement and, to the best of Owner's knowledge, no facts or circumstances exist which, with the passage of time or the giving of notice or both, would constitute a default or breach by either such party under this Agreement;
+
+(vii) There are no actions pending against Owner under the bankruptcy or any similar laws of the United States or any state;
+
+(viii) Owner is not aware of any event, act, circumstance or condition constituting a Force Majeure Event under the Agreement (“Force Majeure Event” meaning, in relation to a Party, any act, event or circumstance, to the extent to which the cause of such act, event or circumstance is not of such Party's making nor within that Party's reasonable control, including without limitation, acts of God, natural disasters or catastrophic events such as epidemics, pandemics, nuclear accidents, fire, flood, typhoons or earthquakes, war, civil disturbances, insurrections, accidents, damage to its facilities, labor disputes, embargos, acts of any governmental body not attributable to such Party's failure to comply with this Agreement);
+
+(ix) Owner has not paid any amounts or received any claims under the indemnification provisions in the Agreement;
+
+(x) Tenant does not owe any indemnity payments to Owner and Owner has no existing counterclaims, offsets or defenses against Tenant under the Agreement;
+
+(xi) There are no proceedings pending or, to Owner's knowledge, threatened against or affecting Owner in any court or by or before any court, governmental authority or arbitration board or tribunal which could reasonably be expected to have a material adverse effect on the ability of Owner to perform its obligations under the Agreement;
+
+(xii) There are no disputes or proceedings between Owner and Tenant related to the Agreement;
+
+(xiii) The assignment of certain direct or indirect equity interests in Tenant to the Financing Entity will not violate the terms and conditions of the Agreement, and any related consent or notice to Owner under the Agreement is hereby deemed satisfied;
+
+(xiv) Owner agrees (i) to provide notice of any default by Tenant under the Agreement to Financing Entity at an address provided to Owner by Tenant and (ii) such Financing Entity is a Financing Entity pursuant to Section 18 of the Agreement; and
+
+(xv) Such other matters as are reasonably requested by Tenant or its Financing Entities",,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Assignment by Lessee,"6a. Upon notice to Owner, Tenant shall have the right to assign or transfer its rights under this Agreement, in whole or in part, to any person or any business entity at any time, subject to the assignee assuming all of Tenant’s obligations hereunder. After delivery by Tenant to Owner of an instrument of assumption by an assignee wherein such assignee assumes all of the obligations of Tenant under this Agreement, Tenant will thereafter be relieved of all liabilities and obligations pursuant to this Agreement.",,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Assignment by Lessor,6b. Owner may assign its rights and obligations under this Agreement to its successor in interest in and to the Property without the prior consent of Tenant.,,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Co-terminus with PPA (Y/N),,This document does not contain any information regarding the term of the lease and PPA running concurrently.,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Default,,,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Effective Date,See Section 22o & comment on this section,"""Effective Date"" is defined in the preamble of this Lease",41.0,0.7192982456140351,0.5771528868600513
+Site Lease - GLD - Hi Lo Biddy.pdf,Eminent Domain,,"If the whole or substantially the whole of the Buildings,
+Improvements or the Premises should be taken for any public or quasi-public use, by right of
+eminent domain or otherwise, or should be sold in lieu of condemnation, then this Lease shall
+terminate as of the date when physical possession of the Buildings, Improvements or the Premises
+is taken by the condemning authority. If less than the whole or substantially the whole of the
+Buildings, Improvements or the Premises is thus taken or sold, Landlord (whether or not the
+Premises is affected thereby) may in its reasonable discretion terminate this Lease by giving
+written notice thereof to Tenant in which event this Lease shall terminate as of the date when
+physical possession of such portion of the Buildings, Improvements or Premises is taken by the",,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Expiration Date,"2. The operating term of this Agreement (the “Operations Term”) shall be thirty-five (35) years, commencing on the commencement of commercial operations of the solar array (the “Commencement Date”) and expiring on the thirty-fifth (35th) anniversary of the Commencement Date",,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Fee Simple Owner (Y/N),16d. Owner is the fee owner of the Premises and the Easement,This document does not contain any information regarding fee simple ownership.,61.0,0.782051282051282,0.719550092194403
+Site Lease - GLD - Hi Lo Biddy.pdf,First Payment Due,"3. Down Payment: Two Thousand, Five Hundred Dollars ($2,500.00), which the parties agree and acknowledge was paid upon execution of Option Agreement",,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Force Majeure,,"""Event of Force Majeure"" under this Lease, means: any acts of God, fire, volcano,
+earthquake, hurricane, blizzard, prolonged severe weather conditions, infectious disease,
+technological disaster, catastrophe, large scale infestation of any type, tremors, flood, explosion,
+release of nuclear radiation, release of biotoxic or of biochemical agent(s), the elements, war,
+blockade, riots, mob violence or civil disturbance, any act or acts of terrorism, an inability to
+procure goods or services or a general shortage of labor, equipment, facilities, energy, materials or
+supplies in the open market, failure of transportation, strikes, walkouts, actions of labor unions,
+governmentally imposed moratoriums or court orders. Performance under this Lease shall be
+excused by an Event of Force Majeure for the length of the delay caused by the Event of Force
+Majeure",,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Governing Law,Section 22i & page 1,,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Initial Term,"2. The operating term of this Agreement (the “Operations Term”) shall be thirty-five (35) years, commencing on the commencement of commercial operations of the solar array (the “Commencement Date”) and expiring on the thirty-fifth (35th) anniversary of the Commencement Date","D. Term and Earlier Termination.
+1. Term. The term (“Term”) of this Lease shall commence on the Effective
+Date and end on the Year 25 Termination Date or on such earlier date as this Lease may be
+terminated in accordance with the provisions of this Lease.",198.0,0.7226277372262774,0.7738702874556502
+Site Lease - GLD - Hi Lo Biddy.pdf,Lessee (Tenant) Entity Name,,,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Lessor (Landlord) Entity Name,,This document does not contain any information regarding the term specified.,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Liens,,"(e) If the state of title to the Property as set forth in the Title Report indicates any liens, claims
+or encumbrances which may interfere with Tenant's use and operation of the Premises and/or the
+Easements, Tenant shall have the right but not the obligation to either (i) discharge such liens, claims and/or
+encumbrances, if possible, and deduct the cost thereof from the Rent to become due hereunder, or (ii)
+terminate this Lease by providing written notice thereof to Owner. Provided, however, the Owner shall
+have thirty (30) days upon receipt of notice to clear any title issues prior to any action by Tenant. Upon and
+after such termination, neither Owner nor Tenant shall have any further obligation or liability under this
+Agreement except as otherwise expressly provided herein; for the avoidance of doubt, in the event that
+Tenant determines not to construct the Facility pursuant to this subparagraph, then the Tenant Project
+Documents will be assigned to Owner or its assigns at no additional cost to Owner",,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Non-Disturbance Requirements,,This document does not contain any information regarding Non-Disturbance Requirements.,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Payment Terms,"3. Down Payment: Two Thousand, Five Hundred Dollars ($2,500.00), which the parties agree and acknowledge was paid upon execution of Option Agreement
+Payment #2: Fifteen Thousand Dollars ($15,000), payable by Tenant within 5 days of execution of this Agreement by all parties.
+Fifty-Nine Thousand Dollars ($59,000), due and owing upon the later of (i) the date of the start of commercial operations (the “Commencement Date”) as defined in this Land Lease Agreement, or (ii) January 15, 2022.","This context does not mention anything about payment terms or annual lease payments, so I cannot extract the requested data from the provided context.",395.0,0.8061224489795918,0.6573830071651462
+Site Lease - GLD - Hi Lo Biddy.pdf,"Per Per ($/kWH, $/kW, $/MW, $/MWh, etc.)",,This document does not contain any information regarding the term you specified.,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Prevailing Party Provision (Y/N),,This document does not contain any information regarding the prevailing party provision.,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Property Size,"1. Owner hereby demises and leases to Tenant, and Tenant hereby leases from Owner, for the purposes described herein, the portion of the Property depicted as “Area Included in Ground Lease, approximately 4 Acres,” on the Site Plan (the “Premises”)",,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Property Tax ($),,"Section 8. Taxes. As of the Effective Date, Tenant agrees to pay or cause to be paid when due all
+state and local personal property taxes, real estate taxes, municipal charges and assessments due against the
+Solar Facility. Nothing in this Section 8 shall be construed as limiting Tenant's right to contest, appeal or
+challenge any tax assessment. If property taxes associated solely with the Premises cannot be reasonably
+determined, property taxes shall be pro-rated based on land area and the value of the land improvements as
+shown on the assessment records of the town. Property taxes, including personal property taxes levied solely
+on the Project on the Premises associated with the Project, shall be paid by the Tenant",,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Purchase Options,,This document does not contain any information regarding purchase options.,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Purchase Options (Y/N),,,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Quiet Enjoyment,,"2. Landlord's Interest in Premises/Tenant's Quiet Enjoyment. Landlord
+represents, warrants and covenants that Landlord (check appropriate box) [X] is the fee title owner
+of the Property or [_] has a leasehold interest in the Property, in which event Landlord represents,
+warrants and covenants that Landlord has a valid leasehold interest in the Property and that
+Landlord is not in default of its lease. Landlord represents, warrants and covenants that Landlord
+has lawful authorization to use and occupy the Premises and that Tenant, subject to all of the
+terms and conditions of this Lease, and provided that Tenant has not committed or suffered to be
+22
+committed a Tenant Event of Default, shall have quiet and peaceful possession of the Premises
+for the permitted Use, free from any claim of any Person of superior title thereto without
+hindrance to or interference with or molestation of Tenant's quiet enjoyment thereof, throughout
+the Term",,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Removal Requirements,"9. Upon written request of Owner given to Tenant within ten (10) days of the expiration or earlier termination of this Agreement, or at Tenant’s option, all personal property and trade fixtures of Tenant, specifically including, but not limited to, the Solar Facility, shall be removed by Tenant from the Premises within One Hundred Twenty (120) days after the expiration or earlier termination of this Agreement. Notwithstanding anything to the contrary set forth herein, upon the Expiration or earlier termination of this Agreement, Tenant shall, at its sole cost and expense, reasonably restore the Property to its original condition","**VII. REMOVAL AND RELOCATION.**
+
+**A.**
+
+1. If this Lease has not terminated earlier pursuant to Subparagraph I.D.2 or Paragraph I.F of this Lease, then on the Year 25 Termination Date, Tenant shall, at its sole cost and expense, remove the Solar System from the Premises and restore the License Areas in accordance with all Removal Obligations. This Paragraph VII.A and the Removal Obligations survive the termination of this Lease until said Removal Obligations are fully completed. Tenant shall complete the Removal Obligations within sixty (60) days of the Year 25 Termination Date.
+
+**B.**
+
+During the time period that Tenant is removing or causing to be removed the Solar System from the Property pursuant to the terms of this Lease, the Tenant Parties can enter onto the Premises with persons and equipment for the purpose of said removal subject to all of the requirements and limitations set forth in Paragraph IV.A above of this Lease and also subject to the requirement that Tenant obtain and comply with all Removal Approvals.
+
+**C.**
+
+For Design, Engineering and Approval.
+
+**Section 9. Removal of Solar Facility.**
+
+Upon written request of Owner given to Tenant within ten (10) days of the expiration or earlier termination of this Agreement, or at Tenant's option, all personal property and trade fixtures of Tenant, specifically including, but not limited to, the Solar Facility, shall be removed by Tenant from the Premises within One Hundred Twenty (120) days after the expiration or earlier termination of this Agreement. Notwithstanding anything to the contrary set forth herein, upon the expiration or earlier termination of this Agreement, Tenant shall, at its sole cost and expense, reasonably restore the Property to its original condition, provided that it is understood that it would not be reasonable to expect that any structures and mature trees removed in conjunction with the Project be replaced with equivalent structures or mature trees. Tenant shall have the right at any time during the Term of this Lease to remove the Solar Facility from the Premises without the consent of the Owner.
+
+**Section 9. Removal of Solar Facility.**
+
+Subject to the terms and conditions of this section, Tenant shall remove the Solar Facility at the end or termination of the Lease, as it may be renewed. Tenant shall provide Owner with a minimum of thirty (60) days’ notice of its intent to remove the Solar Facility (""Tenant's Removal Notice"").",1828.0,0.7424857839155159,0.9292033299103228
+Site Lease - GLD - Hi Lo Biddy.pdf,Removal Timeline & Expectations,"9. Upon written request of Owner given to Tenant within ten (10) days of the expiration or earlier termination of this Agreement, or at Tenant’s option, all personal property and trade fixtures of Tenant, specifically including, but not limited to, the Solar Facility, shall be removed by Tenant from the Premises within One Hundred Twenty (120) days after the expiration or earlier termination of this Agreement. Notwithstanding anything to the contrary set forth herein, upon the Expiration or earlier termination of this Agreement, Tenant shall, at its sole cost and expense, reasonably restore the Property to its original condition","**VII. REMOVAL AND RELOCATION.**
+
+**A.**
+
+1. If this Lease has not terminated earlier pursuant to Subparagraph I.D.2 or Paragraph I.F of this Lease, then on the Year 25 Termination Date, Tenant shall, at its sole cost and expense, remove the Solar System from the Premises and restore the License Areas in accordance with all Removal Obligations. This Paragraph VII.A and the Removal Obligations survive the termination of this Lease until said Removal Obligations are fully completed. Tenant shall complete the Removal Obligations within sixty (60) days of the Year 25 Termination Date.
+
+**Section 9. Removal of Solar Facility.**
+
+Upon written request of Owner given to Tenant within ten (10) days of the expiration or earlier termination of this Agreement, or at Tenant's option, all personal property and trade fixtures of Tenant, specifically including, but not limited to, the Solar Facility, shall be removed by Tenant from the Premises within One Hundred Twenty (120) days after the expiration or earlier termination of this Agreement. Notwithstanding anything to the contrary set forth herein, upon the expiration or earlier termination of this Agreement, Tenant shall, at its sole cost and expense, reasonably restore the Property to its original condition, provided that it is understood that it would not be reasonable to expect that any structures and mature trees removed in conjunction with the Project be replaced with equivalent structures or mature trees. Tenant shall have the right at any time during the Term of this Lease to remove the Solar Facility from the Premises without the consent of the Owner.",989.0,0.6093653727664818,0.9374871942553934
+Site Lease - GLD - Hi Lo Biddy.pdf,Renewal Terms,,This document does not contain any information regarding renewal terms or the ability to extend the Lease beyond the initial term without having to amend the Lease.,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Rent Amount,"3. Total Rent for the term of the Lease is Seventy-Six Thousand, Five Hundred Dollars ($76,500.00)",I have reviewed the provided document and cannot find any information regarding the rent amount.,82.0,0.8367346938775511,0.6609182011823075
+Site Lease - GLD - Hi Lo Biddy.pdf,Rent Calculation,,"This context does not mention anything about Rent Calculation or Price, so I cannot extract the requested data from the provided context.",,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Rent Commencement,"3. Down Payment: Two Thousand, Five Hundred Dollars ($2,500.00), which the parties agree and acknowledge was paid upon execution of Option Agreement","""Term and Earlier Termination.
+D.
+1.
+Term. The term (“Term”) of this Lease shall commence on the Effective
+Date and end on the Year 25 Termination Date or on such earlier date as this Lease may be
+terminated in accordance with the provisions of this Lease.""",200.0,0.7782101167315175,0.6987212004059381
+Site Lease - GLD - Hi Lo Biddy.pdf,Rent Escalator (Amount),,,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Rent Escalator (Y/N),,,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Rent Escalator Effective Date,,"This context does not mention anything about Rent Escalator Effective Date, so I cannot extract the requested data from the provided context.",,,
+Site Lease - GLD - Hi Lo Biddy.pdf,SNDA,,"""SNDA"" means a subordination, non-disturbance and attornment agreement from a
+Lender. Such SNDA shall:
+acknowledge and consent to the Tenant's rights in the Premises and License Areas,
+b. acknowledge that such Lender has no interest in the Solar System and
+Environmental Attributes and shall not gain any interest in the Solar System and Environmental
+Attributes by virtue of the Landlord's or the Tenant's performance or breach of this Lease, and
+a.
+C",,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Site Access Rights,"5g. Tenant shall have 24-hours-a-day, 7-days-a-week access to the Premises and the Easements (the “Access”) at all times during the Feasibility, Permitting and Construction Period, and Operations Term of this Lease and any Renewal Term. Tenant shall have the right to park its vehicles on Owner’s Property when Tenant is constructing, removing, replacing and/or servicing its Solar Facility, provided that such parking does not unreasonably interfere with Owner's use of the Property.","Tenant shall have 24-hours-a-day, 7-days-a-week access to the Premises and the Easements (the ""Access"") at all times during the Feasibility and Permitting Period, and Operations Term of this Lease and any Renewal Term; access to the rights of way designated as ""temporary"" in Exhibit B shall terminate no more than 180 days following issuance of the PTO unless specifically designated as having a longer period in Exhibit B.",210.0,0.43388429752066116,0.9022341671726415
+Site Lease - GLD - Hi Lo Biddy.pdf,Site Control Terms,,"(a) During the period commencing on the day that is thirty-one (31) days after the Public
+Utility Commission issues a Certificate of Public Good for the Facility in a form and with
+conditions acceptable to System Owner, and terminating twelve (12) months thereafter (as
+the same may be extended pursuant to Section 4(c) hereof) (the ""Feasibility, Permitting and
+Construction Period""), Tenant, and its agents and contractors, are hereby granted the right,
+at Tenant's sole cost and expense, to enter upon the Property and conduct such analyses,
+tests, reviews, inspections and studies (collectively, the ""Tests"") as Tenant deems necessary
+to determine the Property's suitability for Tenant's intended use thereof and to obtain any
+and all permits, licenses, agreements and entitlements necessary for Tenant's intended use
+of the Property. Such Tests may include, but are not limited to, surveys, soil tests,
+environmental evaluations, solar assessments, and such other Tests as Tenant deems
+necessary or desirable. In addition, Tenant may obtain an abstract or preliminary title report
+regarding the Property from a title insurance company of its choice (the ""Title Report"")
+
+(a) During the period commencing on the Effective Date and terminating twelve (12) months
+thereafter (as the same may be extended pursuant to Section 4(c) hereof) (the “Feasibility and Permitting
+Period""), Tenant, and its agents and contractors, are hereby granted the right, at Tenant's sole cost and
+expense, to enter upon the Property and conduct such analyses, tests, reviews, inspections and studies
+(collectively, the “Tests"") as Tenant deems necessary to determine the Property's suitability for Tenant's
+intended use thereof and to obtain any and all permits, licenses, agreements and entitlements necessary for
+Tenant's intended use of the Property. Tenant shall provide a copy of permit applications to Owner upon
+filing and shall provide updates upon Owner's reasonable request. An anticipated list of tenant permits is
+attached as Schedule 4(a). Such Tests may include, but are not limited to, surveys, soil tests,
+environmental evaluations, solar assessments, and such other Tests as Tenant deems necessary or desirable.
+In addition, Tenant may obtain an abstract or preliminary title report regarding the Property from a title
+insurance company of its choice (the ""Title Report""). Owner shall within sixty (60) days of the Effective Date
+provide Tenant with any and all local, state or federal permits, approvals, authorizations, registrations, and
+licenses applicable to the Property (""Owner Permits""), which shall be set forth in Schedule 4(a) hereto. The
+parties hereto covenant and agree that notwithstanding anything to the contrary set forth herein, Tenant shall
+not be liable to Owner or any third party on account of or otherwise with regard to any pre-existing defect,
+condition or encumbrance on or with respect to the Property, title to the Property and/or any improvements
+located on the Property, regardless of whether or such defect, condition or encumbrance is disclosed by the
+Tests or the Title Report or Owner Permits
+
+(d) If prior to the Construction Commencement Date as defined below, in the sole and absolute
+discretion of Tenant, the Property is not suitable for Tenant's intended use thereof, or Tenant determines
+that the construction and operation of the Project on the Property would not be in Tenant's best interest, or
+Tenant is unsuccessful in obtaining the permits necessary for Tenant's intended use of the Property, then
+Tenant shall have the right at any time prior to the Construction Commencement Date to terminate this
+Agreement by providing written notice thereof to Owner. Upon and after such termination, neither Owner
+nor Tenant shall have any further obligation or liability under this Agreement except as otherwise expressly
+provided herein; for the avoidance of doubt, in the event that Tenant determines not to construct the Facility
+pursuant to this subparagraph, then all project documents including without limitation the wetlands
+characterization, permits, approvals, CMP authority, the interconnection agreement, the net energy billing
+agreement and surveys and plans obtained or in the possession of Tenant or Green Lantern Development,
+LLC (""Tenant Project Documents"") will be assigned to Owner or its assigns at no additional cost to Owner",,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Site Lease Prepayment (Amount),"3. Down Payment: Two Thousand, Five Hundred Dollars ($2,500.00), which the parties agree and acknowledge was paid upon execution of Option Agreement","Payment #2: Fifteen Thousand Dollars ($15,000), payable by Tenant within 5 days of execution of
+this Agreement by all parties.
+-1-
+Payment #3: Fifty Nine Thousand Dollars ($59,000.00), due and owing upon the later of (i) the
+date of the start of commercial operations (the ""Commencement Date"") as defined in this Land
+Lease Agreement, or (ii) January 15, 2022, whichever is first.",294.0,0.7736842105263158,0.7682178633161046
+Site Lease - GLD - Hi Lo Biddy.pdf,Site Lease Prepayment (Y/N),"3. Down Payment: Two Thousand, Five Hundred Dollars ($2,500.00), which the parties agree and acknowledge was paid upon execution of Option Agreement","Payment #3: Fifty Nine Thousand Dollars ($59,000.00), due and owing upon the later of (i) the date of the start of commercial operations (the ""Commencement Date"") as defined in this Land Lease Agreement, or (ii) January 15, 2022, whichever is first.",185.0,0.7429718875502008,0.7450523097575786
+Site Lease - GLD - Hi Lo Biddy.pdf,Summary of Economic Terms,,This context does not contain any information about the term you requested.,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Termination & Removal - Lessee,,,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Termination & Removal - Lessor,,,,,
+Site Lease - GLD - Hi Lo Biddy.pdf,Termination - Notice Requirements,9. Upon written request of Owner given to Tenant within ten (10) days of the expiration or earlier termination of this Agreement,,,,
+Site Lease - Shine - DuQuoin.pdf,Amendments and/or Estoppels,,"12. Amendments; Acknowledgments. Lessor shall cooperate in amending this Agreement from time to
+time to include any provision that may be reasonably requested by Lessee's lender, any assignee of
+rights under this Agreement, or the lender of any assignee bereunder.",,,
+Site Lease - Shine - DuQuoin.pdf,Assignment by Lessee,,,,,
+Site Lease - Shine - DuQuoin.pdf,Assignment by Lessor,,,,,
+Site Lease - Shine - DuQuoin.pdf,Co-terminus with PPA (Y/N),,This document does not contain any information regarding the term of the lease or PPA.,,,
+Site Lease - Shine - DuQuoin.pdf,Default,,,,,
+Site Lease - Shine - DuQuoin.pdf,Effective Date,"This SITE LEASE AGREEMENT (this “Agreement”) is made and entered into this June 27, 2019 (the “Effective Date”), by and between GreanLife Solar, LLC d/b/a Shine Development Partners (“Lessee”) and the City of DuQuoin (“Lessor”).","""Effective Date"" is defined in the preamble of this Lease",188.0,0.8245614035087719,0.7330033934937921
+Site Lease - Shine - DuQuoin.pdf,Eminent Domain,,"If the whole or substantially the whole of the Buildings,
+Improvements or the Premises should be taken for any public or quasi-public use, by right of
+eminent domain or otherwise, or should be sold in lieu of condemnation, then this Lease shall
+terminate as of the date when physical possession of the Buildings, Improvements or the Premises
+is taken by the condemning authority. If less than the whole or substantially the whole of the
+Buildings, Improvements or the Premises is thus taken or sold, Landlord (whether or not the
+Premises is affected thereby) may in its reasonable discretion terminate this Lease by giving
+written notice thereof to Tenant in which event this Lease shall terminate as of the date when
+physical possession of such portion of the Buildings, Improvements or Premises is taken by the",,,
+Site Lease - Shine - DuQuoin.pdf,Expiration Date,,,,,
+Site Lease - Shine - DuQuoin.pdf,Fee Simple Owner (Y/N),See Section 5 and Recital A,This document does not contain any information regarding the term of the lease or the definition of fee simple ownership.,104.0,0.859504132231405,0.5980665198283845
+Site Lease - Shine - DuQuoin.pdf,First Payment Due,,,,,
+Site Lease - Shine - DuQuoin.pdf,Force Majeure,,"""Event of Force Majeure"" under this Lease, means: any acts of God, fire, volcano,
+earthquake, hurricane, blizzard, prolonged severe weather conditions, infectious disease,
+technological disaster, catastrophe, large scale infestation of any type, tremors, flood, explosion,
+release of nuclear radiation, release of biotoxic or of biochemical agent(s), the elements, war,
+blockade, riots, mob violence or civil disturbance, any act or acts of terrorism, an inability to
+procure goods or services or a general shortage of labor, equipment, facilities, energy, materials or
+supplies in the open market, failure of transportation, strikes, walkouts, actions of labor unions,
+governmentally imposed moratoriums or court orders. Performance under this Lease shall be
+excused by an Event of Force Majeure for the length of the delay caused by the Event of Force
+Majeure",,,
+Site Lease - Shine - DuQuoin.pdf,Governing Law,"7. Governing Law, This Agreement shall be governed by, and interpreted and construed in accordance with, the laws of the State of Illinois, without regard to conflicts of law principles.",,,,
+Site Lease - Shine - DuQuoin.pdf,Initial Term,"2. Term, This Agreement shall be for a period commencing on the Effective Date and expiring on the date that is the earlier of (a) the twenty-fifth (25) anniversary of the Effective Date, and (b) one hundred twenty (120) days following expiration of the term of the Solar Agreement, and (c) any earlier termination of the Solar Agreement due to default by Lessee thereunder. No delay or interruption by Lessee in the use or enjoyment of any right hereby granted shall result in the loss, limitation or abandonment of any of the right, title, interest, or estate granted hereby.","D. Term and Earlier Termination.
+1. Term. The term (“Term”) of this Lease shall commence on the Effective Date and end on the Year 25 Termination Date or on such earlier date as this Lease may be terminated in accordance with the provisions of this Lease.",414.0,0.7175043327556326,0.8420553198366296
+Site Lease - Shine - DuQuoin.pdf,Lessee (Tenant) Entity Name,"This SITE LEASE AGREEMENT (this “Agreement”) is made and entered into this June 27, 2019 (the “Effective Date”), by and between GreanLife Solar, LLC d/b/a Shine Development Partners (“Lessee”) and the City of DuQuoin (“Lessor”).",,,,
+Site Lease - Shine - DuQuoin.pdf,Lessor (Landlord) Entity Name,"This SITE LEASE AGREEMENT (this “Agreement”) is made and entered into this June 27, 2019 (the “Effective Date”), by and between GreanLife Solar, LLC d/b/a Shine Development Partners (“Lessee”) and the City of DuQuoin (“Lessor”).",This document does not contain any information regarding the term specified.,180.0,0.7894736842105263,0.6344507378928904
+Site Lease - Shine - DuQuoin.pdf,Liens,"Title. Lessor represents and warrants to Lessee that (a) Lessor holds fee simple title to the Premises, free and clear of all liens and any other encumbrances, and (b) no lien or other encumbrance to which the Premises is subject would reasonably be expected to adversely impact Lessee’s rights hereunder or under the Solar Agreement. Lessor further represents and warrants to Lessee that Lessor has the right to execute and deliver this Agreement and to grant to Lessee the rights hereunder, and that such grant does not, and will not, violate or breach Lessor’s organizational documents, any law, rule or regulation, or any contract, agreement or arrangement to which Lessor is a party or by or to which any of Lessor’s assets or properties, including the Premises or the Facility, is bound or subject. In the event that, after the date of this Agreement, Lessor duly grants a mortgage for additional value (the “Subsequent
+Mortgage”), Lessor shall, prior to and as a condition to the effectiveness of such grant of a mortgage, cause the mortgagee under the Subsequent Mortgage to execute and deliver to the Lessee an agreement, in customary form and in form and substance reasonably acceptable to Lessee, acknowledging the subordination of the Subsequent Mortgage to the grant of the easement pursuant to this Agreement (the “Subordination Agreement”).","(e) If the state of title to the Property as set forth in the Title Report indicates any liens, claims
+or encumbrances which may interfere with Tenant's use and operation of the Premises and/or the
+Easements, Tenant shall have the right but not the obligation to either (i) discharge such liens, claims and/or
+encumbrances, if possible, and deduct the cost thereof from the Rent to become due hereunder, or (ii)
+terminate this Lease by providing written notice thereof to Owner. Provided, however, the Owner shall
+have thirty (30) days upon receipt of notice to clear any title issues prior to any action by Tenant. Upon and
+after such termination, neither Owner nor Tenant shall have any further obligation or liability under this
+Agreement except as otherwise expressly provided herein; for the avoidance of doubt, in the event that
+Tenant determines not to construct the Facility pursuant to this subparagraph, then the Tenant Project
+Documents will be assigned to Owner or its assigns at no additional cost to Owner",970.0,0.7153392330383481,0.8508841647491052
+Site Lease - Shine - DuQuoin.pdf,Non-Disturbance Requirements,,This document does not contain any information regarding Non-Disturbance Requirements.,,,
+Site Lease - Shine - DuQuoin.pdf,Payment Terms,,This document does not contain any information regarding payment terms or the amount owed for annual lease payments.,,,
+Site Lease - Shine - DuQuoin.pdf,"Per Per ($/kWH, $/kW, $/MW, $/MWh, etc.)",,"This context does not mention anything about the term you are looking for, so I cannot extract the requested data from the provided context.",,,
+Site Lease - Shine - DuQuoin.pdf,Prevailing Party Provision (Y/N),,This document does not contain any information regarding the prevailing party provision.,,,
+Site Lease - Shine - DuQuoin.pdf,Property Size,,,,,
+Site Lease - Shine - DuQuoin.pdf,Property Tax ($),,"Section 8. Taxes. As of the Effective Date, Tenant agrees to pay or cause to be paid when due all
+state and local personal property taxes, real estate taxes, municipal charges and assessments due against the
+Solar Facility. Nothing in this Section 8 shall be construed as limiting Tenant's right to contest, appeal or
+challenge any tax assessment. If property taxes associated solely with the Premises cannot be reasonably
+determined, property taxes shall be pro-rated based on land area and the value of the land improvements as
+shown on the assessment records of the town. Property taxes, including personal property taxes levied solely
+on the Project on the Premises associated with the Project, shall be paid by the Tenant",,,
+Site Lease - Shine - DuQuoin.pdf,Purchase Options,,This document does not contain any information regarding the ability for Lessee to have an option to buy the land from the Lessor.,,,
+Site Lease - Shine - DuQuoin.pdf,Quiet Enjoyment,,"2. Landlord's Interest in Premises/Tenant's Quiet Enjoyment. Landlord
+represents, warrants and covenants that Landlord (check appropriate box) [X] is the fee title owner
+of the Property or [_] has a leasehold interest in the Property, in which event Landlord represents,
+warrants and covenants that Landlord has a valid leasehold interest in the Property and that
+Landlord is not in default of its lease. Landlord represents, warrants and covenants that Landlord
+has lawful authorization to use and occupy the Premises and that Tenant, subject to all of the
+terms and conditions of this Lease, and provided that Tenant has not committed or suffered to be
+22
+committed a Tenant Event of Default, shall have quiet and peaceful possession of the Premises
+for the permitted Use, free from any claim of any Person of superior title thereto without
+hindrance to or interference with or molestation of Tenant's quiet enjoyment thereof, throughout
+the Term",,,
+Site Lease - Shine - DuQuoin.pdf,Removal Requirements,,"**Section 9. Removal of Solar Facility.** Subject to the terms and conditions of this section, Tenant shall remove the Solar Facility at the end or termination of the Lease, as it may be renewed. Tenant shall provide Owner with a minimum of thirty (60) days’ notice of its intent to remove the Solar Facility (""Tenant's Removal Notice"")
+
+**VII. REMOVAL AND RELOCATION.**
+A.
+1.
+If this Lease has not terminated earlier pursuant to Subparagraph I.D.2 or Paragraph I.F of this Lease, then on the Year 25 Termination Date, Tenant shall, at its sole cost and expense, remove the Solar System from the Premises and restore the License Areas in accordance with all Removal Obligations. This Paragraph VII.A and the Removal Obligations survive the termination of this Lease until said Removal Obligations are fully completed. Tenant shall complete the Removal Obligations within sixty (60) days of the Year 25 Termination Date",,,
+Site Lease - Shine - DuQuoin.pdf,Removal Timeline & Expectations,,"**VII. REMOVAL AND RELOCATION.**
+
+**A.**
+
+If this Lease has not terminated earlier pursuant to Subparagraph I.D.2 or Paragraph I.F of this Lease, then on the Year 25 Termination Date, Tenant shall, at its sole cost and expense, remove the Solar System from the Premises and restore the License Areas in accordance with all Removal Obligations. This Paragraph VII.A and the Removal Obligations survive the termination of this Lease until said Removal Obligations are fully completed. Tenant shall complete the Removal Obligations within sixty (60) days of the Year 25 Termination Date.
+
+**Section 9. Removal of Solar Facility.**
+
+Upon written request of Owner given to Tenant within ten (10) days of the expiration or earlier termination of this Agreement, or at Tenant's option, all personal property and trade fixtures of Tenant, specifically including, but not limited to, the Solar Facility, shall be removed by Tenant from the Premises within One Hundred Twenty (120) days after the expiration or earlier termination of this Agreement. Notwithstanding anything to the contrary set forth herein, upon the expiration or earlier termination of this Agreement, Tenant shall, at its sole cost and expense, reasonably restore the Property to its original condition, provided that it is understood that it would not be reasonable to expect that any structures and mature trees removed in conjunction with the Project be replaced with equivalent structures or mature trees. Tenant shall have the right at any time during the Term of this Lease to remove the Solar Facility from the Premises without the consent of the Owner.",,,
+Site Lease - Shine - DuQuoin.pdf,Renewal Terms,,This document does not contain any information regarding renewal terms or the ability to extend the Lease beyond the initial term without having to amend the Lease.,,,
+Site Lease - Shine - DuQuoin.pdf,Rent Amount,,This document does not contain any information regarding the rent amount.,,,
+Site Lease - Shine - DuQuoin.pdf,Rent Calculation,,"This context does not mention anything about Rent Calculation or Price, so I cannot extract the requested data from the provided context.",,,
+Site Lease - Shine - DuQuoin.pdf,Rent Commencement,,This document does not contain any information about the Rent Commencement.,,,
+Site Lease - Shine - DuQuoin.pdf,Rent Escalator (Amount),,,,,
+Site Lease - Shine - DuQuoin.pdf,Rent Escalator (Y/N),,,,,
+Site Lease - Shine - DuQuoin.pdf,Rent Escalator Effective Date,,"This context does not mention anything about Rent Escalator Effective Date, so I cannot extract the requested data from the provided context.",,,
+Site Lease - Shine - DuQuoin.pdf,SNDA,,"""SNDA"" means a subordination, non-disturbance and attornment agreement from a
+Lender. Such SNDA shall:
+acknowledge and consent to the Tenant's rights in the Premises and License Areas,
+b. acknowledge that such Lender has no interest in the Solar System and
+Environmental Attributes and shall not gain any interest in the Solar System and Environmental
+Attributes by virtue of the Landlord's or the Tenant's performance or breach of this Lease, and
+a.",,,
+Site Lease - Shine - DuQuoin.pdf,Site Access Rights,"1.Grant of Access. Lessor hereby grants and permits Lessee, its successors and assigns, access for the period of time set forth herein, across, over, under and above the Facility i) in order to construct, install, alter, protect, repair, maintain, replace, operate, maintain and remove the System, including any related interconnection equipment and any facilities or equipment appurtenant thereto as Lessee may from time to time require, and ii) as reasonably necessary to provide access to and services reasonably required for Lessee’s performance under the Solar Agreement. The rights granted hereunder shall run with and burden the Premises for the term of this Agreement.
+4.Reservation of Rights. Lessor reserves the right to use or authorize others to use the Premises in any manner not inconsistent with or which will not unreasonably interfere with the rights granted herein, provided, however, that Lessor shall not, nor shall permit others to, disturb the System, including any related interconnection equipment, in any way without prior written approval of the Lessee.","Tenant shall have 24-hours-a-day, 7-days-a-week access to the Premises and the Easements (the ""Access"") at all times during the Feasibility and Permitting Period, and Operations Term of this Lease and any Renewal Term; access to the rights of way designated as ""temporary"" in Exhibit B shall terminate no more than 180 days following issuance of the PTO unless specifically designated as having a longer period in Exhibit B. Tenant shall have the right to park its vehicles on Owner's Property when Tenant is constructing, removing, replacing and/or servicing its Solar Facility, provided that such parking does not unreasonably interfere with Owner's use of the Property; such parking is limited to those areas depicted on the plan attached as Exhibit B. Tenant hereby grants Owner the nonexclusive right to access the perimeter of the Leased Premises, including operation of vehicles and maintenance of the area outside of the fencing of the Facility but within the boundaries of the Leased Premises. This grant is not revocable during the term of the Lease as it may be renewed",844.0,0.7814814814814814,0.9161471185586907
+Site Lease - Shine - DuQuoin.pdf,Site Control Terms,,"(a) During the period commencing on the day that is thirty-one (31) days after the Public
+Utility Commission issues a Certificate of Public Good for the Facility in a form and with
+conditions acceptable to System Owner, and terminating twelve (12) months thereafter (as
+the same may be extended pursuant to Section 4(c) hereof) (the ""Feasibility, Permitting and
+Construction Period""), Tenant, and its agents and contractors, are hereby granted the right,
+at Tenant's sole cost and expense, to enter upon the Property and conduct such analyses,
+tests, reviews, inspections and studies (collectively, the ""Tests"") as Tenant deems necessary
+to determine the Property's suitability for Tenant's intended use thereof and to obtain any
+and all permits, licenses, agreements and entitlements necessary for Tenant's intended use
+of the Property. Such Tests may include, but are not limited to, surveys, soil tests,
+environmental evaluations, solar assessments, and such other Tests as Tenant deems
+necessary or desirable. In addition, Tenant may obtain an abstract or preliminary title report
+regarding the Property from a title insurance company of its choice (the ""Title Report"")
+
+(a) During the period commencing on the Effective Date and terminating twelve (12) months
+thereafter (as the same may be extended pursuant to Section 4(c) hereof) (the “Feasibility and Permitting
+Period""), Tenant, and its agents and contractors, are hereby granted the right, at Tenant's sole cost and
+expense, to enter upon the Property and conduct such analyses, tests, reviews, inspections and studies
+(collectively, the “Tests"") as Tenant deems necessary to determine the Property's suitability for Tenant's
+intended use thereof and to obtain any and all permits, licenses, agreements and entitlements necessary for
+Tenant's intended use of the Property. Tenant shall provide a copy of permit applications to Owner upon
+filing and shall provide updates upon Owner's reasonable request. An anticipated list of tenant permits is
+attached as Schedule 4(a). Such Tests may include, but are not limited to, surveys, soil tests, environmental
+evaluations, solar assessments, and such other Tests as Tenant deems necessary or desirable. In addition,
+Tenant may obtain an abstract or preliminary title report regarding the Property from a title insurance
+company of its choice (the ""Title Report""). Owner shall within sixty (60) days of the Effective Date provide
+Tenant with any and all local, state or federal permits, approvals, authorizations, registrations, and licenses
+applicable to the Property (""Owner Permits""), which shall be set forth in Schedule 4(a) hereto. The parties
+hereto covenant and agree that notwithstanding anything to the contrary set forth herein, Tenant shall not
+be liable to Owner or any third party on account of or otherwise with regard to any pre-existing defect,
+condition or encumbrance on or with respect to the Property, title to the Property and/or any improvements
+located on the Property, regardless of whether or such defect, condition or encumbrance is disclosed by the
+Tests or the Title Report or Owner Permits
+
+(d) If prior to the Construction Commencement Date as defined below, in the sole and absolute
+discretion of Tenant, the Property is not suitable for Tenant's intended use thereof, or Tenant determines
+that the construction and operation of the Project on the Property would not be in Tenant's best interest, or
+Tenant is unsuccessful in obtaining the permits necessary for Tenant's intended use of the Property, then
+Tenant shall have the right at any time prior to the Construction Commencement Date to terminate this
+Agreement by providing written notice thereof to Owner. Upon and after such termination, neither Owner
+nor Tenant shall have any further obligation or liability under this Agreement except as otherwise expressly
+provided herein; for the avoidance of doubt, in the event that Tenant determines not to construct the Facility
+pursuant to this subparagraph, then all project documents including without limitation the wetlands
+characterization, permits, approvals, CMP authority, the interconnection agreement, the net energy billing
+agreement and surveys and plans obtained or in the possession of Tenant or Green Lantern Development,
+LLC (""Tenant Project Documents"") will be assigned to Owner or its assigns at no additional cost to Owner
+
+(e) If the state of title to the Property as set forth in the Title Report indicates any liens, claims
+or encumbrances which may interfere with Tenant's use and operation of the Premises and/or the
+Easements, Tenant shall have the right but not the obligation to either (i) discharge such liens, claims and/or
+encumbrances, if possible, and deduct the cost thereof from the Rent to become due hereunder, or (ii)
+terminate this Lease by providing written notice thereof to Owner. Provided, however, the Owner shall
+have thirty (30) days upon receipt of notice to clear any title issues prior to any action by Tenant. Upon and
+after such termination, neither Owner nor Tenant shall have any further obligation or liability under this
+Agreement except as otherwise expressly provided herein; for the avoidance of doubt, in the event that
+Tenant determines not to construct the Facility pursuant to this subparagraph, then the Tenant Project
+Documents will be assigned to Owner or its assigns at no additional cost to Owner",,,
+Site Lease - Shine - DuQuoin.pdf,Site Lease Prepayment (Amount),,"Payment #2: Fifteen Thousand Dollars ($15,000), payable by Tenant within 5 days of execution of
+this Agreement by all parties.
+-1-
+Payment #3: Fifty Nine Thousand Dollars ($59,000.00), due and owing upon the later of (i) the
+date of the start of commercial operations (the ""Commencement Date"") as defined in this Land
+Lease Agreement, or (ii) January 15, 2022, whichever is first.",,,
+Site Lease - Shine - DuQuoin.pdf,Site Lease Prepayment (Y/N),,This document does not contain any information regarding a front-loaded payment early in the lease term.,,,
+Site Lease - Shine - DuQuoin.pdf,Summary of Economic Terms,,"This context does not contain any information about the term ""Summary of Economic Terms"" or the definition ""Costs and other payments made from one party to another"". Therefore, I cannot extract the requested data from the provided context.",,,
+Site Lease - Shine - DuQuoin.pdf,Termination & Removal - Lessee,,,,,
+Site Lease - Shine - DuQuoin.pdf,Termination & Removal - Lessor,,,,,
+Site Lease - Shine - DuQuoin.pdf,Termination - Notice Requirements,,,,,

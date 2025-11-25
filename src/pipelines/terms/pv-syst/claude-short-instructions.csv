@@ -1,0 +1,1522 @@
+Key Items,Instructions,use_pvsyst_prompt,unit,old_names
+Author,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Author from the text in this format.
+Examples of data and format:
+<example of format 0>
+StraightUp Solar
+</example of format 0>
+
+
+<example of format 1>
+Westwood Professional Services
+</example of format 1>
+
+Retrieve Author from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+Author retrieved from the text in specified format:",0,,Author
+System Type,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve System Type from the text in this format.
+Examples of data and format:
+<example of format 0>
+Building system
+</example of format 0>
+
+
+<example of format 1>
+Sheds on ground
+</example of format 1>
+
+
+<example of format 2>
+Single Axis Tracker
+</example of format 2>
+
+Retrieve System Type from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+System Type retrieved from the text in specified format:",0,,System Type
+Module Model,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Module Model from the text in this format.
+Examples of data and format:
+<example of format 0>
+Mono Perc WSM-370
+</example of format 0>
+
+
+<example of format 1>
+REC 345TP2S 72, REC 350TP2S 72
+</example of format 1>
+
+
+<example of format 2>
+CSUN 375-72BMH-DG
+</example of format 2>
+
+Retrieve Module Model from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+Module Model retrieved from the text in specified format:",0,,Module Model
+Module Manufacturer,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Module Manufacturer from the text in this format.
+Examples of data and format:
+<example of format 0>
+REC
+</example of format 0>
+
+
+<example of format 1>
+Waaree
+</example of format 1>
+
+
+<example of format 2>
+CSUN Solar
+</example of format 2>
+
+Retrieve Module Manufacturer from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+Module Manufacturer retrieved from the text in specified format:",0,,Module Manufacturer
+Module Wattage,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Module Wattage from the text in this format.
+Examples of data and format:
+<example of format 0>
+370 Wp
+</example of format 0>
+
+
+<example of format 1>
+345 Wp, 350 Wp
+</example of format 1>
+
+
+<example of format 2>
+375 Wp
+</example of format 2>
+
+Retrieve Module Wattage from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+Module Wattage retrieved from the text in specified format:",0,Wp,Module Wattage
+Module Quantity,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Module Quantity from the text in this format.
+Examples of data and format:
+<example of format 0>
+8670
+</example of format 0>
+
+
+<example of format 1>
+216, 432
+</example of format 1>
+
+
+<example of format 2>
+3744
+</example of format 2>
+
+Retrieve Module Quantity from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+Module Quantity retrieved from the text in specified format:",0,,Module Quantity
+Inverter Model,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Inverter Model from the text in this format.
+Examples of data and format:
+<example of format 0>
+Sunny Tripower_Core1 62-US-41
+</example of format 0>
+
+
+<example of format 1>
+CPS SCA50KTL-DO/US-480 V2.0
+</example of format 1>
+
+
+<example of format 2>
+CSI-66KTL-GS, CSI-60KTL-GS
+</example of format 2>
+
+Retrieve Inverter Model from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+Inverter Model retrieved from the text in specified format:",0,,Inverter Model
+Inverter Manufacturer,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Inverter Manufacturer from the text in this format.
+Examples of data and format:
+<example of format 0>
+Canadian Solar Inc
+</example of format 0>
+
+
+<example of format 1>
+SMA
+</example of format 1>
+
+
+<example of format 2>
+Chint Power Systems
+</example of format 2>
+
+Retrieve Inverter Manufacturer from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+Inverter Manufacturer retrieved from the text in specified format:",0,,Inverter Manufacturer
+Inverter Wattage,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Inverter Wattage from the text in this format.
+Examples of data and format:
+<example of format 0>
+66 kWac, 60 kWac
+</example of format 0>
+
+
+<example of format 1>
+50 kWac
+</example of format 1>
+
+
+<example of format 2>
+62.5 kWac
+</example of format 2>
+
+Retrieve Inverter Wattage from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+Inverter Wattage retrieved from the text in specified format:",0,kWac,Inverter Wattage
+Inverter Quantity,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Inverter Quantity from the text in this format.
+Examples of data and format:
+<example of format 0>
+3
+</example of format 0>
+
+
+<example of format 1>
+37, 1
+</example of format 1>
+
+
+<example of format 2>
+20
+</example of format 2>
+
+Retrieve Inverter Quantity from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+Inverter Quantity retrieved from the text in specified format:",0,,Inverter Quantity
+Inverter Total Power (AC),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Inverter Total Power (AC) from the text in this format.
+Examples of data and format:
+<example of format 0>
+3251 kW
+</example of format 0>
+
+
+<example of format 1>
+188 kW
+</example of format 1>
+
+
+<example of format 2>
+1000 kW
+</example of format 2>
+
+Retrieve Inverter Total Power (AC) from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+Inverter Total Power (AC) retrieved from the text in specified format:",0,kW,kW AC
+Module Total Power (DC),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Module Total Power (DC) from the text in this format.
+Examples of data and format:
+<example of format 0>
+2502 kW
+</example of format 0>
+
+
+<example of format 1>
+1385 kW
+</example of format 1>
+
+
+<example of format 2>
+226 kW
+</example of format 2>
+
+Retrieve Module Total Power (DC) from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+Module Total Power (DC) retrieved from the text in specified format:",0,kW,kW DC
+Year 1 Estimated Energy AC,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Year 1 Estimated Energy AC from the text in this format.
+Examples of data and format:
+<example of format 0>
+1823 MWh/year
+</example of format 0>
+
+
+<example of format 1>
+310.2 MWh/year
+</example of format 1>
+
+
+<example of format 2>
+4813 MWh/year
+</example of format 2>
+
+Retrieve Year 1 Estimated Energy AC from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+Year 1 Estimated Energy AC retrieved from the text in specified format:",0,MWh/year,MWh/year
+Year 1 Estimated Energy AC Per kW DC,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Year 1 Estimated Energy AC Per kW DC from the text in this format.
+Examples of data and format:
+<example of format 0>
+1316 kWh/kWp/year
+</example of format 0>
+
+
+<example of format 1>
+1374 kWh/kWp/year
+</example of format 1>
+
+
+<example of format 2>
+1480 kWh/kWp/year
+</example of format 2>
+
+Retrieve Year 1 Estimated Energy AC Per kW DC from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+Year 1 Estimated Energy AC Per kW DC retrieved from the text in specified format:",0,kWh/kWp/year,kWh/kWp/year
+January Estimated Production (Year 1),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve January Estimated Production (Year 1) from the text in this format.
+Examples of data and format:
+<example of format 0>
+18.04 MWh
+</example of format 0>
+
+
+<example of format 1>
+89.2 MWh
+</example of format 1>
+
+
+<example of format 2>
+127.7 MWh
+</example of format 2>
+
+Retrieve January Estimated Production (Year 1) from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+January Estimated Production (Year 1) retrieved from the text in specified format:",1,MWh,E_Grid mWh Jan
+February Estimated Production (Year 1),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve February Estimated Production (Year 1) from the text in this format.
+Examples of data and format:
+<example of format 0>
+22.28 MWh
+</example of format 0>
+
+
+<example of format 1>
+203.1 MWh
+</example of format 1>
+
+
+<example of format 2>
+104.4 MWh
+</example of format 2>
+
+Retrieve February Estimated Production (Year 1) from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+February Estimated Production (Year 1) retrieved from the text in specified format:",1,MWh,E_Grid mWh Feb
+March Estimated Production (Year 1),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve March Estimated Production (Year 1) from the text in this format.
+Examples of data and format:
+<example of format 0>
+337 MWh
+</example of format 0>
+
+
+<example of format 1>
+24.87 MWh
+</example of format 1>
+
+
+<example of format 2>
+159 MWh
+</example of format 2>
+
+Retrieve March Estimated Production (Year 1) from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+March Estimated Production (Year 1) retrieved from the text in specified format:",1,MWh,E_Grid mWh Mar
+April Estimated Production (Year 1),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve April Estimated Production (Year 1) from the text in this format.
+Examples of data and format:
+<example of format 0>
+479 MWh
+</example of format 0>
+
+
+<example of format 1>
+178 MWh
+</example of format 1>
+
+
+<example of format 2>
+28.51 MWh
+</example of format 2>
+
+Retrieve April Estimated Production (Year 1) from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+April Estimated Production (Year 1) retrieved from the text in specified format:",1,MWh,E_Grid mWh Apr
+May Estimated Production (Year 1),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve May Estimated Production (Year 1) from the text in this format.
+Examples of data and format:
+<example of format 0>
+591.4 MWh
+</example of format 0>
+
+
+<example of format 1>
+29.1 MWh
+</example of format 1>
+
+
+<example of format 2>
+195.3 MWh
+</example of format 2>
+
+Retrieve May Estimated Production (Year 1) from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+May Estimated Production (Year 1) retrieved from the text in specified format:",1,MWh,E_Grid mWh May
+June Estimated Production (Year 1),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve June Estimated Production (Year 1) from the text in this format.
+Examples of data and format:
+<example of format 0>
+615.5 MWh
+</example of format 0>
+
+
+<example of format 1>
+200.8 MWh
+</example of format 1>
+
+
+<example of format 2>
+31.51 MWh
+</example of format 2>
+
+Retrieve June Estimated Production (Year 1) from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+June Estimated Production (Year 1) retrieved from the text in specified format:",1,MWh,E_Grid mWh Jun
+July Estimated Production (Year 1),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve July Estimated Production (Year 1) from the text in this format.
+Examples of data and format:
+<example of format 0>
+32.07 MWh
+</example of format 0>
+
+
+<example of format 1>
+743.4 MWh
+</example of format 1>
+
+
+<example of format 2>
+222.9 MWh
+</example of format 2>
+
+Retrieve July Estimated Production (Year 1) from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+July Estimated Production (Year 1) retrieved from the text in specified format:",1,MWh,E_Grid mWh Jul
+August Estimated Production (Year 1),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve August Estimated Production (Year 1) from the text in this format.
+Examples of data and format:
+<example of format 0>
+204.9 MWh
+</example of format 0>
+
+
+<example of format 1>
+31.47 MWh
+</example of format 1>
+
+
+<example of format 2>
+659.7 MWh
+</example of format 2>
+
+Retrieve August Estimated Production (Year 1) from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+August Estimated Production (Year 1) retrieved from the text in specified format:",1,MWh,E_Grid mWh Aug
+September Estimated Production (Year 1),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve September Estimated Production (Year 1) from the text in this format.
+Examples of data and format:
+<example of format 0>
+513.6 MWh
+</example of format 0>
+
+
+<example of format 1>
+177.4 MWh
+</example of format 1>
+
+
+<example of format 2>
+30.64 MWh
+</example of format 2>
+
+Retrieve September Estimated Production (Year 1) from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+September Estimated Production (Year 1) retrieved from the text in specified format:",1,MWh,E_Grid mWh Sep
+October Estimated Production (Year 1),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve October Estimated Production (Year 1) from the text in this format.
+Examples of data and format:
+<example of format 0>
+297.1 MWh
+</example of format 0>
+
+
+<example of format 1>
+25.4 MWh
+</example of format 1>
+
+
+<example of format 2>
+135.4 MWh
+</example of format 2>
+
+Retrieve October Estimated Production (Year 1) from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+October Estimated Production (Year 1) retrieved from the text in specified format:",1,MWh,E_Grid mWh Oct
+November Estimated Production (Year 1),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve November Estimated Production (Year 1) from the text in this format.
+Examples of data and format:
+<example of format 0>
+85.8 MWh
+</example of format 0>
+
+
+<example of format 1>
+141.9 MWh
+</example of format 1>
+
+
+<example of format 2>
+20.06 MWh
+</example of format 2>
+
+Retrieve November Estimated Production (Year 1) from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+November Estimated Production (Year 1) retrieved from the text in specified format:",1,MWh,E_Grid mWh Nov
+December Estimated Production (Year 1),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve December Estimated Production (Year 1) from the text in this format.
+Examples of data and format:
+<example of format 0>
+69.9 MWh
+</example of format 0>
+
+
+<example of format 1>
+16.23 MWh
+</example of format 1>
+
+
+<example of format 2>
+103.1 MWh
+</example of format 2>
+
+Retrieve December Estimated Production (Year 1) from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+December Estimated Production (Year 1) retrieved from the text in specified format:",1,MWh,E_Grid mWh Dec
+Estimated Production (Year 1),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Estimated Production (Year 1) from the text in this format.
+Examples of data and format:
+<example of format 0>
+4812.5 MWh
+</example of format 0>
+
+
+<example of format 1>
+310.19 MWh
+</example of format 1>
+
+
+<example of format 2>
+1864.7 MWh
+</example of format 2>
+
+Retrieve Estimated Production (Year 1) from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+Estimated Production (Year 1) retrieved from the text in specified format:",1,MWh,E_Grid MWh Annual
+January Estimated GHI Irradiance Per Meter Squared,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve January Estimated GHI Irradiance Per Meter Squared from the text in this format.
+Examples of data and format:
+<example of format 0>
+69.6 kWh/m²
+</example of format 0>
+
+
+<example of format 1>
+54.7 kWh/m²
+</example of format 1>
+
+
+<example of format 2>
+32.9 kWh/m²
+</example of format 2>
+
+Retrieve January Estimated GHI Irradiance Per Meter Squared from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+January Estimated GHI Irradiance Per Meter Squared retrieved from the text in specified format:",1,kWh/m²,GlobHor kWh/m2 Jan
+February Estimated GHI Irradiance Per Meter Squared,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve February Estimated GHI Irradiance Per Meter Squared from the text in this format.
+Examples of data and format:
+<example of format 0>
+53.1 kWh/m²
+</example of format 0>
+
+
+<example of format 1>
+67.1 kWh/m²
+</example of format 1>
+
+
+<example of format 2>
+84.6 kWh/m²
+</example of format 2>
+
+Retrieve February Estimated GHI Irradiance Per Meter Squared from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+February Estimated GHI Irradiance Per Meter Squared retrieved from the text in specified format:",1,kWh/m²,GlobHor kWh/m2 Feb
+March Estimated GHI Irradiance Per Meter Squared,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve March Estimated GHI Irradiance Per Meter Squared from the text in this format.
+Examples of data and format:
+<example of format 0>
+112.7 kWh/m²
+</example of format 0>
+
+
+<example of format 1>
+114.5 kWh/m²
+</example of format 1>
+
+
+<example of format 2>
+89 kWh/m²
+</example of format 2>
+
+Retrieve March Estimated GHI Irradiance Per Meter Squared from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+March Estimated GHI Irradiance Per Meter Squared retrieved from the text in specified format:",1,kWh/m²,GlobHor kWh/m2 Mar
+April Estimated GHI Irradiance Per Meter Squared,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve April Estimated GHI Irradiance Per Meter Squared from the text in this format.
+Examples of data and format:
+<example of format 0>
+145.7 kWh/m²
+</example of format 0>
+
+
+<example of format 1>
+130.1 kWh/m²
+</example of format 1>
+
+
+<example of format 2>
+147.8 kWh/m²
+</example of format 2>
+
+Retrieve April Estimated GHI Irradiance Per Meter Squared from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+April Estimated GHI Irradiance Per Meter Squared retrieved from the text in specified format:",1,kWh/m²,GlobHor kWh/m2 Apr
+May Estimated GHI Irradiance Per Meter Squared,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve May Estimated GHI Irradiance Per Meter Squared from the text in this format.
+Examples of data and format:
+<example of format 0>
+164.1 kWh/m²
+</example of format 0>
+
+
+<example of format 1>
+168.5 kWh/m²
+</example of format 1>
+
+
+<example of format 2>
+176.3 kWh/m²
+</example of format 2>
+
+Retrieve May Estimated GHI Irradiance Per Meter Squared from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+May Estimated GHI Irradiance Per Meter Squared retrieved from the text in specified format:",1,kWh/m²,GlobHor kWh/m2 May
+June Estimated GHI Irradiance Per Meter Squared,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve June Estimated GHI Irradiance Per Meter Squared from the text in this format.
+Examples of data and format:
+<example of format 0>
+191.5 kWh/m²
+</example of format 0>
+
+
+<example of format 1>
+175.4 kWh/m²
+</example of format 1>
+
+
+<example of format 2>
+191.4 kWh/m²
+</example of format 2>
+
+Retrieve June Estimated GHI Irradiance Per Meter Squared from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+June Estimated GHI Irradiance Per Meter Squared retrieved from the text in specified format:",1,kWh/m²,GlobHor kWh/m2 Jun
+July Estimated GHI Irradiance Per Meter Squared,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve July Estimated GHI Irradiance Per Meter Squared from the text in this format.
+Examples of data and format:
+<example of format 0>
+193.2 kWh/m²
+</example of format 0>
+
+
+<example of format 1>
+208.1 kWh/m²
+</example of format 1>
+
+
+<example of format 2>
+206.7 kWh/m²
+</example of format 2>
+
+Retrieve July Estimated GHI Irradiance Per Meter Squared from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+July Estimated GHI Irradiance Per Meter Squared retrieved from the text in specified format:",1,kWh/m²,GlobHor kWh/m2 Jul
+August Estimated GHI Irradiance Per Meter Squared,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve August Estimated GHI Irradiance Per Meter Squared from the text in this format.
+Examples of data and format:
+<example of format 0>
+174.4 kWh/m²
+</example of format 0>
+
+
+<example of format 1>
+178.8 kWh/m²
+</example of format 1>
+
+
+<example of format 2>
+173 kWh/m²
+</example of format 2>
+
+Retrieve August Estimated GHI Irradiance Per Meter Squared from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+August Estimated GHI Irradiance Per Meter Squared retrieved from the text in specified format:",1,kWh/m²,GlobHor kWh/m2 Aug
+September Estimated GHI Irradiance Per Meter Squared,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve September Estimated GHI Irradiance Per Meter Squared from the text in this format.
+Examples of data and format:
+<example of format 0>
+148.3 kWh/m²
+</example of format 0>
+
+
+<example of format 1>
+131.2 kWh/m²
+</example of format 1>
+
+
+<example of format 2>
+130 kWh/m²
+</example of format 2>
+
+Retrieve September Estimated GHI Irradiance Per Meter Squared from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+September Estimated GHI Irradiance Per Meter Squared retrieved from the text in specified format:",1,kWh/m²,GlobHor kWh/m2 Sep
+October Estimated GHI Irradiance Per Meter Squared,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve October Estimated GHI Irradiance Per Meter Squared from the text in this format.
+Examples of data and format:
+<example of format 0>
+86.3 kWh/m²
+</example of format 0>
+
+
+<example of format 1>
+76 kWh/m²
+</example of format 1>
+
+
+<example of format 2>
+104.9 kWh/m²
+</example of format 2>
+
+Retrieve October Estimated GHI Irradiance Per Meter Squared from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+October Estimated GHI Irradiance Per Meter Squared retrieved from the text in specified format:",1,kWh/m²,GlobHor kWh/m2 Oct
+November Estimated GHI Irradiance Per Meter Squared,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve November Estimated GHI Irradiance Per Meter Squared from the text in this format.
+Examples of data and format:
+<example of format 0>
+54.3 kWh/m²
+</example of format 0>
+
+
+<example of format 1>
+37.7 kWh/m²
+</example of format 1>
+
+
+<example of format 2>
+76.8 kWh/m²
+</example of format 2>
+
+Retrieve November Estimated GHI Irradiance Per Meter Squared from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+November Estimated GHI Irradiance Per Meter Squared retrieved from the text in specified format:",1,kWh/m²,GlobHor kWh/m2 Nov
+December Estimated GHI Irradiance Per Meter Squared,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve December Estimated GHI Irradiance Per Meter Squared from the text in this format.
+Examples of data and format:
+<example of format 0>
+43.6 kWh/m²
+</example of format 0>
+
+
+<example of format 1>
+28.5 kWh/m²
+</example of format 1>
+
+
+<example of format 2>
+65.9 kWh/m²
+</example of format 2>
+
+Retrieve December Estimated GHI Irradiance Per Meter Squared from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+December Estimated GHI Irradiance Per Meter Squared retrieved from the text in specified format:",1,kWh/m²,GlobHor kWh/m2 Dec
+Annual Estimated GHI Irradiance Per Meter Squared,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Annual Estimated GHI Irradiance Per Meter Squared from the text in this format.
+Examples of data and format:
+<example of format 0>
+1302.3 kWh/m²
+</example of format 0>
+
+
+<example of format 1>
+1447.6 kWh/m²
+</example of format 1>
+
+
+<example of format 2>
+1536.9 kWh/m²
+</example of format 2>
+
+Retrieve Annual Estimated GHI Irradiance Per Meter Squared from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+Annual Estimated GHI Irradiance Per Meter Squared retrieved from the text in specified format:",1,kWh/m²,GlobHor kWh/m2 Annual
+Statistical Standard (P50 or P90),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Statistical Standard (P50 or P90) from the text in this format.
+Examples of data and format:
+<example of format 0>
+Both
+</example of format 0>
+
+Retrieve Statistical Standard (P50 or P90) from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+Statistical Standard (P50 or P90) retrieved from the text in specified format:",0,,Statistical Standard (P50 or P90)
+P50 MWh,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve P50 MWh from the text in this format.
+Examples of data and format:
+<example of format 0>
+1823 MWh
+</example of format 0>
+
+
+<example of format 1>
+4813 MWh
+</example of format 1>
+
+
+<example of format 2>
+310.2 MWh
+</example of format 2>
+
+Retrieve P50 MWh from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+P50 MWh retrieved from the text in specified format:",0,MWh,P50 MWh
+P90 MWh,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve P90 MWh from the text in this format.
+Examples of data and format:
+<example of format 0>
+294.1 MWh
+</example of format 0>
+
+
+<example of format 1>
+1714 MWh
+</example of format 1>
+
+
+<example of format 2>
+4471 MWh
+</example of format 2>
+
+Retrieve P90 MWh from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+P90 MWh retrieved from the text in specified format:",0,MWh,P90 MWh
+Weather Forecasting Model,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Weather Forecasting Model from the text in this format.
+Examples of data and format:
+<example of format 0>
+NREL NSRDB Typ. Met. Year PSMv3
+</example of format 0>
+
+
+<example of format 1>
+Solar Anywhere Satellite, SUNY model
+</example of format 1>
+
+
+<example of format 2>
+NREL NSRD : TMY3
+</example of format 2>
+
+Retrieve Weather Forecasting Model from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+Weather Forecasting Model retrieved from the text in specified format:",0,,Weather Forecasting Model Used
+Weather Forecasting Model Type,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Weather Forecasting Model Type from the text in this format.
+Examples of data and format:
+<example of format 0>
+TMY, multi-year
+</example of format 0>
+
+
+<example of format 1>
+Monthly averages 2013 Multi-year average
+</example of format 1>
+
+Retrieve Weather Forecasting Model Type from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+Weather Forecasting Model Type retrieved from the text in specified format:",0,,Weather Forecasting Model Type Used
+Simulation Date,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Simulation Date from the text in this format.
+Examples of data and format:
+<example of format 0>
+15/10/19
+</example of format 0>
+
+
+<example of format 1>
+17/12/19
+</example of format 1>
+
+
+<example of format 2>
+30/10/19
+</example of format 2>
+
+Retrieve Simulation Date from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+Simulation Date retrieved from the text in specified format:",0,,Simulation Date
+# of Trackers,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve # of Trackers from the text in this format.
+Examples of data and format:
+<example of format 0>
+85
+</example of format 0>
+
+Retrieve # of Trackers from the text in specified format.
+<text to retrieve information from>
+{text}
+</text to retrieve information from>
+# of Trackers retrieved from the text in specified format:",0,,# of Trackers

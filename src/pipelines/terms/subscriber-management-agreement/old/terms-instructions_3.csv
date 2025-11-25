@@ -1,0 +1,242 @@
+Key Items,Instructions
+Provider,"## Finding the Provider in a Community Solar Garden Agreement
+
+**Prompt:**
+
+Given a community solar garden agreement, identify and extract the section of text that identifies the Provider. 
+
+**Keywords and Patterns:**
+
+* **Direct Identifiers:** Look for phrases like:
+    * ""Provider"" 
+    * ""Program Manager""
+    * ""Operator"" (especially in conjunction with terms like ""system"" or ""project"")
+* **Responsibilities:** Search for sections outlining responsibilities for:
+    * Managing the community solar garden
+    * Enrolling subscribers
+    * Maintaining the solar garden
+    * Billing and customer service for subscribers
+    * Interfacing with the utility company
+* **Company Information:** 
+    * Identify company names, often followed by identifiers such as:
+        * LLC (Limited Liability Company)
+        * Inc. (Incorporated)
+        * Corporation
+        * Trust
+    * Note any addresses associated with the company name.
+
+**Example:**
+
+In the phrase:
+
+>""**Ampion, Inc., a Delaware corporation (""Provider""), shall be responsible for...**""
+
+* ""Ampion, Inc."" is identified as the company name.
+* ""a Delaware corporation"" provides additional company information.
+*  ""(""Provider"")"" explicitly labels the role of the company within the agreement.
+
+**Additional Notes:**
+
+* The Provider might be referred to by their full company name throughout the document after the initial definition.
+* Pay close attention to sections discussing operational aspects of the community solar garden, as these are more likely to mention the Provider."
+Customer,"## Finding the Customer in a Community Solar Agreement
+
+**Prompt:**
+
+Given a community solar agreement, identify and extract section of the text that define the entity of the Customer, it would be one of the party in the agreement, usually in the first page clauses.
+
+**Keywords and Patterns:**
+
+* Look for phrases like:
+    * ""This Agreement"" or ""This [Document Type]""
+    * ""Subscriber"" 
+    * ""Customer""
+    * ""Beneficiary"" (especially if related to energy credits)
+    * ""Owner""
+* Identify company names, often followed by identifiers such as:
+    * LLC (Limited Liability Company)
+    * limited liability company
+    * Inc. (Incorporated)
+    * Corporation
+    * Trust
+    * Individual names
+* Look for addresses associated with the company or individual names.
+* Pay attention to quotation marks surrounding names or titles, and parentheses often containing additional information.
+* Look for patterns like:
+    * **[Company Name], a [State] [Company Type], with an address at [Address] (the ""Customer"")**
+    * **between [Company/Individual Name] (the ""Company"") and [Company/Individual Name] (the ""Customer"")** 
+
+**Example:**
+
+In the phrase:
+
+This SUBSCRIBER MANAGEMENT AGREEMENT is made and entered into as of [DATE] (""Effective Date"") by and between [Customer], LLC, an Oregon Limited Liability Company (""Owner""), and Neighbourhood Power OR, LLC, an Oregon Limited Liability Company (""Operator""). Each of owner and Operator shall be referred to herein as a ""Party"" and collectively, as the ""Parties"".
+
+* """"[Customer], LLC"""" is identified as the company name.
+ 
+**Note:**  The term used to define the Customer may vary. Look for language describing the rights and responsibilities related to receiving solar energy credits."
+Term,"## Finding the Term of Agreement in a document
+
+**Prompt:**
+
+Given a legal document related to a community solar garden, identify and extract the section that defines the ""Term"" of the agreement. This refers to the duration during which the Provider manages the community solar garden and the Customer subscribes to it.
+
+**Keywords and Patterns:**
+
+* Look for headings or sections titled:
+    * ""Term""
+    * ""Agreement Term""
+    * ""Duration""
+    * ""Term of Agreement""
+* Look for phrases like:
+    * ""This Agreement shall commence on...""
+    * ""The term of this Agreement shall continue for a period of...""
+    * ""unless the Parties mutually agree to terminate...""
+    * ""subject to early termination pursuant to Section...""
+* Identify specific time periods mentioned, such as:
+    * Number of years (e.g., 5 years, 20 years)
+* Pay attention to clauses discussing:
+    * Commencement date (e.g., ""Effective Date"")
+    * Termination conditions
+    * Extension possibilities
+
+**Example:**
+
+In the phrase:
+
+>""**8.1 Term. The term of this Agreement shall commence on the Effective Date, and shall continue for a period of Twenty (20) years unless the Parties mutually agree to terminate prior to the end of the period or subject to early termination pursuant to Section 8.2.**""
+
+* ""8.1 Term"" clearly labels the section as defining the Term.
+* ""The term of this Agreement shall commence on the Effective Date"" specifies the start date.
+* ""continue for a period of Twenty (20) years"" explicitly states the duration.
+* ""unless the Parties mutually agree to terminate"" and ""subject to early termination pursuant to Section 8.2"" highlight conditions for ending the agreement before the 20-year period."
+Penalty ($ per kWh),
+Guarantee (%),"## Finding Guarantee (%) in a document
+
+**Prompt:**
+
+Given a document related to energy production or service agreements, identify and extract sections of text that define the Guarantee (%), which represents the minimum percentage of energy production or service uptime the provider commits to.
+
+**Keywords and Patterns:**
+
+* Look for numerical values represented as percentages (e.g., 95%, 99.9%) related to:
+    * Energy production
+    * Service uptime
+    * Availability
+* Search for phrases near these percentages, such as:
+    * ""Guarantee""
+    * ""Minimum production""
+    * ""Uptime guarantee""
+    * ""Availability guarantee""
+    * ""Service level agreement"" (SLA)
+    * ""Subscribed""
+    * ""Maintain""
+* Identify clauses discussing consequences if the guarantee is not met, such as:
+    * Penalties
+    * Credits
+    * Compensation
+* Pay attention to tables, exhibits, or schedules that might list specific percentages associated with guarantees.
+
+**Example:**
+
+In the phrase:
+
+>""Schedule A. Statement of Work.1c. Such ongoing administration includes, but is not limited to, the obligation that PowerMarket maintain **100% subscribers** at all times.""
+
+* ""100%"" is a numerical value expressed as a percentage.
+* ""Maintain...subscribers"" in the context of an ongoing obligation suggests a service uptime or availability guarantee. 
+* This phrase likely refers to a 100% Guarantee (%) for maintaining subscribers."
+Payment Remittance,"## Finding Payment Remittance Clauses in a Document
+
+**Prompt:**
+
+Given a contract, identify and extract sections of text that detail the payment remittance process, including payment terms, schedules, methods, and any related financial handling procedures. 
+
+**Keywords and Patterns:**
+
+* **General Payment Terms:**
+    * ""Payment""
+    * ""Fee(s)""
+    * ""Invoice""
+    * ""Compensation""
+    * ""Remittance""
+    * ""Payment Terms""
+    * ""Payment Schedule""
+    * ""Method of Payment""
+    * ""Wire Transfer""
+    * ""ACH Payment""
+    * ""Check""
+    * ""Electronic Payment""
+* **Timeframes:**
+    * ""Due Date""
+    * ""Net [Number] Days"" (e.g., Net 30 Days)
+    * ""Monthly""
+    * ""Quarterly""
+    * ""Annually""
+    * ""In Arrears""
+    * ""Upon Receipt""
+    * ""Within [Number] Days""
+* **Specific Clauses:**
+    * Look for headings or sections titled:
+        * ""Payment Terms""
+        * ""Payment of Fees""
+        * ""Invoicing and Payment""
+        * ""Financial Terms""
+        * ""Compensation""
+* **Examples:**
+    * ""Contractor shall invoice Client monthly for services rendered.""
+    * ""Payment is due within 30 days of receipt of invoice.""
+    * ""All payments shall be made via electronic funds transfer.""
+
+**Focus on:**
+
+* Identify the parties responsible for making and receiving payments.
+* Extract specific details about payment amounts, due dates, and acceptable payment methods.
+* Look for clauses outlining late payment penalties or consequences of non-payment. 
+
+**Example:**
+
+In the phrase:
+
+>""**4.2.1 Payment Mechanics. Company shall provide Client with an invoice for the One-Time Fee... Company shall not initiate any work... until the One-Time Fee is paid in-full... Company will provide Client with an electronic invoice for the Recurring Fee...**""
+
+* ""Payment Mechanics"" clearly indicates this section relates to payment procedures.
+* ""Company"" and ""Client"" are identified as the parties involved in the transaction.
+* ""One-Time Fee"" and ""Recurring Fee"" suggest different payment types or schedules.
+* ""Invoice,"" ""paid in-full,"" and ""electronic invoice"" provide details about the invoicing and payment process."
+Termination Clause,"## Finding Termination Clauses in a Legal Document
+
+**Prompt:**
+
+Given a legal document, identify and extract sections of text that define the conditions under which either party can terminate the agreement before the end of the Term, including any penalties or requirements for notice. 
+
+**Keywords and Patterns:**
+
+* Look for headings or sections titled:
+    * ""Termination""
+    * ""Cancellation""
+    * ""Early Termination""
+    * ""Term and Termination""
+* Look for phrases like:
+    * ""This Agreement may be terminated...""
+    * ""Either party may terminate this Agreement...""
+    * ""In the event of [Triggering Event]...""
+    * ""Upon [Number] days' notice...""
+    * ""Material Breach""
+    * ""Breach of Contract""
+    * ""Default""
+    * ""Force Majeure""
+    * ""Termination for Convenience""
+* Pay attention to numbered or lettered lists that outline specific termination scenarios.
+
+**Example:**
+
+In the phrase:
+
+>""**8.1 Termination for Cause. This Agreement may be terminated by either party upon written notice to the other party in the event of a material breach of this Agreement by the other party, provided that the breaching party is given thirty (30) days to cure such breach.**""
+
+* ""Termination for Cause"" clearly indicates the nature of the clause.
+* ""This Agreement may be terminated by either party"" highlights that both parties have termination rights.
+* ""upon written notice"" specifies a requirement for formal notification.
+* ""material breach of this Agreement"" outlines the triggering event.
+* ""thirty (30) days to cure such breach"" details a cure period before termination becomes effective."

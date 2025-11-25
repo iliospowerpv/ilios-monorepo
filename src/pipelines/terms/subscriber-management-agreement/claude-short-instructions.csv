@@ -1,0 +1,281 @@
+Key Items,Instructions
+Provider,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Provider from the text in this format:
+<example>
+Text:
+```
+SunCentral...
+```
+Data retrieved:
+SunCentral</example>
+
+
+<example>
+Text:
+```
+Ampion, Inc., a Delaware corporation...
+```
+Data retrieved:
+Ampion, Inc.</example>
+
+
+<example>
+Text:
+```
+Novel Energy Solutions L.L.C. a Minnesota Limited Liability Company...
+```
+Data retrieved:
+Novel Energy Solutions L.L.C</example>
+
+"
+Customer,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Customer from the text in this format:
+<example>
+Text:
+```
+SunRaise Development, LLC, a Delaware limited liability company...
+```
+Data retrieved:
+SunRaise Development, LLC</example>
+
+
+<example>
+Text:
+```
+Lakeville Community Solar, LLC, a New York limited liability company...
+```
+Data retrieved:
+Lakeville Community Solar, LLC</example>
+
+
+<example>
+Text:
+```
+Novel Bartel Solar LLC, a Limited Liability Company....
+```
+Data retrieved:
+Novel Bartel Solar LLC</example>
+
+"
+Term,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Term from the text in this format:
+<example>
+Text:
+```
+8.1:The term of this Agreement shall commence on the Effective Date, and shall continue for a period of 25 years unless the Parties mutually agree to terminate prior to the end of the period or subjec...
+```
+Data retrieved:
+25 years. May extend by mutual agreement</example>
+
+
+<example>
+Text:
+```
+1.1 Agreement Term. This Agreement shall commence on the Effective Date and will continue until either party provides a written notice of termination pursuant to Section 6.1....
+```
+Data retrieved:
+Perpetual until terminated.</example>
+
+
+<example>
+Text:
+```
+1.1 Agreement Term. This Agreement shall commence on the Effective Date and will continue until the third (3rd) anniversary of the Effective Date unless terminated earlier pursuant to the terms of thi...
+```
+Data retrieved:
+3 years unless terminated earlier. Shall automatically renew for successive 5 year periods</example>
+
+"
+Penalty ($ per kWh),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Penalty ($ per kWh) from the text in this format:
+<example>
+Text:
+```
+4(e) of SOW: Late Payment. Any fees, payments, or other amounts due to either Party pursuant to this SOW that are not paid when due will bear interest at the rate of five percent (5%) per annum, calcu...
+```
+Data retrieved:
+5%/annum</example>
+
+"
+Guarantee (%),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Guarantee (%) from the text in this format:
+<example>
+Text:
+```
+3bii of SOW: Ampion shall begin performance of exclusive CAS to Client for each applicable Subject Asset upon the later of (a) the issuance of a Go Notice by Client or (b) 20 days after the execution ...
+```
+Data retrieved:
+100%</example>
+
+
+<example>
+Text:
+```
+Table 3: Site: Small Subscriber Requirement(%) - 60...
+```
+Data retrieved:
+60%</example>
+
+
+<example>
+Text:
+```
+Exhibit C (Second Amendment): Operator agrees to maintain the Project�s solar garden at least 95% subscribed at all times and to ensure that the payments made from subscribers shall amount to at least...
+```
+Data retrieved:
+Agrees to maintain the Project�s solar garden at least 95% subscribed at all times.</example>
+
+"
+Payment Remittance,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Payment Remittance from the text in this format:
+<example>
+Text:
+```
+7.1: Owner shall compensate Operator for the performance of the Services as described herein. At the end of each calendar quarter, Operator shall prepare and deliver to Owner an invoice setting forth ...
+```
+Data retrieved:
+Quarterly within fifteen days to pay after the invoice is approved (ten day review period for Owner after submitted)</example>
+
+
+<example>
+Text:
+```
+4a of SOW: CAS Fee Payment Terms. The CAS Fee will be paid as follows on a per Subject Asset, and not aggregate, basis. On the date Client issues the Go Notice for any Subject Asset, Client will pay A...
+```
+Data retrieved:
+- On the date Client issues the Go Notice for any Subject Asset, Client will pay Ampion, as an advance payment equal to 50% of the total CAS Fee.
+- Fee shall be payable within 15 days after receipt of invoice by Client.</example>
+
+
+<example>
+Text:
+```
+4.2.1 Payment Mechanics. Company shall provide Client with an invoice for the One-Time Fee in the amount shown above, which amount shall be payable as described below. Company shall not initiate any w...
+```
+Data retrieved:
+The invoiced amount set forth in any invoice shall be paid within 14 business days after receipt by Client in immediately available funds via ACH or check drawn. Non-payment will attract interest at the rate of prime + 2%)/annum</example>
+
+"
+Termination Clause,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Termination Clause from the text in this format:
+<example>
+Text:
+```
+6.2 Client's Right to Terminate. Client may terminate this Agreement upon the occurrence of any of the following: (i) a Material Breach by Ampion, (ii) Ampion is notified by Client or any applicable g...
+```
+Data retrieved:
+- Client mat terminate upon material breach; violation of applicable law by Ampion; if force majeure event prevents Ampion from reinstating a Service within 90 days of the occurrence; If Ampion makes an assignment for the benefit of creditors, or petitions or applies to any tribunal for the appointment of a custodian; if Ampion (a) commences any proceeding under any bankruptcy; (b) has had any petition in which an order for relief is entered;(c) takes any corporate action for relief or the appointment of a custodian; or (d)  suffers any such custodianship, receivership, or trusteeship to continue undischarged for a period of 45 days.
+- Ampion may terminate upon breach, force majeure event and insolvency occurs to the client.</example>
+
+
+<example>
+Text:
+```
+8.1: As long as Investor Member is a member in the Owner, the Agreement will not be terminated without written consent of the Investor Member.
+8.2: Owner or its Investor Member may terminate this Agr...
+```
+Data retrieved:
+- Tthe Agreement will not be terminated without written consent of the Investor Member if it is a member in Owner.
+- Owner or its Investor Member may terminate this Agreement for cause at any time.
+- Operator may terminate this Agreement for cause upon 30 days written notice if dispute not resolved in 6 months.
+- Owner can terminate if solar garden subscribed less than 95% for more than 90 days.</example>
+
+
+<example>
+Text:
+```
+6.1.1 Convenience by Client or Company. Either party may terminate this Agreement for convenience at any time prior to the execution of a SOW upon written notice to the other party. Either party may t...
+```
+Data retrieved:
+- Either party may terminate this Agreement for convenience at any time prior to the execution of a SOW upon written notice.
+- Either party may terminate for a Material Breach by other party.
+- Either party may terminate by notice upon insolvency or bankruptcy petition against the of the other party remains uncured for 60 days.
+- If the System or Services become or  is likely to become, the subject of an infringement claim, then Company may terminate upon 60 days notice.
+- If a Force Majeure Event prevents Company from reinstating a Service within 60 days, Client may terminate this Agreement upon
+written notice.</example>
+
+"

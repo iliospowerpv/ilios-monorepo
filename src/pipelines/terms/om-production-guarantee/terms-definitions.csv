@@ -1,0 +1,15 @@
+Key Items,Definitions
+Effective Date,The date that the agreement goes into effect and the obligations of the parties commence.
+Provider,The O&M provider responsible for maintaining and operating the system to meet performance metrics.
+Customer,The individual or entity that owns the system and receives the benefits of its production.
+Commencement Date,The date on which the O&M services officially begin under the agreement.
+Production Guarantee,The assurance provided by the Provider that the system will produce a certain amount of energy.
+Production Guarantee Term,The duration during which the Production Guarantee is applicable.
+Production Estimate,The projected amount of energy the system is expected to produce over a specific period.
+Degredation,The expected reduction in the system's energy production capacity over time due to wear and aging.
+Production Factor,The ratio or metric used to measure the system's actual production against its estimated production.
+Guarantee Limitations,"The conditions and exclusions that apply to the Production Guarantee, outlining circumstances where the guarantee may not be enforced."
+Production Shortfall Rate,The rate or amount of monetary compensation owed by the Provider to the Customer for each unit of energy not produced as guaranteed.
+Adjustments - Production Loss Calculation,The method used to calculate adjustments for production losses due to factors like maintenance or unforeseen events.
+Payment Terms,"Specifies the conditions under which payments are to be made by the O&M provider to REA under the Production Guarantee; details the schedule, amounts, and penalties applicable if the PV system does not meet the agreed-upon production KPIs and metrics"
+Statement of Guarantee,"A formal declaration by the Provider detailing the terms and conditions of the Production Guarantee, including any applicable limitations and obligations."

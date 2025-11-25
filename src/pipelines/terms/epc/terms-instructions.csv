@@ -1,0 +1,2236 @@
+,Key Items,Instructions
+0,Effective Date,"## Finding Effective Date Sections in Lease Documents: Analysis and Prompt
+
+Based on the provided samples, here's how to identify sections containing the effective date in lease documents:
+
+**Common Structures:**
+
+* **Introductory Phrases:** The sections often begin with phrases like:
+    * ""This Agreement...""
+    * ""This Engineering, Procurement and Construction..."" (or similar variations referencing the agreement type)
+    * ""entered into as of...""
+* **Date Format:** The date is typically presented as:
+    * Month (written out or abbreviated)
+    * Day (numerical)
+    * Year (four digits)
+* **""Effective Date"" Label:**  The phrase “Effective Date” is consistently used and enclosed in quotation marks.
+
+**Keywords Patterns:**
+
+* Look for keywords like ""Agreement,"" ""Contract,"" ""entered into,"" ""made,"" and ""Effective Date."" 
+* These keywords often appear close together, signaling the relevant section.
+
+**Additional Features:**
+
+* The section may include the names and types of entities involved in the agreement.
+* It may specify the type of agreement (e.g., Engineering, Procurement, and Construction Agreement).
+
+**Prompt for Gemini LLM:**
+
+**Objective:** Locate and extract the section in the document that specifies the effective date of the agreement.
+
+**Instructions:**
+
+1. **Identify sections:** Look for sections that begin with phrases like ""This Agreement,"" ""This [Agreement Type],"" or ""entered into as of.""
+2. **Verify date format:** Confirm the presence of a date formatted as Month Day, Year.
+3. **Locate ""Effective Date"" label:** Ensure the phrase ""Effective Date"" appears within the section, enclosed in quotation marks.
+4. **Extract the section:** Once all criteria are met, extract the entire section containing the effective date information. 
+
+**Example Output:**
+
+```
+This Engineering, Procurement and Construction Contract (this “Contract”) is entered into as of July 22, 2020 (the “Effective Date”). 
+```
+
+**Additional Notes:**
+
+* You may need to adjust the prompt slightly depending on the specific wording and structure of the lease documents you are working with. 
+* Consider providing Gemini with a larger context (e.g., the entire page or a few paragraphs around the target section) for improved accuracy. 
+"
+1,Owner,"## Finding Specific Text Sections in Lease Documents: Analysis & Prompt
+
+Based on the provided samples, here's how to identify similar text sections within lease documents and a prompt for Gemini LLM:
+
+**Common Structure & Keywords:**
+
+* **Company Names & Structures:**
+    * Look for LLCs (Limited Liability Companies) often followed by state information (e.g., ""a Delaware limited liability company"").
+    *  Company names may include terms like ""Solar,"" ""Energy,"" ""Power,"" etc., indicating involvement in the solar energy sector.
+* **Agreement Titles & Dates:**
+    * Search for titles like ""ENGINEERING, PROCUREMENT AND CONSTRUCTION SERVICES AGREEMENT"" or similar variations.
+    * These titles are often followed by the date the agreement was made, indicated by phrases like ""made and entered into as of this [Date]"".
+* **Party Names & Roles:**
+    * Identify the involved parties, often labelled as ""Owner"" and ""Contractor,"" with their respective company names and state information (if applicable).
+
+**Additional Features:**
+
+* **DBA (Doing Business As):** Some companies might use ""dba"" followed by another name they operate under.
+* **Project Names:**  Occasionally, project names like ""Pequawket Trail"" might precede company details.
+* **Line Breaks & Indentation:**  Pay attention to line breaks and indentation which can separate different sections or agreements within the document.
+
+**Prompt for Gemini LLM:**
+
+**Objective:** Locate and extract sections from the lease document that describe agreements between companies, particularly those related to solar energy projects.
+
+**Instructions:**
+
+1. **Identify text sections containing the following keywords:** ""LLC,"" ""Solar,"" ""Energy,"" ""Power,"" ""ENGINEERING,"" ""PROCUREMENT,"" ""CONSTRUCTION,"" ""SERVICES AGREEMENT,"" ""Owner,"" ""Contractor.""
+2. **Prioritize sections that follow this structure:**
+    * Company Name (including LLC and state information)
+    * Agreement Title and Date
+    * Parties involved (""Owner"" and ""Contractor"") with company names and state information. 
+3. **Extract the entire text section, including company names, agreement titles, dates, and party information.**
+4. **Pay attention to line breaks and indentation to separate distinct agreement sections.** 
+5. **If available, consider project names associated with the companies.**
+
+**Example Output:**
+
+```
+Pequawket Trail
+Baldwin Solar, LLC, a Delaware limited liability company
+
+THIS ENGINEERING, PROCUREMENT AND CONSTRUCTION SERVICES AGREEMENT (this “Agreement”) is made and entered into as of this 19th day of April, 2019 (the “Effective Date”) by and between Mt Hope Solar, LLC, an Oregon limited liability company (“Owner”) and Neighborhood Power Corporation, a California corporation (“Contractor”) 
+``` 
+"
+2,EPC Contractor Name,"## Finding Company Names and Agreement Information in Lease Documents
+
+Based on the samples you provided, here's how to identify similar sections within a lease document and a prompt for Gemini LLM to locate them:
+
+**Common Structures and Keywords:**
+
+* **Company Names:** Look for text strings containing ""LLC,"" ""Inc.,"" or ""corporation"" along with location indicators like state names (e.g., ""California,"" ""Missouri""). These often appear at the beginning of sentences or paragraphs.
+* **Agreement Titles:** Search for phrases like ""ENGINEERING, PROCUREMENT AND CONSTRUCTION SERVICES AGREEMENT,"" ""Agreement,"" or other variations indicating a formal contract.
+* **Dates:** Phrases like ""made and entered into as of"" followed by a specific date (e.g., ""15th day of May 2020"") often precede company names and agreement titles.
+* **Party Names:** Look for terms like ""Owner"" and ""Contractor"" which typically appear after the company names and are used throughout the agreement.
+
+**Features of Text:**
+
+* **Capitalization:** Company names and agreement titles are often fully or partially capitalized.
+* **Dates:** Dates are usually written in a ""day month year"" format. 
+* **Punctuation:** Look for commas separating company names, locations, and titles, and parentheses around terms like ""Agreement"" or ""Effective Date.""
+
+**Prompt for Gemini LLM:**
+
+**Objective:** Identify sections within the document that contain company names, agreement titles, effective dates, and involved parties (Owner and Contractor).
+
+**Instructions:**
+
+1. **Search for lines containing the following keywords:** ""LLC,"" ""Inc.,"" ""corporation,"" ""ENGINEERING,"" ""PROCUREMENT,"" ""CONSTRUCTION,"" ""SERVICES,"" ""AGREEMENT,"" ""made and entered into as of,"" ""Effective Date,"" ""Owner,"" ""Contractor.""
+2. **Analyze the text surrounding the keywords to identify:**
+    * **Company Names:** Look for names with location indicators like state names.
+    * **Agreement Titles:** Identify titles related to construction or service agreements.
+    * **Dates:** Extract the specific date mentioned after ""made and entered into as of.""
+    * **Party Names:** Identify the entities labeled as ""Owner"" and ""Contractor."" 
+3. **Return the extracted information as a structured output, such as a table or list, including:**
+    * Company Name 1 (e.g., Blue Sky Utility 2019 V, LLC)
+    * Company Location 1 (e.g., not provided, extract if available)
+    * Role 1 (e.g., Owner)
+    * Company Name 2 (e.g., Bright Power, Inc. dba BPi_)
+    * Company Location 2 (e.g., not provided, extract if available)
+    * Role 2 (e.g., Contractor)
+    * Agreement Title (e.g., ENGINEERING, PROCUREMENT AND CONSTRUCTION SERVICES AGREEMENT)
+    * Effective Date (e.g., 15th day of May 2020)
+
+**Additional Notes:**
+
+* The specific format of company names and agreement titles may vary, so consider using regular expressions or fuzzy matching techniques to capture variations. 
+*  Pay attention to the context surrounding the keywords to avoid misinterpreting information. 
+* This prompt can be adapted to include additional information based on the specific structure and content of your lease documents. 
+"
+3,System Size,"## Analyzing Lease Document Text Samples:
+
+Based on the provided samples, here's how to find similar sections within a lease document:
+
+**Common Structures:**
+
+* **Exhibit A:** This label often introduces detailed specifications of the solar project, including capacity in kW DC (kilowatt direct current).
+* **Recital A:** This section typically outlines the project's purpose and key details, often mentioning the peak capacity in MW DC (megawatt direct current) or kW DC. 
+* **Numbered Sections (e.g., 2.4.1):** These sections delve into specifics like pricing, labor, and estimated project size, often mentioning DC watt capacity.
+* **Annex Sections (e.g., Annex A.1, Annex C):** These sections may provide further technical details, including DC capacity.
+
+**Keyword Patterns:**
+
+* **""kW DC"" or ""MW DC""**: These units signify the project's power capacity and are consistently present.
+* **""solar photovoltaic""**:  This term identifies the type of energy system.
+* **""nameplate capacity""**: Refers to the maximum power output.
+* **""Project""**: Often used to denote the solar energy system.
+* **Location information**: Specific addresses or site descriptions may be included.
+
+**Features of Text:**
+
+* **Numerical figures**: Pay attention to numbers representing capacity (kW DC, MW DC) and project size.
+* **Parenthetical information**: Often provides additional details or clarifies terms (e.g., ""(DC)"").
+* **References to exhibits**: Look for mentions of ""Exhibit B"" or other exhibits for visual representations and further details.
+
+
+## Prompt for Gemini LLM:
+
+**Objective:** Locate and extract sections within the lease document that describe the solar photovoltaic energy system's capacity and specifications.
+
+**Instructions:**
+
+1. **Identify sections labeled ""Exhibit A"" and ""Recital A"".** Extract the text within these sections, especially information related to:
+    * **Project capacity:** Look for values in kW DC or MW DC.
+    * **Project description:** Note any details about the type of system, location, and size.
+2. **Search for sections containing the keywords ""kW DC"" or ""MW DC"".** Extract the text surrounding these keywords, particularly focusing on:
+    * **Numerical values of capacity.**
+    * **Contextual information about the capacity.** 
+3. **Look for sections mentioning ""solar photovoltaic"" or ""nameplate capacity"".** Analyze the surrounding text for relevant details about the energy system.
+4. **Pay attention to numbered sections and annexes.**  These may contain additional specifications and capacity information.
+5. **Extract any references to visual aids like ""Exhibit B"" for further analysis.**
+
+**Output:**
+
+* A list of extracted text sections relevant to the solar photovoltaic energy system's capacity and specifications.
+* Key information including capacity values, project descriptions, and location details. 
+* References to relevant exhibits or visuals for further exploration. 
+"
+4,Address,"Find and return the location of the solar system that is being built
+Typical format: (Street, City, State, Zip) or coordinates
+
+* **Keywords:** The text samples consistently use keywords like ""Exhibit,"" ""Recital,"" ""Project,"" ""Site,"" ""located at,"" and ""Address."" These indicate sections related to location and project details.
+* **Structure:** There are two main formats:
+    * **""Exhibit/Recital [A/B/C...] - [Address]"":** This format clearly labels a section with an exhibit or recital identifier followed by the address.
+    * **Descriptive sentence with embedded address:**  The address is part of a sentence describing the project or property.
+* **Features:**
+    * Addresses often include street number, street name, city, state abbreviation, and zip code.
+    * Some descriptions might include additional details like project type (e.g., solar facility) or size.
+
+ IF NO EXACT LOCATION OF THE SOLAR SYSTEM RETURN ""Not provided.""
+
+**Objective:** Locate and extract sections within a document that describe the location and project details.
+
+**Instructions:**
+
+1. **Identify sections with the following keywords:** ""Exhibit,"" ""Recital,"" ""Project,"" ""Site,"" ""located at,"" and ""Address.""
+2. **Extract the following information from identified sections:**
+    * **Section Label:**  (e.g., Exhibit A, Recital B)
+    * **Full Address:**  Including street number, street name, city, state, and zip code.
+    * **Project Description (optional):**  Any additional information about the project, such as type or size.
+3. **Prioritize sections with clear address formats like ""Exhibit A - [Address]"".**
+4. **For descriptive sentences, extract the address and any relevant project details mentioned.**
+5. **Present the extracted information in a clear and organized format.**"
+5,Construction Status,"## Analyzing Lease Document Text Samples:
+
+Unfortunately, you haven't provided the actual text samples from the lease document. To accurately guide you in finding specific sections, I'll need to see the content and structure of those samples. However, I can offer a general approach and potential features to look for when trying to locate similar text within the document:
+
+**Common Structures and Patterns:**
+
+* **Headings and Subheadings:** Lease documents often use clear headings and subheadings to organize content. Look for consistent formatting (e.g., bold, underlined, larger font size) and keywords related to the target information.
+* **Numbered or Bulleted Lists:**  Sections detailing specific terms, conditions, or steps might be presented as lists for clarity. 
+* **Tables:**  Rent schedules, fee breakdowns, or other numerical data may be displayed in tables.
+* **Defined Terms:**  Lease agreements frequently define key terms upfront. Look for a ""Definitions"" section or instances where terms are italicized or capitalized.
+* **Standard Clauses:**  Certain legal clauses have standardized language and structure across different leases. Familiarize yourself with common clauses (e.g., force majeure, dispute resolution) to identify them quickly. 
+
+**Keywords and Features:**
+
+* **Specific Terminology:**  Focus on keywords directly related to the information you seek. For example, if you're looking for pet policies, search for terms like ""pets,"" ""animals,"" ""breed restrictions,"" ""deposits,"" etc.
+* **Dates and Timeframes:**  Sections dealing with rent, lease duration, or renewal options will likely mention specific dates or timeframes.
+* **Parties Involved:**  Look for names or designations of the landlord, tenant, and any other relevant parties.
+* **Locations and Addresses:**  Clauses related to property usage, maintenance, or access might mention specific locations or addresses within the property.
+
+**Creating a Prompt for Gemini:**
+
+Once you've identified the common structures and keywords, you can create a more effective prompt for me to find specific text within the lease document. Here's a template you can adapt:
+
+**Prompt:**
+
+> ""In the lease document, locate the section that discusses [Target Information]. Look for the following features:
+> * **Headings or Subheadings:** [List potential headings related to the target information] 
+> * **Keywords:** [List relevant keywords and terms] 
+> * **Structure:** [Describe any specific structures like lists, tables, or defined terms]
+>  
+> Provide the exact text of the relevant section or paragraph.""
+
+**Additional Tips:**
+
+* **Use quotation marks for exact phrases** to narrow down the search.
+* **Utilize Boolean operators (AND, OR, NOT)** to combine or exclude keywords. 
+* **Consider the context** surrounding potential matches to ensure you've found the correct section.
+
+Remember, the more specific your prompt and the better you understand the document's structure, the more accurate and efficient your search will be.
+
+**Please provide the text samples you want me to analyze, and I'll offer more precise guidance on finding those sections within the lease document.** 
+"
+7,Mechanical Completion - Definition,"## Finding ""Mechanical Completion"" Sections in Lease Documents: A Guide for Gemini LLM
+
+**Objective:** Locate and extract sections within a lease document that define and detail ""Mechanical Completion"" of a facility.
+
+**Keywords and Patterns:**
+
+* **Primary Keyword:** ""Mechanical Completion"" 
+* **Secondary Keywords:** ""Facility"", ""Project"", ""System"", ""Work"", ""construction"", ""installation"", ""testing"", ""commissioning"", ""interconnection"", ""synchronization"", ""grid"", ""operation""
+* **Section Titles:** Look for sections explicitly titled ""Mechanical Completion"" or containing variations like ""Project Completion"" or ""System Completion.""
+* **Definitions:** Search for instances where ""Mechanical Completion"" is defined within quotation marks, often followed by a list of conditions or criteria.
+* **Lists and Enumerations:** Pay attention to numbered or lettered lists outlining the requirements for achieving Mechanical Completion. 
+* **Conditional Statements:** Identify sentences containing phrases like ""shall mean"", ""shall be deemed"", or ""is considered"" when referring to Mechanical Completion.
+* **Technical Language:** Expect terms related to electrical systems, wiring, equipment, safety systems, and engineering certifications.
+* **Legal Language:** Be aware of references to contracts, agreements, permits, approvals, and legal responsibilities.
+
+**Instructions for Gemini LLM:**
+
+1. **Scan the document:** Analyze the lease document for the primary keyword ""Mechanical Completion"" and its variations.
+2. **Identify potential sections:** Flag sections containing the keyword, related terms, and relevant section titles. 
+3. **Analyze context:** Examine the flagged sections for the presence of definitions, lists, conditional statements, and technical language associated with Mechanical Completion.
+4. **Extract relevant sections:** Once confirmed, extract the full text of sections that clearly define and detail the requirements for achieving Mechanical Completion.
+5. **Present findings:** Provide the extracted sections as the output, ensuring they comprehensively address the concept of Mechanical Completion within the lease agreement.
+
+**Additional Tips:**
+
+* Pay attention to the document structure and formatting, such as headings, subheadings, and numbering, to identify relevant sections.
+* Consider the specific context of the lease agreement, including the type of facility and industry involved. 
+* If the initial search yields limited results, broaden the search by including synonyms or related terms. 
+
+**By following these instructions and utilizing its language processing capabilities, Gemini LLM can effectively locate and extract ""Mechanical Completion"" sections from lease documents.** 
+"
+8,Substantial Completion - Definition,"## Finding ""Substantial Completion"" Sections in Lease Agreements: A Guide for Gemini
+
+Based on the provided samples, here's how you can guide Gemini to locate ""Substantial Completion"" sections within a site lease document:
+
+**Keywords and Phrases:**
+
+*   **Primary Keywords:** ""Substantial Completion,"" ""Substantially Complete"" 
+*   **Related Keywords:** ""Mechanical Completion,"" ""Commercial Operation,"" ""Interconnection,"" ""Commissioning,"" ""Punchlist,"" ""Performance Test,"" ""Capacity Test,"" ""Utility,"" ""Permits,"" ""Legal Requirements,"" ""Governmental Authority,"" ""Lien waivers,"" ""Delay Damages,"" ""Contract Documents,"" ""Power Purchase Agreement,"" ""Interconnection Agreement""
+*   **Section Numbers:** Pay attention to section numbers or titles containing keywords like ""Completion,"" ""Operation,"" or ""Acceptance.""
+
+**Structural Clues:**
+
+*   **Defined Terms:** Look for sections defining ""Substantial Completion"" within quotation marks or italics, often followed by a list of conditions.
+*   **Numbered Lists:** The conditions for achieving Substantial Completion are often presented as numbered lists within the relevant section. 
+*   **Cross-References:**  Sections might reference other sections or exhibits (e.g., Exhibit A, Exhibit E) that contain further details about specific requirements.
+
+**Textual Features:**
+
+*   **Technical Language:** The language will likely be technical, referencing industry-specific terms and processes.
+*   **Conditional Statements:** Sentences will often use conditional phrasing like ""shall mean,"" ""shall be deemed to have occurred,"" or ""when each of the following conditions has been satisfied.""
+*   **Passive Voice:** The writing may frequently employ passive voice constructions.
+
+**Prompt for Gemini:**
+
+**Objective:** Locate and extract sections related to ""Substantial Completion"" within the provided site lease document.
+
+**Instructions:**
+
+1.  **Keyword Search:** Search for the keywords ""Substantial Completion"" and ""Substantially Complete.""
+2.  **Section Identification:** Identify sections where these keywords are found, paying close attention to section titles and numbers. 
+3.  **Contextual Analysis:** Analyze the surrounding text for related keywords, numbered lists of conditions, and cross-references to other sections or exhibits.
+4.  **Extract Relevant Sections:** Extract the sections that define and detail the conditions for achieving ""Substantial Completion,"" including any referenced sections or exhibits.
+5.  **Present Results:** Present the extracted sections in a clear and organized manner, highlighting key information such as conditions, timelines, and responsibilities.
+
+**Additional Tips:**
+
+*   If the document has a table of contents, use it to quickly navigate to potentially relevant sections.
+*   Pay attention to the context of the keywords. ""Substantial Completion"" might be mentioned in sections discussing other topics, but the relevant sections will delve into its specific definition and requirements.
+*   If you encounter ambiguity, refer back to the provided samples and look for similar patterns or phrasing to guide your interpretation.
+
+By following these guidelines, Gemini should be able to effectively identify and extract the ""Substantial Completion"" sections from site lease documents, providing valuable insights into the project's completion requirements and milestones.
+"
+9,Final Completion - Definition,"## Finding ""Final Acceptance"" and ""Final Completion"" Clauses in Lease Agreements: A Guide for Gemini LLM
+
+**Objective:** Locate and extract clauses related to ""Final Acceptance"" and ""Final Completion"" within a lease agreement document.
+
+**Keywords and Patterns:**
+
+* **Headings/Sections:** Look for sections explicitly titled ""Final Acceptance,"" ""Final Completion,"" or similar variations (e.g., ""Project Completion,"" ""Acceptance of Work""). These may be numbered sections (e.g., ""Section 4.7"") or labeled with letters (e.g., ""Exhibit A (M)""). 
+* **Definitions:**  Search for definitions of ""Final Acceptance"" and ""Final Completion"" within the document. These definitions typically outline the specific conditions that must be met for each stage.
+* **Trigger Phrases:** Look for phrases that indicate completion or acceptance criteria, such as:
+    * ""shall be deemed to have occurred""
+    * ""conditions precedent""
+    * ""satisfaction of""
+    * ""completion of"" 
+    * ""delivery of""
+    * ""achievement of""
+    * ""compliance with""
+* **Related Terms:** Pay attention to related terms that often appear in conjunction with final acceptance and completion clauses, including:
+    * **Substantial Completion:** This signifies a stage where the work is mostly finished, but minor items may remain outstanding.
+    * **Punchlist:** A list of minor corrections or incomplete items that need to be addressed before final acceptance. 
+    * **Lien Waivers:** Documents from contractors and subcontractors confirming they have been paid and waiving any future lien rights on the property.
+    * **As-built Drawings:** Updated drawings reflecting any changes made during construction.
+    * **Equipment Documentation:** Manuals, warranties, and other documents related to the equipment installed at the facility. 
+    * **Commissioning Report:** A document summarizing the testing and commissioning process for the facility.
+
+**Structure:**
+
+* **Numbered/Lettered Lists:**  The conditions for final acceptance or completion are often presented as numbered or lettered lists within the clause.
+* **Cross-References:** Clauses may refer to other sections or exhibits within the lease agreement for further details on specific requirements.
+
+**Additional Tips:**
+
+* **Context:** Consider the context of the lease agreement, such as the type of facility or project involved, to better understand the specific requirements for final acceptance and completion.
+* **Variations in Terminology:** Be aware that terminology may vary slightly between different lease agreements. For example, ""Final Acceptance"" may be referred to as ""Final Completion"" or ""Project Acceptance"" in some documents.
+
+**Prompt for Gemini LLM:**
+
+""Please analyze the provided lease agreement document and extract all clauses related to 'Final Acceptance' and 'Final Completion.' Identify the sections or exhibits where these clauses are located, and provide a summary of the key conditions and requirements outlined within each clause. Pay attention to keywords, phrases, and related terms as described in the provided guide."" 
+"
+10,Mechanical Completion Date,"## Prompt for Gemini LLM to Find Specific Text Sections in Lease Documents:
+
+**Objective:** Locate and extract specific text sections related to project schedules and completion dates, particularly ""Mechanical Completion,"" within a lease agreement document.
+
+**Key Features to Identify:**
+
+* **Section Headings:** Look for headings like ""SCHEDULE J - PROJECT SCHEDULE,"" numbered sections (e.g., 2.2.4(a), 2.12(a), 4.4(b)), or terms like ""Definitions"" where relevant terms might be defined.
+* **Keywords:** Focus on terms like ""Mechanical Completion,"" ""Substantial Completion,"" ""Interim Completion,"" ""Completion Dates,"" ""Guaranteed Completion Date,"" and related phrases like ""Certificate,"" ""Notice,"" ""Punchlist,"" and ""Review Period."" 
+* **Dates and Timelines:** Pay attention to specific dates or timeframes mentioned in relation to completion milestones. 
+* **Process Descriptions:** Identify sections outlining the process of achieving and verifying completion, including submission of certificates, reviews, and potential corrective actions.
+* **Defined Terms:** Look for instances where ""Mechanical Completion Date"" or other relevant terms are put in quotation marks and defined explicitly.
+
+**Instructions for Gemini:**
+
+1. **Analyze the Document Structure:**  Begin by understanding the overall organization of the document, including the presence of sections, headings, and numbering systems. 
+2. **Scan for Keywords:**  Search for the keywords mentioned above to quickly identify potentially relevant sections.
+3. **Read Contextually:**  Once potential sections are found, carefully read the surrounding text to confirm if it relates to Mechanical Completion or other target information. 
+4. **Extract Relevant Sections:**  Once confirmed, extract the entire section or specific sentences containing the desired information. 
+5. **Consider Variations:**  Be aware of potential variations in wording, such as ""achieve Mechanical Completion,"" ""date of Mechanical Completion,"" or references to specific certificates or notices related to completion.
+
+**Example Queries for Gemini:**
+
+* **""Find the section that defines 'Mechanical Completion Date'.""**
+* **""Locate the schedule outlining key project milestones and their completion dates.""**
+* **""Extract the paragraph describing the process for achieving Mechanical Completion.""**
+* **""Identify the Guaranteed Mechanical Completion Date mentioned in the lease agreement.""** 
+* **""Find any clauses related to potential delays or adjustments to the Mechanical Completion Date.""**
+
+**Additional Notes:**
+
+*  The provided samples illustrate the variety of ways Mechanical Completion information may appear in lease agreements. Adapt your approach based on the specific document structure and language.
+* If the document is lengthy or complex, consider using keyword search functions or table of contents to navigate efficiently. 
+*  When extracting information, ensure you capture the full context and relevant details to avoid misinterpretations. 
+"
+11,Is Substantial Completion Date within 3 months of Mechanical Completion Date?,"## Analyzing Lease Document Text Samples:
+
+Unfortunately, you haven't provided the text samples for analysis. To effectively identify common structures, keywords, and features within a lease document, I'll need the specific examples you want to search for. Please provide the text samples you mentioned, and I'll do my best to guide you through finding similar sections within the document.
+
+##  Creating a Prompt for Gemini LLM:
+
+Once I have the text samples, I can help you craft a precise prompt for finding similar sections within your lease document. The prompt will likely include:
+
+* **Keywords and Phrases:** We'll identify unique and recurring words or phrases within the samples to target the search.
+* **Sentence Structure:**  We'll analyze the sentence structure and grammatical patterns of the samples to narrow down the search.
+* **Contextual Clues:** We'll look for surrounding information in the samples, such as section headings, numerical lists, or specific formatting, that might help locate similar sections.
+
+**Here's a potential template for the prompt, assuming you provide the text samples:**
+
+""**Find sections in the lease document that are similar to the following examples:**
+
+**[Insert Sample Text 1]**
+
+**[Insert Sample Text 2]**
+
+**Pay attention to the following features:**
+
+* **Keywords:** [List of Keywords]
+* **Sentence Structure:** [Describe Sentence Structure]
+* **Contextual Clues:** [Describe Contextual Information]"" 
+
+**Please provide the missing information so I can assist you further in creating an effective prompt for finding the desired text sections in your lease document.** 
+"
+12,Substantial Completion Date,"## Finding Substantial Completion Dates in Lease Documents: A Guide for Gemini LLM
+
+Based on the provided samples, here's how you can identify sections related to Substantial Completion Dates within a lease document:
+
+**Keywords and Patterns:**
+
+* **""Substantial Completion""**: This is the most obvious and consistent phrase to search for. 
+* **""Substantial Completion Date""**: This phrase often appears in parentheses following the definition of Substantial Completion.
+* **Date Formats**: Look for specific dates or date calculations, like ""Day 166"" or ""March 30, 2021"". 
+* **Section References**: Phrases like ""Section 3.2.4(b)"" or ""Section 4.5(a)"" can point to relevant sections defining Substantial Completion.
+* **Exhibit References**:  Look for mentions of exhibits, especially those labeled with letters like ""Exhibit B"" or ""Exhibit D"", which might contain specific dates or conditions related to Substantial Completion.
+* **Triggering Events**:  Search for phrases that indicate the completion of certain tasks or conditions, such as ""countersigned and delivered"", ""last iteration submitted"", ""Permission to Operate from the Utility"", or ""Mechanical Completion"".
+
+**Structure and Context:**
+
+* **Schedules**: Sections with titles like ""SCHEDULE J - PROJECT SCHEDULE"" might list key milestones, including Substantial Completion, along with corresponding dates.
+* **Definitions**: Look for sections defining key terms, often labeled as ""Definitions"" or appearing at the beginning of the document.
+* **Clauses within Sections**:  Focus on sections discussing construction progress, project milestones, or contractor obligations. Within these sections, clauses often begin with numbers and letters, like ""2.2.4(b)"" or ""4.5(b)"".
+
+**Prompt for Gemini LLM:**
+
+```
+**Objective:** Identify all sections within this lease document that define or mention the Substantial Completion Date.
+
+**Instructions:**
+
+1. **Keyword Search:** Search for the following keywords and phrases:
+    * ""Substantial Completion""
+    * ""Substantial Completion Date""
+    * Dates in various formats (e.g., ""Day 166"", ""March 30, 2021"")
+    * Section references (e.g., ""Section 3.2.4(b)"") 
+    * Exhibit references (e.g., ""Exhibit B"")
+    * Triggering events (e.g., ""countersigned"", ""last iteration"", ""Permission to Operate"")
+
+2. **Contextual Analysis:**
+    * Pay close attention to sections related to:
+        * Project schedules
+        * Definitions of key terms
+        * Construction progress and milestones
+        * Contractor obligations
+
+3. **Extract and Summarize:**
+    * For each relevant section identified:
+        * Extract the full text of the section or clause defining Substantial Completion Date.
+        * Summarize the conditions or events that trigger the Substantial Completion Date.
+        * If a specific date is mentioned, extract that date.
+
+4. **Present Findings:**
+    * Provide a clear and organized report of all identified sections related to Substantial Completion Date, including extracted text, summaries, and specific dates.
+
+**Additional Notes:**
+
+* Consider variations in phrasing and synonyms for ""Substantial Completion"".
+* Be aware of potential amendments or addendums to the lease document that might affect the Substantial Completion Date.
+* If the document format allows, utilize search functions to expedite the process.
+```
+
+By following these guidelines and using the provided prompt, Gemini should be able to effectively locate and analyze sections related to Substantial Completion Dates within lease documents. 
+"
+13,Are Liquidated Damages Associated with Substantial Completion Date?,"## Prompt for Gemini LLM to Locate Liquidated Damages Clauses in Lease Agreements:
+
+**Objective:** Identify and extract sections within a lease agreement that pertain to liquidated damages, specifically focusing on scenarios where Substantial Completion is not achieved by the Guaranteed Substantial Completion Date.
+
+**Keywords and Patterns to Look for:**
+
+* **Section Titles and Numbers:** Pay close attention to section titles and numbers containing keywords like ""Delay Damages,"" ""Liquidated Damages,"" or referencing ""Substantial Completion"" and ""Guaranteed Substantial Completion Date."" Examples: ""Section 4.8 - Delay Damages,"" ""Article IX,"" ""Section 2.10.1,"" ""Exhibit A,"" ""Exhibit D."" 
+* **Trigger Phrases:**  Search for phrases that indicate the imposition of liquidated damages, such as: 
+    * ""Contractor shall pay to Owner...""
+    * ""...as liquidated damages...""
+    * ""...for each day after the Guaranteed Substantial Completion Date...""
+    * ""...until Substantial Completion is achieved.""
+    * ""...as Owner’s sole and exclusive remedy...""
+* **Dates and Timelines:** Identify references to specific dates or timelines related to project completion, such as ""Guaranteed Substantial Completion Date,"" ""Contract Time,"" ""Mechanical Completion Deadline Date,"" ""Commercial Operation Date.""
+* **Monetary Amounts and Calculations:** Look for numerical figures representing the daily or per-day liquidated damages amount, often expressed as a dollar value per megawatt (MW) or as a percentage of the Contract Price. Also, pay attention to formulas used to calculate these amounts.
+* **Conditional Clauses:** Be aware of clauses that specify conditions under which liquidated damages apply or are waived, such as extensions to the Power Purchase Agreement Commercial Operation Date or adjustments to the Project Schedule. 
+
+**Instructions for Gemini:**
+
+1. **Analyze the provided lease agreement text.** 
+2. **Identify sections that contain the keywords and patterns mentioned above.**
+3. **Extract the full text of these sections, including relevant section titles, numbers, and surrounding context.**
+4. **Present the extracted sections in a clear and organized manner, highlighting the key information related to liquidated damages.** 
+
+**Additional Notes:**
+
+* Consider the variations in language and structure across different lease agreements. 
+* Pay attention to the specific terminology used in each document.
+* Be mindful of potential exceptions or limitations to liquidated damages clauses.
+
+**By following these instructions and focusing on the identified keywords and patterns, Gemini should be able to effectively locate and extract the relevant sections of the lease agreement pertaining to liquidated damages for failure to achieve Substantial Completion.** 
+"
+14,Commercial Operation Date,"## Analysis of Text Samples and Prompt Creation for Gemini LLM
+
+Based on the provided text samples, here's an analysis and a proposed prompt for Gemini LLM:
+
+**Common Structure and Keywords:**
+
+* Each sample follows a consistent structure: ""Defined in"" followed by the name of an agreement. 
+* The keywords are ""Defined in"" and the names of various agreements (e.g., ""Power Purchase Agreement,"" ""NEB Agreement,"" ""Lease Agreement"").
+
+**Features of Text to Look for:**
+
+* **Capitalization:** The phrase ""Defined in"" consistently starts with capital letters.
+* **Agreement Names:** The names of agreements often contain capitalized words and may include the word ""Agreement"" itself. 
+* **Sentence Structure:**  The samples are short, independent clauses.
+
+**Prompt for Gemini LLM:**
+
+```
+**Objective:** Locate sections within the lease document where specific terms are defined.
+
+**Instructions:**
+
+1. Search for the phrase ""Defined in"" within the document.
+2. Identify the name of the agreement mentioned after the phrase ""Defined in.""
+3. Extract the sentence or paragraph where the term is defined, including the agreement name and any additional context. 
+4.  If the agreement name is ""Lease Agreement,"" prioritize extracting that section. 
+
+**Example Matches:**
+
+* ""Defined in the Power Purchase Agreement.""
+* ""Defined in the NEB Agreement.""
+* ""Defined in Lease Agreement"" 
+
+**Additional Notes:**
+
+* Pay attention to capitalization and sentence structure as indicators of potential matches.
+* Focus on extracting definitions related to the lease agreement, but also collect definitions from other mentioned agreements for context. 
+* If available, consider using the document's table of contents or index to quickly locate sections with definitions.
+``` 
+"
+15,Final Completion Date,"## Prompt for Gemini LLM to Find Final Completion Sections in Lease Documents:
+
+**Objective:** Locate and extract sections within a lease document that define and describe ""Final Completion"" and related terms like ""Final Completion Date"" and ""Final Acceptance Date.""
+
+**Keywords and Patterns to Search For:**
+
+* **Explicit terms:** ""Final Completion,"" ""Final Completion Date,"" ""Final Acceptance Date,"" ""Substantial Completion""
+* **Related terms:** ""Certificate,"" ""Notice,"" ""Punchlist,"" ""Completion Certificate,"" ""Final Completion Notice""
+* **Section numbering:** Pay attention to numbered sections, especially those with subsections like ""2.2.4(d)"" or ""4.6(b)""
+* **Capitalized terms:** Look for capitalized terms that might indicate definitions or specific procedures, like ""Owner,"" ""Contractor,"" ""Engineer,"" ""Project Company""
+* **Verbs and actions:** Focus on actions related to completion, such as ""deliver,"" ""submit,"" ""achieve,"" ""notify,"" ""inspect,"" ""correct,"" ""remedy""
+* **Timeframes and deadlines:** Identify mentions of specific timeframes or deadlines associated with Final Completion, like ""60 days"" or ""10 Business Days""
+
+**Instructions for Gemini LLM:**
+
+1. **Analyze the document structure:** Identify the overall organization of the lease document, such as sections, subsections, and articles.
+2. **Search for keywords:** Look for the keywords and related terms listed above within each section.
+3. **Identify relevant sections:** Based on the presence of keywords and the context of the surrounding text, determine which sections are most likely to contain information about Final Completion.
+4. **Extract relevant text:** Once relevant sections are identified, extract the specific paragraphs or sentences that define and explain Final Completion, Final Completion Date, and related processes.
+5. **Present the findings:** Provide the extracted text passages as output, potentially with additional information such as section numbers or headings for context.
+
+**Additional Notes:**
+
+* The specific terminology and structure might vary between different lease documents. 
+* Be aware of variations in wording, such as ""Final Acceptance"" instead of ""Final Completion.""
+* Consider the context and overall purpose of the document to accurately interpret the extracted information. 
+* If available, leverage any document metadata or table of contents for quicker navigation to relevant sections.
+
+**Example Query:**
+
+> ""Search for sections in the lease document that define 'Final Completion' and related terms, including the process for achieving it and the timeframe involved. Pay close attention to sections mentioning 'Final Completion Date,' 'Completion Certificate,' and 'Contractor's notice.'"" 
+"
+16,Default - Owner,"## Finding Default Clauses in Lease Agreements: A Prompt for Gemini
+
+**Objective:** Locate and extract sections within a lease agreement document that specifically address events of default, remedies for default, and termination clauses related to breach of contract.
+
+**Instructions:**
+
+1. **Keywords and Phrases:** Search for the following keywords and phrases that commonly appear in default and termination clauses:
+    * **""Event of Default""**: This is a direct indicator of a clause defining default scenarios.
+    * **""Defaulting Party"" and ""Non-Defaulting Party""**: Identifies the parties involved in a default situation.
+    * **""Remedies""**: Look for sections outlining the actions that can be taken in response to a default.
+    * **""Termination""**: Search for clauses detailing conditions under which the agreement can be terminated.
+    * **""Breach""**: Indicates violation of contractual terms, often leading to default or termination.
+    * **Specific Default Events**: Look for terms like ""failure to pay,"" ""insolvency,"" ""misrepresentation,"" ""bankruptcy,"" and ""failure to comply.""
+    * **Cure Periods**: Identify timeframes given to rectify a breach before further action is taken.
+2. **Section Headings and Numbering**: Pay close attention to section headings and numbering that might directly reference defaults or termination, such as:
+    * **""Default; Remedies""**
+    * **""Events of Default""**
+    * **""Termination""**
+    * **Specific numbered sections (e.g., 9.1, 12.1)** often contain detailed default clauses.
+3. **Structure and Formatting**: 
+    * Look for **numbered or lettered lists** that detail specific events of default.
+    * Clauses often contain **conditional statements** outlining triggers and consequences. 
+    * Pay attention to **timeframes and deadlines** mentioned for curing breaches or initiating termination.
+4. **Contextual Clues**: Consider the overall context of the agreement and the relationship between parties. 
+    * Identify clauses that protect the interests of both parties in case of non-performance. 
+    * Focus on sections dealing with financial obligations, representations and warranties, and performance expectations.
+
+**Prompt for Gemini:**
+
+**Based on the provided samples and instructions, please analyze the lease agreement document and extract the following:**
+
+* All sections related to **events of default**, including specific definitions, triggers, and consequences.
+* Clauses outlining **remedies available to the non-defaulting party** in case of a breach.
+* Sections detailing **termination clauses**, specifically those related to breach of contract and non-performance.
+* **Pay close attention to keywords, section headings, numbering, formatting, and contextual clues to accurately identify relevant sections.**
+
+**Additional Notes:**
+
+* Provide the extracted sections with their corresponding headings and numbering for easy reference.
+* If possible, categorize the extracted information based on the type of default or termination clause.
+* Highlight any crucial deadlines or cure periods mentioned within the clauses. 
+
+**By following these instructions, Gemini should be able to effectively locate and extract the relevant default and termination clauses within the lease agreement document.** 
+"
+17,Default - Contractor,"## Finding Default and Termination Clauses in Lease Agreements: A Guide for Gemini
+
+Based on the provided samples, here's how you can identify sections related to defaults and termination in lease agreements:
+
+**Keywords and Phrases:**
+
+*   **Events of Default:** This is the most explicit indicator and often appears as a section heading or within clauses defining specific default scenarios.
+*   **Defaulting Party / Non-Defaulting Party:** These terms identify the parties involved in a default situation.
+*   **Termination:** Look for sections explicitly mentioning termination rights or conditions under which the agreement can be terminated.
+*   **Breach:** This term often precedes descriptions of actions or inactions constituting a breach of the agreement, potentially leading to default or termination.
+*   **Cure Period / Remedy:** Clauses involving cure periods specify the timeframe within which the defaulting party can rectify the situation.
+*   **Insolvency / Bankruptcy:** References to insolvency, bankruptcy, or related legal proceedings signify potential default triggers.
+*   **Liquidated Damages:** Mentions of liquidated damages, especially exceeding a certain threshold, can indicate default consequences.
+
+**Structural Clues:**
+
+*   **Numbered Sections/Articles:** Look for sections titled ""Default,"" ""Events of Default,"" ""Termination,"" or similar headings, often with numbered subsections detailing specific events.
+*   **Defined Terms:** Pay attention to defined terms like ""Event of Default"" or ""Contractor Event of Default"" which often point to relevant sections. 
+*   **Lists and Enumerations:** Sections outlining events of default frequently use lists or enumerated points to categorize different scenarios.
+
+**Textual Features:**
+
+*   **Conditional Language:** Phrases like ""if,"" ""in the event that,"" or ""failure to"" often introduce default conditions.
+*   **Timeframes:** Specific timeframes associated with payment deadlines, cure periods, or notice periods are common elements in default clauses.
+*   **Consequences:** Descriptions of consequences like termination, liquidated damages, or other remedies often follow the definition of default events.
+
+**Additional Tips:**
+
+*   **Table of Contents:** Use the table of contents, if available, to quickly locate relevant sections.
+*   **Search Function:** Utilize the search function within your document viewer to find keywords like ""default"" or ""termination.""
+*   **Cross-Referencing:** Pay attention to cross-references within the document, which may lead to related sections.
+*   **Contextual Understanding:**  Consider the overall context of the agreement and the relationship between the parties when interpreting clauses. 
+
+**Prompt for Gemini LLM:**
+
+```
+## Locate Default and Termination Clauses
+
+**Objective:** Find sections in the provided lease agreement that define events of default and termination rights.
+
+**Instructions:**
+
+1. **Keywords:** Search for keywords and phrases like ""events of default,"" ""termination,"" ""breach,"" ""cure period,"" ""insolvency,"" and ""liquidated damages.""
+2. **Section Headings:** Identify sections titled ""Default,"" ""Events of Default,"" ""Termination,"" or similar.
+3. **Defined Terms:** Look for defined terms such as ""Event of Default"" or ""Contractor Event of Default.""
+4. **Lists and Enumerations:** Pay attention to lists or enumerated points within relevant sections.
+5. **Context:** Consider the overall context of the agreement and the relationship between the parties.
+
+**Output:**
+
+* **List relevant section headings and numbers.** 
+* **Provide snippets of text containing key information about events of default and termination rights.**
+* **Highlight any specific timeframes, conditions, or consequences associated with default or termination.**
+
+**Example:**
+
+* **Section 12.2 - Contractor Events of Default:** This section defines events such as failure to make payments, failure to achieve commercial operation, and misrepresentation.
+* **Article 9 - Default; Remedies:** This article outlines events of default by either party, including non-payment, insolvency, and breach of warranties.
+* **Section 15.8 - Termination Upon Contractor's Material Breach:** This section specifies conditions for termination due to the contractor's breach, including false representation, failure to perform, and exceeding damage caps.
+```
+
+**Remember:** This information provides a general framework. The specific structure and terminology may vary across different lease agreements. Adapt the search strategies and keywords as needed to effectively locate the relevant clauses.
+"
+18,Termination - Owner,"## Finding Termination Clauses in Lease Agreements: A Prompt for Gemini
+
+**Objective:** Locate and analyze termination clauses within a lease agreement document.
+
+**Instructions:**
+
+1. **Keywords:** Search for sections containing the following keywords or their synonyms:
+    * **Termination:** This is the primary keyword indicating clauses related to ending the agreement.
+    * **Convenience, Cause, Default, Force Majeure:** These terms specify the reasons or conditions for termination.
+    * **Notice:** Look for mentions of written notice and the timeframe required for termination.
+    * **Cure Period:** This indicates the time given to rectify a breach before termination.
+    * **Remedies:** Identify the actions or compensations available upon termination.
+2. **Section Titles:** Pay close attention to section titles or headings, often explicitly mentioning ""Termination"" followed by the specific type, like ""Termination for Convenience"" or ""Termination for Cause.""
+3. **Numbered/Lettered Lists:** Termination clauses frequently appear as numbered or lettered lists outlining the steps involved in the process. 
+4. **Cross-References:** Watch for references to other sections within the document, such as ""pursuant to Section X.X,"" which might lead to additional termination details.
+5. **Contextual Clues:** Analyze the surrounding text for contextual clues like descriptions of breach events, consequences of termination, or specific rights and obligations of each party.
+6. **Common Structures:** 
+    * Look for patterns like ""Party X may terminate this Agreement..."" followed by the conditions and procedures.
+    * Identify clauses starting with ""In the event of..."" followed by the termination scenario and its implications.
+    * Pay attention to if-then statements, e.g., ""If X occurs, then Party Y may terminate...""
+7. **Examples:** Use the provided sample text excerpts as reference points to identify similar structures, keywords, and phrasings within the lease agreement.
+
+**Output:**
+
+* Identify the location (e.g., section number) of each termination clause. 
+* Extract the full text of each clause.
+* Analyze the conditions and procedures for termination in each clause.
+* Summarize the key points of each termination scenario (e.g., who can terminate, under what conditions, and with what notice).
+
+**Additional Notes:**
+
+* Consider the specific type of lease agreement and the industry context when interpreting clauses.
+* Be aware of potential variations in terminology and structure.
+* If uncertainties arise, seek clarification from legal professionals.
+
+**By following these instructions, Gemini can effectively identify and analyze termination clauses within a lease agreement, providing valuable insights into the rights and obligations of the involved parties.** 
+"
+19,Termination - Contractor,"## Finding Termination Clauses in Lease Agreements: A Guide for Gemini LLM
+
+Based on the provided samples, here's how you can identify termination clauses within a lease agreement document:
+
+**Keywords and Patterns:**
+
+* **Section Titles:** Look for sections explicitly titled ""Termination,"" ""Default,"" ""Force Majeure,"" ""Suspension,"" or similar variations.
+* **Triggering Events:** Search for phrases indicating events leading to termination, such as ""breach,"" ""failure to pay,"" ""insolvency,"" ""Force Majeure event,"" ""prolonged suspension,"" etc.
+* **Notice Periods:** Identify clauses mentioning specific timeframes for providing written notice of termination (e.g., ""30 days written notice,"" ""5 days prior written notice"").
+* **Party Rights:** Look for language outlining the rights of each party in the event of termination, including options to terminate, cure breaches, or seek remedies. 
+* **Consequences of Termination:**  Search for clauses detailing the outcomes of termination, such as payment obligations, responsibility for costs, or completion of remaining work.
+
+**Structural Clues:**
+
+* **Numbered or lettered sections and subsections:** Termination clauses are often organized within a numbered or lettered hierarchy (e.g., Section 9.2.1, Section 15.9(a)).
+* **Defined terms:** Pay attention to capitalized terms like ""Event of Default,"" ""Force Majeure Event,"" or ""Non-Defaulting Party,"" which are typically defined earlier in the agreement and indicate relevant clauses.
+* **Cross-references:** Clauses might refer to other sections within the document related to termination procedures or consequences. 
+
+**Prompt for Gemini LLM:**
+
+**Objective:** Locate and extract all clauses related to termination within this lease agreement.
+
+**Instructions:**
+
+1. **Scan section titles and headings:** Prioritize sections titled ""Termination,"" ""Default,"" ""Force Majeure,"" ""Suspension,"" etc.
+2. **Identify keywords:** Search for terms like ""breach,"" ""termination,"" ""notice,"" ""cure,"" ""Force Majeure,"" ""suspension,"" and related phrases.
+3. **Analyze sentence structure:** Look for conditional statements (if/then) outlining triggering events and consequences. 
+4. **Pay attention to numbered/lettered sections and defined terms:** These often indicate specific provisions related to termination.
+5. **Follow cross-references:** Explore any referenced sections for additional termination clauses.
+6. **Extract the full text of each identified clause:** Provide the context and surrounding information for accurate interpretation.
+
+**Additional Tips:**
+
+* **Consider the type of lease agreement:** Commercial leases may have different termination clauses than residential leases.
+* **Account for variations in language:**  Terminology and specific provisions can differ across agreements.
+* **Focus on the intent and overall meaning of the clauses:** Understand the conditions and consequences of termination for each party. 
+
+By following these guidelines, Gemini LLM can effectively identify and analyze termination clauses within lease agreements.
+"
+20,Warranties,"## Prompt for Gemini LLM to Locate Warranty Sections in Lease Documents:
+
+**Objective:** Identify and extract sections within a lease document that pertain to warranties on equipment, workmanship, or the overall system/project. 
+
+**Instructions:**
+
+1. **Section Headings:** Prioritize sections with titles containing keywords like:
+    * ""Warranty""
+    * ""Guarantee""
+    * ""Defects""
+    * ""Repairs"" 
+    * ""Replacement""
+    * ""Maintenance""
+2. **Keywords:** Look for the following keywords within the text:
+    * ""Warranty Period""
+    * ""Substantial Completion"" 
+    * ""Final Completion""
+    * ""Commencement Date""
+    * ""Expiration Date""
+    * ""Workmanship""
+    * ""Materials""
+    * ""Equipment""
+    * ""System""
+    * ""Project""
+    * ""Defects""
+    * ""Repair"" 
+    * ""Replace""
+    * ""Remedy""
+    * ""Manufacturer Warranties""
+3. **Numbered Sections/Articles:** Pay close attention to sections labeled with numbers and titles, such as ""Article 12 - Warranties"" or ""Section 8.2 - Warranty Period."" 
+4. **Dates and Durations:** Identify mentions of specific timeframes related to warranties, such as ""five (5) years,"" ""ten (10) years,"" or references to specific starting and ending dates.
+5. **Responsibilities:**  Look for clauses that outline the responsibilities of both the Contractor and Owner regarding warranty claims, repairs, and replacements. 
+6. **Exclusions and Limitations:** Be aware of sections that specify exclusions or limitations to the warranties provided.
+
+**Output:**
+
+* Extract the relevant sections of the lease document that pertain to warranties based on the criteria mentioned above.
+* Provide the extracted sections with clear labels indicating the type of warranty (e.g., Workmanship Warranty, Equipment Warranty, Manufacturer Warranty). 
+* If possible, identify the starting and ending dates of each warranty period.
+
+**Additional Notes:**
+
+* The provided text samples illustrate the variety of ways warranty information can be presented in lease agreements. Be flexible and adaptable in your search.
+* Consider the context of the document and the overall lease agreement when interpreting warranty clauses. 
+
+**I believe this prompt will effectively guide Gemini LLM in locating and extracting warranty information from lease documents. Please let me know if you have any further questions or require additional refinements.** 
+"
+21,Guaranties,"## Prompt for Gemini LLM:
+
+**Objective:** Locate and extract specific text sections related to performance guarantees within a lease agreement document for a solar energy project.
+
+**Key Features to Identify:**
+
+* **Section Headings:** Look for sections titled ""Performance Guarantee,"" ""Production Guarantee,"" or similar variations. Pay attention to numerical identifiers like ""12.4"" or ""Exhibit G"" which often denote specific sections. 
+* **Keywords:** Focus on keywords related to performance and guarantees, such as:
+    * ""Measured Performance Ratio""
+    * ""Expected Performance Ratio""
+    * ""Performance Guarantee Damages"" 
+    * ""Annual Output""
+    * ""PVsyst Output""
+    * ""Minimum Output Guarantee""
+    * ""Energy Yield""
+    * ""Production Deficit""
+    * ""Compensation""
+* **Dates and Timeframes:** Search for references to specific timeframes like ""Year One,"" ""Year Two,"" ""first year of operation,"" or ""12-month period.""  
+* **Numerical Values:**  Identify numerical values associated with performance guarantees, such as percentages (e.g., 90%), energy output values (e.g., 1450 kWhs/DCkW/Year), or compensation rates.
+* **Exhibit References:**  Note any references to exhibits (e.g., Exhibit A, Exhibit N) that might contain relevant details about performance guarantees. 
+* **Liquidated Damages Clauses:**  Look for sections discussing  ""liquidated damages"" or ""pre-estimation of damages"" in the context of performance shortfalls.
+
+**Instructions:**
+
+1. Analyze the document structure and headings to locate relevant sections.
+2. Scan the text for the keywords listed above.
+3. Pay close attention to numerical values and dates associated with performance guarantees.
+4. Identify any references to relevant exhibits.
+5. Extract the full text sections that discuss performance guarantees, including details about measurement, expected performance levels, consequences of shortfall, and compensation mechanisms.
+
+**Example Text Sections (from the samples provided):**
+
+* The entire section marked as ""12.4 Performance Guarantee"" including subsections 12.4.1 and 12.4.2. 
+* The paragraph within ""Exhibit G"" that mentions the ""Minimum Output Guarantee"".
+* The section detailing the ""Solar Production Guarantee"" with its subsections describing the ""Term"", ""Item of Work"", and ""Production Deficit"" calculations. 
+
+**Additional Notes:**
+
+* The specific wording and structure may vary depending on the individual lease agreement.  
+*  Adapt the search criteria based on the specific language and terminology used in the document you are analyzing. 
+* If the document is lengthy or complex, consider using search functions within your document viewer to locate relevant keywords efficiently. 
+"
+22,Force Majeure,"## Finding Force Majeure Clauses in Lease Agreements: A Guide for Gemini LLM
+
+Based on the provided samples, here's how you can identify Force Majeure sections within a lease document:
+
+**Keywords and Phrases:**
+
+* **Headings:** Look for sections explicitly titled ""Force Majeure,"" often labeled as an Article or Section (e.g., ""Article 10: Force Majeure"").
+* **""Force Majeure Event"":** This term defines the specific events triggering the clause. Pay attention to its definition and included examples. 
+* **Performance and Obligations:**  The clause will discuss excused performance, delays, and non-performance of obligations under the agreement due to Force Majeure events.
+* **Exceptions:**  Look for exceptions to the clause, typically involving financial obligations or events within the party's control. 
+* **Notice Requirements:** The clause usually outlines procedures for notifying the other party about a Force Majeure event, including timeframes and required details.
+* **Mitigation Efforts:** The clause might require affected parties to make reasonable efforts to mitigate the impact of the Force Majeure event.
+* **Duration and Termination:**  Look for clauses specifying the maximum duration of excused non-performance and conditions for contract termination due to prolonged Force Majeure events. 
+
+**Structure and Patterns:**
+
+* **Definitions:** Force Majeure clauses often start with a definition of ""Force Majeure Event,"" outlining the types of events covered.
+* **Conditions for Excused Performance:** The clause will specify conditions under which non-performance is excused due to a Force Majeure event. 
+* **Procedures and Responsibilities:**  Look for sections outlining procedures for invoking the clause, including notice requirements, mitigation efforts, and potential contract adjustments. 
+
+**Additional Features:**
+
+* **Examples of Force Majeure Events:** The clause may provide specific examples, such as natural disasters, war, strikes, or government actions.
+* **Exclusions:**  The clause will often exclude events like economic hardship, market changes, or events within the party's control. 
+
+**Prompt for Gemini LLM:**
+
+**Objective:** Identify and extract the Force Majeure clause within this lease agreement. 
+
+**Instructions:**
+
+1. **Search for keywords:** Look for sections titled ""Force Majeure"" or containing the terms ""Force Majeure Event,"" ""performance,"" ""obligations,"" ""excused,"" ""notice,"" and ""mitigation."" 
+2. **Analyze structure:** Identify sections defining ""Force Majeure Event,"" outlining conditions for excused performance, and specifying procedures and responsibilities.
+3. **Extract the relevant text:** Once identified, extract the entire Force Majeure clause, including definitions, conditions, procedures, and any examples or exclusions. 
+4. **Provide context:** Note the article or section number and any relevant headings.
+
+**Additional notes:** 
+
+* Consider variations in terminology (e.g., ""Act of God"").
+* Pay attention to specific details and limitations within the clause.
+* If multiple potential clauses are found, analyze each one and determine the most relevant based on context and comprehensiveness. 
+"
+23,Assignment - Owner,"## Prompt for Gemini LLM to locate Assignment Clauses in Lease Agreements:
+
+**Objective:** Identify and extract sections within a lease agreement document that pertain to the assignment of rights and obligations by either the Owner or Contractor. 
+
+**Keywords and Patterns to Search for:**
+
+* **Section Titles/Headers:** Look for sections explicitly titled ""Assignment,"" ""Transfer,"" or similar variations. Pay attention to article/section numbering (e.g., Article XIII, Section 25).
+* **Keywords:**
+    * ""Assign,"" ""Transfer,"" ""Delegate,"" ""Subcontract""
+    * ""Rights,"" ""Obligations,"" ""Liabilities,"" ""Interest""
+    * ""Consent,"" ""Approval,"" ""Notice""
+    * ""Owner,"" ""Contractor,"" ""Lender,"" ""Affiliate,"" ""Subsidiary""
+    * ""Financing,"" ""Security,"" ""Collateral""
+    * ""Merger,"" ""Acquisition,"" ""Consolidation""
+* **Specific Phrases:**
+    * ""Without the prior written consent""
+    * ""Permitted Assignments""
+    * ""Void and unenforceable""
+    * ""Assumption of obligations"" 
+
+**Additional Features:**
+
+* **Context:** Analyze the surrounding text to ensure the identified section truly discusses assignment provisions and not just mentions the terms in passing.
+* **Cross-References:** Look for references to other sections within the agreement that might provide further details on assignment rights and limitations.
+* **Logical Structure:** Assignment clauses often follow a specific structure:
+    * **General Prohibition:** An initial statement restricting assignments without consent.
+    * **Exceptions/Permitted Assignments:** Specific situations where assignment might be allowed without consent (e.g., to affiliates, lenders, etc.).
+    * **Conditions and Procedures:** Requirements for valid assignments, such as written notice, assumption of obligations, etc. 
+    * **Consequences of Unauthorized Assignment:**  Clauses outlining the repercussions of violating the assignment provisions.
+
+**Example Prompt:**
+
+> **Search the provided lease agreement document and extract all sections related to the assignment of rights and obligations by either the Owner or the Contractor. Pay close attention to keywords such as ""assign,"" ""transfer,"" ""consent,"" and ""obligations."" Identify the specific conditions and limitations for permissible assignments, including any requirements for notice or consent. Also, note any consequences for unauthorized assignments.** 
+>
+> **Provide the extracted sections with their corresponding headings and article/section numbers. If relevant, include information about cross-referenced sections within the document.** 
+"
+24,Assignment - Contractor,"## Prompt for Gemini LLM to Locate Assignment Clauses in Lease Agreements:
+
+**Objective:** Identify and extract sections within a lease agreement document that pertain to the assignment of rights, obligations, or the contract itself.
+
+**Keywords and Patterns to Look for:**
+
+* **Section Headings:** Search for sections explicitly titled ""Assignment,"" typically labelled as ""Article XIII,"" ""Section 25,"" or similar variations.
+* **Key Terms:**  Look for keywords such as ""assign,"" ""transfer,"" ""delegate,"" ""subcontract,"" ""consent,"" ""written approval,"" ""affiliate,"" ""successor,"" ""legal representatives,"" ""void,"" ""null,"" and ""unenforceable.""
+* **Parties Involved:**  Identify mentions of the involved parties, such as ""Owner,"" ""Contractor,"" ""Design-Builder,"" ""Project Company,"" ""Project Investor,"" ""Lenders,"" and ""Financing Party.""
+* **Conditional Statements:** Pay attention to clauses outlining conditions or restrictions for assignments, including requirements for consent, limitations on subcontracting, or specific scenarios where assignment is allowed (e.g., collateral assignment to lenders).
+
+**Instructions for Gemini:**
+
+1. **Analyze Text:** Process the provided lease agreement document and identify sections containing the keywords and patterns mentioned above.
+2. **Extract Sections:**  Extract the relevant portions of text that specifically discuss assignment clauses, including any conditions or restrictions associated with them.
+3. **Present Results:**  Present the extracted sections clearly, potentially grouping them by the type of assignment clause (e.g., general prohibitions, permitted assignments, consequences of unauthorized assignments).
+
+**Additional Considerations:**
+
+* **Variations in Language:**  Be aware of potential variations in wording and sentence structure while maintaining focus on the core concepts related to assignment.
+* **Contextual Understanding:**  Consider the context of each clause to accurately interpret its meaning and implications within the lease agreement.
+* **Multiple Clauses:** A lease agreement may contain multiple clauses addressing assignment in different contexts. Ensure all relevant sections are identified and extracted.
+
+**By following these instructions and focusing on the provided keywords and patterns, Gemini should effectively locate and present the assignment clauses within a lease agreement document.** 
+"
+25,Liens,"## Finding Lien and Payment Clauses in Lease Agreements: A Guide for Gemini LLM
+
+**Objective:** Locate and extract specific sections within a lease agreement document that pertain to lien waivers, payment conditions, and contractor obligations related to liens. 
+
+**Key Features to Identify:**
+
+* **Section Numbers and Headings:** Look for sections explicitly labeled with terms like ""Liens,"" ""Releases and Waivers,"" ""Payment,"" or similar headings that suggest relevance to the topic. Pay attention to numeric identifiers like ""5.6,"" ""2.16.2,"" etc., as these often denote specific clauses within the agreement.
+* **Keywords and Phrases:**  Focus on the following terms and their synonyms to identify relevant passages:
+    * **Lien:** Mechanic's lien, Contractor Lien, claim of lien, encumbrance, charge
+    * **Waiver:** Release, conditional waiver, lien waiver
+    * **Payment:** Remittance, paid, payment terms, invoice, due
+    * **Contractor Obligations:**  Indemnify, discharge, bond, defend, hold harmless
+    * **Parties Involved:** Owner, Contractor, Subcontractor, Major Subcontractor, laborer, materialman, supplier
+* **Conditional Statements:**  Sentences containing ""if,"" ""to the extent that,"" ""provided that,"" or similar phrasing often outline conditions related to lien waivers and payment obligations. 
+* **Timeframes:** Look for mentions of specific timeframes like ""on or before,"" ""timely,"" ""promptly,"" or number of days, as these often indicate deadlines for fulfilling obligations related to liens and payments.
+* **Forms and Exhibits:** References to specific forms (e.g., ""Exhibits F-1 through F-3"") or external documents might offer further details on lien waiver requirements.
+
+**Prompt for Gemini LLM:**
+
+Given a lease agreement document, please identify and extract all sections that discuss the following:
+
+* **Lien waivers:** This includes clauses specifying when and how contractors must provide lien waivers to the owner, the types of waivers required (e.g., conditional, unconditional), and any conditions tied to the release of payment.
+* **Payment terms and conditions related to liens:** Look for clauses outlining the owner's obligation to make timely payments and the consequences of non-payment on the contractor's lien rights.
+* **Contractor obligations regarding liens:**  Extract sections detailing the contractor's responsibility to avoid placing liens on the property, discharge existing liens, and indemnify the owner from lien-related claims. 
+
+**Additional Tips:**
+
+* Pay attention to the context surrounding the keywords and phrases. Not every mention of ""lien"" or ""payment"" will be relevant to your search.
+* Consider the overall structure of the agreement and the relationships between different clauses. 
+* If the document is lengthy, use search functions or table of contents to navigate efficiently.
+
+**By following these guidelines and using the provided prompt, Gemini LLM should be able to effectively locate and extract the desired information from lease agreements.**
+"
+26,Summary of Economic Terms,"## Finding text related to Economic Terms, description of PAYMENTS.
+
+1. **Keywords:** Search for the following keywords and their variations:
+    * **Delay Damages:** ""Delay Damages,"" ""liquidated damages,"" ""Substantial Completion,"" ""Guaranteed Substantial Completion Date,"" ""Mechanical Completion,"" ""Commercial Operation Date""
+    * **Contract Price:** ""Contract Price,"" ""EPC Price,"" ""cost,"" ""fee schedule,"" ""payment schedule""
+    * **Project Schedule:** ""Project Schedule,"" ""Guaranteed Substantial Completion Date,"" ""Guaranteed Final Completion Date,"" ""Mechanical Completion Date,"" ""Notice to Proceed,"" ""milestone,"" ""delivery,"" ""completion""
+2. **Section Identification:** Pay attention to section numbers and headings related to the identified keywords, such as:
+    * Numbered sections (e.g., 4.8, 2.1, Exhibit D)
+    * Headings and subheadings (e.g., ""Contract Price and Project Schedule,"" ""Milestone Payment Schedule"")
+3. **Contextual Clues:** Look for contextual clues surrounding the keywords that indicate relevance to the target information:
+    * Dates and deadlines
+    * Monetary amounts and calculations
+    * References to specific project milestones or events
+    * Names of parties involved (e.g., Owner, Contractor)
+4. **Exhibit References:** Note any references to exhibits or annexes that may contain relevant information, such as:
+    * ""Exhibit D - Contract Price and Project Schedule""
+    * ""Exhibit C - Contract Price""
+    * ""Annex A System Cost Schedule""
+5. **Output:** Provide the identified sections of text that are most likely to contain information about delay damages, contract price, and project schedule.
+
+**Example:**
+
+Based on the provided samples, here's how you could identify a relevant section:
+
+* **Keywords:** ""Substantial Completion,"" ""Guaranteed Substantial Completion Date,"" ""liquidated damages""
+* **Section Identification:** Section 4.7
+* **Contextual Clues:** Mentions monetary amount per day for delay, references ""Contractor"" and ""Owner""
+* **Output:**
+
+"
+27,Taxes,"## Prompt for Gemini LLM to Locate Tax Clauses in Lease Agreements:
+
+**Objective:** Identify and extract sections within a lease agreement that specifically address tax obligations and responsibilities of both the Owner and Contractor.
+
+**Keywords and Patterns to Look for:**
+
+* **Explicit terms:** ""Taxes,"" ""Tax,"" ""Tax Indemnity,"" ""Excluded Taxes,"" ""Governmental Authority,"" ""Applicable Law,"" ""Tax Assessment,"" ""Property Tax""
+* **Parties involved:** ""Owner,"" ""Contractor,"" ""Subcontractor,"" ""Supplier""
+* **Types of taxes:** ""income,"" ""payroll,"" ""sales,"" ""use,"" ""transfer,"" ""customs,"" ""property,"" ""duties,"" ""levies,"" ""fees"" 
+* **Actions related to taxes:** ""pay,"" ""remit,"" ""reimburse,"" ""indemnify,"" ""defend,"" ""hold harmless""
+* **Sections/Articles/Clauses mentioning taxes:** Look for numbered sections or articles with titles or headings containing the keywords mentioned above. 
+* **Numbered lists:** Pay close attention to clauses with sub-sections denoted by letters (e.g., (a), (b), (c)). These often detail specific tax obligations.
+* **Financial calculations:** Look for sections mentioning calculations related to taxes, such as net present value, discount rates, or depreciation.
+
+**Instructions:**
+
+1. **Scan the document:** Quickly browse the lease agreement, focusing on headings, subheadings, and keywords mentioned above.
+2. **Identify relevant sections:** Pinpoint sections that explicitly discuss tax responsibilities. 
+3. **Extract the text:** Copy the entire section related to tax obligations, including the section number or title, and any sub-sections. 
+4. **Analyze the content:** Pay close attention to the specific types of taxes mentioned, who is responsible for paying them, and any indemnity clauses. 
+5. **Repeat:** Continue this process to identify and extract all sections related to taxes within the lease agreement.
+
+**Additional Tips:**
+
+* Pay attention to the context of the keywords. For example, ""sales tax"" might be mentioned in a different context unrelated to tax obligations.
+* Look for cross-references to other sections within the document that might provide additional information about taxes. 
+* Be aware of any definitions of terms related to taxes, such as ""Tax"" or ""Governmental Authority,"" which are often found at the beginning of the lease agreement.
+
+**Example Prompts:**
+
+* ""Find all sections in the lease agreement that discuss the responsibility for paying property taxes.""
+* ""Extract the section that defines the term 'Tax' and list the types of taxes included in the definition.""
+* ""Identify any clauses that address the obligation of the Contractor to indemnify the Owner for unpaid taxes.""
+
+**By following these instructions and utilizing the provided keywords and patterns, Gemini should be able to effectively locate and extract all relevant sections within the lease agreement that pertain to tax obligations and responsibilities.**
+"
+30,Mechanical Completion - Notification to REA by Developer,"## Finding Mechanical Completion Sections in Lease Documents: Analysis and Prompt
+
+Based on the provided samples, we can identify several key features and patterns to look for when searching for sections related to Mechanical Completion in lease documents:
+
+**Keywords:**
+
+*   ""Mechanical Completion"" is the most obvious and consistent keyword.
+*   Other relevant keywords include: ""Interim Completion,"" ""Certificate,"" ""Notice,"" ""achieve,"" ""deliver,"" ""submit,"" ""completion tasks,"" and ""documentation.""
+*   Look for keywords related to the parties involved, such as ""Contractor,"" ""Owner,"" ""Engineer,"" and ""Project Company.""
+
+**Structure:**
+
+*   The sections are often numbered, using a combination of numbers and letters (e.g., 4.3(c), 2.2.4(a)).
+*   They may be part of a larger section with a broader topic (e.g., Section 4.4).
+*   The sections typically describe a specific action or requirement related to Mechanical Completion. 
+*   They frequently reference specific forms or exhibits (e.g., Exhibit J-1, Exhibit I).
+
+**Text Features:**
+
+*   The language used is usually formal and legalistic.
+*   The sections often specify timelines or deadlines for actions.
+*   They may include conditions or requirements that must be met before Mechanical Completion can be declared.
+
+## Prompt for Gemini LLM:
+
+**Objective:** Locate and extract all sections within the lease document that pertain to Mechanical Completion.
+
+**Instructions:**
+
+1. **Keyword Search:** Scan the document for the keyword ""Mechanical Completion"" and its variations (e.g., ""Completion Certificate,"" ""achieve Mechanical Completion"").
+2. **Section Identification:** Identify sections containing the keywords, paying attention to numbering patterns (e.g., 4.3(c), 10.2(a)).
+3. **Contextual Analysis:** Analyze the surrounding text to ensure the section is relevant to the process of achieving and certifying Mechanical Completion. Look for keywords like ""Contractor,"" ""Owner,"" ""submit,"" ""deliver,"" and references to specific forms or exhibits. 
+4. **Extract and Organize:** Extract the identified sections, including their headings and full text. Organize them based on their numbering or thematic relevance. 
+5. **Additional Keywords:** If necessary, expand the search to include related keywords like ""Interim Completion"" to capture a broader range of relevant sections.
+
+**Output:** Provide a list of all extracted sections, properly formatted with headings and full text. 
+"
+31,Mechanical Completion - Review Period,"## Analyzing the Text Samples:
+
+The provided text samples exhibit a consistent structure and keyword pattern. Let's break down the key features:
+
+**Structure:**
+
+* **Section Numbering:** Each text sample starts with a section number, often with multiple subsections like ""4.3(c)"" or ""2.2.4(a)"". This indicates a hierarchical organization within the document.
+* **Subject and Action:** The text follows with the subject ""Owner"" and the action ""shall review and provide any comments"".
+* **Timeframe:** Finally, a timeframe for the action is specified, such as ""within 10 business days"" or ""within 30 days"". 
+
+**Keywords:**
+
+* **""Owner""**: This consistently refers to the party responsible for reviewing and providing comments.
+* **""shall review and provide any comments""**: This phrase indicates the required action to be taken by the Owner.
+* **Timeframe indicators**:  Keywords like ""within"", ""days"", and ""business days"" specify the time limit for the action.
+
+**Additional Features:**
+
+* The timeframe for the action varies across the samples.
+* Some sections are repeated with different timeframes, like ""2.2.4(a)"". 
+
+## Prompt for Gemini LLM:
+
+Based on the analysis, here's a prompt to help Gemini LLM find similar text sections in the lease document:
+
+**Prompt:**
+
+Search for text sections in the document that follow this structure:
+
+* Starts with a section number (e.g., X.X(a), X.X.X(b)).
+* Contains the keyword ""Owner"".
+* Includes the phrase ""shall review and provide any comments"". 
+* Specifies a timeframe using keywords like ""within"", ""days"", or ""business days"".
+
+**Additional instructions:**
+
+* Look for variations in the timeframe specified.
+* Identify sections with the same number but different timeframes.
+* Extract the section number, timeframe, and any additional relevant context for each matching section. 
+"
+32,Mechanical Completion - Acceptance,"## Analysis of Text Samples and Prompt Creation:
+
+Based on the provided text samples, here's a breakdown of the common structure, keywords, and features to look for when searching for similar sections within a lease document:
+
+**Common Structure:**
+
+* **Numbered sections and subsections:** The text samples follow a consistent pattern of numbered sections (e.g., 4.3, 4.5, 2.2.4) and subsections identified by lowercase letters (e.g., (a), (b)). This suggests a hierarchical organization within the document.
+* **Conditional statements:** Most samples start with ""If accepted,"" indicating a specific condition that needs to be met for the subsequent action to occur.
+* **Action verbs:** The text describes specific actions, such as ""countersign,"" ""return,"" ""deliver,"" and ""determine."" These verbs indicate the responsibilities of either the Owner or the Contractor.
+* **Specific terms:**  The samples consistently refer to ""Mechanical Completion,"" ""Mechanical Completion Certificate,"" and ""Interim Completion Certificate."" These terms are crucial keywords for identifying relevant sections.
+
+**Keywords and Patterns:**
+
+* **""If accepted""** is a strong indicator of the relevant sections.
+* **""Owner"" and ""Contractor""** are the two main parties involved, and their actions are often mentioned.
+* **""countersign,"" ""return,"" ""deliver,""** are actions related to the certificates.
+* **""Mechanical Completion,"" ""Mechanical Completion Certificate,"" ""Interim Completion Certificate""** are the key terms related to the specific stage of the project.
+
+**Prompt for Gemini LLM:**
+
+**Objective:** Find sections within the lease document that discuss the process and conditions related to Mechanical Completion and the relevant certificates.
+
+**Instructions:**
+
+1. **Search for sections containing the phrase ""If accepted"" followed by actions related to ""Owner"" and ""Mechanical Completion Certificate"" or ""Interim Completion Certificate"".**  
+2. **Prioritize sections with numbered structures (e.g., 4.3(c), 10.2(b)) as they likely follow the document's organization.**
+3. **Identify the conditions required for the Owner to accept the certificates.**
+4. **Extract the actions that the Owner and/or Contractor need to take regarding the certificates.**
+5. **Pay attention to any dates or timelines mentioned in relation to Mechanical Completion.**
+
+**Additional Tips:**
+
+* You can utilize keyword search functionalities within your document viewer to quickly identify sections containing the mentioned keywords. 
+* Pay attention to the context surrounding the keywords to ensure relevance to Mechanical Completion.
+
+**By following these instructions and focusing on the identified keywords and patterns, Gemini should be able to effectively locate and analyze the relevant sections within the lease document.** 
+"
+33,Mechanical Completion - Rejection,"## Analyzing Lease Document Text Samples: 
+
+Based on the provided text samples, here's how you can efficiently locate similar sections within the lease document:
+
+**Common Structure:**
+
+* **Numbered Sections and Subsections:**  The text snippets follow a consistent format with numbered sections (e.g., 4.3, 2.2.4, 10.2) and subsections (a, b, c). This indicates a hierarchical structure within the document, allowing for targeted searches using these identifiers.
+* **Conditional Statements:** Most samples begin with ""if"" followed by a specific condition, outlining the circumstances under which the subsequent actions should be taken. This is a crucial element to identify related clauses.
+
+**Keyword Patterns:**
+
+* **Parties Involved:** Look for references to ""Owner,"" ""Contractor,"" and sometimes ""Engineer,"" as these are the key players in the agreement and their interactions are likely defined in such clauses. 
+* **Completion Stages:** Phrases like ""Interim Completion,"" ""Mechanical Completion,"" and ""Certificate of Mechanical Completion"" signal sections dealing with project milestones and related processes.
+* **Actions and Notifications:** Words like ""notify,"" ""provide,"" ""respond in writing,"" ""rejects,"" and ""reasons"" indicate communication protocols and actions required under specific conditions.
+
+**Features of Text:**
+
+* **Formal Language:** The excerpts utilize formal legal language with precise terminology. 
+* **Cause and Effect:** The clauses outline specific situations (cause) and the required actions or responses (effect) following them.
+* **Detailed Explanations:**  There's emphasis on providing ""detailed explanation,"" ""reasons,"" and specific actions to ensure clarity and avoid ambiguity.
+
+## Prompt for Gemini LLM:
+
+**Instructions:**
+
+Search the lease document for sections that match the following criteria:
+
+* **Structure:** Numbered sections and subsections (e.g., X.X(a)), containing conditional statements starting with ""if"".
+* **Keywords:** Focus on clauses mentioning ""Owner,"" ""Contractor,"" ""Engineer,""  ""Completion"" (Interim/Mechanical), ""Certificate,"" ""notify,"" ""provide,"" ""reasons,"" ""rejects,"" and ""respond.""
+* **Content:** Prioritize sections outlining actions or communication protocols required under specific conditions related to project milestones and approvals. 
+
+**Example Queries:**
+
+* Find sections where the Owner rejects the Contractor's Mechanical Completion Notice and the required response. 
+* Locate clauses detailing the process of achieving Interim Completion and the actions to be taken if it's not achieved.
+* Identify sections where the Owner is required to provide a detailed explanation for their decisions. 
+
+**Additional Tips:**
+
+* Use the identified keywords and their synonyms to broaden the search.
+* Pay attention to the context surrounding the keywords to ensure relevance to the desired clauses.
+* Leverage the numbered sections and subsections to navigate the document efficiently. 
+"
+35,Substantial Completion - Notification to REA by Developer,"## Finding Substantial Completion Clauses in Lease Documents: A Prompt for Gemini
+
+**Goal:** Locate and extract sections within a lease document that deal with the process and requirements of achieving ""Substantial Completion"" of a project.
+
+**Key Features to Identify:**
+
+* **Section Numbering:** Look for numbered sections, often formatted as ""X.X"" or ""X.X.X"" (e.g., 2.2.4(b), 10.4(a)).
+* **Keywords:** Search for the following keywords and their variations:
+    * Substantial Completion
+    * Certificate
+    * Notice
+    * Completion
+    * Contractor
+    * Owner
+    * Design-Builder
+    * Engineer
+* **Trigger Phrases:** Pay attention to phrases that indicate the initiation of the Substantial Completion process, such as:
+    * ""When Contractor believes...""
+    * ""After the Day on which Contractor...""
+    * ""When the Design-Builder believes it has achieved...""
+* **Documentation References:** Look for references to specific documents related to Substantial Completion, such as:
+    * Exhibit (followed by a letter/number) 
+    * O&M Manual (Operations & Maintenance Manual)
+* **Action Verbs:** Identify verbs that describe actions to be taken upon achieving Substantial Completion:
+    * Notify
+    * Deliver
+    * Submit 
+
+**Prompt for Gemini:**
+
+```
+**Objective:** Identify and extract all sections within this lease document that pertain to ""Substantial Completion"" of the project.
+
+**Instructions:**
+
+1. **Scan the document for sections containing the keywords:** ""Substantial Completion,"" ""Certificate,"" ""Notice,"" ""Completion,"" ""Contractor,"" ""Owner,"" ""Design-Builder,"" and ""Engineer.""
+2. **Pay close attention to numbered sections (e.g., 2.2.4(b), 10.4(a)) and identify trigger phrases such as:** 
+    * ""When Contractor believes...""
+    * ""After the Day on which Contractor...""
+    * ""When the Design-Builder believes it has achieved...""
+3. **Look for references to specific documents like Exhibits (e.g., Exhibit L) and the O&M Manual.**
+4. **Extract the full text of sections that meet the above criteria, including the section number and any relevant details about required actions, timelines, and documentation.**
+5. **Present the extracted sections in a clear and organized manner, highlighting key information.**
+
+**Additional Notes:**
+
+* Consider variations of the keywords, such as ""completed"" instead of ""completion.""
+* Be aware of context to avoid extracting irrelevant sections that may mention the keywords but not relate to the Substantial Completion process.
+```
+
+**By following these instructions, Gemini should be able to effectively locate and extract the relevant sections of the lease document related to Substantial Completion.** 
+"
+36,Substantial Completion - Review Period,"## Analysis of Text Samples:
+
+From the provided samples, we can identify several key features to look for when searching for similar text sections within a lease document:
+
+**Structure:**
+
+* **Numbered sections and subsections:** The text appears to be organized with a numbered hierarchy, like ""4.6(b)"" or ""2.2.4(a)"". This suggests a consistent structure within the document.
+* **Parentheses for sub-sections:** Subsections are often indicated using parentheses following the main section number.
+
+**Keywords:**
+
+* **""Owner""**: This keyword consistently appears in each sample, indicating the text likely refers to actions or responsibilities of the owner.
+* **""review"" and ""comments""**: These words suggest the text relates to a process of reviewing something and providing feedback.
+* **Timeframes**: Several samples include timeframes for the owner's review, like ""10 business days"" or ""15 days.""
+
+**Additional Features**:
+
+* **Verbs related to actions**: Look for verbs like ""shall,"" ""must,"" ""prepare,"" or ""inspect,"" which often precede specific actions or requirements.
+* **Specific terms**:  Some samples contain specific terms like ""Design-Builder,"" ""Substantial Completion Punchlist,"" or ""Work,"" indicating the context of the review and comment process. 
+
+## Prompt for Gemini LLM:
+
+Here's a prompt you can use to leverage Gemini's capabilities to find similar text sections within a lease document:
+
+**Prompt:**
+
+> Search the lease document for sections that follow this structure: 
+> 1. **Numbered sections and subsections:** Look for text organized with a numbered hierarchy, like ""X.X(a)"" or ""X.X.X(b)"".
+> 2. **Keywords:** Identify sections containing the keywords ""Owner,"" ""review,"" and ""comments."" 
+> 3. **Additional features (optional):** 
+>     * Look for timeframes associated with the review process, such as ""X business days."" 
+>     * Identify sections containing verbs like ""shall,"" ""must,"" ""prepare,"" or ""inspect."" 
+>     * Search for specific terms relevant to the lease agreement, like ""Design-Builder"" or ""Substantial Completion Punchlist.""
+>
+> Please return the identified sections of text with their corresponding section numbers.
+
+**Additional Tips:**
+
+* You can adjust the keywords and features based on the specific focus of your search. 
+* If you know the specific section number or context, you can include that information in the prompt to narrow down the search. 
+* Experiment with different phrasing and keywords to refine your search results. 
+"
+37,Substantial Completion - Acceptance,"## Analyzing the Text Samples:
+
+From the provided samples, we can identify several key features to help locate similar sections within a lease document:
+
+**Keywords:**
+
+*   **Substantial Completion:** This term is central to all the samples and signifies a specific stage in the construction process.
+*   **Certificate of Substantial Completion:** This document officially acknowledges the completion of the work. 
+*   **Owner, Contractor, Design-Builder:** These terms identify the parties involved in the agreement.
+*   **Accept, Countersign, Deliver:** These action verbs describe the process of acknowledging and approving the Substantial Completion.
+
+**Structure:**
+
+*   **Numbered sections:**  The sections are organized with numerical identifiers like 4.6(b), 2.2.4(b), etc., indicating a hierarchical structure within the document.
+*   **Conditional statements:** Many sections use ""if"" clauses, outlining conditions for specific actions (e.g., ""If accepted, Owner shall..."").
+
+**Common Themes:**
+
+*   The sections deal with the process of acknowledging and documenting the **Substantial Completion** of construction work.
+*   They outline the responsibilities of the **Owner** and the **Contractor/Design-Builder** in this process.
+*   The **Certificate of Substantial Completion** serves as a key document in formalizing the achievement of this stage.
+
+## Prompt for Gemini LLM:
+
+**Objective:** Locate sections in the lease document related to the process of achieving and acknowledging Substantial Completion of the construction work.
+
+**Instructions:**
+
+1. **Search for keywords:** Look for occurrences of ""Substantial Completion,"" ""Certificate of Substantial Completion,"" ""Owner,"" ""Contractor,"" ""Design-Builder,"" ""Accept,"" ""Countersign,"" and ""Deliver.""
+2. **Focus on numbered sections:** Pay close attention to sections with numerical identifiers like ""X.X(X)"" as they likely contain relevant contractual clauses.
+3. **Identify conditional statements:** Analyze sections with ""if"" clauses to understand the conditions for specific actions related to Substantial Completion. 
+4. **Extract relevant sections:** Once identified, extract the full text of the sections that discuss the process of achieving and acknowledging Substantial Completion, including the responsibilities of the involved parties and the role of the Certificate of Substantial Completion.
+
+**Additional Tips:**
+
+* You can use regular expressions to refine your search and match specific patterns in the document.
+* Consider the context of the keywords. For example, ""Completion"" might appear in other contexts, so ensure it relates to ""Substantial Completion"" of the construction work.
+* If the document has a table of contents or index, utilize it to navigate directly to relevant sections. 
+"
+38,Substantial Completion - Rejection,"## Analyzing the Text Samples: Finding Similar Sections in Lease Documents
+
+Based on the provided samples, here's how you can identify similar sections within a site lease document:
+
+**Common Structure:**
+
+* **Numbered Sections and Subsections:**  All samples follow a consistent format of ""X.Y(z)"" where X represents the main section, Y signifies a subsection, and (z) indicates a further sub-division within that subsection. This suggests a hierarchical organization within the document. 
+* **Conditional Statements:** Most samples start with ""if"" followed by a specific condition related to ""Substantial Completion"" and the actions required by either Owner or Contractor.
+
+**Similar Keyword Patterns:**
+
+* **Substantial Completion:** This term is central to all samples and appears to be a key concept related to the completion of construction or project milestones.
+* **Owner and Contractor:** These terms consistently appear, representing the two main parties involved in the agreement.
+* **Notice, Writing, Respond:** These words suggest a formal communication process between Owner and Contractor regarding the status of ""Substantial Completion.""
+* **Reasons, Belief, Actions:** These words indicate that justification and explanation of decisions, along with required actions, are important aspects of the process. 
+
+**Features of Text:**
+
+* **Formal Language:** The samples use precise legal and contractual language, avoiding casual expressions. 
+* **Focus on Obligations:** The text primarily outlines obligations and responsibilities of both Owner and Contractor in specific situations. 
+* **Conditional Clauses:**  The use of ""if"" indicates specific scenarios and the resulting actions that must be taken.
+
+**Prompt for Gemini LLM:**
+
+```
+**Objective:** Locate sections within the site lease document that address the process and requirements related to ""Substantial Completion"" and the communication between Owner and Contractor regarding its achievement.
+
+**Instructions:**
+
+1. **Search for sections formatted as ""X.Y(z)""**:  Focus on sections where X likely relates to construction progress or project milestones.
+2. **Identify sections containing the keywords:** ""Substantial Completion,"" ""Owner,"" ""Contractor,"" ""Notice,"" ""Writing,"" ""Respond,"" ""Reasons,"" ""Belief,"" and ""Actions.""
+3. **Prioritize sections with conditional statements starting with ""if""**: These sections likely outline specific scenarios and required actions.
+4. **Extract the full text of relevant sections**: This will provide detailed information about the obligations of both Owner and Contractor regarding ""Substantial Completion.""
+
+**Additional Tips:** 
+
+* Look for sections referencing ""Certificate of Substantial Completion.""
+* Pay attention to clauses outlining the process for rejection of ""Substantial Completion"" and subsequent actions.
+* Consider the context of the surrounding sections to understand the overall process and related requirements. 
+```
+
+By following this prompt and considering the identified features, Gemini can effectively locate and analyze relevant sections within the site lease document. Remember, the specific section numbers and wording might differ, but the core concepts and structure should remain consistent.
+"
+40,Final Completion - Notification to REA by Developer,"## Finding Final Completion/Acceptance Sections in Lease Documents: Analysis & Prompt
+
+Based on the provided samples, several key features can be used to locate sections related to Final Completion or Final Acceptance within a lease document:
+
+**Common Structures and Keywords:**
+
+* **Trigger Phrases:**  Look for phrases like:
+    * ""When Contractor believes...""
+    * ""When [Party] considers that...""
+    * ""[Party] shall notify [Other Party]...""
+    * ""[Party] shall submit to [Other Party]...""
+    * ""Notice of Final Acceptance/Completion""
+    * ""Certificate of Final Acceptance/Completion""
+* **Party Identification:**  Identify the parties involved, usually ""Contractor"" and ""Owner,"" sometimes with additional parties like ""Engineer"" or ""Design-Builder.""
+* **Completion Status:** Look for terms like ""Final Completion"" or ""Final Acceptance"" which signify the completion of contractual obligations.
+* **Documentation:** Phrases like ""written notice,"" ""certification,"" ""Exhibit [Letter/Number],"" often indicate specific documents related to the process.
+
+**Additional Features:**
+
+* **Numbered Sections:** The samples often use numbered sections (e.g., 4.7(b), 2.2.4(d)) suggesting a structured document format. 
+* **Exhibits:** References to ""Exhibit [Letter/Number]"" likely point to attached forms or templates relevant to the process. 
+
+**Prompt for Gemini LLM:**
+
+**Objective:** Locate sections within the lease document related to the process of Final Completion and/or Final Acceptance of work.
+
+**Instructions:**
+
+1. **Identify Sections:** Search for sections containing keywords such as ""Final Completion,"" ""Final Acceptance,"" ""Contractor,"" ""Owner,"" ""notify,"" ""submit,"" ""certificate,"" ""notice,"" ""Exhibit."" Pay close attention to numbered sections and references to Exhibits.
+2. **Analyze Content:** Within identified sections, look for the following information:
+    * **Triggering event:** What action or belief initiates the process?
+    * **Responsible party:** Who is responsible for initiating the process?
+    * **Receiving party:** Who needs to be notified or receive documentation?
+    * **Required actions:** What specific actions need to be taken? Are there any specific forms or documentation mentioned (e.g., certificates, notices)?
+    * **Exhibits:** If Exhibits are referenced, locate and review them for further details.
+
+**Output:**
+
+* Provide a summary of each identified section, including the key information outlined above. 
+* If applicable, provide relevant excerpts from the lease document and any referenced Exhibits. 
+
+**Additional Notes:**
+
+* Adapt the keywords and instructions based on the specific terminology used in the lease document.
+* Be aware of potential variations in the process, such as different requirements for Final Completion vs. Final Acceptance.
+* Use your understanding of the lease agreement and the context of the situation to interpret the extracted information effectively. 
+"
+41,Final Completion - Review Period,"## Analyzing the Sample Text and Creating a Prompt for Gemini LLM
+
+**Common Structure and Keywords:**
+
+* **Numbered Sections:** All the samples start with a numbered section, indicating a specific clause or subsection within the lease document. The format varies slightly, including: 
+    * Single number with a letter in parenthesis (e.g., 4.7(b))
+    * Multiple numbers separated by periods with a letter in parenthesis (e.g., 2.2.4(d))
+    * Single number (e.g., 4.5)
+* **Consistent Phrase:** All samples include the phrase ""Owner shall review and provide any comments."" This is the key identifier for the type of text you're searching for.
+* **Timeframe (Optional):** Many samples specify a timeframe for the Owner's review and comments, using keywords like ""within,"" ""days,"" and ""business days."" The specific timeframe varies (e.g., 5 days, 10 business days, 15 days).
+
+**Features of Text to Look For:**
+
+* **Formal Language:** The samples use formal legal language, with precise wording and specific terms. 
+* **Action-Oriented:** The text describes an action that the Owner is obligated to perform (review and comment).
+* **Time-Bound (Often):** A timeframe for the action is often specified.
+
+**Prompt for Gemini LLM:**
+
+**Objective:** Locate sections within the lease document where the Owner is obligated to review and provide comments.
+
+**Instructions:**
+
+1. Search for text sections that begin with a numbered section identifier (e.g., 2.2.4(d), 4.7(b), 10.9). 
+2. Within those sections, identify text containing the exact phrase ""Owner shall review and provide any comments.""
+3. Extract the entire sentence or clause containing this phrase.
+4. Optionally, note any specified timeframe for the Owner's review and comment (e.g., ""within 10 business days"").
+5. Compile a list of all matching sections with their corresponding section identifiers and any timeframe information.
+
+**Example Output:**
+
+* Section 4.7(b): Owner shall review and provide any comments within 5 business days.
+* Section 2.2.4(d): Owner shall review and provide any comments within 15 days.
+* Section 4.5: Promptly thereafter, the Owner and the Design-Builder must jointly inspect the Work. (Note: This section doesn't explicitly mention ""comments"" but implies a review process.)
+* ... (continue for all matching sections) 
+"
+42,Final Completion - Acceptance,"## Finding Final Completion/Acceptance Certificate Clauses in Lease Agreements:
+
+Based on the provided samples, here's a breakdown of common structures, keywords, and features to look for when searching for sections related to Final Completion/Acceptance Certificates in lease documents:
+
+**Keywords:**
+
+* **Final Completion**: This term, along with variations like ""Final Acceptance,"" is a strong indicator of relevant sections. 
+* **Certificate**: Look for ""Certificate of Final Completion"" or ""Final Acceptance Certificate"".
+* **Owner**: The Owner's actions regarding the certificate, like ""countersign"" and ""return,"" are often mentioned.
+* **Contractor/DesignBuilder**: The party responsible for achieving Final Completion and submitting the certificate. 
+
+**Numbering/Structure:**
+
+* **Numbered sections/clauses:** The examples follow a pattern like ""X.Y(a)"" or ""X.Y.Z"", suggesting a numbered structure within the document.
+* **Sub-clauses:** Look for sections with ""(a)"", ""(b)"", ""(c)"", etc., as they often detail specific actions related to the certificate.
+
+**Verbs and Actions:**
+
+* **Countersign and return/deliver**: These actions indicate the Owner's approval of the Final Completion/Acceptance. 
+* **Issue**: Look for the Owner ""issuing"" the certificate to the Contractor/DesignBuilder.
+* **Acknowledge**: The Owner acknowledging Final Completion is another key phrase.
+
+**Dates:**
+
+* **Date of Final Completion**: Sections may specify how the date of Final Completion is determined, often linked to the certificate's submission and acceptance.
+
+**Prompt for Gemini LLM:**
+
+**Objective:** Locate and extract sections within the lease document related to the Final Completion/Acceptance Certificate.
+
+**Instructions:**
+
+1. **Identify sections with the following keywords**: ""Final Completion"", ""Final Acceptance"", ""Certificate"", ""Owner"", ""Contractor"", ""DesignBuilder"".
+2. **Pay close attention to numbered sections and sub-clauses**: Look for patterns like ""X.Y(a)"" or ""X.Y.Z"".
+3. **Focus on sections mentioning actions related to the certificate**: ""Countersign"", ""return"", ""deliver"", ""issue"", ""acknowledge"".
+4. **Extract any information on how the date of Final Completion is determined**.
+5. **Provide the located sections with their respective numbering/labels for reference**.
+
+**Additional Tips:**
+
+* Utilize the search function within your document viewer and search for the mentioned keywords. 
+* Pay attention to the context surrounding the keywords to ensure relevance.
+* If the document has a table of contents, it may directly list relevant sections. 
+"
+43,Final Completion - Rejection,"## Analyzing the Text Samples: Finding Commonalities
+
+From the provided samples, we can identify several key features to look for when searching for similar text sections within a site lease document:
+
+**Structure:**
+
+* **Numbered Sections and Subsections:** The text samples consistently utilize a numbered structure like ""4.7(b)"" or ""2.2.4(d)"". This suggests a hierarchical organization within the document, with sections and subsections addressing specific topics.
+* **Conditional Statements:**  Most samples start with ""If"" followed by a specific condition, like ""If rejected"" or ""If reasonable cause exists."" This indicates a focus on actions triggered by specific circumstances.
+
+**Keywords:**
+
+* **Completion:** Words like ""Final Completion,"" ""Completion Notice,"" and ""Certificate of Final Completion"" are prevalent, signifying the importance of project completion as a central theme.
+* **Rejection:**  Terms like ""rejected,"" ""rejects,"" and ""reasons for such rejection"" highlight the possibility of disapproval and the need for justification.
+* **Notification:** Phrases like ""notify Contractor in writing"" and ""advising of the actions"" emphasize the role of communication and formal documentation in the process.
+
+**Content Features:**
+
+* **Reasoning and Justification:** The samples emphasize providing reasons and explanations for actions, particularly regarding rejection or belief in non-completion.
+* **Actions and Requirements:** The text outlines required actions to achieve completion, address issues, or respond to notifications.
+* **Parties Involved:**  ""Owner,"" ""Contractor,"" and ""Engineer"" are consistently mentioned, indicating their specific roles and responsibilities within the process.
+
+##  Prompt for Gemini LLM
+
+**Objective:** Locate sections within the site lease document that deal with procedures related to project completion, specifically focusing on situations involving potential non-completion, rejection, and required actions.
+
+**Instructions:**
+
+1. **Search for Numbered Sections:**  Look for sections with a structure similar to ""X.Y(z)"" where X and Y are numbers representing the section and subsection, and (z) is an optional further division. 
+2. **Identify Conditional Statements:** Focus on sections starting with ""If"" followed by conditions related to: 
+    * **Rejection:**  Look for keywords like ""rejected,"" ""rejects,"" and variations of ""not approved.""
+    * **Non-Completion:** Search for phrases like ""Final Completion has not been achieved,"" ""not met,"" or similar expressions indicating incomplete work.
+3. **Analyze Content:** Within identified sections, pay attention to:
+    * **Reasons and justifications provided for rejection or belief in non-completion.**
+    * **Required actions to be taken by either the Contractor or Owner.**
+    * **Communication procedures, specifically written notifications and documentation.**
+
+**Additional Tips:**
+
+*  Utilize keyword search functions within the document viewer to quickly locate relevant sections.
+* Pay attention to the context surrounding the identified sections to understand the overall process and requirements.
+* If the document includes a table of contents, use it to navigate directly to sections related to project completion and acceptance. 
+
+By following these instructions and focusing on the identified features, Gemini should be able to effectively locate the desired sections within the site lease document. 
+"
+45,Pre Contract Module Procurement Payment,"## Analysis of Text Sample and Prompt Creation:
+
+**Observations:**
+
+* **Table Structure:** The text sample clearly follows a table structure with two columns: ""Milestones"" and ""Milestone Dates"". This suggests searching for similar table structures within the lease document.
+* **Keywords:**  Keywords like ""Milestone"", ""Completion"", ""Engineering"", ""Site Prep"", ""Major Equipment"", ""Installation"", and specific dates can be used to identify relevant sections. 
+* **Dates:** The presence of specific dates indicates a timeline or schedule, further supporting the idea of a milestone payment schedule.
+* **Capitalization:** Capitalized words like ""EXHIBIT G"" and milestone names could be distinctive features to search for.
+
+**Prompt for Gemini LLM:**
+
+**Objective:** Locate sections within the lease document related to a milestone payment schedule.
+
+**Instructions:**
+
+1. **Search for tables:**  Prioritize searching for text formatted in a table structure with two columns. The first column should contain keywords like ""Milestones"", ""Completion"", or specific tasks (e.g., ""Engineering"", ""Site Prep""). The second column should contain dates or timeframes.
+2. **Keyword Search:** Look for sections containing keywords such as: 
+    * ""Milestone""
+    * ""Payment Schedule""
+    * ""Completion"" (e.g., ""Substantial Completion"", ""Final Completion"")
+    * ""Engineering""
+    * ""Site Prep""
+    * ""Major Equipment""
+    * ""Installation""
+    * Specific dates mentioned in the sample (e.g., ""5/3/19"", ""4/20/20"")
+3. **Capitalization:** Pay attention to capitalized words or headings that might indicate a relevant section (e.g., ""EXHIBIT G"").
+4. **Context:** Analyze the surrounding text to ensure the identified section relates to a payment schedule and not just a general project timeline.
+
+**Output:**
+
+* Identify the specific sections within the document that are most likely to contain the milestone payment schedule information.
+* If possible, extract the relevant text or table directly from the document. 
+* Indicate the level of confidence in the identified information based on the observed features and context. 
+"
+46,EPC Agreement Execution / LNTP,"## Analyzing Lease Document Samples for Text Search
+
+Unfortunately, you haven't provided the samples of text you want me to analyze. To effectively help you find specific sections within a lease document, I'll need to see the examples and understand the context. 
+
+However, I can still guide you on how to approach this task and create a prompt for me to locate the desired text:
+
+**1. Identifying Common Structures and Keywords:**
+
+* **Headings and Subheadings:** Lease documents often use clear headings and subheadings to organize content. Look for sections titled ""Term,"" ""Rent,"" ""Security Deposit,"" ""Maintenance,"" ""Termination,"" etc.
+* **Keywords and Phrases:** Within each section, identify unique keywords or phrases that distinguish it. For instance, the ""Term"" section might mention ""lease term,"" ""commencement date,"" ""expiration date,"" while the ""Rent"" section might contain ""monthly rent,"" ""due date,"" ""late fees,"" etc.
+* **Numbering and Bullet Points:** Some sections might use numbering or bullet points to list specific clauses or obligations. Pay attention to these formatting cues.
+* **Dates and Amounts:** Dates, dollar amounts, and percentages are often crucial elements within specific sections. 
+
+**2.  Creating a Prompt for Gemini:**
+
+Once you've analyzed the samples and identified key features, you can create a prompt for me to find similar text sections within the lease document. Here's a template you can adapt:
+
+**Prompt:**
+
+> **Locate the section in the lease document that discusses [Topic of the section]. Look for keywords such as [List of keywords] and phrases like [List of phrases]. The section might be titled [Possible title] or [Alternative title]. Pay attention to [Specific formatting features, like numbering or bullet points].**
+
+**Example:**
+
+> **Locate the section in the lease document that discusses the security deposit. Look for keywords such as ""security deposit,"" ""refund,"" ""deductions,"" and phrases like ""return of security deposit,"" ""damage beyond normal wear and tear."" The section might be titled ""Security Deposit"" or ""Tenant Deposits.""**
+
+**3. Additional Tips:**
+
+* **Contextual Clues:** Consider the context surrounding the sample text. Are there any references to other sections or clauses that might help narrow down the search?
+* **Variations:** Be aware that the wording might not be identical across different lease documents. Use synonyms and related terms in your search.
+* **Regular Expressions:** For complex searches, you might consider using regular expressions to define patterns of text. 
+
+**By providing me with the sample text and following these guidelines, I can help you effectively search and locate specific sections within your lease document.** 
+"
+47,LNTP #2,"## Analyzing Lease Document Samples for Text Location 
+
+Unfortunately, you haven't provided the samples of text you want me to analyze. To give you the most accurate and helpful advice on locating specific text sections within a lease document, I'll need those samples. 
+
+However, I can still offer some general guidance on identifying common structures, keyword patterns, and text features to look for when searching for specific sections in lease documents. 
+
+**Common Structures:**
+
+* **Headings and Subheadings:** Lease documents often use clear headings and subheadings to organize content. Look for bolded, underlined, or larger font size text indicating the start of a new section. 
+* **Numbered or Lettered Lists:** Important terms, conditions, or steps might be presented in numbered or lettered lists. 
+* **Tables:**  Rent payment schedules, maintenance responsibilities, or other detailed information might be displayed in tables.
+
+**Keyword Patterns:**
+
+* **Specific Terminology:** Look for keywords related to the topic you're searching for. For example, if you're looking for the section on rent payments, search for terms like ""rent,"" ""payment,"" ""due date,"" ""late fees,"" etc.
+* **Dates and Timeframes:**  Sections may reference specific dates or timeframes, such as the lease start and end date, renewal options, or notice periods.
+* **Names and Titles:**  The names of the landlord, tenant, property management company, or other involved parties can help identify relevant sections.
+
+**Text Features:**
+
+* **Font Style and Size:**  Important clauses or terms might be highlighted using bold, italics, or a different font size.
+* **Capitalization:**  Specific terms or defined words might be consistently capitalized throughout the document. 
+* **Legal Jargon:**  Lease agreements often use legal terminology. Familiarize yourself with common legal terms used in leases to improve your search accuracy.
+
+**Creating a Prompt for Gemini LLM:**
+
+Once you provide the samples, I can help you create a specific prompt to find the exact text paragraphs in the document. The prompt would likely include:
+
+* **Keywords and phrases** from the sample text
+* **Contextual information** about the section you're looking for (e.g., rent payment terms, pet policies, maintenance responsibilities)
+* **Instructions** on the desired output format (e.g., extract the entire paragraph, identify the starting and ending line numbers)
+
+**Remember:** The more information you provide about the samples and the specific text you're looking for, the better I can assist you in creating an effective prompt and locating the relevant sections within the lease document.
+"
+48,Notice to Proceed,"## Analyzing Lease Document Text Samples:
+
+Unfortunately, you haven't provided the text samples for analysis. However, I can still guide you on how to approach this task and create a prompt for me to find specific text paragraphs in a lease document.
+
+**Here's how to analyze the text samples and identify patterns:**
+
+1. **Keywords and Phrases:** Look for unique keywords or phrases that are specific to the sections you want to find. These could be legal terms, names of parties involved, or specific actions being described. 
+2. **Section Headings and Formatting:** Lease documents often use headings and subheadings to organize information. Identify any consistent formatting styles or keywords used in these headings to locate relevant sections. 
+3. **Sentence Structure and Language:** Pay attention to the sentence structure and language used in the samples. Legal documents often have a formal tone and specific phrasing. Identifying these patterns can help distinguish target sections from others.
+4. **Contextual Clues:** Look for contextual clues within the text surrounding the target sections. This could include references to other sections, dates, or specific clauses. 
+5. **Document Structure:** Analyze the overall structure of the lease document. Are there specific sections where certain types of information are typically located? For example, information about rent payments might be found in a ""Financial Obligations"" section.
+
+**Creating a Prompt for Gemini:**
+
+Once you've analyzed the text samples and identified patterns, you can create a prompt for me to find similar text paragraphs in the document. Here's a template you can use:
+
+**Prompt:**
+
+> **Locate sections in the lease document that discuss [topic/subject of the text samples].** 
+> 
+> **Focus on text segments that contain the following keywords/phrases:**
+> * [List of keywords/phrases identified in step 1]
+>
+> **Pay attention to sections with headings or formatting similar to:**
+> * [Describe formatting or keywords found in headings]
+>
+> **The target sections might use sentence structures and language like this:**
+> * [Provide examples of sentence structures and language]
+>
+> **Additional contextual clues to look for:**
+> * [Mention any relevant contextual information]
+
+**Example:**
+
+> **Locate sections in the lease document that discuss rent payments and late fees.**
+>
+> **Focus on text segments that contain the following keywords/phrases:** 
+> * Monthly Rent, Due Date, Late Payment, Grace Period, Penalty Fees
+>
+> **Pay attention to sections with headings similar to:**
+> * Payment Terms, Rent Schedule, Late Fees and Penalties
+>
+> **The target sections might use sentence structures and language like this:** 
+> * ""The Tenant shall pay a monthly rent of...""  ""Late payments will be subject to a penalty fee of...""
+>
+> **Additional contextual clues to look for:**
+> * References to the Security Deposit section, specific dates for payments. 
+
+**By providing me with a detailed prompt like this, I can effectively search the lease document and identify the specific text paragraphs you're looking for.** 
+"
+49,Site Preparation Completion,"## Analyzing Lease Document Text Samples:
+
+Unfortunately, you haven't provided the text samples for analysis. To effectively guide you in finding specific sections within a lease document, I'd need to examine the content and structure of those samples. However, I can still offer general advice and strategies for identifying desired sections within lease agreements.
+
+**Common Structures and Keywords:**
+
+Lease documents typically follow a structured format with sections dedicated to specific topics. Look for headings, subheadings, and numbering schemes to identify relevant sections. Common keywords and phrases associated with key sections include:
+
+* **Premises:** ""Description of Premises,"" ""Leased Premises,"" ""Address""
+* **Term:** ""Lease Term,"" ""Commencement Date,"" ""Expiration Date,"" ""Renewal Options""
+* **Rent:** ""Base Rent,"" ""Monthly Rent,"" ""Payment Due Date,"" ""Late Fees,"" ""Security Deposit""
+* **Use of Premises:** ""Permitted Use,"" ""Exclusive Use,"" ""Restrictions on Use""
+* **Maintenance and Repairs:** ""Landlord's Responsibilities,"" ""Tenant's Responsibilities,"" ""Common Areas""
+* **Termination:** ""Termination Clause,"" ""Default,"" ""Early Termination,"" ""Notice Requirements""
+* **Insurance:** ""Liability Insurance,"" ""Property Insurance,"" ""Insurance Requirements""
+* **Governing Law:** ""Jurisdiction,"" ""Applicable Law,"" ""Dispute Resolution""
+
+**Additional Features:**
+
+* **Defined Terms:** Look for capitalized words within the document, often defined at the beginning or within a specific section. 
+* **Tables and Schedules:** These often contain specific details related to rent, payment schedules, or other key terms. 
+* **Exhibits:** Lease agreements may include exhibits that provide additional information or clarification on certain terms.
+
+**Creating a Prompt for Gemini LLM:**
+
+Once you've identified the keywords, structures, and features relevant to your desired text section, you can create a prompt for Gemini LLM. For example, to find the section on rent payment terms, you could use the following prompt:
+
+**Prompt:** 
+
+""Search for the section in the lease document that discusses rent payment terms. Look for keywords such as 'Base Rent,' 'Monthly Rent,' 'Payment Due Date,' 'Late Fees,' and 'Security Deposit.' The section may be titled 'Rent' or 'Payment Terms' and could include a table outlining the payment schedule.""
+
+**Remember to adapt the prompt based on the specific section you're looking for and the characteristics you've identified within the lease document.** 
+"
+50,Delivery of Racking to Site,"## Analyzing Lease Document Text Samples:
+
+Unfortunately, you haven't provided the actual text samples from the lease document. To effectively analyze and identify patterns, I'll need the specific examples. However, I can still guide you on how to approach this task and create a prompt for Gemini LLM to find the desired text paragraphs.
+
+**Here's how you can analyze the text samples and identify patterns:**
+
+1. **Keywords and Phrases:** Look for unique keywords or phrases that are specific to the sections you want to find. For instance, if you're looking for the section on rent payment, keywords might include ""rent,"" ""payment,"" ""due date,"" ""late fee,"" etc.
+2. **Section Headings:** Lease documents often use clear headings and subheadings to organize information. Identify the headings that typically introduce the sections you're interested in. 
+3. **Formatting and Structure:** Observe the formatting and structure of the sections. Are they numbered or bulleted lists? Are there tables or specific indentations?  
+4. **Contextual Clues:** Pay attention to the surrounding text before and after the target sections. This context can provide additional keywords or patterns to refine your search.
+
+**Creating a Prompt for Gemini LLM:**
+
+Once you've identified the key patterns and features, you can use them to create a prompt for Gemini LLM. Here's a template you can adapt:
+
+**Prompt:**
+
+> ""Find the section in the lease document that discusses [topic of the section]. Look for keywords such as [list of keywords] and headings like [list of potential headings]. The section might be formatted as [describe formatting, e.g., numbered list, table]. Additionally, look for contextual clues like [mention specific context]."" 
+
+**Example:**
+
+> ""Find the section in the lease document that discusses rent payment. Look for keywords such as rent, payment, due date, late fee, and grace period. The section might be formatted as a numbered list and might be located after the section discussing security deposits.""
+
+**Additional Tips:**
+
+* You can provide multiple examples of the target sections to Gemini LLM for better accuracy. 
+* Consider specifying the length of the text sections you're looking for (e.g., a paragraph, a sentence, a clause). 
+* If you have access to the lease document in a digital format, you can use text search tools to quickly find relevant keywords and phrases. 
+
+**Remember, the more precise and detailed your prompt is, the better Gemini LLM will be able to locate the specific text paragraphs you need.**
+"
+51,Delivery of Modules to Site,"## Analyzing Lease Document Text Samples:
+
+Unfortunately, you haven't provided the actual text samples for analysis. To effectively guide you in finding specific sections within a lease document, I'll need to understand the content and structure of those samples. 
+
+However, I can still offer general advice and strategies you can employ:
+
+**Common Structures and Keywords:**
+
+* **Headings and Subheadings:** Lease documents often use clear headings and subheadings to delineate different sections. Look for keywords like ""Term,"" ""Rent,"" ""Security Deposit,"" ""Maintenance,"" ""Termination,"" etc.
+* **Defined Terms:**  Key terms may be defined at the beginning of the document or within specific sections. Pay attention to capitalized terms and their corresponding definitions.
+* **Numbered or Lettered Lists:** Clauses or steps within a section may be organized in numbered or lettered lists.
+* **Dates and Timeframes:** Look for specific dates or timeframes mentioned in the context, like the lease start and end date, notice periods, etc.
+* **Parties involved:** Identify keywords referring to the parties involved, such as ""Landlord,"" ""Tenant,"" ""Lessor,"" ""Lessee,"" etc. 
+
+**Features of Text:**
+
+* **Formal Language:** Lease agreements typically use formal and legalistic language.
+* **Specific Terminology:**  Expect industry-specific terms related to real estate and legal contracts.
+* **Passive Voice:**  The passive voice is commonly used in legal documents.
+* **Dense Text:** Lease documents often contain a lot of information in a concise format.
+
+**Strategies for Finding Specific Sections:**
+
+1. **Table of Contents:** If the lease document has a table of contents, use it to directly navigate to the desired section. 
+2. **Search Function (Digital Documents):** Utilize the search function (Ctrl+F or Cmd+F) in digital documents to find keywords related to the section you're looking for.
+3. **Scanning and Skimming:** If the document lacks a table of contents or search functionality, scan headings and subheadings for relevant keywords. Skim through the content under those headings to locate the specific information.
+4. **Contextual Clues:** Pay attention to the surrounding text and context to ensure you've found the correct section addressing the specific issue.
+
+**Creating a Prompt for Gemini:**
+
+Once you've identified the key features and keywords from your text samples, you can use them to create a prompt for me. For example:
+
+**Prompt:**
+
+```
+Find the section in the lease document that describes the process for terminating the agreement early. Look for keywords like ""termination,"" ""early termination,"" ""notice period,"" and ""fees."" 
+```
+
+**Additional Tips:**
+
+* Provide me with the full text of the lease agreement or the specific section you want to analyze for better assistance.
+* The more specific your instructions and keywords are, the more accurate and helpful my response will be.
+* If you're unsure about the specific wording or terminology, describe the information you're looking for in your own words, and I'll do my best to understand and assist you. 
+"
+52,Delivery of Inverters & Energy Storage Unit to Site,"## Analyzing Lease Document Text Samples:
+
+Unfortunately, you haven't provided the actual text samples from the lease document. To effectively analyze and identify patterns, I'll need the specific examples you want to find. However, I can still guide you on how to approach this task and create a prompt for me (Gemini) to locate similar text sections.
+
+**General Approach:**
+
+1. **Identify Common Structures:** Look for recurring patterns in the text samples, such as:
+    * **Headings and Subheadings:** Are there consistent titles, subtitles, or numbering schemes used to organize information?
+    * **Tables or Lists:** Do the samples contain information presented in tabular format or as bulleted/numbered lists?
+    * **Paragraph Structures:** Are there specific introductory or concluding sentences used in the paragraphs?
+
+2. **Keyword Patterns:**
+    * **Specific Terminology:** Note any specialized terms or jargon related to leases or the specific context of the samples.
+    * **Action Verbs and Phrases:** Look for verbs that indicate actions, obligations, or rights, like ""shall,"" ""must,"" ""may,"" ""entitled,"" etc.
+    * **Dates and Timeframes:** Pay attention to references to specific dates, durations, or time periods.
+
+3. **Contextual Clues:**
+    * **Surrounding Text:** Analyze the text before and after the samples to understand the broader context.
+    * **Section Headings:** Identify the sections or clauses where the samples are located.
+
+**Creating a Prompt for Gemini:**
+
+Once you've analyzed the samples, you can create a prompt like this:
+
+**Prompt:**
+
+""Find sections in the lease document that exhibit the following characteristics:
+
+* **Structure:** [Describe the common structures you identified, e.g., headings, tables, lists]
+* **Keywords:** [List the specific keywords or phrases found in the samples]
+* **Context:** [Mention any relevant contextual clues, like surrounding text or section headings]""
+
+**Example (assuming you find consistent headings and keywords):**
+
+""Find sections in the lease document that:
+
+* Have headings or subheadings titled ""Term,"" ""Renewal,"" or ""Termination."" 
+* Contain keywords like ""lease term,"" ""renewal option,"" ""termination clause,"" ""notice period,"" ""early termination fee.""
+* Are located within the sections titled ""Lease Term and Renewal"" or ""Termination of Lease."" 
+
+**Additional Tips:**
+
+* **Specificity:** The more specific your prompt, the better I can understand your request and provide accurate results.
+* **Multiple Features:** Combine various structural, keyword, and contextual features to narrow down the search effectively.
+* **Examples:** If possible, provide additional samples to illustrate the patterns you've identified.
+
+**Remember:** I can only process information up to November 2023. Ensure the lease document and the information you're seeking fall within this timeframe. 
+
+By providing the actual text samples and following these guidelines, we can work together to efficiently locate the desired sections within your lease document.
+"
+53,Racking Installation,"## Analyzing Lease Document Text Samples:
+
+Unfortunately, you haven't provided the text samples from the lease document for analysis. To effectively guide you in finding specific sections and creating a prompt for Gemini LLM, I'll need the actual text examples. However, I can still offer a general approach and framework you can apply:
+
+**1. Identifying Common Structures and Keywords:**
+
+* **Headings and Subheadings:** Look for consistent formatting like bold text, capitalization, font size changes, or numbering (e.g., ""Article IV: Rent,"" ""Section 2.1: Security Deposit"").
+* **Keywords and Phrases:** Identify recurring terms or legal phrases related to your target sections (e.g., ""termination,"" ""renewal,"" ""default,"" ""force majeure,"" specific dates or timeframes).
+* **Lists and Enumerations:** Sections often use numbered or bulleted lists to outline specific clauses, obligations, or steps. 
+* **Tables and Charts:** Look for visual aids that present information concisely, often containing key terms and figures.
+
+**2. Text Features and Patterns:**
+
+* **Dates and Timeframes:** Pay attention to specific dates, durations, or time-related keywords (e.g., ""commencement date,"" ""lease term,"" ""notice period"").
+* **Defined Terms:** Lease documents often define specific terms early on. Look for capitalized words or phrases with specific meanings within the document.
+* **Legal Language and Terminology:** Identify standard legal phrases or clauses commonly used in lease agreements.
+* **Cross-References:** Sections may refer to other relevant sections within the document. Follow these references to locate related information.
+
+**3. Creating a Prompt for Gemini LLM:**
+
+Once you've identified the common structures, keywords, and patterns, you can create a targeted prompt for Gemini LLM. Here's a template you can adapt:
+
+**Prompt:**
+
+```
+In the provided lease document, locate the section that discusses [specific topic or keyword]. Look for the following clues:
+
+* **Headings or subheadings:** [List potential headings related to the topic]
+* **Keywords or phrases:** [List relevant keywords or phrases]
+* **Specific features:** [Mention any unique formatting, lists, tables, or dates]
+
+Once you've identified the section, extract the entire text of that section and present it as a direct quote.
+```
+
+**4. Adapting the Prompt:**
+
+* **Replace `[specific topic or keyword]` with your desired section's theme (e.g., ""rent payment,"" ""maintenance responsibilities,"" ""early termination"").**
+* **Modify the listed clues based on your analysis of the document's structure and language.**
+* **You can add further instructions if needed, such as specifying the level of detail or requesting a summary of the section.**
+
+**Remember, providing Gemini LLM with the actual text samples will significantly improve its ability to find the desired sections accurately.**
+"
+54,Module Installation,"## Analyzing Lease Document Text Samples:
+
+Unfortunately, you haven't provided the text samples from the lease document for me to analyze. To effectively guide you in finding specific sections, I'll need the actual content you're looking for. However, I can still offer some general advice and strategies for identifying text within a lease document.
+
+**Common Structures and Keywords:**
+
+* **Headings and Subheadings:** Lease documents often use clear headings and subheadings to organize content. Look for keywords that indicate the section you need, such as ""Term,"" ""Rent,"" ""Security Deposit,"" ""Maintenance,"" ""Termination,"" etc. 
+* **Defined Terms:** Key terms are typically defined at the beginning of the lease or within a specific section. Look for capitalized words or terms in quotation marks, and then search for their definitions to understand their context. 
+* **Dates and Numbers:** Sections related to rent, payments, and lease duration will often include specific dates and numerical values. Use these as search terms to quickly locate relevant clauses. 
+* **Standard Clauses:** Many leases use standardized language for common clauses. Familiarize yourself with typical phrasing used in lease agreements to recognize relevant sections more easily.
+
+**Text Features to Look For:**
+
+* **Tables and Lists:**  Look for information presented in tables or lists, as they often summarize key points like rent schedules, late fees, or maintenance responsibilities.
+* **Bold or Italicized Text:**  Important terms or conditions may be emphasized using bold or italicized text, drawing your attention to crucial information. 
+* **Legal Jargon:** Lease agreements may contain legal terminology.  While you don't need to understand every legal term, recognizing common legal phrases can help you identify relevant sections. 
+
+**Creating a Prompt for Gemini LLM:**
+
+Once you have identified the keywords, structures, and features of the text you're seeking, you can create a prompt for me to help you locate it within the lease document. Here's a template you can adapt:
+
+**Prompt:**
+
+""In the lease document, find the section that discusses [topic/keyword]. Look for keywords such as [list of keywords] and features like [headings, tables, lists, etc.]. The section may also be located near clauses related to [related topics/keywords].""
+
+**Example:**
+
+""In the lease document, find the section that discusses rent payments. Look for keywords such as 'monthly rent,' 'due date,' 'late fees,' and features like a rent schedule table. The section may also be located near clauses related to security deposits or lease duration."" 
+
+**Additional Tips:**
+
+* **Use the search function:** Most digital documents have a search function that allows you to quickly find specific keywords.
+* **Read the table of contents:** If the lease document has a table of contents, use it to navigate directly to relevant sections.
+* **Ask for clarification:** If you're unsure about the meaning of certain clauses or sections, don't hesitate to ask the landlord or a legal professional for clarification. 
+"
+55,Inverters & Energy Storage Unit Installation,"## Analyzing Lease Document Structure for Target Text Sections
+
+Unfortunately, you haven't provided the sample text sections you want to find within the lease document. To offer the most precise guidance, I'll need those specific examples. However, I can still provide a general approach and framework for identifying common structures, keyword patterns, and text features you should look for when trying to locate specific sections within a lease document. 
+
+**Common Structures:**
+
+* **Headings and Subheadings:** Lease documents often use clear headings and subheadings to delineate different sections and clauses. Look for keywords like ""Term,"" ""Rent,"" ""Security Deposit,"" ""Maintenance,"" ""Termination,"" etc. 
+* **Numbered or Lettered Lists:** Specific terms or conditions might be presented in numbered or lettered lists for clarity. 
+* **Tables:**  Tables can be used to outline payment schedules, fees, or other important numerical data.
+
+**Keyword Patterns:**
+
+* **Specific Terminology:** Lease documents use specific legal and real estate terminology. Identify keywords relevant to the sections you're seeking. For example, if you're looking for the section on rent payment, keywords might include ""rent,"" ""payment,"" ""due date,"" ""late fees,"" etc.
+* **Dates and Timeframes:** Look for references to specific dates, months, or timeframes relevant to the sections you're interested in. 
+* **Parties Involved:**  Pay attention to names and identifiers of the parties involved in the lease, such as ""Landlord,"" ""Tenant,"" ""Property Manager,"" etc.
+
+**Text Features:**
+
+* **Bold or Italicized Text:** Important clauses or terms might be emphasized using bold or italicized text. 
+* **Defined Terms:** Lease documents often define specific terms at the beginning or within the document. Look for capitalized words or phrases that might hold the key to understanding specific sections.
+* **Cross-References:** Sections might reference other related sections within the document. Pay attention to these cross-references to navigate and locate relevant information.
+
+
+**Creating a Prompt for Gemini LLM:**
+
+Once you've identified the common structures, keyword patterns, and text features relevant to the sections you want to find, you can create a prompt for Gemini LLM to help you locate them within the document. Here's a template you can adapt:
+
+**Prompt:**
+
+""**Locate the section within the lease document that discusses [TOPIC].** Look for keywords such as [LIST OF KEYWORDS], headings like [LIST OF HEADINGS], and features like [LIST OF TEXT FEATURES].  The section may also be near sections discussing [RELATED TOPICS] or contain references to [PARTIES INVOLVED].""
+
+**Example:** 
+
+""**Locate the section within the lease document that discusses rent payments.** Look for keywords such as rent, due date, late fees, payment methods, grace period. The section may be titled 'Rent' or 'Payment Terms' and might be near sections discussing security deposits or late fees. It may also contain references to the Landlord and Tenant.""
+
+**Additional Tips:**
+
+* **Use quotation marks to search for exact phrases.**
+* **Utilize Boolean operators (AND, OR, NOT) to refine your search.**
+* **Consider the context of the document and the overall structure.**
+
+
+By following these guidelines and providing the specific sample text sections you're interested in, you can effectively utilize Gemini LLM to navigate and extract relevant information from your lease document. 
+"
+56,Mechanical Completion,"## Analyzing the Text Samples:
+
+From the provided samples, we can identify several key features to look for when searching for similar sections in the lease document:
+
+**Structure:**
+
+* **Numbered sections and subsections:** The sections are organized with a numerical hierarchy, like 4.3(b) and 2.2.4(a). This indicates a structured document format. 
+* **Definitions:** Key terms are often defined within the section, enclosed in quotation marks, such as ""Mechanical Completion Date"" and ""Mechanical Completion Certificate.""
+
+**Keywords:**
+
+* **Dates and timelines:** Look for terms like ""date,"" ""completion,"" ""period,"" and ""review"" which indicate specific timeframes and milestones.
+* **Parties involved:** Identify references to ""Contractor,"" ""Owner,"" and possibly ""Engineer,"" highlighting the contractual relationships.
+* **Certificates and documentation:** Terms like ""certificate"" and ""submitted"" suggest formal processes and documentation requirements.
+
+**Features:**
+
+* **Conditional statements:** Phrases like ""shall be"" and ""in the event"" indicate specific conditions and actions that must be met.
+* **Passive voice:** The text frequently uses passive voice constructions like ""was submitted"" and ""has been achieved.""
+
+## Prompt for Gemini LLM:
+
+Based on the analysis, here's a prompt to help Gemini LLM find similar text paragraphs in the lease document:
+
+**Prompt:**
+
+Search for sections within the document that exhibit the following characteristics:
+
+* **Structure:** Numbered sections and subsections (e.g., X.X.X(a))
+* **Keywords:** Dates, completion, period, review, Contractor, Owner, Engineer, certificate, submitted 
+* **Features:** Conditional statements (shall, in the event), passive voice, definitions of key terms 
+
+**Additional tips:**
+
+* You can provide Gemini with specific section numbers or keywords to narrow down the search. 
+* If you have a particular section of interest (e.g., related to Mechanical Completion), you can specify that in the prompt.
+* You can ask Gemini to extract specific information from the located sections, like dates, responsibilities, or conditions.
+
+**Example:**
+
+""Gemini, find sections in the lease document similar to 2.2.4(a) that deal with completion milestones and required documentation."" "
+57,Witness Test,"## Analyzing Lease Document Text Samples:
+
+Unfortunately, you haven't provided the actual text samples from the lease document. To effectively guide you in finding specific sections and creating a prompt for Gemini LLM, I'll need those samples. However, I can offer general advice and strategies for identifying common structures, keyword patterns, and features within lease documents. 
+
+**Common Structures in Lease Documents:**
+
+* **Headings and Subheadings:** Lease agreements often use clear headings and subheadings to separate different sections and clauses. Look for bolded, underlined, or capitalized text that indicates the topic of the section. 
+* **Numbered or Lettered Lists:**  Lists are frequently used to outline specific terms, conditions, or obligations of the involved parties. 
+* **Tables:** Tables can present complex information concisely, such as rent schedules, payment due dates, or maintenance responsibilities.
+* **Defined Terms:** Lease documents often define specific terms with unique meanings within the context of the agreement. These terms may be capitalized or italicized. 
+
+**Keyword Patterns:**
+
+* **Specific Legal Terminology:** Look for legal terms related to leasing, such as ""premises,"" ""lease term,"" ""rent,"" ""security deposit,"" ""default,"" ""termination,"" etc.
+* **Dates and Timeframes:** Phrases indicating dates, durations, or deadlines are crucial for identifying specific clauses. 
+* **Names and Titles:**  Pay attention to the names of the involved parties (lessor, lessee) and any referenced individuals or entities. 
+* **Action Verbs:** Verbs like ""shall,"" ""must,"" ""may,"" and ""will"" often precede essential obligations and restrictions. 
+
+**Features of Text:**
+
+* **Formal Language:** Lease agreements typically use formal and precise language to avoid ambiguity.
+* **Passive Voice:**  The passive voice is commonly used to describe obligations and responsibilities. 
+* **Conditional Statements:**  Clauses often contain ""if-then"" statements outlining consequences for specific actions or events.
+
+**Creating a Prompt for Gemini LLM:**
+
+Once you provide the text samples, I can help you create a precise prompt for Gemini LLM to locate those specific sections within the lease document. The prompt would likely involve a combination of:
+
+* **Specific Keywords or Phrases:**  Extracted from the text samples you provide.
+* **Structural Indicators:** Mentioning headings, subheadings, list formats, or table structures. 
+* **Contextual Information:** Describing the surrounding text or the overall topic of the section. 
+* **Instructions:**  Clearly stating the desired outcome, such as ""Locate the section that describes..."" or ""Find the clause related to...""
+
+**Example Prompt (with Placeholder Text):**
+
+""**Locate the section in the lease document that describes the process for terminating the lease agreement early. This section may be titled 'Termination' or 'Early Termination' and might include a numbered list of steps or conditions. Look for keywords such as 'termination fee,' 'notice period,' and 'breach of contract.'**"" 
+"
+58,PTO,"## Analyzing Lease Document Samples for Text Search Patterns
+
+Unfortunately, you haven't provided the actual text samples from the lease document. To effectively assist you in finding specific sections, I'll need to analyze the samples themselves. Please provide the text excerpts you want to search for, and I can help you identify:
+
+**Common Structures:**
+
+* **Headings and Subheadings:** Look for consistent formatting like bold text, larger font sizes, or specific heading styles that differentiate sections. 
+* **Numbering or Lettering:**  Sections might be organized with numerical or alphabetical markers (e.g., Section 1, Article II, etc.) 
+* **Indentation and Spacing:**  Visual cues like indentation or extra spacing can indicate the start of a new section.
+
+**Keyword Patterns:**
+
+* **Specific Terminology:** Identify unique terms or phrases that are likely to appear only in the desired section (e.g., ""termination clause,"" ""rent abatement,"" ""security deposit"").
+* **Synonyms and Variations:** Consider synonyms and different phrasings of keywords to broaden your search. 
+
+**Text Features:**
+
+* **Length and Sentence Structure:**  Observe the typical length and complexity of sentences within the target sections.  
+* **Dates and Numerical Values:** Look for specific dates, monetary amounts, or other numerical values that can help pinpoint the relevant section.
+* **Contextual Clues:**  Pay attention to surrounding sections and keywords that often appear near the target information.
+
+**Prompt for Gemini LLM:**
+
+Once we analyze the samples and identify the patterns, I can help you create a precise prompt for Gemini LLM.  Here's a template you can adapt:
+
+**Prompt:**
+
+""In the provided lease document, locate the section that discusses [Specific Topic/Keywords]. Look for [Common Structures/Patterns] such as [Specific Examples]. The section may also contain [Text Features/Keywords]. Please provide the exact text of the relevant section.""
+
+**Remember to replace the bracketed placeholders with the specific information we identify from your samples.** 
+
+**Additional Tips:**
+
+* **Utilize Search Functionality:** Most document viewers offer search options to quickly find keywords within the text. 
+* **Consider Regular Expressions:** For complex patterns, regular expressions can offer a powerful way to search for text with specific characteristics.
+* **Break Down the Search:** If the desired section is extensive, try searching for smaller, unique segments within it.
+
+By providing the sample text excerpts, I can offer a more tailored and effective approach to finding the information you need within the lease document. 
+"
+59,PV Substantial Completion,"## Analyzing Lease Document Text Samples:
+
+Based on the provided samples, here's how to identify similar sections within a lease document:
+
+**Common Structure:**
+
+* **Numbered Sections and Subsections:** The text uses a clear numbering system (e.g., 2.2.4(b), 2.12(b)). This indicates a structured document format.
+* **Defined Terms:** Key terms like ""Substantial Completion Date"" are capitalized and often placed within quotation marks, followed by a definition in parentheses.
+* **Dates and Deadlines:** The sections frequently refer to specific dates or timeframes related to project milestones or completion.
+
+**Similar Keyword Patterns:**
+
+* **""Substantial Completion""**: This term, along with its variations (""achieve Substantial Completion,"" ""Substantial Completion Date""), is central to these sections.
+* **Dates and Timeframes:** Words like ""date,"" ""on or before,"" ""following,"" and specific numbers (e.g., 30 days, 45 Days) are common.
+* **Parties Involved:** Look for references to ""Contractor,"" ""Owner,"" ""Engineer,"" and potentially other entities involved in the project.
+* **Certificates and Documentation:** Terms like ""Substantial Completion Certificate,"" ""Permission to Operate,"" and other official documents are often mentioned.
+
+**Text Features:**
+
+* **Formal Language:** The writing style is professional and legalistic.
+* **Passive Voice:** Sentences often use passive voice constructions (e.g., ""was submitted,"" ""as it may be adjusted"").
+* **Conditional Clauses:** Clauses like ""on or before,"" ""following,"" and ""as it may be adjusted"" establish conditions or dependencies. 
+
+## Prompt for Gemini LLM:
+
+**Objective:** Locate sections within the lease document that define or refer to ""Substantial Completion"" and related dates/deadlines.
+
+**Instructions:**
+
+1. **Search for sections containing the keywords:** ""Substantial Completion,"" ""Substantial Completion Date,"" ""achieve Substantial Completion.""
+2. **Prioritize sections with the following structure:** Numbered sections and subsections (e.g., 2.2.4(b)), defined terms, and references to dates or timeframes. 
+3. **Identify sections that mention:** ""Contractor,"" ""Owner,"" ""Engineer,"" and relevant documents like ""Substantial Completion Certificate"" or ""Permission to Operate.""
+4. **Extract the identified sections and present them with their corresponding section numbers.**
+
+**Additional Tips:**
+
+* Pay attention to the context surrounding the keywords. 
+* Look for clauses defining how the ""Substantial Completion Date"" is determined.
+* Consider any adjustments or conditions related to the date. 
+* If available, utilize the document's table of contents or index to navigate directly to relevant sections.  "
+60,ESS Substantial Completion,"## Analyzing Lease Document Text Samples:
+
+The provided text snippet seems to belong to a section outlining specific clauses within a lease agreement, likely related to construction or facility completion timelines.  Here's how we can break it down:
+
+**Structure:**
+
+* **Numbered Sections and Subsections:** The text follows a clear hierarchical structure using numbers and letters (e.g., 2.12(b)). This indicates a systematic organization of clauses within the document.
+* **Defined Terms:**  The clause references ""Substantial Completion"" and ""Guaranteed Mechanical Completion Date,"" suggesting these terms are defined elsewhere in the document, likely in a definitions section or at the beginning of the agreement. 
+* **Dates and Deadlines:** The clause specifies a timeframe related to project completion, indicating a focus on contractual obligations and timelines.
+
+**Keywords and Patterns:**
+
+* **""Contractor"":**  Identifies one of the parties involved in the agreement and implies obligations or responsibilities.
+* **""Facility"":** Refers to the subject of the agreement, likely a building or specific space.
+* **""Substantial Completion"" and ""Guaranteed Mechanical Completion Date"":**  These terms represent key milestones or phases in the construction or facility preparation process.
+
+**Features to Look for:**
+
+To find similar clauses in the lease document, you should focus on:
+
+* **Numbered sections and subsections:** Look for clauses with a similar format, especially those within the same section (e.g., other clauses under section 2).
+* **Defined terms:** Pay attention to capitalized terms and trace them back to their definitions to understand their specific meaning within the context of the agreement.
+* **Keywords related to construction, timelines, and obligations:**  Search for terms like ""completion,"" ""date,"" ""work,"" ""performance,"" ""shall,"" etc.
+
+## Prompt for Gemini LLM: 
+
+Here's how you can prompt Gemini to find similar text paragraphs in the document:
+
+**Prompt:**"
+61,Final Completion,"## Analyzing Text Samples and Creating a Prompt for Gemini LLM
+
+Based on the provided text samples, here's an analysis of the structure, keywords, and features to look for when searching for similar sections in a lease document:
+
+**Common Structure:**
+
+* **Numbered sections and subsections:** The text clearly follows a hierarchical structure with numbered sections (e.g., 2.2.4) and subsections (e.g., (d)). This suggests the document is organized systematically.
+* **Definitions in parentheses:** Key terms are often defined within parentheses following their introduction, like ""Final Completion Date"" in the examples. 
+* **Dates and timelines:** The excerpts focus on specific dates and timeframes related to project completion, indicating a concern with scheduling and deadlines.
+* **Contractual language:** The language is formal and precise, characteristic of legal documents and contracts. 
+
+**Similar Keyword Patterns:**
+
+* **Completion related terms:**  ""Final Completion,"" ""Substantial Completion,"" ""Completion Certificate"" 
+* **Dates and Timelines:** ""Date,"" ""days,"" ""period of time""
+* **Contract Participants:** ""Contractor,"" ""Owner,"" ""Engineer""
+* **Legal and Procedural Terms:** ""Force Majeure,"" ""Change Order,"" ""Applicable Permit,"" ""Site-Related Requirements""
+
+**Features of Text:**
+
+* **Formal and precise language**
+* **Specific terms and definitions**
+* **Focus on timelines and procedures**
+* **Reference to contractual obligations and participants**
+
+## Prompt for Gemini LLM:
+
+**Instruction:** Search for sections in the lease document that pertain to project completion timelines and procedures, specifically focusing on Final Completion and related milestones.
+
+**Keywords to look for:**
+
+* ""Final Completion""
+* ""Substantial Completion""
+* ""Completion Certificate""
+* ""Date"" (in relation to completion milestones)
+* ""Contractor""
+* ""Owner""
+* ""Engineer""
+* ""Force Majeure""
+* ""Change Order""
+
+**Additional features to consider:**
+
+* Sections with numbered subsections (e.g., 2.2.4(d))
+* Definitions of key terms within parentheses
+* Language related to contractual obligations and procedures
+
+**Output:**
+
+* Provide the exact text of the relevant sections
+* Identify the section and subsection numbers (if available) 
+* Highlight or annotate the keywords found within the text"

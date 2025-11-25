@@ -1,0 +1,40 @@
+Key Items,Definitions
+Lessor (Landlord) Entity Name,The individual or entity who holds title to the property and is leasing to REA controlled entity
+Lessee (Tenant) Entity Name,The individual that is renting the property and pays fee to the Landlord
+Effective Date,Effective Date is the date that the agreement goes into effect; Escalator is an increase in price over the term of the agreement
+Property Size,The acreage or similarly defined size of the land that is the object of the lease agreement between Landlord and and Tenant
+Initial Term,The length of the Site Lease
+Rent Commencement,The date of the first payment. When the lease commitment officially starts
+Renewal Terms,Ability to extend the Lease beyond initial term without having to amend the Lease
+Rent Calculation,Price
+Rent Amount,How much Lessee is required pay to Lessor to lease the property
+Payment Terms,Amount owed for annual lease payments
+First Payment Due,The date of the first payment for the site lease.
+Expiration Date,The date when the site lease agreement expires.
+Renewal Notice Term,Renewal terms of the Site Lease. It contains rules on the notice periods and general rules of agreement's renewal.
+Site Lease Prepayment (Y/N),Is there a front-loaded payment early in the lease term (i.e. is first year or are earlier years of lease subject to higher payment than later years?)
+Site Lease Prepayment (Amount),Is there a front-loaded payment early in the lease term (i.e. is first year or are earlier years of lease subject to higher payment than later years?)
+Removal Timeline & Expectations,Timeframes and method requirements for removing project from land at end of and/or termination of Lease
+Fee Simple Owner (Y/N),Full and irrevocable ownership of land
+Rent Escalator (Y/N),Can the price of the rent go up over time?
+Rent Escalator (Amount),Amount of increase in price
+Rent Escalator Effective Date,When the increase in price goes into effect
+Termination & Removal - Lessee,Termination terms for the Lessee
+Termination & Removal - Lessor,Termination terms from the perspective of the Lessor (Landlord)
+Termination - Notice Requirements,What is the termination period and notice requirements. What prerequisites have to take place for the termination to be effective.
+Default,"A failure to fulfill a legal obligation or condition, such as failure to make a payment or not performing contractual obligations."
+Assignment by Lessee,The act of transferring the lessee's rights and obligations under the lease agreement to another party.
+Assignment by Lessor,The act of transferring the lessor's rights and obligations under the lease agreement to another party.
+Removal Requirements,Timeframes and method requirements for removing project from land at end of and/or termination of Lease
+Site Access Rights,"Ability to access the project (may have to cross over another parcel, etc.)"
+Quiet Enjoyment,the right to inhabit or use certain property without disturbance.
+Non-Disturbance Requirements,Ensures that a rental agreement between the tenant and the landlord will continue under any circumstances
+SNDA,"Subordination Non-Disturbance and Attornment. It essentially guarantees that if the landlord defaults, neither the landlord nor the lender can cancel a tenant's lease"
+Eminent Domain,"The right of a government or its agent to expropriate private property for public use, with payment of compensation"
+Force Majeure,"Contract clause that removes liability for catastrophic, unforeseen events that prevent participants from fulfilling obligations"
+Property Tax ($),Need the amount of property taxes for operational and valuation purposes
+Purchase Options,Ability for Lessee to have an option to buy the land from the Lessor
+Liens,A right to keep possession of property belonging to another person until a debt owed by that person is discharged.
+"Amendments, Assignments and/or Estoppels",Estoppel -legal principle that prevents someone from arguing something or asserting a right that contradicts what they previously said or agreed to by law.
+Prevailing Party Provision (Y/N),Whether prevailing party in any dispute and/or litigation gets its legal costs covered by non prevailing party
+Governing Law,"The legal jurisdiction that determines the laws applicable to the agreement, resolving any disputes or legal matters arising from the agreement."

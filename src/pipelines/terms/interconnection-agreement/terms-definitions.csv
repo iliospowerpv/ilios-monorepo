@@ -1,0 +1,30 @@
+Key Items,Definitions
+Effective Date,The date in which the agreement is deemed effective
+Interconnection Utility Company,The provider that allows you to connect to the grid
+Interconnection Customer,The owner of the project wanting to provide power and connect to the grid
+Nameplate Capacity (System Size),Size of the solar project
+Nameplate Capacity Limits,The limits of the system size -- not to exceed amount
+Term,Defined terms in an agreement
+Mechanical Completion Date,Date by which system must be mechanically complete in the IA.(should be calendared with at least one month out as a tickler)
+Commercial Operation Date,The date that the project is connected to the gird and able to sell power
+Deadline to Interconnect Date,"Date by which system must be interconnected, tested and have permission to operate (should be calendared with a tickler out at least three months)"
+Amendments and/or Assignments,"Amendments (i.e. formally agreed upon changes to the agreement between the parties) and/or transfers of rights, duties, and interests of the agreement to other parties"
+Default by Provider,Provider's failure to fulfill its key obligations under the agreement
+Default by Customer,Customer's failure to fulfill its key obligations under the agreement
+Termination by Customer,Rights to terminate the agreement by the project owner (Interconnection Customer)
+Termination by Provider,Rights to terminate the agreement by the utility company (Interconnection Utility Provider)
+Terms for Disconnection,"In the event a system is to be disconnect (either temporarily or permanently), there are steps that must be taken. This section outlines such requirements"
+Assignment – Customer,"Customer's ability to assign (i.e. transfer its rights, duties, and obligations of the agreement) to someone else"
+Assignment – Provider,"Provider's ability to assign (i.e. transfer its rights, duties, and obligations of the agreement) to someone else"
+Force Majeure,"Significant events (including severe weather, acts of God, etc.) that prevent one party from being able to perform its obligations under an agreement due to no fault of such party"
+Insurance Requirements,Overview of the insurance coverage that is required
+Taxes,Amount of property taxes due on the physical property and projected amount once the solar facility is constructed
+Summary of Economic Terms,Costs and other payments made from one party to another
+Cost Responsibility for Interconnection,Party that will pay for the connection to the grid
+Cost Responsibility for System Upgrades,Party that will pay for system upgrades
+Prevailing Party Provision,Whether prevailing party in any dispute and/or litigation gets its legal costs covered by non prevailing party
+Governing Law,The laws of the jurisdiction that the agreement is to be enforced
+Access Rights,Ability of the utility to enter the premises
+Other Dates/Deadlines Referenced,"Any other specific dates that are called out in the agreement that need to be brought to our attention (i.e. milestones, payments, notice requirements, reporting, etc.)"
+Responsible Party for Metering,Party that will pay for the telemetry date. Metering lets you know how much power is being produced
+Recurring Monthly Costs,Any other costs that are recurring (not a one time fee associated with the build of the solar project)

@@ -1,0 +1,8 @@
+Key Items,Definitions
+Provider,"The party responsible for managing the community solar garden, ensuring its operation, and maintaining subscriber relations."
+Customer,The individual or entity subscribing to the community solar garden to receive solar energy credits.
+Term,The duration of the agreement during which the Provider manages the community solar garden and the Customer subscribes to it.
+Penalty ($ per kWh),The monetary penalty imposed on the Provider for each kilowatt-hour of energy not delivered as agreed.
+Guarantee (%),"The percentage of energy production that the Provider guarantees to the Customer, ensuring a minimum level of service."
+Payment Remittance,"Details the process and guidelines for transferring payments from subscribers to the management entity; includes information on payment methods, frequency, and any related financial handling procedures as outlined in the Subscriber Management Agreement"
+Termination Clause,"The conditions under which either party can terminate the agreement before the end of the Term, including any penalties or requirements for notice."
