@@ -1,0 +1,15 @@
+{
+  "name": "ingest_telemetry_data_job",
+  "parameters": [
+    {
+      "name": "subscription_id",
+      "label": "Subscription ID",
+      "helpText": "Pub/Sub subscription for reading input data. Must be a resource identifier in the format: projects/<project_id>/subscriptions/<subscription_name>"
+    },
+    {
+      "name": "dataset_id",
+      "label": "Dataset ID",
+      "helpText": "BigQuery dataset for writing output data. Must be a resource identifier in the format: <project_id>:<dataset_name>"
+    }
+  ]
+}

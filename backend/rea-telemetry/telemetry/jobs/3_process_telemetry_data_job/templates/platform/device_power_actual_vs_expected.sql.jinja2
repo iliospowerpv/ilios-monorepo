@@ -1,0 +1,92 @@
+CREATE OR REPLACE TABLE FUNCTION platform_{{ environment }}.device_power_actual_vs_expected(
+    start_ts TIMESTAMP,
+    end_ts TIMESTAMP,
+    tz STRING
+)
+RETURNS TABLE <
+    device_id INTEGER,
+    device_power_actual ARRAY<STRUCT<value NUMERIC, ts DATETIME>>,
+    device_power_expected ARRAY<STRUCT<value NUMERIC, ts DATETIME>>
+> AS (
+    WITH id_ts_grid AS (
+        SELECT DISTINCT
+            internal.device_id AS device_id,
+            DATETIME_TRUNC(point_data_ts, HOUR) + (INTERVAL 15 MINUTE) * DIV(EXTRACT(MINUTE FROM point_data_ts), 15) AS point_data_ts
+        FROM telemetry_rfn.id_map
+        CROSS JOIN (
+            SELECT
+                DATETIME(point_data_ts, tz) AS point_data_ts
+            FROM UNNEST(
+                GENERATE_TIMESTAMP_ARRAY(
+                    start_ts,
+                    end_ts - (INTERVAL 1 MICROSECOND), /* inclusive -> exclusive */
+                    INTERVAL 15 MINUTE
+                )
+            ) AS point_data_ts
+        )
+        WHERE internal.environment = '{{ environment }}'
+    ),
+    points_mapped AS (
+        SELECT
+            internal.device_id AS device_id,
+            point_tag,
+            point_data_value,
+            DATETIME(point_data_ts, tz) AS point_data_ts
+        FROM telemetry_rfn.points(start_ts, end_ts)
+        JOIN telemetry_rfn.id_map
+        ON external.data_provider = data_provider
+        AND external.site_id = site_id
+        AND external.device_id = device_id
+        AND internal.environment = '{{ environment }}'
+    ),
+    points_binned AS (
+        SELECT
+            device_id,
+            point_tag,
+            point_data_value,
+            DATETIME_TRUNC(point_data_ts, HOUR) + (INTERVAL 15 MINUTE) * DIV(EXTRACT(MINUTE FROM point_data_ts), 15) AS point_data_ts
+        FROM points_mapped
+    ),
+    device_power_actual_stg_0 AS (  /* device-level AVG */
+        SELECT
+            device_id,
+            AVG(point_data_value) AS point_data_value,
+            point_data_ts
+        FROM points_binned
+        WHERE point_tag = 'device_power_ac'
+        GROUP BY device_id, point_data_ts
+    ),
+    device_power_actual AS (  /* final */
+        SELECT
+            device_id,
+            point_data_value,
+            point_data_ts
+        FROM id_ts_grid
+        LEFT JOIN device_power_actual_stg_0
+        USING (device_id, point_data_ts)
+    ),
+    device_power_expected AS (
+        SELECT
+            device_id,
+            CAST(NULL AS NUMERIC) AS point_data_value,
+            point_data_ts
+        FROM id_ts_grid
+        /* FIXME */
+    )
+    SELECT
+        device_id,
+        ARRAY_AGG(
+            STRUCT(device_power_actual.point_data_value AS value, device_power_actual.point_data_ts AS ts)
+            ORDER BY device_power_actual.point_data_ts
+        ) AS device_power_actual,
+        ARRAY_AGG(
+            STRUCT(device_power_expected.point_data_value AS value, device_power_expected.point_data_ts AS ts)
+            ORDER BY device_power_expected.point_data_ts
+        ) AS device_power_expected
+    FROM id_ts_grid
+    JOIN device_power_actual
+    USING (device_id, point_data_ts)
+    JOIN device_power_expected
+    USING (device_id, point_data_ts)
+    GROUP BY device_id
+);

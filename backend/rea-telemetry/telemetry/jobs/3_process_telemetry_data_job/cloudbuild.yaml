@@ -1,0 +1,32 @@
+steps:
+- id: deploy
+  name: gcr.io/google.com/cloudsdktool/cloud-sdk
+  entrypoint: /bin/bash
+  dir: telemetry
+  env:
+  - 'IDX=3'
+  - 'JOB=process_telemetry_data_job'
+  args:
+  - '-c'
+  - |
+      mkdir deploy
+      cp -rl "jobs/$${IDX}_$$JOB" "deploy/$$JOB"
+      gcloud functions deploy "$$JOB" \
+        --region=$LOCATION \
+        --gen2 \
+        --trigger-http \
+        --no-allow-unauthenticated \
+        --runtime=python312 \
+        --memory=1024Mi \
+        --cpu=1000m \
+        --timeout=300 \
+        --min-instances=0 \
+        --max-instances=1 \
+        --concurrency=1 \
+        --entry-point="$$JOB" \
+        --source="./deploy/$$JOB" \
+        --set-env-vars=LOG_EXECUTION_ID=true \
+        --set-build-env-vars=GIT_BRANCH=$BRANCH_NAME,GIT_COMMIT=$COMMIT_SHA
+
+options:
+  logging: CLOUD_LOGGING_ONLY
