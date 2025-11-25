@@ -1,0 +1,1496 @@
+Key Items,Instructions,Definitions
+Lessor (Landlord) Entity Name,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Lessor (Landlord) Entity Name from the text in this format:
+<example>
+Text:
+```
+THIS SOLAR LEASE (this “Lease”) is made and entered into as of July 22, 2020 (the “Effective Date”), by and between MARSHFIELD AGRICULTURAL & HORTICULTURAL SOCIETY, a Massachusetts not-for-profit corp...
+```
+Data retrieved:
+MARSHFIELD AGRICULTURAL & HORTICULTURAL SOCIETY</example>
+
+
+<example>
+Text:
+```
+Mount Kemble Morristown, LLC, a Delaware limited liability company, (ii) Norte Investments, LLC, a Delaware limited liability company, and (iii) Mount Kimble LLC, a Delaware limited liability company...
+```
+Data retrieved:
+Mount Kemble Morristown, LLC, Norte Investments, LLC,  and Mount Kimble LLC</example>
+
+
+<example>
+Text:
+```
+Between Sunvestment Energy Group NY 64, LLC, a New York limited liability company (“Lessee”), and Lakeville Village, Inc., a New York non-profit cooperative corporation (“Lessor”). Each of Lessor and ...
+```
+Data retrieved:
+Lakeville Village, Inc.</example>
+
+",The individual or entity who holds title to the property and is leasing to REA controlled entity
+Lessee (Tenant) Entity Name,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Lessee (Tenant) Entity Name from the text in this format:
+<example>
+Text:
+```
+By and between HEELSTONE LAND HOLDINGS, LLC, a Delaware limited liability company (the “Landlord”) and 233 RANDOLPH 74 SOLAR I,
+LLC, a North Carolina limited liability company (the “Tenant”)....
+```
+Data retrieved:
+233 Randolph 74 Solar I LLC</example>
+
+
+<example>
+Text:
+```
+By and between PWH Properties, LLC (""Owner""), and Canton G LC Solar, LLC a Maine limited liability company (""Tenant"")....
+```
+Data retrieved:
+Canton GLC Solar, LLC</example>
+
+
+<example>
+Text:
+```
+Solops, LLC, a New Jersey limited liability company...
+```
+Data retrieved:
+Solops, LLC</example>
+
+",The individual that is renting the property and pays fee to the Landlord
+Effective Date,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Effective Date from the text in this format:
+<example>
+Text:
+```
+This SYSTEM SITE LEASE AGREEMENT (this “Agreement”’) is made and entered into as of August 10, 2018 (the “Effective Date”)...
+```
+Data retrieved:
+August 10, 2018</example>
+
+
+<example>
+Text:
+```
+THIS SITE LEASE AGREEMENT), (“Leasé”)) is made and entered into as of this 30 day of September 2019 (the ""Effective Date"")...
+```
+Data retrieved:
+September 30, 2019</example>
+
+
+<example>
+Text:
+```
+THIS GROUND LEASE AGREEMENT (this “Lease”) is made and entered into as of the 4th day of February, 2016 (the “Effective Date”)....
+```
+Data retrieved:
+February 4, 2016</example>
+
+",Effective Date is the date that the agreement goes into effect; Escalator is an increase in price over the term of the agreement
+Property Size,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Property Size from the text in this format:
+<example>
+Text:
+```
+1. Hereby demises and leases to Tenant, and Tenant hereby leases from Owner, for the purposes described herein, ±19.9 acres thereof (the ""Premises""),...
+```
+Data retrieved:
+±19.9 acres</example>
+
+
+<example>
+Text:
+```
+Owner owns a parcel of real property located in the vicinity of “0” Lake Street, Plympton, Massachusetts, being identified on the Town of Plympton’s Tax Map 3 as Lot 3-2-8 comprising approximately 108...
+```
+Data retrieved:
+108.9 acres</example>
+
+
+<example>
+Text:
+```
+Section ""Description of Lease Area"" The above described lease area contains an area of 1,059, 717±s.f. (24.33 acres)...
+```
+Data retrieved:
+24.33 acres</example>
+
+",The acreage or similarly defined size of the land that is the object of the lease agreement between Landlord and and Tenant
+Initial Term,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Initial Term from the text in this format:
+<example>
+Text:
+```
+2. The operating term of this Agreement (the ""Operations Term"") shall be twenty (20) years, commencing on the date that Central Maine Power (""CMP"") issues the Permission to Operate (PTO) or the final ...
+```
+Data retrieved:
+20 years beginning on the date the Permission to Operate was issued</example>
+
+
+<example>
+Text:
+```
+I.D.1.. The term (“Term”) of this Lease shall commence on the Effective Date and end on the Year 25 Termination Date or on such earlier date as this Lease may be terminated in accordance with the prov...
+```
+Data retrieved:
+Begins on the Effective Date (September 30,2019)  and extends 25 years.)</example>
+
+
+<example>
+Text:
+```
+2. The term of this Agreement (together with extensions thereof, the “Term”) shall be twenty (20) years (the “Initial Term”), commencing on the date on which Tenant obtains all necessary permits or au...
+```
+Data retrieved:
+20 years from Commencement Date or COD</example>
+
+",The length of the Site Lease
+Rent Commencement,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Rent Commencement from the text in this format:
+<example>
+Text:
+```
+“Rent Commencement Date” shall mean when (a) the Solar Operations is mechanically complete and operating, (b) electrical output is delivered to the grid or a utility provider under local and state reg...
+```
+Data retrieved:
+Commercial Operation Date</example>
+
+
+<example>
+Text:
+```
+Commencing on the Effective Date, until the Commercial Operation Date, Tenant shall pay the Landlord...
+```
+Data retrieved:
+Effective Date</example>
+
+
+<example>
+Text:
+```
+3 On the date on which Lessee obtains all necessary permits or authorizations from the utility providers to operate the Project and to sell electricity (""Commencement Date"")....
+```
+Data retrieved:
+Commercial Operation Date</example>
+
+",The date of the first payment. When the lease commitment officially starts
+Renewal Terms,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Renewal Terms from the text in this format:
+<example>
+Text:
+```
+2.2.1 Lessee shall have, at Lessee’s sole discretion, two options to extend the Term for a period of Five (5) years each. Such requests for extension by the Lessee shall occur not less than Ninety (90...
+```
+Data retrieved:
+Two (2) additional five (5) year periods with written notice Ninety (90) days prior to the expiration</example>
+
+
+<example>
+Text:
+```
+2. Tenant shall have three (3) options to extend this Lease, each option being for a tenn of five (5) years (each, a ""Renewal Term""). Tenant shall exercise such extension option, if at all, by giving ...
+```
+Data retrieved:
+Three (3) additional five (5) year periods with written notice ninety (90) days prior to the expiration</example>
+
+
+<example>
+Text:
+```
+3b. Tenant shall be entitled to renew this Lease for Two (2) additional and consecutive periods of five (5) years each (“Renewal Period”) by providing written notice to Landlord of its intent to so re...
+```
+Data retrieved:
+Two( 2) additional five (5) year periods with written notice sixty (60) days prior to the expiration</example>
+
+",Ability to extend the Lease beyond initial term without having to amend the Lease
+Rent Calculation,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Rent Calculation from the text in this format:
+<example>
+Text:
+```
+Beginning on the Rent Commencement Date, annual rent shall equal One Thousand and 00/100 Dollars ($1,000.00) (the “Lease Rate”) of the Net Acreage...
+```
+Data retrieved:
+$1,000 per acre per year</example>
+
+
+<example>
+Text:
+```
+4. Rent shall be calculated as two thousand five hundred and 00/100 dollars ($2,500.00) per acre per annum during the Lease Term with an escalator of 1% per annum....
+```
+Data retrieved:
+$2,500 per acre per year</example>
+
+
+<example>
+Text:
+```
+3a.  Rent
+Block 1 $7,000 per acre per year
+Block 2 $6,500 per acre per year
+Block 3 $6,000 per acre per year
+Block 4 $5,500 per acre per year
+Block 5 $5,000 per acre per year
+Block 6-8 $4,500 pe...
+```
+Data retrieved:
+See Section 3a.</example>
+
+",Price
+Rent Amount,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Rent Amount from the text in this format:
+<example>
+Text:
+```
+4. Rent shall be calculated as two thousand five hundred and 00/100 dollars ($2,500.00) per acre per annum during the Lease Term with an escalator of 1% per annum....
+```
+Data retrieved:
+Two thousand five hundred thousand and 00/100 dollars ($2,500.00)
+per acre per annum with an annual escalator of I% per annum.</example>
+
+
+<example>
+Text:
+```
+5a. Commencing on the first day of the first full month following the Commercial Operation Date (“Rent Commencement Date”) and continuing thereafter during the Term, Tenant shall pay Landlord rent in ...
+```
+Data retrieved:
+$89,500 per year</example>
+
+
+<example>
+Text:
+```
+Section 3. BaseRent. Starting on the Commencement Date, Tenant shall pay to Owner an annual baserent(""AnnualRent"")assetforthbelow. ExceptasotherwisespecificallyprovidedinthisLease,all rent shall be pa...
+```
+Data retrieved:
+-Annual Rent for the first year shall be $49,020
+-Annual Rent for Year 2: $50,000
+-Annual Rent for Years 3-20: Previous year Annual Rent increased by 2%</example>
+
+",How much Lessee is required pay to Lessor to lease the property
+Payment Terms,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Payment Terms from the text in this format:
+<example>
+Text:
+```
+2.3 During the Development period, Lessee shall pay to Lessor, as rent, One ($1.00) Dollar per year. During the Operating Term, Lessee shall pay to Lessor, as rent, Seventeen Thousand ($17,000.00) Dol...
+```
+Data retrieved:
+Annual</example>
+
+
+<example>
+Text:
+```
+II. A. 1b. Commencing on the Commercial Operation Date, Tenant shall pay the Landlord the Base Rent in equal monthly  installments, equal to the amount, set forth in Section IL.A.1a of this Lease, of ...
+```
+Data retrieved:
+Monthly
+Annually</example>
+
+
+<example>
+Text:
+```
+Commencing on the Commercial Operation Date, Tenant shall pay the Landlord the Base Rent in equal monthly installments, equal to the amount, set forth in Section II.A.1a of this Lease, of the Base Ren...
+```
+Data retrieved:
+Monthly installments</example>
+
+",Amount owed for annual lease payments
+First Payment Due,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve First Payment Due from the text in this format:
+<example>
+Text:
+```
+2. Starting on the Commencement Date, Tenant shall pay to Owner an annual base rent (""Annual Rent"") as set forth below....
+```
+Data retrieved:
+On the Commencement Date</example>
+
+
+<example>
+Text:
+```
+The first Lease Fee shall be paid on the day that the System reaches Commercial Operation (the “Commercial Operation Date”) and any additional Lease Fee shall be made on each anniversary thereof durin...
+```
+Data retrieved:
+the date system reaches Commercial Operation</example>
+
+
+<example>
+Text:
+```
+3a. Starting on the Commencement Date, Tenant shall pay to Owner annual rent...
+```
+Data retrieved:
+Due on Rent Commencement Date</example>
+
+",The date of the first payment for the site lease.
+Expiration Date,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Expiration Date from the text in this format:
+<example>
+Text:
+```
+3D. The term (“Term”) of this Lease shall commence on the Effective Date and end on the Year 25 Termination Date or on such earlier date as this Lease may be terminated in accordance with the provisio...
+```
+Data retrieved:
+25 years from the Commercial Operation Date (COD)</example>
+
+
+<example>
+Text:
+```
+2. The term of this Agreement (together with extensions thereof, the “Term”) shall be twenty (20) years (the “Initial Term”), commencing on the date on which Tenant obtains all necessary permits or au...
+```
+Data retrieved:
+20 years from Commencement Date</example>
+
+
+<example>
+Text:
+```
+5a. Base lease term shall be twenty (20) years subject to Lessee's sole option to extend Lease Term for two (2) additional and successive periods of
+five (5) years....
+```
+Data retrieved:
+20 years from the Lease Commencement Date</example>
+
+",The date when the site lease agreement expires.
+Renewal Notice Term,"Retrieve Renewal Notice Term from the text.
+Definitions: Renewal Notice Term - Renewal terms of the Site Lease. It contains rules on the notice periods and general rules of agreement's renewal..
+",Renewal terms of the Site Lease. It contains rules on the notice periods and general rules of agreement's renewal.
+Site Lease Prepayment (Y/N),"Retrieve Site Lease Prepayment (Y/N) from the text.
+Definitions: Site Lease Prepayment (Y/N) - Is there a front-loaded payment early in the lease term (i.e. is first year or are earlier years of lease subject to higher payment than later years?).
+",Is there a front-loaded payment early in the lease term (i.e. is first year or are earlier years of lease subject to higher payment than later years?)
+Site Lease Prepayment (Amount),"Retrieve Site Lease Prepayment (Amount) from the text.
+Definitions: Site Lease Prepayment (Amount) - Is there a front-loaded payment early in the lease term (i.e. is first year or are earlier years of lease subject to higher payment than later years?).
+",Is there a front-loaded payment early in the lease term (i.e. is first year or are earlier years of lease subject to higher payment than later years?)
+Removal Timeline & Expectations,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Removal Timeline & Expectations from the text in this format:
+<example>
+Text:
+```
+Landlord gives written notice to Tenant at least ninety (90) days prior to the expiration or earlier termination of the Lease identifying the specific lines and connections to remain on the Premises...
+```
+Data retrieved:
+90 days notice</example>
+
+
+<example>
+Text:
+```
+10. Upon written request of Owner given to Tenant within ten (10) days of the expiration or earlier termination of this Agreement,...
+```
+Data retrieved:
+10 days notice</example>
+
+
+<example>
+Text:
+```
+9. Tenant shall provide Owner with a minimum of thirty (60) days' notice of its intent to remove the Solar Facility (""Tenant's Removal Notice"")....
+```
+Data retrieved:
+60 days notice (see legal term as it says 30 and 60)--- [good catch, that's inconsistent and something that we would want to have clarified with a corrective amendment, etc.]</example>
+
+",Timeframes and method requirements for removing project from land at end of and/or termination of Lease
+Fee Simple Owner (Y/N),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Fee Simple Owner (Y/N) from the text in this format:
+<example>
+Text:
+```
+Y - Cover page, paragraph below table says ""certain real property owned by Lessor""; Exhibit 2 suggests so as it says ""parcel of real property owned by Lessor""...
+```
+Data retrieved:
+Yes</example>
+
+
+<example>
+Text:
+```
+12. Lessor respresents, warrants and covenants that Lessor has a lawful fee simple interest in title to the Property, including the Premises, and that Lessee shall have quiet and peaceful possession o...
+```
+Data retrieved:
+Y</example>
+
+
+<example>
+Text:
+```
+Owner is the fee simple owner of a certain property located at 350 and 360 Mt. Kemble Avenue, Morristown, New Jersey 08609, Morris County, New Jersey, which property as more specifically identified on...
+```
+Data retrieved:
+Y</example>
+
+",Full and irrevocable ownership of land
+Rent Escalator (Y/N),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Rent Escalator (Y/N) from the text in this format:
+<example>
+Text:
+```
+Y...
+```
+Data retrieved:
+Yes</example>
+
+
+<example>
+Text:
+```
+2.3 Beginning on the first anniversary of the COD, rent shall be subject to an annual escalator of 1% for the duration of the Operations Term....
+```
+Data retrieved:
+Y</example>
+
+
+<example>
+Text:
+```
+II. A. 1a. Commencing on the Commercial Operation Date and for each year of the Term thereafter, Tenant shall pay Landlord Twenty Eight Thousand and Five Hundered Dollars ($28,500.00) per annum (“Base...
+```
+Data retrieved:
+Y</example>
+
+",Can the price of the rent go up over time?
+Rent Escalator (Amount),"1. You have a task for due diligence company, working with solar projects.
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms.
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term.
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Rent Escalator (Amount) from the text in this format:
+<example>
+Text:
+```
+3. Annual Rent for Years 3-20: Previous year Annual Rent increased by 2%...
+```
+Data retrieved:
+2%</example>
+
+
+<example>
+Text:
+```
+4. Rent shall be calculated as two thousand five hundred and 00/100 dollars ($2,500.00) per acre per annum during the Lease Term with an escalator of 1% per annum....
+```
+Data retrieved:
+I% per annum</example>",What are the key dates or schedule of some sort for the escalator.
+Rent Escalator Effective Date,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Rent Escalator Effective Date from the text in this format:
+<example>
+Text:
+```
+II. A. 1a. Commencing on the Commercial Operation Date and for each year of the Term thereafter, Tenant shall pay Landlord Twenty Eight Thousand and Five Hundered Dollars ($28,500.00) per annum (“Base...
+```
+Data retrieved:
+(One) 1 year after the Commercial Operation Date</example>
+
+
+<example>
+Text:
+```
+2.3 Beginning on the first anniversary of the COD, rent shall be subject to an annual escalator of 1% for the duration of the Operations Term....
+```
+Data retrieved:
+Beginning on the first anniversary of the COD</example>
+
+
+<example>
+Text:
+```
+3. Annual Rent for Years 3-20: Previous year Annual Rent increased by 2%...
+```
+Data retrieved:
+3 years from the Commencement Date</example>
+
+",When the increase in price goes into effect
+Co-terminus with PPA (Y/N),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Co-terminus with PPA (Y/N) from the text in this format:
+<example>
+Text:
+```
+In PPA, term is of 25 years with 2 extensions of 5 years each possible. In Lease Agreement, operational term is of 25 years with no extension and construction term is of 18 months with possible 12 mon...
+```
+Data retrieved:
+No.</example>
+
+",Do the term of the lease and PPA run concurrently
+Termination & Removal - Lessee,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Termination & Removal - Lessee from the text in this format:
+<example>
+Text:
+```
+1(c)- Tenant shall have the right to terminate this Lease in the event that its power purchase agreement, or other agreement under which Tenant provides power generated at the Premises to a third part...
+```
+Data retrieved:
+See Sections 1.c, 1.e, 10, and 11.a</example>
+
+
+<example>
+Text:
+```
+13. enant may terminate this Agreement at any time, in its sole discretion, by giving written notice thereof to Owner not less than 30 days prior to the Commencement Date. Further, this Agreement may ...
+```
+Data retrieved:
+See Section 13</example>
+
+
+<example>
+Text:
+```
+VII. A. If this Lease has not terminated earlier pursuant to Subparagraph l.D.2 or Paragraph I.F of this Lease, then on the Year 25 Termination Date, Tenant shall, at its sole cost and expense, remove...
+```
+Data retrieved:
+See Section VII. A</example>
+
+",Termination terms for the Lessee
+Termination & Removal - Lessor,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Termination & Removal - Lessor from the text in this format:
+<example>
+Text:
+```
+In the event Lessee fails to complete the removal of the System and restoration of the Premises by the Removal and Restoration Date, Lessor may provide notice to Lessee stating that Lessee has failed ...
+```
+Data retrieved:
+5d</example>
+
+
+<example>
+Text:
+```
+17(a)- Lessor have the right to terminate Lease due to a Lessee's default event only after the expiration of cure period and action to cure default is not commenced within that cure period....
+```
+Data retrieved:
+17(a)</example>
+
+
+<example>
+Text:
+```
+11.02 If the default relates to work (other than the operation of and sale of electricity from theSystem) to be performed by Developer, perform such work or cause it to be performed, for the account o...
+```
+Data retrieved:
+Owner can terminate this Lease upon at least 30 days additional written notice to
+Developer upon occurrence of an Event of Default by Developer</example>
+
+",Termination terms from the perspective of the Lessor (Landlord)
+Termination - Notice Requirements,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Termination - Notice Requirements from the text in this format:
+<example>
+Text:
+```
+7. Landlord gives written notice to Tenant at least ninety (90) days prior to the expiration or earlier termination of the Lease identifying the specific lines and connections to remain on the Premise...
+```
+Data retrieved:
+For discussion - ask Daniel</example>
+
+
+<example>
+Text:
+```
+13. Termination. Tenant may terminate this Agreement at any time, in its sole discretion, by giving written notice thereof to Owner not less than 30 days prior to the Commencement Date. Further, this ...
+```
+Data retrieved:
+30 days notice</example>
+
+
+<example>
+Text:
+```
+2.9 Lessee’s_ Termination Rights. Lessee shall have the right to terminate this Agreement and Lease and the easements hereunder at any point during the Development Period or Operating Term upon thirty...
+```
+Data retrieved:
+30 days written notice</example>
+
+",What is the termination period and notice requirements. What prerequisites have to take place for the termination to be effective.
+Default,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Default from the text in this format:
+<example>
+Text:
+```
+13. Default. In the event of a material breach of representations or warranties of either party or the failure of either party to comply with any term, covenant or condition of this Lease for a period...
+```
+Data retrieved:
+See Section 13</example>
+
+
+<example>
+Text:
+```
+If a Party shall be in default (the ""Defaulting Party"") if it fails to perform any covenant or obligations hereunder or commits a material breach of this Lease ( each an ""Event of Default') and fails ...
+```
+Data retrieved:
+See Section 22</example>
+
+
+<example>
+Text:
+```
+a.	Default. Any Party that fails to perform its responsibilities as listed below or experiences any of the circumstances listed below shall be deemed a ""Defaulting Party"", the other Party shall be the...
+```
+Data retrieved:
+16a</example>
+
+","A failure to fulfill a legal obligation or condition, such as failure to make a payment or not performing contractual obligations."
+Assignment by Lessee,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Assignment by Lessee from the text in this format:
+<example>
+Text:
+```
+Section 13. Tenant shall obtain Landlord’s written consent before assigning or subletting the Leased Property in whole or in part, which consent shall not be unreasonably withheld, conditioned or dela...
+```
+Data retrieved:
+Tenant shall obtain Landlord's written consent before assigning</example>
+
+
+<example>
+Text:
+```
+6a. Upon notice to Owner, Tenant shall have the right to assign or transfer its rights under this Agreement, in whole or in part, to any person or any business entity at any time, subject to the assig...
+```
+Data retrieved:
+Tenant can assign with notice to the owner</example>
+
+
+<example>
+Text:
+```
+IX. A. Tenant cannot assign this Lease except:
+a. to a Solar Lender pursuant to the provisions of Exhibit E, attached to this Lease, or
+b. to a Person, which:
+(i) agrees in a writing, reasonably sa...
+```
+Data retrieved:
+Yes</example>
+
+",The act of transferring the lessee's rights and obligations under the lease agreement to another party.
+Assignment by Lessor,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Assignment by Lessor from the text in this format:
+<example>
+Text:
+```
+15.1 Neither Party shall have the right to assign any of its rights, duties, or obligations under this Agreement without the prior written consent of the other Party, which consent may not be unreason...
+```
+Data retrieved:
+Prior written consent needed in order for Lessor to assign</example>
+
+
+<example>
+Text:
+```
+6b. Owner may assign its rights and obligations under this Agreement to its successor in interest in and to the Property without the prior consent of Tenant....
+```
+Data retrieved:
+Owner can assign without consent</example>
+
+
+<example>
+Text:
+```
+21. Assignment. Lessee shall not assign any of its rights, duties or obligations under this Lease without the prior consent of Lessor, which consent shall not be unreasonably withheld, conditioned or ...
+```
+Data retrieved:
+Lessor cannot assign without consent from Lessee</example>
+
+",The act of transferring the lessor's rights and obligations under the lease agreement to another party.
+Removal Requirements,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Removal Requirements from the text in this format:
+<example>
+Text:
+```
+5.3. Removal Upon Termination. Upon the termination or expiration of this Agreement, Lessee shall, within one hundred eighty (180) days after the date of expiration, remove the all above ground portio...
+```
+Data retrieved:
+Restore the Project Site to its condition as of the Effective Date</example>
+
+
+<example>
+Text:
+```
+10.  Upon the expiration or earlier termination of this Agreement, Tenant shall, at its sole cost and expense, restore the Property to its original condition....
+```
+Data retrieved:
+Tenant shall restore the Property to its original condition prior to expiration</example>
+
+
+<example>
+Text:
+```
+The removal and restoration shall be completed in a manner that does not materially and adversely affect the use of the Premises for farming purposes.  Tenant shall be required to grade the Premises a...
+```
+Data retrieved:
+Tenant shall restore the land to the same condition prior to expiration</example>
+
+",Timeframes and method requirements for removing project from land at end of and/or termination of Lease
+Site Access Rights,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Site Access Rights from the text in this format:
+<example>
+Text:
+```
+Tenant, and Tenant’s agents, guests, subtenants and designees shall have access to the Premises at all times during the Term.  Landlord shall have the right to enter the Premises to inspect the same a...
+```
+Data retrieved:
+Tenant has access to the premises at all times. Landlord shall have right to inspect with advanced written notice</example>
+
+
+<example>
+Text:
+```
+III. SOLAR SYSTEM INSTALLATION, OPERATION AND OWNERSHIP.
+A. Use of thePremises
+Provided that Tenant has not committed or suffered to be committed a Tenant Event of Default, Tenant has the right to u...
+```
+Data retrieved:
+Tenant has full access to Premises during the term of Lease</example>
+
+
+<example>
+Text:
+```
+Lessor hereby also grants to Lessee and the applicable utility company, at all times on a 24-hours-a-day, 7-days-a-week basis, for any purposes reasonably connected with this Lease for a period co-ter...
+```
+Data retrieved:
+3A</example>
+
+","Ability to access the project (may have to cross over another parcel, etc.)"
+Quiet Enjoyment,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Quiet Enjoyment from the text in this format:
+<example>
+Text:
+```
+6.3
+Quiet Enjoyment. On paying the rent and performing the covenants herein, and during the Operating Term, provided the P A remains in place, Lessee shall enjoy quiet and peaceful use, enjoyment and...
+```
+Data retrieved:
+See Section 6.3</example>
+
+
+<example>
+Text:
+```
+1.03  Owner covenants that, provided Developer is not in default hereunder, Developer shall have the right to quietly enjoy and use the Premises and Developer’s Lease Rights granted in this Lease thro...
+```
+Data retrieved:
+right to quietly enjoy ad use the premises per the Lease.</example>
+
+
+<example>
+Text:
+```
+and that Lessee shall have quiet and peaceful possession of the Premises free from any claim of any entity or Person of superior title thereto without hindrance to or interference with or molestation ...
+```
+Data retrieved:
+12a</example>
+
+",the right to inhabit or use certain property without disturbance.
+Non-Disturbance Requirements,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Non-Disturbance Requirements from the text in this format:
+<example>
+Text:
+```
+Lessor shall obtain a non-disturbance agreement (""NDA"") in favor of Lessee from any third party who now has or may in the future obtain an interest in the Property or Premises, including, without Jimi...
+```
+Data retrieved:
+See Section 12c</example>
+
+
+<example>
+Text:
+```
+Section 24. Subordination and Non-Disturbance.
+(a) Tenant acknowledges that prior to the Commencement Date, Owner may have granted, and on or after the Commencement Date Owner may grant, a mortgage(s...
+```
+Data retrieved:
+See Section 24</example>
+
+
+<example>
+Text:
+```
+24. Non-Disturbance Agreement.  No later than the Rent Commencement Date, Landlord hall provide to Tenant an agreement, in form and substance acceptable to Tenant, from any and all current beneficiari...
+```
+Data retrieved:
+See Section 24.</example>
+
+",Ensures that a rental agreement between the tenant and the landlord will continue under any circumstances
+SNDA,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve SNDA from the text in this format:
+<example>
+Text:
+```
+3.05  Developer’s subordination and attornment agreements in this Article III with respect to any future mortgage or other encumbrance are expressly conditioned on Developer’s receipt of a subordinati...
+```
+Data retrieved:
+Required</example>
+
+
+<example>
+Text:
+```
+SECTION 10. SUBORDINATION; ESTOPPEL CERTIFICATE.
+(a) Subordination. This Lease shall be subject and subordinate at all times to any mortgage(s), deeds of trust and the lien resulting from any other m...
+```
+Data retrieved:
+See Section 10a.</example>
+
+
+<example>
+Text:
+```
+(a)	Tenant acknowledges that prior to the Commencement Date, Owner may have granted, and on or after the Commencement Date Owner may grant, a mortgage(s), deed(s) of trust or other security instrument...
+```
+Data retrieved:
+21</example>
+
+","Subordination Non-Disturbance and Attornment. It essentially guarantees that if the landlord defaults, neither the landlord nor the lender can cancel a tenant's lease"
+Eminent Domain,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Eminent Domain from the text in this format:
+<example>
+Text:
+```
+If there is a condemnation of the Premises, the Easements and/or the Property (or a portion thereof which is sufficient to render the Premises and/or the Easements unsuitable for Tenant's purposes), i...
+```
+Data retrieved:
+15 a</example>
+
+
+<example>
+Text:
+```
+Section 10.01. Condemnation. In the event that the whole or any portion of the Premises is acquired or condemned by any governmental authority, public utility or otherwise, or sold by Owner in lieu th...
+```
+Data retrieved:
+Lease terminates date condemning authority takes over.</example>
+
+
+<example>
+Text:
+```
+In the event the Premises or Property are transferred to a condemning authority pursuant to a taking of all or a portion of the Property sufficient in Lessee's determination to render the Premises uns...
+```
+Data retrieved:
+See Section 20</example>
+
+","The right of a government or its agent to expropriate private property for public use, with payment of compensation"
+Force Majeure,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Force Majeure from the text in this format:
+<example>
+Text:
+```
+Except as otherwise specifically provided in the Lease, neither Party shall be considered in breach of the Lease or liable for any delay or failure to comply with the Lease (other than the failure to ...
+```
+Data retrieved:
+See Section 33</example>
+
+
+<example>
+Text:
+```
+11.04 A “Force Majeure Event” means an unforeseeable event that is not in the reasonablecontrol of the Party claiming the Force Majeure Event to the extent not caused by the actions or inactions of th...
+```
+Data retrieved:
+11.04</example>
+
+
+<example>
+Text:
+```
+SECTION 18. FORCE MAJEURE. If performance of this Lease or of any obligation hereunder is prevented or substantially restricted or interfered with by reason of an event of Force Majeure (as defined be...
+```
+Data retrieved:
+See Section 18</example>
+
+","Contract clause that removes liability for catastrophic, unforeseen events that prevent participants from fulfilling obligations"
+Property Tax ($),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Property Tax ($) from the text in this format:
+<example>
+Text:
+```
+6.12 Taxes. Lessor shall pay when due all real property taxes and assessments
+possessory interest taxes, business or license taxes or fees, service payments in lieu of such taxes
+or fees, Payments i...
+```
+Data retrieved:
+See Section 6.12</example>
+
+
+<example>
+Text:
+```
+SECTION 6. TAXES.
+(a) Real Property Taxes. Tenant shall be liable for and shall pay as and when due any real property taxes assessed by a Governmental Authority exclusively against the Solar Facility...
+```
+Data retrieved:
+See Section 6a</example>
+
+
+<example>
+Text:
+```
+Lessee shall pay any income, real estate or personal property taxes, possessory interest taxes, business or license taxes or fees, service payments in lieu of such taxes or fees, annual or periodic li...
+```
+Data retrieved:
+See Section 17</example>
+
+",Need the amount of property taxes for operational and valuation purposes
+Purchase Options (Y/N),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Purchase Options (Y/N) from the text in this format:
+<example>
+Text:
+```
+11a. If at any time during the Term Owner elects to offer the Property for sale Owner will give Tenant written notice of the intent to sell and agrees to negotiate in good faith with Tenant for Tenant...
+```
+Data retrieved:
+Y</example>
+
+",
+Liens,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Liens from the text in this format:
+<example>
+Text:
+```
+Lessor shall not directly or indirectly cause, create, incur, assume or suffer to exist any mortgage, pledge, lien (including mechanics', labor or materialman's lien), charge, security interest, encum...
+```
+Data retrieved:
+12h</example>
+
+
+<example>
+Text:
+```
+Landlord hereby waives all rights to distraint, possession or statutory, common law or landlord’s lien against Tenant’s Property or any part thereof....
+```
+Data retrieved:
+Waived</example>
+
+",A right to keep possession of property belonging to another person until a debt owed by that person is discharged.
+Amendments and/or Estoppels,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Amendments and/or Estoppels from the text in this format:
+<example>
+Text:
+```
+10b. Landlord and Tenant shall each, within ten (10) days after receipt of a written request from the other, execute and deliver a commercially reasonable form of estoppel certificate in favor of a La...
+```
+Data retrieved:
+Yes</example>
+
+
+<example>
+Text:
+```
+Owner shall from time to time, within ten (10) days after receipt of Tenant’s written request therefor, deliver to Tenant a written statement (to be prepared by Tenant and provided with the request) a...
+```
+Data retrieved:
+22</example>
+
+
+<example>
+Text:
+```
+Section 6.06. Estoppel Certificates. Each Party shall provide to the other, within twenty (20) business days of written request from the requesting Party, an estoppel certificate in form reasonably sa...
+```
+Data retrieved:
+Section 6.06 Estoppels due within 20 business days from request.</example>
+
+",
+Prevailing Party Provision (Y/N),"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Prevailing Party Provision (Y/N) from the text in this format:
+<example>
+Text:
+```
+ubstantially prevailing party shall be entitled to recover all costs and expenses, including its actual attorneys' and expert or consultants' fees and court costs, in such lawsuit, action or proceedin...
+```
+Data retrieved:
+35</example>
+
+
+<example>
+Text:
+```
+26f. The prevailing Party in any action or proceeding in court to enforce the terms of this Agreement shall be entitled to receive its reasonable attorneys’ fees and other reasonable enforcement costs...
+```
+Data retrieved:
+Y</example>
+
+
+<example>
+Text:
+```
+12.11 The prevailing Party in any lawsuit or action under this Lease in addition to any other relief granted by the court or an arbitrator, shall be entitled to all reasonable attorneys' fees and cost...
+```
+Data retrieved:
+Yes</example>
+
+",Whether prevailing party in any dispute and/or litigation gets its legal costs covered by non prevailing party
+Governing Law,"1. You have a task for due diligence company, working with solar projects. 
+* As a due diligence manager you will need to build a project preview for th Solar Project.
+* Preview contains Legal Terms and Short Values.
+* Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+2. Your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+3. I want you to putput only the Short Values for the Legal Terms. 
+* Avoid any unnecessary comments or explanations.
+* You will be provided with couple of examples for each Legal Term. 
+* You will need to extract the Short Value from the Legal Terms in the same format as in the examples. 
+* Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+* Avoid adding to you output such things as: ""<actual_case>"", ""Text:"", ""```"", ""Data retrieved:"", Legal Terms itself
+
+Retrieve Governing Law from the text in this format:
+<example>
+Text:
+```
+12.09 This Lease and the performance thereof shall be governed, interpreted, construed, and regulated by the laws of the State of New Jersey, without giving effect to any conflict of laws principles....
+```
+Data retrieved:
+New Jersey</example>
+
+
+<example>
+Text:
+```
+12.1 This Agreement shall be construed in accordance with the laws of the State of New York, without regard to its conflict of laws principles....
+```
+Data retrieved:
+State of New York</example>
+
+
+<example>
+Text:
+```
+21a. This Lease shall be governed by and construed in accordance with the laws of the Commonwealth of Massachusetts without reference to 
+choice of law provisions....
+```
+Data retrieved:
+State of Massachusetts</example>
+
+","The legal jurisdiction that determines the laws applicable to the agreement, resolving any disputes or legal matters arising from the agreement."

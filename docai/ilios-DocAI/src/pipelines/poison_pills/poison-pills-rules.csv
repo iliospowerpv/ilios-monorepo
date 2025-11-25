@@ -1,0 +1,18 @@
+Name,Prompt Short,Prompt,Key Items,Agreement Type
+Lessor must be landowner,Lessor must be landowner or have right to rent,"Lessor must be landowner or have right to rent. No relevant text is alarming. Short term value equal to N, means that the Lessor is not a fee simple owner, which also is a violation of the rule.",Fee Simple Owner (Y/N),All
+Unilaterally termination,One Party can unilaterally terminate the contract with the other side,One Party must not be able to unilaterally terminate the contract with the other side.,"Termination & Removal - Lessee;Termination & Removal - Lessor;Termination - Notice Requirements;Termination - Provider;Termination - Customer;Termination - Maximum Liability;Termination by Customer;Termination by Provider
+
+
+",All
+Fair Market Value,Buyout should be fair market value,Buyout should be fair market value.,"Termination & Removal - Lessee;Termination & Removal - Lessor;Termination - Notice Requirements;Termination - Provider;Termination - Customer;Termination - Maximum Liability;Termination by Customer;Termination by Provider
+
+
+",All
+Clause with confusion,Issue in the clause that leads to confusion,Issue in the clause that leads to confusion.,All,All
+Too long construction terms,Terms of the construction can take to long from the moment of receiving all documents,Terms of the construction can take to long from the moment of receiving all documents.,Mechanical Completion Date;,PPA
+Unclear calculation logic,Not clear logic of calculation from agreements causes to delays or financial losses,Not clear logic of calculation from agreements causes to delays or financial losses.,Rent Amount;Term;Power Purchase Agreement Rate;Power Purchase Agreement End Date;,Site Lease;PPA;
+Prepayment required,Some of the things require pre-payment,No pre-payment in any form must be required.,Rent Amount;Rent Calculation;,Site Lease;PPA;
+Production factor issues,Production factor Must be P50. If P90 - it is a poison pill / rule violation,Production factor Must be P50. If P90 - it is a poison pill / rule violation.,Production Factor,OM;
+Uncovered scope,Scope & Services must include mowing/vegetation. If this is not listed - it is a poison pill / rule violation,Scope & Services must include mowing/vegetation. If this is not listed - it is a poison pill / rule violation.,Scope & Services,OM;
+Guaranties Issues,Not covering what Investors require,Not covering what Investors require.,Guaranties,EPC;OM;
+PG NOTE,"If No Personal Guarantee (PG) Promissory Note it is a rule violation / poison pill. The Equity Placement Committee (EPC) is unable to provide sufficient funding, so the issue needs to be addressed through other means.","If No Personal Guarantee (PG) Promissory Note it is a rule violation / poison pill. The Equity Placement Committee (EPC) is unable to provide sufficient funding, so the issue needs to be addressed through other means.",Guaranties,EPC;OM;

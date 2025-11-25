@@ -1,0 +1,39 @@
+steps:
+- id: build
+  name: gcr.io/cloud-builders/docker
+  args: ['build', '-f', 'src/deployment/fast_api/Dockerfile', '-t', 'us-east1-docker.pkg.dev/prj-ilios-ai/docai-registry/docai-fastapi:$SHORT_SHA', '.']
+
+- id: push
+  name: gcr.io/cloud-builders/docker
+  args: ['push', 'us-east1-docker.pkg.dev/prj-ilios-ai/docai-registry/docai-fastapi:$SHORT_SHA']
+
+- id: deploy
+  name: gcr.io/google.com/cloudsdktool/cloud-sdk
+  entrypoint: gcloud
+  args:
+  - run
+  - deploy
+  - 'ml-$_ENVIRONMENT'
+  - '--image=us-east1-docker.pkg.dev/prj-ilios-ai/docai-registry/docai-fastapi:$SHORT_SHA'
+  - '--region=$LOCATION'
+  - --port=8080
+  - --cpu=1
+  - --memory=4Gi
+  - --cpu-boost
+  - '--service-account=$PROJECT_ID@appspot.gserviceaccount.com'
+  - --allow-unauthenticated
+  - --concurrency=80
+  - --network=ilios-internal-network
+  - --subnet=ilios-internal-subnetwork
+  - --timeout=5m
+  - --min-instances=1
+  - --max-instances=1
+  - '--set-env-vars=PYTHONPATH=/app,PWD=/app,PROJECT_ID=602280418311,LOCATION=$LOCATION,DOC_AI_LOCATION=us,DOC_AI_PROCESSOR_ID=e977fdd46ee23308,GCS_BUCKET=doc_ai_storage,GCS_VECTOR_STORE_BUCKET=chatbot_docs,VECTOR_STORE_INDEX_ENDPOINT_ID=projects/602280418311/locations/us-west1/indexEndpoints/2644395833545457664,VECTOR_STORE_INDEX_ID=projects/602280418311/locations/us-west1/indexes/5658473864628273152,ENV=$_ENV,BACKEND_URL=$_BACKEND_URL'
+  - '--set-secrets=AWS_ACCESS_KEY_ID=projects/602280418311/secrets/aws-access-key-id:latest,AWS_SECRET_ACCESS_KEY=projects/602280418311/secrets/aws-secret-access-key:latest,GOOGLE_API_KEY=projects/602280418311/secrets/google-api-key:latest,BACKEND_API_KEY=backend-api-key:latest,SECRET_KEY=projects/$PROJECT_NUMBER/secrets/ml-app-secret-key:latest,ML_API_KEY=projects/$PROJECT_NUMBER/secrets/ml-api-key:latest'
+  - '--set-cloudsql-instances=$PROJECT_ID:$LOCATION:chatbot-vector-store-$_ENVIRONMENT,$PROJECT_ID:$LOCATION:test-db'
+
+images:
+- 'us-east1-docker.pkg.dev/prj-ilios-ai/docai-registry/docai-fastapi:$SHORT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

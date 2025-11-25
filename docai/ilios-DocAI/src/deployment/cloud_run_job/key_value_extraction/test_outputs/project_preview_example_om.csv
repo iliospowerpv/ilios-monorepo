@@ -1,0 +1,251 @@
+key_item,value,legal_term,poison_pill,is_poison_pill,poison_pill_detailed
+Effective Date,"March 12, 2021","The relevant text from the document is:
+
+""This Master Solar PV Operation and Maintenance Agreement (this ""Agreement""), is made and entered into as of 3/12/2021 (the ""Effective Date"") by and between REA Investments, LLC, a Missouri limited liability company (""Owner"") and Borrego Solar Systems, Inc., a California corporation (""Contractor"").""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Provider,Contractor,"The relevant sections containing the term ""Provider"" are:
+
+""WHEREAS, Owner wishes to retain Contractor to provide operation and maintenance services for Owner's photovoltaic, solar electric power systems (each a ""System,"" collectively, the ""Systems"") located at one or more sites (the ""Site"" or ""Sites""), with each Site and System identified in Exhibit A, and Contractor wishes to provide such services for the consideration set forth herein.""
+
+""Owner hereby engages Contractor to perform certain services, as set forth in Exhibit B ""Maintenance Scope of Services"" (the ""Maintenance Scope of Services""), and Contractor hereby accepts the engagement and agrees to perform the Maintenance Scope of Services for the Annual O&M Fee set forth in Exhibit A.""
+
+The term ""Provider"" is not explicitly used, but ""Contractor"" is referred to as the party providing operation and maintenance services to the Owner.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Customer,REA Investments,"Based on the document, here are the relevant sections containing information about the ""Customer"":
+
+""WHEREAS, Owner wishes to retain Contractor to provide operation and maintenance services for Owner's photovoltaic, solar electric power systems (each a ""System,"" collectively, the ""Systems"") located at one or more sites (the ""Site"" or ""Sites""), with each Site and System identified in Exhibit A, and Contractor wishes to provide such services for the consideration set forth herein.""
+
+This section refers to the ""Owner"" as the entity that owns the solar power systems and is retaining the Contractor for operation and maintenance services, suggesting that the ""Owner"" is the customer in this agreement.
+
+""To Owner:
+REA Investments
+Attention: 
+718 W. Business Hwy 60
+Dexter, MO 63841
+Email: info@rea-investments.com""
+
+This section provides the name and address for the ""Owner"" entity, which is REA Investments, further confirming that REA Investments is the customer in this agreement.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Commencement Date,Anniversary of the System Commencement Date for each System,"The relevant section from the document text is:
+
+""effective on the first day of the calendar quarter at each anniversary of the System Commencement Date for each System during the Term of the Agreement.""", No poison rules violations are present because the poison rules do not apply to the situation.,0,
+Utility Company,N/A,,,,
+Term,"5 years from the System Commencement Date of the first System or upon the five-year anniversary of the System Commencement Date of the last System, whichever is later, with automatic annual extensions thereafter","The relevant section containing information about the ""Term"" of the agreement is:
+
+""2. Term of Agreement
+Unless terminated earlier in accordance with the terms and conditions of this Agreement,
+this Agreement shall commence on the date on which Owner provides written notice of
+commencement (the ""System Commencement Date"") for the first System and continue
+for a period of five (5) years thereafter, or upon the five-year anniversary of the System
+Commencement Date of the last System, whichever is later (the ""Term""), Thereafter,
+unless either Party shall have otherwise terminated this Agreement, the Term shall
+automatically be extended annually for one (1) additional year at each anniversary of each
+System Commencement Date. For the avoidance of doubt, ""Term"" shall refer to the
+original Term and any annual extensions thereof.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Renewal,"5 year initial term, then 1 year automatic renewals","The relevant section containing information about renewal of the agreement is:
+
+""Unless terminated earlier in accordance with the terms and conditions of this Agreement, this Agreement shall commence on the date on which Owner provides written notice of commencement (the ""System Commencement Date"") for the first System and continue for a period of five (5) years thereafter, or upon the five-year anniversary of the System Commencement Date of the last System, whichever is later (the ""Term""), Thereafter, unless either Party shall have otherwise terminated this Agreement, the Term shall automatically be extended annually for one (1) additional year at each anniversary of each System Commencement Date.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Maintenance Service Fee,10 percent annual increase,"The relevant section containing the term ""Maintenance Service Fee"" is:
+
+""C. Annual Increases: The Annual O&M Fee and Fees for Additional Services shall increase by 10 percent effective on the first day of the calendar quarter at each anniversary of the System Commencement Date for each System during the Term of the Agreement.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Escalator,3% annually,"The relevant section containing the term ""escalator"" is:
+
+""C. Annual Increases: The Annual O&M Fee and Fees for Additional Services shall increase by 3% effective on the first day of the calendar quarter at each anniversary of the System Commencement Date for each System during the Term of the Agreement.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Payment Terms,Within 30 days of Owner's receipt; finance fees of 1.5%/month or 18%/year; Contractor entitled to recover attorneys' fees and costs for unpaid fees,"The relevant section containing information about payment terms is:
+
+8. Payment Terms
+a. Owner shall pay Contractor according to the fees set forth in Exhibit A, inclusive of the annual escalation charges over the Term of the Agreement, for the Services provided by Contractor.  
+b. Annual O&M Fees: Contractor will invoice Owner (via email) for the Annual O&M Fees on the System Commencement Date for each System, and thereafter on each anniversary of each System Commencement Date.
+c. Fees for Additional Services/Components: Contractor will invoice Owner (via email) monthly for Additional Services/Components as set forth in Work Orders.
+d. Full payment on all invoices is due within thirty (30) calendar days of Owner's receipt of the invoice (the ""Due Date""). A finance charge of the lesser of (i) 1.50% per month (18% per annum) or (ii) the maximum amount allowed by law, shall apply to all unpaid invoices past the Due Date.
+e. In any lawsuit or legal proceeding brought by Contractor to collect on unpaid fees for Services, Contractor shall be entitled to recover its attorneys' fees and all other costs and expenses from Owner.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Services Warranty Terms,No warranty period specified,"The document does not appear to contain any information directly related to ""Services Warranty Terms"". The relevant sections seem to cover the scope of maintenance services provided, response times, reporting requirements, and exclusions, but do not explicitly mention warranty terms for the services.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Year 1 Production,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation.,0,
+Production Guarantee,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Production Guarantee Term,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Production Estimate - Definition,N/A,,,,
+Degredation,No degradation rate specified,"The term ""degradation"" or related terms do not appear to be mentioned in the given document. The document seems to be a solar operation and maintenance agreement and does not contain any information related to degradation.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Production Factor,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Adjustments - Production Loss,No adjustments or calculations related to production loss are specified.,"The document does not appear to contain any information directly relevant to the term ""Adjustments - Production Loss"". The text does not mention adjustments or calculations related to production loss or deficiencies.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Statement of Guarantee,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Production Shortfall Rate,The Production Shortfall Rate is not provided in the given text.,"The term ""Production Shortfall Rate"" is not mentioned in the given document. The document appears to be a solar operation and maintenance agreement and does not contain any information related to the specified term.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Guarantee Limitations,"Excludes replacement costs for manufacturer components if manufacturer doesn't honor warranty, unless due to contractor's negligence/misconduct","The relevant section containing limitations on guarantees is:
+
+""In addition to certain exclusions set forth above, the Maintenance Scope of Services specifically excludes the following:
+...
+c. In the event a manufacturer is not able or willing to honor its product warranty to Owner, the Maintenance Scope of Services shall not include any material replacement costs of manufacturer's components, unless such manufacturer refuses to honor its product warranty as a direct result of Contractor's sole negligence or misconduct.""
+
+This section outlines that the maintenance services exclude covering replacement costs for manufacturer components if the manufacturer does not honor its warranty, unless it is due to the contractor's negligence or misconduct.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Reporting (Proactive and Reactive),"4 quarterly and 1 annual maintenance/inspection reports; report after each annual service visit with PM activities, results, non-conformance items and photos; quarterly reports with maintenance, reactive service visits, and performance for each site","The relevant sections from the document containing information about ""Reporting (Proactive and Reactive)"" are:
+
+""1.2 Reporting: Provide four (4) quarterly and one (1) annual maintenance/inspection reports for the project for the preceding calendar year""
+
+""3. Reporting: Following each annual service visit, Contractor will provide a report of all PM activities and esults as well as non onformance items that need to be addressed. Photos of damage or non-conformance items will be provided.""
+
+""Contractor shall provide Owner four (4) Quarterly and one (1) Annual Report that includes Site information such as all maintenance, reactive service visits, and performance (a ""Performance Report"") of each individual Site set forth in Exhibit A.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Insurance Requirements,General Liability; Umbrella; Automobile; Worker's Compensation (See Specifics from Section 12 in Legal Terms Column),"The relevant section containing information about insurance requirements is:
+
+12. Insurance Provisions
+Throughout the Term of this Agreement, Contractor shall maintain insurance meeting the
+""Insurance Requirements"" as set forth below. In the event Contractor makes any material
+modification, cancellation or termination of such coverage, Contractor shall give Owner at
+least thirty (30) days prior written notice. Such insurance shall be primary coverage without
+right of contribution from any insurance of Owner.
+
+GENERAL LIABILITY
+Limits of Liability
+$1,000,000
+$1,000,000
+$2,000,000
+$1,000,000
+$100,000
+$10,000
+$250
+
+Limits of Liability
+$1,000,000
+$1,000,000
+
+UMBRELLA LIABILITY
+Limits of Liability
+$1,000,000
+$1,000,000
+$1,000,000
+$1,000,000
+$100,000
+$10,000
+
+Description
+Per Occurrence
+Annual Aggregate, Other Than Products
+Annual Aggregate, Products & Completed Operations
+Personal and Advertising Injury Aggregate
+Fire Damage Liability
+
+AUTOMOBILE LIABILITY
+Limits of Liability
+$1,000,000
+$1,000,000
+$1,000,000
+
+Description
+Per Occurrence
+Annual Aggregate Limit
+
+Coverage
+Liability
+
+WORKERS COMPENSATION
+Hired/Borrowed Auto Liability
+Non-Owned Auto Liability
+Uninsured Motorists
+Employers Liability Insurance
+Medical Expense Each Claim
+
+Coverage
+Liability (Each Accident)
+Disease (Each Employee) 
+Disease (Policy Limit)", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Termination - Provider,"If Owner fails to comply with obligations in Section 7 or fails to pay Contractor by the Due Date (no bona fide dispute), then Contractor may, upon 15 days written notice, suspend Services and/or terminate Agreement. Owner liable for Services up to termination date.","The relevant section containing information about termination by the provider (Contractor) is:
+
+9. Termination
+c. By Contractor: If Owner fails to comply with any of its obligations in Section 7 of this Agreement or fails to pay Contractor any amount by the Due Date (and there is no bona fide dispute between the Parties as to amounts owed hereunder), then Contractor may, upon fifteen (15) days written notice to Owner, suspend performance of all Services hereunder and/or terminate this Agreement. Owner remains liable for all Services performed by Contractor up through and including the date of termination."," Yes, the text contains a poison pill as it grants the Contractor the right to terminate the contract unilaterally under certain conditions, violating the rule that neither party should possess this ability.",1,"## Bullet points explaining why the text is a violation of the rules:
+
+* **Unilateral Termination Right:** The contract grants the Contractor a right to unilaterally terminate the agreement under certain conditions. This directly violates the rule stating that neither party should hold this power.
+* **Absence of Mutual Consent:** The current termination clause lacks a requirement for mutual consent between both parties before initiating the termination process, contradicting the rule's stipulation. 
+* **Lack of Cure Period:** The text doesn't mention a mandatory ""cure period"" following a breach of contract, which would allow the breaching party time to rectify the issue before facing termination. This omission violates the rule's intention of promoting fairness and dispute resolution. 
+"
+Termination - Customer,"1. If other party filed for bankruptcy or became insolvent
+2. For material breach after 30 day cure period
+3. For non-payment after 15 day notice period","The relevant section containing information about termination by the customer is Section 9:
+
+9. Termination
+a. By Either Party: 
+i. Either Party may terminate this Agreement immediately if the other Party has filed a voluntary petition in bankruptcy, is the subject of an involuntary petition in bankruptcy, has been adjudicated as bankrupt or insolvent, or has made an assignment for the benefit of creditors.  
+b. By Owner: Owner may terminate this Agreement for default upon written notice if Contractor breaches a material term of this Agreement and fails to cure such material breach within thirty (30) days of such written notice.
+c. By Contractor: If Owner fails to comply with any of its obligations in Section 7 of this Agreement or fails to pay Contractor any amount by the Due Date (and there is no bona fide dispute between the Parties as to amounts owed hereunder), then Contractor may, upon fifteen (15) days written notice to Owner, suspend performance of all Services hereunder and/or terminate this Agreement. Owner remains liable for all Services performed by Contractor up through and including the date of termination."," Yes, the contract contains poison pill provisions that grant unilateral termination rights to the Owner and Contractor under certain conditions, allowing either party to terminate the agreement without giving the other party a fair chance to remedy any breaches or issues.",1,"## Rule Violation Explanation:
+
+*   **Unilateral Termination by Owner (Section 9b):** The text violates the rule because it allows the Owner to terminate the agreement immediately for a material breach, even if the Contractor is actively trying to fix the issue within the allowed 30-day period. This denies the Contractor a fair chance to remedy the situation and constitutes unilateral termination.
+*   **Unilateral Termination by Contractor (Section 9c):**  The text violates the rule by granting the Contractor the right to terminate if the Owner fails to meet certain obligations, without requiring the Contractor to provide the Owner a reasonable opportunity to rectify the situation. This creates a situation where the Contractor can unilaterally terminate the agreement. 
+"
+Termination - Maximum Liability,N/A,,,,
+Default - Provider,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Default - Customer,failure to comply with its obligations or failure to pay,"The relevant section containing information about customer default is Section 9(c):
+
+""c. By Contractor: If Owner fails to comply with any of its obligations in Section 7 of this Agreement or fails to pay Contractor any amount by the Due Date (and there is no bona fide dispute between the Parties as to amounts owed hereunder), then Contractor may, upon fifteen (15) days written notice to Owner, suspend performance of all Services hereunder and/or terminate this Agreement. Owner remains liable for all Services performed by Contractor up through and including the date of termination.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Assignment - Provider,"Need prior written consent of Owner, except can assign to affiliate or successor without consent","The relevant section containing information about assignment is Section 14, which states:
+
+""Owner may assign this Agreement and any of its rights or obligations hereunder to any third party, provided that Owner gives Contractor written notice of such assignment. In the event of any such assignment, Owner shall remain liable after such assignment as a guarantor for any payment obligations incurred before such assignment; and further provided that the assignee shall agree in writing to be bound by all the terms of this Agreement, but shall only be required to assume liabilities and obligations arising after the relevant assignment. Contractor shall not assign this Agreement without the prior written consent of Owner, which shall not be unreasonably withheld; provided, however, that Contractor may assign this Agreement without Owner's prior written consent to an affiliate of Contractor or to the successor in interest to Contractor's operation and maintenance business in the event of a merger, consolidation or sale of all or substantially all of the assets of such business.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Assignment - Customer,"to third party with written notice to Contractor, Owner remains liable as guarantor for pre-assignment obligations, assignee assumes post-assignment obligations; Contractor can assign to affiliate or successor without consent","The relevant section containing information about ""Assignment - Customer"" is:
+
+""14. Assignment
+Owner may assign this Agreement and any of its rights or obligations hereunder to any third party, provided that Owner gives Contractor written notice of such assignment. In the event of any such assignment, Owner shall remain liable after such assignment as a guarantor for any payment obligations incurred before such assignment; and further provided that the assignee shall agree in writing to be bound by all the terms of this Agreement, but shall only be required to assume liabilities and obligations arising after the relevant assignment. Contractor shall not assign this Agreement without the prior written consent of Owner, which shall not be unreasonably withheld; provided, however, that Contractor may assign this Agreement without Owner's prior written consent to an affiliate of Contractor or to the successor in interest to Contractor's operation and maintenance business in the event of a merger, consolidation or sale of all or substantially all of the assets of such business.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Force Majeure,"Obligations suspended by any force majeure event (sabotage, riots, civil disturbances, acts of God, acts of public enemy, terrorist acts, natural disasters, strikes/labor unrest not attributable to contractor, utility requirements, governmental actions); notify in writing within 10 business days; use commercially reasonable efforts to remedy inability to perform.","The relevant section containing the term ""Force Majeure"" is:
+
+10. Force Majeure
+a. Notwithstanding any other provision of this Agreement, each Party's
+obligations under this Agreement (excluding any obligations to pay moneys
+due) shall be suspended by any Force Majeure Event (as defined below) if and
+to the extent that such Party is prevented or delayed from performing by reason
+of the Force Majeure Event. In every instance of a Force Majeure Event, (i)
+the suspension of performance shall be of no greater scope and of no longer
+duration than is necessarily caused by the Force Majeure Event and required
+by any remedial measures, (ii) no obligations of any Party that arose before
+the occurrence of such causes shall be excused as the result of the
+occurrence, and (iii) each Party shall use commercially reasonable efforts to
+remedy its inability to perform. If the performance by either Party of its
+obligations under this Agreement is affected by any Force Majeure Event, such
+Party shall notify the other Party in writing within ten (10) business days after
+the initial occurrence of the claimed Force Majeure Event of the nature and
+extent thereof. When the claiming Party is able to resume performance of its
+obligations under this Agreement, it shall give the other Party prompt notice to
+that effect.
+b. As used herein, the term ""Force Majeure Event"" shall mean any event that
+prevents the affected Party from performing its obligations under this
+Agreement and that is reasonably beyond the control of, and not the fault of or
+caused by, the affected Party, including, without limitation: (i) sabotage, riots
+or civil disturbances, (ii) acts of God, (iii) acts of the public enemy, (iv) terrorist
+acts affecting the Site, (v) volcanic eruptions, earthquake, hurricane, tornado,
+storm, flood, ice storms, explosion, fire, lightning, landslide or similarly
+cataclysmic occurrence, (vi) strikes or labor unrest not attributable to
+Contractor's workforce, (vii) requirement by a utility that the System
+discontinue operation for any reason, (viii) appropriation or diversion of
+electricity by sale or order of any governmental authority having jurisdiction
+thereof, or (ix) any other action by any governmental authority which prevents", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Prevailing Party,Provider entitled to recover attorneys fees and other expenses,"The relevant section containing the term ""Prevailing Party"" is:
+
+""In any lawsuit or legal proceeding brought by Contractor to collect on unpaid fees for Services, Contractor shall be entitled to recover its attorneys' fees and all other costs and expenses from Owner.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Nameplate Capacity,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Liens,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+PPA Net Energy Rate,N/A,,,0,
+Summary of Economic Terms,No economic terms or fee details found.,"The document does not appear to contain any information related to the term ""Summary of Economic Terms"". There are no sections or text explicitly mentioning an economic summary, financial overview, compensation details, fee schedules, or payment terms.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Scope & Services,Exhibit B,"The relevant sections from the document containing information about ""Scope & Services"" are:
+
+""3. Scope of Services
+a. Owner hereby engages Contractor to perform certain services, as set forth in Exhibit B ""Maintenance Scope of Services"" (the ""Maintenance Scope of Services""), and Contractor hereby accepts the engagement and agrees to perform the Maintenance Scope of Services for the Annual O&M Fee set forth in Exhibit A.""
+
+""Exhibit B (1) MAINTENANCE SCOPE OF SERVICES: PREVENTATIVE PACKAGE
+Contractor will perform the following Maintenance Scope of Services for the System.""
+
+This is followed by a table listing the specific services under different categories like ""1. Monitoring, Reporting"", ""2. Site Property Inspection/Maintenance"", ""3. DC Systems"", ""4. AC Systems"", ""5. DAS/SCADA Inspections"", and ""6. Testing"".
+
+""Exhibit B (2) MAINTENANCE SCOPE OF SERVICES: COMPREHENSIVE PACKAGE
+The Comprehensive Package includes all of the Services in Exhibit B(1), and in addition, the following Services defined herein.""
+
+This is followed by sections on ""Reactive Service"" and ""1. Response Times"" defining additional services under the Comprehensive package."," Yes, there is a poison pill/rule violation because the provided text lacks explicit mention of mowing or vegetation management within the defined ""Scope & Services"" or ""Maintenance Scope of Services"" detailed in Exhibits A and B.",1,"## Rule Violation: Uncovered Scope - Mowing & Vegetation Management
+
+Here's why the provided text indicates a rule violation:
+
+* **Missing from Scope:** The contract fails to explicitly mention mowing and vegetation management within the defined scope of services (Exhibits A & B). This omission violates the rule requiring all service obligations to be clearly outlined.
+* **Ambiguity Creates Risk:**  The lack of clarity regarding responsibility for mowing and vegetation management represents a ""poison pill."" This ambiguity could lead to disputes,  unfulfilled obligations, and potential legal ramifications. 
+* **Non-Compliance with Standards:** Without defined standards and frequency for mowing/vegetation management, the contract cannot ensure consistent, compliant, and satisfactory service delivery. 
+"
+Noncovered Service - Rate Schedule,"Major repairs excluded: SEL relay programming, replacement of major components (central inverters, transformers, switchgear, MV equipment), insurable events, major module replacement (>5 modules), additional time/equipment if unable to access equipment. CAISO RIG maintenance/repair/calibration/inspection excluded. Utility outage resets are additional services.","The relevant section containing information about ""Noncovered Service - Rate Schedule"" is:
+
+Exhibit B (2) MAINTENANCE SCOPE OF SERVICES: COMPREHENSIVE PACKAGE
+The Comprehensive Package includes all of the Services in Exhibit B(1), and in addition, the following Services defined herein.
+
+Reactive Service
+Reactive service visits are defined as follows:
+1) Response to failures of data communications or generation failures on Site; 
+2) Corrective maintenance visits
+
+3. Exclusions
+Major repairs are not included in the Maintenance Scope of Services. Major repairs includes but is not limited to SEL relay programming, replacement of major components such as central inverters, transformers, switchgear, medium voltage equipment, insurable events, major module replacement (greater than 5 modules) and any additional time or equipment required if technicians are unable to access any equipment. Maintenance, repair, calibration and inspection of CAISO RIG. Service visits required to reset equipment as a result of utility outages, either power or telecommunications, shall be considered Additional Services.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,

@@ -1,0 +1,405 @@
+,"Key Items (Agreement Definitions, Keywords & Phrases)",Definitions,Key Items,Unnamed: 3,Prompts
+1,2. Effective date,The date in which the agreement is deemed effective,Effective Date,,"**Prompt for Gemini Pro Model**
+
+**Task:** Retrieve sections or parts of sections from a document that are related to a specified term and contain the most important information for that term.
+
+**Characteristics of Examples of Text to Look For:**
+
+* **Term-related:** The text should be directly related to the specified term.
+* **Informative:** The text should provide the most important information about the term.
+* **Specific:** The text should be specific to the term and not contain general or irrelevant information.
+
+**How to Find the Text in the Document:**
+
+* **Use keywords:** Search for the specified term and any related keywords.
+* **Examine section headings:** Check section headings for terms related to the specified term.
+* **Scan for specific structures:** Look for specific structures, such as numbered sections or paragraphs that begin with the term or a related keyword.
+
+**What to Look For:**
+
+* **Key words:** The specified term and any related keywords.
+* **Structure:** Numbered sections, paragraphs, or other specific structures.
+
+**Precise Rules:**
+
+1. Search for the specified term and any related keywords.
+2. Examine section headings for terms related to the specified term.
+3. Scan for specific structures, such as numbered sections or paragraphs that begin with the term or a related keyword.
+4. Identify text that is directly related to the specified term and provides the most important information about it.
+5. Exclude text that is general or irrelevant to the specified term."
+4,5. Terms,Defined terms in an agreement,Term,,"**Prompt for Gemini Pro Model**
+
+**Task:** Retrieve sections or parts of sections from a document that are related to a specified term and contain the most important information for that term.
+
+**Characteristics of Examples of Text to Look For:**
+
+* **Keywords:** ""Term"", ""Term of Agreement"", ""Effective Date"", ""Duration"", ""Expiration""
+* **Structure:** Typically found in a section or subsection dedicated to defining terms or outlining the agreement's duration
+
+**How to Find the Text in the Document:**
+
+* Search for the term ""Term"" or related keywords.
+* Identify sections or subsections with titles such as ""Definitions"", ""Term of Agreement"", or ""Duration"".
+* Scan the text within these sections for information related to the term, such as its definition, start date, end date, or termination conditions.
+
+**Rules:**
+
+1. **Identify the Term:** Specify the term you are searching for.
+2. **Search for Keywords:** Use keywords related to the term to locate relevant sections in the document.
+3. **Examine Section Titles:** Check the titles of sections or subsections for terms like ""Definitions"" or ""Term of Agreement"".
+4. **Scan for Key Information:** Within the identified sections, look for information that defines the term, specifies its duration, or outlines its termination conditions.
+5. **Extract Relevant Text:** Retrieve the sections or parts of sections that contain the most important information for the term."
+5,6. Nameplate capacity (and limits thereto),Amount of power the system should produce in a year,Name Plate Capacity (and limits thereto),,"**Prompt for Gemini Pro Model**
+
+**Task:** Retrieve sections or parts of sections from the document related to the term ""Name Plate Capacity (and limits thereto)"".
+
+**Characteristics of Examples of Text to Look For:**
+
+* **Content:** Contains information about the amount of power the system should produce in a year.
+* **Structure:** May be presented as a numerical value (e.g., ""500 kW"") or a range of values (e.g., ""3.00 MW"").
+* **Keywords:** ""Name Plate Capacity"", ""power"", ""system"", ""produce"", ""year"".
+
+**How to Find the Text in the Document:**
+
+* Scan the document for sections that discuss the system's power output or capacity.
+* Look for keywords or phrases related to ""Name Plate Capacity"".
+* Identify numerical values or ranges that represent the system's power output.
+
+**What to Look For:**
+
+* **Key Words:**
+    * Name Plate Capacity
+    * Power
+    * System
+    * Produce
+    * Year
+* **Structure:**
+    * Numerical values (e.g., ""500 kW"")
+    * Ranges of values (e.g., ""3.00 MW"")
+
+**Precise Rules:**
+
+1. Identify sections that discuss the system's power output or capacity.
+2. Search for keywords or phrases related to ""Name Plate Capacity"".
+3. Extract numerical values or ranges that represent the system's power output.
+4. Ensure that the extracted text is relevant to the term ""Name Plate Capacity (and limits thereto)""."
+9,10. Mechanical completion date,Date by which system must be mechanically complete in the IA.(should be calendared with at least one month out as a tickler),Mechanical Completion Date,,"**Prompt for Gemini Pro Model**
+
+**Task:** Retrieve sections or parts of sections from a document related to the term ""Mechanical Completion Date.""
+
+**Characteristics of Examples of Text to Look For:**
+
+* **Content:** Contains information about the Mechanical Completion Date, including its definition and importance.
+* **Structure:** May be a section or subsection within a larger document, such as a contract or project plan.
+* **Key Words:** ""Mechanical Completion Date,"" ""system,"" ""mechanically complete,"" ""IA,"" ""tickler.""
+
+**How to Find the Text in the Document:**
+
+1. Search for the term ""Mechanical Completion Date"" or its synonyms.
+2. Examine the surrounding text for context and relevance.
+3. Identify sections or subsections that provide specific information about the Mechanical Completion Date.
+
+**Rules:**
+
+1. Retrieve only sections or parts of sections that are directly related to the term ""Mechanical Completion Date.""
+2. Prioritize sections that provide the most important and comprehensive information.
+3. Include the section title or heading in the retrieved text.
+4. If multiple sections contain relevant information, retrieve the most specific and detailed section.
+5. Ensure that the retrieved text is clear, concise, and free of unnecessary details."
+10,11. Deadline to interconnect (date),"Date by which system must be interconnected, tested and have permission to operate (should be calendared with a tickler out at least three months)",Deadline to Interconnect,,"**Prompt for Gemini Pro Model**
+
+**Task:** Retrieve sections or parts of sections from a document that are related to the term ""Deadline to Interconnect.""
+
+**Characteristics of Examples of Text to Look For:**
+
+* **Content:** Information about the date by which a system must be interconnected, tested, and have permission to operate.
+* **Structure:** Typically found in sections or clauses related to project timelines or termination provisions.
+
+**How to Find the Text in the Document:**
+
+* **Key Words:** ""Deadline,"" ""Interconnect,"" ""Test,"" ""Permission to Operate""
+* **Structure:** Look for sections or clauses that specify timeframes for project completion or termination.
+
+**Rules:**
+
+1. Identify sections or clauses that contain the key words ""Deadline,"" ""Interconnect,"" ""Test,"" or ""Permission to Operate.""
+2. Extract the specific date or timeframe mentioned in these sections.
+3. Ensure that the extracted information is directly related to the term ""Deadline to Interconnect.""
+4. If multiple dates or timeframes are mentioned, prioritize the one that is most specific and relevant to the term.
+
+**Example:**
+
+In the provided example text:
+
+* **Key Words:** ""Deadline,"" ""Interconnect,"" ""Calendar Year""
+* **Structure:** Clause 5.2 specifies a termination date based on the completion of the Facility within a calendar year.
+* **Extracted Information:** ""one calendar year from the date of the execution of this GIA"""
+11,12.  Amendments and/or assignments,"Amendments (i.e. formally agreed upon changes to the agreement between the parties) and/or transfers of rights, duties, and interests of the agreement to other parties",Amendments and/or Assignments,,"**Prompt for Gemini Pro Model**
+
+**Task:** Retrieve sections or parts of sections from a document that are related to the term ""Amendments and/or Assignments.""
+
+**Characteristics of Examples of Text to Look For:**
+
+* **Key Words:** ""Amendment,"" ""Assignment,"" ""Transfer,"" ""Rights,"" ""Duties,"" ""Interests""
+* **Structure:** Typically found in legal documents, such as contracts or agreements
+* **Format:** May be in the form of a separate document or an addendum to the main agreement
+
+**How to Find the Text in the Document:**
+
+* **Search for Key Words:** Use the key words listed above to search the document.
+* **Examine Headings and Subheadings:** Look for sections or subsections titled ""Amendments,"" ""Assignments,"" or similar terms.
+* **Review Addenda and Appendices:** Check for any additional documents attached to the main agreement that may contain amendments or assignments.
+
+**What to Look For:**
+
+* **Formal Language:** Amendments and assignments are typically written in formal legal language.
+* **Specific Changes:** Amendments should clearly state the changes being made to the original agreement.
+* **Transfer of Rights and Obligations:** Assignments should specify the transfer of rights, duties, and interests from one party to another.
+
+**Precise Rules:**
+
+1. Search for the key words ""Amendment,"" ""Assignment,"" ""Transfer,"" ""Rights,"" ""Duties,"" and ""Interests.""
+2. Examine headings and subheadings for sections related to amendments or assignments.
+3. Review addenda and appendices for additional documents containing amendments or assignments.
+4. Identify formal language and specific changes in the text.
+5. Note any transfer of rights and obligations from one party to another."
+12,13. Default provider,Provider's failure to fulfill its key obligations under the agreement,Default – Provider,,"**Prompt for Gemini Pro Model**
+
+**Task:** Retrieve sections or parts of sections from a document related to the term ""Default – Provider.""
+
+**Characteristics of Examples of Text to Look For:**
+
+* **Key Words:** Default, failure, breach, cure, notice
+* **Structure:**
+    * Definition of ""Default""
+    * Conditions that do not constitute a Default
+    * Actions to be taken upon a Default
+    * Timeframes for curing a Default
+
+**How to Find the Text in the Document:**
+
+* Search for the term ""Default"" and its synonyms.
+* Identify sections that define ""Default"" and describe its consequences.
+* Look for sections that specify exceptions to the definition of ""Default.""
+* Examine sections that outline the steps to be taken in the event of a Default.
+
+**Precise Rules:**
+
+1. Retrieve all sections that contain the term ""Default"" or its synonyms.
+2. Extract the definition of ""Default"" from the relevant section.
+3. Identify any conditions that are explicitly excluded from the definition of ""Default.""
+4. Determine the actions that must be taken by the non-defaulting party upon a Default.
+5. Specify the timeframes for curing a Default."
+13,14. Default customer,Customer's failure to fulfill its key obligations under the agreement,Default – Customer,,"**Prompt for Gemini Pro Model**
+
+**Task:** Retrieve sections or parts of sections from a document related to the term ""Default – Customer.""
+
+**Characteristics of Examples of Text to Look For:**
+
+* **Key Words:** Default, failure, breach, cure, notice
+* **Structure:**
+    * Definition of ""Default""
+    * Conditions that do not constitute a Default
+    * Actions to be taken upon a Default
+    * Timeframes for curing a Default
+
+**How to Find the Text in the Document:**
+
+* Search for the term ""Default"" and its synonyms.
+* Identify sections that define ""Default"" and describe its consequences.
+* Look for sections that specify exceptions to the definition of ""Default.""
+* Examine sections that outline the steps to be taken in the event of a Default.
+
+**Precise Rules:**
+
+1. Retrieve all sections that contain the term ""Default"" or its synonyms.
+2. Extract the definition of ""Default"" from the relevant section.
+3. Identify any conditions that are explicitly excluded from the definition of ""Default.""
+4. Determine the actions that must be taken upon a Default.
+5. Specify the timeframes for curing a Default."
+16,17. System size,Defined amount of power a system can produce,"Does System Size tie to PPA, EPC, O&M, and PV Syst?",,"**Prompt for Gemini Pro Model**
+
+**Task:** Retrieve sections or parts of sections from the document that are related to the term ""Does System Size tie to PPA, EPC, O&M, and PV Syst?"" and contain the most important information for the term.
+
+**Characteristics of Examples of Text to Look For:**
+
+* **Content:** Focus on the relationship between system size and PPA, EPC, O&M, and PV Syst.
+* **Structure:** May be in paragraphs, bullet points, or tables.
+* **Key Words:** ""System Size,"" ""PPA,"" ""EPC,"" ""O&M,"" ""PV Syst,"" ""tied,"" ""related,"" ""impact""
+
+**How to Find the Text in the Document:**
+
+* **Scan for Key Words:** Search for the key words listed above.
+* **Identify Relevant Sections:** Look for sections that discuss the relationship between system size and the other terms.
+* **Examine Context:** Read the surrounding text to ensure that the sections are relevant to the term.
+
+**Rules for Identifying Relevant Text:**
+
+* **Rule 1:** Sections must explicitly mention the term ""System Size"" and at least one of the other terms (PPA, EPC, O&M, PV Syst).
+* **Rule 2:** Sections must provide specific information about the relationship between system size and the other terms.
+* **Rule 3:** Sections should be concise and contain the most important information for the term."
+17,18. Assignment by customer,"Customer's ability to assign (i.e. transfer its rights, duties, and obligations of the agreement) to someone else",Assignment by Customer,,"**Prompt for Gemini Pro Model**
+
+**Task:** Retrieve sections or parts of sections from the document related to the term ""Assignment by Customer.""
+
+**Characteristics of Examples of Text to Look For:**
+
+* **Content:** Focus on the customer's ability to transfer rights, duties, and obligations to another party.
+* **Structure:** Typically found in sections or clauses dealing with assignment or transfer of rights.
+* **Key Words:** ""assign,"" ""transfer,"" ""rights,"" ""duties,"" ""obligations,"" ""affiliate,"" ""collateral security,"" ""financing.""
+
+**How to Find the Text in the Document:**
+
+* **Scan for Key Words:** Search for the key words listed above.
+* **Examine Context:** Read the surrounding text to ensure it aligns with the definition of ""Assignment by Customer.""
+* **Identify Relevant Sections:** Focus on sections or clauses that specifically address assignment or transfer of rights.
+
+**Precise Rules:**
+
+1. Retrieve all sections or parts of sections that contain the term ""assign"" or ""transfer"" in relation to the customer's rights, duties, or obligations.
+2. Ensure that the retrieved text clearly demonstrates the customer's ability to transfer these elements to another party.
+3. Exclude any sections that refer to assignment by the other party (e.g., the supplier or vendor).
+4. Prioritize sections that provide specific conditions or limitations on the customer's ability to assign."
+18,19. Assignment by provider,"Provider's ability to assign (i.e. transfer its rights, duties, and obligations of the agreement) to someone else",Assignment by Provider,,"**Prompt for Gemini Pro Model**
+
+**Task:** Retrieve sections or parts of sections from the document related to the term ""Assignment by Provider.""
+
+**Characteristics of Examples of Text to Look For:**
+
+* **Content:** Describe the provider's ability to assign rights, duties, and obligations to another party.
+* **Structure:** Typically found in sections or clauses dealing with assignment or transfer of rights.
+* **Key Words:** ""assign,"" ""transfer,"" ""rights,"" ""duties,"" ""obligations,"" ""affiliate,"" ""collateral security,"" ""financing transaction,"" ""purchaser,"" ""assets.""
+
+**How to Find the Text in the Document:**
+
+* **Scan for Key Words:** Search for the key words listed above.
+* **Examine Context:** Read the surrounding text to ensure it aligns with the definition of ""Assignment by Provider.""
+* **Identify Relevant Sections:** Focus on sections or clauses that specifically address assignment or transfer of rights.
+
+**Precise Rules:**
+
+* **Rule 1:** Retrieve any section or part of a section that contains the term ""assign"" or ""transfer"" in relation to the provider's rights, duties, or obligations.
+* **Rule 2:** Include sections that specify the conditions or limitations for assignment, such as prior notice, consent, or specific purposes.
+* **Rule 3:** Exclude sections that refer to assignment by parties other than the provider."
+19,20. Force majeure,"Significant events (including severe weather, acts of God, etc.) that prevent one party from being able to perform its obligations under an agreement due to no fault of such party",Force Majeure,,"**Prompt for Gemini Pro Model**
+
+**Task:** Retrieve sections or parts of sections from the provided document that are related to the term ""Force Majeure.""
+
+**Characteristics of Examples of Text to Look For:**
+
+* **Key Words:** ""Force Majeure,"" ""Force Majeure Event,"" ""Act of God,"" ""Labor Disturbance,"" ""War,"" ""Insurrection,"" ""Riot,"" ""Fire,"" ""Storm,"" ""Flood,"" ""Explosion,"" ""Breakage,"" ""Accident,"" ""Order,"" ""Regulation,"" ""Restriction,"" ""Governmental,"" ""Military,"" ""Civilian,"" ""Control,"" ""Negligence,"" ""Intentional Wrongdoing""
+* **Structure:** Definitions, lists of events, descriptions of circumstances, notification requirements, mitigation measures, suspension or modification of obligations
+
+**How to Find the Text in the Document:**
+
+* **Search for the term ""Force Majeure"" or its synonyms.**
+* **Examine the surrounding text for definitions or descriptions of Force Majeure events.**
+* **Look for sections that specify the circumstances that constitute a Force Majeure event.**
+* **Identify any requirements for notification, mitigation, or suspension of obligations in the event of a Force Majeure.**
+
+**Precise Rules:**
+
+1. Retrieve all sections or parts of sections that contain the term ""Force Majeure"" or its synonyms.
+2. Include only text that provides definitions, descriptions, or specific information about Force Majeure events.
+3. Exclude any text that does not directly relate to the term ""Force Majeure.""
+4. Organize the retrieved text into sections based on the type of information provided (e.g., definition, circumstances, notification requirements)."
+20,21. Termination by customer,Rights to terminate the agreement by the customer,Termination by Customer,,"**Prompt for Gemini Pro Model**
+
+**Task:** Retrieve sections or parts of sections from a document related to the term ""Termination by Customer.""
+
+**Characteristics of Examples of Text to Look For:**
+
+* **Content:** Text that describes the customer's right to terminate the agreement.
+* **Structure:** Typically found in sections titled ""Termination"" or ""Termination by Customer.""
+* **Key Words:** ""Termination,"" ""Customer,"" ""Notice,"" ""Default.""
+
+**How to Find the Text in the Document:**
+
+1. Search for the term ""Termination by Customer"" or related key words.
+2. Identify sections or parts of sections that discuss the customer's termination rights.
+3. Focus on text that specifies the conditions, procedures, and consequences of termination by the customer.
+
+**Precise Rules:**
+
+1. Retrieve only text that directly relates to the customer's right to terminate the agreement.
+2. Exclude text that discusses termination by the other party (e.g., the provider).
+3. Include all relevant information, such as notice periods, default provisions, and any other conditions or limitations.
+4. Ensure that the retrieved text is accurate and complete."
+23,24. Taxes,Amount of property taxes due on the physical property and projected amount once the solar facility is constructed,Taxes,,"**Prompt for Gemini Pro Model**
+
+**Task:** Retrieve sections or parts of sections from the provided document that are related to the term ""Taxes.""
+
+**Characteristics of Examples of Text to Look For:**
+
+* **Content:** Information about property taxes due on physical property and projected taxes after solar facility construction.
+* **Structure:** Sections or parts of sections that discuss tax liability, tax treatment, and tax consequences.
+
+**How to Find the Text in the Document:**
+
+* **Key Words:** ""Taxes,"" ""tax liability,"" ""tax treatment,"" ""tax consequences,"" ""property taxes,"" ""solar facility.""
+* **Structure:** Look for sections or parts of sections that are titled or subtitled with terms related to taxes.
+
+**Precise Rules:**
+
+1. Identify sections or parts of sections that contain the term ""Taxes"" or related terms.
+2. Extract the following information from the identified sections:
+    * Amount of property taxes due on physical property
+    * Projected amount of property taxes once the solar facility is constructed
+    * Tax liability, tax treatment, and tax consequences related to the solar facility
+3. Ensure that the extracted information is the most important and relevant to the term ""Taxes."""
+24,25. Summary of economic terms (cost $),Costs and other payments made from one party to another,Summary of Economic Terms (including Cost Responsibility for Interconnection as well as Cost Responsibility for System Upgrades),,"**Prompt for Gemini Pro Model**
+
+**Task:** Retrieve sections or parts of sections from the provided document that are related to the term ""Summary of Economic Terms (including Cost Responsibility for Interconnection as well as Cost Responsibility for System Upgrades)"".
+
+**Characteristics of Examples of Text to Look For:**
+
+* **Content:** Costs and payments made from one party to another
+* **Structure:** Typically presented in numbered sections or paragraphs
+* **Key Words:** Cost, responsibility, interconnection, system upgrades
+
+**How to Find the Text in the Document:**
+
+* Scan the document for sections or paragraphs that mention ""cost"" or ""responsibility"" in relation to ""interconnection"" or ""system upgrades"".
+* Pay attention to the numbering or structure of the sections to identify relevant parts.
+
+**What to Look For:**
+
+* **Key Words:** Cost, responsibility, interconnection, system upgrades
+* **Structure:** Numbered sections or paragraphs
+* **Specific Examples:**
+    * Costs incurred by one party for the construction and maintenance of interconnection facilities
+    * Responsibility for future enhancements to interconnection facilities
+    * Costs associated with system upgrades necessary for interconnection
+
+**Precise Rules:**
+
+1. Identify sections or paragraphs that mention ""cost"" or ""responsibility"" in relation to ""interconnection"" or ""system upgrades"".
+2. Extract the relevant parts of these sections or paragraphs that provide specific information about costs and responsibilities.
+3. Ensure that the extracted text is directly related to the term ""Summary of Economic Terms (including Cost Responsibility for Interconnection as well as Cost Responsibility for System Upgrades)""."
+27,28. Prevailing party provision (Y/N),Whether prevailing party in any dispute and/or litigation gets its legal costs covered by non prevailing party,Prevailing Party Provision,,"**Prompt for Gemini Pro Model**
+
+**Task:** Retrieve sections or parts of sections from a document that are related to the term ""Prevailing Party Provision.""
+
+**Characteristics of Examples of Text to Look For:**
+
+* **Content:** Focus on the concept of the prevailing party being awarded legal costs.
+* **Structure:** Typically found in legal contracts or agreements.
+* **Key Words:** ""Prevailing Party,"" ""Legal Costs,"" ""Non-Prevailing Party.""
+
+**How to Find the Text in the Document:**
+
+* **Search for the term ""Prevailing Party Provision"" directly.**
+* **Scan for sections titled ""Legal Costs"" or ""Dispute Resolution.""**
+* **Look for clauses that specify the conditions under which a party may be considered the prevailing party.**
+
+**What to Look For:**
+
+* **Key Words:** ""Prevailing Party,"" ""Legal Costs,"" ""Non-Prevailing Party,"" ""Dispute,"" ""Litigation.""
+* **Structure:** Clauses or paragraphs that outline the circumstances in which legal costs will be awarded to the prevailing party.
+
+**Precise Rules:**
+
+1. Search for the term ""Prevailing Party Provision"" or related key words.
+2. Identify sections that discuss legal costs or dispute resolution.
+3. Extract clauses or paragraphs that specify the conditions for awarding legal costs to the prevailing party.
+4. Ensure that the retrieved text is relevant to the term and contains the most important information."

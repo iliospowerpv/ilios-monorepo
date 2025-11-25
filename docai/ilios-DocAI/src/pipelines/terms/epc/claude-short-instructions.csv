@@ -1,0 +1,1826 @@
+Key Items,Instructions,Definitions
+Effective Date,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Effective Date from the text in this format:
+<example>
+Text:
+```
+entered into as of this 6th day of October, 2020 (the “Effective Date”)...
+```
+Data retrieved:
+October 6, 2020</example>
+
+
+<example>
+Text:
+```
+This Agreement is made as of July 1, 2019....
+```
+Data retrieved:
+July 1, 2019</example>
+
+
+<example>
+Text:
+```
+This Engineering, Procurement and Construction Contract (this “Contract”) is entered into as of July 22, 2020 (the “Effective Date”)....
+```
+Data retrieved:
+July 22, 2020</example>
+
+",The date on which the terms and conditions of the contract become enforceable.
+Owner,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Owner from the text in this format:
+<example>
+Text:
+```
+Pequawket Trail
+Baldwin Solar, LLC, a Delaware limited liability company...
+```
+Data retrieved:
+Pequawket Trail Baldwin Solar, LLC</example>
+
+
+<example>
+Text:
+```
+SOLOPS, LLC...
+```
+Data retrieved:
+SOLOPS, LLC</example>
+
+
+<example>
+Text:
+```
+233 Randolph 74 Solar I, LLC, a North Carolina limited liability company....
+```
+Data retrieved:
+233 Randolph 74 Solar I, LLC</example>
+
+",The entity that owns the project site and enters into the contract with the EPC contractor for the construction of the solar energy facility.
+EPC Contractor Name,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve EPC Contractor Name from the text in this format:
+<example>
+Text:
+```
+THIS ENGINEERING, PROCUREMENT AND CONSTRUCTION SERVICES AGREEMENT (this “Agreement”) is made and entered into as of this 15th day of May 2020 (the “Effective Date”) by and between Blue Sky Utility 201...
+```
+Data retrieved:
+Bright Power, Inc. dba BPi</example>
+
+
+<example>
+Text:
+```
+Borrego Solar Systems, Inc., a California
+corporation...
+```
+Data retrieved:
+Borrego Solar Systems, Inc.</example>
+
+
+<example>
+Text:
+```
+Novel Energy Construction 2 LLC, a Minnesota limited liability company...
+```
+Data retrieved:
+Novel Energy Construction 2 LLC</example>
+
+","The name of the contractor responsible for engineering, procurement, and construction services under the agreement."
+System Size,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve System Size from the text in this format:
+<example>
+Text:
+```
+2.4.1 - This project will be priced, using union AC electrical labor, at $1.90 per DC Watt. The estimated size of this project will be 552,750 DC Watts....
+```
+Data retrieved:
+552,750 DC Watts</example>
+
+
+<example>
+Text:
+```
+Owner is developing an approximately 1.4 MWDC solar photovoltaic electric generating facility located at 1645 13th St. NW, Byron MN, 55920....
+```
+Data retrieved:
+1.4 MWDC</example>
+
+
+<example>
+Text:
+```
+Recital A - Owner is developing a solar photovoltaic energy system facility of a size rated approximate 4.06068 MW (DC) peak capacity, as further described and depicted on Exhibit B....
+```
+Data retrieved:
+4.06068 MW (DC)</example>
+
+","The total capacity of the solar power system to be installed, usually measured in megawatts (MW) or kilowatts (kW)."
+Address,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Address from the text in this format:
+<example>
+Text:
+```
+Owner is developing an approximately 1.4 MWDC solar photovoltaic electric generating facility located at 1645 13th St. NW, Byron MN, 55920....
+```
+Data retrieved:
+1645 13th St. NW, Byron MN, 55920.</example>
+
+
+<example>
+Text:
+```
+Recital A - 5563 Lakeville Road, Geneseo, New York, 14454...
+```
+Data retrieved:
+5563 Lakeville Road, Geneseo, New York, 14454</example>
+
+
+<example>
+Text:
+```
+Exhibit A - 1855 South Centre City Pkwy, Escondido, CA 92025...
+```
+Data retrieved:
+1855 South Centre City Pkwy, Escondido, CA 92025</example>
+
+",The physical location where the solar power facility is to be constructed.
+Construction Status,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Construction Status from the text in this format:
+<example>
+Text:
+```
+Complete...
+```
+Data retrieved:
+Complete</example>
+
+","Current phase of the construction process, typically described as planned, in progress, or completed."
+Mechanical Completion - Definition,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Mechanical Completion - Definition from the text in this format:
+<example>
+Text:
+```
+Section 10.1 Mechanical Completion
+ Mechanical Completion. Contractor shall have achieved ""Mechanical Completion"" when
+cach of the following conditions has been met in respect of the Facility:
+ (a)...
+```
+Data retrieved:
+Contractor has completed (i) the design, engineering, and procurement; (ii) and properly installed all inverters and ancillary
+Equipment; (iii) and properly installed the racking system and all panels; (iv) and properly installed all AC and DC wiring; (v) protective and control features installation; and the construction of the Facility such that the Facility is ready for continuous operation to the extent permissible.</example>
+
+
+<example>
+Text:
+```
+""4.4	Mechanical Completion.
+(a)	Mechanical Completion of the Project. The following are the conditions precedent for the Project to achieve Mechanical Completion:
+(i)	the Project, inclusive of all Equ...
+```
+Data retrieved:
+All Equipment has been completely installed; Project is ready to be synchronized and ready to be
+interconnected; and Project has not received any backfeed power.</example>
+
+
+<example>
+Text:
+```
+(b) Mechanical Completion of the Facility. ""Mechanical Completion"" of the Facility shall mean and shall be deemed to have occurred when each of the following conditions has been satisfied:
+(1) the Fa...
+```
+Data retrieved:
+4.3(b)</example>
+
+","The point at which the installation of all major equipment is completed and the system is capable of operating in a standalone mode, although it may not yet be connected to the grid."
+Substantial Completion - Definition,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Substantial Completion - Definition from the text in this format:
+<example>
+Text:
+```
+""4.5	Substantial Completion.
+(a)	Substantial Completion of the Project.	The following are the conditions precedent for the Project to achieve Substantial Completion:
+(i)	the Project has achieved Mecha...
+```
+Data retrieved:
+Project has achieved Mechanical Completion; liquidated damages paid; successful completion the Capacity Test; Project complies with all requirements;completed in conformance with the terms and conditions; Governmental Approvals have been received; all Lien waivers received by Owner; and agreed on the Punch List.</example>
+
+
+<example>
+Text:
+```
+12.30 - The state in the progress of the Work when the following have occurred: (1) mechanical and electrical completion of the Project; (2) receipt of a Certificate of Occupancy or an equivalent docu...
+```
+Data retrieved:
+The state in the progress of the Work when the following have occurred: (1) mechanical and electrical completion of the Project; (2) receipt of a Certificate of Occupancy or an equivalent document from the authority having jurisdiction (“AHJ”); (3) receipt of Permission to Operate from the local Utility; and (4) completion of a functioning data acquisition system with a utility grade meter.</example>
+
+
+<example>
+Text:
+```
+""Substantial Completion"" means that each of the following has been achieved in accordance with Prudent Industry
+Practices and the other requirements of this Agreement to the reasonable satisfaction o...
+```
+Data retrieved:
+Exhibit D</example>
+
+","The stage at which the solar facility is deemed sufficiently complete, according to the contract specifications, to begin functional operation, pending minor finishing works."
+Final Completion - Definition,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Final Completion - Definition from the text in this format:
+<example>
+Text:
+```
+""4.6	Final Acceptance.
+(a)	Final Acceptance of the Project. The following are the conditions precedent for the Project to achieve Final Acceptance:
+(i)	Substantial Completion has been achieved;
+(ii)	C...
+```
+Data retrieved:
+Substantial completion has achieved; contractor has delivered lien waivers; and Punch List shall have been completed</example>
+
+
+<example>
+Text:
+```
+Section 10.7 Final Completion
+ Contractor shall have achieved ""Final Completion"" when each of the following conditions
+has been met in respect of the Facility
+(a) all of the Work shall be complete,...
+```
+Data retrieved:
+All of the Work shall be complete; Substantial Completion has been achieved; Delivery to Owner of Lien Waivers; Contractor’s obligations required to be performed on or before Final Completion have been completely and satisfactorily performed; documentation and records listed delivered; delivered the Warranty Period Bond to Owner; Contractor has constructed the Facility in accordance with the EPC Requirements and the Interconnection Service Agreements; removed all Contractor equipment; paid to Owner all damages due; delivered all reports, contracts, certificates and other items required; stamped as-built civil and electrical drawings of the Facility have been delivered to Owner; and issued and delivered a Certificate of Final Completion to Owner.</example>
+
+
+<example>
+Text:
+```
+12.15 - The stage in the progress of the Work when the Work or an Owner-designated portion of it is totally complete and the Design-Builder has satisfied every associated requirement under the Contrac...
+```
+Data retrieved:
+The stage in the progress of the Work when the Work or an Owner-designated portion of it is totally complete and the Design-Builder has satisfied every associated requirement under the Contract.</example>
+
+","The stage at which all construction activities have been completed, all systems are operational, final inspections have been passed, and all contractual obligations are fulfilled."
+Mechanical Completion Date,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Mechanical Completion Date from the text in this format:
+<example>
+Text:
+```
+SCHEDULE J - PROJECT SCHEDULE
+Activity, Completion Dates (in Business Days)
+NTP to Mobilize Construction, Day 0
+Construction Mobilization, Day 10
+AE MV Audit, Day 121
+Mechanical Completion, Day 1...
+```
+Data retrieved:
+128 days after NTP date</example>
+
+
+<example>
+Text:
+```
+4.4(b) - The “Mechanical Completion Date” of the Project shall be the day after the date on which the last of the conditions of Section 4.4(a) was satisfied or, in the sole discretion of Owner, waived...
+```
+Data retrieved:
+December 23, 2019</example>
+
+
+<example>
+Text:
+```
+2.12(a) - Contractor shall cause the Facility to achieve Mechanical Completion on or before January 8, 2021  (such date, as it may be adjusted herein, the “Guaranteed Mechanical Completion Date....
+```
+Data retrieved:
+January 8, 2021</example>
+
+",The scheduled date by which mechanical completion is expected to be achieved as per the contract.
+Is Substantial Completion Date within 3 months of Mechanical Completion Date?,"Retrieve Is Substantial Completion Date within 3 months of Mechanical Completion Date? from the text.
+Definitions: Is Substantial Completion Date within 3 months of Mechanical Completion Date? - Indicates whether the substantial completion date falls within three months after the mechanical completion date, as specified in the contract..
+","Indicates whether the substantial completion date falls within three months after the mechanical completion date, as specified in the contract."
+Substantial Completion Date,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Substantial Completion Date from the text in this format:
+<example>
+Text:
+```
+2.12(b) - Contractor shall cause the Facility to achieve Substantial Completion on or before March 30, 2021 (such date, as it may be adjusted herein, the “Guaranteed Substantial Completion Date”)....
+```
+Data retrieved:
+March 30, 2021</example>
+
+
+<example>
+Text:
+```
+2.2.4(b) - The date of achievement of Substantial Completion (the “Substantial Completion Date”) shall be the date on which the last iteration of the Substantial Completion Certificate was submitted b...
+```
+Data retrieved:
+Exhibit D - December 7, 2020</example>
+
+
+<example>
+Text:
+```
+4.5(b) - The “Substantial Completion Date” of the Project shall be the day after the date on which the last of the conditions of Section 4.5(a) was satisfied or, in the sole discretion of Owner, waive...
+```
+Data retrieved:
+April 13, 2020</example>
+
+",The scheduled date by which substantial completion is expected to be achieved as outlined in the contract.
+Are Liquidated Damages Associated with Substantial Completion Date?,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Are Liquidated Damages Associated with Substantial Completion Date? from the text in this format:
+<example>
+Text:
+```
+11.2(b) - If Substantial Completion does not occur on or before the Guaranteed Substantial Completion Date, after any adjustment is made to such date as permitted under Section 2.12(b) that affects th...
+```
+Data retrieved:
+Yes, penalty of $250/day per MW DC</example>
+
+
+<example>
+Text:
+```
+2.10.1 - If Contractor has not achieved Substantial Completion by the Guaranteed Substantial Completion Date, Contractor shall pay to Owner, as liquidated damages, the Daily Liquidated Damages Amount ...
+```
+Data retrieved:
+Yes, penalty of $400/MW/day</example>
+
+
+<example>
+Text:
+```
+4.8 - Delay Damages. Subject to Section 12.4 and Article IX, in the event Contractor has not achieved Substantial Completion on or before the Guaranteed Substantial Completion Date, then, as Owner’s s...
+```
+Data retrieved:
+Yes, penalty of $250/MW/day</example>
+
+",Specifies whether there are financial penalties (liquidated damages) associated for failing to meet the substantial completion date.
+Commercial Operation Date,"Retrieve Commercial Operation Date from the text.
+Definitions: Commercial Operation Date - The date on which the solar facility starts commercial operation after successful testing and commissioning..
+",The date on which the solar facility starts commercial operation after successful testing and commissioning.
+Final Completion Date,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Final Completion Date from the text in this format:
+<example>
+Text:
+```
+4.6(b) - The “Final Acceptance Date” of the Project shall be the day after the date on which the last of the conditions of Section 4.6(a) was satisfied or, in the sole discretion of Owner, waived....
+```
+Data retrieved:
+May 01, 2020</example>
+
+
+<example>
+Text:
+```
+2.2.4(d) - The date of achievement of Final Completion (the “Final Completion Date”) shall be the date on which Owner has delivered to Contractor a Final Completion Certificate for such Project counte...
+```
+Data retrieved:
+Exhibit D: 12/31/2020</example>
+
+
+<example>
+Text:
+```
+10.10 - Final Completion shall occur no later than sixty (60) days after Substantial Completion, or such later period of time as may be reasonably necessary to complete items required to comply with a...
+```
+Data retrieved:
+May 29, 2021</example>
+
+",The date when the final completion is achieved as per the contractual terms.
+Default - Owner,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Default - Owner from the text in this format:
+<example>
+Text:
+```
+ARTICLE 9
+DEFAULT; REMEDIES
+ 9.1 Event of Default. The occurrence of any one or more of the following events shall constitute an
+event of default (""Event of Default"") by a Party (the ""Defaulting Pa...
+```
+Data retrieved:
+non-payment; dissolution; filing of insolvency or bankruptcy petition.</example>
+
+
+<example>
+Text:
+```
+12.1 Owner Events of Default. The following shall constitute events of default on the
+part of Owner (each, an ""Owner Event of Default"") under this Agreement:
+(a) If Owner fails to make any undispute...
+```
+Data retrieved:
+Fails to pay undisputed amount when due; misrepresentation; breach of material obligations</example>
+
+
+<example>
+Text:
+```
+Section 15.9 Termination or Suspension Upon Owner's Breach
+ (a) Contractor's Right to Terminate or Suspend Performance
+ (i) If Owner fails to make payment of any undisputed amounts when
+due and pay...
+```
+Data retrieved:
+Fails to make payment of any undisputed amounts within 10 business days after receiving notice;  misrepresentation; and fails to perform material obligations.</example>
+
+","Circumstances under which the owner may be considered in default, such as failure to make payments or provide necessary permissions."
+Default - Contractor,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Default - Contractor from the text in this format:
+<example>
+Text:
+```
+8.10.3 - If any legal action is brought for the enforcement of this Agreement or because of an alleged dispute, default, misrepresentation, or breach in connection with any of the provisions of this A...
+```
+Data retrieved:
+Misrepresentation</example>
+
+
+<example>
+Text:
+```
+""12.2	Contractor Events of Default. The following shall constitute events of default on the part of Contractor (each, a “Contractor Event of Default”) under this Agreement:
+(a)	Payment. Contractor fai...
+```
+Data retrieved:
+Fails to make payment within 10 business days after notice; fails to commence work within 30 days after receiving FNTP; misrepresentation; fails to cause substantial completion on due day and fails to damages; insolvency; assignment in breach; and failure to perform material obligations</example>
+
+
+<example>
+Text:
+```
+12.2 Contractor Events of Default. The following shall constitute events of default on
+the part of Contractor (each, a ""Contractor Event of Default"") under this Agreement:
+(a) If Contractor fails to...
+```
+Data retrieved:
+Fails to pay undisputed amount when due; Fails to achieve Commercial Operation with respect to the Facility within 45 days of the Guaranteed Substantial Completion Date; misrepresentation; fails to maintain insurance; abandons the Work; breach of material obligations; and fails to prepare a Remedial Action Plan.</example>
+
+","Circumstances under which the contractor may be considered in default, such as delays, failure to meet specifications, or non-compliance with safety standards."
+Termination - Owner,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Termination - Owner from the text in this format:
+<example>
+Text:
+```
+10.1 - Termination for Cause- Breach Capable of Cure. With respect to any material breach of the Contract that is capable of cure, either party may terminate the Contract for cause after giving five d...
+```
+Data retrieved:
+May terminate the Contract (i) for cause after giving five days prior written notice; (ii) for material breach; (iii) for convenience</example>
+
+
+<example>
+Text:
+```
+9.2.1 Non-Defaulting Party Rights. Upon the occurrence of an Event of Default, the Non-Defaulting Party shall have the following rights: (a) to terminate this Agreement by written notice to the Defaul...
+```
+Data retrieved:
+9.2.1(a) - non-defaulting Party may terminate by giving written notice to Defaulting Party
+10.4 - Force Majeure prevents Contractor from performing its obligations under this Agreement for four (4) months or longer</example>
+
+
+<example>
+Text:
+```
+12.5 Termination for Convenience.
+ (a) Owner may terminate this Agreement for convenience on ten (10) days written
+notice to Contractor. Upon receipt of any such notice, Contractor shall, unless the...
+```
+Data retrieved:
+6.4 - Prevented from fulfilling its obligations as a result of a Force Majeure Event for more than 365 days in the aggregate
+12.5(a) - 10 days written notice to Contractor
+12.7 - Owner is entititled to terminate this Agreement for convenience prior to issuance of Notice to Proceed to Contractor without any payment obligation to Contractor</example>
+
+",Conditions under which the owner has the right to terminate the contract.
+Termination - Contractor,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Termination - Contractor from the text in this format:
+<example>
+Text:
+```
+10.1 - Termination for Cause- Breach Capable of Cure. With respect to any material breach of the Contract that is capable of cure, either party may terminate the Contract for cause after giving five d...
+```
+Data retrieved:
+May terminate the Contract for cause after giving five days prior written notice</example>
+
+
+<example>
+Text:
+```
+6.7 - Termination due to Suspension or Prolonged Force Majeure Event or Excusable Event. If the Work is suspended, prevented or delayed, in each case in the aggregate, for more than sixty (60) calenda...
+```
+Data retrieved:
+Work suspension for more than 60 days due to force majeure; and may terminate upon Owner's default.</example>
+
+
+<example>
+Text:
+```
+15.1(c) - If Owner does not notify Contractor to resume the Work within 180 days following the date of its suspension notice, subject to tolling for a Force Majeure event, Contractor may terminate the...
+```
+Data retrieved:
+If Owner does not notify Contractor to resume the Work within 180 days following the date of its suspension notice.
+payment default not cured within in 60 days receipt of notice.""</example>
+
+",Conditions under which the contractor has the right to terminate the contract.
+Warranties,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Warranties from the text in this format:
+<example>
+Text:
+```
+2. Section 8.2 of the EPC is hereby replaced in its entirety with the following:
+ 8.2 Warranty Period. Contractor shall remedy any breach of the warranties set
+forth in Section 8.1 that manifests in...
+```
+Data retrieved:
+5 years</example>
+
+
+<example>
+Text:
+```
+ARTICLE 12
+WARRANTIES
+ 12.1 Work Warranty.
+ 12.1.1 Work Warranty. Contractor warrants during the Work Warranty Period that:
+(a) the work and Materials shall be free from defects in design, materia...
+```
+Data retrieved:
+Work Warranty of 5 years
+12.2 - Manufacturer Warranty period ranges from 5 years to 25 years
+12.3 - PV Syst Confirmation and Price Adjustment</example>
+
+
+<example>
+Text:
+```
+""8.1 - Contractor warrants to Owner (the “Warranty”): All Work and the Equipment furnished, installed or otherwise performed by Contractor or any Subcontractors hereunder shall: (a) be free from any D...
+```
+Data retrieved:
+5 years warranty for (a) free from any Defects; (b) be new, unused and undamaged and of good and
+suitable quality when installed; and (c) be installed in accordance with manufacturers instructions.</example>
+
+","Details of any guarantees provided by the contractor on materials, labor, and system performance."
+Guaranties,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Guaranties from the text in this format:
+<example>
+Text:
+```
+12.4 Performance Guarantee.
+12.4.1 Measured Performance Ratio. Contractor guarantees that the Measured Performance
+Ratio in the first two years of operation (from the Substantial Completion Date to ...
+```
+Data retrieved:
+12.4 - Performance Guarantee</example>
+
+
+<example>
+Text:
+```
+Exhibit G - Design-Builder warrants and guarantees that during the first year of operation occurring after the date that Substantial Completion is achieved, the Project will generate no less than nine...
+```
+Data retrieved:
+Project will generate no less than 90% of output. Guaranteed output 3,861,694 kWh</example>
+
+",Formal assurances or promises regarding certain aspects of the project such as system performance or completion timelines.
+Force Majeure,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Force Majeure from the text in this format:
+<example>
+Text:
+```
+""6.5	Force Majeure Events and Excusable Events
+(a)	Certain Events. No failure or omission to carry out or observe any of the terms, provisions or conditions of this Agreement shall give rise to any cl...
+```
+Data retrieved:
+acts of God, fires, explosions or accidents, war, riots, insurrection, rebellion, civil disturbance, acts of the public enemy, acts of terrorism and sabotage, blockades, embargoes; unusual export or import restrictions by any Governmental Authority, sanctions, strikes or other labor difficulty or labor disputes that are national or regional in scope; port closure, rationing or allocation, at the request or insistence of any Governmental Authority; national or regional epidemic or quarantine; and any emergencies declared by any Governmental Authority.</example>
+
+
+<example>
+Text:
+```
+10.1  - “Force Majeure Event” means any act or event that directly delays or prevents a Party from performing all or a portion of its obligations under this Agreement, or from complying with all or a ...
+```
+Data retrieved:
+(i) natural, single event phenomena, such as tornadoes, hurricanes, floods, lightning, extreme weather conditions, seismic activity including but not limited to earthquakes and volcanic eruptions; (ii) explosions or fires arising from lightning or other causes unrelated to the acts or omissions of the Party seeking to be excused from performance; (iii) acts of war or public disorders, civil disturbances, riots, insurrection, sabotage, epidemic, terrorist acts, or rebellion; (iv) outages of the electric grid or cellular service or internet service, or (v) any unforeseen facts or consequences, as of the Effective Date, of the COVID-19 pandemic which have a material effect on Contractor’s performance under this Contract. The term Force Majeure Event does not include (i) economic hardship or lack of funds; (ii) changes in market conditions, including but not limited to a general deterioration in the economy or in the economic conditions prevalent in the industry which the Party operates; (iii) inability of Contractor to obtain equipment to construct the Project, equipment failures, or acts or omissions of agents or subcontractors of Contractor, except to the extent such acts or omissions arise from a Force Majeure Event; (iv) any financial or payment obligations of either Party whether arising under this Agreement or otherwise; (v) the extent to which the Party claiming a Force Majeure Event has caused or contributed to the applicable act, event or condition by its fault or negligence or has failed to use commercially reasonable efforts or Prudent Industry Practices to prevent or remedy such act, event, cause or condition and, so far as possible and within a reasonable time period, remove it; or (vi) the extent to which the act, event, cause or condition is the result of a breach by the Party seeking to invoke a Force Majeure Event.</example>
+
+
+<example>
+Text:
+```
+ARTICLE 10
+FORCE MAJEURE
+ 10.1.1 10.1 Definition.""Force Majeure Event"" means any act or event that directly delays or
+prevents a Party from performing all or a portion of its obligations under this...
+```
+Data retrieved:
+Unusually severe weather, tornadoes, hurricanes, floods, lightning, and seismic activity, including but not limited to earthquakes and volcanic eruptions; (ii) explosions or fires arising from lightning or other causes unrelated to the acts or omissions of the Party seeking to be excused from performance; and (iii) acts of war or public disorders, civil disturbances, riots, insurrection, sabotage, epidemic, terrorist acts, or rebellion. The term Force Majeure Event does not include (i) economic hardship or lack of funds; (ii) changes in market conditions, including but not limited to a general deterioration in the economy or in the economic conditions prevalent in the industry which the Party operates; (iii) inability of Contractor to obtain equipment to construct the Project, equipment failures, or acts or omissions of agents or subcontractors of Contractor, except to the extent such acts or omissions arise from a Force Majeure Event; (iv) any financial or payment obligations of either Party whether arising under this Agreement or otherwise; (v) the extent to which the Party claiming a Force Majeure Event has caused or contributed to the applicable act, event or condition by its fault or negligence or has failed to use commercially reasonable efforts to prevent or remedy such act, event, cause or condition and, so far as possible and within a reasonable time period, remove it; (vi) the extent to which the act, event, cause or condition is the result of a breach by the Party seeking to invoke Force Majeure; (vii) delays in receipt of any Permit or Governmental Authorization; (viii) delays by the Utility; or (ix)any non-national Site-specific strike or labor action affecting Contractor or its Subcontractors exclusively.</example>
+
+","Clauses that release both parties from liability or obligation when an extraordinary event or circumstance beyond the control of the parties, such as a natural disaster, prevents one or both parties from fulfilling their contractual obligations."
+Assignment - Owner,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Assignment - Owner from the text in this format:
+<example>
+Text:
+```
+13.1.2 Permitted Assignments. Notwithstanding Section 13.1.1, Owner may, without Contractor’s consent, but with written notice to Contractor: (i) assign this Agreement to (A) any subsidiary, Affiliate...
+```
+Data retrieved:
+13.1.2 - (i)(A) subsidiary, affiliate, or special purpose company, or
+   (B) purchaser of Project ;
+(ii) collateral assignment</example>
+
+
+<example>
+Text:
+```
+11.5 - The Owner and the Design-Builder each bind themselves, their successors, assigns, and legal representatives to the other party to the Contract and to the successors, assigns, and legal represen...
+```
+Data retrieved:
+Can assign without consent.</example>
+
+
+<example>
+Text:
+```
+13.1	General. Neither Party shall assign this Agreement or any of its rights hereunder, or delegate any of its obligations hereunder, without the prior written consent of the other Party. Notwithstand...
+```
+Data retrieved:
+Can't assign without consent unless assigning to any financing</example>
+
+",Conditions under which the owner can transfer their rights and obligations under the contract to another party.
+Assignment - Contractor,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Assignment - Contractor from the text in this format:
+<example>
+Text:
+```
+Section 25.2 Assignments
+ (a) Except as set forth in this 0 and in Section 25.3, this Contract may be assigned
+only with the prior written consent of the other Party. Contractor may not assign, sub-...
+```
+Data retrieved:
+Can't assign without consent unless assigning to an affiliate with notice.</example>
+
+
+<example>
+Text:
+```
+11.5 - The Owner and the Design-Builder each bind themselves, their successors, assigns, and legal representatives to the other party to the Contract and to the successors, assigns, and legal represen...
+```
+Data retrieved:
+Can't assign without consent.</example>
+
+
+<example>
+Text:
+```
+13.1	General. Neither Party shall assign this Agreement or any of its rights hereunder, or delegate any of its obligations hereunder, without the prior written consent of the other Party. Notwithstand...
+```
+Data retrieved:
+Can't assign without consent unless (i) subcontracting  the work, or (ii) assigning to any financing</example>
+
+",Conditions under which the contractor can transfer their rights and obligations under the contract to another party.
+Liens,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Liens from the text in this format:
+<example>
+Text:
+```
+6.6(a) - As a condition to the obligation of Owner to make the payment on any Invoice under this Contract, Contractor shall deliver to Owner conditional Lien Waivers related thereto, duly executed by ...
+```
+Data retrieved:
+Contractor shall deliver lien waivers to Owner.</example>
+
+
+<example>
+Text:
+```
+2.16.2 - Design-Builder shall indemnify and protect any Owner Indemnified Party from and against all claims, liens, charges or encumbrances pertaining to payment for the Work arising from the performa...
+```
+Data retrieved:
+Contractor shall indemnify and protect any Owner Indemnified Party from and against all claims, liens, charges or encumbrances.</example>
+
+
+<example>
+Text:
+```
+5.1.2 No Liens. To the extent that Owner has timely paid Contractor for Work performed hereunder, Contractor shall not directly or indirectly create, incur, assume, or suffer to be created by it or an...
+```
+Data retrieved:
+Contractor shall not directly or indirectly create lien, mechanic’s lien, charge, or encumbrance on the Work, the Site, the Project, or any part thereof unless non-payment from Owner.</example>
+
+","Details regarding any legal right or interest that the contractor or others may have on the property, until certain debts arising out of the construction are cleared."
+Summary of Economic Terms,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Summary of Economic Terms from the text in this format:
+<example>
+Text:
+```
+Exhibit D - Mechanical Completion Delay Liquidated Damages: ($400)/day per MW DC, or the actual amount of interest carrying costs, whichever is greater, if the Facility has not achieved Mechanical Com...
+```
+Data retrieved:
+$400/day per MW DC for non-achievement of Mechanical Completion on or before the Guaranteed Substantial Completion Date and $250)/day per MW DC for non-achievement of Substantial  Completion on or before the Guaranteed Substantial Completion Date.
+Contract Price: $8,215,529.71 equal to $ $1.201971 / Watt DC at 6,835,050 Watts DC</example>
+
+
+<example>
+Text:
+```
+4.8 - Delay Damages. Subject to Section 12.4 and Article IX, in the event Contractor has not achieved Substantial Completion on or before the Guaranteed Substantial Completion Date, then, as Owner’s s...
+```
+Data retrieved:
+Shall pay damages in the amount of $250.00 per Megawatt of Expected Capacity per day for each day after the Guaranteed Substantial Completion Date until the Substantial Completion Date</example>
+
+
+<example>
+Text:
+```
+Exhibit C - Contract Price: $ 4,767,238.32...
+```
+Data retrieved:
+Contract Price: $ 4,767,238.32</example>
+
+","A comprehensive overview of the financial aspects of the project, including payment terms, pricing structure, and cost allocation."
+Taxes,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Taxes from the text in this format:
+<example>
+Text:
+```
+3.5 - Owner shall remit in a timely manner any and all Excluded Taxes to the Governmental Authority having jurisdiction over such Taxes as are Owner’s responsibility under Section 5.3. In the event an...
+```
+Data retrieved:
+Owner's responsibility to pay excluded taxes.</example>
+
+
+<example>
+Text:
+```
+Article 1 - “Tax” means any tax, levy, imposition, rates, impost, duty, fee, assessment, deduction, charge or withholding imposed by any Government Authority, including but not limited to income, capi...
+```
+Data retrieved:
+Article 1</example>
+
+
+<example>
+Text:
+```
+Contractor’s Tax Indemnity. Contractor shall be responsible for and shall pay (or cause to be paid) all Taxes of any kind arising in connection with the Work and any materials supplied hereunder, incl...
+```
+Data retrieved:
+7.3 - Contractor is responsible for any taxes paid arising in connection with the Work and any materials supplied under the Agreement; Owner responsible for all property taxes</example>
+
+","Details of taxes applicable to the project, who is responsible for them, and how they are to be handled."
+Mechanical Completion - Notification to REA by Developer,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Mechanical Completion - Notification to REA by Developer from the text in this format:
+<example>
+Text:
+```
+2.2.4 (a) - On or before the Day that is three (3) Business Days after the Day on which Contractor believes that Mechanical Completion has been completed (other than delivery of the Mechanical Complet...
+```
+Data retrieved:
+Contractor shall notify Owner by delivering to Owner a Mechanical Completion Certificate.</example>
+
+
+<example>
+Text:
+```
+10.2(a) - Contractor shall deliver a written notice upon mechanical completion and certification of such determination substantially in the form attached hereto as Exhibit T-1...
+```
+Data retrieved:
+Contractor shall notify Owner by delivering to Owner a Mechanical Completion Certificate.</example>
+
+
+<example>
+Text:
+```
+2.2.4(a) - On or before the Day that is three (3) Business Days after the Day on which Contractor believes that Interim Completion has been achieved, Contractor shall submit to Owner and Engineer the ...
+```
+Data retrieved:
+Contractor shall notify Owner by delivering to Owner a Interim Completion Certificate.</example>
+
+",Procedure for notifying the relevant energy authority by the developer once mechanical completion is achieved.
+Mechanical Completion - Review Period,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Mechanical Completion - Review Period from the text in this format:
+<example>
+Text:
+```
+4.3(c) - Owner shall review and provide any comments within 10 business days....
+```
+Data retrieved:
+Review within 10 days.</example>
+
+
+<example>
+Text:
+```
+10.2(b) - Owner shall review and provide any comments within 10 business days....
+```
+Data retrieved:
+Review within 10 days.</example>
+
+
+<example>
+Text:
+```
+2.2.4(a) - Owner shall review and provide any comments within 30 days....
+```
+Data retrieved:
+Review within 30 days.</example>
+
+",The time period allowed for the energy authority or the owner to review and assess the mechanical completion before giving approval.
+Mechanical Completion - Acceptance,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Mechanical Completion - Acceptance from the text in this format:
+<example>
+Text:
+```
+2.2.4(a) - countersign and deliver to Contractor the Mechanical Completion Certificate to indicate its agreement that Mechanical Completion has been achieved....
+```
+Data retrieved:
+Issue Mechanical Completion Certificate if accepted.</example>
+
+
+<example>
+Text:
+```
+4.5(b) - If accepted, Owner shall countersign and return Interim Completion Certificate....
+```
+Data retrieved:
+Issue Interim  Completion Certificate if accepted.</example>
+
+
+<example>
+Text:
+```
+4.4(b) - If accepted, Owner shall countersign and return Mechanical Completion Certificate....
+```
+Data retrieved:
+Issue Mechanical Completion Certificate if accepted.</example>
+
+",Process by which mechanical completion is formally accepted by the owner or the authority.
+Mechanical Completion - Rejection,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Mechanical Completion - Rejection from the text in this format:
+<example>
+Text:
+```
+10.2(b) - If Owner notifies Contractor that Mechanical Completion was not achieved, Contractor will promptly undertake such action or work as necessary to achieve Mechanical Completion in accordance w...
+```
+Data retrieved:
+Give notification of rejection.</example>
+
+
+<example>
+Text:
+```
+4.3(c) - If rejected, Owner shall provide a detailed explanation of the reasons therefor....
+```
+Data retrieved:
+Give reasons for rejection.</example>
+
+
+<example>
+Text:
+```
+2.2.4(a) - if reasonable cause exists for doing so, notify Contractor of its belief that Mechanical Completion has not been achieved, including but not limited to Owner’s or the Engineer’s reasons for...
+```
+Data retrieved:
+Give reasons for rejection.</example>
+
+",Conditions and process for rejection of the mechanical completion if it does not meet the specified standards or requirements.
+Substantial Completion - Notification to REA by Developer,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Substantial Completion - Notification to REA by Developer from the text in this format:
+<example>
+Text:
+```
+4.5(b) - Contractor shall deliver to Owner a Notice of Substantial Completion, which shall list each requirement of Substantial Completion and provide confirmation that each requirement has been compl...
+```
+Data retrieved:
+Contractor shall notify Owner by delivering to Owner a Substantial Completion Certificate.</example>
+
+
+<example>
+Text:
+```
+4.6(b) - When Contractor considers that the criteria for Substantial Completion have been met, Contractor shall so notify Owner in writing by delivering to Owner a Substantial Completion Certificate i...
+```
+Data retrieved:
+Contractor shall notify Owner by delivering to Owner a Substantial Completion Certificate.</example>
+
+
+<example>
+Text:
+```
+4.3 - When the Design-Builder believes it has achieved Substantial Completion of the Work or a designated portion of the Work, which the Owner has agreed to accept separately, the DesignBuilder must n...
+```
+Data retrieved:
+Contractor shall notify Owner by delivering to Owner a Substantial Completion Certificate.</example>
+
+",Procedure for notifying the relevant energy authority by the developer once substantial completion is achieved.
+Substantial Completion - Review Period,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Substantial Completion - Review Period from the text in this format:
+<example>
+Text:
+```
+2.2.4(b) - Owner shall review and provide any comments...
+```
+Data retrieved:
+Review</example>
+
+
+<example>
+Text:
+```
+2.2.4(b) - Owner shall review and provide any comments within 15 days....
+```
+Data retrieved:
+Review within 15 days.</example>
+
+
+<example>
+Text:
+```
+10.4(b) - Owner shall review and provide any comments within 10 business days....
+```
+Data retrieved:
+Review within 10 days.</example>
+
+",The time period allowed for the energy authority or the owner to review and assess the substantial completion before giving approval.
+Substantial Completion - Acceptance,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Substantial Completion - Acceptance from the text in this format:
+<example>
+Text:
+```
+2.2.4(b) - countersign and deliver to Contractor the Substantial Completion Certificate to indicate its agreement that Substantial Completion has been achieved....
+```
+Data retrieved:
+Issue Substantial Completion Certificate if accepted.</example>
+
+
+<example>
+Text:
+```
+10.4(b) - If Owner acknowledges that Substantial Completion has been achieved, the date on which Contractor submitted the accepted Certificate of Substantial Completion shall be deemed the date of Sub...
+```
+Data retrieved:
+Issue Substantial Completion Certificate if accepted.</example>
+
+
+<example>
+Text:
+```
+4.5(b) - If accepted, Owner shall countersign and return Substantial Completion Certificate....
+```
+Data retrieved:
+Issue Substantial Completion Certificate if accepted.</example>
+
+",Process by which substantial completion is formally accepted by the owner or the authority.
+Substantial Completion - Rejection,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Substantial Completion - Rejection from the text in this format:
+<example>
+Text:
+```
+4.6(b) - If rejected, Owner shall provide a detailed explanation of the reasons therefor....
+```
+Data retrieved:
+Give reasons for rejection.</example>
+
+
+<example>
+Text:
+```
+10.4(b) - If Owner notifies Contractor that Substantial Completion has not been met, Contractor will promptly undertake such action or work as necessary to achieve Substantial Completion in accordance...
+```
+Data retrieved:
+Give notification of rejection.</example>
+
+
+<example>
+Text:
+```
+2.2.4(b) -  if reasonable cause exists for doing so, notify Contractor in writing of its belief that Substantial Completion has not been achieved, including but not limited to Owner’s or the Engineer’...
+```
+Data retrieved:
+Give reasons for rejection.</example>
+
+",Conditions and process for rejection of the substantial completion if it does not meet the specified standards or requirements.
+Final Completion - Notification to REA by Developer,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Final Completion - Notification to REA by Developer from the text in this format:
+<example>
+Text:
+```
+4.5 - When the Design-Builder believes it has achieved Final Completion, the Design-Builder must notify the Owner that the Work is ready for Final Completion inspection....
+```
+Data retrieved:
+Contractor shall notify Owner by delivering to Owner a Final Completion Certificate.</example>
+
+
+<example>
+Text:
+```
+4.7(b) - When Contractor considers that the criteria for Final Acceptance for the Facility have been met, Contractor shall so notify Owner in writing by delivering to Owner a Final Acceptance Certific...
+```
+Data retrieved:
+Contractor shall notify Owner by delivering to Owner a Final Acceptance Certificate.</example>
+
+
+<example>
+Text:
+```
+10.8 - When Contractor believes in good faith that it has achieved Final Completion, Contractor shall deliver a written notice and certification of such determination substantially in the form attache...
+```
+Data retrieved:
+Contractor shall notify Owner by delivering to Owner a Final Completion Certificate.</example>
+
+",Procedure for notifying the relevant energy authority by the developer once final completion is achieved.
+Final Completion - Review Period,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Final Completion - Review Period from the text in this format:
+<example>
+Text:
+```
+4.5 - Promptly thereafter, the Owner and the Design-Builder must jointly inspect the Work...
+```
+Data retrieved:
+Prompt review</example>
+
+
+<example>
+Text:
+```
+2.2.4(d) - Owner shall review and provide any comments within 15 days....
+```
+Data retrieved:
+Review within 15 days.</example>
+
+
+<example>
+Text:
+```
+10.9 - Owner shall review and provide any comments within 10 business days....
+```
+Data retrieved:
+Review within 10 days.</example>
+
+",The time period allowed for the energy authority or the owner to review and assess the final completion before giving approval.
+Final Completion - Acceptance,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Final Completion - Acceptance from the text in this format:
+<example>
+Text:
+```
+4.6(b) - If accepted, Owner shall countersign and return Final Acceptance Certificate....
+```
+Data retrieved:
+Issue Final Acceptance Certificate if accepted.</example>
+
+
+<example>
+Text:
+```
+2.2.4(d) - countersign and deliver to Contractor the Final Completion Certificate to indicate its agreement that Final Completion has been achieved....
+```
+Data retrieved:
+Issue Final Acceptance Certificate if accepted.</example>
+
+
+<example>
+Text:
+```
+4.7(b) - If accepted, Owner shall countersign and return Final Acceptance Certificate....
+```
+Data retrieved:
+Issue Final Acceptance Certificate if accepted.</example>
+
+",Process by which final completion is formally accepted by the owner or the authority.
+Final Completion - Rejection,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Final Completion - Rejection from the text in this format:
+<example>
+Text:
+```
+4.7(b) - If rejected, Owner shall provide a detailed explanation of the reasons therefor....
+```
+Data retrieved:
+Give reasons for rejection.</example>
+
+
+<example>
+Text:
+```
+2.2.4(d) - If reasonable cause exists for doing so, notify Contractor in writing of its belief that Final Completion has not been achieved, including but not limited to Owner’s or the Engineer’s reaso...
+```
+Data retrieved:
+Give reasons for rejection.</example>
+
+
+<example>
+Text:
+```
+4.6(b) - if Owner rejects Contractor’s Final Acceptance Notice, respond in writing, giving its reasons for such rejection....
+```
+Data retrieved:
+Give reasons for rejection.</example>
+
+",Conditions and process for rejection of the final completion if it does not meet the specified standards or requirements.
+Pre Contract Module Procurement Payment,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Pre Contract Module Procurement Payment from the text in this format:
+<example>
+Text:
+```
+""EXHIBIT G MILESTONE PAYMENT SCHEDULE
+
+Milestones	Milestone Dates
+Mobilization / Major Equipment Down Payment	5/3/19
+POs Issued for Major Equipment	5/3/19
+Engineering
+Civil Design Complete	6/1/19
+Mech...
+```
+Data retrieved:
+May 3, 2019</example>
+
+",Advance payment that may be required before contract signing for securing module procurement.
+EPC Agreement Execution / LNTP,"Retrieve EPC Agreement Execution / LNTP from the text.
+Definitions: EPC Agreement Execution / LNTP - Date of execution of the EPC agreement or issuance of the Letter of Notice to Proceed..
+",Date of execution of the EPC agreement or issuance of the Letter of Notice to Proceed.
+LNTP #2,"Retrieve LNTP #2 from the text.
+Definitions: LNTP #2 - Issuance of the second Letter of Notice to Proceed if applicable, marking another phase of project progression..
+","Issuance of the second Letter of Notice to Proceed if applicable, marking another phase of project progression."
+Notice to Proceed,"Retrieve Notice to Proceed from the text.
+Definitions: Notice to Proceed - Formal notice given by the owner to the contractor to begin or continue work according to the contract terms..
+",Formal notice given by the owner to the contractor to begin or continue work according to the contract terms.
+Site Preparation Completion,"Retrieve Site Preparation Completion from the text.
+Definitions: Site Preparation Completion - The date by which the site preparation is expected to be completed..
+",The date by which the site preparation is expected to be completed.
+Delivery of Racking to Site,"Retrieve Delivery of Racking to Site from the text.
+Definitions: Delivery of Racking to Site - Scheduled date for the delivery of racking systems to the project site..
+",Scheduled date for the delivery of racking systems to the project site.
+Delivery of Modules to Site,"Retrieve Delivery of Modules to Site from the text.
+Definitions: Delivery of Modules to Site - Scheduled date for the delivery of solar modules to the project site..
+",Scheduled date for the delivery of solar modules to the project site.
+Delivery of Inverters & Energy Storage Unit to Site,"Retrieve Delivery of Inverters & Energy Storage Unit to Site from the text.
+Definitions: Delivery of Inverters & Energy Storage Unit to Site - Scheduled date for the delivery of inverters and any associated energy storage units to the project site..
+",Scheduled date for the delivery of inverters and any associated energy storage units to the project site.
+Racking Installation,"Retrieve Racking Installation from the text.
+Definitions: Racking Installation - The process and timeline for the installation of racking systems that will hold the solar panels..
+",The process and timeline for the installation of racking systems that will hold the solar panels.
+Module Installation,"Retrieve Module Installation from the text.
+Definitions: Module Installation - The process and timeline for the installation of solar modules onto the racking systems..
+",The process and timeline for the installation of solar modules onto the racking systems.
+Inverters & Energy Storage Unit Installation,"Retrieve Inverters & Energy Storage Unit Installation from the text.
+Definitions: Inverters & Energy Storage Unit Installation - The process and timeline for the installation of inverters and any energy storage units..
+",The process and timeline for the installation of inverters and any energy storage units.
+Mechanical Completion,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Mechanical Completion from the text in this format:
+<example>
+Text:
+```
+2.2.4(a) - The date of achievement of Mechanical Completion (the “Mechanical Completion Date”) shall be the date on which the last iteration of the Mechanical Completion Certificate was submitted by C...
+```
+Data retrieved:
+November 16, 2020</example>
+
+
+<example>
+Text:
+```
+December 23, 2019...
+```
+Data retrieved:
+December 23, 2019</example>
+
+
+<example>
+Text:
+```
+121 days after NTP...
+```
+Data retrieved:
+121 days after NTP</example>
+
+",
+Mechanical Completion,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Mechanical Completion from the text in this format:
+<example>
+Text:
+```
+2.2.4(a) - The date of achievement of Mechanical Completion (the “Mechanical Completion Date”) shall be the date on which the last iteration of the Mechanical Completion Certificate was submitted by C...
+```
+Data retrieved:
+November 16, 2020</example>
+
+
+<example>
+Text:
+```
+December 23, 2019...
+```
+Data retrieved:
+December 23, 2019</example>
+
+
+<example>
+Text:
+```
+121 days after NTP...
+```
+Data retrieved:
+121 days after NTP</example>
+
+",Confirmation that all mechanical components of the solar project have been installed and are ready for testing.
+Witness Test,"Retrieve Witness Test from the text.
+Definitions: Witness Test - Testing conducted in the presence of both parties (or their representatives) to verify that the system meets the contractual and operational specifications..
+",Testing conducted in the presence of both parties (or their representatives) to verify that the system meets the contractual and operational specifications.
+PTO,"Retrieve PTO from the text.
+Definitions: PTO - Permission to Operate - official approval from the relevant authorities allowing the solar facility to be connected to the grid and start operations..
+",Permission to Operate - official approval from the relevant authorities allowing the solar facility to be connected to the grid and start operations.
+PV Substantial Completion,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve PV Substantial Completion from the text in this format:
+<example>
+Text:
+```
+February 28, 2019...
+```
+Data retrieved:
+February 28, 2019</example>
+
+
+<example>
+Text:
+```
+April 20, 2020...
+```
+Data retrieved:
+April 20, 2020</example>
+
+
+<example>
+Text:
+```
+2.2.4(b) - The date of achievement of Substantial Completion (the “Substantial Completion Date”) shall be the date on which the last iteration of the Substantial Completion Certificate was submitted b...
+```
+Data retrieved:
+December 7, 2020</example>
+
+",The point at which the photovoltaic components of the project are considered substantially complete.
+ESS Substantial Completion,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve ESS Substantial Completion from the text in this format:
+<example>
+Text:
+```
+166 days after NTP...
+```
+Data retrieved:
+166 days after NTP</example>
+
+
+<example>
+Text:
+```
+April 20, 2020...
+```
+Data retrieved:
+April 20, 2020</example>
+
+
+<example>
+Text:
+```
+11/20/2020...
+```
+Data retrieved:
+11/20/2020</example>
+
+",The point at which the energy storage system (if applicable) is considered substantially complete.
+Final Completion,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Final Completion from the text in this format:
+<example>
+Text:
+```
+May 11, 2021...
+```
+Data retrieved:
+May 11, 2021</example>
+
+
+<example>
+Text:
+```
+12/31/2020...
+```
+Data retrieved:
+12/31/2020</example>
+
+
+<example>
+Text:
+```
+2.2.4(d) - The date of achievement of Final Completion (the “Final Completion Date”) shall be the date on which the last iteration of the Final Completion Certificate was submitted by Contractor to Ow...
+```
+Data retrieved:
+December 31, 2020.</example>
+
+",
+Final Completion,"You have a task for due diligence company, working with solar projects.
+As a due diligence manager you will need to build a project preview for th Solar Project.
+Preview contains Legal Terms and Short Values.
+Legal Terms are the terms that are used in the contract. Direct citations from the contract.
+And your task is to extract Short Values from those Leral Terms, so that the preview can be built. And it will be easy for other due diligence managers understand main points of the Legal Terms by looking at the Short Values.
+
+I want you to putput only the Short Values for the Legal Terms. Avoid any unnecessary comments or explanations.
+You will be provided with couple of examples for each Legal Term. You will need to extract the Short Value from the Legal Terms in the same format as in the examples.
+
+Then you will need to provide the Short Value for the Legal Terms for tha actual case.
+        
+        
+Retrieve Final Completion from the text in this format:
+<example>
+Text:
+```
+May 11, 2021...
+```
+Data retrieved:
+May 11, 2021</example>
+
+
+<example>
+Text:
+```
+12/31/2020...
+```
+Data retrieved:
+12/31/2020</example>
+
+
+<example>
+Text:
+```
+2.2.4(d) - The date of achievement of Final Completion (the “Final Completion Date”) shall be the date on which the last iteration of the Final Completion Certificate was submitted by Contractor to Ow...
+```
+Data retrieved:
+December 31, 2020.</example>
+
+","The date or condition under which the project is considered fully complete, with all contractual obligations fulfilled."

@@ -1,0 +1,16 @@
+Key Items,Definitions
+Construction Lender,The financial institution or entity providing the loan for the construction phase of the project.
+Customer,The individual or entity receiving the loan and responsible for repaying it according to the agreement.
+Effective Date,Effective Date is the date that the agreement goes into effect;
+Loan Amount,The total amount of money that the Construction Lender agrees to lend to the Customer for the project.
+Term,"The duration over which the loan must be repaid, including any interest and fees."
+Draw Schedule,A timetable outlining specific milestones at which the Customer can draw funds from the loan.
+Commitment Fee / Origination Fee,A fee charged by the Construction Lender to the Customer for reserving the loan funds.
+Closing Costs,"Expenses incurred during the finalization of the loan agreement, including legal fees, appraisal fees, and other associated costs."
+Interest Rate,The percentage charged on the loan amount by the Construction Lender as the cost of borrowing.
+Maturity Date,"The date by which the loan must be fully repaid, including principal and any accrued interest."
+Borrower,The entity or individual that receives the loan and is obligated to repay it under the terms of the agreement.
+Default - Borrower,"A condition where the borrower fails to meet the financial or other contractual obligations stipulated in the Loan / Security Agreement, such as missed payments, breach of terms, or failure to achieve mapped milestones, potentially leading to legal and financial consequences."
+Guarantors,Individuals or entities that agree to repay the loan if the Borrower defaults.
+Reporting Requirements,The obligations of the Borrower to provide regular updates and financial reports to the Construction Lender.
+Forebarence Agreement (Y/N),"Indicates whether a forebearance agreement is included as part of the Subscriber Manager Agreement; 'Y' for yes, there is a forebearance agreement, 'N' for no, there is not"

@@ -1,0 +1,177 @@
+Document Name 1,Key Item 1,Document Name 2,Key Item 2,Value 1,Value 2,ans,Project
+PPA,Effective Date,Site Lease,Effective Date,"September 25, 2018","June 27,2019",FALSE,Site Lease - Shine - DuQuoin.pdf
+PPA,Effective Date,Site Lease,Effective Date,"March 14, 2019","March 14, 2019",TRUE,Site Lease - Emerald Garden - Mt Kimble.csv
+PPA,Effective Date,O&M,Effective Date,"February 10, 2021","October 19, 2023",FALSE,Site Lease - GLD - Canton (ES).pdf
+PPA,Effective Date,O&M,Effective Date,"September 25, 2018","July 8, 2019",FALSE,Site Lease - Shine - DuQuoin.pdf
+PPA,Effective Date,O&M,Effective Date,"March 14, 2019","June 28, 2021",FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+PPA,Effective Date,EPC,Effective Date,"February 10, 2021","June 12, 2023",FALSE,Site Lease - GLD - Canton (ES).pdf
+PPA,Effective Date,EPC,Effective Date,"September 25, 2018","June 5, 2019",FALSE,Site Lease - Shine - DuQuoin.pdf
+PPA,Effective Date,EPC,Effective Date,"March 14, 2019","July 1, 2019",FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+PPA,Effective Date,Interconnection Agreement,Effective Date,"February 10, 2021","October 21, 2021",FALSE,Site Lease - GLD - Canton (ES).pdf
+PPA,Effective Date,Interconnection Agreement,Effective Date,"September 25, 2018","February 11, 2019",FALSE,Site Lease - Shine - DuQuoin.pdf
+PPA,Effective Date,Interconnection Agreement,Effective Date,"March 14, 2019","August 8, 2019",FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+Site Lease,Effective Date,O&M,Effective Date,"September 9, 2018",8/22/2019,FALSE,Site Lease - Novel - Bartel (ES).pdf
+Site Lease,Effective Date,O&M,Effective Date,"June 27,2019","July 8, 2019",FALSE,Site Lease - Shine - DuQuoin.pdf
+Site Lease,Effective Date,O&M,Effective Date,"August 10, 2018","December 10, 2020",FALSE,Site Lease - Bullrock - Lakeville.pdf
+Site Lease,Effective Date,O&M,Effective Date,"July 22, 2020","March 12, 2021",FALSE,Site Lease - SunRaise - Pequawket.csv
+Site Lease,Effective Date,O&M,Effective Date,"September 30, 2019","May 19, 2020",FALSE,Site Lease - Blue Sky- Felicita Town Center.csv
+Site Lease,Effective Date,O&M,Effective Date,"March 14, 2019","June 28, 2021",FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+Site Lease,Effective Date,O&M,Effective Date,"February 4, 2016","November 18, 2021",FALSE,Site Green - Emerald Garden - Cape Fear.pdf
+Site Lease,Effective Date,EPC,Effective Date,"September 9, 2018","May 24, 2019",FALSE,Site Lease - Novel - Bartel (ES).pdf
+Site Lease,Effective Date,EPC,Effective Date,"June 27,2019","June 5, 2019",FALSE,Site Lease - Shine - DuQuoin.pdf
+Site Lease,Effective Date,EPC,Effective Date,"August 10, 2018","October 6, 2020",FALSE,Site Lease - Bullrock - Lakeville.pdf
+Site Lease,Effective Date,EPC,Effective Date,"July 22, 2020","July 22, 2020",TRUE,Site Lease - SunRaise - Pequawket.csv
+Site Lease,Effective Date,EPC,Effective Date,"September 30, 2019","May 15, 2020",FALSE,Site Lease - Blue Sky- Felicita Town Center.csv
+Site Lease,Effective Date,EPC,Effective Date,"March 14, 2019","July 1, 2019",FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+Site Lease,Effective Date,Interconnection Agreement,Effective Date,"September 9, 2018","May 20, 2019",FALSE,Site Lease - Novel - Bartel (ES).pdf
+Site Lease,Effective Date,Interconnection Agreement,Effective Date,"June 27,2019","February 11, 2019",FALSE,Site Lease - Shine - DuQuoin.pdf
+Site Lease,Effective Date,Interconnection Agreement,Effective Date,"August 10, 2018","August 16, 2019",FALSE,Site Lease - Bullrock - Lakeville.pdf
+Site Lease,Effective Date,Interconnection Agreement,Effective Date,"July 22, 2020","May 5, 2020",FALSE,Site Lease - SunRaise - Pequawket.csv
+Site Lease,Effective Date,Interconnection Agreement,Effective Date,"September 30, 2019",5/26/21,FALSE,Site Lease - Blue Sky- Felicita Town Center.csv
+Site Lease,Effective Date,Interconnection Agreement,Effective Date,"March 14, 2019","August 8, 2019",FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+Site Lease,Effective Date,Interconnection Agreement,Effective Date,"February 4, 2016","October 1, 2015",FALSE,Site Green - Emerald Garden - Cape Fear.pdf
+O&M,Effective Date,EPC,Effective Date,8/22/2019,"May 24, 2019",FALSE,Site Lease - Novel - Bartel (ES).pdf
+O&M,Effective Date,EPC,Effective Date,"October 19, 2023","June 12, 2023",FALSE,Site Lease - GLD - Canton (ES).pdf
+O&M,Effective Date,EPC,Effective Date,"July 8, 2019","June 5, 2019",FALSE,Site Lease - Shine - DuQuoin.pdf
+O&M,Effective Date,EPC,Effective Date,"December 10, 2020","October 6, 2020",FALSE,Site Lease - Bullrock - Lakeville.pdf
+O&M,Effective Date,EPC,Effective Date,"March 12, 2021","July 22, 2020",FALSE,Site Lease - SunRaise - Pequawket.csv
+O&M,Effective Date,EPC,Effective Date,"May 19, 2020","May 15, 2020",FALSE,Site Lease - Blue Sky- Felicita Town Center.csv
+O&M,Effective Date,EPC,Effective Date,"June 28, 2021","July 1, 2019",FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+O&M,Effective Date,Interconnection Agreement,Effective Date,8/22/2019,"May 20, 2019",FALSE,Site Lease - Novel - Bartel (ES).pdf
+O&M,Effective Date,Interconnection Agreement,Effective Date,"October 19, 2023","October 21, 2021",FALSE,Site Lease - GLD - Canton (ES).pdf
+O&M,Effective Date,Interconnection Agreement,Effective Date,"July 8, 2019","February 11, 2019",FALSE,Site Lease - Shine - DuQuoin.pdf
+O&M,Effective Date,Interconnection Agreement,Effective Date,"December 10, 2020","August 16, 2019",FALSE,Site Lease - Bullrock - Lakeville.pdf
+O&M,Effective Date,Interconnection Agreement,Effective Date,"March 12, 2021","May 5, 2020",FALSE,Site Lease - SunRaise - Pequawket.csv
+O&M,Effective Date,Interconnection Agreement,Effective Date,"May 19, 2020",5/26/21,FALSE,Site Lease - Blue Sky- Felicita Town Center.csv
+O&M,Effective Date,Interconnection Agreement,Effective Date,"June 28, 2021","August 8, 2019",FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+O&M,Effective Date,Interconnection Agreement,Effective Date,"November 18, 2021","October 1, 2015",FALSE,Site Green - Emerald Garden - Cape Fear.pdf
+EPC,Effective Date,Interconnection Agreement,Effective Date,"May 24, 2019","May 20, 2019",FALSE,Site Lease - Novel - Bartel (ES).pdf
+EPC,Effective Date,Interconnection Agreement,Effective Date,"June 12, 2023","October 21, 2021",FALSE,Site Lease - GLD - Canton (ES).pdf
+EPC,Effective Date,Interconnection Agreement,Effective Date,"June 5, 2019","February 11, 2019",FALSE,Site Lease - Shine - DuQuoin.pdf
+EPC,Effective Date,Interconnection Agreement,Effective Date,"October 6, 2020","August 16, 2019",FALSE,Site Lease - Bullrock - Lakeville.pdf
+EPC,Effective Date,Interconnection Agreement,Effective Date,"July 22, 2020","May 5, 2020",FALSE,Site Lease - SunRaise - Pequawket.csv
+EPC,Effective Date,Interconnection Agreement,Effective Date,"May 15, 2020",5/26/21,FALSE,Site Lease - Blue Sky- Felicita Town Center.csv
+EPC,Effective Date,Interconnection Agreement,Effective Date,"July 1, 2019","August 8, 2019",FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+PPA,Term,Site Lease,Initial Term,20th anniversary of the Commercial Operation Date,20 years beginning on the date the Permission to Operate was issued,TRUE,Site Lease - GLD - Canton (ES).pdf
+PPA,Term,Site Lease,Initial Term,25 years from Commercial Operation; extenable for 2 five year terms,25 years from the Commercial Operation Date,TRUE,Site Lease - Emerald Garden - Mt Kimble.csv
+PPA,Term,O&M,Term,20th anniversary of the Commercial Operation Date,1 year; automatically renews,FALSE,Site Lease - GLD - Canton (ES).pdf
+PPA,Term,O&M,Term,25 years from Commercial Operation; extenable for 2 five year terms,5 years beginning on the Commencement Date and may be extended for additional 5 year period on mutual agreement.,FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+PPA,Term,EPC,Term,20th anniversary of the Commercial Operation Date,Shall commence performance promptly upon Owner’s issuance of such Limited Notice to Proceed.,FALSE,Site Lease - GLD - Canton (ES).pdf
+PPA,Term,EPC,Term,25 years from Commercial Operation; extenable for 2 five year terms,Owner will establish the Date of Commencement,FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+PPA,Term,Interconnection Agreement,Term,20th anniversary of the Commercial Operation Date,Perpetual,FALSE,Site Lease - GLD - Canton (ES).pdf
+Site Lease,Initial Term,O&M,Term,Begins on the Effective Date and extends 24 months,5 years; auto renews for three more terms (15 more years),FALSE,Site Lease - Novel - Bartel (ES).pdf
+Site Lease,Initial Term,O&M,Term,20 years beginning on the date the Permission to Operate was issued,1 year; automatically renews,FALSE,Site Lease - GLD - Canton (ES).pdf
+Site Lease,Initial Term,O&M,Term,"Begins on the Effective Date (June 27, 2019) and extends 25 years from the Commercial Operation Date (COD)",15 years from COD.,FALSE,Site Lease - Shine - DuQuoin.pdf
+Site Lease,Initial Term,O&M,Term,Begin on the effective date and extend twenty-five (25 years) from the Commercial Operation Date (COD),"5 years with an automatic extension for consecutive one (1) year periods
+thereafter",FALSE,Site Lease - Bullrock - Lakeville.pdf
+Site Lease,Initial Term,O&M,Term,"Commencement Date until 240 months (20 years) from Commercial
+Operation Date","2 - System Commencement Date for a period of 5 years thereafter, then potentially extended for 1-year terms",FALSE,Site Lease - SunRaise - Pequawket.csv
+Site Lease,Initial Term,O&M,Term,25 years from the Commercial Operation Date,5 years beginning on the Commencement Date and may be extended for additional 5 year period on mutual agreement.,FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+Site Lease,Initial Term,O&M,Term,"Begins on the Effective Date (February 4, 2016) and extends 15 years from the Commercial Operation Date (COD)",5 years beginning on the Commencement Date,FALSE,Site Green - Emerald Garden - Cape Fear.pdf
+Site Lease,Initial Term,EPC,Term,20 years beginning on the date the Permission to Operate was issued,Shall commence performance promptly upon Owner’s issuance of such Limited Notice to Proceed.,FALSE,Site Lease - GLD - Canton (ES).pdf
+Site Lease,Initial Term,EPC,Term,"Begins on the Effective Date (June 27, 2019) and extends 25 years from the Commercial Operation Date (COD)","Commence upon the Effective Date, and, unless earlier terminated in accordance with this Section 14 shall remain in effect until, (i) the Project has achieved Final Completion, (ii) Contractor has performed fully its obligations under this Installation Agreement and (iii) Contractor shall have received Final Payment in respect of the Project.",FALSE,Site Lease - Shine - DuQuoin.pdf
+Site Lease,Initial Term,EPC,Term,"Commencement Date until 240 months (20 years) from Commercial
+Operation Date",Shall commence performance promptly upon Owner’s issuance of such Limited Notice to Proceed.,FALSE,Site Lease - SunRaise - Pequawket.csv
+Site Lease,Initial Term,EPC,Term,25 years from the Commercial Operation Date,Owner will establish the Date of Commencement,FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+Site Lease,Initial Term,Interconnection Agreement,Term,20 years beginning on the date the Permission to Operate was issued,Perpetual,FALSE,Site Lease - GLD - Canton (ES).pdf
+Site Lease,Initial Term,Interconnection Agreement,Term,"Begins on the Effective Date (June 27, 2019) and extends 25 years from the Commercial Operation Date (COD)",3.2 - Begins Effective Date and remains in effect unless terminated by Article 3.3.,FALSE,Site Lease - Shine - DuQuoin.pdf
+Site Lease,Initial Term,Interconnection Agreement,Term,Begin on the effective date and extend twenty-five (25 years) from the Commercial Operation Date (COD),Perpetual,FALSE,Site Lease - Bullrock - Lakeville.pdf
+Site Lease,Initial Term,Interconnection Agreement,Term,"Commencement Date until 240 months (20 years) from Commercial
+Operation Date","Effective Date for perpetuity, unless terminated in accordance with 3.3",FALSE,Site Lease - SunRaise - Pequawket.csv
+Site Lease,Initial Term,Interconnection Agreement,Term,"Begins on the Effective Date (September 30,2019)  and extends 25 years.)",The agreement becomes effective when signed by both parties and shall remain in effect unless terminated by either party on 30 days' prior written notice,FALSE,Site Lease - Blue Sky- Felicita Town Center.csv
+Site Lease,Initial Term,Interconnection Agreement,Term,"Begins on the Effective Date (February 4, 2016) and extends 15 years from the Commercial Operation Date (COD)","10 years from October 1, 2015. Auto renewed annually",FALSE,Site Green - Emerald Garden - Cape Fear.pdf
+O&M,Term,EPC,Term,1 year; automatically renews,Shall commence performance promptly upon Owner’s issuance of such Limited Notice to Proceed.,FALSE,Site Lease - GLD - Canton (ES).pdf
+O&M,Term,EPC,Term,15 years from COD.,"Commence upon the Effective Date, and, unless earlier terminated in accordance with this Section 14 shall remain in effect until, (i) the Project has achieved Final Completion, (ii) Contractor has performed fully its obligations under this Installation Agreement and (iii) Contractor shall have received Final Payment in respect of the Project.",FALSE,Site Lease - Shine - DuQuoin.pdf
+O&M,Term,EPC,Term,"2 - System Commencement Date for a period of 5 years thereafter, then potentially extended for 1-year terms",Shall commence performance promptly upon Owner’s issuance of such Limited Notice to Proceed.,FALSE,Site Lease - SunRaise - Pequawket.csv
+O&M,Term,EPC,Term,5 years beginning on the Commencement Date and may be extended for additional 5 year period on mutual agreement.,Owner will establish the Date of Commencement,FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+O&M,Term,Interconnection Agreement,Term,1 year; automatically renews,Perpetual,FALSE,Site Lease - GLD - Canton (ES).pdf
+O&M,Term,Interconnection Agreement,Term,15 years from COD.,3.2 - Begins Effective Date and remains in effect unless terminated by Article 3.3.,FALSE,Site Lease - Shine - DuQuoin.pdf
+O&M,Term,Interconnection Agreement,Term,"5 years with an automatic extension for consecutive one (1) year periods
+thereafter",Perpetual,FALSE,Site Lease - Bullrock - Lakeville.pdf
+O&M,Term,Interconnection Agreement,Term,"2 - System Commencement Date for a period of 5 years thereafter, then potentially extended for 1-year terms","Effective Date for perpetuity, unless terminated in accordance with 3.3",FALSE,Site Lease - SunRaise - Pequawket.csv
+O&M,Term,Interconnection Agreement,Term,5 years beginning on the Commencement Date,"10 years from October 1, 2015. Auto renewed annually",FALSE,Site Green - Emerald Garden - Cape Fear.pdf
+EPC,Term,Interconnection Agreement,Term,Shall commence performance promptly upon Owner’s issuance of such Limited Notice to Proceed.,Perpetual,FALSE,Site Lease - GLD - Canton (ES).pdf
+EPC,Term,Interconnection Agreement,Term,"Commence upon the Effective Date, and, unless earlier terminated in accordance with this Section 14 shall remain in effect until, (i) the Project has achieved Final Completion, (ii) Contractor has performed fully its obligations under this Installation Agreement and (iii) Contractor shall have received Final Payment in respect of the Project.",3.2 - Begins Effective Date and remains in effect unless terminated by Article 3.3.,FALSE,Site Lease - Shine - DuQuoin.pdf
+EPC,Term,Interconnection Agreement,Term,Shall commence performance promptly upon Owner’s issuance of such Limited Notice to Proceed.,"Effective Date for perpetuity, unless terminated in accordance with 3.3",FALSE,Site Lease - SunRaise - Pequawket.csv
+PPA,Renewal Terms,O&M,Renewal,2 renewals at 5 years each,May be extended for additional 5 year periods on mutual agreement.,FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+Site Lease,Renewal Terms,O&M,Renewal,two (2) five (5) year extensions with written notice on or before the commencement of the twenty-third (23rd) year of the Primary Term.,3 subsequent terms of 5 years each.,FALSE,Site Lease - Novel - Bartel (ES).pdf
+Site Lease,Renewal Terms,O&M,Renewal,Three (3) additional five (5) year periods with written notice ninety (90) days prior to the expiration,auto renews annually unless terminated,FALSE,Site Lease - GLD - Canton (ES).pdf
+Site Lease,Renewal Terms,O&M,Renewal,Two (2) additional five (5) year periods with written notice Ninety (90) days prior to the expiration,An automatic extension for consecutive one (1) year periods,FALSE,Site Lease - Bullrock - Lakeville.pdf
+Site Lease,Renewal Terms,O&M,Renewal,"Three additional five (5) year terms, at Tenant’s election","2 - after 5 years, 1 year renewals",FALSE,Site Lease - SunRaise - Pequawket.csv
+Site Lease,Renewal Terms,O&M,Renewal,Three (3) additional five (5) year periods with written notice sixty (60) days prior to the expiration,5 year extensions,FALSE,Site Green - Emerald Garden - Cape Fear.pdf
+PPA,Provider,Interconnection Agreement,Interconnection Utility Company,Central Maine Power,Central Maine Power Company,TRUE,Site Lease - GLD - Canton (ES).pdf
+PPA,Provider,Interconnection Agreement,Interconnection Utility Company,"GreanLife Solar, LLC b a Shine Development",Ameren Illinois Company,FALSE,Site Lease - Shine - DuQuoin.pdf
+PPA,Provider,Interconnection Agreement,Interconnection Utility Company,"Solops, LLC","Jersey Central Power & Light Company (""JCP&L"")",FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+PPA,Power Purchase Agreement Rate,O&M,PPA Net Energy Rate,$0.114 per kilowatt hour in year 1 or $0.12 per kilowatt if the SEF is only approved for 10 years of SRECs (Annex A),$120/MWh,TRUE,Site Lease - Emerald Garden - Mt Kimble.csv
+PPA,Renewal Terms,O&M,Renewal,2 renewals at 5 years each,May be extended for additional 5 year periods on mutual agreement.,FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+Site Lease,Renewal Terms,O&M,Renewal,two (2) five (5) year extensions with written notice on or before the commencement of the twenty-third (23rd) year of the Primary Term.,3 subsequent terms of 5 years each.,FALSE,Site Lease - Novel - Bartel (ES).pdf
+Site Lease,Renewal Terms,O&M,Renewal,Three (3) additional five (5) year periods with written notice ninety (90) days prior to the expiration,auto renews annually unless terminated,FALSE,Site Lease - GLD - Canton (ES).pdf
+Site Lease,Renewal Terms,O&M,Renewal,Two (2) additional five (5) year periods with written notice Ninety (90) days prior to the expiration,An automatic extension for consecutive one (1) year periods,FALSE,Site Lease - Bullrock - Lakeville.pdf
+Site Lease,Renewal Terms,O&M,Renewal,"Three additional five (5) year terms, at Tenant’s election","2 - after 5 years, 1 year renewals",FALSE,Site Lease - SunRaise - Pequawket.csv
+Site Lease,Renewal Terms,O&M,Renewal,Three (3) additional five (5) year periods with written notice sixty (60) days prior to the expiration,5 year extensions,FALSE,Site Green - Emerald Garden - Cape Fear.pdf
+Site Lease,Rent Commencement,O&M,Commencement Date,4.a - Lessee provides written notice of its election to commence the Primary Term on or before expiration of Option Term and stating commencement date for Primary Term,8/22/2019,FALSE,Site Lease - Novel - Bartel (ES).pdf
+Site Lease,Rent Commencement,O&M,Commencement Date,Permission to Operate date,System Commencement Date,FALSE,Site Lease - GLD - Canton (ES).pdf
+Site Lease,Rent Commencement,O&M,Commencement Date,Commercial Operation Date,When Company delivers notice to Provider that the Project is first placed into commercial operation and selling usable energy to JCP&L.,TRUE,Site Lease - Emerald Garden - Mt Kimble.csv
+PPA,Offtaker,Site Lease,Lessee (Tenant) Entity Name,"Customers of PWH Properties, LLC","Canton GLC Solar, LLC",FALSE,Site Lease - GLD - Canton (ES).pdf
+PPA,Offtaker,Site Lease,Lessee (Tenant) Entity Name,"CityofDuQuoin, Illinois","GreenLife Solar, LLC d/b/a Shine Development Partners",FALSE,Site Lease - Shine - DuQuoin.pdf
+PPA,Offtaker,Site Lease,Lessee (Tenant) Entity Name,"HEG Energy, LLC","Solops, LLC",FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+PPA,Offtaker,O&M,Customer,"Customers of PWH Properties, LLC","Canton GLC Solar, LLC",FALSE,Site Lease - GLD - Canton (ES).pdf
+PPA,Offtaker,O&M,Customer,"CityofDuQuoin, Illinois","DuQuoin Solar, LLC",FALSE,Site Lease - Shine - DuQuoin.pdf
+PPA,Offtaker,O&M,Customer,"HEG Energy, LLC","Emerald Kemble,
+LLC",FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+PPA,Offtaker,EPC,Owner,"Customers of PWH Properties, LLC","Canton GLC Solar, LLC",FALSE,Site Lease - GLD - Canton (ES).pdf
+PPA,Offtaker,EPC,Owner,"CityofDuQuoin, Illinois",SHINE DEVELOPMENT PARTNERS,FALSE,Site Lease - Shine - DuQuoin.pdf
+PPA,Offtaker,EPC,Owner,"HEG Energy, LLC","SOLOPS, LLC",FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+PPA,Offtaker,Interconnection Agreement,Interconnection Customer,"Customers of PWH Properties, LLC",PWH Properties LLC,FALSE,Site Lease - GLD - Canton (ES).pdf
+PPA,Offtaker,Interconnection Agreement,Interconnection Customer,"CityofDuQuoin, Illinois",City of DuQuoin,TRUE,Site Lease - Shine - DuQuoin.pdf
+PPA,Offtaker,Interconnection Agreement,Interconnection Customer,"HEG Energy, LLC",Mount Kemble Morristown,FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+PPA,Nameplate Capacity,O&M,Nameplate Capacity,Less than 5 MW,4653 kW,TRUE,Site Lease - GLD - Canton (ES).pdf
+PPA,Nameplate Capacity,Interconnection Agreement,Nameplate Capacity (System Size),Less than 5 MW,3.00 MW,TRUE,Site Lease - GLD - Canton (ES).pdf
+PPA,Nameplate Capacity,Interconnection Agreement,Nameplate Capacity Limits,Less than 5 MW,Not to exceed 3 MW,FALSE,Site Lease - GLD - Canton (ES).pdf
+O&M,Nameplate Capacity,EPC,System Size,"1,404 kW DC",1.4 MWDC,TRUE,Site Lease - Novel - Bartel (ES).pdf
+O&M,Nameplate Capacity,EPC,System Size,231.84 Kw DC,226.3 kW DC; 226.3 Kw DC,FALSE,Site Lease - Shine - DuQuoin.pdf
+O&M,Nameplate Capacity,EPC,System Size,4114.11 KW,4.06068 MW (DC),FALSE,Site Lease - Bullrock - Lakeville.pdf
+O&M,Nameplate Capacity,EPC,System Size,3.334 (MWDC),"552,750 DC Watts",FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+O&M,Nameplate Capacity,Interconnection Agreement,Nameplate Capacity (System Size),"1,404 kW DC",1000 KW,FALSE,Site Lease - Novel - Bartel (ES).pdf
+O&M,Nameplate Capacity,Interconnection Agreement,Nameplate Capacity (System Size),4653 kW,3.00 MW,FALSE,Site Lease - GLD - Canton (ES).pdf
+O&M,Nameplate Capacity,Interconnection Agreement,Nameplate Capacity (System Size),231.84 Kw DC,226 kW DC,FALSE,Site Lease - Shine - DuQuoin.pdf
+O&M,Nameplate Capacity,Interconnection Agreement,Nameplate Capacity (System Size),4114.11 KW,2 MW,FALSE,Site Lease - Bullrock - Lakeville.pdf
+O&M,Nameplate Capacity,Interconnection Agreement,Nameplate Capacity (System Size),3.334 (MWDC),1248 KW AC,FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+O&M,Nameplate Capacity,Interconnection Agreement,Nameplate Capacity (System Size),2.644 DC / 1.99 AC,"1,999 KW AC",TRUE,Site Green - Emerald Garden - Cape Fear.pdf
+O&M,Nameplate Capacity,Interconnection Agreement,Nameplate Capacity Limits,"1,404 kW DC",Not to exceed 1 MW,FALSE,Site Lease - Novel - Bartel (ES).pdf
+O&M,Nameplate Capacity,Interconnection Agreement,Nameplate Capacity Limits,4653 kW,Not to exceed 3 MW,FALSE,Site Lease - GLD - Canton (ES).pdf
+O&M,Nameplate Capacity,Interconnection Agreement,Nameplate Capacity Limits,4114.11 KW,Not to exceed 2 MW,FALSE,Site Lease - Bullrock - Lakeville.pdf
+EPC,System Size,Interconnection Agreement,Nameplate Capacity (System Size),1.4 MWDC,1000 KW,FALSE,Site Lease - Novel - Bartel (ES).pdf
+EPC,System Size,Interconnection Agreement,Nameplate Capacity (System Size),226.3 kW DC; 226.3 Kw DC,226 kW DC,TRUE,Site Lease - Shine - DuQuoin.pdf
+EPC,System Size,Interconnection Agreement,Nameplate Capacity (System Size),4.06068 MW (DC),2 MW,FALSE,Site Lease - Bullrock - Lakeville.pdf
+EPC,System Size,Interconnection Agreement,Nameplate Capacity (System Size),640.68 kw DC,592.47 kW,FALSE,Site Lease - Blue Sky- Felicita Town Center.csv
+EPC,System Size,Interconnection Agreement,Nameplate Capacity (System Size),"552,750 DC Watts",1248 KW AC,FALSE,Site Lease - Emerald Garden - Mt Kimble.csv
+EPC,System Size,Interconnection Agreement,Nameplate Capacity Limits,1.4 MWDC,Not to exceed 1 MW,FALSE,Site Lease - Novel - Bartel (ES).pdf
+EPC,System Size,Interconnection Agreement,Nameplate Capacity Limits,4.06068 MW (DC),Not to exceed 2 MW,FALSE,Site Lease - Bullrock - Lakeville.pdf
+Interconnection Agreement,Nameplate Capacity (System Size),Interconnection Agreement,Nameplate Capacity Limits,1000 KW,Not to exceed 1 MW,TRUE,Site Lease - Novel - Bartel (ES).pdf
+Interconnection Agreement,Nameplate Capacity (System Size),Interconnection Agreement,Nameplate Capacity Limits,3.00 MW,Not to exceed 3 MW,TRUE,Site Lease - GLD - Canton (ES).pdf
+Interconnection Agreement,Nameplate Capacity (System Size),Interconnection Agreement,Nameplate Capacity Limits,2 MW,Not to exceed 2 MW,TRUE,Site Lease - Bullrock - Lakeville.pdf
+PPA,Effective Date,Site Lease,Effective Date,"June 30, 2018","June 30, 2018",TRUE,Site Lease - Emerald Garden - Mt Kimble.csv
+Site Lease,Effective Date,EPC,Effective Date,"July 22, 2020","July 22, 2020",TRUE,Site Lease - SunRaise - Pequawket.csv
+PPA,Term,Site Lease,Initial Term,35th anniversary of the Commercial Operation Date,35 years beginning on the date the Permission to Operate was issued,TRUE,Site Lease - GLD - Canton (ES).pdf
+PPA,Term,Site Lease,Initial Term,15 years from Effective Date; extenable for 2 five year terms,15 years from the Effective Date,TRUE,Site Lease - Emerald Garden - Mt Kimble.csv
+PPA,Provider,Interconnection Agreement,Interconnection Utility Company,Side Good Power,Side Good Power Company,TRUE,Site Lease - GLD - Canton (ES).pdf
+Site Lease,Rent Commencement,O&M,Commencement Date,Commercial Operation Date,When Company delivers notice to Provider that the Project is first placed into commercial operation and selling usable energy to JCP&L.,TRUE,Site Lease - Emerald Garden - Mt Kimble.csv
+PPA,Offtaker,O&M,Customer,"LasVegas, Nevada","LasVegas Solar, LLC",FALSE,Site Lease - Shine - DuQuoin.pdf
+PPA,Offtaker,Interconnection Agreement,Interconnection Customer,"CityofNewYork, NY",City of New York,TRUE,Site Lease - Shine - DuQuoin.pdf
+PPA,Nameplate Capacity,O&M,Nameplate Capacity,Less than 6 MW,5653 kW,TRUE,Site Lease - GLD - Canton (ES).pdf
+PPA,Nameplate Capacity,Interconnection Agreement,Nameplate Capacity (System Size),Less than 11 MW,7.00 MW,TRUE,Site Lease - GLD - Canton (ES).pdf
+O&M,Nameplate Capacity,EPC,System Size,"5,504 kW DC",5.5 MWDC,TRUE,Site Lease - Novel - Bartel (ES).pdf
+O&M,Nameplate Capacity,Interconnection Agreement,Nameplate Capacity (System Size),3.644 DC / 2.99 AC,"2,999 KW AC",TRUE,Site Green - Emerald Garden - Cape Fear.pdf
+EPC,System Size,Interconnection Agreement,Nameplate Capacity (System Size),336.3 kW DC; 336.3 Kw DC,336 kW DC,TRUE,Site Lease - Shine - DuQuoin.pdf
+Interconnection Agreement,Nameplate Capacity (System Size),Interconnection Agreement,Nameplate Capacity Limits,2000 KW,Not to exceed 2 MW,TRUE,Site Lease - Novel - Bartel (ES).pdf
+Interconnection Agreement,Nameplate Capacity (System Size),Interconnection Agreement,Nameplate Capacity Limits,4.00 MW,Not to exceed 4 MW,TRUE,Site Lease - GLD - Canton (ES).pdf
+Interconnection Agreement,Nameplate Capacity (System Size),Interconnection Agreement,Nameplate Capacity Limits,5 MW,Not to exceed 5 MW,TRUE,Site Lease - Bullrock - Lakeville.pdf
+PPA and Amendments,Term,Site Lease,Term,1 year,12 months,TRUE,
+PPA and Amendments,Term,O&M Agreement,Term,1 year,1 year,TRUE,
+PPA and Amendments,Term,Interconnection Agreement and Amendments,Term,1 year,calendar year,FALSE,
+PPA and Amendments,Degradation,O&M Agreement,Degradation,the amount is 99,lower than 100,TRUE,
+PPA and Amendments,Term,O&M Agreement,Term,1 year,annual,TRUE,
+PPA and Amendments,Degradation,O&M Agreement,Degradation,the value is 99,lower than 100,TRUE,
+PPA and Amendments,Degradation,O&M Agreement,Degradation,the value is 77,lower than 80,TRUE,
+PPA and Amendments,Degradation,O&M Agreement,Degradation,the amount is 88,lower than 90,TRUE,

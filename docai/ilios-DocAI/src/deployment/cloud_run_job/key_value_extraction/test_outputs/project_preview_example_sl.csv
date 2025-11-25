@@ -1,0 +1,287 @@
+key_item,value,legal_term,poison_pill,is_poison_pill,poison_pill_detailed
+Lessor (Landlord) Entity Name,"California Property Owner I, LLC","The relevant text from the document is:
+
+""California Property Owner I, LLC, a Delaware limited liability company, with an address c/o Brixmor Property Group, 450 Lexington Avenue, 13th Floo New York, New York 10017 (""Landlord"").""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Lessee (Tenant) Entity Name,"Blue Sky Utility Holding, LLC","The relevant text from the document is:
+
+""By and between Blue Sky Utility Holding, LLC, a California limited liability company with an address at P.O.Box 5571, Napa, CA 94581 (""Tenant"")""
+
+This section identifies Blue Sky Utility Holding, LLC as the Tenant (Lessee) entity.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Effective Date,"January 1, 2023","The relevant text from the document is:
+
+""Commencing on the Effective Date, until the Commercial Operation Date, Tenant shall pay the Landlord five thousand dollars ($5,000) for the first four (4) months of the Term (""Initial Pre-Construction Rent"") and then three thousand dollars ($3,000) per month thereafter (""Pre-Construction Rent"") for the Premises until Commencement of Construction.""
+
+This section mentions the ""Effective Date"" in the context of when the rent payments start.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Property Size,25% of the Premises,"The relevant section containing information about the property size is:
+
+""If twenty-five percent (25%) of the Premises or twenty (20%) percent or more of the Solar System is thus taken or sold, Tenant may terminate this Lease by giving written notice thereof to Landlord in which event this Lease shall terminate as of the date when physical possession of such portion of the Property is taken by the condemning authority.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Initial Term,Begins on the Effective Date and extends 25 years.,"The relevant section containing information about the ""Initial Term"" is:
+
+""1. Term. The term (""Term"") of this Lease shall commence on the Effective Date and end on the Year 25 Termination Date or on such earlier date as this Lease may be terminated in accordance with the provisions of this Lease.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Rent Commencement,Commercial Operation Date,"The relevant sections containing the term ""Rent Commencement"" are:
+
+""Commencing on the Effective Date, until the Commercial Operation Date, Tenant shall pay the Landlord five thousand dollars ($5,000) for the first four (4) months of the Term (""Initial Pre-Construction Rent"") and then three thousand dollars ($3,000) per month thereafter (""Pre-Construction Rent"") for the Premises until Commencement of Construction.""
+
+""Commencing on the Commercial Operation Date and for each year of the Term thereafter, Tenant shall pay Landlord Elevent Thousand Five Hundred Dollars ($11,500.00) per annum (""Base Rent""), based on the Expected Capacity, with an annual escalation of 2% percent.""
+
+""Commencing on the Commercial Operation Date, Tenant shall pay the Landlord the Base Rent in equal monthly installments, equal to the amount, set forth in Section II.A.1a of this Lease, of the Base Rent for the particular year of the Term, as such Base Rent may be reduced from time to time as set forth in Section II.E, divided by twelve (""Base Rent Installments""), commencing on the Commercial Operation Date and payable on the first calendar day of each calendar month thereafter (""Base Rent Due Date"") throughout the Term. The Base Rent Installments shall be payable in arrears throughout the Term.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Renewal Terms,Twenty-five (25) year term with no explicit renewal option mentioned.,"The relevant section containing information about ""Renewal Terms"" is:
+
+""D. Term and Earlier Termination.
+1. Term. The term (""Term"") of this Lease shall commence on the Effective Date and end on the Year 25 Termination Date or on such earlier date as this Lease may be terminated in accordance with the provisions of this Lease.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Rent Calculation,"$11,500 per year, with 2% annual escalation
+Monthly installments of $11,500/12
+5% of Gross Revenues paid semi-annually
+Rent reduction possible based on reduced occupancy","The relevant sections containing information about ""Rent Calculation"" are:
+
+II.A.1.a:
+""Commencing on the Commercial Operation Date and for each year of the Term thereafter, Tenant shall pay Landlord Elevent Thousand Five Hundred Dollars ($11,500.00) per annum (""Base Rent""), based on the Expected Capacity, with an annual escalation of 2% percent.""
+
+II.A.1.b:
+""Commencing on the Commercial Operation Date, Tenant shall pay the Landlord the Base Rent in equal monthly installments, equal to the amount, set forth in Section II.A.1a of this Lease, of the Base Rent for the particular year of the Term, as such Base Rent may be reduced from time to time as set forth in Section II.E, divided by twelve (""Base Rent Installments""), commencing on the Commercial Operation Date and payable on the first calendar day of each calendar month thereafter (""Base Rent Due Date"") throughout the Term. The Base Rent Installments shall be payable in arrears throughout the Term.""
+
+II.D:
+""Tenant shall pay five percent (5%) of Tenant's Gross Revenues (as defined below) derived from and attributable to the Solar System (the ""Percentage Rent""), which Percentage Rent shall be paid on a semi-annual basis on or before July 31st (with respect to the period from January 1st through June 30th) and on or before January 31st (with respect to the period from July 1st through December 31st) during each year of the Term after the Commercial Operation Date.""
+
+II.E:
+This section outlines the conditions under which the Tenant has the right to a reduction in the Base Rent based on reduced occupancy levels within the Property.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Rent Amount,"$5,000 for the first 4 months, then $3,000 per month until Commencement of Construction
+
+$5,000 per month from Commencement of Construction until Commercial Operation Date
+
+$11,500 per annum with 2% annual escalation from Commercial Operation Date
+
+Equal monthly installments of annual rent amount from Commercial Operation Date
+
+5% of Gross Revenues from Solar System, paid semi-annually after Commercial Operation Date","The relevant sections containing information about the ""Rent Amount"" are:
+
+1. Commencing on the Effective Date, until the Commercial Operation Date, Tenant shall pay the Landlord five thousand dollars ($5,000) for the first four (4) months of the Term (""Initial Pre-Construction Rent"") and then three thousand dollars ($3,000) per month thereafter (""Pre-Construction Rent"") for the Premises until Commencement of Construction. Tenant shall notify Landlord of Commencement of Construction, no later than fourteen (14) days prior to the Commencement of Construction date. From Commencement of Construction until the Commercial Operation Date, Tenant shall pay the Landlord five thousand dollars ($5,000) per month for site access, equipment storage and rental of the construction staging areas (""Storage and Staging Area Rent""). Commencing on the Commercial Operation Date and for each year of the Term thereafter, Tenant shall pay Landlord Elevent Thousand Five Hundred Dollars ($11,500.00) per annum (""Base Rent""), based on the Expected Capacity, with an annual escalation of 2% percent.
+
+2. Commencing on the Commercial Operation Date, Tenant shall pay the Landlord the Base Rent in equal monthly installments, equal to the amount, set forth in Section II.A.1a of this Lease, of the Base Rent for the particular year of the Term, as such Base Rent may be reduced from time to time as set forth in Section II.E, divided by twelve (""Base Rent Installments""), commencing on the Commercial Operation Date and payable on the first calendar day of each calendar month thereafter (""Base Rent Due Date"") throughout the Term. The Base Rent Installments shall be payable in arrears throughout the Term.
+
+3. Tenant shall pay five percent (5%) of Tenant's Gross Revenues (as defined below) derived from and attributable to the Solar System (the ""Percentage Rent""), which Percentage Rent shall be paid on a semi-annual basis on or before July 31st (with respect to the period from January 1st through June 30th) and on or before January 31st (with respect to the period from July 1st through December 31st) during each year of the Term after the Commercial Operation Date."," Yes, there are potential poison pill violations due to unclear definitions and calculation methodologies, as well as pre-payment requirements that violate the rule against pre-payments in any form.",1,"## Rule Violations in Provided Text:
+
+**Unclear Calculation Logic:**
+
+* **Vague Metrics:** The text relies on undefined terms like ""Expected Capacity"" and ""Gross Revenues"" for rent calculations, creating ambiguity and potential for disputes over payment amounts. 
+* **Missing Definitions:** While referencing ""Gross Revenues (as defined below),"" the text fails to provide a clear definition, leaving the scope of this crucial term open to interpretation and disagreement.
+* **Ambiguous Payment Terms:** Despite mentioning ""payment in arrears,"" the agreement lacks a defined grace period and late payment penalties, potentially leading to disputes over late payment consequences.
+
+**Prepayment Required:**
+
+* **Multiple Pre-Construction Payments:** The text mandates various pre-payments like ""Initial Pre-Construction Rent,"" ""Pre-Construction Rent,"" and ""Storage and Staging Area Rent"" before the Commercial Operation Date, directly violating the rule prohibiting any form of pre-payment.
+* **Potential First Month Rent Pre-Payment:**  The phrase ""payable in arrears throughout the Term"" for Base Rent Installments raises concerns about the first month's rent potentially being due at the lease commencement, constituting a pre-payment. 
+"
+Payment Terms,"Initial Pre-Construction Rent: $5,000 for the first 4 months, then $3,000 per month until Commencement of Construction
+Storage and Staging Area Rent: $5,000 per month from Commencement of Construction until Commercial Operation Date
+Base Rent: $11,500 per annum with 2% annual escalation, paid in equal monthly installments
+Tax Rent: Any increase in taxes or assessments, paid within 10 days of invoice
+Additional Rent: Specified amount due on the first day of each month
+Percentage Rent: 5% of Gross Revenues, paid semi-annually","The relevant sections containing information about ""Payment Terms"" are:
+
+II.A.1.a:
+""Commencing on the Effective Date, until the Commercial Operation Date, Tenant shall pay the Landlord five thousand dollars ($5,000) for the first four (4) months of the Term (""Initial Pre-Construction Rent"") and then three thousand dollars ($3,000) per month thereafter (""Pre-Construction Rent"") for the Premises until Commencement of Construction. [...] From Commencement of Construction until the Commercial Operation Date, Tenant shall pay the Landlord five thousand dollars ($5,000) per month for site access, equipment storage and rental of the construction staging areas (""Storage and Staging Area Rent""). Commencing on the Commercial Operation Date and for each year of the Term thereafter, Tenant shall pay Landlord Elevent Thousand Five Hundred Dollars ($11,500.00) per annum (""Base Rent""), based on the Expected Capacity, with an annual escalation of 2% percent.""
+
+II.A.1.b:
+""Commencing on the Commercial Operation Date, Tenant shall pay the Landlord the Base Rent in equal monthly installments, equal to the amount, set forth in Section II.A.1a of this Lease, of the Base Rent for the particular year of the Term, as such Base Rent may be reduced from time to time as set forth in Section II.E, divided by twelve (""Base Rent Installments""), commencing on the Commercial Operation Date and payable on the first calendar day of each calendar month thereafter (""Base Rent Due Date"") throughout the Term. The Base Rent Installments shall be payable in arrears throughout the Term.""
+
+II.B.1:
+""During the Term, Tenant shall pay the Landlord any increase in taxes or assessments (""Tax Rent"") levied against the Property or Landlord caused by the installation of the Solar System on the Property, within ten (10) days of Tenant's receipt of Landlord's invoice for same, sent in accordance with Paragraph X.B of this Lease (""Tax Rent Due Date"").""
+
+II.C:
+""Tenant shall pay Landlord additional rent (""Additional Rent"") due on the first day of each month during the Term, equal to:
+[...]""
+
+II.D:
+""Tenant shall pay five percent (5%) of Tenant's Gross Revenues (as defined below) derived from and attributable to the Solar System (the ""Percentage Rent""), which Percentage Rent shall be paid on a semi-annual basis on or before July 31st (with respect to the period from January 1st through June 30th) and on or before January 31st (with respect to the period from July 1st through December 31st) during each year of the Term after the Commercial Operation Date.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+First Payment Due,On the Commercial Operation Date,"The relevant section containing information about the ""First Payment Due"" is:
+
+II.A.1.a. Commencing on the Effective Date, until the Commercial Operation Date, Tenant shall pay the Landlord five thousand dollars ($5,000) for the first four (4) months of the Term (""Initial Pre-Construction Rent"") and then three thousand dollars ($3,000) per month thereafter (""Pre-Construction Rent"") for the Premises until Commencement of Construction.
+
+II.A.1.b. Commencing on the Commercial Operation Date, Tenant shall pay the Landlord the Base Rent in equal monthly installments, equal to the amount, set forth in Section II.A.1a of this Lease, of the Base Rent for the particular year of the Term, as such Base Rent may be reduced from time to time as set forth in Section II.E, divided by twelve (""Base Rent Installments""), commencing on the Commercial Operation Date and payable on the first calendar day of each calendar month thereafter (""Base Rent Due Date"") throughout the Term. The Base Rent Installments shall be payable in arrears throughout the Term.", No poison rules violations are present because the poison rules do not apply to the situation.,0,
+Expiration Date,5 years from the Commercial Operation Date,"The relevant section containing the term ""Expiration Date"" is:
+
+""d. Partial Termination for Convenience. In addition to any rights of Landlord provided by the foregoing Section I.D.2.c, at any time and from time to time during the Term, Landlord may partially terminate this Lease (a ""Partial Termination"") on 90 days advance written notice (""Partial Termination Notice"") to Tenant, given in accordance with this Subsection I.D.2.d and Paragraph X.B of this Lease; provided that the effective date of the Partial Termination may not be a date that is earlier than the fifth (5th) anniversary of the Commercial Operation Date.""", No poison rules violations are present because the poison rules do not apply to the situation.,0,
+Renewal Notice Term,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Site Lease Prepayment (Y/N),No.,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Site Lease Prepayment (Amount),"Based on the given text, there does not appear to be any mention of a ""Site Lease Prepayment (Amount)"" or a front-loaded payment early in the lease term. The text mentions a ""Default Escrow"" deposit equal to the annual Base Rent on the Commercial Operation Date, but this does not seem to indicate a prepayment or higher payment in the earlier years of the lease.","The relevant section containing the term ""Site Lease Prepayment (Amount)"" is:
+
+""c. On the Commercial Operation Date, Tenant shall deposit an amount equal to the annual Base Rent as of the Commercial Operation Date (the ""Default Escrow"") with""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Removal Timeline & Expectations,"60 days notice
+90 days notice","The relevant sections from the document are:
+
+1. Paragraph VII.A:
+""If this Lease has not terminated earlier pursuant to Subparagraph I.D.2 or Paragraph I.F of this Lease, then on the Year 25 Termination Date, Tenant shall, at its sole cost and expense, remove the Solar System from the Premises and restore the License Areas in accordance with all Removal Obligations. This Paragraph VII.A and the Removal Obligations survive the termination of this Lease until said Removal Obligations are fully completed. Tenant shall complete the Removal Obligations within sixty (60) days of the Year 25 Termination Date.""
+
+2. Paragraph I.D.2.a(i):
+""Upon a Default Termination, Tenant shall have access to the Premises and the License Areas for up to ninety (90) days from the date of the Default Termination Notice (""Default Removal Period"") to remove the Solar System from the Premises in accordance with this Subsection I.D.2.a(i) During the Default Removal Period Tenant shall, at its sole cost and expense, diligently remove the Solar System and/or all partially installed portions thereof from the Premises in accordance with all Approvals, all Final Approvals, if applicable, and all Applicable Laws and shall obtain all additional Governmental Agency and Local Utility approvals required by Applicable Laws for such removal (""Removal Approvals"")...""
+
+These sections outline the timeline and expectations for removal of the Solar System upon termination of the lease, either at the end of the 25 year term or due to default.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Fee Simple Owner (Y/N),Y,"Based on the document, the relevant sections indicating that the Landlord is the fee simple owner of the property are:
+
+1. Section V.A.2:
+""Landlord represents, warrants and covenants that Landlord (check appropriate box) [X] is the fee title owner of the Property or [_] has a leasehold interest in the Property, in which event Landlord represents, warrants and covenants that Landlord has a valid leasehold interest in the Property and that Landlord is not in default of its lease.""
+
+2. Section V.A.4:
+""Landlord covenants that it will use commercially reasonable efforts to obtain a SNDA from any Lender who now has or may in the future obtain a security interest in the Property.""
+
+These sections directly state that the Landlord is the fee simple owner of the Property.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Rent Escalator (Y/N),Y,"Based on the document, the relevant section containing information about rent escalation is:
+
+II.A.1.a. Commencing on the Effective Date, until the Commercial Operation Date, Tenant shall pay the Landlord five thousand dollars ($5,000) for the first four (4) months of the Term (""Initial Pre-Construction Rent"") and then three thousand dollars ($3,000) per month thereafter (""Pre-Construction Rent"") for the Premises until Commencement of Construction. Tenant shall notify Landlord of Commencement of Construction, no later than fourteen (14) days prior to the Commencement of Construction date. From Commencement of Construction until the Commercial Operation Date, Tenant shall pay the Landlord five thousand dollars ($5,000) per month for site access, equipment storage and rental of the construction staging areas (""Storage and Staging Area Rent""). Commencing on the Commercial Operation Date and for each year of the Term thereafter, Tenant shall pay Landlord Elevent Thousand Five Hundred Dollars ($11,500.00) per annum (""Base Rent""), based on the Expected Capacity, with an annual escalation of 2% percent.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Rent Escalator (Schedule),N/A,,,,
+Rent Escalator Effective Date,1 year after the Commercial Operation Date,"The relevant section containing the term ""Rent Escalator Effective Date"" is:
+
+""Commencing on the Commercial Operation Date and for each year of the Term thereafter, Tenant shall pay Landlord Elevent Thousand Five Hundred Dollars ($11,500.00) per annum (""Base Rent""), based on the Expected Capacity, with an annual escalation of 2% percent.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Co-terminus with PPA (Y/N),No.,,,,
+Termination & Removal - Lessee,"See Sections I.D.2.c, I.D.2.d, I.D.2.a(i)","Here are the relevant excerpts from the document containing the term ""Termination & Removal - Lessee"":
+
+""c. Termination for Convenience. At any time on or after the fifth (5th) anniversary of the Commercial Operation Date, Landlord may terminate this Lease by delivering advance written notice (""Termination Notice"") to Tenant, given in accordance with this Subsection I.D.2.c and Paragraph X.B of this Lease.""
+
+""d. Partial Termination for Convenience. In addition to any rights of Landlord provided by the foregoing Section I.D.2.c, at any time and from time to time during the Term, Landlord may partially terminate this Lease (a ""Partial Termination"") on 90 days advance written notice (""Partial Termination Notice"") to Tenant, given in accordance with this Subsection I.D.2.d and Paragraph X.B of this Lease; provided that the effective date of the Partial Termination may not be a date that is earlier than the fifth (5th) anniversary of the Commercial Operation Date.""
+
+""a. (i) If Tenant commits or suffers to be committed a Tenant Event of Default, then in addition to Landlord's other rights and remedies under this Lease, subject to the terms of this Section I.D.2a, Landlord can terminate this Lease by written notice (""Default Termination Notice"") to Tenant in accordance with Paragraph X.B of this Lease (""Default Termination""). On the occurrence of a Default Termination, neither Landlord nor Tenant shall have any obligations or liabilities to the other by reason of this Lease, except for Landlord's other remedies set forth in Paragraph VI.B of this Lease, Tenant's obligations under this Section I.D.2.a and those obligations and/or liabilities which this Lease expressly states survive the termination of this Lease. Upon a Default Termination, Tenant shall have access to the Premises and the License Areas for up to ninety (90) days from the date of the Default Termination Notice (""Default Removal Period"") to remove the Solar System from the Premises in accordance with this Subsection I.D.2.a(i)"""," Yes, the provided legal terms violate the rule against unilateral termination due to the Landlord's unilateral termination rights and the lack of specificity in defining ""Tenant Event of Default.""",1,"Here are the bullet points explaining why the provided text indicates a violation of the ""Unilateral Termination"" rule:
+
+* **Unbalanced Termination Rights:** The lease grants the Landlord unilateral termination rights in sections I.D.2.c and I.D.2.d, directly contradicting the rule that neither party should have this power independently. 
+* **Vague Termination Clause:** Section I.D.2.a(i) allows termination for a ""Tenant Event of Default"" without defining what constitutes such an event. This ambiguity violates the rule by potentially allowing the Landlord to terminate the lease at their discretion, rather than for clearly defined breaches of contract. 
+"
+Termination & Removal - Lessor,"90d
+5y
+90d
+25y","The relevant sections containing information about ""Termination & Removal - Lessor"" are:
+
+I.D.2.a:
+""(i) If Tenant commits or suffers to be committed a Tenant Event of Default, then in addition to Landlord's other rights and remedies under this Lease, subject to the terms of this Section I.D.2a, Landlord can terminate this Lease by written notice (""Default Termination Notice"") to Tenant in accordance with Paragraph X.B of this Lease (""Default Termination"")...Upon a Default Termination, Tenant shall have access to the Premises and the License Areas for up to ninety (90) days from the date of the Default Termination Notice (""Default Removal Period"") to remove the Solar System from the Premises in accordance with this Subsection I.D.2.a(i) During the Default Removal Period Tenant shall, at its sole cost and expense, diligently remove the Solar System and/or all partially installed portions thereof from the Premises in accordance with all Approvals, all Final Approvals, if applicable, and all Applicable Laws and shall obtain all additional Governmental Agency and Local Utility approvals required by Applicable Laws for such removal (""Removal Approvals"")...""
+
+I.D.2.c:
+""Termination for Convenience. At any time on or after the fifth (5th) anniversary of the Commercial Operation Date, Landlord may terminate this Lease by delivering advance written notice (""Termination Notice"") to Tenant, given in accordance with this Subsection I.D.2.c and Paragraph X.B of this Lease...If Landlord elects to terminate this Lease pursuant to this Subsection I.D.2.c, Landlord shall pay Tenant an amount (the ""Termination Payment"") equal to the applicable Termination Payment for the year of the Term in which this Lease is so terminated, as set forth in Schedule 2 of this Lease. Tenant shall have a period of 60 days after the Termination Date to remove the Solar System from the Premises and restore the License Areas, at its cost and expense, in accordance with all the Removal Obligations...""
+
+I.D.2.d:
+""Partial Termination for Convenience. In addition to any rights of Landlord provided by the foregoing Section I.D.2.c, at any time and from time to time during the Term, Landlord may partially terminate this Lease (a ""Partial Termination"") on 90 days advance written notice (""Partial Termination Notice"") to Tenant, given in accordance with this Subsection I.D.2.d and Paragraph X.B of this Lease...""
+
+VII.A:
+""If this Lease has not terminated earlier pursuant to Subparagraph I.D.2 or Paragraph I.F of this Lease, then on the Year 25 Termination Date, Tenant shall, at its sole cost and expense, remove the Solar System from the Premises and restore the License Areas in accordance with all Removal Obligations. This Paragraph VII.A and the Removal Obligations survive the termination of this Lease until said Removal Obligations are fully completed."""," Yes, the lease agreement contains poison pill provisions in the form of unilateral termination rights granted to the Landlord, allowing for termination after the fifth year or partial termination with a 90-day notice, which violates the principle of mutuality and fairness in lease agreements.",1,"##  Violation of Unilateral Termination Rule:
+
+* **Landlord's Unilateral Right to Terminate:**  Section I.D.2.c and I.D.2.d grant the Landlord the exclusive right to end the lease, violating the rule against unilateral termination clauses. 
+* **Triggered Termination Without Mutual Consent:**  I.D.2.c allows the Landlord to terminate the lease after five years with a payment, while I.D.2.d allows partial termination with a 90-day notice, both lacking the required mutual consent from both parties. 
+* **Absence of Specific, Bilateral Breach Conditions:** The clauses do not specify breaches by both parties that would trigger termination, making them unilateral and non-compliant. 
+"
+Termination - Notice Requirements,"90 days advance written notice
+5th anniversary of Commercial Operation Date advance written notice
+50 days written notice after Structural Estimate review","The relevant sections from the document containing information about ""Termination - Notice Requirements"" are:
+
+""c. Termination for Convenience. At any time on or after the fifth (5th) anniversary of the Commercial Operation Date, Landlord may terminate this Lease by delivering advance written notice (""Termination Notice"") to Tenant, given in accordance with this Subsection I.D.2.c and Paragraph X.B of this Lease.""
+
+""d. Partial Termination for Convenience. In addition to any rights of Landlord provided by the foregoing Section I.D.2.c, at any time and from time to time during the Term, Landlord may partially terminate this Lease (a ""Partial Termination"") on 90 days advance written notice (""Partial Termination Notice"") to Tenant, given in accordance with this Subsection I.D.2.d and Paragraph X.B of this Lease; provided that the effective date of the Partial Termination may not be a date that is earlier than the fifth (5th) anniversary of the Commercial Operation Date.""
+
+""e. Structural Termination. In the event that the Structural Estimate, reviewed and approved by Landlord pursuant to Subparagraph I.G.2 of this Lease, states that the cost of the Roof and/or Building Repairs exceeds $50,000 then within fifty (50) days of the Effective Date, Tenant can terminate this Lease by written notice to Landlord, given in accordance with Paragraph X.B of this Lease, at which time this Lease shall terminate and neither Landlord nor Tenant shall have any liability to the other by reason of this Lease, except for Tenant's restoration obligations under Section I.E.1.h, Section I.E.3.h, Subparagraph IV.A.8 and Paragraph IV.C of this Lease which shall survive such termination until fully complied with."""," Yes, the text contains a poison pill in the form of unilateral termination rights granted to the Landlord after the fifth anniversary, violating the rule against unilateral termination and requiring modifications to ensure fairness and balance in the agreement.",1,"## Bullet points explaining why the text is a violation of the rules:
+
+* **Unilateral Termination Clause:** The text violates the rule against unilateral termination as evidenced by sections I.D.2.c and I.D.2.d, which grant the Landlord the exclusive right to end the lease after five years from the Commercial Operation Date. 
+* **Lack of Tenant's Termination Right:** The agreement is unbalanced because it denies the Tenant a corresponding right to terminate the lease at their discretion after the five-year mark, creating a disadvantageous position for the Tenant. 
+* **Violation of Mutual Agreement Principle:**  The rule mandates that ending the contractual relationship should be based on mutual consent or clearly defined conditions applicable to both parties. The Landlord's unilateral termination right contradicts this principle. 
+"
+Default,"Sections I.D.2.a, V.B.13, V.B.14, VI.B, VII.B.3","Here are the relevant excerpts from the document containing the term ""Default"":
+
+1. ""Any of the following constitute an event of default under this Lease by the Tenant (""Tenant Event of Default""):""
+
+2. ""If Tenant has committed or suffered to be committed a Tenant Event of Default, then:""
+
+3. ""Any of the following constitute an event of default under this Lease by the Landlord (""Landlord Event of Default""):""
+
+4. ""If Landlord has committed or suffered to be committed a Landlord Event of Default, then:""
+
+5. ""Landlord can terminate this Lease pursuant to Section I.D.2.a. hereof.""
+
+6. ""Except for a Tenant Event of Default of Subparagraphs V.B.13, V.B.14 or VII.B.3 of this Lease, Landlord can obtain only Landlord's direct contract damages for a Tenant Event of Default.""
+
+7. ""On the occurrence of a Default Termination, neither Landlord nor Tenant shall have any obligations or liabilities to the other by reason of this Lease, except for Landlord's other remedies set forth in Paragraph VI.B of this Lease, Tenant's obligations under this Section I.D.2.a and those obligations and/or liabilities which this Lease expressly states survive the termination of this Lease.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Assignment by Lessee,Yes,"The relevant section containing the term ""Assignment by Lessee"" is:
+
+IX. ASSIGNMENT.
+A. Tenant Assignment.
+1. Tenant cannot assign this Lease except:
+a. to this Lease, or
+b. to a Person, which:
+(i) agrees in a writing, reasonably satisfactory to Landlord, to
+assume all of Tenant's obligations under this Lease,
+(ii) has equivalent or greater experience and expertise as Tenant
+in installing, operating, repairing, maintaining and removing roof top photovoltaic systems of
+equivalent size (in kW DC) and design as the Solar System and
+(iii) is approved in writing by Landlord, such approval to not be
+unreasonably withheld, conditioned or delayed.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Assignment by Lessor,"Landlord can assign to an Affiliate or Subsequent Owner who acquires title to the Property or leasehold interest in the entire Property, provided Landlord gives notice and the Assignee assumes the Lease. Landlord shall use commercially reasonable efforts to provide 60 days advance notice of assignment to an unaffiliated Subsequent Owner. Landlord can assign to a Lender for financing purposes, provided Landlord uses commercially reasonable efforts to obtain an SNDA from the Lender.","The relevant section containing information about ""Assignment by Lessor"" is:
+
+IX. ASSIGNMENT.
+...
+B. Landlord Assignment-Conveyance.
+Landlord can assign this Lease to an Affiliate of Landlord or to a Person (""Subsequent Owner"") who acquires the title to the Property or a leasehold interest in the entire Property, provided that Landlord gives Tenant notice of the assignment and the Affiliate or Subsequent Owner assumes this Lease. Landlord shall use commercially reasonable efforts to provide no less sixty (60) days advance notice to Tenant of any prospective or pending sale and assignment of the Property, or of this Lease, to a potential unaffiliated Subsequent Owner.
+
+Assignment-Financing. 
+Landlord can at any time and from time to time finance or refinance the Property and the Premises and in connection therewith assign this Lease to the Lender providing such financing, so long as Landlord uses commercially reasonable efforts to obtain a SNDA of this Lease from any such Lender.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Removal Requirements,Tenant shall remove the Solar System and restore the Premises to its original condition prior to installation,"The relevant sections containing information about ""Removal Requirements"" are:
+
+VII. REMOVAL AND RELOCATION.
+A. Permanent Removal.
+1. If this Lease has not terminated earlier pursuant to Subparagraph I.D.2 or Paragraph I.F of this Lease, then on the Year 25 Termination Date, Tenant shall, at its sole cost and expense, remove the Solar System from the Premises and restore the License Areas in accordance with all Removal Obligations. This Paragraph VII.A and the Removal Obligations survive the termination of this Lease until said Removal Obligations are fully completed. Tenant shall complete the Removal Obligations within sixty (60) days of the Year 25 Termination Date.
+
+I.D.2.a:
+(i) During the Default Removal Period Tenant shall, at its sole cost and expense, diligently remove the Solar System and/or all partially installed portions thereof from the Premises in accordance with all Approvals, all Final Approvals, if applicable, and all Applicable Laws and shall obtain all additional Governmental Agency and Local Utility approvals required by Applicable Laws for such removal (""Removal Approvals"") (contingent upon Landlord signing application forms, if required by the applicable Governmental Agency, at no cost and expense to Landlord, required to obtain the Removal Approvals), shall comply with all Removal Approvals and shall repair all damage and remove all alterations to the Property, including, but not limited to, the Buildings and the Roofs, caused by said installation and/or partial installation of the Solar System, in accordance with all Applicable Laws, such that the Property, including, but not limited to the Buildings and the Roofs, is in the same condition as it was in prior to the commencement of any installation and/or partial installation of the Solar System, normal wear and tear excepted, referred to collectively in this Lease as the ""Removal Obligations.""", No poison rules violations are present because the poison rules do not apply to the situation.,0,
+Site Access Rights,"Tenant has access to the premises for installing, operating, maintaining, cleaning, replacing, repairing the Solar System and connecting to utility lines during the term, subject to conditions specified.","The relevant sections containing information about ""Site Access Rights"" are:
+
+I.E.1. ""Tenant shall have a non-exclusive license during the Term for the Tenant Parties to enter onto the Property at locations (""Installation, Maintenance and Repair Access Areas"") pre-approved by Landlord, in Landlord's reasonable discretion, with persons and equipment for the purpose of installing, operating, maintaining, cleaning, replacing and/or repairing the Solar System and/or connecting same to existing utility lines, pipes and conduits for the transmission of electricity, including administration of the VNMP or other similar program, provided that: ...""
+
+IV.A. ""During the Term and any Renewal Terms. Provided that Tenant has not committed or suffered to be committed a Tenant Event of Default, during the Term, the Tenant Parties can enter onto Premises with persons and equipment for the purpose of installing, operating, maintaining, cleaning, replacing and/or repairing the Solar System, connecting same to existing utility lines, pipes and conduits for the transmission of electricity and/or administering the VNMP or other similar program, provided that: ...""
+
+These sections outline the rights granted to the Tenant to access the premises for the purposes of installing, operating, maintaining, and repairing the Solar System.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Quiet Enjoyment,"Subject to no material interference with other tenants' use/enjoyment and no Tenant Event of Default, Tenant shall have quiet and peaceful possession of the Premises for the Permitted Use, free from claims of superior title/hindrance throughout the Term.","The relevant sections containing the term ""quiet enjoyment"" are:
+
+""f. The Tenant Parties do not materially interfere with the use or quiet enjoyment of the Other Tenant Space of any Other Tenant (without limiting the meaning of materially, at a minimum the Tenant Parties will be materially interfering with the use and quiet enjoyment of an Other Tenant's Other Tenant Space if said interference would cause Landlord to be in default of its lease or contract with said Other Tenant or incur liability to said Other Tenant or permit said Other Tenant to withhold rent or other payments from the Landlord).""
+
+""g. The Tenant Parties do not materially interfere with the use or quiet enjoyment of the Property by the Landlord (without limiting the meaning of materially, at a minimum the Tenant Parties will be materially interfering with the use and quiet enjoyment of the Property by Landlord if said interference would cause Landlord to be in default of any lease or contract with an Other Tenant or incur liability to an Other Tenant or permit an Other Tenant to withhold rent or other payments from the Landlord); and""
+
+""2. Landlord's Interest in Premises/Tenant's Quiet Enjoyment. Landlord represents, warrants and covenants that Landlord (check appropriate box) [X] is the fee title owner of the Property or [_] has a leasehold interest in the Property, in which event Landlord represents, warrants and covenants that Landlord has a valid leasehold interest in the Property and that Landlord is not in default of its lease. Landlord represents, warrants and covenants that Landlord has lawful authorization to use and occupy the Premises and that Tenant, subject to all of the terms and conditions of this Lease, and provided that Tenant has not committed or suffered to be committed a Tenant Event of Default, shall have quiet and peaceful possession of the Premises for the Permitted Use, free from any claim of any Person of superior title thereto without hindrance to or interference with or molestation of Tenant's quiet enjoyment thereof, throughout the Term.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Non-Disturbance Requirements,"See Section ""SNDA""","The relevant section containing the term ""Non-Disturbance Requirements"" is:
+
+""SNDA"" means a subordination, non-disturbance and attornment agreement from a Lender. Such SNDA shall: 
+a. acknowledge and consent to the Tenant's rights in the Premises and License Areas,
+b. acknowledge that such Lender has no interest in the Solar System and Environmental Attributes and shall not gain any interest in the Solar System and Environmental Attributes by virtue of the Landlord's or the Tenant's performance or breach of this Lease, and
+c. provide that Lender will not interfere with: Tenant's Permitted Use of the Premises in accordance with all of the terms and provisions of this Lease, Tenant's use of the License Areas in accordance with all of the terms and provisions of this Lease and Tenant's rights under this Lease with respect to Insolation.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+SNDA,N/A,,,,
+Eminent Domain,Lease terminates when condemning authority takes possession of premises,"The relevant section containing the term ""Eminent Domain"" is:
+
+""2. Condemnation. If the whole or substantially the whole of the Buildings, Improvements or the Premises should be taken for any public or quasi-public use, by right of eminent domain or otherwise, or should be sold in lieu of condemnation, then this Lease shall terminate as of the date when physical possession of the Buildings, Improvements or the Premises is taken by the condemning authority.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Force Majeure,"See Section defining ""Event of Force Majeure""","The relevant section containing the term ""Force Majeure"" is:
+
+""Event of Force Majeure"" under this Lease, means: any acts of God, fire, volcano, earthquake, hurricane, blizzard, prolonged severe weather conditions, infectious disease, technological disaster, catastrophe, large scale infestation of any type, tremors, flood, explosion, release of nuclear radiation, release of biotoxic or of biochemical agent(s), the elements, war, blockade, riots, mob violence or civil disturbance, any act or acts of terrorism, an inability to procure goods or services or a general shortage of labor, equipment, facilities, energy, materials or supplies in the open market, failure of transportation, strikes, walkouts, actions of labor unions, governmentally imposed moratoriums or court orders. Performance under this Lease shall be excused by an Event of Force Majeure for the length of the delay caused by the Event of Force Majeure.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Property Tax ($),See Section 1,"The relevant text from the document is:
+
+""1. During the Term, Tenant shall pay the Landlord any increase in taxes or assessments (""Tax Rent"") levied against the Property or Landlord caused by the installation of the Solar System on the Property, within ten (10) days of Tenant's receipt of Landlord's invoice for same, sent in accordance with Paragraph X.B of this Lease (""Tax Rent Due Date"").""
+
+This section mentions ""Tax Rent"" which refers to any increase in property taxes levied against the Property or Landlord due to the installation of the Solar System, which the Tenant is required to pay.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Purchase Options (Y/N),No.,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Liens,Prohibited,"The relevant text from the document regarding liens is:
+
+""12. Liens. Tenant shall not place and shall not permit any Tenant Parties to place any security interests, mortgages, mechanics liens, materialmens' liens, notices of liens, judgments and/or stop notices on the Property. A breach of this Subparagraph VB.12 by Tenant shall be deemed a Tenant Event of Default under Subparagraph VI.A.1 of this Lease.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Amendments and/or Estoppels,Estoppel certificate due within 30 days from request.,"The relevant sections containing information about ""Amendments and/or Estoppels"" are:
+
+""J. Estoppel Certificate.
+From time to time, upon written request, by either Tenant or its Solar Lender or Landlord or its Lender, made pursuant to Paragraph X.B of this Lease, Landlord or Tenant, as applicable, shall, within thirty (30) days after receipt of said written request, provide an estoppel certificate certifying, to Landlord's or Tenant's respective knowledge as applicable, Tenant's or Landlord's, as applicable, compliance with the terms of this Lease or setting forth any known issues of noncompliance, and making such other representations, warranties and accommodations reasonably requested by a Lender or Solar Lender.""
+
+There does not appear to be any mention of ""Amendments"" in the given text.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Prevailing Party Provision (Y/N),Y,"The relevant section containing the term ""Prevailing Party Provision"" is:
+
+""Escrow Agent shall be reimbursed for all costs and expenses of such action or proceeding including, without limitation, reasonable attorneys' fees actually incurred and disbursements, by the Party determined not to be entitled to the Default Escrow and/or Removal Escrow, as applicable, or if same is shared between the Parties, such costs of Escrow Agent shall be shared pro rata, between Landlord and Tenant, based upon the amount received by each.""
+
+This section indicates that the prevailing party in any dispute or litigation related to the Default Escrow or Removal Escrow shall be entitled to recover reasonable attorneys' fees and costs from the non-prevailing party, which is a prevailing party provision.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Governing Law,State of California,"The relevant section containing the term ""Governing Law"" is:
+
+""X. MISCELLANEOUS.
+...
+D. Choice of Law and Venue.
+This Lease shall be construed in accordance with the laws of the State of California
+(without regard to its conflicts of law principles). Each of Landlord and Tenant hereby irrevocably
+and unconditionally: (i) consents to submit to the exclusive jurisdiction of the state and federal
+courts of the State of California for any proceeding arising in connection with this Lease and each
+such party agrees not to commence any such proceeding except in such courts, and (ii) waives any
+objection to the laying of venue of any such proceeding in the state and federal courts of the State
+of California.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,

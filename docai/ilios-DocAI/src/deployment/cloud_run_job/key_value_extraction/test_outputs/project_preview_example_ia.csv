@@ -1,0 +1,153 @@
+key_item,value,legal_term,poison_pill,is_poison_pill,poison_pill_detailed
+Effective Date,The date when SCE issues written authorization to interconnect the Generating Facility after receipt of all required documents and payments.,"The relevant text from the document is:
+
+""12.1 This Agreement will become effective when SCE issues written authorization to interconnect the Generating Facility after receipt of all required documents and payments, and will remain in effect from month to month unless terminated by either Party on thirty (30) days' prior written notice in accordance with Section 11.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Interconnection Utility Company,Southern California Edison Company,"The relevant text from the document is:
+
+""SOUTHERN CALIFORNIA EDISON COMPANY:
+Attn: NEM Program Administrator
+SCE Customer Solar & Self Generation
+P.O. Box 800
+Rosemead, CA 91770""
+
+This section explicitly mentions ""Southern California Edison Company"" as the Interconnection Utility Company.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Interconnection Customer,Blue Sky Utility 2019 II LLC,"The term ""Interconnection Customer"" is directly mentioned in the following sections of the document:
+
+1.1 ""This Virtual Net Energy Metering for Multi-Tenant and Multi-Meter Properties (NEM-V/NEM-V-ST) Interconnection Agreement (""Agreement"") is entered into by and between Blue Sky Utility 2019 II LLC (""Customer""), and Southern California Edison Company (""SCE""), sometimes also referred to jointly as ""Parties"" or individually as ""Party.""""
+
+2.1 ""This Agreement is applicable only to Customers with Generating Facilities sized one megawatt (MW) and smaller who satisfy all requirements of SCE's Schedule NEM-V for multi-tenant and multi-meter virtual net energy metering, or its successor, Schedule NEM-V-ST.""
+
+10.4 ""This Agreement supersedes any existing agreement under which the Customer is currently operating the Generating Facility identified in Section 2 of this Agreement, and any such existing agreement will be deemed terminated as of the date this Agreement becomes effective.""
+
+10.6 ""A new Customer of Record or New Party In (""NPI"") who owns, leases, or rents a premises with an operating NEM-V or NEM-V-ST eligible Generating Facility, previously approved by SCE for Parallel Operation, does not have to submit a new interconnection agreement as long as the Customer meets the requirements of Schedule NEM-V, or its successor, NEM-V-ST, as applicable.""
+
+12.2 ""A new Customer or NPI who owns, rents or leases a premises that includes an NEM-V or NEM-V-ST Generating Facility above 30 kW will need to sign a new interconnection agreement.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Nameplate Capacity (System Size),156 kW,"The relevant section containing the term ""Nameplate Capacity (System Size)"" is:
+
+2.7 Generating Facility Nameplate Rating (kW): 156
+2.8 Generating Facility CEC-AC Rating or Equivalent (kW): 162.719", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Nameplate Capacity Limits,No nameplate capacity limit specified,"The document does not appear to contain any information directly related to the term ""Nameplate Capacity Limits"". There are no mentions of limits on nameplate capacity or system size.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Term,"The agreement becomes effective when SCE issues written authorization to interconnect the Generating Facility after receipt of all required documents and payments, and will remain in effect from month to month unless terminated by either Party on thirty (30) days' prior written notice","The relevant section containing information about the term of the agreement is Section 12:
+
+""12.1 This Agreement will become effective when SCE issues written authorization to interconnect the Generating Facility after receipt of all required documents and payments, and will remain in effect from month to month unless terminated by either Party on thirty (30) days' prior written notice in accordance with Section 11.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Mechanical Completion Date,"Unfortunately there is no explicit mention of a ""Mechanical Completion Date"" in the given text. The text discusses requirements and a process for the customer to receive approval from SCE to commence parallel operation of their generating facility, but it does not provide a specific date or term matching the definition of ""Mechanical Completion Date"" provided.","The term ""Mechanical Completion Date"" is not explicitly mentioned in the given document. However, there are a few related phrases that appear:
+
+""Customer cannot commence parallel operation of the Generating Facility until written approval has been provided to it by SCE. SCE shall normally provide such written approval no later than 30 business days following SCE's receipt of (1) a completed Net Energy Metering Application including all supporting documents and required payments, (2) a completed signed Virtual Net Energy Metering Interconnection Agreement, and (3) evidence of the Application's final electric inspection clearance from the Local Authority having jurisdiction over the Generating Facility.""
+
+This suggests that there is a process and requirements to be met before the customer can operate the generating facility in parallel with SCE's system, which could be considered analogous to a ""Mechanical Completion Date"", but the exact term is not used.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Commercial Operation Date,Anticipated 4/30/21,"The relevant section containing the term ""Commercial Operation Date"" is:
+
+2.8 - anticipated 4/30/21", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Deadline to Interconnect Date,"Unfortunately, there is no specific ""Deadline to Interconnect Date"" mentioned in the given text. The text states that the agreement will become effective when SCE issues written authorization to interconnect the generating facility after receiving required documents and payments, but it does not provide a concrete date or deadline for this to occur.","The relevant text from the document is:
+
+""This Agreement will become effective when SCE issues written authorization to interconnect the Generating Facility after receipt of all required documents and payments, and will remain in effect from month to month unless terminated by either Party on thirty (30) days' prior written notice in accordance with Section 11.""
+
+This section mentions a deadline related to interconnecting the generating facility, which is when SCE issues written authorization after receiving required documents and payments. However, it does not explicitly state a specific ""Deadline to Interconnect Date"".", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Amendments and/or Assignments,"10.1, 10.3","The relevant sections containing information about amendments and/or assignments are:
+
+10.1 This Agreement may not be altered or modified by either of the Parties, except by an instrument in writing executed by each of them.
+
+10.3 None of the provisions of this Agreement will be considered waived by a Party unless such waiver is given in writing. The failure of a Party to insist in any one or more instances upon strict performance of any of the provisions of this Agreement or to take advantage of any of its rights hereunder will not be construed as a waiver of any such provisions or the relinquishment of any such right for the future, but the same will continue and remain in full force and effect.
+
+10.6 A new Customer of Record or New Party In (""NPI"") who owns, leases, or rents a premises with an operating NEM-V or NEM-V-ST eligible Generating Facility, previously approved by SCE for Parallel Operation, does not have to submit a new interconnection agreement as long as the Customer meets the requirements of Schedule NEM-V, or its successor, NEM-V-ST, as applicable. This will also apply to premises where the developer/contractor establishes the interconnection, so that the Customer who buys/rents/leases the premises will not have to re-submit and sign a new interconnection agreement.
+
+12.2 A new Customer or NPI who owns, rents or leases a premises that includes an NEM-V or NEM-V-ST Generating Facility above 30 kW will need to sign a new interconnection agreement. If no changes are made to the interconnection facilities, the agreement will have identical terms and conditions as the ones approved for the previous customer.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Default by Provider,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation.,0,
+Default by Customer,6.6,"The relevant sections containing the term ""Default by Customer"" are:
+
+6.6.1 Customer will be in default under this Agreement if Customer fails to meet or cause to be met any material obligation of this Agreement, and such failure continues for 30 calendar days after receipt of written notice from SCE, unless delayed by a Force Majeure event under Section 6.7 below. Upon a default, SCE will be entitled to terminate this Agreement, the Generating Facility's Parallel Operation, and/or the electric service supply, as well as pursue all other remedies available under law or in equity.
+
+6.6.2 If Customer is in default due to failure to meet or cause to be met any material obligation of this Agreement, and if such default is not cured within 30 calendar days after receipt of written notice from SCE, or if delayed, pursuant to Section 6.7, such additional time as may be reasonably required to cure the default, then SCE may terminate this Agreement, the Generating Facility's Parallel Operation, and/or the electric service supply. Upon termination, Customer must cease parallel operation of the Generating Facility and SCE will have the right to isolate the Generating Facility.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Termination by Customer,By 30 days' prior written notice in accordance with Section 11,"The relevant section containing information about ""Termination by Customer"" is Section 12 (TERM AND TERMINATION OF AGREEMENT):
+
+""12.1 This Agreement will become effective when SCE issues written authorization to interconnect the Generating Facility after receipt of all required documents and payments, and will remain in effect from month to month unless terminated by either Party on thirty (30) days' prior written notice in accordance with Section 11."""," Yes, the provided legal terms violate the rule against unilateral termination because the language suggests that either party, including the Customer, has the unilateral right to terminate the agreement with prior written notice.",1,"Here are the bullet points explaining why the original text violates the rule on unilateral termination:
+
+* **Unilateral Termination by Customer:** The phrase ""either Party"" explicitly grants the Customer the right to end the agreement with 30 days' notice, violating the rule against unilateral termination.
+* **Lack of Mutuality:** The language does not require both parties' agreement for termination, making it one-sided and in violation of the rule promoting mutuality in termination provisions. 
+* **Absence of Specific Grounds:**  The original text allows termination for any reason with only a notice period, contradicting the rule that termination should be based on specific and justifiable grounds. 
+"
+Termination by Provider,"Section 12.2 (a) - Termination of electric distribution service to Customer
+Section 12.2 (b) - Changes to Customer's electric load causing ineligibility as Customer-Generator
+Immediate disconnect upon termination or if continued operation endangers public, personnel or system integrity","The relevant section containing information about ""Termination by Provider"" is Section 12 ""TERM AND TERMINATION OF AGREEMENT"". Here are the relevant excerpts:
+
+""12.2 This Agreement will terminate, without notice, upon: (a) termination of the electric distribution service provided to Customer by SCE; or (b) changes to Customer's electric load which cause Customer to no longer satisfy all requirements of the definition of an Eligible Customer-Generator.""
+
+""Notwithstanding any other provision of this Agreement, SCE reserves the right to require the immediate disconnect of the Generating Facility from SCE's electric system upon termination of this Agreement or at any time SCE determines the continued parallel operation of the Generating Facility may endanger the public or SCE personnel, or may affect the integrity of SCE's electric system or the quality of electric service provided to other customers.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Terms for Disconnection,"SCE may require customer to interrupt or reduce output for maintenance, emergencies, or compliance with prudent practices
+SCE reserves right to immediately disconnect facility if continued operation may endanger public/personnel or affect system integrity
+SCE will attempt to provide reasonable notice of potential interruption when feasible
+Energy provided during curtailment will be per applicable rate schedule
+Agreement terminates upon termination of customer's distribution service, changes to load making customer ineligible, or SCE has right to disconnect upon termination","Here are the relevant excerpts from the document regarding the term ""Terms for Disconnection"":
+
+4.1 ""SCE may, in its sole judgment, require Customer to interrupt or reduce the output of its Generating Facility under the following circumstances: (a) Whenever SCE deems it necessary to construct, install, maintain, repair, replace, remove, investigate, or inspect any of its equipment or any part of its electric system; or (b) Whenever SCE determines that curtailment, interruption, or reduction of Customer's electrical generation is otherwise necessary due to emergencies, forced outages, force majeure, or compliance with prudent electrical practices.""
+
+3.4.1 ""Notwithstanding any other provision of this Agreement, SCE reserves the right to require the immediate disconnect of the Generating Facility from SCE's electric system upon termination of this Agreement or at any time SCE determines the continued parallel operation of the Generating Facility may endanger the public or SCE personnel, or may affect the integrity of SCE's electric system or the quality of electric service provided to other customers. The Generating Facility must remain disconnected until SCE determines, in its sole judgment, that the condition(s) causing the disconnection have ended or have been corrected.""
+
+4.2 ""Whenever feasible, SCE will attempt to give Customer reasonable notice of the possibility that interruption or reduction of deliveries may be required.""
+
+3.4.4 ""Electrical energy and capacity provided to Customer during periods of curtailment or interruption of the output of the Generating Facility will be provided pursuant to the terms of the rate schedule(s) applicable to the electric service account to which the Generating Facility is connected.""
+
+3.33 ""This Agreement will terminate, without notice, upon: (a) termination of the electric distribution service provided to Customer by SCE; or (b) changes to Customer's electric load which cause Customer to no longer satisfy all requirements of the definition of an Eligible Customer-Generator set forth in SCE's applicable NEM tariff.""
+
+Exhibit E excerpt: ""Upon termination of this Agreement, SCE shall have the right to disconnect the Generating Facility from SCE's electric system.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Assignment – Customer,No assignment rights mentioned in the given text.,"The relevant section containing information about ""Assignment"" is:
+
+10.3 None of the provisions of this Agreement will be considered waived by a Party unless such waiver is given in writing. The failure of a Party to insist in any one or more instances upon strict performance of any of the provisions of this Agreement or to take advantage of any of its rights hereunder will not be construed as a waiver of any such provisions or the relinquishment of any such right for the future, but the same will continue and remain in full force and effect.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Assignment – Provider,No assignment provisions found in the given text.,"Here are the relevant excerpts from the document regarding the term ""Assignment - Provider"":
+
+10.3 None of the provisions of this Agreement will be considered waived by a Party unless such waiver is given in writing. The failure of a Party to insist in any one or more instances upon strict performance of any of the provisions of this Agreement or to take advantage of any of its rights hereunder will not be construed as a waiver of any such provisions or the relinquishment of any such right for the future, but the same will continue and remain in full force and effect.
+
+10.4 This Agreement supersedes any existing agreement under which the Customer is currently operating the Generating Facility identified in Section 2 of this Agreement, and any such existing agreement will be deemed terminated as of the date this Agreement becomes effective.
+
+10.5 This Agreement contains the entire agreement and understanding between the Parties, their agents, and employees as to its subject matter. Each party also represents that in entering into this Agreement, it has not relied on any promise, inducement, representation, warranty, agreement or other statement not set forth in this Agreement.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Force Maejure,"Unfortunately there is no text containing the term ""Force Majeure"" in the given input. The provided text states that the term ""Force Majeure"" is not explicitly mentioned.","The term ""Force Majeure"" is not explicitly mentioned in the provided document. There are no direct citations containing the term ""Force Majeure"".", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Insurance Requirements,"Property, commercial general liability and/or personal liability insurance","The relevant section containing information about insurance requirements is:
+
+3.3 For Customers interconnecting a Generating Facility under the provisions of Schedule NEM-V-ST, the Generating Facility must have a warranty of at least 10 years for all equipment and the associated installation from the system provider. In appropriate circumstances conforming to industry practice, this requirement may rely on and be satisfied by manufacturers' warranties for equipment and separate contractors' warranties for workmanship (i.e., installation). Warranties or service agreements conforming to requirements applicable to the Self-Generation Incentive Program (""SGIP"") may also be used for technologies eligible for the SGIP.
+
+10.6 A new Customer of Record or New Party In (""NPI"") who owns, leases, or rents a premises with an operating NEM-V or NEM-V-ST eligible Generating Facility, previously approved by SCE for Parallel Operation, does not have to submit a new interconnection agreement as long as the Customer meets the requirements of Schedule NEM-V, or its successor, NEM-V-ST, as applicable. This will also apply to premises where the developer/contractor establishes the interconnection, so that the Customer who buys/rents/leases the premises will not have to re-submit and sign a new interconnection agreement. A new Customer of Record or NPI, who owns, rents or leases a premises that includes an NEM-V or NEM-V-ST eligible Generating Facility with a capacity of 30 kW or less, that was approved by SCE for Parallel Operation prior to the new Customer or NPI moving in and/or taking electric service with SCE will take service on Schedule NEM-V or its successor, NEM-V-ST, as applicable, as long as the requirements of this section are met. To be eligible, the new Customer or NPI must (1) ensure that the Generating Facility is compliant with all applicable safety and performance standards as delineated in SCE's Electric Rule 21 and other applicable tariffs in effect at the time of initial approval for Parallel Operation; (2) keep in force the amount of property, commercial general liability and/or personal liability insurance the NPI or new Customer has in place at the time it initiates service on this tariff; and, (3) understand that SCE may from time to time release to the CEC and/or the Commission, information regarding the new Customer or NPI's Generating Facility, including NPI or new Customer's name and Generating Facility location, capacity and operational characteristics. SCE will provide the NPI or new Customer with (i) a copy of the interconnection agreement in effect and as signed by the previous customer, which will remain unchanged, (ii) a copy of the NEM-V/NEM-V-ST Fact Sheet on operation and billing, and (iii) SCE's website information on the NEM-V or NEM-V-ST tariffs.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Taxes,N/A,,,0,
+Summary of Economic Terms,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Cost Responsibility for Interconnection,Not specified,"The relevant section containing information about ""Cost Responsibility for Interconnection"" is:
+
+4. METERING AND BILLING:
+5.1 Metering requirements and billing procedures will be as provided in the SCE, Electric Service Provider's and/or Community Choice Aggregator's/Community Aggregator's rate schedule(s) applicable to the electric service account assigned to the location where the Generating Facility is connected.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Cost Responsibility for System Upgrades,Customer,"The relevant section containing information about ""Cost Responsibility for System Upgrades"" is:
+
+10.6 A new Customer of Record or New Party In (""NPI"") who owns, leases, or rents a premises with an operating NEM-V or NEM-V-ST eligible Generating Facility, previously approved by SCE for Parallel Operation, does not have to submit a new interconnection agreement as long as the Customer meets the requirements of Schedule NEM-V, or its successor, NEM-V-ST, as applicable. This will also apply to premises where the developer/contractor establishes the interconnection, so that the Customer who buys/rents/leases the premises will not have to re-submit and sign a new interconnection agreement.
+
+12.2 A new Customer or NPI who owns, rents or leases a premises that includes an NEM-V or NEM-V-ST Generating Facility above 30 kW will need to sign a new interconnection agreement. If no changes are made to the interconnection facilities, the agreement will have identical terms and conditions as the ones approved for the previous customer.", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Prevailing Party Provision,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Governing Law,California,"The relevant section containing the term ""Governing Law"" is:
+
+""9. GOVERNING LAW:
+This Agreement must be interpreted, governed, and construed under the laws of the State of California as if executed and to be performed wholly within the State of California.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Warranty,N/A,,,0,
+Access Rights,"Utility can access premises at all times without notice for emergency purposes only: to inspect protective devices, check meters, ensure no power flow; or to disconnect the facility if hazardous conditions exist that may cause damage or interference.","The relevant sections containing information about ""Access Rights"" are:
+
+6. ACCESS TO PREMISES:
+SCE may enter Customer's premises at all times, without notice to Customer, for emergency
+purposes only:
+(a) To inspect Customer's protective devices or check meter(s); to ascertain there is no power
+flow; or
+(b) To disconnect the Generating Facility and/or service to Customer, whenever in SCE's sole
+opinion, a hazardous condition exists and such immediate action is necessary to protect
+persons, SCE's facilities, or property of others from damage or interference caused by the
+Generating Facility, or the absence or failure of properly operating protective devices.
+
+SCE will make prior arrangements with the Customer for gaining emergency access to
+Customer's premises by obtaining keys to a lock box or a padlock or by making other mutually
+agreeable arrangements", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Other Dates/Deadlines Referenced,"Agreement effective when SCE issues written authorization after receiving all required documents and payments;
+Customer cannot commence parallel operation until written approval from SCE, normally within 30 business days after receiving completed application, agreement, and inspection clearance;
+Customer must notify SCE at least 5 days before final inspection by authority","Here are the relevant excerpts from the document containing references to ""Other Dates/Deadlines"":
+
+""12.1 This Agreement will become effective when SCE issues written authorization to interconnect the Generating Facility after receipt of all required documents and payments, and will remain in effect from month to month unless terminated by either Party on thirty (30) days' prior written notice in accordance with Section 11.""
+
+""3.5 Customer cannot commence parallel operation of the Generating Facility until written approval has been provided to it by SCE. SCE shall normally provide such written approval no later than 30 business days following SCE's receipt of (1) a completed Net Energy Metering Application including all supporting documents and required payments, (2) a completed signed Virtual Net Energy Metering Interconnection Agreement, and (3) evidence of the Application's final electric inspection clearance from the Local Authority having jurisdiction over the Generating Facility.""
+
+""5.3 SCE has the right to have a representative present at the final inspection made by the governmental authority having jurisdiction to inspect and approve the installation of the Generating Facility. Customer must notify SCE in accordance with the terms of Section 11 of this Agreement at least five (5) days before the inspection.""", No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+Responsible Party for Metering,N/A,,,0,
+Recurring Monthly Costs,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation.,0,
+Workflow Questions,N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,
+"Does System Size tie to PPA, EPC, O&M, and PV Syst?",N/A,N/A, No poison rules violations are present because the poison rules do not apply to the situation described in the text.,0,

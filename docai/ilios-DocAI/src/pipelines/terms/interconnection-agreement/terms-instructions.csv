@@ -1,0 +1,917 @@
+Key Items,Instructions
+Effective Date,"## Finding the Effective Date in a Solar Interconnection Agreement:
+
+**Keywords to Look For:**
+
+*   ""Effective Date""
+*   ""Execution""
+*   ""Effective Upon""
+*   ""Commencement Date""
+
+**Patterns to Identify:**
+
+*   Dates written in various formats (e.g., MM/DD/YY, Month DD, YYYY)
+*   Clauses indicating the agreement starts upon signature by all parties
+*   Sections referencing the agreement's start date
+
+**Sections to Focus On:**
+
+*   **Article/Section 1 or 3:** These sections commonly contain definitions and general provisions, often including the effective date.
+*   **Signature Page:** Look for dates near the signatures, which might indicate the last signing date and, consequently, the effective date.
+*   **Exhibit A or Appendix:**  Sometimes, the effective date might be specified within these sections, especially if it's contingent on specific conditions or milestones.
+
+**Examples of How the Effective Date Might Appear:**
+
+*   **Direct Statement:** ""The Effective Date of this Agreement is March 15, 2023.""
+*   **Upon Execution Clause:** ""This Agreement shall become effective upon execution by all Parties.""
+*   **Reference to Signature Date:** ""The Effective Date shall be the date of the last Party's signature.""
+"
+Interconnection Utility Company,"## Finding the Interconnection Utility Company in Solar Energy Interconnection Agreements
+
+Here's how to identify and extract examples of the ""Interconnection Utility Company"" from a solar energy interconnection agreement during due diligence:
+
+**Keywords and Patterns:**
+
+*   **Direct Naming:** Look for explicit mentions like ""Interconnection Utility"", ""Utility"", ""Transmission Provider"", ""Distribution Provider"", or ""Grid Operator"".
+*   **Company Name Patterns:** Search for terms like ""Company"", ""Corp."", ""LLC"", ""Inc."", or ""Limited"" which often appear as part of the utility company's name.
+*   **State References:**  Look for mentions of states, particularly in conjunction with ""Public Utilities Commission"" or abbreviations like ""PUC"" or ""PSC"", which can help identify the relevant utility companies operating in the project's location.
+*   **Acronyms:** Be aware of potential acronyms like ""EDC"" (Electric Distribution Company) used in the examples provided.
+
+**Sections to Focus On:**
+
+*   **Definitions or Recitals:**  The agreement will likely define key terms like ""Interconnection Utility"" or ""Utility"" early on.
+*   **Interconnection Application/Request:** This section may explicitly name the utility company where the interconnection application was submitted.
+*   **Point of Interconnection:** Look for descriptions of the physical location where the solar project connects to the grid, as this may reference the responsible utility's infrastructure.
+*   **Technical Exhibits/ Appendices:** These sections might contain diagrams, maps, or technical specifications that identify the involved utility company.
+
+**Examples of Search Queries:**
+
+*   ""Interconnection Utility""
+*   ""Company [State Name]"" (e.g., ""Company California"")
+*   ""Electric Distribution Company"" AND ""[State Name]""
+*   ""[Acronym]"" (e.g., ""PGE"")
+
+**Extracting Examples:**
+
+Once you've identified sections mentioning the Interconnection Utility Company using the methods above, extract the full and official name of the company, including any abbreviations or parent company information provided.
+"
+Interconnection Customer,"## Finding the Interconnection Customer in Solar Interconnection Agreements:
+
+**Keywords and Patterns:**
+
+*   ""Interconnection Customer""
+*   ""Applicant""
+*   ""Customer"" (in the context of interconnection)
+*   Project name followed by LLC, Inc., or similar entity indicators.
+*   City or municipality names.
+
+**Sections to Focus On:**
+
+*   **Definitions or Recitals:** The agreement usually defines the Interconnection Customer early on.
+*   **Project Description:** Look for sections describing the project and its ownership.
+*   **Signatures:** The Interconnection Customer often signs the agreement, revealing their identity.
+
+**Examples of How to Spot the Interconnection Customer:**
+
+*   **Direct Identification:** The agreement may explicitly state, ""The Interconnection Customer is [Name of Entity].""
+*   **Project Name and Entity Type:** Look for phrases like ""Brixmore Felicita Town Center"" followed by entity indicators such as ""LLC"" or ""Inc.""
+*   **Applicant Designation:** If the term ""Applicant"" is used, check if it aligns with the context of interconnection and project ownership.
+*   **City or Municipality as Customer:**  In cases like ""City of DuQuoin,"" the municipality itself may be the Interconnection Customer.
+
+**Additional Tips:**
+
+*   Pay attention to the context of the terms. Not every mention of ""Customer"" refers to the Interconnection Customer.
+*   Cross-reference with other sections of the agreement to confirm the identity of the Interconnection Customer.
+"
+Nameplate Capacity (System Size),"## Finding Nameplate Capacity in a Solar Interconnection Agreement:
+
+**Keywords to search for:**
+
+*   Nameplate Capacity
+*   System Size
+*   kW (kilowatt)
+*   MW (megawatt)
+*   DC (direct current)
+*   AC (alternating current)
+*   Generator
+*   Photovoltaic
+*   Small Generator Facility
+
+**Patterns to identify:**
+
+*   Numbers followed by kW or MW (e.g., 2.6 kW, 3.00 MW)
+*   ""Nameplate capacity of..."" followed by a number and unit
+*   References to Appendix or Exhibit containing system size information
+
+**Sections to focus on:**
+
+*   Project Description
+*   Technical Specifications
+*   Equipment Specifications
+*   Appendix/Exhibits related to system size or equipment details
+
+**Examples of how Nameplate Capacity might appear:**
+
+*   ""The Project will have a **Nameplate Capacity of 5 MW AC**.""
+*   ""Appendix A details the system components and their respective **kW ratings**.""
+*   ""The **Small Generator Facility** will consist of a **photovoltaic system with a capacity of 1,200 kW DC**.""
+"
+Nameplate Capacity Limits,"## Finding Nameplate Capacity Limits in Interconnection Agreements:
+
+**Keywords to look for:**
+
+*   Nameplate Capacity
+*   System Size
+*   MW (Megawatts)
+*   kW (Kilowatts)
+*   Maximum Allowable
+*   Limited to
+*   Not to Exceed
+
+**Patterns to identify:**
+
+*   Numbers followed by MW or kW, often with decimals (e.g., 1.5 MW, 2.000 kW)
+*   Phrases indicating limitations or maximums (e.g., ""limited to"", ""not to exceed"", ""maximum allowable"")
+*   References to specific equipment types (e.g., photovoltaic, PV)
+
+**Sections to focus on:**
+
+*   **Project Description:** This section usually outlines the size and type of the proposed solar facility.
+*   **Technical Specifications:** Look for details about the system's capacity and any limitations.
+*   **Interconnection Requirements:** This section often specifies the maximum allowable size for interconnection.
+*   **Appendices:** Technical appendices may contain detailed specifications and calculations related to system capacity.
+
+**Examples of how the term might appear:**
+
+*   ""The Project will have a **nameplate capacity** of 2.5 MW.""
+*   ""The **system size** is **limited to** 1.0 MW due to feeder constraints.""
+*   ""The maximum **allowable PV** is 500 kW at unity power factor.""
+"
+Term,"## Finding Term Clauses in Interconnection Agreements:
+
+**Keywords to Look for:**
+
+*   Term
+*   Effective Date
+*   Duration
+*   Period
+*   Termination
+
+**Patterns to Identify:**
+
+*   Section numbers starting with ""Term"" or ""Effective Date"" (e.g., 1.1, 3.2)
+*   Clauses mentioning the agreement's starting date and duration (e.g., ""This Agreement shall become effective..."" and ""...remain in effect for a period of..."")
+*   References to termination clauses (e.g., ""...unless terminated earlier in accordance with Article 3.3..."")
+*   Dates or specific timeframes (e.g., ""December 8, 2020"", ""ten years"", ""perpetual"")
+
+**Sections to Focus On:**
+
+*   **Article 1 or the initial sections of the agreement:** These sections typically define key terms and the effective date.
+*   **Article 3 or sections related to the term and termination:** Look for specific clauses outlining the duration of the agreement, renewal options, and termination conditions.
+*   **Schedules or exhibits:** Sometimes, the term of the agreement might be detailed in separate schedules or exhibits attached to the main agreement.
+
+**Examples of How Term Clauses May Appear:**
+
+*   ""This Agreement shall commence on the Effective Date and shall continue in full force and effect for a period of twenty (20) years...""
+*   ""The Term of this Agreement shall be for a period of ten (10) years from the Effective Date, unless earlier terminated as provided herein.""
+*   ""This Agreement shall remain in effect until terminated by either Party upon thirty (30) days' prior written notice to the other Party.""
+
+**Additional Tips:**
+
+*   Pay attention to the language used to describe the term, such as ""perpetual,"" ""month-to-month,"" or specific timeframes.
+*   Note any conditions or events that could trigger early termination of the agreement.
+*   Cross-reference with other sections of the agreement, especially termination clauses, to fully understand the term and its implications.
+"
+Mechanical Completion Date,"## Finding ""Mechanical Completion Date"" in a Solar Interconnection Agreement:
+
+**Keywords to search for:**
+
+*   ""Mechanical Completion""
+*   ""Mechanical Completion Date""
+*   ""Substantial Completion"" (sometimes used interchangeably)
+*   ""Ready for Commissioning""
+*   ""Completion of Construction""
+
+**Patterns to identify:**
+
+*   Dates followed by the keywords above.
+*   Clauses outlining requirements to achieve Mechanical Completion.
+*   Sections dealing with project timelines, milestones, or construction phases.
+
+**Sections to examine:**
+
+*   **Definitions or Recitals:** Often, key terms like ""Mechanical Completion Date"" are defined upfront.
+*   **Project Timelines or Milestones:** Look for sections outlining the project schedule, including key dates and deadlines.
+*   **Construction or Installation Requirements:** Sections detailing construction obligations may mention Mechanical Completion as a milestone.
+*   **Testing and Commissioning:**  The agreement might specify Mechanical Completion as a prerequisite for starting these activities.
+
+**Examples of how the term might appear:**
+
+*   ""The 'Mechanical Completion Date' is defined as [Date], or as otherwise agreed to by the Parties in writing.""
+*   ""The Interconnection Customer shall achieve Mechanical Completion of the Generating Facility by [Date].""
+*   ""Upon Mechanical Completion, the Interconnection Customer shall notify the Interconnection Company and schedule the commencement of commissioning tests.""
+"
+Commercial Operation Date,"## Finding the Commercial Operation Date (COD) in a Solar Interconnection Agreement
+
+Here's how to pinpoint the Commercial Operation Date (COD) within a solar interconnection agreement document:
+
+**Keywords to Look for:**
+
+*   ""Commercial Operation Date""
+*   ""COD""
+*   ""Grid Connection Date""
+*   ""Date of Interconnection""
+*   ""Service Commencement Date""
+
+**Patterns to Identify:**
+
+*   Dates mentioned in context of project completion, grid connection, or power sales.
+*   Sections referencing testing, commissioning, or final approvals.
+
+**Section Numbers to Explore:**
+
+*   **Project Schedule or Timeline sections:** Look for sections outlining the project's development phases and key milestones.
+*   **Interconnection Requirements or Procedures sections:** These sections may specify the process and timeline for connecting to the grid.
+*   **Definitions or Glossary section:** The document might explicitly define ""Commercial Operation Date"" and provide its specific meaning within the agreement.
+
+**Example Search Strategies:**
+
+1. **Direct Search:** Use the ""Find"" function (Ctrl+F or Cmd+F) to search for the exact term ""Commercial Operation Date"" or its abbreviation ""COD"".
+2. **Contextual Search:** Search for keywords like ""grid connection"", ""power sales"", or ""project completion"" and then scan the surrounding text for date references.
+3. **Section Review:**  Carefully examine the sections mentioned above, paying close attention to dates and timelines related to project milestones.
+
+**Applying the Example:**
+
+In the provided example ""2.8 - anticipated 4/30/21"", it's likely that:
+
+*   **""2.8""** refers to a specific section or clause within the agreement.
+*   **""anticipated 4/30/21""** indicates the expected COD, suggesting it's an estimation or target date.
+
+To verify, navigate to section 2.8 of the agreement and analyze the context to confirm if it relates to the project's Commercial Operation Date.
+"
+Deadline to Interconnect Date,"## Finding ""Deadline to Interconnect Date"" in a Solar Energy Interconnection Agreement
+
+Here's how to identify the ""Deadline to Interconnect Date"" within a solar energy interconnection agreement:
+
+**Keywords to Search:**
+
+*   Interconnection Date
+*   Deadline
+*   Completion of Construction
+*   Commercial Operation Date (COD)
+*   In-Service Date
+*   Permission to Operate (PTO)
+*   Milestone Schedule
+
+**Sections to Examine:**
+
+*   **Project Schedule or Timeline:** Look for sections outlining the project's phases and associated deadlines.
+*   **Milestones:**  Often listed as an appendix or within the project schedule, search for specific milestones related to interconnection, testing, and permission to operate.
+*   **Conditions Precedent:**  This section may outline requirements that must be met before interconnection can occur, potentially including a deadline.
+
+**Patterns to Identify:**
+
+*   **Dates associated with keywords:** Look for specific calendar dates mentioned in conjunction with the keywords listed above.
+*   **Timeframes:**  Search for phrases indicating timeframes, such as ""within X days of,"" ""no later than,"" or ""by [Date].""
+*   **Conditional Language:**  Pay attention to clauses outlining conditions that must be met before interconnection can occur, as these may indirectly reference deadlines.
+
+**Examples of How the Term Might Appear:**
+
+*   ""The Interconnection Date shall be no later than [Date].""
+*   ""The System must achieve Commercial Operation by [Date].""
+*   ""Milestone X: Permission to Operate - [Date]""
+*   ""The Parties agree to use commercially reasonable efforts to achieve interconnection within [Number] days of [Triggering Event].""
+
+**Remember:** The specific wording and location of the ""Deadline to Interconnect Date""  will vary depending on the individual agreement.  Utilize the keywords, sections, and patterns mentioned above to effectively locate this crucial information.
+"
+Amendments and/or Assignments,"## Finding Amendments and Assignments Clauses in Interconnection Agreements:
+
+**Keywords to Search:**
+
+*   Amendment
+*   Assign* (to capture variations like ""assign,"" ""assigned,"" ""assigning,"" etc.)
+*   Consent
+*   Modification
+*   Transfer
+
+**Patterns to Look For:**
+
+*   Section headings related to ""Assignment,"" ""Amendment,"" ""Miscellaneous,"" ""General Provisions,"" or similar.
+*   Clauses using the keywords above, often with terms like ""written consent,"" ""prior approval,"" ""shall not,"" ""only by,"" etc.
+*   Numbered sections (e.g., 11.5, 8.6) which often signify specific clauses within the agreement.
+
+**Section Numbers (Examples):**
+
+While section numbering can vary between agreements, common locations for amendments and assignments clauses include:
+
+*   **Section 8-12:** Often dedicated sections for ""Assignment,"" ""Amendment,"" or within ""Miscellaneous Provisions.""
+*   **Section 20-25:**  Sometimes found within ""General Provisions"" or towards the end of the agreement.
+
+**Instructions:**
+
+1. **Utilize the ""Find"" function:** In your document viewer or text editor, use the ""Find"" or ""Search"" function to locate the keywords listed above. This will help you quickly identify relevant sections.
+2. **Scan section headings:** Look for sections titled ""Assignment,"" ""Amendment,"" ""Miscellaneous Provisions,"" ""General Provisions,"" or similar. These sections are likely to contain clauses related to amendments and assignments.
+3. **Review numbered sections:** Pay close attention to clauses within numbered sections (e.g., 8.6, 11.5) as these often address specific contractual terms, including amendments and assignments.
+4. **Read the identified clauses carefully:** Once you've located potential clauses, read them thoroughly to understand the specific requirements and restrictions regarding amendments and assignments of the interconnection agreement.
+5. **Extract relevant examples:**  Copy the exact wording of clauses related to amendments and assignments, including the section number, to build your collection of examples.
+"
+Default by Provider,"## Finding ""Default by Provider"" Clauses in Interconnection Agreements:
+
+Here's how to identify and extract relevant text concerning ""Default by Provider"" from solar energy interconnection agreements:
+
+**Keywords:**
+
+*   ""Default""
+*   ""Breach""
+*   ""Non-performance""
+*   ""Failure to perform""
+*   ""Cure period""
+*   ""Termination""
+*   ""Force Majeure""
+
+**Patterns:**
+
+*   Look for sections labeled ""Default,"" ""Events of Default,"" or ""Breach and Remedies.""
+*   Pay attention to clauses outlining consequences of non-compliance by the Provider.
+*   Identify language specifying cure periods, termination rights, and remedies available to the non-defaulting party.
+
+**Section Numbers:**
+
+While section numbering can vary across agreements, common locations for ""Default by Provider"" clauses include:
+
+*   **Article 5 or 6:** Often dedicated to general terms and conditions, including default provisions.
+*   **Article 7 or 8:** May address termination, force majeure, and dispute resolution, encompassing default scenarios.
+*   **Specific articles related to Provider obligations:** Look for default provisions within articles addressing specific obligations, such as power delivery, maintenance, or reporting requirements.
+
+**Examples:**
+
+The examples you provided demonstrate common features of ""Default by Provider"" clauses.  Key elements to note:
+
+*   **Definition of Default:** Clauses typically define what constitutes a default, often including failure to fulfill material obligations or specific breaches like non-payment.
+*   **Cure Period:**  A timeframe is usually granted to the defaulting party to rectify the issue.
+*   **Termination Rights:** The non-defaulting party often has the right to terminate the agreement if the default is not cured within the specified period.
+*   **Remedies:** Clauses outline remedies available to the non-defaulting party, such as recovering damages, seeking equitable relief, or pursuing dispute resolution.
+*   **Force Majeure Exceptions:**  Clauses often exclude events beyond the Provider's control (e.g., natural disasters) from constituting a default.
+
+**Additional Notes:**
+
+*   Pay close attention to the specific language used in each agreement, as definitions and procedures may vary.
+*   Consider the context of the agreement and the specific obligations of the Provider.
+*   Cross-reference default clauses with other relevant sections, such as force majeure and dispute resolution provisions.
+"
+Default by Customer,"## Finding ""Default by Customer"" Clauses in Interconnection Agreements
+
+Here's how to identify and extract relevant text regarding ""Default by Customer"" from solar energy interconnection agreements:
+
+**Keywords:**
+
+*   Default
+*   Customer
+*   Breach
+*   Non-performance
+*   Termination
+*   Cure Period
+*   Force Majeure
+
+**Patterns:**
+
+*   Look for sections titled ""Default,"" ""Events of Default,"" or similar headings.
+*   Within those sections, focus on clauses specifically mentioning ""Customer"" or their obligations.
+*   Pay attention to language describing consequences of default, such as cure periods, termination rights, and remedies.
+
+**Section Numbers:**
+
+While section numbering varies across agreements, common locations for default clauses include:
+
+*   **Article 5 or 6:** Often dedicated to general terms and conditions, including default and termination provisions.
+*   **Article [X].6 or [X].7:** Within specific articles addressing obligations of the Customer, you might find sub-sections related to default.
+
+**Examples of Relevant Text (Based on your provided samples):**
+
+*   **Article 6.6.1 & 6.6.2:** These clauses define what constitutes a ""Default"" by the Customer and outline the cure period and potential consequences, such as termination and damage recovery.
+*   **Similar clauses with different numbering (e.g., 5.6, 7.6):** Look for analogous language and structure across the agreement, even if the section numbers differ.
+
+**Additional Notes:**
+
+*   Pay attention to definitions of ""Default"" and ""Force Majeure"" within the agreement to understand specific parameters and exceptions.
+*   Consider the context of the entire agreement and the specific obligations of the Customer to accurately interpret default clauses.
+"
+Termination by Customer,"## Finding Termination by Customer Clauses in Interconnection Agreements:
+
+**Keywords and Patterns:**
+
+*   **Section Titles:** Look for sections titled ""Termination"", ""Term and Termination"", ""Default"", ""Force Majeure"", or similar variations.
+*   **Keywords within Sections:** Scan for keywords like ""terminate"", ""cancellation"", ""right to terminate"", ""notice"", ""default"", ""breach"", ""customer"", ""interconnection customer"", ""applicant"", ""project owner"", ""days' notice"", etc.
+*   **Specific Phrases:** Search for phrases like ""either party may terminate"", ""customer may terminate at any time"", ""termination upon default"", ""written notice"", ""termination fee"", etc.
+
+**Sections to Focus On:**
+
+*   **Article/Section on Termination:** This is the most likely location for detailed clauses related to termination by the customer. Pay close attention to subsections differentiating between termination rights of the customer and the utility.
+*   **Default and Force Majeure Sections:** These sections may contain provisions for termination related to specific events like non-payment, failure to meet deadlines, or unforeseen circumstances.
+*   **Definitions Section:** Ensure you understand the defined terms, especially ""customer"", ""interconnection customer"", ""applicant"", ""default"", ""breach"", etc., as they might have specific meanings within the agreement.
+
+**Examples of How to Apply the Instructions:**
+
+1.  **Search for ""Termination"" in the document.** This will likely lead you to the relevant section containing termination clauses.
+2.  **Within the ""Termination"" section, look for subsections or clauses specifically addressing the customer's right to terminate.**  These clauses often begin with phrases like ""The Customer may..."" or ""The Interconnection Customer may...""
+3.  **Scan for keywords like ""notice"" and ""days"" to determine the notice period required for termination.** Note the specific number of days and whether they are business days or calendar days.
+4.  **Check if there are any conditions or fees associated with termination.** Look for phrases like ""termination fee"", ""upon payment of..."", or ""subject to...""
+5.  **Review the ""Default"" and ""Force Majeure"" sections for additional termination events or conditions.**
+
+**Additional Tips (Optional, as per your instruction):**
+
+*   **Pay attention to the agreement's structure and numbering system.** This will help you navigate and locate specific clauses efficiently.
+*   **Use the search function within your document viewer to quickly find relevant keywords.**
+*   **If the agreement is complex, consider creating a table or summary of the termination clauses to easily compare and understand the different conditions and requirements.**
+"
+Termination by Provider,"## Finding Termination by Provider Clauses in Interconnection Agreements:
+
+Here's how to identify and extract ""Termination by Provider"" clauses from solar energy interconnection agreements:
+
+**Keywords:**
+
+*   ""Termination""
+*   ""Default""
+*   ""Cause""
+*   ""Notice""
+*   ""Cure""
+*   ""Utility""
+*   ""Provider""
+*   ""Company""
+
+**Patterns:**
+
+*   Look for sections that explicitly discuss termination rights, often titled ""Termination"" or ""Default"".
+*   Search for instances where the utility company has the right to end the agreement due to specific events or breaches by the customer.
+*   Pay attention to clauses mentioning ""notice periods"" and ""cure periods"" which detail the process and timelines involved in termination.
+
+**Sections:**
+
+*   Focus on sections labeled as ""Termination"", ""Default"", ""Force Majeure"", or similar headings.
+*   Appendix or exhibits related to specific events or conditions leading to termination may also be relevant.
+*   Numbered articles or sections referencing termination rights (e.g., ""Article 3.3"", ""Section 6.5"").
+
+**Examples of Specific Phrases to Look For:**
+
+*   ""The Utility may terminate this Agreement...""
+*   ""Either Party may terminate this Agreement after Default...""
+*   ""Upon [specific event], the Provider may terminate this Agreement...""
+*   ""Failure to [specific action] may result in termination...""
+*   ""The Company reserves the right to terminate...""
+
+**Additional Tips:**
+
+*   While the above instructions focus on specific keywords and sections, understanding the overall structure and context of the agreement is crucial.
+*   Pay attention to defined terms within the agreement, as they may hold specific meanings relevant to termination clauses.
+*   Consider using the search function within your document viewer to quickly locate instances of relevant keywords.
+"
+Terms for Disconnection,"## Finding Terms for Disconnection in Interconnection Agreements:
+
+**Keywords to Search:**
+
+*   ""disconnect""
+*   ""disconnection""
+*   ""curtailment""
+*   ""interruption""
+*   ""reduction"" (in reference to power output)
+*   ""emergency""
+*   ""forced outage""
+*   ""maintenance""
+*   ""repair""
+*   ""termination"" (of the agreement)
+
+**Patterns to Identify:**
+
+*   Sections explicitly titled ""Disconnection,"" ""Suspension of Service,"" or similar
+*   Clauses outlining conditions under which the utility or customer can disconnect the system
+*   Procedures and timelines for disconnection, including notification requirements
+*   Differentiation between emergency and non-emergency disconnections
+*   Consequences of disconnection, such as potential fees or liability
+
+**Section Numbers to Explore:**
+
+While section numbering can vary across agreements, common locations for disconnection terms include:
+
+*   **Section 3:** Often covers interconnection operations and procedures, potentially including disconnection protocols.
+*   **Section 4:** May focus on operation and maintenance, encompassing situations necessitating disconnection.
+*   **Section 5:** Sometimes addresses default, termination, and disconnection conditions related to breaches of the agreement.
+*   **Section 6:** Might cover general terms and conditions, including clauses about disconnection for safety or system integrity.
+*   **Exhibit E (or similar):** If present, may be a dedicated maintenance agreement outlining disconnection procedures related to equipment upkeep.
+
+**Specific Examples from the Provided Text:**
+
+The examples you provided illustrate the types of clauses and information you might find:
+
+*   **Emergency Disconnection:** Look for clauses like 4.1 and 3.4.1, detailing situations where immediate disconnection is authorized due to safety hazards, grid emergencies, or equipment issues.
+*   **Non-Emergency Disconnection:** Clauses like 4.2 and 3.4.4 outline conditions where disconnection is permitted after notice and opportunity for correction, such as non-compliance, service quality issues, or adverse system impacts.
+*   **Temporary Disconnection:** Sections like 3.4 often provide details about temporary disconnections due to maintenance, repairs, forced outages, or other situations, including notice requirements and coordination procedures.
+*   **Disconnection upon Termination:** Clauses like 3.33 and the excerpt from Exhibit E specify that the system will be disconnected upon termination of the agreement, sometimes outlining additional conditions or processes.
+
+**Additional Notes:**
+
+*   Pay attention to the specific language used in the agreement, as terms and conditions can vary.
+*   Consider the context of the entire agreement when interpreting disconnection clauses.
+*   If uncertainties arise, seeking clarification from a legal professional experienced in energy contracts is recommended.
+"
+Assignment – Customer,"## Finding Assignment Clauses in a Solar Interconnection Agreement:
+
+**Keywords to Look for:**
+
+*   ""Assignment""
+*   ""Transfer""
+*   ""Successors""
+*   ""Assigns""
+*   ""Consent"" (often in the context of requiring consent for assignment)
+
+**Patterns to Identify:**
+
+*   **Conditional Clauses:** Look for phrases like ""subject to,"" ""provided that,"" or ""upon,"" which often introduce conditions or limitations on assignment rights.
+*   **Consent Requirements:**  Identify clauses that stipulate the need for consent from the other party (usually the utility company) before assignment can occur.
+*   **Prohibited Assignments:**  Search for language that explicitly restricts or prohibits assignment under certain circumstances.
+
+**Sections to Focus On:**
+
+*   **Miscellaneous Provisions:** Assignment clauses are commonly found within this section of the agreement.
+*   **Term and Termination:** This section might address assignment rights in the context of contract termination or expiration.
+*   **Definitions:**  Check if the agreement provides a specific definition for ""assignment"" that could offer further context.
+
+**Examples of How the Clause May Appear:**
+
+*   ""Neither Party may assign this Agreement without the prior written consent of the other Party, which consent shall not be unreasonably withheld, conditioned or delayed.""
+*   ""This Agreement shall be binding upon and inure to the benefit of the Parties and their respective successors and permitted assigns.""
+*   ""Customer may not assign this Agreement or any of its rights or obligations hereunder without the prior written consent of [Utility Name], except that Customer may assign this Agreement to an Affiliate without such consent.""
+"
+Assignment – Provider,"## Finding Assignment Provisions in a Solar Interconnection Agreement:
+
+**Keywords:**
+
+*   ""Assignment""
+*   ""Transfer""
+*   ""Delegate""
+*   ""Successors""
+*   ""Assigns""
+
+**Patterns:**
+
+*   ""Provider shall not assign...""
+*   ""Provider may assign...""
+*   ""Subject to [conditions], Provider may assign...""
+*   ""[Conditions] required for assignment...""
+
+**Sections to Check:**
+
+*   **Assignment; Successors and Assigns:** This section is often explicitly dedicated to outlining the conditions and limitations of assignment.
+*   **Miscellaneous Provisions:**  Assignment clauses might be included here if a dedicated section is absent.
+*   **Definitions:** Look for definitions of key terms like ""Assignment"" or ""Provider"" to understand the specific scope intended in the agreement.
+
+**Instructions:**
+
+1.  **Scan the Table of Contents:**  Look for sections with the keywords or titles related to ""Assignment.""
+2.  **Search within Sections:**  Use the ""find"" function within your document viewer to search for the keywords within the identified sections.
+3.  **Analyze Clauses:** Carefully read the clauses containing the keywords to understand the specific restrictions and requirements for assignment by the Provider.
+4.  **Identify Examples:** Extract the relevant sentences or paragraphs that clearly demonstrate the conditions or limitations placed on the Provider's ability to assign the agreement.
+
+**Examples of Text to Extract:**
+
+*   ""Provider shall not assign this Agreement, in whole or in part, without the prior written consent of [Interconnection Customer].""
+*   ""Provider may assign this Agreement to an Affiliate upon written notice to [Interconnection Customer].""
+*   ""Any attempted assignment in violation of this Section shall be null and void.""
+"
+Force Maejure,"## Finding Force Majeure Clauses in Interconnection Agreements:
+
+Here's how to locate and extract Force Majeure clauses within a solar energy interconnection agreement:
+
+**Keywords and Patterns:**
+
+*   **Section Titles:** Look for sections titled ""Force Majeure,"" ""Excusable Delays,"" ""Uncontrollable Events,"" or similar variations. These sections typically house the relevant clauses.
+*   **Keywords within Text:** Search for keywords like ""act of God,"" ""natural disaster,"" ""labor disturbance,"" ""government action,"" ""unforeseeable circumstances,"" ""beyond control,"" and ""excuse performance.""
+*   **Triggering Events:** Phrases like ""prevents a Party from fulfilling,"" ""unable to perform,"" or ""delays performance"" often precede the list of specific Force Majeure events.
+
+**Section Numbering:**
+
+While section numbering varies across agreements, Force Majeure clauses commonly reside within sections dedicated to general terms and conditions, such as:
+
+*   **Article/Section 5-8:** These sections often cover topics like default, termination, and remedies, making Force Majeure a natural inclusion.
+*   **Exhibit or Schedule:** Some agreements might place Force Majeure clauses within a separate exhibit or schedule attached to the main agreement.
+
+**Examples of Search Queries:**
+
+*   **""Force Majeure"" AND (""act of God"" OR ""natural disaster"")**
+*   **""Excusable Delays"" AND (""government action"" OR ""labor disturbance"")**
+*   **Section 6 AND (""unable to perform"" OR ""delays performance"")**
+
+**Additional Tips:**
+
+*   **Context is Key:** Pay attention to the surrounding text to confirm the identified clause relates to Force Majeure and not another contractual concept.
+*   **Review Definitions:** Look for a definition of ""Force Majeure Event"" within the clause or the agreement's definitions section.
+*   **Notice Requirements:** Identify the notice procedures for invoking Force Majeure, including timelines and required details.
+*   **Mitigation Obligations:** Note any obligations for the affected party to mitigate the impact of the Force Majeure event.
+
+**By using this approach, you can effectively locate and analyze Force Majeure clauses within solar energy interconnection agreements.**
+"
+Insurance Requirements,"## Finding Insurance Requirements in Interconnection Agreements:
+
+Here's how to locate and extract insurance requirement details from a solar energy interconnection agreement:
+
+**Keywords & Patterns:**
+
+*   **Explicit Keywords:** ""insurance,"" ""liability,"" ""coverage,"" ""indemnification,"" ""policy,"" ""additional insured,"" ""subrogation,"" ""occurrence,"" ""aggregate,"" ""claims-made,"" ""tail coverage,"" ""extended reporting period.""
+*   **Section Titles:** Look for sections explicitly titled ""Insurance,"" or variations like ""Insurance Requirements,"" ""Liability and Insurance,"" etc.
+*   **Common Locations:** Insurance clauses often reside in dedicated ""Insurance"" sections, but may also appear within sections on ""Operations and Maintenance,"" ""General Terms and Conditions,"" or as exhibits attached to the agreement.
+*   **Numerical Amounts:** Scan for dollar amounts (e.g., $1,000,000) potentially tied to coverage limits.
+*   **MW/kW Values:**  Look for references to ""MW"" or ""kW"" indicating generating capacity thresholds for insurance requirements.
+
+**Sections & Exhibits:**
+
+*   **Dedicated Insurance Sections:** These sections will comprehensively outline insurance obligations, types of coverage, limits, additional insured parties, and other relevant details.
+*   **Exhibits:** Look for exhibits labeled ""Insurance Requirements"" or similarly, often containing specific coverage amounts and types tied to different generating capacities.
+*   **Other Relevant Sections:**
+    *   **Definitions:**  This section may define key terms related to insurance (e.g., ""occurrence,"" ""aggregate"").
+    *   **Term and Termination:** May specify insurance obligations during the agreement's term and post-termination.
+
+**Examples & Extraction:**
+
+1.  **Identify Relevant Sections:**  Use the keywords and patterns to locate sections or exhibits dealing with insurance.
+2.  **Extract Coverage Types:** Note the specific types of insurance required (e.g., general liability, property damage).
+3.  **Extract Coverage Limits:** Identify the coverage limits associated with each type of insurance, often expressed in dollar amounts per occurrence and in aggregate.
+4.  **Generating Capacity Thresholds:**  Note any thresholds based on generating capacity (kW or MW) that trigger different insurance requirements.
+5.  **Additional Insured Parties:**  Identify any parties (e.g., utility company) who must be added as additional insured on the policy.
+6.  **Other Requirements:**  Look for provisions related to subrogation waivers, notice periods for cancellation or changes, and tail coverage requirements.
+7. **Document and Organize:** Compile the extracted information in a clear and organized manner for further analysis and action.
+"
+Taxes,""
+Summary of Economic Terms,"## Finding ""Summary of Economic Terms"" in Interconnection Agreements:
+
+Here's how to identify and extract the ""Summary of Economic Terms"" within a solar energy interconnection agreement:
+
+**Keywords and Patterns:**
+
+*   **Explicit mentions:** Look for sections explicitly titled ""Summary of Economic Terms,"" ""Costs and Payments,"" ""Financial Terms,"" or similar.
+*   **Cost-related terms:** Search for keywords like ""cost,"" ""payment,"" ""expense,"" ""fee,"" ""charge,"" ""deposit,"" ""contribution,"" ""reimbursement,"" ""compensation,"" ""billing,"" ""invoice,"" and ""rate.""
+*   **Responsibility and ownership:** Pay attention to phrases indicating responsibility for costs, such as ""shall pay,"" ""shall be responsible for,"" ""borne by,"" ""assigned to,"" and ""obligation.""
+*   **Specific items:** Look for mentions of specific cost components like ""interconnection facilities,"" ""distribution upgrades,"" ""network upgrades,"" ""system modifications,"" ""studies,"" ""metering,"" and ""maintenance.""
+*   **Numerical values:** Be attentive to dollar amounts, percentages, and formulas used to calculate costs.
+
+**Sections to Focus On:**
+
+*   **Section 4:** This section often deals with cost responsibility and payment terms for interconnection facilities and upgrades.
+*   **Exhibits and Appendices:** These often contain detailed breakdowns of costs, including itemized lists and tables. Pay close attention to references to exhibits and appendices within the main body of the agreement.
+*   **Attachment A:** This section may include cost estimates for various components of the interconnection project.
+
+**Examples of Relevant Sections:**
+
+Based on the examples you provided, here's how you might identify and extract information:
+
+*   **Example 1:** The phrase ""The Interconnection Customer shall pay for the cost..."" clearly indicates a cost responsibility. Look for similar phrases throughout the document.
+*   **Example 2:** The mention of specific costs associated with ""Distribution Upgrades"" and ""Network Upgrades"" provides valuable information for the summary.
+*   **Example 3:** Appendix 2 with itemized costs and Exhibit 6 with a cost cap are crucial elements of the economic terms.
+*   **Example 4:** The reference to a 50% deposit and a $1,000 limit falls under the scope of economic terms.
+*   **Example 5:** Attachment A provides a detailed cost breakdown for various components.
+*   **Example 6:** The table with cost forecasts for materials, labor, and equipment is relevant to the summary.
+*   **Example 7:** Similar to Example 1, the cost responsibility and a specific cost cap with additional amounts to be determined are important details.
+
+**Remember:** Interconnection agreements can vary in structure and terminology. Adapt your search based on the specific document you're reviewing, and always consider the context surrounding the keywords and phrases you find.
+"
+Cost Responsibility for Interconnection,"## Finding Cost Responsibility Clauses in Interconnection Agreements:
+
+Here's how to identify sections dealing with cost responsibility for interconnection in solar energy interconnection agreements:
+
+**Keywords:**
+
+*   ""Cost Responsibility""
+*   ""Interconnection Facilities""
+*   ""Distribution Upgrades""
+*   ""Payment""
+*   ""Bill""
+*   ""Expenses""
+*   ""Capital Costs""
+*   ""Dedicated Facilities""
+
+**Patterns:**
+
+*   Look for sections outlining who is responsible for the ""design,"" ""engineering,"" ""construction,"" ""procurement,"" ""installation,"" ""operation,"" ""maintenance,"" and ""repair"" of interconnection facilities.
+*   Search for clauses mentioning ""payment terms,"" ""billing cycles,"" or specific timeframes for payment (e.g., ""within 30 days"").
+*   Identify sections referencing ""attachments"" or ""exhibits"" that may contain detailed cost breakdowns.
+
+**Section Numbers:**
+
+While section numbering can vary, common locations for cost responsibility clauses include:
+
+*   **Article/Section 4:** Often titled ""Cost Responsibility,"" ""Interconnection Costs,"" or similar.
+*   **Article/Section 5:** May be labeled ""Billing and Payment"" or ""Financial Arrangements.""
+*   **Article/Section 6:** Potentially titled ""Construction and Installation"" or ""Interconnection Facilities.""
+
+**Examples of Relevant Text:**
+
+Pay close attention to phrases like:
+
+*   _""The Interconnection Customer shall pay for...""_
+*   _""The Customer-Generator is responsible for the costs of...""_
+*   _""T&D Utility shall bill the Interconnection Customer for...""_
+*   _""The Utility will design and construct the Dedicated Facilities at the Customer's expense.""_
+
+**Additional Tips:**
+
+*   **Table of Contents:**  Use the table of contents to quickly navigate to relevant sections.
+*   **Definitions Section:**  Review the definitions section to understand the specific meaning of terms like ""Interconnection Facilities"" and ""Distribution Upgrades"" within the agreement.
+*   **Exhibits and Attachments:**  Carefully examine any attached exhibits or schedules that detail specific costs or payment schedules.
+"
+Cost Responsibility for System Upgrades,"## Finding Cost Responsibility for System Upgrades in Interconnection Agreements:
+
+Here's how to identify sections dealing with cost responsibility for system upgrades within a solar energy interconnection agreement:
+
+**Keywords to Search:**
+
+*   ""Cost""
+*   ""Upgrade""
+*   ""Distribution Upgrade""
+*   ""Network Upgrade""
+*   ""Interconnection Facilities""
+*   ""Dedicated Facilities""
+*   ""Responsibility""
+*   ""Expense""
+*   ""Capital Cost""
+
+**Patterns to Identify:**
+
+*   Sections outlining responsibilities for design, construction, installation, procurement, and ownership of upgrades.
+*   Clauses mentioning cost allocation, billing, or payment terms for upgrades.
+*   Sentences specifying which party (Interconnection Customer or Utility) bears the cost burden for specific upgrade types.
+
+**Section Numbers (Common Locations):**
+
+*   **Article/Section Titles:** Look for titles containing keywords like ""Cost Responsibility,"" ""Interconnection Facilities,"" ""Distribution Upgrades,"" or ""Network Upgrades.""
+*   **Article 4 & 5:** These sections frequently address cost allocation and payment terms within interconnection agreements.
+*   **Exhibits and Appendices:**  Detailed cost breakdowns or specific upgrade descriptions may be located within exhibits or appendices referenced in the main agreement.
+
+**Examples of Relevant Text (Similar to Provided Examples):**
+
+*   _""The Interconnection Customer shall be responsible for the costs associated with all necessary upgrades to the Point of Interconnection.""_
+*   _""The Utility shall bear the cost of Network Upgrades required to accommodate the interconnection of the Customer's Facility.""_
+*   _""The cost of Dedicated Facilities shall be shared equally between the Interconnection Customer and the Utility.""_
+
+**Additional Tips (Oops, you said no tips, but here's one anyway):**
+
+*   Pay attention to the definitions section of the agreement, as it may clarify specific terms related to cost responsibility and upgrades.
+"
+Prevailing Party Provision,"## Finding the Prevailing Party Provision in a Solar Energy Interconnection Agreement:
+
+**Keywords to look for:**
+
+*   Prevailing Party
+*   Costs
+*   Expenses
+*   Attorneys' Fees
+*   Legal Fees
+*   Litigation
+*   Dispute Resolution
+
+**Patterns to identify:**
+
+*   ""The prevailing party in any dispute arising out of or relating to this Agreement shall be entitled to recover...""
+*   ""Each party shall bear its own costs and expenses, including attorneys' fees, incurred in connection with any dispute..."" (This indicates the absence of a prevailing party provision)
+
+**Sections to focus on:**
+
+*   **Dispute Resolution or Arbitration Clause:** This section usually outlines the process for resolving disputes and often includes information about the allocation of costs.
+*   **Miscellaneous Provisions:** Sometimes, provisions related to costs and attorneys' fees can be found in a general miscellaneous section.
+
+**Examples within the text:**
+
+*   ""In the event of any dispute arising under this Agreement, the prevailing party shall be entitled to recover from the other party all reasonable costs and expenses incurred in connection with such dispute, including, without limitation, reasonable attorneys’ fees.""
+*   ""If any legal action or other proceeding is brought for the enforcement of this Agreement, or because of an alleged dispute, breach, default, or misrepresentation in connection with any of the provisions of this Agreement, the successful or prevailing party or parties shall be entitled to recover reasonable attorneys’ fees and other costs incurred in that action or proceeding, in addition to any other relief to which it or they may be entitled.""
+"
+Governing Law,"## Finding the Governing Law in Interconnection Agreements:
+
+Here's how to pinpoint the governing law clause within solar energy interconnection agreements:
+
+**Keywords to Search:**
+
+*   ""Governing Law""
+*   ""Choice of Law""
+*   ""Applicable Law""
+*   ""Jurisdiction""
+*   ""Laws of""
+
+**Patterns to Identify:**
+
+*   Section headings like ""Miscellaneous,"" ""General Provisions,"" or a dedicated ""Governing Law"" section.
+*   Numbered clauses often within Section 8 to 12.
+*   The phrase ""shall be governed by the laws of..."" followed by the state name.
+*   Mention of ""without regard to its conflicts of law principles"" indicating the chosen state's laws will apply exclusively.
+
+**Examples of Section Numbers:**
+
+While it varies, common sections include:
+
+*   9.1
+*   12.1
+*   8.1
+
+**Additional Tips (oops, disregard this):**
+
+*   Table of Contents can guide you to relevant sections.
+*   Consider using the search function within a PDF viewer.
+
+**Examples from Your Provided Data:**
+
+As you've already shown, the governing law typically appears within a clause like this:
+
+>""9.1 Governing Law, Regulatory Authority, and Rules The validity, interpretation and enforcement of this Agreement and each of its provisions shall be governed by the laws of the State of [State Name], without regard to its conflicts of law principles.""
+"
+Warranty,""
+Access Rights,"## Finding Access Rights Clauses in Interconnection Agreements:
+
+Here's how to identify and extract access rights clauses from solar energy interconnection agreements:
+
+**Keywords and Patterns:**
+
+*   **Section Titles:** Look for sections titled ""Access Rights,"" ""Right of Entry,"" ""Access to Premises,"" or similar variations.
+*   **Keywords within Text:** Search for keywords such as ""access,"" ""enter,"" ""premises,"" ""inspection,"" ""disconnect,"" ""emergency,"" ""hazardous condition,"" ""reasonable hours,"" ""notice,"" and ""metering equipment.""
+*   **Parties Involved:** Identify references to the utility company (e.g., SDG&E, PGE, Xcel Energy) and the customer/interconnection customer.
+*   **Conditional Statements:** Look for clauses outlining conditions under which access is granted (e.g., reasonable hours, with/without notice, emergencies).
+*   **Purpose of Access:** Identify the reasons for access, such as inspection, meter reading, disconnection due to safety concerns, or maintenance activities.
+
+**Section Numbers:**
+
+While section numbering may vary across agreements, focus on sections likely to contain access rights information:
+
+*   **General Terms and Conditions:** Early sections often outline general rights and responsibilities of both parties.
+*   **Operations and Maintenance:** Sections related to system operation and maintenance might specify access rights for the utility.
+*   **Safety and Emergency Procedures:**  Look for sections addressing emergency situations and access protocols during such events.
+*   **Metering and Billing:** Sections dealing with metering equipment and billing procedures may include access rights for meter reading and inspection.
+
+**Examples of How to Locate Clauses:**
+
+1. **Search by Section Title:**  Look for sections titled ""Access Rights"" or similar. Then, read the content to verify if it discusses the utility's right to enter the premises.
+2. **Keyword Search:** Use the ""Find"" function within your document viewer and search for keywords like ""access,"" ""enter,"" or ""premises."" Examine the surrounding text to determine if it pertains to access rights.
+3. **Table of Contents:** If the agreement has a table of contents, scan for relevant sections like ""Operations and Maintenance"" or ""Safety and Emergency Procedures.""
+
+**Remember:**
+
+*   Access rights clauses may be spread across multiple sections within the agreement.
+*   Pay attention to the specific conditions and limitations associated with access rights.
+*   Consider the context and overall purpose of the agreement when interpreting access rights clauses.
+"
+Other Dates/Deadlines Referenced,"## Finding Other Dates/Deadlines in Interconnection Agreements:
+
+Here's how to identify and extract ""Other Dates/Deadlines Referenced"" within a solar energy interconnection agreement:
+
+**Keywords and Patterns:**
+
+*   **Numeric Patterns:** Look for expressions like ""within [number] days,"" ""[number] months,"" specific dates (e.g., ""August 7, 2016""), or references to specific timeframes (e.g., ""close of business"").
+*   **Trigger Words:** Pay attention to terms like ""shall,"" ""must,"" ""required,"" ""following,"" ""after,"" ""prior to,"" ""commencement,"" ""completion,"" ""notice,"" ""payment,"" ""report,"" ""bill,"" ""invoice,"" ""refund,"" ""true-up,"" ""accounting,"" ""final,"" ""estimate,"" ""budget,"" ""variation,"" and ""significant.""
+*   **Action Verbs:** Watch for verbs indicating actions tied to dates, such as ""provide,"" ""submit,"" ""pay,"" ""deliver,"" ""install,"" ""complete,"" ""construct,"" ""notify,"" and ""file.""
+
+**Sections to Focus On:**
+
+*   **Payment Terms (Article/Section 5):** This section typically outlines billing cycles, payment deadlines, late fees, and related terms.
+*   **Construction and Completion (Articles/Sections 6, 11):** Look for timelines associated with the construction, installation, and completion of interconnection facilities and upgrades. This might include milestones, inspection dates, and deadlines for final reports.
+*   **Notice Provisions (Article/Section 10):** This section usually specifies timeframes for providing notices related to various events or actions under the agreement.
+*   **Reporting Requirements (Article/Section 7):**  Search for deadlines associated with submitting reports, such as performance reports, maintenance reports, or incident reports.
+*   **Exhibits and Appendices:** These sections often contain detailed schedules, cost estimates, and other documents with specific dates and deadlines.
+
+**Examples of How to Apply these Instructions:**
+
+1. **Example 1:** The phrase ""within thirty (30) calendar days of receipt"" clearly indicates a deadline for payment.
+2. **Example 2:** The term ""ninety (90) calendar days of completing the construction"" signifies a deadline for providing a final accounting report.
+3. **Example 3:** The expression ""close of business on August 7, 2016"" represents a specific deadline associated with project commencement and potential cost revisions.
+
+**Remember:** Dates and deadlines can appear throughout the agreement, not just in the sections mentioned above. Be thorough in your review and utilize the keywords and patterns to effectively identify all relevant dates and deadlines.
+"
+Responsible Party for Metering,""
+Recurring Monthly Costs,"## Finding ""Recurring Monthly Costs"" in a Solar Energy Interconnection Agreement
+
+Here's how to identify sections potentially outlining ""Recurring Monthly Costs TBD"" within a solar energy interconnection agreement:
+
+**Keywords to look for:**
+
+*   Recurring costs
+*   Monthly charges
+*   Fees (in context of ongoing expenses)
+*   Operations and maintenance (O&M) costs
+*   Administrative fees
+*   Metering charges
+*   Data acquisition charges
+*   Insurance
+
+**Patterns to identify:**
+
+*   Sections detailing ongoing financial obligations of the solar project owner to the utility or other involved parties.
+*   Clauses mentioning charges that are not explicitly defined but marked as ""To Be Determined"" (TBD).
+*   Tables or schedules outlining various cost components associated with the interconnection.
+
+**Section Numbers (Potentially):**
+
+*   **Cost Responsibility:** Look for sections outlining the allocation of costs between the solar project owner and the utility. This section might explicitly list or reference recurring monthly costs.
+*   **Metering:** Sections detailing metering requirements and associated costs could mention recurring charges for meter data management or communication infrastructure.
+*   **Operations and Maintenance:** Sections outlining O&M responsibilities and cost sharing might specify recurring charges related to maintaining the interconnection infrastructure.
+*   **Insurance:**  Sections detailing insurance requirements could mention ongoing costs associated with liability coverage or other insurance needs.
+
+**Examples (locating within the document):**
+
+1.  **Within Text:** Look for sentences like ""The customer shall be responsible for...  [list of charges]... and any other recurring monthly costs as determined by the utility.""
+2.  **Within Tables:** Search for tables outlining cost components, specifically columns labeled as ""Monthly Charges"" or similar, with entries marked as ""TBD"" or with formulas indicating variable costs.
+
+**Remember:** The specific wording and organization of interconnection agreements can vary. Flexibility and careful reading are crucial for identifying relevant sections.
+"
