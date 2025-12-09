@@ -55,8 +55,8 @@ externalPort = 8000
 
 [deployment]
 deploymentTarget = "vm"
-build = ["bash", "-c", "cd /home/runner/workspace/frontend/rea-investment-fe && npm install && npm run build && cd /home/runner/workspace/backend/ilios-server && pip install -r requirements.txt"]
-run = ["bash", "-c", "cd /home/runner/workspace/frontend/rea-investment-fe && npx serve -s build -l 5000 & cd /home/runner/workspace/backend/ilios-server && gunicorn --bind 0.0.0.0:8000 --workers 4 --worker-class uvicorn.workers.UvicornWorker app.main:app"]
+build = ["bash", "-c", "(cd frontend/rea-investment-fe && npm install && npm run build) && (cd backend/ilios-server && pip install -r requirements.txt)"]
+run = ["bash", "-c", "(cd frontend/rea-investment-fe && npx serve -s build -l 5000) & (cd backend/ilios-server && exec gunicorn --bind 0.0.0.0:8000 --workers 4 --worker-class uvicorn.workers.UvicornWorker app.main:app)"]
 
 [userenv]
 
