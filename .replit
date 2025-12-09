@@ -1,4 +1,4 @@
-modules = ["python-3.12", "nodejs-20"]
+modules = ["nodejs-20", "python-3.11", "postgresql-16"]
 [agent]
 expertMode = true
 
@@ -17,6 +17,10 @@ author = "agent"
 task = "workflow.run"
 args = "Frontend"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Backend"
+
 [[workflows.workflow]]
 name = "Frontend"
 author = "agent"
@@ -29,11 +33,69 @@ waitForPort = 5000
 [workflows.workflow.metadata]
 outputType = "webview"
 
+[[workflows.workflow]]
+name = "Backend"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend/ilios-server && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+waitForPort = 8000
+
+[workflows.workflow.metadata]
+outputType = "console"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 8000
+externalPort = 8000
+
+[[ports]]
+localPort = 44205
+externalPort = 3000
 
 [deployment]
 deploymentTarget = "static"
 build = ["bash", "-c", "cd frontend/rea-investment-fe && npm run build"]
 publicDir = "frontend/rea-investment-fe/build"
+
+[userenv]
+
+[userenv.shared]
+db_host = "helium"
+db_user = "postgres"
+db_password = "password"
+db_name = "heliumdb"
+secret_key = "21f3869f9e099b69ab9b6f74424c1545bbc2f6f4d84e0a4d7ea89c74ef377453"
+api_key = "dev-api-key-placeholder"
+system_user_password = "SystemUser123!"
+environment_name = "dev"
+mailgun_rest_api_endpoint = "https://api.mailgun.net/v3"
+mailgun_api_key = "placeholder-mailgun-key"
+mailgun_domain_name = "placeholder.mailgun.org"
+default_email_sender = "noreply@example.com"
+invitation_url = "https://example.com/invite"
+password_reset_url = "https://example.com/reset-password"
+login_url = "https://example.com/login"
+support_email = "support@example.com"
+file_parse_function_url = "https://placeholder-function.com/parse"
+co_terminus_function_url = "https://placeholder-function.com/co-terminus"
+chatbot_upload_file_function_url = "https://placeholder-function.com/chatbot-upload"
+chatbot_mark_actual_function_url = "https://placeholder-function.com/chatbot-mark"
+chatbot_delete_file_function_url = "https://placeholder-function.com/chatbot-delete"
+chatbot_session_token_function_url = "https://placeholder-function.com/chatbot-token"
+ml_api_key = "placeholder-ml-api-key"
+telemetry_token_function_url = "https://placeholder-function.com/telemetry-token"
+telemetry_sites_function_url = "https://placeholder-function.com/telemetry-sites"
+telemetry_devices_function_url = "https://placeholder-function.com/telemetry-devices"
+telemetry_device_static_info_func_url = "https://placeholder-function.com/telemetry-static"
+gcp_project_id = "123456789"
+rombus_api_key = "placeholder-rombus-key"
+redis_url = "redis://localhost:6379"
+pbi_tenant_id = "placeholder-tenant-id"
+pbi_client_id = "placeholder-client-id"
+pbi_client_secret = "placeholder-client-secret"
+pbi_workspace_id = "placeholder-workspace-id"

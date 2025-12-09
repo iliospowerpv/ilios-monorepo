@@ -14,7 +14,6 @@ import sqlalchemy as sa
 # revision identifiers, used by Alembic.
 from app.crud.board_related_entity import BoardRelatedEntityCRUD
 from app.crud.site import SiteCRUD
-from app.db.session import get_session
 from app.helpers.task_tracker.board_defaults_helper import create_default_board
 from app.models.board import BoardRelatedEntityTypeEnum, BoardModuleEnum
 
@@ -26,7 +25,8 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Create default site O&M board if they don't exist"""
-    db_session = next(get_session())
+    connection = op.get_bind()
+    db_session = sa.orm.Session(bind=connection)
     for site in SiteCRUD(db_session).get(skip_pagination=True):
         total, _ = BoardRelatedEntityCRUD(db_session).get_by_entity(entity_type=BoardRelatedEntityTypeEnum.site,
                                                                     entity_id=site.id,

@@ -8,10 +8,11 @@ Create Date: 2024-07-16 13:46:07.285559
 
 from typing import Sequence, Union
 
+import sqlalchemy as sa
+from alembic import op
 from app.crud.board import BoardCRUD
 from app.crud.board_related_entity import BoardRelatedEntityCRUD
 from app.crud.company import CompanyCRUD
-from app.db.session import get_session
 from app.helpers.task_tracker.board_defaults_helper import create_default_board
 from app.models.board import BoardRelatedEntityTypeEnum
 
@@ -23,7 +24,8 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    db_session = next(get_session())
+    connection = op.get_bind()
+    db_session = sa.orm.Session(bind=connection)
     for company in CompanyCRUD(db_session).get(skip_pagination=True):
         if BoardRelatedEntityCRUD(db_session).get_entity_default_board(company.id, BoardRelatedEntityTypeEnum.company):
             continue
@@ -31,7 +33,8 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    db_session = next(get_session())
+    connection = op.get_bind()
+    db_session = sa.orm.Session(bind=connection)
     for company in CompanyCRUD(db_session).get(skip_pagination=True):
         related_entity_board = BoardRelatedEntityCRUD(db_session).get_entity_default_board(
             company.id, BoardRelatedEntityTypeEnum.company
