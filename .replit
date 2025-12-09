@@ -54,6 +54,10 @@ localPort = 8000
 externalPort = 8000
 
 [[ports]]
+localPort = 35275
+externalPort = 3001
+
+[[ports]]
 localPort = 44807
 externalPort = 3000
 
@@ -96,6 +100,8 @@ pbi_client_id = "placeholder-client-id"
 pbi_client_secret = "placeholder-client-secret"
 pbi_workspace_id = "placeholder-workspace-id"
 REPLIT_SKIP_NPM_INSTALL = "1"
+
+[userenv.development]
 db_host = "helium"
 db_user = "postgres"
 db_password = "password"
