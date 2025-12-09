@@ -53,6 +53,10 @@ externalPort = 80
 localPort = 8000
 externalPort = 8000
 
+[[ports]]
+localPort = 34107
+externalPort = 3000
+
 [deployment]
 deploymentTarget = "vm"
 build = ["bash", "-c", "npm run install:all && npm run build"]
