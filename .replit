@@ -33,10 +33,6 @@ outputType = "webview"
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 45875
-externalPort = 3000
-
 [deployment]
 deploymentTarget = "static"
 build = ["bash", "-c", "cd frontend/rea-investment-fe && npm run build"]
