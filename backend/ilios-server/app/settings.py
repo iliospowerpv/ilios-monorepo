@@ -51,12 +51,20 @@ class Settings(BaseSettings):
     mailgun_domain_name: str
     default_email_sender: str
 
-    # DB settings
-    db_host: str
-    db_user: str
-    db_password: str
-    db_name: str
+    # DB settings - supports both custom db_* vars and Replit's PG* vars
+    db_host: Optional[str] = None
+    db_user: Optional[str] = None
+    db_password: Optional[str] = None
+    db_name: Optional[str] = None
     db_dsn: Optional[str] = None
+    
+    # Replit PostgreSQL environment variables (auto-populated)
+    PGHOST: Optional[str] = None
+    PGUSER: Optional[str] = None
+    PGPASSWORD: Optional[str] = None
+    PGDATABASE: Optional[str] = None
+    PGPORT: Optional[str] = None
+    DATABASE_URL: Optional[str] = None
 
     # Google Cloud Storage settings
     due_diligence_gcs_bucket: Optional[str] = "due-diligence-files"
@@ -132,14 +140,25 @@ class Settings(BaseSettings):
     @field_validator("db_dsn", mode="after")
     @classmethod
     def assemble_db_uri(cls, field_value, info: ValidationInfo) -> str:
-        if isinstance(field_value, str):
+        if isinstance(field_value, str) and field_value:
             return field_value
+        
+        # Use db_* vars if set, otherwise fall back to Replit's PG* vars
+        db_user = info.data.get("db_user") or info.data.get("PGUSER")
+        db_password = info.data.get("db_password") or info.data.get("PGPASSWORD")
+        db_host = info.data.get("db_host") or info.data.get("PGHOST")
+        db_name = info.data.get("db_name") or info.data.get("PGDATABASE")
+        pg_port = info.data.get("PGPORT")
+        
+        # Build connection string with port if available
+        host_with_port = f"{db_host}:{pg_port}" if pg_port and not info.data.get("db_host") else db_host
+        
         return PostgresDsn.build(
             scheme="postgresql+psycopg2",
-            username=info.data.get("db_user"),
-            password=info.data.get("db_password"),
-            host=info.data.get("db_host"),
-            path=info.data.get("db_name") or "",
+            username=db_user,
+            password=db_password,
+            host=host_with_port,
+            path=db_name or "",
         ).unicode_string()
 
     @field_validator("allowed_extensions")

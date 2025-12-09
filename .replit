@@ -65,10 +65,6 @@ run = ["bash", "-c", "cd frontend/rea-investment-fe && npx serve -s build -l 500
 [userenv]
 
 [userenv.shared]
-db_host = "helium"
-db_user = "postgres"
-db_password = "password"
-db_name = "heliumdb"
 secret_key = "21f3869f9e099b69ab9b6f74424c1545bbc2f6f4d84e0a4d7ea89c74ef377453"
 api_key = "dev-api-key-placeholder"
 system_user_password = "SystemUser123!"
@@ -100,3 +96,7 @@ pbi_client_id = "placeholder-client-id"
 pbi_client_secret = "placeholder-client-secret"
 pbi_workspace_id = "placeholder-workspace-id"
 REPLIT_SKIP_NPM_INSTALL = "1"
+db_host = "helium"
+db_user = "postgres"
+db_password = "password"
+db_name = "heliumdb"

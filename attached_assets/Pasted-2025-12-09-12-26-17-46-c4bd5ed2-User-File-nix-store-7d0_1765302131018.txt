@@ -1,0 +1,157 @@
+2025-12-09 12:26:17.46
+c4bd5ed2
+User
+File "/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/logging/__init__.py", line 1113, in emit
+2025-12-09 12:26:17.46
+c4bd5ed2
+User
+Traceback (most recent call last):
+2025-12-09 12:26:17.46
+c4bd5ed2
+User
+stream.write(msg + self.terminator)
+2025-12-09 12:26:17.46
+c4bd5ed2
+User
+RuntimeError: reentrant call inside <_io.BufferedWriter name=''>
+2025-12-09 12:26:17.46
+c4bd5ed2
+User
+During handling of the above exception, another exception occurred:
+2025-12-09 12:26:17.46
+c4bd5ed2
+User
+stream.write(msg + self.terminator)
+2025-12-09 12:26:17.46
+c4bd5ed2
+User
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/gunicorn/arbiter.py", line 241, in handle_chld
+2025-12-09 12:26:17.46
+c4bd5ed2
+User
+self.reap_workers()
+2025-12-09 12:26:17.46
+c4bd5ed2
+User
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/gunicorn/glogging.py", line 271, in error
+2025-12-09 12:26:17.46
+c4bd5ed2
+User
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/gunicorn/arbiter.py", line 526, in reap_workers
+2025-12-09 12:26:17.46
+c4bd5ed2
+User
+self.log.error('Worker (pid:%s) exited with code %s', wpid, exitcode)
+2025-12-09 12:26:17.46
+c4bd5ed2
+User
+File "/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/logging/__init__.py", line 1518, in error
+2025-12-09 12:26:17.46
+c4bd5ed2
+User
+self.error_log.error(msg, *args, **kwargs)
+2025-12-09 12:26:17.47
+c4bd5ed2
+User
+self._log(ERROR, msg, args, **kwargs)
+2025-12-09 12:26:17.47
+c4bd5ed2
+User
+File "/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/logging/__init__.py", line 1634, in _log
+2025-12-09 12:26:17.47
+c4bd5ed2
+User
+File "/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/logging/__init__.py", line 1644, in handle
+2025-12-09 12:26:17.47
+c4bd5ed2
+User
+self.handle(record)
+2025-12-09 12:26:17.47
+c4bd5ed2
+User
+File "/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/logging/__init__.py", line 1706, in callHandlers
+2025-12-09 12:26:17.47
+c4bd5ed2
+User
+self.callHandlers(record)
+2025-12-09 12:26:17.47
+c4bd5ed2
+User
+self.emit(record)
+2025-12-09 12:26:17.47
+c4bd5ed2
+User
+hdlr.handle(record)
+2025-12-09 12:26:17.47
+c4bd5ed2
+User
+File "/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/logging/__init__.py", line 978, in handle
+2025-12-09 12:26:17.47
+c4bd5ed2
+User
+self.handleError(record)
+2025-12-09 12:26:17.47
+c4bd5ed2
+User
+File "/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/logging/__init__.py", line 1118, in emit
+2025-12-09 12:26:17.47
+c4bd5ed2
+User
+File "/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/logging/__init__.py", line 1031, in handleError
+2025-12-09 12:26:17.47
+c4bd5ed2
+User
+sys.stderr.write('--- Logging error ---\n')
+2025-12-09 12:26:17.47
+c4bd5ed2
+User
+File "/home/runner/workspace/.pythonlibs/bin/gunicorn", line 8, in
+
+2025-12-09 12:26:17.47
+c4bd5ed2
+User
+During handling of the above exception, another exception occurred:
+2025-12-09 12:26:17.47
+c4bd5ed2
+User
+RuntimeError: reentrant call inside <_io.BufferedWriter name=''>
+2025-12-09 12:26:17.47
+c4bd5ed2
+User
+Traceback (most recent call last):
+2025-12-09 12:26:17.50
+c4bd5ed2
+User
+sys.exit(run())
+2025-12-09 12:26:17.50
+c4bd5ed2
+User
+^^^^^
+2025-12-09 12:26:17.50
+c4bd5ed2
+User
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 66, in run
+2025-12-09 12:26:17.50
+c4bd5ed2
+User
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/gunicorn/app/base.py", line 235, in run
+2025-12-09 12:26:17.51
+c4bd5ed2
+User
+super().run()
+2025-12-09 12:26:17.51
+c4bd5ed2
+User
+Arbiter(self).run()
+2025-12-09 12:26:17.51
+c4bd5ed2
+User
+time.sleep(0.1)
+2025-12-09 12:26:17.51
+c4bd5ed2
+User
+self.log.error('Worker (pid:%s) exited with code %s', wpid, exitcode)
+2025-12-09 12:26:17.51
+c4bd5ed2
+User
+File "/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/logging/__init__.py", line 1518, in error
