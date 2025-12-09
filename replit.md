@@ -1,7 +1,7 @@
 # iliOS - REA Investment Platform
 
 ## Overview
-This is a real estate asset investment management platform frontend built with React and TypeScript. The application provides user authentication, asset management, due diligence, task management, and reporting features.
+This is a real estate asset investment management platform built with React and TypeScript frontend, and Python FastAPI backend. The application provides user authentication, asset management, due diligence, task management, and reporting features.
 
 ## Project Structure
 - `frontend/rea-investment-fe/` - React/TypeScript frontend application
@@ -9,23 +9,36 @@ This is a real estate asset investment management platform frontend built with R
   - `config/` - Webpack and development server configuration
   - `public/` - Static assets
   - `scripts/` - Build and development scripts
-- `backend/` - Backend services (not configured in Replit)
-  - `ilios-server/` - Python FastAPI backend with Alembic migrations
-  - `ilios-DocAI/` - AI/ML document processing service
+- `backend/ilios-server/` - Python FastAPI backend
+  - `app/` - Main application code
+  - `alembic/` - Database migrations
+- `backend/ilios-DocAI/` - AI/ML document processing service
 - `docai/` - Document AI processing components
 
-## Development
-The frontend runs on port 5000 using webpack-dev-server. Start with:
+## Development Workflows
+
+### Frontend (Port 5000)
 ```bash
 cd frontend/rea-investment-fe && PORT=5000 npm start
 ```
 
-## Deployment
-Configured as a static deployment. The build process:
-1. Runs `npm run build` in the frontend directory
-2. Serves the built static files from `frontend/rea-investment-fe/build`
+### Backend (Port 8000)
+```bash
+cd backend/ilios-server && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+## Environment Variables
+- **REACT_APP_URL**: Backend API URL for frontend to connect to
+- **db_host, db_user, db_password, db_name**: Database connection for development
+- Production uses Replit's built-in PostgreSQL (PG* environment variables)
+
+## Test Credentials
+- Email: system@user.com
+- Password: SystemUser123!
 
 ## Tech Stack
+
+### Frontend
 - React 18
 - TypeScript
 - Material UI (MUI)
@@ -35,6 +48,18 @@ Configured as a static deployment. The build process:
 - Chart.js
 - Webpack 5
 
+### Backend
+- Python 3.11
+- FastAPI
+- SQLAlchemy
+- Alembic (migrations)
+- PostgreSQL
+
+## Deployment
+Configured as a static deployment for frontend:
+1. Runs `npm run build` in the frontend directory
+2. Serves the built static files from `frontend/rea-investment-fe/build`
+
 ## Notes
-- The backend (ilios-server) is a separate Python FastAPI application not currently set up in this Replit environment
-- The frontend connects to an external API backend for data
+- Both frontend and backend are configured and running in this Replit environment
+- Frontend connects to the backend API on port 8000

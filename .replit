@@ -54,6 +54,10 @@ localPort = 8000
 externalPort = 8000
 
 [[ports]]
+localPort = 40807
+externalPort = 3001
+
+[[ports]]
 localPort = 44807
 externalPort = 3000
 
@@ -102,3 +106,4 @@ db_host = "helium"
 db_user = "postgres"
 db_password = "password"
 db_name = "heliumdb"
+REACT_APP_URL = "https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev:8000"

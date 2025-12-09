@@ -77,8 +77,8 @@ const Login: React.FC = () => {
         noValidate
         sx={{
           'input:-webkit-autofill': {
-            '-webkit-background-clip': 'text',
-            '-webkit-text-fill-color': '#000',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: '#000',
             boxShadow: 'inset 0 0 20px 20px transparent',
             transition: 'background-color 5000s ease-in-out 0s'
           }
