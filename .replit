@@ -58,9 +58,10 @@ localPort = 44205
 externalPort = 3000
 
 [deployment]
-deploymentTarget = "static"
-build = ["bash", "-c", "cd frontend/rea-investment-fe && npm run build"]
+deploymentTarget = "vm"
+build = ["bash", "-c", "cd frontend/rea-investment-fe && npm ci && npm run build && cd ../../backend/ilios-server && pip install -r requirements.txt"]
 publicDir = "frontend/rea-investment-fe/build"
+run = ["bash", "-c", "cd frontend/rea-investment-fe && npx serve -s build -l 3000 & cd backend/ilios-server && gunicorn --bind 0.0.0.0:5000 --workers 4 --worker-class uvicorn.workers.UvicornWorker app.main:app"]
 
 [userenv]
 
