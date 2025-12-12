@@ -118,15 +118,17 @@ class Settings(BaseSettings):
     bq_device_characteristics_table: Optional[str] = "device_characteristics"
     bq_site_characteristics_table: Optional[str] = "site_characteristics"
 
-    # Redis cache settings - uses REDIS_CONNECTION_URL (Upstash TLS connection)
+    # Redis cache settings - supports REDIS_URL or REDIS_CONNECTION_URL
+    REDIS_URL: Optional[str] = None
     REDIS_CONNECTION_URL: Optional[str] = None
     
     @property
     def redis_connection_string(self) -> str:
-        """Get Redis URL from REDIS_CONNECTION_URL environment variable.
+        """Get Redis URL from environment variables.
+        Priority: REDIS_URL > REDIS_CONNECTION_URL
         Supports both redis:// (no TLS) and rediss:// (TLS) schemes.
         """
-        return self.REDIS_CONNECTION_URL or ""
+        return self.REDIS_URL or self.REDIS_CONNECTION_URL or ""
     # TODO rename it based on the value, for example, cache_15_minutes and cache_8_hours
     site_dashboard_expiration_seconds: Optional[int] = 15 * 60  # 15 minutes for dashboard cache
     site_7_days_performance_expiration_seconds: Optional[int] = 8 * 60 * 60  # 8 hours for past 7 days performance
