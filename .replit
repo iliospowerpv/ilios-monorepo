@@ -86,7 +86,6 @@ telemetry_devices_function_url = "https://placeholder-function.com/telemetry-dev
 telemetry_device_static_info_func_url = "https://placeholder-function.com/telemetry-static"
 gcp_project_id = "123456789"
 rombus_api_key = "placeholder-rombus-key"
-redis_url = "redis://localhost:6379"
 REPLIT_SKIP_NPM_INSTALL = "1"
 pbi_tenant_id = "904fc939-8148-4b54-b032-1bc4f81966a9"
 pbi_client_id = "96aec30d-0ebe-416c-9f26-a09f42278916"
