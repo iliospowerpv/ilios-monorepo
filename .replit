@@ -87,11 +87,9 @@ telemetry_device_static_info_func_url = "https://placeholder-function.com/teleme
 gcp_project_id = "123456789"
 rombus_api_key = "placeholder-rombus-key"
 redis_url = "redis://localhost:6379"
-pbi_tenant_id = "placeholder-tenant-id"
-pbi_client_id = "placeholder-client-id"
-pbi_client_secret = "placeholder-client-secret"
-pbi_workspace_id = "placeholder-workspace-id"
 REPLIT_SKIP_NPM_INSTALL = "1"
+pbi_tenant_id = "904fc939-8148-4b54-b032-1bc4f81966a9"
+pbi_client_id = "96aec30d-0ebe-416c-9f26-a09f42278916"
 
 [userenv.development]
 db_host = "helium"
@@ -99,3 +97,7 @@ db_user = "postgres"
 db_password = "password"
 db_name = "heliumdb"
 REACT_APP_URL = "https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev:8000"
+pbi_workspace_id = "59754A20-0A6A-4EA8-BD10-B37171F8FF51"
+
+[userenv.production]
+pbi_workspace_id = "EF47351C-2E0B-4891-843C-BC091B232E41"
