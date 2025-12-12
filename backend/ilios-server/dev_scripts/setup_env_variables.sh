@@ -37,7 +37,7 @@ printf "chatbot_session_token_function_url=httttttttps://dummy.com/chatbot-sessi
 # Redis URL - set from environment for both dev and prod
 # For local dev, use: redis://localhost:6379
 # For Upstash, use: rediss://default:PASSWORD@HOST:6379
-printf "REDIS_URL=\${REDIS_URL:-redis://localhost:6379}\n" >> .env
+printf "REDIS_CONNECTION_URL=\${REDIS_CONNECTION_URL:-redis://localhost:6379}\n" >> .env
 printf "ml_api_key=dymmYs3cr3t\n" >> .env
 printf "pbi_tenant_id=pbit-id\n" >> .env
 printf "pbi_client_id=pbi-cid\n" >> .env
