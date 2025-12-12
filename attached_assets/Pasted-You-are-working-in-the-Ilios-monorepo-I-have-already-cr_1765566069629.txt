@@ -1,0 +1,103 @@
+You are working in the Ilios monorepo. I have already created an Upstash Redis instance and added its connection string as an environment variable in Replit.
+
+Goal:
+Audit and update ALL Redis-related code so that it correctly uses the new Upstash Redis instance for both development and production, with no leftover hard-coded or obsolete Redis configuration.
+
+Please do the following:
+
+Discover all Redis usage in the codebase
+
+Search the entire repo for:
+
+Imports/usage of libraries like redis, ioredis, bull, bullmq, connect-redis, express-session with Redis, celery, rq, or any other Redis client.
+
+Any strings containing redis://, localhost, 127.0.0.1, or common Redis ports (6379) used as URLs.
+
+Produce a short list of:
+
+Where Redis connections are created (file + line)
+
+Where Redis is used for caching, sessions, queues, rate limiting, or anything else.
+
+Standardize the Redis connection for both dev and prod
+
+Ensure there is a single shared helper/module for Redis connections in each language environment:
+
+For Node/TypeScript, something like src/lib/redis.ts or similar.
+
+For Python, a shared module like server/redis_client.py or equivalent.
+
+All Redis clients must only read the connection string from:
+
+process.env.REDIS_URL (Node/TypeScript/JavaScript)
+
+os.getenv("REDIS_URL") (Python)
+
+Remove or refactor any code that:
+
+Hard-codes hostnames (localhost, IPs) or ports for Redis.
+
+Uses a separate REDIS_HOST, REDIS_PORT, etc., unless absolutely required. If so, ensure those are derived from REDIS_URL or consistently from environment variables.
+
+Handle environment differences (dev vs prod)
+
+Confirm how the app distinguishes environments (NODE_ENV, config files, etc.).
+
+Make sure both development and production configurations resolve to the same REDIS_URL pattern, just sourced from environment variables:
+
+If there are config files for dev/prod (e.g., config/dev.ts, config/prod.ts, settings_dev.py, etc.), update them so Redis config is derived from REDIS_URL and not duplicated.
+
+If tests or local scripts need their own Redis instance, define a pattern such as REDIS_URL_TEST, but do not break the main app. Only add a test override if it clearly exists in the current code.
+
+Upstash-specific compatibility checks
+
+Verify that no Redis client configuration requires features incompatible or unnecessary for Upstash (e.g., manual clustering config, sentinel lists, local-only assumptions).
+
+Make sure the Redis client configuration is appropriate for Upstash hosted Redis, including:
+
+Using the full Upstash REDIS_URL (which typically already includes auth).
+
+Enabling TLS if required, but only if the Upstash URL or docs call for it.
+
+If any code assumes a long-lived blocking or pub/sub connection, flag it and make sure it is compatible with Upstash. If you find such patterns, summarize them for me instead of making risky changes.
+
+Update all integrations to use the standardized Redis client
+
+Wherever Redis is used for:
+
+Caching
+
+Sessions
+
+Background jobs / queues
+
+Rate limiting
+
+Any other purpose
+Make sure they import and use the shared Redis client helper instead of creating their own raw connections.
+
+Add a small runtime connectivity check
+
+Add (or update) a small utility or health check endpoint that:
+
+Performs a simple SET and GET using the shared Redis client.
+
+Use this primarily for dev/debugging so we can confirm Redis connectivity at runtime without affecting performance in production (e.g., only run it in a dedicated health-check or a development-only script).
+
+Validation and summary
+
+After making the changes:
+
+Run the relevant dev/start commands and ensure there are no Redis-related connection errors.
+
+Confirm that all old Redis URLs or host/port literals were removed or migrated.
+
+Finally, provide a concise summary:
+
+Files changed
+
+How Redis is now configured for dev and prod
+
+Any remaining caveats or places where Redis usage could be fragile with Upstash
+
+Before making any large or destructive changes, briefly show me your plan and the list of Redis-related files you intend to modify.
