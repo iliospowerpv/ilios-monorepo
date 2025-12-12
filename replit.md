@@ -63,3 +63,11 @@ Configured as a static deployment for frontend:
 ## Notes
 - Both frontend and backend are configured and running in this Replit environment
 - Frontend connects to the backend API on port 8000
+
+## Integration Status
+- **Redis**: ✅ Working (Upstash with TLS) - Health check at `/api/internal/health`
+- **PostgreSQL**: ✅ Working (Replit built-in)
+- **PowerBI**: ⚠️ Configured but Azure AD returning 401 - verify credentials in Azure Portal
+
+## Tips
+- **Upstash copy/paste**: Always paste URLs to a text editor first to verify completeness. The Upstash console copy function may truncate URLs.
