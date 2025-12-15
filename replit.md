@@ -67,7 +67,7 @@ Configured as a static deployment for frontend:
 ## Integration Status
 - **Redis**: ✅ Working (Upstash with TLS) - Health check at `/api/internal/health`
 - **PostgreSQL**: ✅ Working (Replit built-in)
-- **PowerBI**: ⚠️ Configured but Azure AD returning 401 - verify credentials in Azure Portal
+- **PowerBI**: ✅ Working - Returns reports from workspace
 
 ## Tips
 - **Upstash copy/paste**: Always paste URLs to a text editor first to verify completeness. The Upstash console copy function may truncate URLs.
