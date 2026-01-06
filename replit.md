@@ -68,6 +68,7 @@ Configured as a static deployment for frontend:
 - **Redis**: ✅ Working (Upstash with TLS) - Health check at `/api/internal/health`
 - **PostgreSQL**: ✅ Working (Replit built-in)
 - **PowerBI**: ✅ Working - Returns reports from workspace
+- **Mailgun**: ✅ Configured (US region, domain: iliospower.com)
 
 ## Tips
 - **Upstash copy/paste**: Always paste URLs to a text editor first to verify completeness. The Upstash console copy function may truncate URLs.
