@@ -69,6 +69,7 @@ Configured as a static deployment for frontend:
 - **PostgreSQL**: ✅ Working (Replit built-in)
 - **PowerBI**: ✅ Working - Returns reports from workspace
 - **Mailgun**: ✅ Configured (US region, domain: iliospower.com)
+- **Rombus**: ✅ Configured - Camera/security integration
 
 ## Tips
 - **Upstash copy/paste**: Always paste URLs to a text editor first to verify completeness. The Upstash console copy function may truncate URLs.
