@@ -70,6 +70,7 @@ Configured as a static deployment for frontend:
 - **PowerBI**: ✅ Working - Returns reports from workspace
 - **Mailgun**: ✅ Configured (US region, domain: iliospower.com)
 - **Rombus**: ✅ Configured - Camera/security integration
+- **AG Grid**: ✅ Licensed - Enterprise license configured
 
 ## Tips
 - **Upstash copy/paste**: Always paste URLs to a text editor first to verify completeness. The Upstash console copy function may truncate URLs.

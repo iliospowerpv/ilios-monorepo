@@ -93,6 +93,7 @@ rombus_api_key = "PBmx89YNThy2dbY1NzF4DA"
 REPLIT_SKIP_NPM_INSTALL = "1"
 pbi_tenant_id = "904fc939-8148-4b54-b032-1bc4f81966a9"
 pbi_client_id = "96aec30d-0ebe-416c-9f26-a09f42278916"
+REACT_APP_AG_GRID_LICENSE_KEY = "MTc5OTM2NjQwMDAwMA==6725f3113f84e04cffd52d91ffffb95b"
 
 [userenv.development]
 db_host = "helium"
