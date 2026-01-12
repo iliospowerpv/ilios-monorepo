@@ -153,6 +153,7 @@ const BaseTable = forwardRef((props: BaseTableProps, ref) => {
         pagination={true}
         animateRows={true}
         suppressContextMenu={true}
+        reactiveCustomComponents={true}
         headerHeight={32}
         groupHeaderHeight={32}
         getRowId={getRowId}

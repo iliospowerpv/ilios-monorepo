@@ -80,6 +80,7 @@ const BaseTableNoPagination = forwardRef((props: BaseTableProps, ref) => {
         pagination={false}
         animateRows={true}
         suppressContextMenu={true}
+        reactiveCustomComponents={true}
         headerHeight={32}
         groupHeaderHeight={32}
         getRowId={getRowId}

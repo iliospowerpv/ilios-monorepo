@@ -126,6 +126,7 @@ const EditTable: React.FC<EditTableProps> = ({ rowData, customActions }) => {
           domLayout="autoHeight"
           className="ag-fill-both"
           rowSelection="single"
+          reactiveCustomComponents={true}
           headerHeight={32}
           groupHeaderHeight={32}
           rowHeight={74}
