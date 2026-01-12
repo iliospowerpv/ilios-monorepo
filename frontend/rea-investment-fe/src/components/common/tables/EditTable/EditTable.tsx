@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo, useState, useRef } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import { LicenseManager } from 'ag-grid-enterprise';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import '../../../../utils/styles/ag-theme-rea.css';
@@ -10,10 +9,6 @@ import { Button, Typography } from '@mui/material';
 
 import CheckboxRenderer from '../components/CheckboxRenderer/CheckboxRenderer';
 import { HeaderActionsContainer, FooterActionsContainer } from './EditTable.style';
-
-if (typeof process.env.REACT_APP_AG_GRID_LICENSE_KEY === 'string') {
-  LicenseManager.setLicenseKey(process.env.REACT_APP_AG_GRID_LICENSE_KEY);
-}
 
 interface EditTableProps {
   rowData: any[];

@@ -1,15 +1,10 @@
 import React, { useMemo, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { SelectionChangedEvent, RowModelType, RowStyle, GridOptions, RowClickedEvent, ColDef } from 'ag-grid-community';
-import { LicenseManager } from 'ag-grid-enterprise';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import '../../../../utils/styles/ag-theme-rea.css';
 import NoDataOverlay from '../components/NoDataOverlay/NoDataOverlay';
-
-if (typeof process.env.REACT_APP_AG_GRID_LICENSE_KEY === 'string') {
-  LicenseManager.setLicenseKey(process.env.REACT_APP_AG_GRID_LICENSE_KEY);
-}
 
 interface BaseTableProps {
   columnDefs: any[];
