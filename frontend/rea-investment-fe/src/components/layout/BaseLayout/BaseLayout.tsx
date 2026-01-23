@@ -7,6 +7,7 @@ import { PageHeader } from '../PageHeader/PageHeader';
 import { PageSidebar } from '../PageSidebar/PageSidebar';
 import { Main } from '../Main/Main';
 import { useAuth } from '../../../contexts/auth/auth';
+import { SidebarProvider } from '../../../contexts/sidebar';
 
 export const BaseLayout: React.FC = () => {
   const { isAuthPending, isAuthenticated } = useAuth();
@@ -18,11 +19,13 @@ export const BaseLayout: React.FC = () => {
   }
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <CssBaseline />
-      <PageHeader />
-      <PageSidebar />
-      <Main />
-    </Box>
+    <SidebarProvider>
+      <Box sx={{ display: 'flex' }}>
+        <CssBaseline />
+        <PageHeader />
+        <PageSidebar />
+        <Main />
+      </Box>
+    </SidebarProvider>
   );
 };

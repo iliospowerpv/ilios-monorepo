@@ -11,32 +11,25 @@ import {
 } from './PageSidebar.styles';
 import { CompanyLogo } from '../CompanyLogo/CompanyLogo';
 import { NavMenu } from '../NavMenu/NavMenu';
+import { useSidebar } from '../../../contexts/sidebar';
 
 export const PageSidebar: React.FC = () => {
-  const [open, setOpen] = React.useState(false);
+  const { isOpen, toggleSidebar, closeSidebar } = useSidebar();
   const drawerRef = React.useRef<HTMLDivElement>(null);
-
-  const toggleDrawer = () => {
-    setOpen(!open);
-  };
-
-  const closeMenu = () => {
-    open && setOpen(false);
-  };
 
   return (
     <SidebarContainer>
-      <SidebarDrawer ref={drawerRef} variant="permanent" open={open}>
+      <SidebarDrawer ref={drawerRef} variant="permanent" open={isOpen}>
         <SidebarHead>
           <CompanyLogo />
         </SidebarHead>
         <SidebarDivider />
-        <NavMenu containerRef={drawerRef} isMenuOpen={open} closeMenu={closeMenu} />
+        <NavMenu containerRef={drawerRef} isMenuOpen={isOpen} closeMenu={closeSidebar} />
         <SidebarDivider />
       </SidebarDrawer>
       <SidebarToggleButtonContainer>
-        <IconButton color="inherit" onClick={toggleDrawer}>
-          {open ? <ChevronLeftIcon /> : <ChevronRightIcon />}
+        <IconButton color="inherit" onClick={toggleSidebar}>
+          {isOpen ? <ChevronLeftIcon /> : <ChevronRightIcon />}
         </IconButton>
       </SidebarToggleButtonContainer>
     </SidebarContainer>
