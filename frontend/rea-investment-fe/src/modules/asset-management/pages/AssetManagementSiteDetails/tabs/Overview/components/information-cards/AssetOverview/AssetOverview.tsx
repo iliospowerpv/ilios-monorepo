@@ -496,13 +496,15 @@ AssetOverviewForm.displayName = 'AssetOverviewForm';
 interface AssetOverviewCardProps {
   siteId: number;
   data: AssetOverviewCardData;
+  hideHeader?: boolean;
 }
 
-export const AssetOverviewCard: React.FC<AssetOverviewCardProps> = ({ siteId, data }) => (
+export const AssetOverviewCard: React.FC<AssetOverviewCardProps> = ({ siteId, data, hideHeader }) => (
   <InformationCardBase<AssetOverviewCardData>
     title="Asset Overview"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={AssetOverviewForm}
+    hideHeader={hideHeader}
   />
 );

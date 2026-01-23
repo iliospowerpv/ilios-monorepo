@@ -493,13 +493,15 @@ TaxEquityForm.displayName = 'TaxEquityForm';
 interface TaxEquityCardProps {
   siteId: number;
   data: TaxEquityData;
+  hideHeader?: boolean;
 }
 
-export const TaxEquityCard: React.FC<TaxEquityCardProps> = ({ siteId, data }) => (
+export const TaxEquityCard: React.FC<TaxEquityCardProps> = ({ siteId, data, hideHeader }) => (
   <InformationCardBase<TaxEquityData>
     title="Tax Equity"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={TaxEquityForm}
+    hideHeader={hideHeader}
   />
 );

@@ -439,13 +439,15 @@ OMForm.displayName = 'OMForm';
 interface OMCardProps {
   siteId: number;
   data: OMCardData;
+  hideHeader?: boolean;
 }
 
-export const OMCard: React.FC<OMCardProps> = ({ siteId, data }) => (
+export const OMCard: React.FC<OMCardProps> = ({ siteId, data, hideHeader }) => (
   <InformationCardBase<OMCardData>
     title="O&M"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={OMForm}
+    hideHeader={hideHeader}
   />
 );

@@ -1,9 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import Grid from '@mui/material/Grid';
-import Stack from '@mui/material/Stack';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import { useTheme } from '@mui/material/styles';
+import Box from '@mui/material/Box';
 
 import { ApiClient } from '../../../../../../api';
 
@@ -23,16 +20,44 @@ import { OwnershipCard } from './components/information-cards/Ownership/Ownershi
 import { CommunitySolarManagerCard } from './components/information-cards/CommunitySolarManager/CommunitySolarManager';
 import { InterconnectionUtilityProviderCard } from './components/information-cards/InterconnectionUtilityProvider/InterconnectionUtilityProvider';
 import { SiteLevelDetailsCard } from './components/information-cards/SiteLevelDetails/SiteLevelDetails';
+import { DraggableCardLayout, CardItem } from './components/DraggableLayout';
 
-type DetailedSiteInto = Awaited<ReturnType<typeof ApiClient.assetManagement.siteInfo>>;
-type InfoCardKeys = keyof DetailedSiteInto;
+const CARD_TITLES: Record<string, string> = {
+  site_level_details: 'Site Level Details',
+  asset_overview: 'Asset Overview',
+  ownership: 'Ownership',
+  tax_equity: 'Tax Equity',
+  key_dates: 'Key Dates',
+  o_and_m: 'O&M',
+  interconnection: 'Interconnection',
+  epc_contractor: 'EPC Contractor',
+  community_solar_manager: 'Community Solar Manager',
+  insurance_provider: 'Insurance Provider',
+  vegetation_vendor: 'Vegetation Vendor',
+  offtaker: 'Offtaker',
+  compliance: 'Compliance',
+  site_lease: 'Site Lease'
+};
+
+const DEFAULT_CARD_ORDER = [
+  'site_level_details',
+  'asset_overview',
+  'ownership',
+  'epc_contractor',
+  'tax_equity',
+  'key_dates',
+  'vegetation_vendor',
+  'o_and_m',
+  'interconnection',
+  'site_lease',
+  'community_solar_manager',
+  'insurance_provider',
+  'compliance',
+  'offtaker'
+];
 
 export const OverviewTab: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDetails }) => {
   const { id: siteId } = siteDetails;
-
-  const theme = useTheme();
-  const mediumSizeView = useMediaQuery(theme.breakpoints.up('md'));
-  const largeSizeView = useMediaQuery(theme.breakpoints.up('lg'));
 
   const { data: siteData, isLoading: isLoadingSiteData } = useQuery({
     queryFn: () => ApiClient.assetManagement.siteInfo(siteId),
@@ -40,112 +65,43 @@ export const OverviewTab: React.FC<AssetManagementSiteDetailsTabProps> = ({ site
     throwOnError: true
   });
 
-  const InfoCardMap: { [key in InfoCardKeys]: React.ReactElement } | null = React.useMemo(
-    () =>
-      siteData
-        ? {
-            asset_overview: <AssetOverviewCard siteId={siteId} data={siteData.asset_overview} />,
-            ownership: <OwnershipCard siteId={siteId} data={siteData.ownership} />,
-            tax_equity: <TaxEquityCard siteId={siteId} data={siteData.tax_equity} />,
-            key_dates: <KeyDatesCard siteId={siteId} data={siteData.key_dates} />,
-            o_and_m: <OMCard siteId={siteId} data={siteData.o_and_m} />,
-            interconnection: <InterconnectionUtilityProviderCard siteId={siteId} data={siteData.interconnection} />,
-            epc_contractor: <EPCContractorCard siteId={siteId} data={siteData.epc_contractor} />,
-            community_solar_manager: (
-              <CommunitySolarManagerCard siteId={siteId} data={siteData.community_solar_manager} />
-            ),
-            insurance_provider: <InsuranceProviderCard siteId={siteId} data={siteData.insurance_provider} />,
-            vegetation_vendor: <VegetationVendorCard siteId={siteId} data={siteData.vegetation_vendor} />,
-            offtaker: <OfftakerCard siteId={siteId} data={siteData.offtaker} />,
-            compliance: <ComplianceCard siteId={siteId} data={siteData.compliance} />,
-            site_lease: <SiteLeaseCard siteId={siteId} data={siteData.site_lease} />,
-            site_level_details: <SiteLevelDetailsCard siteId={siteId} data={siteData.site_level_details} />
-          }
-        : null,
-    [siteId, siteData]
-  );
+  const cardItems: CardItem[] = React.useMemo(() => {
+    if (!siteData) return [];
 
-  if (isLoadingSiteData || !siteData || !InfoCardMap) return null;
+    const cardContentMap: Record<string, React.ReactNode> = {
+      site_level_details: <SiteLevelDetailsCard siteId={siteId} data={siteData.site_level_details} hideHeader />,
+      asset_overview: <AssetOverviewCard siteId={siteId} data={siteData.asset_overview} hideHeader />,
+      ownership: <OwnershipCard siteId={siteId} data={siteData.ownership} hideHeader />,
+      tax_equity: <TaxEquityCard siteId={siteId} data={siteData.tax_equity} hideHeader />,
+      key_dates: <KeyDatesCard siteId={siteId} data={siteData.key_dates} hideHeader />,
+      o_and_m: <OMCard siteId={siteId} data={siteData.o_and_m} hideHeader />,
+      interconnection: (
+        <InterconnectionUtilityProviderCard siteId={siteId} data={siteData.interconnection} hideHeader />
+      ),
+      epc_contractor: <EPCContractorCard siteId={siteId} data={siteData.epc_contractor} hideHeader />,
+      community_solar_manager: (
+        <CommunitySolarManagerCard siteId={siteId} data={siteData.community_solar_manager} hideHeader />
+      ),
+      insurance_provider: <InsuranceProviderCard siteId={siteId} data={siteData.insurance_provider} hideHeader />,
+      vegetation_vendor: <VegetationVendorCard siteId={siteId} data={siteData.vegetation_vendor} hideHeader />,
+      offtaker: <OfftakerCard siteId={siteId} data={siteData.offtaker} hideHeader />,
+      compliance: <ComplianceCard siteId={siteId} data={siteData.compliance} hideHeader />,
+      site_lease: <SiteLeaseCard siteId={siteId} data={siteData.site_lease} hideHeader />
+    };
 
-  if (largeSizeView) {
-    return (
-      <Grid mb="12px" container spacing={1}>
-        <Grid item xs={4}>
-          <Stack direction="column" spacing={1}>
-            {InfoCardMap['site_level_details']}
-            {InfoCardMap['epc_contractor']}
-            {InfoCardMap['vegetation_vendor']}
-            {InfoCardMap['site_lease']}
-          </Stack>
-        </Grid>
-        <Grid item xs={4}>
-          <Stack direction="column" spacing={1}>
-            {InfoCardMap['asset_overview']}
-            {InfoCardMap['tax_equity']}
-            {InfoCardMap['o_and_m']}
-            {InfoCardMap['community_solar_manager']}
-            {InfoCardMap['compliance']}
-          </Stack>
-        </Grid>
-        <Grid item xs={4}>
-          <Stack direction="column" spacing={1}>
-            {InfoCardMap['ownership']}
-            {InfoCardMap['key_dates']}
-            {InfoCardMap['interconnection']}
-            {InfoCardMap['insurance_provider']}
-            {InfoCardMap['offtaker']}
-          </Stack>
-        </Grid>
-      </Grid>
-    );
-  }
+    return DEFAULT_CARD_ORDER.map(id => ({
+      id,
+      title: CARD_TITLES[id] || id,
+      content: cardContentMap[id]
+    }));
+  }, [siteId, siteData]);
 
-  if (mediumSizeView) {
-    return (
-      <Grid mb="12px" container spacing={1}>
-        <Grid item xs={6}>
-          <Stack direction="column" spacing={1}>
-            {InfoCardMap['site_level_details']}
-            {InfoCardMap['o_and_m']}
-            {InfoCardMap['epc_contractor']}
-            {InfoCardMap['community_solar_manager']}
-            {InfoCardMap['offtaker']}
-            {InfoCardMap['site_lease']}
-          </Stack>
-        </Grid>
-        <Grid item xs={6}>
-          <Stack direction="column" spacing={1}>
-            {InfoCardMap['asset_overview']}
-            {InfoCardMap['ownership']}
-            {InfoCardMap['tax_equity']}
-            {InfoCardMap['key_dates']}
-            {InfoCardMap['interconnection']}
-            {InfoCardMap['insurance_provider']}
-            {InfoCardMap['vegetation_vendor']}
-            {InfoCardMap['compliance']}
-          </Stack>
-        </Grid>
-      </Grid>
-    );
-  }
+  if (isLoadingSiteData || !siteData) return null;
 
   return (
-    <Stack mb="12px" direction="column" spacing={1}>
-      {InfoCardMap['site_level_details']}
-      {InfoCardMap['asset_overview']}
-      {InfoCardMap['ownership']}
-      {InfoCardMap['tax_equity']}
-      {InfoCardMap['key_dates']}
-      {InfoCardMap['o_and_m']}
-      {InfoCardMap['interconnection']}
-      {InfoCardMap['epc_contractor']}
-      {InfoCardMap['community_solar_manager']}
-      {InfoCardMap['insurance_provider']}
-      {InfoCardMap['vegetation_vendor']}
-      {InfoCardMap['offtaker']}
-      {InfoCardMap['compliance']}
-      {InfoCardMap['site_lease']}
-    </Stack>
+    <Box>
+      <DraggableCardLayout cards={cardItems} storageKey={`overview_cards_${siteId}`} columns={3} />
+    </Box>
   );
 };
 

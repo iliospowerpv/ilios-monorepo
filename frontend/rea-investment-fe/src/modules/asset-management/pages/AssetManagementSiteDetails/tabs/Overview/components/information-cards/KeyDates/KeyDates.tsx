@@ -333,13 +333,15 @@ KeyDatesForm.displayName = 'KeyDatesForm';
 interface KeyDatesCardProps {
   siteId: number;
   data: KeyDatesCardData;
+  hideHeader?: boolean;
 }
 
-export const KeyDatesCard: React.FC<KeyDatesCardProps> = ({ siteId, data }) => (
+export const KeyDatesCard: React.FC<KeyDatesCardProps> = ({ siteId, data, hideHeader }) => (
   <InformationCardBase<KeyDatesCardData>
     title="Key Dates"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={KeyDatesForm}
+    hideHeader={hideHeader}
   />
 );

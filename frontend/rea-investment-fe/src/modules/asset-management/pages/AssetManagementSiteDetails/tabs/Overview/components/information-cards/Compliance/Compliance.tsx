@@ -405,13 +405,15 @@ ComplianceForm.displayName = 'ComplianceForm';
 interface ComplianceCardProps {
   siteId: number;
   data: ComplianceCardData;
+  hideHeader?: boolean;
 }
 
-export const ComplianceCard: React.FC<ComplianceCardProps> = ({ siteId, data }) => (
+export const ComplianceCard: React.FC<ComplianceCardProps> = ({ siteId, data, hideHeader }) => (
   <InformationCardBase<ComplianceCardData>
     title="Compliance"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={ComplianceForm}
+    hideHeader={hideHeader}
   />
 );

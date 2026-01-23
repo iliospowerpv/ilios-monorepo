@@ -8,6 +8,7 @@ import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Fade from '@mui/material/Fade';
+import { useTheme } from '@mui/material/styles';
 
 export interface InformationCardFormReflectedState {
   isValid: boolean;
@@ -35,10 +36,12 @@ interface InformationCardBaseProps<T> {
   >;
   siteId: number;
   title: string;
+  hideHeader?: boolean;
 }
 
 export const InformationCardBase = <T,>(props: InformationCardBaseProps<T>): React.ReactElement => {
-  const { InformationCardForm, informationCardData, siteId, title } = props;
+  const { InformationCardForm, informationCardData, siteId, title, hideHeader = false } = props;
+  const theme = useTheme();
 
   const [mode, setMode] = React.useState<'view' | 'edit'>('view');
   const [formReflectedState, setFormReflectedState] = React.useState<InformationCardFormReflectedState>({
@@ -63,6 +66,9 @@ export const InformationCardBase = <T,>(props: InformationCardBaseProps<T>): Rea
 
   const editBtnTestId = title.toLocaleLowerCase().split(' ').join('_') + '-edit-btn';
 
+  const borderColor = theme.palette.divider;
+  const editBtnBgColor = theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.85)';
+
   return (
     <Box>
       <Box
@@ -70,33 +76,48 @@ export const InformationCardBase = <T,>(props: InformationCardBaseProps<T>): Rea
         display="flex"
         flexDirection="column"
         flexGrow={1}
-        paddingY="16px"
+        paddingY={hideHeader ? '8px' : '16px'}
         paddingX="8px"
-        border="1px solid #0000003B"
+        border={hideHeader ? 'none' : `1px solid ${borderColor}`}
       >
-        <Stack
-          direction="row"
-          p="8px"
-          pt="0px"
-          pb="12px"
-          flexWrap="nowrap"
-          justifyContent="space-between"
-          alignItems="center"
-        >
-          <Typography variant="h6" mb="0px">
-            {title}
-          </Typography>
-          <Zoom in={mode === 'view'}>
-            <Box borderRadius="50%" bgcolor="rgba(255, 255, 255, 0.85)">
-              <IconButton data-testid={editBtnTestId} size="small" onClick={handleClickEdit}>
-                <EditIcon fontSize="small" sx={{ color: '#404251' }} />
-              </IconButton>
+        {!hideHeader && (
+          <>
+            <Stack
+              direction="row"
+              p="8px"
+              pt="0px"
+              pb="12px"
+              flexWrap="nowrap"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <Typography variant="h6" mb="0px">
+                {title}
+              </Typography>
+              <Zoom in={mode === 'view'}>
+                <Box borderRadius="50%" bgcolor={editBtnBgColor}>
+                  <IconButton data-testid={editBtnTestId} size="small" onClick={handleClickEdit}>
+                    <EditIcon fontSize="small" sx={{ color: theme.palette.text.secondary }} />
+                  </IconButton>
+                </Box>
+              </Zoom>
+            </Stack>
+            <Box px="8px">
+              <Divider sx={{ borderBottom: `1px solid ${borderColor}`, height: '1px', marginBottom: '8px' }} />
             </Box>
-          </Zoom>
-        </Stack>
-        <Box px="8px">
-          <Divider sx={{ borderBottom: '1px solid #0000003B', height: '1px', marginBottom: '8px' }} />
-        </Box>
+          </>
+        )}
+        {hideHeader && (
+          <Stack direction="row" justifyContent="flex-end" alignItems="center" px="8px" pb="8px">
+            <Zoom in={mode === 'view'}>
+              <Box borderRadius="50%" bgcolor={editBtnBgColor}>
+                <IconButton data-testid={editBtnTestId} size="small" onClick={handleClickEdit}>
+                  <EditIcon fontSize="small" sx={{ color: theme.palette.text.secondary }} />
+                </IconButton>
+              </Box>
+            </Zoom>
+          </Stack>
+        )}
         <InformationCardForm
           ref={formApi}
           mode={mode}

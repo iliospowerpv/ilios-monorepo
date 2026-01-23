@@ -338,13 +338,15 @@ OwnershipForm.displayName = 'OwnershipContractorForm';
 interface OMCardProps {
   siteId: number;
   data: OwnershipCardData;
+  hideHeader?: boolean;
 }
 
-export const OwnershipCard: React.FC<OMCardProps> = ({ siteId, data }) => (
+export const OwnershipCard: React.FC<OMCardProps> = ({ siteId, data, hideHeader }) => (
   <InformationCardBase<OwnershipCardData>
     title="Ownership"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={OwnershipForm}
+    hideHeader={hideHeader}
   />
 );

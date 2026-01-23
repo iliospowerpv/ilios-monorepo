@@ -604,13 +604,15 @@ CommunitySolarManagerForm.displayName = 'CommunitySolarManagerForm';
 interface CommunitySolarManagerCardProps {
   siteId: number;
   data: CommunitySolarManagerData;
+  hideHeader?: boolean;
 }
 
-export const CommunitySolarManagerCard: React.FC<CommunitySolarManagerCardProps> = ({ siteId, data }) => (
+export const CommunitySolarManagerCard: React.FC<CommunitySolarManagerCardProps> = ({ siteId, data, hideHeader }) => (
   <InformationCardBase<CommunitySolarManagerData>
     title="Community Solar Manager"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={CommunitySolarManagerForm}
+    hideHeader={hideHeader}
   />
 );

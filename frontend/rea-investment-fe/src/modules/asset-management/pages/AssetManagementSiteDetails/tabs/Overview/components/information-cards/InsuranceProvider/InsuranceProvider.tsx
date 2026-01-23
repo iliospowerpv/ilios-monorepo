@@ -222,13 +222,15 @@ InsuranceProviderForm.displayName = 'InsuranceProviderForm';
 interface InsuranceProviderCardProps {
   siteId: number;
   data: InsuranceProviderCardData;
+  hideHeader?: boolean;
 }
 
-export const InsuranceProviderCard: React.FC<InsuranceProviderCardProps> = ({ siteId, data }) => (
+export const InsuranceProviderCard: React.FC<InsuranceProviderCardProps> = ({ siteId, data, hideHeader }) => (
   <InformationCardBase<InsuranceProviderCardData>
     title="Insurance Provider"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={InsuranceProviderForm}
+    hideHeader={hideHeader}
   />
 );

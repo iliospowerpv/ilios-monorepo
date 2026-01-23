@@ -395,13 +395,15 @@ OfftakerForm.displayName = 'OfftakerForm';
 interface OfftakerCardProps {
   siteId: number;
   data: OfftakerCardData;
+  hideHeader?: boolean;
 }
 
-export const OfftakerCard: React.FC<OfftakerCardProps> = ({ siteId, data }) => (
+export const OfftakerCard: React.FC<OfftakerCardProps> = ({ siteId, data, hideHeader }) => (
   <InformationCardBase<OfftakerCardData>
     title="Offtaker"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={OfftakerForm}
+    hideHeader={hideHeader}
   />
 );

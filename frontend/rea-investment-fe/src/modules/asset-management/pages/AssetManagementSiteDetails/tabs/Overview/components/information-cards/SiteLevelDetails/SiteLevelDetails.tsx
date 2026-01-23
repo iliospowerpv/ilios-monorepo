@@ -764,13 +764,15 @@ SiteLevelDetailsForm.displayName = 'SiteLevelDetailsForm';
 interface SiteLevelDetailsCardProps {
   siteId: number;
   data: SiteLevelDetailsData;
+  hideHeader?: boolean;
 }
 
-export const SiteLevelDetailsCard: React.FC<SiteLevelDetailsCardProps> = ({ siteId, data }) => (
+export const SiteLevelDetailsCard: React.FC<SiteLevelDetailsCardProps> = ({ siteId, data, hideHeader }) => (
   <InformationCardBase<SiteLevelDetailsData>
     title="Site Level Details"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={SiteLevelDetailsForm}
+    hideHeader={hideHeader}
   />
 );

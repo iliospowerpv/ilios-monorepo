@@ -359,13 +359,15 @@ EPCContractorForm.displayName = 'EPCContractorForm';
 interface EPCContractorCardProps {
   siteId: number;
   data: EPCContractorCardData;
+  hideHeader?: boolean;
 }
 
-export const EPCContractorCard: React.FC<EPCContractorCardProps> = ({ siteId, data }) => (
+export const EPCContractorCard: React.FC<EPCContractorCardProps> = ({ siteId, data, hideHeader }) => (
   <InformationCardBase<EPCContractorCardData>
     title="EPC Contractor"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={EPCContractorForm}
+    hideHeader={hideHeader}
   />
 );

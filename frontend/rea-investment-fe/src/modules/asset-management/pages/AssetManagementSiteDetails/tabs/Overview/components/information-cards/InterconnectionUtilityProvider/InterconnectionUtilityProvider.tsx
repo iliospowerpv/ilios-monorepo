@@ -449,16 +449,19 @@ InterconnectionUtilityProviderForm.displayName = 'InterconnectionUtilityProvider
 interface InterconnectionUtilityProviderCardProps {
   siteId: number;
   data: InterconnectionUtilityProviderCardData;
+  hideHeader?: boolean;
 }
 
 export const InterconnectionUtilityProviderCard: React.FC<InterconnectionUtilityProviderCardProps> = ({
   siteId,
-  data
+  data,
+  hideHeader
 }) => (
   <InformationCardBase<InterconnectionUtilityProviderCardData>
     title="Interconnection Utility Provider"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={InterconnectionUtilityProviderForm}
+    hideHeader={hideHeader}
   />
 );

@@ -396,13 +396,15 @@ VegetationVendorForm.displayName = 'VegetationVendorForm';
 interface VegetationVendorCardProps {
   siteId: number;
   data: VegetationVendorCardData;
+  hideHeader?: boolean;
 }
 
-export const VegetationVendorCard: React.FC<VegetationVendorCardProps> = ({ siteId, data }) => (
+export const VegetationVendorCard: React.FC<VegetationVendorCardProps> = ({ siteId, data, hideHeader }) => (
   <InformationCardBase<VegetationVendorCardData>
     title="Vegetation Vendor"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={VegetationVendorForm}
+    hideHeader={hideHeader}
   />
 );

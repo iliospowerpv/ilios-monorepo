@@ -437,13 +437,15 @@ SiteLeaseForm.displayName = 'SiteLeaseForm';
 interface SiteLeaseCardProps {
   siteId: number;
   data: SiteLeaseCardData;
+  hideHeader?: boolean;
 }
 
-export const SiteLeaseCard: React.FC<SiteLeaseCardProps> = ({ siteId, data }) => (
+export const SiteLeaseCard: React.FC<SiteLeaseCardProps> = ({ siteId, data, hideHeader }) => (
   <InformationCardBase
     title="Site Lease"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={SiteLeaseForm}
+    hideHeader={hideHeader}
   />
 );
