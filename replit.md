@@ -64,6 +64,16 @@ Configured as a static deployment for frontend:
 - Both frontend and backend are configured and running in this Replit environment
 - Frontend connects to the backend API on port 8000
 
+## Recent Features
+
+### Asset Management Overview - Collapsible Drag-and-Drop Cards (Jan 2026)
+- **Drag-and-drop reordering**: Cards can be reordered using @dnd-kit library with rectSortingStrategy for grid layouts
+- **Collapsible cards**: Each card has a collapse/expand toggle in the header
+- **Default state**: Top row (first 3 cards) open by default, others collapsed
+- **Persistence**: Card order and collapsed state persist per site using localStorage (key: `overview_cards_{siteId}`)
+- **Missing field indicators**: Warning icon (⚠️) appears in card header when required fields are missing
+- **Components**: DraggableCardLayout.tsx, Overview.tsx with REQUIRED_FIELDS configuration
+
 ## Integration Status
 - **Redis**: ✅ Working (Upstash with TLS) - Health check at `/api/internal/health`
 - **PostgreSQL**: ✅ Working (Replit built-in)
