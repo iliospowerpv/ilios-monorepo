@@ -39,6 +39,31 @@ const CARD_TITLES: Record<string, string> = {
   site_lease: 'Site Lease'
 };
 
+const REQUIRED_FIELDS: Record<string, string[]> = {
+  site_level_details: ['name', 'address', 'city', 'state', 'zip_code', 'system_size_ac', 'system_size_dc'],
+  asset_overview: ['module_quantity', 'inverter_quantity', 'project_type'],
+  ownership: ['guarantor'],
+  tax_equity: [],
+  key_dates: ['mechanical_completion_date', 'substantial_completion_date', 'final_completion_date'],
+  o_and_m: ['provider', 'agreement_effective_date', 'o_and_m_escalator', 'production_guarantee'],
+  interconnection: ['provider', 'ppa_effective_date', 'production_guarantee'],
+  epc_contractor: ['provider', 'agreement_effective_date'],
+  community_solar_manager: [],
+  insurance_provider: [],
+  vegetation_vendor: [],
+  offtaker: ['offtaker_name'],
+  compliance: [],
+  site_lease: ['landlord', 'tenant', 'property_size', 'effective_date', 'rent_commencement', 'rent_amount']
+};
+
+const checkMissingFields = (data: Record<string, any> | null | undefined, requiredFields: string[]): boolean => {
+  if (!data || requiredFields.length === 0) return false;
+  return requiredFields.some(field => {
+    const value = data[field];
+    return value === null || value === undefined || value === '';
+  });
+};
+
 const DEFAULT_CARD_ORDER = [
   'site_level_details',
   'asset_overview',
@@ -89,10 +114,28 @@ export const OverviewTab: React.FC<AssetManagementSiteDetailsTabProps> = ({ site
       site_lease: <SiteLeaseCard siteId={siteId} data={siteData.site_lease} hideHeader />
     };
 
+    const cardDataMap: Record<string, Record<string, any> | null | undefined> = {
+      site_level_details: siteData.site_level_details,
+      asset_overview: siteData.asset_overview,
+      ownership: siteData.ownership,
+      tax_equity: siteData.tax_equity,
+      key_dates: siteData.key_dates,
+      o_and_m: siteData.o_and_m,
+      interconnection: siteData.interconnection,
+      epc_contractor: siteData.epc_contractor,
+      community_solar_manager: siteData.community_solar_manager,
+      insurance_provider: siteData.insurance_provider,
+      vegetation_vendor: siteData.vegetation_vendor,
+      offtaker: siteData.offtaker,
+      compliance: siteData.compliance,
+      site_lease: siteData.site_lease
+    };
+
     return DEFAULT_CARD_ORDER.map(id => ({
       id,
       title: CARD_TITLES[id] || id,
-      content: cardContentMap[id]
+      content: cardContentMap[id],
+      hasMissingFields: checkMissingFields(cardDataMap[id], REQUIRED_FIELDS[id] || [])
     }));
   }, [siteId, siteData]);
 

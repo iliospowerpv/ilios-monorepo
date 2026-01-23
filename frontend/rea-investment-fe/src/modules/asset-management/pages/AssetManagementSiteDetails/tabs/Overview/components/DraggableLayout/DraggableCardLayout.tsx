@@ -27,11 +27,14 @@ import { useTheme } from '@mui/material/styles';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import Tooltip from '@mui/material/Tooltip';
 
 export interface CardItem {
   id: string;
   title: string;
   content: React.ReactNode;
+  hasMissingFields?: boolean;
 }
 
 interface CollapsedState {
@@ -49,9 +52,10 @@ interface SortableCardProps {
   isCollapsed: boolean;
   onToggleCollapse: (id: string) => void;
   isDragging?: boolean;
+  hasMissingFields?: boolean;
 }
 
-const SortableCard: React.FC<SortableCardProps> = ({ card, isCollapsed, onToggleCollapse, isDragging = false }) => {
+const SortableCard: React.FC<SortableCardProps> = ({ card, isCollapsed, onToggleCollapse, isDragging = false, hasMissingFields = false }) => {
   const theme = useTheme();
   const {
     attributes,
@@ -122,6 +126,17 @@ const SortableCard: React.FC<SortableCardProps> = ({ card, isCollapsed, onToggle
           >
             {card.title}
           </Typography>
+          {hasMissingFields && (
+            <Tooltip title="Missing required fields" arrow>
+              <WarningAmberIcon 
+                fontSize="small" 
+                sx={{ 
+                  color: theme.palette.warning.main,
+                  ml: 0.5
+                }} 
+              />
+            </Tooltip>
+          )}
         </Stack>
         <IconButton size="small" onClick={() => onToggleCollapse(card.id)}>
           {isCollapsed ? <ExpandMoreIcon fontSize="small" /> : <ExpandLessIcon fontSize="small" />}
@@ -163,8 +178,14 @@ const DraggableCardLayout: React.FC<DraggableCardLayoutProps> = ({ cards, storag
     } catch (e) {
       console.error('Error loading collapsed state from localStorage:', e);
     }
-    return {};
-  }, [storageKey]);
+    const defaultState: CollapsedState = {};
+    const currentOrder = getStoredOrder();
+    const TOP_ROW_COUNT = 3;
+    currentOrder.forEach((id, index) => {
+      defaultState[id] = index >= TOP_ROW_COUNT;
+    });
+    return defaultState;
+  }, [storageKey, getStoredOrder]);
 
   const [cardOrder, setCardOrder] = React.useState<string[]>(getStoredOrder);
   const [collapsedState, setCollapsedState] = React.useState<CollapsedState>(getStoredCollapsedState);
@@ -250,6 +271,7 @@ const DraggableCardLayout: React.FC<DraggableCardLayoutProps> = ({ cards, storag
               card={card}
               isCollapsed={!!collapsedState[card.id]}
               onToggleCollapse={handleToggleCollapse}
+              hasMissingFields={card.hasMissingFields}
             />
           ))}
         </Box>
