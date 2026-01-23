@@ -8,9 +8,10 @@ export const HeaderMenuAvatar = styled(Avatar)(({ theme }) => ({
   width: 48,
   height: 48,
   marginRight: theme.spacing(1),
-  backgroundColor: theme.color.blueGray,
+  background: 'linear-gradient(87deg, #C5AFF0 0%, #456CF3 100%)',
   fontSize: '16px',
-  fontWeight: '600'
+  fontWeight: '600',
+  color: '#FFFFFF'
 }));
 
 export const HeaderToolbar = styled(Toolbar)(({ theme }) => ({

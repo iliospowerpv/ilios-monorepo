@@ -8,9 +8,10 @@ export const SidebarDrawer = styled(MuiDrawer, { shouldForwardProp: prop => prop
   '& .MuiDrawer-paper': {
     position: 'relative',
     whiteSpace: 'nowrap',
-    backgroundColor: theme.palette.mode === 'light' ? '#1D1D1D' : '#0A0A0A',
+    backgroundColor: theme.palette.mode === 'light' ? '#1A1C27' : '#201E2B',
     width: theme.spacing(30),
     borderRight: 'none',
+    borderRadius: 0,
     transition: theme.transitions.create('width', {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.enteringScreen

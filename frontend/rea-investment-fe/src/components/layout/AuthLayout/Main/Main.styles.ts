@@ -18,13 +18,17 @@ export const Offset = styled('div')(({ theme }) => ({
   height: theme.spacing(8)
 }));
 
-export const CardStyled = styled(Card)(({ theme }) => ({
-  backgroundColor: theme.palette.background.paper,
-  width: '420px',
-  padding: '40px 26px',
-  borderRadius: theme.spacing(2),
-  boxSizing: 'border-box'
-}));
+export const CardStyled = styled(Card)(({ theme }) => {
+  const isLight = theme.palette.mode === 'light';
+  return {
+    backgroundColor: isLight ? '#FFFFFF' : '#1F1F1F',
+    width: '420px',
+    padding: '40px 26px',
+    borderRadius: theme.shape.borderRadius,
+    boxSizing: 'border-box',
+    boxShadow: isLight ? '0 8px 32px rgba(0, 0, 0, 0.12)' : '0 8px 32px rgba(0, 0, 0, 0.4)'
+  };
+});
 
 export const CardContentStyled = styled(CardContent)(() => ({
   padding: 0,

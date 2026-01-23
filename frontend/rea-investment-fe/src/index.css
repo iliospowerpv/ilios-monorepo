@@ -1,8 +1,28 @@
-@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700&display=swap');
+
+:root {
+  --accent-color: #5A5DEB;
+  --accent-light: #DEDFFB;
+  --accent-lighter: #EEEFFD;
+  --gradient-cta: linear-gradient(87deg, #8D4BE9 0%, #456CF3 100%);
+  --gradient-cta-hover: linear-gradient(87deg, #7F33E9 0%, #4245EB 100%);
+  --gradient-avatar: linear-gradient(87deg, #C5AFF0 0%, #456CF3 100%);
+  --interactive-main: #494BC1;
+  --interactive-hover: #3638A0;
+  --border-radius: 8px;
+}
+
+[data-theme="dark"] {
+  --accent-color: #9C9EF3;
+  --accent-light: #2A2C4D;
+  --accent-lighter: #36374D;
+  --interactive-main: #9C9EF3;
+  --interactive-hover: #7B7DEF;
+}
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
