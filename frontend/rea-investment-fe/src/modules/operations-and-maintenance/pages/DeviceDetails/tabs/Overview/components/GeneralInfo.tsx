@@ -38,7 +38,13 @@ export const GeneralInfo: React.FC<GeneralInfoProps> = ({ data }) => {
   ];
 
   return (
-    <Box display="flex" flexDirection="column" flexGrow={1} padding="16px" border="1px solid #0000003B">
+    <Box
+      display="flex"
+      flexDirection="column"
+      flexGrow={1}
+      padding="16px"
+      sx={{ border: theme => `1px solid ${theme.palette.divider}` }}
+    >
       <Typography variant="h6" mb="6px">
         General Device Information
       </Typography>

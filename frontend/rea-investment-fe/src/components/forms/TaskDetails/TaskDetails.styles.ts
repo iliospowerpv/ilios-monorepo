@@ -27,7 +27,9 @@ export const TextBox = styled('span')<TextBoxProps>(({ fieldName }) => ({
   display: 'inline-block'
 }));
 
-export const DetailsContainer = styled(Box)(() => ({
+export const DetailsContainer = styled(Box)(({ theme }) => ({
   padding: '8px',
-  border: '1px solid #0000003B'
+  border: `1px solid ${theme.palette.divider}`,
+  backgroundColor: theme.palette.background.paper,
+  borderRadius: theme.shape.borderRadius
 }));

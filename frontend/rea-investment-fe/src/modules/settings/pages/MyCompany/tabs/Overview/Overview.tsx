@@ -29,7 +29,13 @@ const InfoBox: React.FC<InfoBoxProps> = ({ title, infoTableData, id }) => {
   const navigate = useNavigate();
 
   return (
-    <Box display="flex" flexDirection="column" flexGrow={1} padding="16px" border="1px solid #0000003B">
+    <Box
+      display="flex"
+      flexDirection="column"
+      flexGrow={1}
+      padding="16px"
+      sx={{ border: theme => `1px solid ${theme.palette.divider}` }}
+    >
       <Box display="flex" alignItems="center" justifyContent="space-between">
         <Typography variant="h6" mb="6px">
           {title}

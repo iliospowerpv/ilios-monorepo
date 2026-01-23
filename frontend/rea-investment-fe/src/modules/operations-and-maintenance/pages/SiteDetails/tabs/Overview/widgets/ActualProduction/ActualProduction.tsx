@@ -230,7 +230,12 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
                   <Grid
                     item
                     xs={4}
-                    sx={{ '&.MuiGrid-item': { borderRight: '1px solid #E0E0E0', marginRight: '16px' } }}
+                    sx={{
+                      '&.MuiGrid-item': {
+                        borderRight: theme => `1px solid ${theme.palette.divider}`,
+                        marginRight: '16px'
+                      }
+                    }}
                   >
                     <Typography variant="h6" fontWeight={700} fontSize={20} lineHeight="32px">
                       {formatFloatValue(actual_kw ?? 0)}
@@ -242,7 +247,12 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
                   <Grid
                     item
                     xs={4}
-                    sx={{ '&.MuiGrid-item': { borderRight: '1px solid #E0E0E0', marginRight: '16px' } }}
+                    sx={{
+                      '&.MuiGrid-item': {
+                        borderRight: theme => `1px solid ${theme.palette.divider}`,
+                        marginRight: '16px'
+                      }
+                    }}
                   >
                     <Typography variant="h6" fontWeight={700} fontSize={20} lineHeight="32px">
                       {formatFloatValue(expected_kw ?? 0)}

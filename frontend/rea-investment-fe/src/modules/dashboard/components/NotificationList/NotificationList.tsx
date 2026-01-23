@@ -14,13 +14,13 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import NotificationItem from '../NotificationItem/NotificationItem';
 import { ApiClient, Notification } from '../../../../api';
 
-const NotificationListStyled = styled(Box)(() => ({
+const NotificationListStyled = styled(Box)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   flexGrow: 1,
   padding: '16px 0 0',
   marginTop: '8px',
-  border: '1px solid #0000003B',
+  border: `1px solid ${theme.palette.divider}`,
   maxHeight: 'calc(100vh - 160px)',
   overflowY: 'auto'
 }));

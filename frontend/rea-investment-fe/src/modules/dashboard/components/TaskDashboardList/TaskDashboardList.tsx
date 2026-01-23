@@ -183,9 +183,9 @@ export const TaskDashboardList: React.FC = () => {
     <Box sx={{ pt: 1 }}>
       <Box
         sx={{
-          borderTop: '1px solid #0000003B',
-          borderRight: '1px solid #0000003B',
-          borderLeft: '1px solid #0000003B'
+          borderTop: theme => `1px solid ${theme.palette.divider}`,
+          borderRight: theme => `1px solid ${theme.palette.divider}`,
+          borderLeft: theme => `1px solid ${theme.palette.divider}`
         }}
       >
         <Typography variant="h6" fontSize="24px" p="16px">

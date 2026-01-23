@@ -1,7 +1,21 @@
+:root {
+    --fc-border-color: rgba(0, 0, 0, 0.12);
+    --fc-page-bg-color: #fff;
+    --fc-neutral-bg-color: #FAFAFA;
+    --fc-today-bg-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] {
+    --fc-border-color: rgba(255, 255, 255, 0.12);
+    --fc-page-bg-color: #1e1e1e;
+    --fc-neutral-bg-color: #2d2d2d;
+    --fc-today-bg-color: rgba(255, 255, 255, 0.08);
+}
+
 .fc-theme-standard .fc-scrollgrid,
 .fc-theme-standard th,
 .fc-theme-standard td {
-    border-color: #e0e0e0;
+    border-color: var(--fc-border-color);
 }
 
 .fc-theme-standard .fc-list-empty-cushion {
@@ -11,8 +25,8 @@
 }
 
 .fc .fc-toolbar.fc-header-toolbar {
-    background-color: #fff;
-    border-bottom: 1px solid #e0e0e0;
+    background-color: var(--fc-page-bg-color);
+    border-bottom: 1px solid var(--fc-border-color);
     display: flex;
     justify-content: space-between;
     padding: 8px 0;
@@ -145,16 +159,16 @@
     flex-direction: column;
     height: 100%;
     min-height: 135px;
-    background: #FAFAFA;
+    background: var(--fc-neutral-bg-color);
 }
 
 .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-frame {
-    background-color: #e0e0e0;
+    background-color: var(--fc-today-bg-color);
 }
 
 .fc .fc-col-header-cell {
     background-color: #1D1D1D;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--fc-border-color);
     color: #fff;
     font-family: 'Lato', sans-serif;
     font-size: 14px;
@@ -168,7 +182,7 @@
 
 .fc .fc-popover-header {
     background-color: #1D1D1D;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--fc-border-color);
     color: #fff;
 }
 

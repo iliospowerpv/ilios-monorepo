@@ -181,7 +181,9 @@ export const TechnicalDetailCard: React.FC<TechnicalDetailsProps> = ({
           </Zoom>
         </Stack>
         <Box px="8px">
-          <Divider sx={{ borderBottom: '1px solid #0000003B', height: '1px', marginBottom: '8px' }} />
+          <Divider
+            sx={{ borderBottom: theme => `1px solid ${theme.palette.divider}`, height: '1px', marginBottom: '8px' }}
+          />
         </Box>
         {DisplayContent && (
           <DisplayContent

@@ -22,7 +22,7 @@ const ConnectionItem: React.FC<ConnectionItemProps> = ({ connection, onEdit, onD
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        border: '1px solid #0000001F',
+        border: theme => `1px solid ${theme.palette.divider}`,
         color: 'text.secondary',
         padding: '14px 20px'
       }}

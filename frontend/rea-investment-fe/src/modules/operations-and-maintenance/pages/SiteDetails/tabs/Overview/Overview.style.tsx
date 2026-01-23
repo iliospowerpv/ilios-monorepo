@@ -5,12 +5,12 @@ import IconButton from '@mui/material/IconButton';
 import { styled } from '@mui/system';
 import CircularProgress from '@mui/material/CircularProgress';
 
-export const WidgetContainer = styled(Box)(() => ({
+export const WidgetContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   flexGrow: 1,
   padding: '16px',
-  border: '1px solid #0000003B',
+  border: `1px solid ${theme.palette.divider}`,
   height: '100%',
   minHeight: '360px'
 }));

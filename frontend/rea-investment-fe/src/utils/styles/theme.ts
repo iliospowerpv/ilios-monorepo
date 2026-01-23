@@ -163,7 +163,7 @@ export const getTheme = (mode: PaletteMode) => {
         dark: '#6CC469',
         light: '#A7F5A3'
       },
-      divider: isLight ? '#323232' : '#79797A',
+      divider: isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)',
       action: {
         active: isLight ? 'rgba(0, 0, 0, 0.54)' : 'rgba(255, 255, 255, 0.54)',
         hover: isLight ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.04)',
@@ -306,7 +306,9 @@ export const getTheme = (mode: PaletteMode) => {
       MuiTableCell: {
         styleOverrides: {
           root: {
-            borderColor: isLight ? '#E0E0E0' : 'rgba(255, 255, 255, 0.12)'
+            borderColor: isLight ? '#E0E0E0' : 'rgba(255, 255, 255, 0.12)',
+            backgroundColor: isLight ? '#FFFFFF' : '#1F1F1F',
+            color: isLight ? '#000000' : '#FFFFFF'
           },
           head: {
             backgroundColor: isLight ? '#F0F0F0' : '#9C9EF3',
@@ -318,9 +320,18 @@ export const getTheme = (mode: PaletteMode) => {
       MuiTableRow: {
         styleOverrides: {
           root: {
+            backgroundColor: isLight ? '#FFFFFF' : '#1F1F1F',
             '&:hover': {
               backgroundColor: isLight ? '#F5F5F5' : '#333333'
             }
+          }
+        }
+      },
+      MuiTableContainer: {
+        styleOverrides: {
+          root: {
+            backgroundColor: isLight ? '#FFFFFF' : '#1F1F1F',
+            borderRadius: 8
           }
         }
       },

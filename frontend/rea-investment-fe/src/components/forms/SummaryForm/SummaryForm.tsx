@@ -326,7 +326,7 @@ export const SummaryForm: React.FC<TaskDetailsSiteScopeProps> = ({ taskData, boa
                 )}
               </FieldCell>
             </TableRow>
-            <TableRow sx={{ borderTop: '1px solid #0000003B' }}>
+            <TableRow sx={{ borderTop: theme => `1px solid ${theme.palette.divider}` }}>
               <FieldCell component="th" scope="row" width="150px">
                 <TextBox fieldName sx={{ fontSize: '16px' }}>
                   Resolution:

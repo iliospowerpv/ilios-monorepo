@@ -146,7 +146,9 @@ export const ServiceDetailCard: React.FC<ServiceDetailProps> = ({
           </Zoom>
         </Stack>
         <Box px="8px">
-          <Divider sx={{ borderBottom: '1px solid #0000003B', height: '1px', marginBottom: '8px' }} />
+          <Divider
+            sx={{ borderBottom: theme => `1px solid ${theme.palette.divider}`, height: '1px', marginBottom: '8px' }}
+          />
         </Box>
         <Table sx={{ width: '100%', height: 'auto', tableLayout: 'fixed' }} size="small">
           <TableBody>

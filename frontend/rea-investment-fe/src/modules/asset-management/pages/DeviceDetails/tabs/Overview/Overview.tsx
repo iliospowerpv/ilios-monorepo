@@ -62,7 +62,13 @@ export const OverviewTab: React.FC<DeviceDetailsTabProps> = ({ deviceDetails, de
               }
             }}
           >
-            <Box display="flex" flexDirection="column" flexGrow={1} padding="16px" border="1px solid #0000003B">
+            <Box
+              display="flex"
+              flexDirection="column"
+              flexGrow={1}
+              padding="16px"
+              sx={{ border: theme => `1px solid ${theme.palette.divider}` }}
+            >
               <Typography variant="h5" mb="16px">
                 Documents
               </Typography>

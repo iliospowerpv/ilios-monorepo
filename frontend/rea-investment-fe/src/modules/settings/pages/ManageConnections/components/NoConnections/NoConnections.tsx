@@ -6,7 +6,7 @@ const NoConnections: React.FC = () => (
   <Box
     data-testid="no-connections__component"
     sx={{
-      border: '1px solid #0000001F',
+      border: theme => `1px solid ${theme.palette.divider}`,
       alignContent: 'center',
       height: '80px',
       color: 'text.secondary'

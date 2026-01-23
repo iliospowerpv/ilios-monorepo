@@ -60,13 +60,12 @@ const MessageOverlay: React.FC<{ msg: string }> = ({ msg }) => (
 
 export const WidgetContainer = styled(Box, {
   shouldForwardProp: prop => prop !== 'scope'
-})<WidgetContainerScoped>(({ scope }) => ({
+})<WidgetContainerScoped>(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   flexGrow: 1,
   padding: '16px',
-  border: '1px solid',
-  borderColor: scope !== 'investor-dashboard' ? '#0000003B' : '#0000001F',
+  border: `1px solid ${theme.palette.divider}`,
   height: '100%',
   minHeight: '360px'
 }));
@@ -303,7 +302,12 @@ const ActualProduction: React.FC<ActualProductionProps> = ({
                   <Grid
                     item
                     xs={4}
-                    sx={{ '&.MuiGrid-item': { borderRight: '1px solid #E0E0E0', marginRight: '16px' } }}
+                    sx={{
+                      '&.MuiGrid-item': {
+                        borderRight: theme => `1px solid ${theme.palette.divider}`,
+                        marginRight: '16px'
+                      }
+                    }}
                   >
                     <Typography variant="h6" fontWeight={700} fontSize={20} lineHeight="32px">
                       {formatFloatValue(total_actual_kw ?? 0)}

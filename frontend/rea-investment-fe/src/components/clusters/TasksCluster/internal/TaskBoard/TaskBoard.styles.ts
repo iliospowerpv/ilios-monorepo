@@ -49,7 +49,7 @@ export const Title = styled(Typography)(({ theme }) => ({
 
 export const TaskContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
-  border: '1px solid #0000001F',
+  border: `1px solid ${theme.palette.divider}`,
   flexDirection: 'column',
   justifyContent: 'center',
   alignItems: 'flex-start',
