@@ -17,18 +17,19 @@ export const HeaderToolbar = styled(Toolbar)(({ theme }) => ({
   height: theme.spacing(8),
   minHeight: `${theme.spacing(8)} !important`,
   padding: `0 !important`,
-  color: 'rgba(0, 0, 0, 0.4)'
+  color: theme.palette.text.secondary
 }));
 
 export const Header = styled(AppBar)(({ theme }) => ({
   left: theme.spacing(8),
   width: `calc(100% - ${theme.spacing(8)})`,
-  backgroundColor: '#ffffff',
+  backgroundColor: theme.palette.background.paper,
   boxShadow: 'none'
 }));
 
-export const MenuStyled = styled(Menu)(() => ({
+export const MenuStyled = styled(Menu)(({ theme }) => ({
   '& .MuiPaper-root': {
-    minWidth: 180
+    minWidth: 180,
+    backgroundColor: theme.palette.background.paper
   }
 }));

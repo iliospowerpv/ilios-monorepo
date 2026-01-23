@@ -8,7 +8,7 @@ export const SidebarDrawer = styled(MuiDrawer, { shouldForwardProp: prop => prop
   '& .MuiDrawer-paper': {
     position: 'relative',
     whiteSpace: 'nowrap',
-    backgroundColor: theme.color.black,
+    backgroundColor: theme.palette.mode === 'light' ? '#1D1D1D' : '#0A0A0A',
     width: theme.spacing(30),
     borderRight: 'none',
     transition: theme.transitions.create('width', {
@@ -32,7 +32,7 @@ export const SidebarContainer = styled(Box)(({ theme }) => ({
   position: 'fixed',
   zIndex: theme.zIndex.drawer,
   height: '100vh',
-  color: theme.color.black
+  color: '#ffffff'
 }));
 
 export const SidebarHead = styled(Toolbar)(() => ({
@@ -48,11 +48,11 @@ export const SidebarToggleButtonContainer = styled(Box)(({ theme }) => ({
   right: 0,
   top: 0,
   zIndex: theme.zIndex.drawer,
-  backgroundColor: '#ffffff',
+  backgroundColor: theme.palette.background.paper,
   borderRadius: '50%',
   transform: `translate(50%, calc(${theme.spacing(8)} - 50%))`
 }));
 
-export const SidebarDivider = styled(Divider)(() => ({
-  backgroundColor: '#e0e0e0'
+export const SidebarDivider = styled(Divider)(({ theme }) => ({
+  backgroundColor: theme.palette.divider
 }));

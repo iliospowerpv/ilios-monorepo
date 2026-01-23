@@ -5,6 +5,8 @@ import Badge from '@mui/material/Badge';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import SettingsIcon from '@mui/icons-material/Settings';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
@@ -19,6 +21,7 @@ import { Breadcrumbs } from '../Breadcrumbs/Breadcrumbs';
 import { ApiClient } from '../../../api';
 import { useAuth } from '../../../contexts/auth/auth';
 import { useNotify } from '../../../contexts/notifications/notifications';
+import { useThemeMode } from '../../../contexts/theme/theme';
 
 export const PageHeader: React.FC = () => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -27,6 +30,7 @@ export const PageHeader: React.FC = () => {
   const queryClient = new QueryClient();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { mode, toggleTheme } = useThemeMode();
 
   if (!user) {
     throw new Error('PageHeader component requires user authentication');
@@ -64,16 +68,21 @@ export const PageHeader: React.FC = () => {
         <HeaderToolbar>
           <Breadcrumbs />
           <Stack direction="row" alignItems="center">
+            <Tooltip title={mode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}>
+              <IconButton onClick={toggleTheme} sx={{ mr: t => t.spacing(2), color: 'text.secondary' }}>
+                {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
+              </IconButton>
+            </Tooltip>
             <Link to="/settings">
-              <Tooltip title={isDisabled ? 'You don’t have permission to view this page.' : ''}>
+              <Tooltip title={isDisabled ? "You don't have permission to view this page." : ''}>
                 <span>
-                  <IconButton disabled={isDisabled} sx={{ mr: t => t.spacing(2), color: 'rgba(0, 0, 0, 0.4)' }}>
+                  <IconButton disabled={isDisabled} sx={{ mr: t => t.spacing(2), color: 'text.secondary' }}>
                     <SettingsIcon />
                   </IconButton>
                 </span>
               </Tooltip>
             </Link>
-            <IconButton sx={{ mr: t => t.spacing(2), color: 'rgba(0, 0, 0, 0.4)' }}>
+            <IconButton sx={{ mr: t => t.spacing(2), color: 'text.secondary' }}>
               <Badge color="primary">
                 <NotificationsIcon />
               </Badge>

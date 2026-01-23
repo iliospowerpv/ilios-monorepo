@@ -3,12 +3,11 @@ import { Route, createBrowserRouter, createRoutesFromElements, Navigate } from '
 // Providers
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { ThemeProvider } from '@mui/material/styles';
+import { ThemeModeProvider } from './contexts/theme/theme';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from 'react-router-dom';
 import { BaseLayout } from './components/layout/BaseLayout/BaseLayout';
 import { AuthLayout } from './components/layout/AuthLayout/AuthLayout';
-import theme from './utils/styles/theme';
 import { AuthProvider, useAuth } from './contexts/auth/auth';
 import { NotificationsProvider } from './contexts/notifications/notifications';
 import { ActionProcessorsProvider } from './contexts/action-processor/action-processor';
@@ -569,7 +568,7 @@ const router = createBrowserRouter(
 function App() {
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <ThemeProvider theme={theme}>
+      <ThemeModeProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <NotificationsProvider>
@@ -579,7 +578,7 @@ function App() {
             </NotificationsProvider>
           </AuthProvider>
         </QueryClientProvider>
-      </ThemeProvider>
+      </ThemeModeProvider>
     </LocalizationProvider>
   );
 }

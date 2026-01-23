@@ -19,7 +19,7 @@ export const Offset = styled('div')(({ theme }) => ({
 }));
 
 export const CardStyled = styled(Card)(({ theme }) => ({
-  backgroundColor: theme.palette.common.white,
+  backgroundColor: theme.palette.background.paper,
   width: '420px',
   padding: '40px 26px',
   borderRadius: theme.spacing(2),

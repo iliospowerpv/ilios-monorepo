@@ -78,7 +78,7 @@ const Login: React.FC = () => {
         sx={{
           'input:-webkit-autofill': {
             WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: '#000',
+            WebkitTextFillColor: 'inherit',
             boxShadow: 'inset 0 0 20px 20px transparent',
             transition: 'background-color 5000s ease-in-out 0s'
           }
