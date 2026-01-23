@@ -6,6 +6,7 @@ import { Navigate } from 'react-router-dom';
 import { PageHeader } from '../PageHeader/PageHeader';
 import { PageSidebar } from '../PageSidebar/PageSidebar';
 import { useAuth } from '../../../contexts/auth/auth';
+import { SidebarProvider } from '../../../contexts/sidebar';
 import CustomError from '../CustomError/CustomError';
 
 export const ErrorLayout: React.FC = () => {
@@ -18,11 +19,13 @@ export const ErrorLayout: React.FC = () => {
   }
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <CssBaseline />
-      <PageHeader />
-      <PageSidebar />
-      <CustomError />
-    </Box>
+    <SidebarProvider>
+      <Box sx={{ display: 'flex' }}>
+        <CssBaseline />
+        <PageHeader />
+        <PageSidebar />
+        <CustomError />
+      </Box>
+    </SidebarProvider>
   );
 };
