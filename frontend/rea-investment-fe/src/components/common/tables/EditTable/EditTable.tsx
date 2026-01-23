@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState, useRef } from 'react';
 import { AgGridReact } from 'ag-grid-react';
+import { useTheme } from '@mui/material/styles';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import '../../../../utils/styles/ag-theme-rea.css';
@@ -16,6 +17,7 @@ interface EditTableProps {
 }
 
 const EditTable: React.FC<EditTableProps> = ({ rowData, customActions }) => {
+  const theme = useTheme();
   const gridRef = useRef<AgGridReact>(null);
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
   const [isRowEditMode, setIsRowEditMode] = useState<boolean>(false);
@@ -120,7 +122,7 @@ const EditTable: React.FC<EditTableProps> = ({ rowData, customActions }) => {
         {/*  Edit Permissions*/}
         {/*</Button>*/}
       </HeaderActionsContainer>
-      <div className="ag-theme-quartz full-width-grid">
+      <div className={`${theme.palette.mode === 'dark' ? 'ag-theme-quartz-dark' : 'ag-theme-quartz'} full-width-grid`}>
         <AgGridReact
           ref={gridRef}
           domLayout="autoHeight"

@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { SelectionChangedEvent, RowModelType, RowStyle, GridOptions, RowClickedEvent, ColDef } from 'ag-grid-community';
+import { useTheme } from '@mui/material/styles';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import '../../../../utils/styles/ag-theme-rea.css';
@@ -21,6 +22,7 @@ interface BaseTableProps {
 }
 
 const BaseTableNoPagination = forwardRef((props: BaseTableProps, ref) => {
+  const theme = useTheme();
   const agGridRef = useRef<AgGridReact>(null);
   const {
     columnDefs,
@@ -72,7 +74,7 @@ const BaseTableNoPagination = forwardRef((props: BaseTableProps, ref) => {
   );
 
   return (
-    <div className="ag-theme-quartz full-width-grid no-borders " data-testid="grid__base-table">
+    <div className={`${theme.palette.mode === 'dark' ? 'ag-theme-quartz-dark' : 'ag-theme-quartz'} full-width-grid no-borders`} data-testid="grid__base-table">
       <AgGridReact
         ref={agGridRef}
         domLayout="autoHeight"

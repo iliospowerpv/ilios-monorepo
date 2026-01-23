@@ -9,6 +9,7 @@ import {
   ColDef,
   GridReadyEvent
 } from 'ag-grid-community';
+import { useTheme } from '@mui/material/styles';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import '../../../../utils/styles/ag-theme-rea.css';
@@ -33,6 +34,7 @@ interface BaseTableProps {
 }
 
 const BaseTable = forwardRef((props: BaseTableProps, ref) => {
+  const theme = useTheme();
   const agGridRef = useRef<AgGridReact>(null);
   const {
     rowIdKey,
@@ -143,7 +145,7 @@ const BaseTable = forwardRef((props: BaseTableProps, ref) => {
 
   return (
     <div
-      className={`ag-theme-quartz full-width-grid no-borders ${disableRowHover ? 'no-hover' : ''}`}
+      className={`${theme.palette.mode === 'dark' ? 'ag-theme-quartz-dark' : 'ag-theme-quartz'} full-width-grid no-borders ${disableRowHover ? 'no-hover' : ''}`}
       data-testid="grid__base-table"
     >
       <AgGridReact
