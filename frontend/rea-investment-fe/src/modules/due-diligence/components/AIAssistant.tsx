@@ -384,7 +384,7 @@ const AIChatBotCluster: React.FC<AIChatBotClusterProps> = ({ siteId }) => {
               height: '60vh',
               minHeight: '120px',
               maxHeight: '1200px',
-              backgroundColor: '#FFFFFF',
+              bgcolor: 'background.paper',
               outline: 'none',
               boxShadow:
                 'rgba(0, 0, 0, 0.08) 0px 5px 22px 4px, rgba(0, 0, 0, 0.1) 0px 12px 17px 2px, rgba(0, 0, 0, 0.16) 0px 7px 8px -4px'
@@ -426,7 +426,7 @@ const AIChatBotCluster: React.FC<AIChatBotClusterProps> = ({ siteId }) => {
                       padding: '15%',
                       gap: '12px',
                       position: 'absolute',
-                      background: '#FFFFFF',
+                      bgcolor: 'background.paper',
                       zIndex: 10000
                     }}
                   >
@@ -573,7 +573,15 @@ const AIChatBotCluster: React.FC<AIChatBotClusterProps> = ({ siteId }) => {
                         )
                       )}
                     </TransitionGroup>
-                    <Box sx={{ position: 'sticky', bottom: '0', width: '100%', zIndex: '100', background: '#fff' }}>
+                    <Box
+                      sx={{
+                        position: 'sticky',
+                        bottom: '0',
+                        width: '100%',
+                        zIndex: '100',
+                        bgcolor: 'background.paper'
+                      }}
+                    >
                       <Fade
                         in={
                           readyState !== ReadyState.OPEN ||
@@ -582,7 +590,7 @@ const AIChatBotCluster: React.FC<AIChatBotClusterProps> = ({ siteId }) => {
                       >
                         <Box
                           sx={{
-                            background: '#ffffff',
+                            bgcolor: 'background.paper',
                             position: 'absolute',
                             width: '100%',
                             height: '100%',
@@ -592,7 +600,7 @@ const AIChatBotCluster: React.FC<AIChatBotClusterProps> = ({ siteId }) => {
                             alignItems: 'center',
                             flexDirection: 'column',
                             zIndex: 1000,
-                            borderTop: '1px solid #E0E0E0'
+                            borderTop: theme => `1px solid ${theme.palette.divider}`
                           }}
                         >
                           <svg width={0} height={0}>

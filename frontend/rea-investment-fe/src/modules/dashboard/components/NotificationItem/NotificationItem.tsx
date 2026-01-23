@@ -41,13 +41,13 @@ const formatDate = (date: string) => {
 };
 
 const CustomListItem = styled(ListItem, { shouldForwardProp: prop => prop !== 'isRead' })<CustomListItemProps>(
-  ({ isRead }) => ({
-    backgroundColor: isRead ? '#fff' : '#25C1FC14',
+  ({ theme, isRead }) => ({
+    backgroundColor: isRead ? theme.palette.background.paper : '#25C1FC14',
     cursor: 'pointer',
-    borderBottom: '1px solid #E0E0E0',
+    borderBottom: `1px solid ${theme.palette.divider}`,
     transition: 'opacity 0.5s ease, transform 0.5s ease',
     '&:hover': {
-      backgroundColor: isRead ? '#0000000a' : '#25C1FC29',
+      backgroundColor: isRead ? theme.palette.action.hover : '#25C1FC29',
       boxShadow: '2px 2px 8px 0px #00000014',
       transition: 'box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1)'
     }

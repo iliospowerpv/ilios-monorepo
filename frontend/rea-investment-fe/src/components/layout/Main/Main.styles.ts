@@ -6,6 +6,6 @@ export const MainContainer = styled(Box)(({ theme }) => ({
   marginLeft: theme.spacing(8),
   maxWidth: `calc(100% - ${theme.spacing(8)})`,
   flexGrow: 1,
-  backgroundColor: '#ffffff',
+  backgroundColor: theme.palette.background.default,
   minHeight: '100vh'
 }));

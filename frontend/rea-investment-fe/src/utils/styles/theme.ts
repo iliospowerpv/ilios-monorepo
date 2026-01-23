@@ -145,7 +145,7 @@ export const getTheme = (mode: PaletteMode) => {
       },
       background: {
         default: isLight ? '#FFFFFF' : '#1A1C27',
-        paper: isLight ? '#FAFAFA' : '#201E2B'
+        paper: isLight ? '#FFFFFF' : '#1F1F1F'
       },
       error: {
         main: isLight ? '#E53C10' : '#EF3E10',
@@ -276,6 +276,7 @@ export const getTheme = (mode: PaletteMode) => {
         styleOverrides: {
           root: {
             backgroundImage: 'none',
+            backgroundColor: isLight ? '#FFFFFF' : '#1F1F1F',
             borderRadius: 8
           }
         }

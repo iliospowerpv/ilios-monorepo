@@ -13,10 +13,9 @@ const Container = styled('div')(({ theme }) => ({
   justifyContent: 'flex-start',
   alignItems: 'center',
   padding: '8px 20px',
-  backgroundColor: '#fff',
+  backgroundColor: theme.palette.background.paper,
   boxShadow: 'none',
-  borderBottom: '1px solid #E0E0E0',
-  background: theme.palette.common.white,
+  borderBottom: `1px solid ${theme.palette.divider}`,
   '@media (max-width: 768px)': {
     padding: '6px'
   },
@@ -33,32 +32,32 @@ const Container = styled('div')(({ theme }) => ({
   }
 }));
 
-const ControlButton = styled('button')`
-  color: #4f4f4f;
-  box-shadow: none;
-  margin: 0px 8px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  text-align: center;
-  font-size: 18px;
-  border: 0;
-  outline: none;
-  cursor: pointer;
-  text-decoration: none;
-  border-radius: 35px;
-  opacity: 1;
-  pointer-events: all;
-  background: ${({ theme }) => theme.palette.common.white};
-  @media (max-width: 768px) {
-    width: 25px;
-    height: 25px;
-    font-size: 15px;
+const ControlButton = styled('button')(({ theme }) => ({
+  color: theme.palette.text.secondary,
+  boxShadow: 'none',
+  margin: '0px 8px',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  width: '30px',
+  height: '30px',
+  padding: 0,
+  textAlign: 'center',
+  fontSize: '18px',
+  border: 0,
+  outline: 'none',
+  cursor: 'pointer',
+  textDecoration: 'none',
+  borderRadius: '35px',
+  opacity: 1,
+  pointerEvents: 'all',
+  background: theme.palette.background.paper,
+  '@media (max-width: 768px)': {
+    width: '25px',
+    height: '25px',
+    fontSize: '15px'
   }
-`;
+}));
 
 interface IconProps {
   color?: string;

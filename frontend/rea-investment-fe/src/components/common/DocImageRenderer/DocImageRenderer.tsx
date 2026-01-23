@@ -9,7 +9,6 @@ const DocImageRenderer: DocRenderer = props => {
   const {
     mainState: { currentDocument }
   } = props;
-  const backgroundColor = '#FAFAFA';
   const scaleUp = false;
   const zoomFactor = 8;
 
@@ -70,7 +69,7 @@ const DocImageRenderer: DocRenderer = props => {
       sx={{
         width: '100%',
         height: '100%',
-        backgroundColor
+        bgcolor: 'background.paper'
       }}
       data-testid="doc-image-renderer-container"
       ref={(el: HTMLDivElement | null) => setContainer(el)}
@@ -89,8 +88,7 @@ const DocImageRenderer: DocRenderer = props => {
               display: 'flex',
               flex: 1,
               width: '100%',
-              height: '100%',
-              backgroundColor: '#fff'
+              height: '100%'
             }}
           >
             <img src={currentDocument.fileData} alt="current document image" />
