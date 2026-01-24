@@ -1,0 +1,78 @@
+You are acting as an investor/lender diligence reviewer (tax equity, lender credit committee, or infrastructure fund) reviewing a single project in Ilios. We have recently converted the Overview page into collapsible cards. Your job is to pressure-test this page for underwriting and diligence readiness and then implement targeted improvements.
+
+GOAL
+Make the Overview page support a lender/investor workflow: fast scan → identify risk/missing items → drill down → export/share → auditability. Do not invent new business logic; focus on IA/UX, states, and completeness signaling using existing fields.
+
+CONTEXT
+- Page is currently a collection of collapsible cards (sections) containing mostly read-only label/value fields.
+- This is used for due diligence and ongoing asset oversight.
+- The current pain: poor hierarchy, too many equal-weight fields, hard to see what matters, and hard to know what’s missing.
+
+TASKS (deliver in this order)
+
+1) WORKFLOW WALKTHROUGH (write this as a short report in comments or a markdown file in repo)
+Simulate 3 personas reviewing the same site:
+A. Lender credit reviewer
+B. Tax equity / ITC eligibility reviewer
+C. Asset manager / operations reviewer
+For each persona, list:
+- The first 5 questions they need answered on this page (not in a separate system).
+- What info they expect to see “above the fold”.
+- What red flags they look for.
+- What missing data prevents approval.
+
+2) GAP ANALYSIS AGAINST CURRENT UI
+Inspect the current Overview page implementation and identify:
+- What is not visible quickly enough (scan problem).
+- What is present but poorly grouped (IA problem).
+- What is missing as an interaction affordance (workflow problem).
+- Where the collapsible cards help vs hurt.
+
+3) IMPLEMENTATION CHANGES (make code changes)
+Implement the minimum set of UI enhancements to satisfy lender/investor scan + drill-down:
+
+A. Add a non-collapsible “Executive Summary” strip at the top of the page that includes:
+- Site Name, Project ID, Status badge
+- Address/City/State
+- System size (kW DC and kW AC)
+- Interconnection utility provider (if present)
+- Key dates (PTO, COD/Placed-in-Service, Financial Close if present)
+Keep it compact and readable.
+
+B. For each collapsible card header, show a compact header summary:
+- 2–3 highest-signal fields for that card (choose appropriate ones)
+- A completeness indicator: “Complete” or “Missing X” based on empty required fields
+Do not show long text; keep it one line or two max.
+
+C. Add required-field definitions (front-end only is fine)
+Define a simple required field list per card (hard-coded for now). A field counts as missing if null/empty/undefined.
+Display missing count in the card header and list missing field names inside the card when expanded.
+
+D. Edit interaction cleanup
+Remove individual pencil icons scattered across the page.
+Replace with a single “Edit” button per card (only visible when the card is expanded).
+Clicking Edit toggles that card into edit mode (inline inputs) and provides Save/Cancel.
+Do not change backend data models unless required; prefer existing save mechanisms.
+
+E. Defaults + persistence
+- Open by default: Executive Summary (always visible), plus the most critical two cards (Overview and Assets & Engineering, or equivalent).
+- All others collapsed by default.
+- Persist expanded/collapsed state per user per project in localStorage.
+
+F. “Underwriting Readiness” indicator (simple)
+Add a small readiness widget near the Executive Summary:
+- “Underwriting Readiness: Ready / Not Ready”
+- Not Ready if any critical cards have missing required fields (Ownership, Key Dates, Interconnection/PPA/Contracts, Insurance, Tax Equity—use what exists).
+- Show the top 3 missing fields contributing to Not Ready.
+
+4) ACCEPTANCE CRITERIA (must meet)
+- A lender can answer: who/where/what size/status, utility & PTO timing, and who owns/guarantees, within 10 seconds.
+- Missing critical diligence items are visible without expanding every card.
+- Editing is not noisy; only one edit control per card.
+- No significant layout regressions on desktop widths.
+- No new dependencies unless necessary.
+
+OUTPUT
+- Implement the above changes in code.
+- Provide a short “before/after” description and where to click to validate.
+- If any required field is not present in the current data model, note it and gracefully handle (show “—” and count as missing only if the field exists but is empty).
