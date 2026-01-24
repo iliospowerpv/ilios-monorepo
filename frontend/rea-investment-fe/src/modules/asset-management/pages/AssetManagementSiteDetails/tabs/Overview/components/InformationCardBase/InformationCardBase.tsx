@@ -1,14 +1,12 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import EditIcon from '@mui/icons-material/Edit';
-import Zoom from '@mui/material/Zoom';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Fade from '@mui/material/Fade';
 import { useTheme } from '@mui/material/styles';
+import EditIcon from '@mui/icons-material/Edit';
 
 export interface InformationCardFormReflectedState {
   isValid: boolean;
@@ -67,7 +65,6 @@ export const InformationCardBase = <T,>(props: InformationCardBaseProps<T>): Rea
   const editBtnTestId = title.toLocaleLowerCase().split(' ').join('_') + '-edit-btn';
 
   const borderColor = theme.palette.divider;
-  const editBtnBgColor = theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.85)';
 
   return (
     <Box>
@@ -94,29 +91,11 @@ export const InformationCardBase = <T,>(props: InformationCardBaseProps<T>): Rea
               <Typography variant="h6" mb="0px">
                 {title}
               </Typography>
-              <Zoom in={mode === 'view'}>
-                <Box borderRadius="50%" bgcolor={editBtnBgColor}>
-                  <IconButton data-testid={editBtnTestId} size="small" onClick={handleClickEdit}>
-                    <EditIcon fontSize="small" sx={{ color: theme.palette.text.secondary }} />
-                  </IconButton>
-                </Box>
-              </Zoom>
             </Stack>
             <Box px="8px">
               <Divider sx={{ borderBottom: `1px solid ${borderColor}`, height: '1px', marginBottom: '8px' }} />
             </Box>
           </>
-        )}
-        {hideHeader && (
-          <Stack direction="row" justifyContent="flex-end" alignItems="center" px="8px" pb="8px">
-            <Zoom in={mode === 'view'}>
-              <Box borderRadius="50%" bgcolor={editBtnBgColor}>
-                <IconButton data-testid={editBtnTestId} size="small" onClick={handleClickEdit}>
-                  <EditIcon fontSize="small" sx={{ color: theme.palette.text.secondary }} />
-                </IconButton>
-              </Box>
-            </Zoom>
-          </Stack>
         )}
         <InformationCardForm
           ref={formApi}
@@ -126,10 +105,31 @@ export const InformationCardBase = <T,>(props: InformationCardBaseProps<T>): Rea
           data={informationCardData}
           reflectFormState={setFormReflectedState}
         />
-        <Stack width="100%" direction="row" flexWrap="nowrap" alignItems="center" justifyContent="flex-end">
+        <Stack
+          width="100%"
+          direction="row"
+          flexWrap="nowrap"
+          alignItems="center"
+          justifyContent="flex-end"
+          sx={{ mt: 1 }}
+        >
+          {mode === 'view' && (
+            <Fade in={mode === 'view'} timeout={{ enter: 300, exit: 300 }}>
+              <Button
+                data-testid={editBtnTestId}
+                variant="outlined"
+                size="small"
+                startIcon={<EditIcon fontSize="small" />}
+                onClick={handleClickEdit}
+                sx={{ mx: 1 }}
+              >
+                Edit
+              </Button>
+            </Fade>
+          )}
           {mode === 'edit' && (
-            <Fade in={mode === 'edit'} timeout={{ enter: 1000, exit: 1000 }}>
-              <Stack direction="row" spacing={1} px="8px" pt="16px">
+            <Fade in={mode === 'edit'} timeout={{ enter: 300, exit: 300 }}>
+              <Stack direction="row" spacing={1} px="8px">
                 <Button disabled={isSubmitting} variant="outlined" size="small" onClick={handleClickCancel}>
                   Cancel
                 </Button>
