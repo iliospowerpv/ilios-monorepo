@@ -49,3 +49,9 @@ INVESTOR_DASHBOARD_TAG = "Investor Dashboard"
 BREADCRUMBS_TAG = "Breadcrumbs"
 
 REPORTING_TAG = "[Reporting]"
+
+FINANCE_VENDORS_TAG = "[Finance] Vendors"
+FINANCE_BUDGETS_TAG = "[Finance] Budgets"
+FINANCE_OBLIGATIONS_TAG = "[Finance] Obligations"
+FINANCE_ACTUALS_TAG = "[Finance] Actuals"
+FINANCE_PORTFOLIO_TAG = "[Finance] Portfolio"

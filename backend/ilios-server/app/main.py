@@ -34,6 +34,11 @@ from .routers import (
     documents_router,
     files_parsing_router,
     files_router,
+    finance_actuals_router,
+    finance_budgets_router,
+    finance_obligations_router,
+    finance_portfolio_router,
+    finance_vendors_router,
     health_router,
     internal_ai_router,
     internal_router,
@@ -191,6 +196,32 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
         reports_sites_router, prefix="/api/reporting/companies/{company_id}/sites", tags=[tags.REPORTING_TAG]
     )
     app.include_router(reports_router, prefix="/api/reporting/reports", tags=[tags.REPORTING_TAG])
+    # finance related APIs
+    app.include_router(
+        finance_vendors_router,
+        prefix="/api/finance/companies/{company_id}/vendors",
+        tags=[tags.FINANCE_VENDORS_TAG],
+    )
+    app.include_router(
+        finance_budgets_router,
+        prefix="/api/finance/companies/{company_id}/budgets",
+        tags=[tags.FINANCE_BUDGETS_TAG],
+    )
+    app.include_router(
+        finance_obligations_router,
+        prefix="/api/finance/companies/{company_id}/obligations",
+        tags=[tags.FINANCE_OBLIGATIONS_TAG],
+    )
+    app.include_router(
+        finance_actuals_router,
+        prefix="/api/finance/companies/{company_id}/actuals",
+        tags=[tags.FINANCE_ACTUALS_TAG],
+    )
+    app.include_router(
+        finance_portfolio_router,
+        prefix="/api/finance/companies/{company_id}/portfolio",
+        tags=[tags.FINANCE_PORTFOLIO_TAG],
+    )
     # internal APIs
     app.include_router(internal_router, prefix="/api/internal", tags=[tags.INTERNAL_TAG])
     app.include_router(internal_ai_router, prefix="/api/internal", tags=[tags.INTERNAL_AI_TAG])

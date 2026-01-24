@@ -76,7 +76,7 @@ const menuItems: [string, React.ReactNode, string, string, boolean][] = [
     false
   ],
   ['due-diligence', <FactCheckIcon key="due-diligence" />, 'Diligence', '/due-diligence', false],
-  ['finance', <AccountBalanceWalletIcon key="finance" />, 'Finance', '/', true],
+  ['finance', <AccountBalanceWalletIcon key="finance" />, 'Finance', '/finance', false],
   ['asset-management', <AccountBalanceIcon key="asset-management" />, 'Asset Management', '/asset-management', false],
   ['reports', <AssessmentIcon key="reports" />, 'Reports', '/reports', false]
 ];
@@ -132,6 +132,8 @@ export const NavMenu: React.FC<NavMenuProps> = ({ containerRef, isMenuOpen, clos
         return !user?.role?.permissions?.['O&M (Production Monitoring)']?.view;
       case 'Diligence':
         return !user?.role?.permissions?.['Diligence']?.view;
+      case 'Finance':
+        return !user?.role?.permissions?.['Finance']?.view;
       case 'Asset Management':
         return !user?.role?.permissions?.['Asset Management']?.view;
       case 'Reports':

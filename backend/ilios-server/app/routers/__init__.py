@@ -12,6 +12,13 @@ from .due_diligence import (
     files_parsing_router,
     files_router,
 )
+from .finance import (
+    finance_actuals_router,
+    finance_budgets_router,
+    finance_obligations_router,
+    finance_portfolio_router,
+    finance_vendors_router,
+)
 from .health import health_router
 from .internal import internal_ai_router, internal_router, internal_sites_router
 from .investor_dashboard import investor_companies_router

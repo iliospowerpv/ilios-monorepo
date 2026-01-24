@@ -66,6 +66,42 @@ Configured as a static deployment for frontend:
 
 ## Recent Features
 
+### Finance Module MVP (Jan 2026)
+A capital governance, authorization, and compliance engine (NOT a general ledger) that provides:
+- **Budget vs Actual Tracking**: Site-level and portfolio-level budget management with variance analysis
+- **Vendor/Service Provider Visibility**: Centralized vendor registry with contact info and type classification
+- **Authorization Gating**: Prerequisite checks (ownership, interconnection, insurance, PTO/COD dates) before payment authorization
+- **Approval Workflows with Audit Trail**: Submit → Approve/Reject/Override flow with full audit history
+- **Portfolio/Fund Rollup**: Company-level aggregation showing finance readiness across all sites
+- **Data Room Package Export**: JSON export of finance data for investor/lender due diligence
+
+**Backend Components**:
+- `app/models/finance.py` - SQLAlchemy models (FinanceVendor, FinanceBudget, FinanceBudgetLineItem, FinanceObligation, FinanceApproval, FinanceActual)
+- `app/schema/finance.py` - Pydantic schemas for API request/response
+- `app/routers/finance/` - API routes (vendors, budgets, obligations, actuals, portfolio)
+- `app/crud/finance.py` - Database CRUD operations
+- `app/static/permissions.py` - FinancePermissions RBAC class
+
+**Frontend Components**:
+- `src/modules/finance/` - Finance module directory
+- `pages/FinanceHome/` - Portfolio overview with summary cards and site list
+- `pages/SiteFinance/` - Site-level finance with tabs (Budget, Obligations, Vendors, Actuals)
+- `api/finance.ts` - API client with React Query hooks
+- `types/index.ts` - TypeScript types and enums
+
+**API Routes** (all prefixed with `/api/finance/companies/{company_id}/`):
+- `GET /portfolio/summary` - Portfolio-level finance summary
+- `GET /portfolio/sites/{site_id}/summary` - Site-level finance summary
+- `GET/POST /vendors` - Vendor CRUD
+- `GET/POST /budgets` - Budget CRUD with line items
+- `GET/POST /obligations` - Obligation management
+- `POST /obligations/{id}/submit` - Submit for approval
+- `POST /obligations/{id}/approve` - Approve/reject/override
+- `GET /actuals` - Actual transactions (supports QuickBooks/Gravity import stubs)
+- `GET /portfolio/sites/{site_id}/data-room-package` - Export finance data
+
+**Navigation**: Enabled at `/finance` with Finance permission check in NavMenu.tsx
+
 ### Asset Management Overview - Investor/Lender Diligence Workflow (Jan 2026)
 - **Drag-and-drop reordering**: Cards can be reordered using @dnd-kit library with rectSortingStrategy for grid layouts
 - **Collapsible cards**: Each card has a collapse/expand toggle in the header

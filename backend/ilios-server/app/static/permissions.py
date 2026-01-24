@@ -6,6 +6,7 @@ class PermissionsModules(BaseMessageEnum):
     diligence = "Diligence"
     # todo rename to 'om' like in the rest of the app
     operation_maintenance = "O&M (Production Monitoring)"
+    finance = "Finance"
     investor_dashboard = "Investor Dashboard"
     role_based_dashboard = "Role-based Homepage/Tab"
     settings = "Settings Page"
