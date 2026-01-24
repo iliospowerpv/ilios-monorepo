@@ -1,0 +1,158 @@
+You are the Replit agent working in the Ilios codebase. Build the MVP of the “Finance Module” according to the Finance Module Charter and Family Office Workflow Pressure Test.
+
+NON-NEGOTIABLE INTENT
+Ilios Finance is a capital governance, authorization, and compliance engine for solar assets.
+It is NOT a general ledger and must NOT attempt to replace QuickBooks, Gravity, banking, or tax filing systems.
+
+SCOPE AND BOUNDARIES (MUST ENFORCE)
+1) Finance authorizes and gates decisions; external systems execute transactions.
+2) Finance is ALWAYS state-aware: all actions tie to a Site state and/or Deal state.
+3) Finance must not embed or duplicate operational telemetry time-series. Operations owns raw telemetry.
+4) Finance must not embed or duplicate due diligence checklists. Diligence owns checklists; Finance references completion signals.
+5) Finance must support:
+   - Deal-centric workflow during acquisition/diligence/construction
+   - Site-centric operational oversight once in service
+   - Portfolio/Fund rollups for the family office (read-only rollups are fine in MVP)
+6) Exit readiness is a first-class concern: everything we track should support future data room packaging.
+
+CURRENT SYSTEM CONTEXT (ASSUME)
+- Ilios is modular with Company → Site hierarchy.
+- Canonical Site Overview exists (collapsible cards) and should remain the single “site record.”
+- There is a separate Operations module with baseline performance models + telemetry.
+- There is a Due Diligence module.
+- Finance module is new and not yet built.
+
+DELIVERABLES (MVP)
+Build a Finance module that enables:
+A) Authorization gating (what to pay, when to pay, is it authorized, are prerequisites complete?)
+B) Budget vs actual tracking per Site (and optionally per Deal)
+C) Vendor / service provider cost visibility (including warranty/O&M cost categories)
+D) Expected vs actual financial performance at the Site level (high-level actuals, no time-series)
+E) Portfolio/Fund rollup view (basic) across Sites for read-only visibility
+F) Audit trail for approvals/overrides
+
+DO NOT BUILD IN MVP
+- Full invoicing, AR/AP ledger, double-entry accounting, bank feeds, reconciliation, tax filing.
+- Complex waterfall distributions or investor portals (we can stub later).
+- Deep operational KPI charts or telemetry dashboards.
+
+MODULE NAVIGATION + UX CONTRACT (CRITICAL)
+- Avoid ambiguous “Overview.” Use explicit naming:
+  - Company > Portfolio (optional)
+  - Site > Canonical Site Overview (existing)
+  - Site > Finance (new)
+  - Deal > Finance (if Deal entities exist)
+- Finance pages must feel consistent with existing UI patterns.
+- Finance should be accessible from:
+  1) Site context (primary)
+  2) Deal/pipeline context (secondary, if pipeline exists)
+
+MVP INFORMATION ARCHITECTURE
+1) Finance Home (Company-level):
+   - Portfolio snapshot: total budget, total authorized, total actual, variance
+   - Sites list with finance status: Ready/Not Ready + missing critical finance prerequisites
+   - Filters: status, state, utility, fund/vehicle, “needs attention”
+2) Site Finance (Site-level):
+   - Finance Summary strip (compact):
+     - Budget total, Authorized total, Actual total, Variance
+     - Underwriting/Finance Readiness indicator (Ready/Not Ready)
+     - Top 3 missing prerequisites (from finance required fields and referenced module completion signals)
+   - Tabs or collapsible sections:
+     - Budget & Forecast (line items)
+     - Obligations & Payments (authorization requests)
+     - Vendors & Contracts (vendor list + cost categories + terms metadata)
+     - Performance vs Model (expected vs actual revenue/cost summary; no telemetry charts)
+     - Audit Trail (approvals/overrides history)
+3) Deal Finance (Optional if Deal objects exist):
+   - Deal budget, diligence spend authorization, milestone draw schedule
+   - Link to related Site(s)
+
+CORE DATA MODEL REQUIREMENTS
+Implement the minimum data structures needed. Prefer existing DB patterns (Drizzle/Postgres or current ORM).
+Add migrations safely.
+
+Entities (minimum):
+- FinanceBudget
+  - id, companyId, siteId, dealId (optional), name, period (optional), status
+- FinanceBudgetLineItem
+  - id, budgetId, category (enum), vendorId (optional), description
+  - amountPlanned, amountAuthorized, amountActual
+  - startDate, endDate (optional)
+- FinanceVendor
+  - id, companyId, name, type (enum: EPC, O&M, Insurance, Utility, Engineering, Legal, Other)
+  - contact info fields (optional), notes, active flag
+- FinanceObligation (Authorization Request)
+  - id, companyId, siteId, vendorId (optional)
+  - type (enum: milestone, invoice, retainer, change_order, service_call, other)
+  - amountRequested, requestedDate, dueDate (optional)
+  - status (enum: draft, submitted, approved, rejected, paid_external, canceled)
+  - prerequisiteSnapshot (json) capturing what was true at approval time
+- FinanceApproval
+  - id, obligationId, approvedByUserId, approvedAt, decision (approved/rejected/override)
+  - notes, overrideReason (optional)
+- FinanceActual (lightweight)
+  - id, companyId, siteId, vendorId (optional), category, amount, date, referenceId, sourceSystem (QuickBooks/Gravity/manual)
+  - NOTE: This is NOT a ledger. It’s a normalized “actuals feed” table to compare against budgets.
+
+Required field logic:
+- Define “critical finance prerequisites” per lifecycle state.
+- Finance readiness = NOT READY if missing critical prerequisites OR if obligations pending approval beyond threshold.
+- Missing prerequisites must show without expanding everything.
+
+INTEGRATIONS (MVP APPROACH)
+- Add manual entry for actuals and obligations for now.
+- Prepare an interface for future sync from QuickBooks/Gravity (adapter pattern), but do not build full integration unless already partially present.
+
+AUTHORIZATION RULES (MVP)
+Implement a simple, enforceable rules engine:
+- Obligation can only be submitted if required prerequisites for the Site state are satisfied.
+- Approval requires role permission (Admin/Finance Approver).
+- Overrides allowed but must require overrideReason and show in audit trail.
+- Keep rules declarative (config object) so we can expand.
+
+SECURITY / RBAC
+- Finance pages restricted to roles: Admin, Finance, Portfolio Manager (read-only), Operations (read-only).
+- Sensitive fields (e.g., bank info if present later) must be masked; in MVP just ensure no secrets are introduced.
+
+UI REQUIREMENTS
+- Use the same UI component library and layout patterns as Ilios.
+- Provide:
+  - Status badges (Ready/Not Ready, Draft/Submitted/Approved/Paid External)
+  - Variance indicators (positive/negative)
+  - “Needs Attention” queue based on missing prerequisites, pending approvals, high variance.
+- Editing:
+  - Avoid noisy per-field pencil icons; use section-level edit patterns as in Canonical Site Overview.
+
+REPORTING / EXPORT (MVP)
+- Add a “Generate Data Room Finance Package” stub action at Site level:
+  - For MVP: generate a single downloadable JSON or CSV bundle containing budget, obligations, approvals, actuals summary.
+  - This is a placeholder for later PDF/data room automation.
+
+TESTING / ACCEPTANCE CRITERIA
+A) A family office controller can:
+   - See which sites are finance-ready
+   - Submit an obligation for approval
+   - Approve/reject with audit trail
+   - See budget vs actual variance for a site
+B) A portfolio manager can:
+   - Filter sites needing attention
+   - Roll up planned/authorized/actual across the portfolio
+C) System does not behave like a ledger:
+   - No double-entry or reconciliation logic
+   - Actuals are treated as an imported/entered feed for variance analysis
+
+IMPLEMENTATION INSTRUCTIONS
+1) Scan existing codebase: routing, module structure, DB schema patterns, auth/RBAC patterns, UI components.
+2) Propose a minimal folder structure for Finance Module.
+3) Implement data models + migrations.
+4) Implement Company-level Finance Home.
+5) Implement Site-level Finance view with the sections above.
+6) Implement authorization gating + audit trail.
+7) Add a few seed/demo records behind a dev flag for UI testing.
+8) Provide a short README: where it lives in nav, how to validate flows, how readiness is computed.
+
+OUTPUT
+- Make the code changes.
+- Summarize what was added and where.
+- List any assumptions about existing entities (Site, Deal, Company, User roles).
+- If missing dependencies exist (e.g., no Deal model), implement Site-centric only and stub Deal linkage.
