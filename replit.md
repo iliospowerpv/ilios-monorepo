@@ -66,13 +66,20 @@ Configured as a static deployment for frontend:
 
 ## Recent Features
 
-### Asset Management Overview - Collapsible Drag-and-Drop Cards (Jan 2026)
+### Asset Management Overview - Investor/Lender Diligence Workflow (Jan 2026)
 - **Drag-and-drop reordering**: Cards can be reordered using @dnd-kit library with rectSortingStrategy for grid layouts
 - **Collapsible cards**: Each card has a collapse/expand toggle in the header
-- **Default state**: Top row (first 3 cards) open by default, others collapsed
+- **Default state**: Top 2 cards (Site Level Details + Key Dates) open by default, others collapsed
 - **Persistence**: Card order and collapsed state persist per site using localStorage (key: `overview_cards_{siteId}`)
-- **Missing field indicators**: Warning icon (⚠️) appears in card header when required fields are missing
-- **Components**: DraggableCardLayout.tsx, Overview.tsx with REQUIRED_FIELDS configuration
+- **Executive Summary**: Non-collapsible header showing Site Name, Project ID, Status, Location, System Size, Utility, Key Dates
+- **Underwriting Readiness Widget**: Shows Ready/Not Ready status based on 5 critical cards, displays top 3 missing fields
+- **Enhanced Card Headers**: Completeness indicators, inline summaries when collapsed, tooltips for missing fields
+- **Single Edit Button**: Consolidated edit interaction at bottom of each card in view mode
+- **Components**: ExecutiveSummary.tsx, UnderwritingReadiness.tsx, DraggableCardLayout.tsx, Overview.tsx, InformationCardBase.tsx
+
+#### Architectural Guardrails for Canonical Site Overview
+1. **No operational data leakage** - This page is a static site record and readiness surface. It must not require telemetry, alerts, or live performance data to be useful.
+2. **Clear cross-module boundaries** - Where operational metrics exist, link out to the Operations module. Do not embed time-series charts or live KPIs in the Canonical Site Overview.
 
 ## Integration Status
 - **Redis**: ✅ Working (Upstash with TLS) - Health check at `/api/internal/health`
