@@ -59,13 +59,7 @@ const REQUIRED_FIELDS: Record<string, string[]> = {
   site_lease: ['landlord', 'effective_date']
 };
 
-const CRITICAL_CARDS = [
-  'site_level_details',
-  'ownership',
-  'key_dates',
-  'interconnection',
-  'insurance_provider'
-];
+const CRITICAL_CARDS = ['site_level_details', 'ownership', 'key_dates', 'interconnection', 'insurance_provider'];
 
 interface MissingFieldInfo {
   cardId: string;
@@ -74,10 +68,7 @@ interface MissingFieldInfo {
   fieldLabel: string;
 }
 
-const getMissingFields = (
-  data: Record<string, any> | null | undefined,
-  requiredFields: string[]
-): string[] => {
+const getMissingFields = (data: Record<string, any> | null | undefined, requiredFields: string[]): string[] => {
   if (!data || requiredFields.length === 0) return [];
   return requiredFields.filter(field => {
     const value = data[field];
@@ -85,10 +76,7 @@ const getMissingFields = (
   });
 };
 
-const generateHeaderSummary = (
-  cardId: string,
-  data: Record<string, any> | null | undefined
-): string => {
+const generateHeaderSummary = (cardId: string, data: Record<string, any> | null | undefined): string => {
   if (!data) return '';
 
   switch (cardId) {

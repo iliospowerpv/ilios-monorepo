@@ -184,10 +184,7 @@ const SortableCard: React.FC<SortableCardProps> = ({ card, isCollapsed, onToggle
               </Tooltip>
             ) : (
               <Tooltip title="All required fields complete" arrow>
-                <CheckCircleOutlineIcon
-                  fontSize="small"
-                  sx={{ color: theme.palette.success.main, flexShrink: 0 }}
-                />
+                <CheckCircleOutlineIcon fontSize="small" sx={{ color: theme.palette.success.main, flexShrink: 0 }} />
               </Tooltip>
             )}
           </Stack>

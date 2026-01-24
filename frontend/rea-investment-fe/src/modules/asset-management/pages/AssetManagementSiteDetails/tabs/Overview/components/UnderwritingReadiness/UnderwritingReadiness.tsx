@@ -52,8 +52,12 @@ const UnderwritingReadiness: React.FC<UnderwritingReadinessProps> = ({
 
   const borderColor = theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)';
   const bgColor = isReady
-    ? theme.palette.mode === 'dark' ? 'rgba(46, 125, 50, 0.1)' : 'rgba(46, 125, 50, 0.05)'
-    : theme.palette.mode === 'dark' ? 'rgba(211, 47, 47, 0.1)' : 'rgba(211, 47, 47, 0.05)';
+    ? theme.palette.mode === 'dark'
+      ? 'rgba(46, 125, 50, 0.1)'
+      : 'rgba(46, 125, 50, 0.05)'
+    : theme.palette.mode === 'dark'
+      ? 'rgba(211, 47, 47, 0.1)'
+      : 'rgba(211, 47, 47, 0.05)';
 
   return (
     <Box
@@ -92,7 +96,7 @@ const UnderwritingReadiness: React.FC<UnderwritingReadinessProps> = ({
             <Typography variant="body2" color="text.secondary">
               Missing:
             </Typography>
-            {topMissing.map((field, index) => (
+            {topMissing.map(field => (
               <Tooltip
                 key={`${field.cardId}-${field.fieldName}`}
                 title={`${field.cardTitle}: ${FIELD_LABELS[field.fieldName] || field.fieldName}`}

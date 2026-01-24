@@ -54,11 +54,7 @@ const formatDate = (dateStr: string | null | undefined): string => {
   return parsed.isValid() ? parsed.format('MM/DD/YYYY') : '—';
 };
 
-const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
-  siteLevelDetails,
-  keyDates,
-  interconnection
-}) => {
+const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({ siteLevelDetails, keyDates, interconnection }) => {
   const theme = useTheme();
   const borderColor = theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)';
 
@@ -86,7 +82,12 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
         backgroundColor: theme.palette.background.paper
       }}
     >
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', md: 'center' }} justifyContent="space-between">
+      <Stack
+        direction={{ xs: 'column', md: 'row' }}
+        spacing={2}
+        alignItems={{ xs: 'flex-start', md: 'center' }}
+        justifyContent="space-between"
+      >
         <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
           <Box>
             <Typography variant="h6" fontWeight={700} sx={{ mb: 0.5 }}>
@@ -96,14 +97,7 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
               Project ID: {projectId}
             </Typography>
           </Box>
-          {status && (
-            <Chip
-              label={status}
-              color={getStatusColor(status)}
-              size="small"
-              sx={{ fontWeight: 600 }}
-            />
-          )}
+          {status && <Chip label={status} color={getStatusColor(status)} size="small" sx={{ fontWeight: 600 }} />}
         </Stack>
       </Stack>
 
@@ -123,7 +117,8 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
         <Stack direction="row" spacing={0.5} alignItems="center">
           <BoltIcon fontSize="small" color="action" />
           <Typography variant="body2">
-            {sizeDC ? `${formatFloatValue(sizeDC)} kW DC` : '— kW DC'} / {sizeAC ? `${formatFloatValue(sizeAC)} kW AC` : '— kW AC'}
+            {sizeDC ? `${formatFloatValue(sizeDC)} kW DC` : '— kW DC'} /{' '}
+            {sizeAC ? `${formatFloatValue(sizeAC)} kW AC` : '— kW AC'}
           </Typography>
         </Stack>
 
@@ -142,20 +137,12 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
       >
         <Stack direction="row" spacing={0.5} alignItems="center">
           <CalendarTodayIcon fontSize="small" color="action" />
-          <Typography variant="body2">
-            PTO: {formatDate(ptoDate)}
-          </Typography>
+          <Typography variant="body2">PTO: {formatDate(ptoDate)}</Typography>
         </Stack>
 
-        <Typography variant="body2">
-          COD: {formatDate(codDate)}
-        </Typography>
+        <Typography variant="body2">COD: {formatDate(codDate)}</Typography>
 
-        {financialClose && (
-          <Typography variant="body2">
-            Fin Close: {formatDate(financialClose)}
-          </Typography>
-        )}
+        {financialClose && <Typography variant="body2">Fin Close: {formatDate(financialClose)}</Typography>}
       </Stack>
     </Box>
   );

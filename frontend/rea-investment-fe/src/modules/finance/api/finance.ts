@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { httpClient } from '../../../api/http-client';
 import type {
   FinancePortfolioResponse,
   FinanceSiteSummary,
@@ -11,19 +11,17 @@ import type {
   PaginatedResponse
 } from '../types';
 
-const API_BASE = process.env.REACT_APP_URL || '';
-
 export const financeApi = {
   getPortfolioSummary: async (companyId: number): Promise<FinancePortfolioResponse> => {
-    const response = await axios.get<FinancePortfolioResponse>(
-      `${API_BASE}/api/finance/companies/${companyId}/portfolio/summary`
+    const response = await httpClient.get<FinancePortfolioResponse>(
+      `/api/finance/companies/${companyId}/portfolio/summary`
     );
     return response.data;
   },
 
   getSiteSummary: async (companyId: number, siteId: number): Promise<FinanceSiteSummary> => {
-    const response = await axios.get<FinanceSiteSummary>(
-      `${API_BASE}/api/finance/companies/${companyId}/portfolio/sites/${siteId}/summary`
+    const response = await httpClient.get<FinanceSiteSummary>(
+      `/api/finance/companies/${companyId}/portfolio/sites/${siteId}/summary`
     );
     return response.data;
   },
@@ -32,25 +30,22 @@ export const financeApi = {
     companyId: number,
     params?: { site_id?: number; skip?: number; limit?: number }
   ): Promise<PaginatedResponse<FinanceBudget>> => {
-    const response = await axios.get<PaginatedResponse<FinanceBudget>>(
-      `${API_BASE}/api/finance/companies/${companyId}/budgets`,
+    const response = await httpClient.get<PaginatedResponse<FinanceBudget>>(
+      `/api/finance/companies/${companyId}/budgets`,
       { params }
     );
     return response.data;
   },
 
   getBudget: async (companyId: number, budgetId: number): Promise<FinanceBudgetDetail> => {
-    const response = await axios.get<FinanceBudgetDetail>(
-      `${API_BASE}/api/finance/companies/${companyId}/budgets/${budgetId}`
+    const response = await httpClient.get<FinanceBudgetDetail>(
+      `/api/finance/companies/${companyId}/budgets/${budgetId}`
     );
     return response.data;
   },
 
   createBudget: async (companyId: number, data: Partial<FinanceBudget>): Promise<FinanceBudgetDetail> => {
-    const response = await axios.post<FinanceBudgetDetail>(
-      `${API_BASE}/api/finance/companies/${companyId}/budgets`,
-      data
-    );
+    const response = await httpClient.post<FinanceBudgetDetail>(`/api/finance/companies/${companyId}/budgets`, data);
     return response.data;
   },
 
@@ -59,46 +54,43 @@ export const financeApi = {
     budgetId: number,
     data: Partial<FinanceBudget>
   ): Promise<FinanceBudgetDetail> => {
-    const response = await axios.patch<FinanceBudgetDetail>(
-      `${API_BASE}/api/finance/companies/${companyId}/budgets/${budgetId}`,
+    const response = await httpClient.patch<FinanceBudgetDetail>(
+      `/api/finance/companies/${companyId}/budgets/${budgetId}`,
       data
     );
     return response.data;
   },
 
   deleteBudget: async (companyId: number, budgetId: number): Promise<void> => {
-    await axios.delete(`${API_BASE}/api/finance/companies/${companyId}/budgets/${budgetId}`);
+    await httpClient.delete(`/api/finance/companies/${companyId}/budgets/${budgetId}`);
   },
 
   getObligations: async (
     companyId: number,
     params?: { site_id?: number; status?: string; skip?: number; limit?: number }
   ): Promise<PaginatedResponse<FinanceObligation>> => {
-    const response = await axios.get<PaginatedResponse<FinanceObligation>>(
-      `${API_BASE}/api/finance/companies/${companyId}/obligations`,
+    const response = await httpClient.get<PaginatedResponse<FinanceObligation>>(
+      `/api/finance/companies/${companyId}/obligations`,
       { params }
     );
     return response.data;
   },
 
   getObligation: async (companyId: number, obligationId: number): Promise<FinanceObligation> => {
-    const response = await axios.get<FinanceObligation>(
-      `${API_BASE}/api/finance/companies/${companyId}/obligations/${obligationId}`
+    const response = await httpClient.get<FinanceObligation>(
+      `/api/finance/companies/${companyId}/obligations/${obligationId}`
     );
     return response.data;
   },
 
   createObligation: async (companyId: number, data: Partial<FinanceObligation>): Promise<FinanceObligation> => {
-    const response = await axios.post<FinanceObligation>(
-      `${API_BASE}/api/finance/companies/${companyId}/obligations`,
-      data
-    );
+    const response = await httpClient.post<FinanceObligation>(`/api/finance/companies/${companyId}/obligations`, data);
     return response.data;
   },
 
   submitObligation: async (companyId: number, obligationId: number): Promise<FinanceObligation> => {
-    const response = await axios.post<FinanceObligation>(
-      `${API_BASE}/api/finance/companies/${companyId}/obligations/${obligationId}/submit`,
+    const response = await httpClient.post<FinanceObligation>(
+      `/api/finance/companies/${companyId}/obligations/${obligationId}/submit`,
       {}
     );
     return response.data;
@@ -109,16 +101,16 @@ export const financeApi = {
     obligationId: number,
     data: { decision: string; notes?: string; override_reason?: string }
   ): Promise<FinanceApproval> => {
-    const response = await axios.post<FinanceApproval>(
-      `${API_BASE}/api/finance/companies/${companyId}/obligations/${obligationId}/approve`,
+    const response = await httpClient.post<FinanceApproval>(
+      `/api/finance/companies/${companyId}/obligations/${obligationId}/approve`,
       data
     );
     return response.data;
   },
 
   getApprovals: async (companyId: number, obligationId: number): Promise<FinanceApproval[]> => {
-    const response = await axios.get<FinanceApproval[]>(
-      `${API_BASE}/api/finance/companies/${companyId}/obligations/${obligationId}/approvals`
+    const response = await httpClient.get<FinanceApproval[]>(
+      `/api/finance/companies/${companyId}/obligations/${obligationId}/approvals`
     );
     return response.data;
   },
@@ -127,21 +119,21 @@ export const financeApi = {
     companyId: number,
     params?: { is_active?: boolean; skip?: number; limit?: number }
   ): Promise<PaginatedResponse<FinanceVendor>> => {
-    const response = await axios.get<PaginatedResponse<FinanceVendor>>(
-      `${API_BASE}/api/finance/companies/${companyId}/vendors`,
+    const response = await httpClient.get<PaginatedResponse<FinanceVendor>>(
+      `/api/finance/companies/${companyId}/vendors`,
       { params }
     );
     return response.data;
   },
 
   createVendor: async (companyId: number, data: Partial<FinanceVendor>): Promise<FinanceVendor> => {
-    const response = await axios.post<FinanceVendor>(`${API_BASE}/api/finance/companies/${companyId}/vendors`, data);
+    const response = await httpClient.post<FinanceVendor>(`/api/finance/companies/${companyId}/vendors`, data);
     return response.data;
   },
 
   updateVendor: async (companyId: number, vendorId: number, data: Partial<FinanceVendor>): Promise<FinanceVendor> => {
-    const response = await axios.patch<FinanceVendor>(
-      `${API_BASE}/api/finance/companies/${companyId}/vendors/${vendorId}`,
+    const response = await httpClient.patch<FinanceVendor>(
+      `/api/finance/companies/${companyId}/vendors/${vendorId}`,
       data
     );
     return response.data;
@@ -151,21 +143,21 @@ export const financeApi = {
     companyId: number,
     params?: { site_id?: number; skip?: number; limit?: number }
   ): Promise<PaginatedResponse<FinanceActual>> => {
-    const response = await axios.get<PaginatedResponse<FinanceActual>>(
-      `${API_BASE}/api/finance/companies/${companyId}/actuals`,
+    const response = await httpClient.get<PaginatedResponse<FinanceActual>>(
+      `/api/finance/companies/${companyId}/actuals`,
       { params }
     );
     return response.data;
   },
 
   createActual: async (companyId: number, data: Partial<FinanceActual>): Promise<FinanceActual> => {
-    const response = await axios.post<FinanceActual>(`${API_BASE}/api/finance/companies/${companyId}/actuals`, data);
+    const response = await httpClient.post<FinanceActual>(`/api/finance/companies/${companyId}/actuals`, data);
     return response.data;
   },
 
   downloadDataRoomPackage: async (companyId: number, siteId: number): Promise<Blob> => {
-    const response = await axios.get(
-      `${API_BASE}/api/finance/companies/${companyId}/portfolio/sites/${siteId}/data-room-package`,
+    const response = await httpClient.get(
+      `/api/finance/companies/${companyId}/portfolio/sites/${siteId}/data-room-package`,
       { responseType: 'blob' }
     );
     return response.data;
