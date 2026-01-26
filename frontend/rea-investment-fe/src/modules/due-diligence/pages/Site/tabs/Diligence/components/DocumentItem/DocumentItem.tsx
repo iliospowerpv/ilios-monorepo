@@ -104,8 +104,14 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ document, onRefresh }) => {
       </Dialog>
       <Box
         data-testid="document-item__component"
-        component="button"
+        role="button"
+        tabIndex={0}
         onClick={() => navigate(`/due-diligence/companies/${companyId}/sites/${siteId}/due-diligence/${document.id}`)}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            navigate(`/due-diligence/companies/${companyId}/sites/${siteId}/due-diligence/${document.id}`);
+          }
+        }}
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
