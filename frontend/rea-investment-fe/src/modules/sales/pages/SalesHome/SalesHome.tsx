@@ -20,13 +20,20 @@ import {
   TextField,
   Grid,
   MenuItem,
-  InputAdornment
+  InputAdornment,
+  IconButton,
+  Menu,
+  ListItemIcon,
+  ListItemText
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ViewKanbanIcon from '@mui/icons-material/ViewKanban';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AddIcon from '@mui/icons-material/Add';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import EditIcon from '@mui/icons-material/Edit';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useEntityContext } from '../../../../contexts/entityContext';
@@ -66,30 +73,77 @@ const formatDate = (dateString?: string): string => {
 
 interface DealCardProps {
   deal: Deal;
-  onClick: () => void;
+  onView: () => void;
+  onEdit: () => void;
 }
 
-const DealCard: React.FC<DealCardProps> = ({ deal, onClick }) => {
+const DealCard: React.FC<DealCardProps> = ({ deal, onView, onEdit }) => {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const menuOpen = Boolean(anchorEl);
   const isOverdue = deal.next_action_date && new Date(deal.next_action_date) < new Date();
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleView = () => {
+    handleMenuClose();
+    onView();
+  };
+
+  const handleEdit = () => {
+    handleMenuClose();
+    onEdit();
+  };
 
   return (
     <Card
       sx={{
         mb: 1,
-        cursor: 'pointer',
         transition: 'box-shadow 0.2s',
         '&:hover': { boxShadow: 3 },
         opacity: deal.is_converted ? 0.6 : 1
       }}
-      onClick={onClick}
     >
       <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-        <Typography variant="subtitle2" fontWeight={600} noWrap>
-          {deal.name}
-        </Typography>
-        <Typography variant="caption" color="text.secondary" noWrap>
-          {deal.company_name || `Company ${deal.company_id}`}
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant="subtitle2" fontWeight={600} noWrap>
+              {deal.name}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" noWrap>
+              {deal.company_name || `Company ${deal.company_id}`}
+            </Typography>
+          </Box>
+          <IconButton size="small" onClick={handleMenuClick} sx={{ ml: 0.5, mt: -0.5 }}>
+            <MoreVertIcon fontSize="small" />
+          </IconButton>
+          <Menu
+            anchorEl={anchorEl}
+            open={menuOpen}
+            onClose={handleMenuClose}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          >
+            <MenuItem onClick={handleView}>
+              <ListItemIcon>
+                <VisibilityIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>View</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={handleEdit} disabled={deal.is_converted}>
+              <ListItemIcon>
+                <EditIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Edit</ListItemText>
+            </MenuItem>
+          </Menu>
+        </Box>
 
         <Box sx={{ mt: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="body2" fontWeight={500}>
@@ -133,10 +187,11 @@ const DealCard: React.FC<DealCardProps> = ({ deal, onClick }) => {
 interface KanbanColumnProps {
   stage: SalesStage;
   deals: Deal[];
-  onDealClick: (dealId: number) => void;
+  onDealView: (dealId: number) => void;
+  onDealEdit: (dealId: number) => void;
 }
 
-const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, deals, onDealClick }) => {
+const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, deals, onDealView, onDealEdit }) => {
   const totalValue = deals.reduce((sum, d) => sum + (d.pipeline_value || 0), 0);
   const isClosed = CLOSED_STAGES.includes(stage);
 
@@ -175,7 +230,12 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, deals, onDealClick }
 
       <Box sx={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 300px)' }}>
         {deals.map(deal => (
-          <DealCard key={deal.id} deal={deal} onClick={() => onDealClick(deal.id)} />
+          <DealCard
+            key={deal.id}
+            deal={deal}
+            onView={() => onDealView(deal.id)}
+            onEdit={() => onDealEdit(deal.id)}
+          />
         ))}
         {deals.length === 0 && (
           <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block', py: 2 }}>
@@ -234,9 +294,16 @@ export const SalesHome: React.FC = () => {
     }
   });
 
-  const handleDealClick = useCallback(
+  const handleDealView = useCallback(
     (dealId: number) => {
       navigate(`/sales/deal/${dealId}`);
+    },
+    [navigate]
+  );
+
+  const handleDealEdit = useCallback(
+    (dealId: number) => {
+      navigate(`/sales/deal/${dealId}?mode=edit`);
     },
     [navigate]
   );
@@ -343,7 +410,8 @@ export const SalesHome: React.FC = () => {
                   key={stage}
                   stage={stage}
                   deals={(pipeline[stageKeyMap[stage]] as Deal[]) || []}
-                  onDealClick={handleDealClick}
+                  onDealView={handleDealView}
+                  onDealEdit={handleDealEdit}
                 />
               ))}
             </Box>
