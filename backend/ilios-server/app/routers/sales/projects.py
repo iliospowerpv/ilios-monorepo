@@ -100,8 +100,6 @@ def transition_sales_stage(
     
     user_id = 1
     
-    sales_crud.transition_sales_stage(db, site_id, data.new_stage, user_id, data.notes)
-    
     if data.new_stage == SalesStage.handoff_to_diligence:
         checklist = sales_crud.get_handoff_checklist(db, site_id)
         if not checklist["all_complete"]:
@@ -110,7 +108,10 @@ def transition_sales_stage(
                 status_code=400,
                 detail=f"Handoff checklist incomplete. Missing: {', '.join(missing)}"
             )
-        
+    
+    sales_crud.transition_sales_stage(db, site_id, data.new_stage, user_id, data.notes)
+    
+    if data.new_stage == SalesStage.handoff_to_diligence:
         sales_crud.transition_lifecycle_state(
             db, site_id, LifecycleState.due_diligence, user_id, 
             "Automatic transition from Sales handoff"
