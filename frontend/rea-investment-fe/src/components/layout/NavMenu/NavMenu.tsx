@@ -107,10 +107,9 @@ const MenuItem: React.FC<MenuItemProps> = ({ icon, title, active, disabled, onCl
 interface NavMenuProps {
   containerRef: React.RefObject<HTMLDivElement>;
   isMenuOpen: boolean;
-  closeMenu: () => void;
 }
 
-export const NavMenu: React.FC<NavMenuProps> = ({ containerRef, isMenuOpen, closeMenu }) => {
+export const NavMenu: React.FC<NavMenuProps> = ({ containerRef, isMenuOpen }) => {
   const navigate = useNavigate();
   const matches = useMatches();
   const { user } = useAuth();
@@ -122,7 +121,6 @@ export const NavMenu: React.FC<NavMenuProps> = ({ containerRef, isMenuOpen, clos
 
   const menuItemClickHandler = (navigateTo: string) => () => {
     navigate(navigateTo);
-    setTimeout(closeMenu, 100);
   };
 
   const disableModule = (disabled: boolean, title: string) => {

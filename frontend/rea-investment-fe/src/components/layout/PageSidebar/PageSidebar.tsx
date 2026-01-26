@@ -14,7 +14,7 @@ import { NavMenu } from '../NavMenu/NavMenu';
 import { useSidebar } from '../../../contexts/sidebar';
 
 export const PageSidebar: React.FC = () => {
-  const { isOpen, toggleSidebar, closeSidebar } = useSidebar();
+  const { isOpen, toggleSidebar } = useSidebar();
   const drawerRef = React.useRef<HTMLDivElement>(null);
 
   return (
@@ -24,7 +24,7 @@ export const PageSidebar: React.FC = () => {
           <CompanyLogo />
         </SidebarHead>
         <SidebarDivider />
-        <NavMenu containerRef={drawerRef} isMenuOpen={isOpen} closeMenu={closeSidebar} />
+        <NavMenu containerRef={drawerRef} isMenuOpen={isOpen} />
         <SidebarDivider />
       </SidebarDrawer>
       <SidebarToggleButtonContainer>

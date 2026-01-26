@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
+
+const SIDEBAR_STORAGE_KEY = 'ilios_sidebar_open';
 
 interface SidebarContextType {
   isOpen: boolean;
@@ -8,16 +10,36 @@ interface SidebarContextType {
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
+const getInitialSidebarState = (): boolean => {
+  try {
+    const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+    if (stored !== null) {
+      return JSON.parse(stored);
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
+  return false;
+};
+
 export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(getInitialSidebarState);
 
-  const toggleSidebar = () => {
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, JSON.stringify(isOpen));
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [isOpen]);
+
+  const toggleSidebar = useCallback(() => {
     setIsOpen(prev => !prev);
-  };
+  }, []);
 
-  const closeSidebar = () => {
+  const closeSidebar = useCallback(() => {
     setIsOpen(false);
-  };
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -25,7 +47,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
       toggleSidebar,
       closeSidebar
     }),
-    [isOpen]
+    [isOpen, toggleSidebar, closeSidebar]
   );
 
   return <SidebarContext.Provider value={value}>{children}</SidebarContext.Provider>;
