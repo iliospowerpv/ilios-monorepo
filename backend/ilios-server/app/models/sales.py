@@ -32,7 +32,9 @@ class Deal(Base):
     last_action = Column(Text, nullable=True)
     next_action = Column(Text, nullable=True)
     next_action_status = Column(VARCHAR(50), nullable=True)
+    next_action_date = Column(Date, nullable=True)
     ownership_structure = Column(VARCHAR(255), nullable=True)
+    sales_notes = Column(Text, nullable=True)
     
     address = Column(VARCHAR(500), nullable=True)
     city = Column(VARCHAR(255), nullable=True)
@@ -49,9 +51,12 @@ class Deal(Base):
     
     project_company = Column(VARCHAR(255), nullable=True)
     mipa_per_watt = Column(DECIMAL(10, 4), nullable=True)
+    offtaker_name = Column(VARCHAR(255), nullable=True)
     offtaker_legal_name = Column(VARCHAR(255), nullable=True)
+    utility_rate = Column(VARCHAR(255), nullable=True)
     utility_zone = Column(VARCHAR(255), nullable=True)
-    system_size_kw_dc = Column(DECIMAL(12, 2), nullable=True)
+    system_size_ac = Column(DECIMAL(12, 2), nullable=True)
+    system_size_dc = Column(DECIMAL(12, 2), nullable=True)
     
     itc_percent = Column(DECIMAL(5, 2), nullable=True)
     itc_amount = Column(DECIMAL(15, 2), nullable=True)

@@ -5,20 +5,20 @@ import enum
 
 class SalesStage(enum.Enum):
     """Sales pipeline stages for deal acquisition."""
-    prospect = "Prospect"
-    nda_signed = "NDA Signed"
-    inputs_received = "Inputs Received"
-    modeling = "Modeling"
-    model_review = "Model Review"
-    model_approved = "Model Approved"
-    quoted = "Quoted"
-    term_sheet_neg = "Term Sheet Neg"
-    term_sheet_signed = "Term Sheet Signed"
-    phase_1_diligence = "Phase 1 Diligence"
-    mipa_negotiating = "MIPA Negotiating"
-    mipa_signed = "MIPA Signed"
-    passed = "Passed"
-    dead = "Dead"
+    prospect = "prospect"
+    nda_signed = "nda_signed"
+    inputs_received = "inputs_received"
+    modeling = "modeling"
+    model_review = "model_review"
+    model_approved = "model_approved"
+    quoted = "quoted"
+    term_sheet_neg = "term_sheet_neg"
+    term_sheet_signed = "term_sheet_signed"
+    phase_1_diligence = "phase_1_diligence"
+    mipa_negotiating = "mipa_negotiating"
+    mipa_signed = "mipa_signed"
+    passed = "passed"
+    dead = "dead"
 
 
 class LifecycleState(enum.Enum):
@@ -42,10 +42,11 @@ class SalesSource(enum.Enum):
 
 class NextActionStatus(enum.Enum):
     """Status of the next action."""
-    pending = "Pending"
-    in_progress = "In Progress"
-    completed = "Completed"
-    overdue = "Overdue"
+    none = "none"
+    pending = "pending"
+    in_progress = "in_progress"
+    blocked = "blocked"
+    overdue = "overdue"
 
 
 HANDOFF_CHECKLIST_ITEMS = [

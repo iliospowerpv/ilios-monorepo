@@ -407,7 +407,9 @@ export const SalesHome: React.FC = () => {
                 label="System Size (AC MW)"
                 type="number"
                 value={dealForm.system_size_ac || ''}
-                onChange={e => handleFormChange('system_size_ac', e.target.value ? parseFloat(e.target.value) : undefined)}
+                onChange={e =>
+                  handleFormChange('system_size_ac', e.target.value ? parseFloat(e.target.value) : undefined)
+                }
                 fullWidth
                 InputProps={{ endAdornment: <InputAdornment position="end">MW</InputAdornment> }}
               />
@@ -417,7 +419,9 @@ export const SalesHome: React.FC = () => {
                 label="System Size (DC MW)"
                 type="number"
                 value={dealForm.system_size_dc || ''}
-                onChange={e => handleFormChange('system_size_dc', e.target.value ? parseFloat(e.target.value) : undefined)}
+                onChange={e =>
+                  handleFormChange('system_size_dc', e.target.value ? parseFloat(e.target.value) : undefined)
+                }
                 fullWidth
                 InputProps={{ endAdornment: <InputAdornment position="end">MW</InputAdornment> }}
               />
@@ -427,7 +431,9 @@ export const SalesHome: React.FC = () => {
                 label="MIPA $/Watt"
                 type="number"
                 value={dealForm.mipa_per_watt || ''}
-                onChange={e => handleFormChange('mipa_per_watt', e.target.value ? parseFloat(e.target.value) : undefined)}
+                onChange={e =>
+                  handleFormChange('mipa_per_watt', e.target.value ? parseFloat(e.target.value) : undefined)
+                }
                 fullWidth
                 InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
               />
@@ -437,7 +443,9 @@ export const SalesHome: React.FC = () => {
                 label="Pipeline Value"
                 type="number"
                 value={dealForm.pipeline_value || ''}
-                onChange={e => handleFormChange('pipeline_value', e.target.value ? parseFloat(e.target.value) : undefined)}
+                onChange={e =>
+                  handleFormChange('pipeline_value', e.target.value ? parseFloat(e.target.value) : undefined)
+                }
                 fullWidth
                 InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
               />

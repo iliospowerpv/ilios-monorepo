@@ -31,14 +31,12 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import { useEntityContext } from '../../../../contexts/entityContext';
 import { dealsApi } from '../../api/sales';
 import {
-  Deal,
   DealUpdate,
   SalesStage,
   SALES_STAGE_LABELS,
   SALES_STAGE_COLORS,
   ACTIVE_PIPELINE_STAGES,
   CLOSED_STAGES,
-  NextActionStatus,
   NEXT_ACTION_STATUS_LABELS,
   SalesStateTransition
 } from '../../types';
@@ -94,7 +92,11 @@ export const DealDetail: React.FC = () => {
     setCurrentProject(null);
   }, [setCurrentModule, setCurrentProject]);
 
-  const { data: deal, isLoading, error } = useQuery({
+  const {
+    data: deal,
+    isLoading,
+    error
+  } = useQuery({
     queryKey: ['deal', dealId],
     queryFn: () => dealsApi.getDeal(Number(dealId)),
     enabled: !!dealId
@@ -229,9 +231,7 @@ export const DealDetail: React.FC = () => {
             label={SALES_STAGE_LABELS[deal.sales_stage]}
             sx={{ bgcolor: SALES_STAGE_COLORS[deal.sales_stage], fontWeight: 500 }}
           />
-          {deal.is_converted && (
-            <Chip label="Converted to Project" color="success" icon={<CheckCircleIcon />} />
-          )}
+          {deal.is_converted && <Chip label="Converted to Project" color="success" icon={<CheckCircleIcon />} />}
         </Box>
       </Box>
 
@@ -248,11 +248,7 @@ export const DealDetail: React.FC = () => {
                 ) : (
                   <Box sx={{ display: 'flex', gap: 1 }}>
                     <Button onClick={() => setIsEditing(false)}>Cancel</Button>
-                    <Button
-                      variant="contained"
-                      onClick={handleSaveEdit}
-                      disabled={updateMutation.isPending}
-                    >
+                    <Button variant="contained" onClick={handleSaveEdit} disabled={updateMutation.isPending}>
                       Save
                     </Button>
                   </Box>
@@ -608,11 +604,7 @@ export const DealDetail: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setStageDialogOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleStageTransition}
-            disabled={!newStage || stageMutation.isPending}
-          >
+          <Button variant="contained" onClick={handleStageTransition} disabled={!newStage || stageMutation.isPending}>
             {stageMutation.isPending ? 'Updating...' : 'Update Stage'}
           </Button>
         </DialogActions>
@@ -622,8 +614,8 @@ export const DealDetail: React.FC = () => {
         <DialogTitle>Convert Deal to Project</DialogTitle>
         <DialogContent>
           <Alert severity="info" sx={{ mb: 2 }}>
-            This will create a new project in Asset Management based on this deal's information. The deal will be marked
-            as converted and can no longer be modified.
+            This will create a new project in Asset Management based on this deal&apos;s information. The deal will be
+            marked as converted and can no longer be modified.
           </Alert>
           <Typography variant="body2" sx={{ mb: 2 }}>
             The following information will be transferred:
@@ -633,7 +625,9 @@ export const DealDetail: React.FC = () => {
             <li>Address: {deal.address || 'Not set'}</li>
             <li>City: {deal.city || 'Not set'}</li>
             <li>State: {deal.state || 'Not set'}</li>
-            <li>System Size: {deal.system_size_ac || 'Not set'} MW AC / {deal.system_size_dc || 'Not set'} MW DC</li>
+            <li>
+              System Size: {deal.system_size_ac || 'Not set'} MW AC / {deal.system_size_dc || 'Not set'} MW DC
+            </li>
           </Box>
           <TextField
             label="Conversion Notes (optional)"
@@ -646,12 +640,7 @@ export const DealDetail: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConvertDialogOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            color="success"
-            onClick={handleConvert}
-            disabled={convertMutation.isPending}
-          >
+          <Button variant="contained" color="success" onClick={handleConvert} disabled={convertMutation.isPending}>
             {convertMutation.isPending ? 'Converting...' : 'Convert to Project'}
           </Button>
         </DialogActions>

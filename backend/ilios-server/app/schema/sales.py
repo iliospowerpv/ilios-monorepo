@@ -46,9 +46,12 @@ class DealCreate(BaseModel):
     substantial_completion_date: Optional[date] = None
     project_company: Optional[str] = None
     mipa_per_watt: Optional[Decimal] = None
+    offtaker_name: Optional[str] = None
     offtaker_legal_name: Optional[str] = None
+    utility_rate: Optional[str] = None
     utility_zone: Optional[str] = None
-    system_size_kw_dc: Optional[Decimal] = None
+    system_size_ac: Optional[Decimal] = None
+    system_size_dc: Optional[Decimal] = None
     itc_percent: Optional[Decimal] = None
     itc_amount: Optional[Decimal] = None
     fmv: Optional[Decimal] = None
@@ -59,6 +62,8 @@ class DealCreate(BaseModel):
     pipeline_value: Optional[Decimal] = None
     probability: Optional[int] = Field(None, ge=0, le=100)
     target_close_date: Optional[date] = None
+    next_action_date: Optional[date] = None
+    sales_notes: Optional[str] = None
 
 
 class DealUpdate(BaseModel):
@@ -84,9 +89,12 @@ class DealUpdate(BaseModel):
     substantial_completion_date: Optional[date] = None
     project_company: Optional[str] = None
     mipa_per_watt: Optional[Decimal] = None
+    offtaker_name: Optional[str] = None
     offtaker_legal_name: Optional[str] = None
+    utility_rate: Optional[str] = None
     utility_zone: Optional[str] = None
-    system_size_kw_dc: Optional[Decimal] = None
+    system_size_ac: Optional[Decimal] = None
+    system_size_dc: Optional[Decimal] = None
     itc_percent: Optional[Decimal] = None
     itc_amount: Optional[Decimal] = None
     fmv: Optional[Decimal] = None
@@ -97,6 +105,8 @@ class DealUpdate(BaseModel):
     pipeline_value: Optional[Decimal] = None
     probability: Optional[int] = Field(None, ge=0, le=100)
     target_close_date: Optional[date] = None
+    next_action_date: Optional[date] = None
+    sales_notes: Optional[str] = None
 
 
 class SalesProjectUpdate(SalesProjectBase):
@@ -176,19 +186,27 @@ class DealResponse(BaseModel):
     substantial_completion_date: Optional[date] = None
     project_company: Optional[str] = None
     mipa_per_watt: Optional[Decimal] = None
+    offtaker_name: Optional[str] = None
     offtaker_legal_name: Optional[str] = None
+    utility_rate: Optional[str] = None
     utility_zone: Optional[str] = None
-    system_size_kw_dc: Optional[Decimal] = None
+    system_size_ac: Optional[Decimal] = None
+    system_size_dc: Optional[Decimal] = None
     itc_percent: Optional[Decimal] = None
     itc_amount: Optional[Decimal] = None
     fmv: Optional[Decimal] = None
     grant_amount: Optional[Decimal] = None
     tax_equity: Optional[Decimal] = None
     company: Optional[CompanySummary] = None
+    company_id: Optional[int] = None
     assigned_owner: Optional[UserSummary] = None
     pipeline_value: Optional[Decimal] = None
     probability: Optional[int] = None
     target_close_date: Optional[date] = None
+    next_action_date: Optional[date] = None
+    sales_notes: Optional[str] = None
+    is_converted: bool = False
+    converted_project_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
@@ -241,8 +259,10 @@ class SalesPipelineSummary(BaseModel):
     next_action: Optional[str] = None
     next_action_status: Optional[NextActionStatus] = None
     assigned_owner: Optional[UserSummary] = None
-    system_size_kw_dc: Optional[Decimal] = None
+    system_size_ac: Optional[Decimal] = None
+    system_size_dc: Optional[Decimal] = None
     mipa_per_watt: Optional[Decimal] = None
+    is_converted: bool = False
 
     class Config:
         from_attributes = True

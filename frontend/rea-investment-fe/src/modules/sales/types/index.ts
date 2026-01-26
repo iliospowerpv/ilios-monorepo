@@ -338,7 +338,4 @@ export const ACTIVE_PIPELINE_STAGES: SalesStage[] = [
   SalesStage.MIPASigned
 ];
 
-export const CLOSED_STAGES: SalesStage[] = [
-  SalesStage.Passed,
-  SalesStage.Dead
-];
+export const CLOSED_STAGES: SalesStage[] = [SalesStage.Passed, SalesStage.Dead];

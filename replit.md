@@ -103,33 +103,41 @@ A capital governance, authorization, and compliance engine (NOT a general ledger
 **Navigation**: Enabled at `/finance` with Finance permission check in NavMenu.tsx
 
 ### Sales Module MVP (Jan 2026)
-Pipeline management and lifecycle tracking for solar projects from discovery through handoff to Due Diligence.
+14-stage deal acquisition pipeline with conversion to projects. Tracks deals separately from Site entities until they are ready for due diligence.
 
-**Pipeline Stages**: discovery → qualified → loi_term_sheet → under_contract → handoff_to_diligence
+**Pipeline Stages (14)**: prospect → nda_signed → inputs_received → modeling → model_review → model_approved → quoted → term_sheet_neg → term_sheet_signed → phase_1_diligence → mipa_negotiating → mipa_signed → passed → dead
 
 **Lifecycle States**: sales_pre_diligence → due_diligence → implementation → placed_in_service → operations
 
+**Key Entities**:
+- **Deal**: Pre-project entity for acquisition tracking. Contains developer info, financial metrics, location, and project dates.
+- **Site**: Created when a deal is converted to a project via "Convert to Project" action.
+
 **Backend Components**:
-- `app/models/sales.py` - SalesStateTransition model for audit logging
-- `app/schema/sales.py` - Pydantic schemas
+- `app/models/sales.py` - Deal and SalesStateTransition models
+- `app/schema/sales.py` - Pydantic schemas (DealCreate, DealUpdate, DealResponse, SalesPipelineResponse)
 - `app/routers/sales/` - API routes (pipeline, projects)
 - `app/crud/sales.py` - Database operations
 - `app/static/sales.py` - Enums (SalesStage, LifecycleState)
 
+- `app/routers/sales/deals.py` - Deal CRUD and conversion endpoints
+
 **Frontend Components**:
 - `src/modules/sales/` - Sales module directory
-- `pages/SalesHome/` - Kanban pipeline view with list view toggle
-- `api/sales.ts` - API client
-- `types/index.ts` - TypeScript types
+- `pages/SalesHome/` - Kanban pipeline view with 14 stages, Add Deal dialog
+- `pages/DealDetail/` - Deal detail page with edit, stage change, and Convert to Project
+- `api/sales.ts` - API client (salesApi for projects, dealsApi for deals)
+- `types/index.ts` - TypeScript types and enums
 
 **API Routes** (prefixed with `/api/sales/`):
-- `GET /pipeline` - Kanban pipeline view
-- `GET /list` - List view with filters
-- `GET/PATCH /projects/{site_id}` - Project details/update
-- `POST /projects/{site_id}/stage-transition` - Move between pipeline stages
-- `POST /projects/{site_id}/lifecycle-transition` - Move between lifecycle states
-- `GET /projects/{site_id}/handoff-checklist` - Checklist for DD handoff
-- `GET /projects/{site_id}/transitions` - Audit log
+- `GET /deals/pipeline` - Deal kanban pipeline view (14 stages)
+- `GET /deals` - List deals with filters
+- `POST /deals` - Create new deal
+- `GET/PATCH /deals/{deal_id}` - Deal details/update
+- `POST /deals/{deal_id}/stage-transition` - Move deal between pipeline stages
+- `POST /deals/{deal_id}/convert-to-project` - Convert deal to Site entity
+- `GET /deals/{deal_id}/transitions` - Deal audit log
+- `GET/PATCH /projects/{site_id}` - Project details/update (for converted deals)
 
 **Handoff Checklist Required Fields**: address, system_size_ac, system_size_dc, utility_rate, ownership_structure, offtaker_name
 

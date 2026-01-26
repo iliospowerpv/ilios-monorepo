@@ -112,7 +112,10 @@ export const dealsApi = {
   },
 
   convertToProject: async (dealId: number, data?: ConvertToProjectRequest): Promise<ConvertToProjectResponse> => {
-    const response = await httpClient.post<ConvertToProjectResponse>(`/api/sales/deals/${dealId}/convert-to-project`, data || {});
+    const response = await httpClient.post<ConvertToProjectResponse>(
+      `/api/sales/deals/${dealId}/convert-to-project`,
+      data || {}
+    );
     return response.data;
   }
 };
