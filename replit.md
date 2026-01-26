@@ -102,6 +102,39 @@ A capital governance, authorization, and compliance engine (NOT a general ledger
 
 **Navigation**: Enabled at `/finance` with Finance permission check in NavMenu.tsx
 
+### Sales Module MVP (Jan 2026)
+Pipeline management and lifecycle tracking for solar projects from discovery through handoff to Due Diligence.
+
+**Pipeline Stages**: discovery → qualified → loi_term_sheet → under_contract → handoff_to_diligence
+
+**Lifecycle States**: sales_pre_diligence → due_diligence → implementation → placed_in_service → operations
+
+**Backend Components**:
+- `app/models/sales.py` - SalesStateTransition model for audit logging
+- `app/schema/sales.py` - Pydantic schemas
+- `app/routers/sales/` - API routes (pipeline, projects)
+- `app/crud/sales.py` - Database operations
+- `app/static/sales.py` - Enums (SalesStage, LifecycleState)
+
+**Frontend Components**:
+- `src/modules/sales/` - Sales module directory
+- `pages/SalesHome/` - Kanban pipeline view with list view toggle
+- `api/sales.ts` - API client
+- `types/index.ts` - TypeScript types
+
+**API Routes** (prefixed with `/api/sales/`):
+- `GET /pipeline` - Kanban pipeline view
+- `GET /list` - List view with filters
+- `GET/PATCH /projects/{site_id}` - Project details/update
+- `POST /projects/{site_id}/stage-transition` - Move between pipeline stages
+- `POST /projects/{site_id}/lifecycle-transition` - Move between lifecycle states
+- `GET /projects/{site_id}/handoff-checklist` - Checklist for DD handoff
+- `GET /projects/{site_id}/transitions` - Audit log
+
+**Handoff Checklist Required Fields**: address, system_size_ac, system_size_dc, utility_rate, ownership_structure, offtaker_name
+
+**Navigation**: Enabled at `/sales` with Sales permission check in NavMenu.tsx
+
 ### Cross-Module Navigation Architecture (Jan 2026)
 A three-tier navigation system providing consistent navigation across all modules:
 
