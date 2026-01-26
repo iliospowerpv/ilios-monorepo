@@ -7,7 +7,13 @@ import type {
   SalesStateTransition,
   SalesListFilters,
   SalesStage,
-  LifecycleState
+  LifecycleState,
+  Deal,
+  DealCreate,
+  DealUpdate,
+  DealPipelineResponse,
+  ConvertToProjectRequest,
+  ConvertToProjectResponse
 } from '../types';
 
 export const salesApi = {
@@ -58,6 +64,55 @@ export const salesApi = {
 
   getTransitions: async (siteId: number): Promise<SalesStateTransition[]> => {
     const response = await httpClient.get<SalesStateTransition[]>(`/api/sales/projects/${siteId}/transitions`);
+    return response.data;
+  }
+};
+
+export const dealsApi = {
+  getPipeline: async (companyId?: number): Promise<DealPipelineResponse> => {
+    const response = await httpClient.get<DealPipelineResponse>('/api/sales/deals/pipeline', {
+      params: companyId ? { company_id: companyId } : undefined
+    });
+    return response.data;
+  },
+
+  getList: async (companyId?: number, stage?: SalesStage, skip?: number, limit?: number): Promise<Deal[]> => {
+    const response = await httpClient.get<Deal[]>('/api/sales/deals', {
+      params: { company_id: companyId, stage, skip, limit }
+    });
+    return response.data;
+  },
+
+  getDeal: async (dealId: number): Promise<Deal> => {
+    const response = await httpClient.get<Deal>(`/api/sales/deals/${dealId}`);
+    return response.data;
+  },
+
+  createDeal: async (data: DealCreate): Promise<Deal> => {
+    const response = await httpClient.post<Deal>('/api/sales/deals', data);
+    return response.data;
+  },
+
+  updateDeal: async (dealId: number, data: DealUpdate): Promise<Deal> => {
+    const response = await httpClient.patch<Deal>(`/api/sales/deals/${dealId}`, data);
+    return response.data;
+  },
+
+  transitionStage: async (dealId: number, newStage: SalesStage, notes?: string): Promise<Deal> => {
+    const response = await httpClient.post<Deal>(`/api/sales/deals/${dealId}/stage-transition`, {
+      new_stage: newStage,
+      notes
+    });
+    return response.data;
+  },
+
+  getTransitions: async (dealId: number): Promise<SalesStateTransition[]> => {
+    const response = await httpClient.get<SalesStateTransition[]>(`/api/sales/deals/${dealId}/transitions`);
+    return response.data;
+  },
+
+  convertToProject: async (dealId: number, data?: ConvertToProjectRequest): Promise<ConvertToProjectResponse> => {
+    const response = await httpClient.post<ConvertToProjectResponse>(`/api/sales/deals/${dealId}/convert-to-project`, data || {});
     return response.data;
   }
 };

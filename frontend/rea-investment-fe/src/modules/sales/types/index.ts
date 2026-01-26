@@ -1,9 +1,18 @@
 export enum SalesStage {
-  Discovery = 'discovery',
-  Qualified = 'qualified',
-  LOITermSheet = 'loi_term_sheet',
-  UnderContract = 'under_contract',
-  HandoffToDiligence = 'handoff_to_diligence'
+  Prospect = 'prospect',
+  NDASigned = 'nda_signed',
+  InputsReceived = 'inputs_received',
+  Modeling = 'modeling',
+  ModelReview = 'model_review',
+  ModelApproved = 'model_approved',
+  Quoted = 'quoted',
+  TermSheetNeg = 'term_sheet_neg',
+  TermSheetSigned = 'term_sheet_signed',
+  Phase1Diligence = 'phase_1_diligence',
+  MIPANegotiating = 'mipa_negotiating',
+  MIPASigned = 'mipa_signed',
+  Passed = 'passed',
+  Dead = 'dead'
 }
 
 export enum LifecycleState {
@@ -23,6 +32,14 @@ export enum SalesSource {
   Other = 'other'
 }
 
+export enum NextActionStatus {
+  None = 'none',
+  Pending = 'pending',
+  InProgress = 'in_progress',
+  Blocked = 'blocked',
+  Overdue = 'overdue'
+}
+
 export interface UserSummary {
   id: number;
   first_name: string;
@@ -33,6 +50,114 @@ export interface UserSummary {
 export interface CompanySummary {
   id: number;
   name: string;
+}
+
+export interface Deal {
+  id: number;
+  name: string;
+  company_id: number;
+  company_name?: string;
+  sales_stage: SalesStage;
+  is_converted: boolean;
+  converted_project_id?: number;
+  developer_name?: string;
+  quoted_by?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  latitude?: number;
+  longitude?: number;
+  system_size_ac?: number;
+  system_size_dc?: number;
+  ownership_structure?: string;
+  offtaker_name?: string;
+  offtaker_legal_name?: string;
+  utility_rate?: string;
+  utility_zone?: string;
+  project_company?: string;
+  mipa_per_watt?: number;
+  itc_percent?: number;
+  itc_amount?: number;
+  fmv?: number;
+  grant_amount?: number;
+  tax_equity?: number;
+  target_close_date?: string;
+  probability?: number;
+  pipeline_value?: number;
+  assigned_owner_id?: number;
+  assigned_owner?: UserSummary;
+  last_action?: string;
+  next_action?: string;
+  next_action_date?: string;
+  next_action_status?: NextActionStatus;
+  notice_to_proceed_date?: string;
+  mechanical_completion_date?: string;
+  permission_to_operate_date?: string;
+  substantial_completion_date?: string;
+  sales_notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DealCreate {
+  name: string;
+  company_id: number;
+  sales_stage?: SalesStage;
+  developer_name?: string;
+  quoted_by?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  latitude?: number;
+  longitude?: number;
+  system_size_ac?: number;
+  system_size_dc?: number;
+  ownership_structure?: string;
+  offtaker_name?: string;
+  offtaker_legal_name?: string;
+  utility_rate?: string;
+  utility_zone?: string;
+  project_company?: string;
+  mipa_per_watt?: number;
+  itc_percent?: number;
+  itc_amount?: number;
+  fmv?: number;
+  grant_amount?: number;
+  tax_equity?: number;
+  target_close_date?: string;
+  probability?: number;
+  pipeline_value?: number;
+  assigned_owner_id?: number;
+  last_action?: string;
+  next_action?: string;
+  next_action_date?: string;
+  next_action_status?: NextActionStatus;
+  notice_to_proceed_date?: string;
+  mechanical_completion_date?: string;
+  permission_to_operate_date?: string;
+  substantial_completion_date?: string;
+  sales_notes?: string;
+}
+
+export interface DealUpdate extends Partial<DealCreate> {
+  sales_stage?: SalesStage;
+}
+
+export interface DealPipelineResponse {
+  prospect: Deal[];
+  nda_signed: Deal[];
+  inputs_received: Deal[];
+  modeling: Deal[];
+  model_review: Deal[];
+  model_approved: Deal[];
+  quoted: Deal[];
+  term_sheet_neg: Deal[];
+  term_sheet_signed: Deal[];
+  phase_1_diligence: Deal[];
+  mipa_negotiating: Deal[];
+  mipa_signed: Deal[];
+  passed: Deal[];
+  dead: Deal[];
 }
 
 export interface SalesProject {
@@ -96,7 +221,8 @@ export interface HandoffChecklistResponse {
 
 export interface SalesStateTransition {
   id: number;
-  site_id: number;
+  site_id?: number;
+  deal_id?: number;
   transition_type: string;
   from_state?: string;
   to_state: string;
@@ -128,12 +254,31 @@ export interface SalesListFilters {
   limit?: number;
 }
 
+export interface ConvertToProjectRequest {
+  notes?: string;
+}
+
+export interface ConvertToProjectResponse {
+  deal_id: number;
+  project_id: number;
+  message: string;
+}
+
 export const SALES_STAGE_LABELS: Record<SalesStage, string> = {
-  [SalesStage.Discovery]: 'Discovery',
-  [SalesStage.Qualified]: 'Qualified',
-  [SalesStage.LOITermSheet]: 'LOI / Term Sheet',
-  [SalesStage.UnderContract]: 'Under Contract',
-  [SalesStage.HandoffToDiligence]: 'Handoff to Diligence'
+  [SalesStage.Prospect]: 'Prospect',
+  [SalesStage.NDASigned]: 'NDA Signed',
+  [SalesStage.InputsReceived]: 'Inputs Received',
+  [SalesStage.Modeling]: 'Modeling',
+  [SalesStage.ModelReview]: 'Model Review',
+  [SalesStage.ModelApproved]: 'Model Approved',
+  [SalesStage.Quoted]: 'Quoted',
+  [SalesStage.TermSheetNeg]: 'Term Sheet Neg',
+  [SalesStage.TermSheetSigned]: 'Term Sheet Signed',
+  [SalesStage.Phase1Diligence]: 'Phase 1 Diligence',
+  [SalesStage.MIPANegotiating]: 'MIPA Negotiating',
+  [SalesStage.MIPASigned]: 'MIPA Signed',
+  [SalesStage.Passed]: 'Passed',
+  [SalesStage.Dead]: 'Dead'
 };
 
 export const LIFECYCLE_STATE_LABELS: Record<LifecycleState, string> = {
@@ -153,10 +298,47 @@ export const SALES_SOURCE_LABELS: Record<SalesSource, string> = {
   [SalesSource.Other]: 'Other'
 };
 
-export const SALES_STAGE_COLORS: Record<SalesStage, string> = {
-  [SalesStage.Discovery]: '#90CAF9',
-  [SalesStage.Qualified]: '#81C784',
-  [SalesStage.LOITermSheet]: '#FFB74D',
-  [SalesStage.UnderContract]: '#9575CD',
-  [SalesStage.HandoffToDiligence]: '#4CAF50'
+export const NEXT_ACTION_STATUS_LABELS: Record<NextActionStatus, string> = {
+  [NextActionStatus.None]: 'None',
+  [NextActionStatus.Pending]: 'Pending',
+  [NextActionStatus.InProgress]: 'In Progress',
+  [NextActionStatus.Blocked]: 'Blocked',
+  [NextActionStatus.Overdue]: 'Overdue'
 };
+
+export const SALES_STAGE_COLORS: Record<SalesStage, string> = {
+  [SalesStage.Prospect]: '#E3F2FD',
+  [SalesStage.NDASigned]: '#BBDEFB',
+  [SalesStage.InputsReceived]: '#90CAF9',
+  [SalesStage.Modeling]: '#64B5F6',
+  [SalesStage.ModelReview]: '#42A5F5',
+  [SalesStage.ModelApproved]: '#81C784',
+  [SalesStage.Quoted]: '#A5D6A7',
+  [SalesStage.TermSheetNeg]: '#FFE082',
+  [SalesStage.TermSheetSigned]: '#FFD54F',
+  [SalesStage.Phase1Diligence]: '#FFCA28',
+  [SalesStage.MIPANegotiating]: '#CE93D8',
+  [SalesStage.MIPASigned]: '#4CAF50',
+  [SalesStage.Passed]: '#BDBDBD',
+  [SalesStage.Dead]: '#EF5350'
+};
+
+export const ACTIVE_PIPELINE_STAGES: SalesStage[] = [
+  SalesStage.Prospect,
+  SalesStage.NDASigned,
+  SalesStage.InputsReceived,
+  SalesStage.Modeling,
+  SalesStage.ModelReview,
+  SalesStage.ModelApproved,
+  SalesStage.Quoted,
+  SalesStage.TermSheetNeg,
+  SalesStage.TermSheetSigned,
+  SalesStage.Phase1Diligence,
+  SalesStage.MIPANegotiating,
+  SalesStage.MIPASigned
+];
+
+export const CLOSED_STAGES: SalesStage[] = [
+  SalesStage.Passed,
+  SalesStage.Dead
+];

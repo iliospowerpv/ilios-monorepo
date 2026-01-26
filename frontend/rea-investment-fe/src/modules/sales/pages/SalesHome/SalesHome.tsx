@@ -11,27 +11,40 @@ import {
   Paper,
   Stack,
   Avatar,
-  LinearProgress
+  LinearProgress,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Grid,
+  MenuItem,
+  InputAdornment
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ViewKanbanIcon from '@mui/icons-material/ViewKanban';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import { useQuery } from '@tanstack/react-query';
+import AddIcon from '@mui/icons-material/Add';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useEntityContext } from '../../../../contexts/entityContext';
-import { salesApi } from '../../api/sales';
-import { SalesPipelineSummary, SalesStage, SALES_STAGE_LABELS, SALES_STAGE_COLORS } from '../../types';
+import { dealsApi } from '../../api/sales';
+import {
+  Deal,
+  DealCreate,
+  DealPipelineResponse,
+  SalesStage,
+  SALES_STAGE_LABELS,
+  SALES_STAGE_COLORS,
+  ACTIVE_PIPELINE_STAGES,
+  CLOSED_STAGES,
+  NextActionStatus,
+  NEXT_ACTION_STATUS_LABELS
+} from '../../types';
 
 type ViewMode = 'kanban' | 'list';
-
-const STAGE_ORDER: SalesStage[] = [
-  SalesStage.Discovery,
-  SalesStage.Qualified,
-  SalesStage.LOITermSheet,
-  SalesStage.UnderContract,
-  SalesStage.HandoffToDiligence
-];
 
 const formatCurrency = (value?: number): string => {
   if (value === undefined || value === null) return '-';
@@ -51,13 +64,13 @@ const formatDate = (dateString?: string): string => {
   });
 };
 
-interface ProjectCardProps {
-  project: SalesPipelineSummary;
+interface DealCardProps {
+  deal: Deal;
   onClick: () => void;
 }
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
-  const isOverdue = project.next_action_date && new Date(project.next_action_date) < new Date();
+const DealCard: React.FC<DealCardProps> = ({ deal, onClick }) => {
+  const isOverdue = deal.next_action_date && new Date(deal.next_action_date) < new Date();
 
   return (
     <Card
@@ -65,41 +78,51 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
         mb: 1,
         cursor: 'pointer',
         transition: 'box-shadow 0.2s',
-        '&:hover': { boxShadow: 3 }
+        '&:hover': { boxShadow: 3 },
+        opacity: deal.is_converted ? 0.6 : 1
       }}
       onClick={onClick}
     >
       <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
         <Typography variant="subtitle2" fontWeight={600} noWrap>
-          {project.name}
+          {deal.name}
         </Typography>
         <Typography variant="caption" color="text.secondary" noWrap>
-          {project.company_name}
+          {deal.company_name || `Company ${deal.company_id}`}
         </Typography>
 
         <Box sx={{ mt: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="body2" fontWeight={500}>
-            {formatCurrency(project.pipeline_value)}
+            {formatCurrency(deal.pipeline_value)}
           </Typography>
-          {project.probability !== undefined && (
-            <Chip label={`${project.probability}%`} size="small" sx={{ height: 20, fontSize: '0.7rem' }} />
+          {deal.probability !== undefined && (
+            <Chip label={`${deal.probability}%`} size="small" sx={{ height: 20, fontSize: '0.7rem' }} />
           )}
         </Box>
 
-        <Box sx={{ mt: 1, display: 'flex', gap: 1, alignItems: 'center' }}>
-          {project.assigned_owner && (
-            <Tooltip title={`${project.assigned_owner.first_name} ${project.assigned_owner.last_name}`}>
-              <Avatar sx={{ width: 20, height: 20, fontSize: '0.7rem' }}>{project.assigned_owner.first_name[0]}</Avatar>
+        {deal.system_size_ac && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            {deal.system_size_ac} MW AC
+          </Typography>
+        )}
+
+        <Box sx={{ mt: 1, display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+          {deal.assigned_owner && (
+            <Tooltip title={`${deal.assigned_owner.first_name} ${deal.assigned_owner.last_name}`}>
+              <Avatar sx={{ width: 20, height: 20, fontSize: '0.7rem' }}>{deal.assigned_owner.first_name[0]}</Avatar>
             </Tooltip>
           )}
-          {project.next_action_date && (
+          {deal.next_action_date && (
             <Chip
               icon={<CalendarTodayIcon sx={{ fontSize: 12 }} />}
-              label={formatDate(project.next_action_date)}
+              label={formatDate(deal.next_action_date)}
               size="small"
               color={isOverdue ? 'error' : 'default'}
               sx={{ height: 20, fontSize: '0.65rem' }}
             />
+          )}
+          {deal.is_converted && (
+            <Chip label="Converted" size="small" color="success" sx={{ height: 20, fontSize: '0.65rem' }} />
           )}
         </Box>
       </CardContent>
@@ -109,20 +132,21 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
 
 interface KanbanColumnProps {
   stage: SalesStage;
-  projects: SalesPipelineSummary[];
-  onProjectClick: (projectId: number) => void;
+  deals: Deal[];
+  onDealClick: (dealId: number) => void;
 }
 
-const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, projects, onProjectClick }) => {
-  const totalValue = projects.reduce((sum, p) => sum + (p.pipeline_value || 0), 0);
+const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, deals, onDealClick }) => {
+  const totalValue = deals.reduce((sum, d) => sum + (d.pipeline_value || 0), 0);
+  const isClosed = CLOSED_STAGES.includes(stage);
 
   return (
     <Paper
       sx={{
-        flex: '1 1 0',
-        minWidth: 220,
-        maxWidth: 280,
-        bgcolor: 'grey.50',
+        flex: '0 0 200px',
+        minWidth: 180,
+        maxWidth: 220,
+        bgcolor: isClosed ? 'grey.100' : 'grey.50',
         p: 1.5,
         display: 'flex',
         flexDirection: 'column'
@@ -139,23 +163,23 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, projects, onProjectC
           borderColor: SALES_STAGE_COLORS[stage]
         }}
       >
-        <Typography variant="subtitle2" fontWeight={600} sx={{ flex: 1 }}>
+        <Typography variant="caption" fontWeight={600} sx={{ flex: 1 }} noWrap>
           {SALES_STAGE_LABELS[stage]}
         </Typography>
-        <Chip label={projects.length} size="small" sx={{ height: 20 }} />
+        <Chip label={deals.length} size="small" sx={{ height: 18, minWidth: 24, fontSize: '0.65rem' }} />
       </Box>
 
       <Typography variant="caption" color="text.secondary" sx={{ mb: 1 }}>
-        {formatCurrency(totalValue)} total
+        {formatCurrency(totalValue)}
       </Typography>
 
-      <Box sx={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 280px)' }}>
-        {projects.map(project => (
-          <ProjectCard key={project.id} project={project} onClick={() => onProjectClick(project.id)} />
+      <Box sx={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 300px)' }}>
+        {deals.map(deal => (
+          <DealCard key={deal.id} deal={deal} onClick={() => onDealClick(deal.id)} />
         ))}
-        {projects.length === 0 && (
-          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
-            No projects
+        {deals.length === 0 && (
+          <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block', py: 2 }}>
+            No deals
           </Typography>
         )}
       </Box>
@@ -163,10 +187,33 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, projects, onProjectC
   );
 };
 
+const initialDealForm: DealCreate = {
+  name: '',
+  company_id: 0,
+  sales_stage: SalesStage.Prospect,
+  developer_name: '',
+  address: '',
+  city: '',
+  state: '',
+  system_size_ac: undefined,
+  system_size_dc: undefined,
+  mipa_per_watt: undefined,
+  pipeline_value: undefined,
+  probability: undefined,
+  target_close_date: '',
+  next_action: '',
+  next_action_date: '',
+  next_action_status: NextActionStatus.None,
+  sales_notes: ''
+};
+
 export const SalesHome: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { currentCompany, setCurrentProject, setCurrentModule } = useEntityContext();
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [dealForm, setDealForm] = useState<DealCreate>(initialDealForm);
 
   useEffect(() => {
     setCurrentModule('sales');
@@ -174,24 +221,68 @@ export const SalesHome: React.FC = () => {
   }, [setCurrentModule, setCurrentProject]);
 
   const { data: pipeline, isLoading } = useQuery({
-    queryKey: ['sales-pipeline', currentCompany?.id],
-    queryFn: () => salesApi.getPipeline(currentCompany?.id)
+    queryKey: ['deals-pipeline', currentCompany?.id],
+    queryFn: () => dealsApi.getPipeline(currentCompany?.id)
   });
 
-  const handleProjectClick = useCallback(
-    (projectId: number) => {
-      navigate(`/sales/project/${projectId}`);
+  const createDealMutation = useMutation({
+    mutationFn: (data: DealCreate) => dealsApi.createDeal(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['deals-pipeline'] });
+      setAddDialogOpen(false);
+      setDealForm({ ...initialDealForm, company_id: currentCompany?.id || 0 });
+    }
+  });
+
+  const handleDealClick = useCallback(
+    (dealId: number) => {
+      navigate(`/sales/deal/${dealId}`);
     },
     [navigate]
   );
 
-  const totalProjects = pipeline ? Object.values(pipeline).reduce((sum, stage) => sum + stage.length, 0) : 0;
+  const handleOpenAddDialog = () => {
+    setDealForm({ ...initialDealForm, company_id: currentCompany?.id || 0 });
+    setAddDialogOpen(true);
+  };
+
+  const handleFormChange = (field: keyof DealCreate, value: any) => {
+    setDealForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmitDeal = () => {
+    if (!dealForm.name || !dealForm.company_id) return;
+    createDealMutation.mutate(dealForm);
+  };
+
+  const allStages = [...ACTIVE_PIPELINE_STAGES, ...CLOSED_STAGES];
+
+  const totalDeals = pipeline
+    ? Object.values(pipeline).reduce((sum, stage) => sum + (Array.isArray(stage) ? stage.length : 0), 0)
+    : 0;
 
   const totalValue = pipeline
     ? Object.values(pipeline)
         .flat()
-        .reduce((sum, p) => sum + (p.pipeline_value || 0), 0)
+        .reduce((sum, d: Deal) => sum + (d.pipeline_value || 0), 0)
     : 0;
+
+  const stageKeyMap: Record<SalesStage, keyof DealPipelineResponse> = {
+    [SalesStage.Prospect]: 'prospect',
+    [SalesStage.NDASigned]: 'nda_signed',
+    [SalesStage.InputsReceived]: 'inputs_received',
+    [SalesStage.Modeling]: 'modeling',
+    [SalesStage.ModelReview]: 'model_review',
+    [SalesStage.ModelApproved]: 'model_approved',
+    [SalesStage.Quoted]: 'quoted',
+    [SalesStage.TermSheetNeg]: 'term_sheet_neg',
+    [SalesStage.TermSheetSigned]: 'term_sheet_signed',
+    [SalesStage.Phase1Diligence]: 'phase_1_diligence',
+    [SalesStage.MIPANegotiating]: 'mipa_negotiating',
+    [SalesStage.MIPASigned]: 'mipa_signed',
+    [SalesStage.Passed]: 'passed',
+    [SalesStage.Dead]: 'dead'
+  };
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -207,25 +298,30 @@ export const SalesHome: React.FC = () => {
         }}
       >
         <Typography variant="h5" fontWeight={600}>
-          Sales Pipeline
+          Deal Pipeline
         </Typography>
-        <ToggleButtonGroup value={viewMode} exclusive onChange={(_, v) => v && setViewMode(v)} size="small">
-          <ToggleButton value="kanban">
-            <ViewKanbanIcon fontSize="small" />
-          </ToggleButton>
-          <ToggleButton value="list">
-            <ViewListIcon fontSize="small" />
-          </ToggleButton>
-        </ToggleButtonGroup>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenAddDialog} size="small">
+            Add Deal
+          </Button>
+          <ToggleButtonGroup value={viewMode} exclusive onChange={(_, v) => v && setViewMode(v)} size="small">
+            <ToggleButton value="kanban">
+              <ViewKanbanIcon fontSize="small" />
+            </ToggleButton>
+            <ToggleButton value="list">
+              <ViewListIcon fontSize="small" />
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
       </Box>
 
       <Box sx={{ px: 3, py: 2, borderBottom: 1, borderColor: 'divider' }}>
         <Stack direction="row" spacing={3}>
           <Box>
             <Typography variant="caption" color="text.secondary">
-              Total Projects
+              Total Deals
             </Typography>
-            <Typography variant="h6">{totalProjects}</Typography>
+            <Typography variant="h6">{totalDeals}</Typography>
           </Box>
           <Box>
             <Typography variant="caption" color="text.secondary">
@@ -241,13 +337,13 @@ export const SalesHome: React.FC = () => {
       {!isLoading && pipeline && (
         <Box sx={{ flex: 1, p: 2, overflow: 'auto' }}>
           {viewMode === 'kanban' ? (
-            <Box sx={{ display: 'flex', gap: 2, height: '100%' }}>
-              {STAGE_ORDER.map(stage => (
+            <Box sx={{ display: 'flex', gap: 1.5, height: '100%', overflowX: 'auto', pb: 2 }}>
+              {allStages.map(stage => (
                 <KanbanColumn
                   key={stage}
                   stage={stage}
-                  projects={pipeline[stage.replace('-', '_') as keyof typeof pipeline] || []}
-                  onProjectClick={handleProjectClick}
+                  deals={(pipeline[stageKeyMap[stage]] as Deal[]) || []}
+                  onDealClick={handleDealClick}
                 />
               ))}
             </Box>
@@ -260,6 +356,168 @@ export const SalesHome: React.FC = () => {
           )}
         </Box>
       )}
+
+      <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Add New Deal</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} md={6}>
+              <TextField
+                label="Deal Name"
+                value={dealForm.name}
+                onChange={e => handleFormChange('name', e.target.value)}
+                fullWidth
+                required
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                label="Developer Name"
+                value={dealForm.developer_name}
+                onChange={e => handleFormChange('developer_name', e.target.value)}
+                fullWidth
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                label="Address"
+                value={dealForm.address}
+                onChange={e => handleFormChange('address', e.target.value)}
+                fullWidth
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                label="City"
+                value={dealForm.city}
+                onChange={e => handleFormChange('city', e.target.value)}
+                fullWidth
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                label="State"
+                value={dealForm.state}
+                onChange={e => handleFormChange('state', e.target.value)}
+                fullWidth
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                label="System Size (AC MW)"
+                type="number"
+                value={dealForm.system_size_ac || ''}
+                onChange={e => handleFormChange('system_size_ac', e.target.value ? parseFloat(e.target.value) : undefined)}
+                fullWidth
+                InputProps={{ endAdornment: <InputAdornment position="end">MW</InputAdornment> }}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                label="System Size (DC MW)"
+                type="number"
+                value={dealForm.system_size_dc || ''}
+                onChange={e => handleFormChange('system_size_dc', e.target.value ? parseFloat(e.target.value) : undefined)}
+                fullWidth
+                InputProps={{ endAdornment: <InputAdornment position="end">MW</InputAdornment> }}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                label="MIPA $/Watt"
+                type="number"
+                value={dealForm.mipa_per_watt || ''}
+                onChange={e => handleFormChange('mipa_per_watt', e.target.value ? parseFloat(e.target.value) : undefined)}
+                fullWidth
+                InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                label="Pipeline Value"
+                type="number"
+                value={dealForm.pipeline_value || ''}
+                onChange={e => handleFormChange('pipeline_value', e.target.value ? parseFloat(e.target.value) : undefined)}
+                fullWidth
+                InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                label="Probability"
+                type="number"
+                value={dealForm.probability || ''}
+                onChange={e => handleFormChange('probability', e.target.value ? parseInt(e.target.value) : undefined)}
+                fullWidth
+                InputProps={{ endAdornment: <InputAdornment position="end">%</InputAdornment> }}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                label="Target Close Date"
+                type="date"
+                value={dealForm.target_close_date || ''}
+                onChange={e => handleFormChange('target_close_date', e.target.value)}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                label="Next Action"
+                value={dealForm.next_action || ''}
+                onChange={e => handleFormChange('next_action', e.target.value)}
+                fullWidth
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <TextField
+                label="Next Action Date"
+                type="date"
+                value={dealForm.next_action_date || ''}
+                onChange={e => handleFormChange('next_action_date', e.target.value)}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <TextField
+                select
+                label="Action Status"
+                value={dealForm.next_action_status || NextActionStatus.None}
+                onChange={e => handleFormChange('next_action_status', e.target.value)}
+                fullWidth
+              >
+                {Object.entries(NEXT_ACTION_STATUS_LABELS).map(([value, label]) => (
+                  <MenuItem key={value} value={value}>
+                    {label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Notes"
+                value={dealForm.sales_notes || ''}
+                onChange={e => handleFormChange('sales_notes', e.target.value)}
+                fullWidth
+                multiline
+                rows={3}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleSubmitDeal}
+            disabled={!dealForm.name || !dealForm.company_id || createDealMutation.isPending}
+          >
+            {createDealMutation.isPending ? 'Creating...' : 'Create Deal'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

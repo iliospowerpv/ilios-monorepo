@@ -83,7 +83,7 @@ import {
   createFinanceHomeHandle,
   createSiteFinanceHandle
 } from './modules/finance';
-import { SalesHome, SalesModuleContainer, createSalesHomeHandle } from './modules/sales';
+import { SalesHome, SalesModuleContainer, createSalesHomeHandle, DealDetail } from './modules/sales';
 
 // initialization
 const queryClient = new QueryClient();
@@ -143,6 +143,7 @@ const router = createBrowserRouter(
         </Route>
         <Route path="/sales" element={<SalesModuleContainer />}>
           <Route index handle={createSalesHomeHandle(queryClient)} element={<SalesHome />} />
+          <Route path="deal/:dealId" element={<DealDetail />} />
         </Route>
         <Route path="/due-diligence" element={<DDModuleContainer />}>
           <Route index handle={DPDiligencePage.createHandle()} element={<DPDiligencePage.Component />} />
