@@ -4,12 +4,21 @@ import enum
 
 
 class SalesStage(enum.Enum):
-    """Sales pipeline stages for project acquisition."""
-    discovery = "Discovery"
-    qualified = "Qualified"
-    loi_term_sheet = "LOI / Term Sheet"
-    under_contract = "Under Contract"
-    handoff_to_diligence = "Handoff to Due Diligence"
+    """Sales pipeline stages for deal acquisition."""
+    prospect = "Prospect"
+    nda_signed = "NDA Signed"
+    inputs_received = "Inputs Received"
+    modeling = "Modeling"
+    model_review = "Model Review"
+    model_approved = "Model Approved"
+    quoted = "Quoted"
+    term_sheet_neg = "Term Sheet Neg"
+    term_sheet_signed = "Term Sheet Signed"
+    phase_1_diligence = "Phase 1 Diligence"
+    mipa_negotiating = "MIPA Negotiating"
+    mipa_signed = "MIPA Signed"
+    passed = "Passed"
+    dead = "Dead"
 
 
 class LifecycleState(enum.Enum):
@@ -29,6 +38,14 @@ class SalesSource(enum.Enum):
     outreach = "Outreach"
     referral = "Referral"
     other = "Other"
+
+
+class NextActionStatus(enum.Enum):
+    """Status of the next action."""
+    pending = "Pending"
+    in_progress = "In Progress"
+    completed = "Completed"
+    overdue = "Overdue"
 
 
 HANDOFF_CHECKLIST_ITEMS = [
