@@ -1,8 +1,8 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
+import Typography from '@mui/material/Typography';
 import Companies, { CompaniesRef } from './components/Companies';
 import Sites from './components/Sites';
 import ActualProduction from '../../../../components/charts/ActualProduction/ActualProduction';
@@ -38,9 +38,6 @@ export const PortfolioPage: React.FC = () => {
 
   return (
     <Box maxWidth="1800px" mx="auto" paddingTop="0" paddingBottom="24px" sx={{ flexGrow: 1 }}>
-      <Typography variant="h4" marginBottom="24px" sx={{ fontWeight: 600 }} fontSize="34px" lineHeight="42px">
-        My Portfolio
-      </Typography>
       <Grid container spacing={2} pt="-24px">
         <Grid item xs={12} sm={12} md={6} lg={7}>
           <Box
@@ -84,7 +81,7 @@ export const PortfolioPage: React.FC = () => {
             }}
           >
             <Typography variant="h6" fontSize="24px" p="16px">
-              Sites
+              Projects
             </Typography>
           </Box>
           <Sites />

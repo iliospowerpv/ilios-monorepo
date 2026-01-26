@@ -127,9 +127,6 @@ export const AllCompaniesPage: React.FC = () => {
 
   return (
     <Box>
-      <Typography variant="h4" marginBottom="24px" sx={{ fontWeight: 600 }} fontSize="34px" lineHeight="42px">
-        Companies
-      </Typography>
       <Box sx={{ paddingTop: '24px' }}>
         <SearchAndActions
           showSearch={true}

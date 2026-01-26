@@ -78,10 +78,7 @@ export const AllReportsPage: React.FC = () => {
   return (
     <Box maxWidth="1600px" mx="auto">
       <FullPageLoader open={loading} />
-      <Box display="flex" flexDirection={'row'} justifyContent="space-between">
-        <Typography variant="h4" sx={{ fontWeight: 600 }} fontSize="34px" lineHeight="42px">
-          Reports
-        </Typography>
+      <Box display="flex" flexDirection={'row'} justifyContent="flex-end">
         <Button
           onClick={() => exportPowerBIReportToPDF(filters?.type?.id ? filters?.type?.id : '')}
           fullWidth

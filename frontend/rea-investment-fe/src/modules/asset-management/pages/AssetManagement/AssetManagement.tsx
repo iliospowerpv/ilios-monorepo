@@ -1,6 +1,5 @@
 import React from 'react';
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import { Link } from 'react-router-dom';
@@ -43,7 +42,6 @@ interface AssetManagementProps {
 
 const AssetManagement: React.FC<AssetManagementProps> = ({ tabId }) => {
   const activeTab = tabId || 'overview';
-  const title = activeTab === 'sites' ? 'Projects' : 'Companies';
 
   const content = React.useMemo(() => {
     const tab = tabData.find(({ id }) => id === activeTab);
@@ -52,9 +50,6 @@ const AssetManagement: React.FC<AssetManagementProps> = ({ tabId }) => {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }} data-testid="asset-management__title">
-        {title}
-      </Typography>
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={activeTab}>
           {tabData.map(tab => (
