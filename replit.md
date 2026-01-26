@@ -30,6 +30,12 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
         1. **Entity Context Navigation (Top Bar)**: Displays `Portfolio → Company → Project` hierarchy, persists selection to `localStorage`, and dynamically enables/disables icons based on selected entity level.
         2. **Module Sidebar Navigation (Left)**: Permission-based visibility for modules like Asset Management, O&M, Due Diligence, Finance, Reports.
         3. **Breadcrumb Navigation (Header)**: Auto-generates from React Router `handle` patterns, resolving dynamic segments from URL parameters.
+    - **Context Bar Infrastructure**: Unified three-tier scope management system. See `docs/context_bar_contract.md` for complete specification.
+        - **Scope Types**: Portfolio (all entities), Company (single company + its projects), Project (single project)
+        - **Dual Route Patterns**: Canonical routes (`/portfolio`, `/companies/:id`, `/projects/:id`) for direct entity access; Module-scoped lens routes (`/[module]/scope/{portfolio|company/:id|project/:id}`) for in-module scope switching
+        - **Repaint Navigation**: Switching scope via Context Bar keeps users in current module using lens routes
+        - **ScopedModuleRoute Component**: Wrapper that sets context from URL parameters without navigating away from module
+        - **Persistence**: Current scope persisted to localStorage with 5-minute React Query cache for accessible entities
     - **Asset Management Overview**: Features a canonical site overview with drag-and-drop reordering, collapsible cards, persistence of state to `localStorage`, an executive summary, an underwriting readiness widget, and enhanced card headers with completeness indicators.
     - **Sidebar Layout Pattern**: Critical guidance for implementing collapsible sidebar navigation, ensuring main content and fixed headers correctly adapt to sidebar width changes using `marginLeft`, `width`, and `maxWidth` properties. Sidebar state is persisted to `localStorage`.
 
