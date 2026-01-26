@@ -26,12 +26,15 @@ from app.models.board import BoardRelatedEntityTypeEnum, BoardRelatedEntityTypeE
 from app.models.document import Document
 from app.models.site import Site
 from app.schema.documents import (
+    CustomDocumentCreationSchema,
+    DocumentArchiveSuccess,
     DocumentCreationSchema,
     DocumentCreationSuccess,
     DocumentDetailsSchema,
     DocumentKeyUpdateSchema,
     DocumentKeyUpdateSuccess,
     DocumentRemovalSuccess,
+    DocumentReorderSchema,
     DocumentUpdateSuccess,
     UpdateDocumentDescriptionSchema,
     UpdateDocumentDetailsSchema,
@@ -159,8 +162,110 @@ async def remove_document(
     db_session: Session = Depends(get_session),
     document: Document = Depends(get_authorized_document),
 ):
+    from datetime import datetime, timedelta, timezone
+
+    # Check if document has any non-deleted uploaded files
+    active_files = [f for f in document.files if not f.deleted]
+
+    if active_files:
+        # Check if within 24-hour grace period (based on most recent file upload)
+        most_recent_upload = max(f.created_at for f in active_files)
+        grace_period_end = most_recent_upload + timedelta(hours=24)
+        now = datetime.now(timezone.utc)
+
+        # Make most_recent_upload timezone-aware if it isn't
+        if most_recent_upload.tzinfo is None:
+            most_recent_upload = most_recent_upload.replace(tzinfo=timezone.utc)
+            grace_period_end = most_recent_upload + timedelta(hours=24)
+
+        if now > grace_period_end:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=DocumentMessages.document_delete_grace_period_expired,
+            )
+
     DocumentCRUD(db_session).delete_by_id(document.id)
     return {"code": status.HTTP_200_OK, "message": DocumentMessages.document_remove_success}
+
+
+@documents_router.post(
+    "/{document_id}/archive",
+    status_code=status.HTTP_200_OK,
+    response_model=DocumentArchiveSuccess,
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
+    description="Archive a document (soft delete). Use this for documents with uploaded files.",
+    dependencies=[Depends(AuthorizedUser(DiligencePermissions(PermissionsActions.edit)))],
+)
+async def archive_document(
+    db_session: Session = Depends(get_session),
+    document: Document = Depends(get_authorized_document),
+):
+    DocumentCRUD(db_session).update_by_id(document.id, {"is_archived": True})
+    return {"code": status.HTTP_200_OK, "message": DocumentMessages.document_archive_success}
+
+
+@documents_router.post(
+    "/{document_id}/reorder",
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=DocumentUpdateSuccess,
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
+    description="Update document position within its section",
+    dependencies=[Depends(AuthorizedUser(DiligencePermissions(PermissionsActions.edit)))],
+)
+async def reorder_document(
+    reorder_data: DocumentReorderSchema,
+    db_session: Session = Depends(get_session),
+    document: Document = Depends(get_authorized_document),
+):
+    DocumentCRUD(db_session).update_by_id(document.id, {"position": reorder_data.position})
+    return {"code": status.HTTP_202_ACCEPTED, "message": DocumentMessages.document_reorder_success}
+
+
+@documents_router.post(
+    "/custom",
+    response_model=DocumentCreationSuccess,
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
+    description="Create a custom document with a user-defined name",
+)
+async def create_custom_document(
+    document: CustomDocumentCreationSchema,
+    *,
+    site: Site = Depends(get_authorized_site),
+    current_user: Annotated[CurrentUserSchema, Depends(AuthorizedUser(DiligencePermissions(PermissionsActions.edit)))],
+    db_session: Session = Depends(get_session),
+):
+    # Validate section belongs to the site
+    section = DocumentSectionCRUD(db_session).get_by_id(document.section_id)
+    if not section or section.site_id != site.id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid section ID for this site",
+        )
+
+    # Get max position for the section to place new document at the end
+    existing_docs = [d for d in section.documents if not d.is_archived]
+    max_position = max((d.position for d in existing_docs), default=0)
+
+    document_payload = {
+        "site_id": site.id,
+        "section_id": document.section_id,
+        "name": SiteDocumentsEnum.custom,
+        "custom_name": document.custom_name,
+        "description": document.description,
+        "position": max_position + 1,
+    }
+
+    document_data = DocumentCRUD(db_session).create_item(document_payload)
+    logger.info(f"Created custom document with id {document_data.id}")
+
+    # each site document should have linked default ticket
+    if not site.documents_board:
+        create_default_board(
+            site.id, BoardRelatedEntityTypeEnum.site, db_session, BoardRelatedEntityTypeExtraEnum.document
+        )
+    create_default_document_tasks(db_session, site.documents_board, [document_data], current_user.id)
+
+    return {"code": status.HTTP_201_CREATED, "message": DocumentMessages.document_create_success}
 
 
 @documents_router.put(

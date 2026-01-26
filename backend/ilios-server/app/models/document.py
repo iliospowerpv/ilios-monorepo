@@ -1,8 +1,9 @@
 import logging
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Identity, Index, Integer, String, UniqueConstraint, asc, cast
+from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Identity, Index, Integer, String, UniqueConstraint, asc, cast
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import DefaultClause
+from sqlalchemy.sql import expression
 
 from app.db.base_class import Base
 from app.models.comment import HasComments
@@ -21,10 +22,13 @@ class Document(HasComments, Base):
     section_id = Column(Integer, ForeignKey("document_sections.id", ondelete="CASCADE"))
 
     name = Column(Enum(SiteDocumentsEnum))
+    custom_name = Column(String, nullable=True)
     description = Column(String)
     approver_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     # use this field to define the order of appearance
     position = Column(Integer, nullable=False, default=1, server_default=DefaultClause("1"))
+    # soft delete flag - documents with uploads should be archived, not deleted
+    is_archived = Column(Boolean, nullable=False, default=False, server_default=expression.false())
 
     site = relationship("Site", back_populates="documents")
     files = relationship("File", back_populates="document", lazy="joined")

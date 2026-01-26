@@ -59,6 +59,8 @@ class SiteDocumentDetailsSchema(BaseDocumentSchema):
     status: str = Field(examples=["To Upload"])
     assignee: Optional[TaskUser]
     ai_supported: bool = Field(examples=[False])
+    custom_name: Optional[str] = Field(default=None, examples=["Custom Document Name"])
+    display_name: Optional[str] = Field(default=None, examples=["Custom Document Name"])
 
 
 class SiteDocumentsSchema(BaseModel):
@@ -130,3 +132,17 @@ class DocumentKeysListSchema(BaseModel):
 
 class SiteIDSchema(BaseModel):
     site_ids: Optional[list] = Field([], examples=[1, 2, 3])
+
+
+class DocumentReorderSchema(BaseModel):
+    position: int = Field(ge=1, examples=[1], description="New position for the document (1-indexed)")
+
+
+class DocumentArchiveSuccess(Success):
+    message: str = Field(description="Success message", examples=["Document has been archived"])
+
+
+class CustomDocumentCreationSchema(BaseModel):
+    section_id: int = Field(examples=[1])
+    custom_name: str = Field(min_length=1, max_length=200, examples=["Custom Document Name"])
+    description: Union[str, None] = Field(examples=["This is a custom document description"], default=None)

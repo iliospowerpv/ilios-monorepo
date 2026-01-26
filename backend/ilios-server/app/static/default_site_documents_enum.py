@@ -422,3 +422,5 @@ class SiteDocumentsEnum(enum.Enum):
     operating_agreements_including_all_amendments_pre_tax_equity = (
         "Operating Agreement Including All Amendments (Pre-Tax Equity)"
     )
+    # Custom user-defined document
+    custom = "Custom"

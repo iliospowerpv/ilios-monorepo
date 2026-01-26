@@ -46,7 +46,7 @@ export const SiteDetailsPage: React.FC<SiteDetailsProps> = ({ tabId }) => {
     () => [
       {
         id: 'overview',
-        label: 'Overview',
+        label: 'Analysis',
         link: '/due-diligence/companies/:companyId/sites/:siteId/overview',
         disabled: !access,
         icon: <SpaceDashboardIcon />,
@@ -54,7 +54,7 @@ export const SiteDetailsPage: React.FC<SiteDetailsProps> = ({ tabId }) => {
       },
       {
         id: 'diligence',
-        label: 'Diligence',
+        label: 'Documents',
         link: '/due-diligence/companies/:companyId/sites/:siteId/due-diligence',
         disabled: false,
         icon: <DescriptionIcon />,

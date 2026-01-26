@@ -102,6 +102,10 @@ class DocumentMessages(BaseMessageEnum):
     document_update_success = "Updated successfully"
     document_key_update_success = "Document key has been successfully updated"
     document_remove_success = "Document has been successfully removed"
+    document_archive_success = "Document has been archived"
+    document_reorder_success = "Document position has been updated"
+    document_has_files_cannot_delete = "Cannot delete document with uploaded files. Archive it instead or remove files first."
+    document_delete_grace_period_expired = "Cannot delete document. The 24-hour grace period has expired. Please archive instead."
 
 
 class SiteMessages(BaseMessageEnum):

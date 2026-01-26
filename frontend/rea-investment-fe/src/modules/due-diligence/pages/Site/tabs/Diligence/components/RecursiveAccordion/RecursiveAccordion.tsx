@@ -13,6 +13,7 @@ import { DiligenceItem } from '../../../../../../../../api';
 interface RecursiveAccordionProps {
   items: DiligenceItem[] | undefined;
   forceExpanded?: boolean;
+  onRefresh?: () => void;
 }
 
 const ManagedAccordion: React.FC<{ children: NonNullable<React.ReactNode>; forceExpanded?: boolean }> = ({
@@ -39,7 +40,7 @@ const ManagedAccordion: React.FC<{ children: NonNullable<React.ReactNode>; force
   );
 };
 
-const RecursiveAccordion: React.FC<RecursiveAccordionProps> = ({ items, forceExpanded }) => {
+const RecursiveAccordion: React.FC<RecursiveAccordionProps> = ({ items, forceExpanded, onRefresh }) => {
   return (
     <>
       {items?.map(item => (
@@ -68,11 +69,11 @@ const RecursiveAccordion: React.FC<RecursiveAccordionProps> = ({ items, forceExp
           </AccordionSummary>
           <AccordionDetails sx={{ padding: '0' }}>
             {item.documents.map(document => (
-              <DocumentItem key={`doc+${document.id}`} document={document} />
+              <DocumentItem key={`doc+${document.id}`} document={document} onRefresh={onRefresh} />
             ))}
             {!!item?.related_sections.length && (
               <Box sx={{ padding: '16px' }}>
-                <RecursiveAccordion forceExpanded={forceExpanded} items={item.related_sections} />
+                <RecursiveAccordion forceExpanded={forceExpanded} items={item.related_sections} onRefresh={onRefresh} />
               </Box>
             )}
           </AccordionDetails>

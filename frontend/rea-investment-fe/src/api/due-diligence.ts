@@ -87,6 +87,8 @@ interface DiligenceDocument {
     last_name: string;
   } | null;
   ai_supported: boolean;
+  custom_name?: string | null;
+  display_name?: string | null;
 }
 interface DiligenceItem {
   name: string;
@@ -536,6 +538,45 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     return response.data;
   };
 
+  const archiveDocument = async (siteId: number, documentId: number): Promise<{ code: number; message: string }> => {
+    const response = await httpClient.post<{ code: number; message: string }>(
+      `/api/due-diligence/${siteId}/documents/${documentId}/archive`
+    );
+    return response.data;
+  };
+
+  const reorderDocument = async (
+    siteId: number,
+    documentId: number,
+    position: number
+  ): Promise<{ code: number; message: string }> => {
+    const response = await httpClient.post<{ code: number; message: string }>(
+      `/api/due-diligence/${siteId}/documents/${documentId}/reorder`,
+      { position }
+    );
+    return response.data;
+  };
+
+  const deleteDocument = async (siteId: number, documentId: number): Promise<{ code: number; message: string }> => {
+    const response = await httpClient.delete<{ code: number; message: string }>(
+      `/api/due-diligence/${siteId}/documents/${documentId}`
+    );
+    return response.data;
+  };
+
+  const createCustomDocument = async (
+    siteId: number,
+    sectionId: number,
+    customName: string,
+    description?: string
+  ): Promise<{ code: number; message: string }> => {
+    const response = await httpClient.post<{ code: number; message: string }>(
+      `/api/due-diligence/${siteId}/documents/custom`,
+      { section_id: sectionId, custom_name: customName, description }
+    );
+    return response.data;
+  };
+
   return Object.freeze({
     docInfo,
     updateDocDescription,
@@ -561,7 +602,11 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     getCoTerminusExecutionStatus,
     getCoterminusCheckResults,
     getChatBotSession,
-    getCoTerminusExecutionStop
+    getCoTerminusExecutionStop,
+    archiveDocument,
+    reorderDocument,
+    deleteDocument,
+    createCustomDocument
   });
 };
 

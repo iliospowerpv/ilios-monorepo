@@ -59,6 +59,8 @@ class DocumentSectionsHandler:
                 assignee=document.assignee,
                 status=document.status,
                 ai_supported=document.name.value in self.parsable_documents,
+                custom_name=document.custom_name,
+                display_name=document.custom_name if document.custom_name else document.name.value,
             )
             for document in documents
         ]
@@ -78,9 +80,12 @@ class DocumentSectionsHandler:
 
     def _get_section_documents(self, document_section):
         """Filter section documents user role has access to if there are limitations"""
+        # Start by filtering out archived documents
+        active_documents = [doc for doc in document_section.documents if not doc.is_archived]
+
         # return the full documents list if no restriction config provided
         if not self.document_role_config:
-            return document_section.documents
+            return active_documents
 
         # process the role-based config
         section_documents_by_role = self.document_role_config.document_name_section_mapper.get(document_section.name)
@@ -95,7 +100,7 @@ class DocumentSectionsHandler:
             return []
 
         # filter out section documents role has access to by the name
-        return [document for document in document_section.documents if document.name in section_documents_by_role]
+        return [document for document in active_documents if document.name in section_documents_by_role]
 
     def build_site_sections_tree(self, section_id: int, site_sections: dict):
         """Recursively builds a tree of all sections and subsections within a site."""
