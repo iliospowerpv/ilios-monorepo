@@ -49,7 +49,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, isActive, isAvailable, o
             backgroundColor: getBackgroundColor(),
             color: getColor(),
             borderRadius: '8px',
-            padding: '8px',
+            padding: '10px',
             transition: 'all 0.2s ease',
             '&:hover': {
               backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.12)'
@@ -91,8 +91,8 @@ export const EntityContextNav: React.FC = () => {
       sx={{
         display: 'flex',
         alignItems: 'center',
-        gap: 0.5,
-        padding: '4px 8px',
+        gap: 1,
+        padding: '6px 12px',
         borderRadius: '12px',
         backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
         border: `1px solid ${theme.palette.divider}`
@@ -100,7 +100,7 @@ export const EntityContextNav: React.FC = () => {
     >
       <NavItem
         level="portfolio"
-        icon={<FolderSpecialIcon fontSize="small" />}
+        icon={<FolderSpecialIcon />}
         label="Portfolio"
         isActive={currentLevel === 'portfolio'}
         isAvailable={true}
@@ -108,7 +108,7 @@ export const EntityContextNav: React.FC = () => {
       />
       <NavItem
         level="company"
-        icon={<BusinessIcon fontSize="small" />}
+        icon={<BusinessIcon />}
         label={currentCompany ? currentCompany.name : 'Companies'}
         isActive={currentLevel === 'company'}
         isAvailable={!!currentCompany}
@@ -116,7 +116,7 @@ export const EntityContextNav: React.FC = () => {
       />
       <NavItem
         level="project"
-        icon={<SolarPowerIcon fontSize="small" />}
+        icon={<SolarPowerIcon />}
         label={currentProject ? currentProject.name : 'Projects'}
         isActive={currentLevel === 'project'}
         isAvailable={!!currentProject}
