@@ -1,0 +1,67 @@
+You are the Replit agent in the Ilios codebase. Before we redesign anything, I need you to map and explain the CURRENT implementation for Company / Project / User management and hierarchy.
+
+GOAL
+Produce a clear implementation report showing:
+- data model relationships (Company, Project/Site, User)
+- how user access is modeled (single-company vs multi-company)
+- where the current “Settings” flows live and why they feel clunky
+- where hierarchy breaks (Portfolio → Companies → Projects)
+
+DO NOT CHANGE UX YET
+This is an analysis + mapping task only. Make no changes unless you find a critical bug that prevents the audit.
+
+AUDIT QUESTIONS YOU MUST ANSWER
+
+1) DATA MODEL + RELATIONSHIPS
+- List tables/entities involved:
+  - companies
+  - sites/projects (canonical)
+  - users
+  - junction tables (e.g., UserProject, UserCompany, memberships)
+- Draw a textual ERD showing keys and relationships.
+- Confirm whether multi-company user membership is supported today. If not, identify what prevents it (missing junction table, auth assumptions, UI constraints, etc.).
+
+2) AUTH + TENANCY MODEL
+- Explain how tenancy is enforced:
+  - Is there a “current company” context in session?
+  - Are queries scoped by company_id?
+  - Is access enforced via junction tables or role claims?
+- Identify any code that assumes a user belongs to only one company.
+
+3) CURRENT UX FLOWS (WHAT EXISTS)
+For each action, list:
+- where it lives in the UI (nav path)
+- the route(s)
+- the form component(s)
+- the API endpoint(s)
+- the DB writes
+Actions:
+A) Create Company
+B) Create Project (site)
+C) Create User
+D) Associate User to Company
+E) Associate User to Project
+F) Switch between companies (if supported)
+G) View “my portfolio” / “my companies” / “my projects”
+
+4) WHY IT FEELS CLUNKY (DIAGNOSIS)
+Identify the top issues causing confusion:
+- “Settings” placement
+- missing or unclear hierarchy
+- inability to associate users to multiple companies
+- lack of user-centric landing view
+
+5) RECOMMENDATION INPUTS (NO BUILD YET)
+Propose a target model at a high level (no code changes yet):
+- User-centric “My Workspace” view (portfolio → companies → projects)
+- Admin-friendly onboarding flow (wizard or guided steps)
+- Multi-company membership rules
+- Where these should live in navigation (e.g., Admin vs Settings vs Workspace)
+
+OUTPUT
+Create: /docs/hierarchy_and_onboarding_audit.md including:
+- Tables/entities and relationships (text ERD)
+- Findings for multi-company membership feasibility
+- File paths for key routes/components/endpoints
+- A short list of the most critical breakpoints
+- A recommended direction (bullets), but do NOT implement yet

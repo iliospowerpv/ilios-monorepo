@@ -1,0 +1,85 @@
+You are the Replit agent in the Ilios codebase. Implement a consistent “Context Bar” contract across the app so users always know whether they are looking at Portfolio, Company, or Project scope and can switch scope from any screen.
+
+NON-NEGOTIABLE INTENT
+- Context must be explicit on every screen.
+- There is always a stable top context bar: Portfolio | Company | Project.
+- Clicking Portfolio shows portfolio rollup view.
+- Clicking Company shows company-level view with a company picker.
+- Clicking Project shows project-level view with a project picker.
+- Switching context should “repaint” the page content appropriately (navigate to the correct scoped route).
+- Do NOT hide global modules; context switching is not nav gating.
+- Use existing data model: sites table is canonical project; user access derived from UserProject and/or existing company access patterns.
+
+IMPLEMENTATION REQUIREMENTS
+
+A) SINGLE SOURCE OF TRUTH FOR CONTEXT
+Create a central context state (ContextProvider/store) with:
+- currentScope: 'portfolio' | 'company' | 'project'
+- currentCompanyId (nullable)
+- currentProjectId (nullable)
+Persist:
+- in localStorage (required)
+Optionally:
+- in URL params where appropriate (preferred for deep linking)
+
+B) ACCESSIBLE OPTIONS
+Implement utility selectors:
+- getAccessibleCompaniesForUser(userId): from UserProject distinct company_id plus parent_company_id if present (and any other existing company access table if present)
+- getAccessibleProjectsForUser(userId, optional companyId filter): from UserProject by user_id and optional company_id
+
+C) CONTEXT BAR UI
+- Display on every module page (layout component), not per-page.
+- Portfolio tab: no picker
+- Company tab: company picker + optional "All Companies" (portfolio view already covers rollup; company view should be a single selected company)
+- Project tab: project picker filtered by selected company (if company selected) with search.
+- Show breadcrumbs that include current company/project names when selected.
+- Add a clear “No company selected” / “No project selected” empty state if user clicks Company/Project without selecting.
+
+D) ROUTING CONTRACT (CRITICAL)
+Define canonical routes for the 3 scopes:
+- /portfolio (rollup dashboard)
+- /companies/:companyId (company dashboard)
+- /projects/:projectId (project overview)
+When user clicks:
+- Portfolio: navigate to /portfolio
+- Company: if currentCompanyId exists, navigate to /companies/:companyId; else navigate to a company-picker view /companies
+- Project: if currentProjectId exists, navigate to /projects/:projectId; else navigate to a project-picker view /projects (filtered by company if selected)
+
+Ensure that module pages (Finance, Sales, Diligence, Operations) respect context:
+- If user is viewing Finance:
+  - Portfolio scope → portfolio finance rollup
+  - Company scope → company finance rollup
+  - Project scope → project finance detail
+Same for Sales/Diligence/Operations as applicable.
+Do not rebuild every module view fully; implement consistent routing + placeholders where rollups don’t exist yet.
+
+E) “REPAINT” BEHAVIOR ON EXISTING PAGES
+When switching scope from within a module, keep the module:
+Example:
+- User is on Finance module:
+  - Portfolio tab → /finance/portfolio (or /portfolio?module=finance if that’s your pattern)
+  - Company tab → /finance/company/:companyId
+  - Project tab → /finance/project/:projectId
+Pick a pattern consistent with the existing router, but make it systematic and documented.
+
+F) DOCUMENTATION
+Create /docs/context_bar_contract.md explaining:
+- scopes
+- how selection persists
+- route patterns
+- how modules should implement portfolio/company/project variants
+
+SAFE FIXES ALLOWED
+- Refactor “My Company” singular assumptions to use currentCompanyId for view context (do not rebuild admin flows yet)
+- Rename any ambiguous nav labels that conflict with this contract
+
+DO NOT DO
+- Do not redesign admin creation forms yet
+- Do not change underlying permission model broadly
+- Do not create new deal/fund models
+
+ACCEPTANCE TESTS
+- On any screen, I can see whether I’m in Portfolio, Company, or Project scope.
+- I can switch Company and Project via pickers and it navigates to correct pages.
+- The selected company/project persists across reloads.
+- Deep links to /companies/:id and /projects/:id set context correctly.
