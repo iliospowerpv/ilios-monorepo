@@ -70,6 +70,7 @@ const menuItems: [string, React.ReactNode, string, string, boolean][] = [
   ['my-portfolio', <DashboardIcon key="my-portfolio" />, 'My Portfolio', '/my-portfolio', false],
   ['dashboard', <DashboardIcon key="dashboard" />, 'Dashboard', '/dashboard', false],
   ['sales', <TrendingUpIcon key="sales" />, 'Sales', '/sales', false],
+  ['due-diligence', <FactCheckIcon key="due-diligence" />, 'Diligence', '/due-diligence', false],
   [
     'operations-and-maintenance',
     <WhatshotIcon key="operations-and-maintenance" />,
@@ -77,9 +78,8 @@ const menuItems: [string, React.ReactNode, string, string, boolean][] = [
     '/operations-and-maintenance',
     false
   ],
-  ['due-diligence', <FactCheckIcon key="due-diligence" />, 'Diligence', '/due-diligence', false],
-  ['finance', <AccountBalanceWalletIcon key="finance" />, 'Finance', '/finance', false],
   ['asset-management', <AccountBalanceIcon key="asset-management" />, 'Asset Management', '/asset-management', false],
+  ['finance', <AccountBalanceWalletIcon key="finance" />, 'Finance', '/finance', false],
   ['reports', <AssessmentIcon key="reports" />, 'Reports', '/reports', false]
 ];
 
