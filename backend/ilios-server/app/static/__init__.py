@@ -9,6 +9,7 @@ from .pagination import *
 from .permissions import *
 from .power_bi import *
 from .responses import *
+from .sales import *
 from .tags import *
 from .tasks import *
 from .telemetry import *

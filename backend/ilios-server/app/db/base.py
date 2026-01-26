@@ -30,3 +30,4 @@ from app.models.finance import (
     FinanceObligation,
     FinanceVendor,
 )
+from app.models.sales import SalesStateTransition

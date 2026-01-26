@@ -1,0 +1,83 @@
+You are the Replit agent in the Ilios codebase. Implement a new “Sales” module to manage early-stage discovery and pipeline workflows, and connect it into the lifecycle so modules progressively activate from Sales → Due Diligence → Implementation/Asset Mgmt → Placed In Service → O&M.
+
+CRITICAL LIMITATIONS
+- “Project” remains the canonical physical asset record (formerly Site). No new entity for “Project.”
+- Sales module will manage pipeline stages BEFORE formal due diligence. Keep it lightweight.
+- Do not build a full CRM. We only need what supports solar project acquisition/development and transition into diligence.
+- Do not modify Operations telemetry systems; only link/activate based on state.
+
+REQUIRED OUTCOME
+A user can create and manage a Project from the earliest stage through handoff into Due Diligence, and the UI consistently reflects what modules are active/inactive based on lifecycle stage.
+
+DATA MODEL (MINIMAL)
+Add the minimum fields to the canonical Project record (formerly Site) OR add a small related table if needed:
+- salesStage (enum; include Discovery as earliest stage)
+- source (optional: broker, inbound, developer, outreach, etc.)
+- targetCloseDate (optional)
+- probability (optional)
+- notes (optional)
+- assignedOwnerUserId (optional)
+- pipelineValue (optional; ballpark)
+- nextActionDate + nextActionNotes (optional)
+
+Do NOT add complex contact management unless it already exists.
+
+SALES STAGES (INITIAL)
+Use a simple enum with clear progression:
+- Discovery
+- Qualified
+- LOI / Term Sheet
+- Under Contract
+- Handoff to Due Diligence (this triggers or enables Diligence module focus)
+After Handoff, diligence has its own internal statuses; don’t duplicate them.
+
+UI / NAVIGATION
+- Add a left-nav module: Sales
+- Add:
+  1) Sales Pipeline board (kanban) grouped by salesStage
+  2) Sales List view (table) with filters (stage, owner, needs action, company)
+  3) Project Detail header shows lifecycle stage + sales stage (when applicable)
+- Ensure “Projects” is still the primary unit; Sales is a module view on Projects.
+
+LIFECYCLE WORKFLOW INTEGRATION
+- Define or reuse a lifecycleState field on Project:
+  - Sales / Pre-Diligence
+  - Due Diligence
+  - Implementation
+  - Placed In Service
+  - Operations (O&M)
+- When salesStage moves to “Handoff to Due Diligence,” lifecycleState should transition to “Due Diligence” (with confirmation step or simple rules).
+- Gate module activation:
+  - Sales active only while lifecycleState is Sales/Pre-Diligence (still viewable later for history)
+  - Due Diligence active starting at Due Diligence
+  - Implementation/Asset Mgmt active starting at Implementation
+  - Operations active starting at Placed In Service or Operations
+  - Finance always active but readiness logic changes by lifecycleState
+
+READINESS + GOVERNANCE (LIGHT MVP)
+- Add a “Handoff Checklist” inside Sales that is NOT the diligence checklist:
+  - Minimum required fields to enter diligence (e.g., address, estimated size, utility, basic ownership/contact info)
+- Finance should not allow obligations to be submitted in early Sales stages unless explicitly allowed by role and flagged as “diligence spend.”
+
+AUDITABILITY
+- Log key state transitions:
+  - salesStage changes
+  - lifecycleState changes
+  Include who changed, when, and notes.
+
+EXPORT STUB (ROADMAP)
+- Add a stub action: “Generate Buyer Package (future)” and “Generate Diligence Package”
+  For now, generate a JSON bundle with project identity + sales history + key attachments references.
+
+DELIVERABLES
+1) Implement the Sales module screens and state model
+2) Ensure navigation is consistent: Portfolio / Companies / Projects / Sales / Finance / Due Diligence / Operations
+3) Provide a markdown doc: /docs/sales_module_roadmap_notes.md describing:
+   - How Sales connects to lifecycleState
+   - What we intentionally did NOT build yet (CRM, contacts depth, forecasting complexity)
+   - Next steps for later iterations (deal entity, fund entity, advanced approvals)
+
+ACCEPTANCE TESTS
+- Create a new Project in Sales at Discovery, move through stages, and handoff into Due Diligence.
+- Confirm modules activate/deactivate appropriately based on lifecycleState.
+- Confirm “Project” remains a relabel of the canonical Site record; no duplicate entity.

@@ -42,3 +42,4 @@ from .task_tracker import (
     sv_uploads_router,
     tasks_router,
 )
+from .sales import router as sales_router

@@ -26,6 +26,7 @@ from app.models.device import DeviceStatuses
 from app.models.file import FileParsingStatuses
 from app.models.helpers import utcnow
 from app.static import DASConnectionStatus
+from app.static.sales import LifecycleState, SalesSource, SalesStage
 
 
 class State(enum.Enum):
@@ -351,7 +352,21 @@ class SiteAdditionalFieldList(RelatedBoards, Base):
     rating_agency = Column(VARCHAR, nullable=True)
     date_of_rating = Column(Date, nullable=True)
 
+    # Sales / Pipeline fields
+    lifecycle_state = Column(Enum(LifecycleState), nullable=True, default=LifecycleState.sales_pre_diligence)
+    sales_stage = Column(Enum(SalesStage), nullable=True)
+    sales_source = Column(Enum(SalesSource), nullable=True)
+    target_close_date = Column(Date, nullable=True)
+    probability = Column(Integer, nullable=True)
+    pipeline_value = Column(NUMERIC, nullable=True)
+    assigned_owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    next_action_date = Column(Date, nullable=True)
+    next_action_notes = Column(VARCHAR, nullable=True)
+    sales_notes = Column(VARCHAR, nullable=True)
+    handoff_checklist_completed = Column(Boolean, default=False, nullable=True)
+
     site = relationship("Site", back_populates="additional_fields", uselist=False)
+    assigned_owner = relationship("User", foreign_keys=[assigned_owner_id])
 
     created_at = Column(DateTime, server_default=utcnow())
     updated_at = Column(DateTime, server_default=utcnow())

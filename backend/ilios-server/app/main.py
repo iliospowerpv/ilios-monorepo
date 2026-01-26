@@ -52,6 +52,7 @@ from .routers import (
     reports_router,
     reports_sites_router,
     roles_router,
+    sales_router,
     settings_connections_router,
     settings_sites_router,
     site_visits_router,
@@ -229,6 +230,8 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
     app.include_router(internal_sites_router, prefix="/api/internal", tags=[tags.INTERNAL_SITES_TAG])
     # Breadcrumbs related APIs
     app.include_router(breadcrumbs_router, prefix="/api/breadcrumbs", tags=[tags.BREADCRUMBS_TAG])
+    # Sales related APIs
+    app.include_router(sales_router)
     return app
 
 
