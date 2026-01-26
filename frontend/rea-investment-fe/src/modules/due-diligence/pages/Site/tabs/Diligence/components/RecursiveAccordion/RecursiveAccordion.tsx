@@ -7,26 +7,13 @@ import AccordionDetails from '@mui/material/AccordionDetails';
 import Typography from '@mui/material/Typography';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import Box from '@mui/material/Box';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy
-} from '@dnd-kit/sortable';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 
 import ProgressBar from '../ProgressBar/ProgressBar';
-import SortableDocumentItem from '../DocumentItem/SortableDocumentItem';
+import DocumentItem from '../DocumentItem/DocumentItem';
 import { ApiClient, DiligenceDocument, DiligenceItem } from '../../../../../../../../api';
 import { useNotify } from '../../../../../../../../contexts/notifications/notifications';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 
 interface RecursiveAccordionProps {
   items: DiligenceItem[] | undefined;
@@ -60,30 +47,24 @@ const ManagedAccordion: React.FC<{ children: NonNullable<React.ReactNode>; force
 
 interface SortableDocumentListProps {
   documents: DiligenceDocument[];
+  sectionName: string;
   onRefresh?: () => void;
 }
 
-const SortableDocumentList: React.FC<SortableDocumentListProps> = ({ documents: initialDocuments, onRefresh }) => {
+const SortableDocumentList: React.FC<SortableDocumentListProps> = ({
+  documents: initialDocuments,
+  sectionName,
+  onRefresh
+}) => {
   const { siteId } = useParams();
   const notify = useNotify();
   const [documents, setDocuments] = useState<DiligenceDocument[]>(initialDocuments);
+  const previousDocumentsRef = React.useRef<DiligenceDocument[]>(initialDocuments);
 
   React.useEffect(() => {
     setDocuments(initialDocuments);
+    previousDocumentsRef.current = initialDocuments;
   }, [initialDocuments]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5
-      }
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates
-    })
-  );
-
-  const previousDocumentsRef = React.useRef<DiligenceDocument[]>(initialDocuments);
 
   const reorderMutation = useMutation({
     mutationFn: ({ documentId, position }: { documentId: number; position: number }) =>
@@ -98,33 +79,74 @@ const SortableDocumentList: React.FC<SortableDocumentListProps> = ({ documents: 
     }
   });
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      const oldIndex = documents.findIndex(doc => doc.id === active.id);
-      const newIndex = documents.findIndex(doc => doc.id === over.id);
-
-      previousDocumentsRef.current = documents;
-      const newDocuments = arrayMove(documents, oldIndex, newIndex);
-      setDocuments(newDocuments);
-
-      const movedDoc = documents[oldIndex];
-      reorderMutation.mutate({
-        documentId: movedDoc.id,
-        position: newIndex + 1
-      });
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) {
+      return;
     }
+
+    if (result.destination.index === result.source.index) {
+      return;
+    }
+
+    const newDocuments = Array.from(documents);
+    const [removed] = newDocuments.splice(result.source.index, 1);
+    newDocuments.splice(result.destination.index, 0, removed);
+
+    previousDocumentsRef.current = documents;
+    setDocuments(newDocuments);
+
+    reorderMutation.mutate({
+      documentId: removed.id,
+      position: result.destination.index + 1
+    });
   };
 
+  const droppableId = `section-${sectionName.replace(/\s+/g, '-')}`;
+
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <SortableContext items={documents.map(doc => doc.id)} strategy={verticalListSortingStrategy}>
-        {documents.map(document => (
-          <SortableDocumentItem key={`doc+${document.id}`} document={document} onRefresh={onRefresh} />
-        ))}
-      </SortableContext>
-    </DndContext>
+    <DragDropContext onDragEnd={handleDragEnd}>
+      <Droppable droppableId={droppableId}>
+        {provided => (
+          <div ref={provided.innerRef} {...provided.droppableProps}>
+            {documents.map((document, index) => (
+              <Draggable key={document.id} draggableId={`doc-${document.id}`} index={index}>
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    style={{
+                      ...provided.draggableProps.style,
+                      display: 'flex',
+                      alignItems: 'stretch',
+                      backgroundColor: snapshot.isDragging ? '#f5f5f5' : 'transparent'
+                    }}
+                  >
+                    <div
+                      {...provided.dragHandleProps}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '32px',
+                        cursor: 'grab',
+                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                        borderBottom: '1px solid #E0E0E0'
+                      }}
+                    >
+                      <DragIndicatorIcon sx={{ color: 'rgba(0, 0, 0, 0.4)', fontSize: '20px' }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <DocumentItem document={document} onRefresh={onRefresh} />
+                    </div>
+                  </div>
+                )}
+              </Draggable>
+            ))}
+            {provided.placeholder}
+          </div>
+        )}
+      </Droppable>
+    </DragDropContext>
   );
 };
 
@@ -156,7 +178,7 @@ const RecursiveAccordion: React.FC<RecursiveAccordionProps> = ({ items, forceExp
             </Box>
           </AccordionSummary>
           <AccordionDetails sx={{ padding: '0' }}>
-            <SortableDocumentList documents={item.documents} onRefresh={onRefresh} />
+            <SortableDocumentList documents={item.documents} sectionName={item.name} onRefresh={onRefresh} />
             {!!item?.related_sections.length && (
               <Box sx={{ padding: '16px' }}>
                 <RecursiveAccordion forceExpanded={forceExpanded} items={item.related_sections} onRefresh={onRefresh} />
