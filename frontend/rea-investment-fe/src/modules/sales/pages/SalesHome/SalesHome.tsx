@@ -24,7 +24,9 @@ import {
   IconButton,
   Menu,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ViewKanbanIcon from '@mui/icons-material/ViewKanban';
@@ -34,7 +36,19 @@ import AddIcon from '@mui/icons-material/Add';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  DndContext,
+  DragOverlay,
+  useDraggable,
+  useDroppable,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragStartEvent,
+  DragEndEvent
+} from '@dnd-kit/core';
 
 import { useEntityContext } from '../../../../contexts/entityContext';
 import { dealsApi } from '../../api/sales';
@@ -75,9 +89,16 @@ interface DealCardProps {
   deal: Deal;
   onView: () => void;
   onEdit: () => void;
+  isDragging?: boolean;
 }
 
-const DealCard: React.FC<DealCardProps> = ({ deal, onView, onEdit }) => {
+const DealCardContent: React.FC<DealCardProps & { dragHandleProps?: any }> = ({
+  deal,
+  onView,
+  onEdit,
+  isDragging,
+  dragHandleProps
+}) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
   const isOverdue = deal.next_action_date && new Date(deal.next_action_date) < new Date();
@@ -107,11 +128,17 @@ const DealCard: React.FC<DealCardProps> = ({ deal, onView, onEdit }) => {
         mb: 1,
         transition: 'box-shadow 0.2s',
         '&:hover': { boxShadow: 3 },
-        opacity: deal.is_converted ? 0.6 : 1
+        opacity: isDragging ? 0.5 : deal.is_converted ? 0.6 : 1,
+        cursor: deal.is_converted ? 'default' : 'grab'
       }}
     >
       <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          {!deal.is_converted && (
+            <Box {...dragHandleProps} sx={{ cursor: 'grab', mr: 0.5, mt: 0.25, color: 'text.secondary' }}>
+              <DragIndicatorIcon fontSize="small" />
+            </Box>
+          )}
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography variant="subtitle2" fontWeight={600} noWrap>
               {deal.name}
@@ -184,6 +211,26 @@ const DealCard: React.FC<DealCardProps> = ({ deal, onView, onEdit }) => {
   );
 };
 
+const DraggableDealCard: React.FC<DealCardProps> = ({ deal, onView, onEdit }) => {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `deal-${deal.id}`,
+    data: { deal },
+    disabled: deal.is_converted
+  });
+
+  const style = transform
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`
+      }
+    : undefined;
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <DealCardContent deal={deal} onView={onView} onEdit={onEdit} isDragging={isDragging} />
+    </div>
+  );
+};
+
 interface KanbanColumnProps {
   stage: SalesStage;
   deals: Deal[];
@@ -191,20 +238,29 @@ interface KanbanColumnProps {
   onDealEdit: (dealId: number) => void;
 }
 
-const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, deals, onDealView, onDealEdit }) => {
+const DroppableKanbanColumn: React.FC<KanbanColumnProps> = ({ stage, deals, onDealView, onDealEdit }) => {
+  const { isOver, setNodeRef } = useDroppable({
+    id: `stage-${stage}`,
+    data: { stage }
+  });
+
   const totalValue = deals.reduce((sum, d) => sum + (d.pipeline_value || 0), 0);
   const isClosed = CLOSED_STAGES.includes(stage);
 
   return (
     <Paper
+      ref={setNodeRef}
       sx={{
         flex: '0 0 200px',
         minWidth: 180,
         maxWidth: 220,
-        bgcolor: isClosed ? 'grey.100' : 'grey.50',
+        bgcolor: isOver ? 'primary.50' : isClosed ? 'grey.100' : 'grey.50',
         p: 1.5,
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        border: isOver ? '2px dashed' : '2px solid transparent',
+        borderColor: isOver ? 'primary.main' : 'transparent',
+        transition: 'all 0.2s ease'
       }}
       elevation={0}
     >
@@ -228,9 +284,9 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, deals, onDealView, o
         {formatCurrency(totalValue)}
       </Typography>
 
-      <Box sx={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 300px)' }}>
+      <Box sx={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 300px)', minHeight: 100 }}>
         {deals.map(deal => (
-          <DealCard
+          <DraggableDealCard
             key={deal.id}
             deal={deal}
             onView={() => onDealView(deal.id)}
@@ -239,7 +295,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, deals, onDealView, o
         ))}
         {deals.length === 0 && (
           <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block', py: 2 }}>
-            No deals
+            {isOver ? 'Drop here' : 'No deals'}
           </Typography>
         )}
       </Box>
@@ -274,6 +330,20 @@ export const SalesHome: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [dealForm, setDealForm] = useState<DealCreate>(initialDealForm);
+  const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8
+      }
+    })
+  );
 
   useEffect(() => {
     setCurrentModule('sales');
@@ -293,6 +363,57 @@ export const SalesHome: React.FC = () => {
       setDealForm({ ...initialDealForm, company_id: currentCompany?.id || 0 });
     }
   });
+
+  const stageTransitionMutation = useMutation({
+    mutationFn: ({ dealId, newStage }: { dealId: number; newStage: SalesStage }) =>
+      dealsApi.transitionStage(dealId, newStage),
+    onSuccess: (_, { newStage }) => {
+      queryClient.invalidateQueries({ queryKey: ['deals-pipeline'] });
+      setSnackbar({
+        open: true,
+        message: `Deal moved to ${SALES_STAGE_LABELS[newStage]}`,
+        severity: 'success'
+      });
+    },
+    onError: (error: any) => {
+      setSnackbar({
+        open: true,
+        message: error?.response?.data?.detail || 'Failed to move deal',
+        severity: 'error'
+      });
+    }
+  });
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const { active } = event;
+    const deal = active.data.current?.deal as Deal;
+    if (deal) {
+      setActiveDeal(deal);
+    }
+  }, []);
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      setActiveDeal(null);
+
+      if (!over) return;
+
+      const deal = active.data.current?.deal as Deal;
+      const targetStage = over.data.current?.stage as SalesStage;
+
+      if (!deal || !targetStage) return;
+      if (deal.sales_stage === targetStage) return;
+      if (deal.is_converted) return;
+
+      stageTransitionMutation.mutate({ dealId: deal.id, newStage: targetStage });
+    },
+    [stageTransitionMutation]
+  );
+
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
 
   const handleDealView = useCallback(
     (dealId: number) => {
@@ -404,17 +525,40 @@ export const SalesHome: React.FC = () => {
       {!isLoading && pipeline && (
         <Box sx={{ flex: 1, p: 2, overflow: 'auto' }}>
           {viewMode === 'kanban' ? (
-            <Box sx={{ display: 'flex', gap: 1.5, height: '100%', overflowX: 'auto', pb: 2 }}>
-              {allStages.map(stage => (
-                <KanbanColumn
-                  key={stage}
-                  stage={stage}
-                  deals={(pipeline[stageKeyMap[stage]] as Deal[]) || []}
-                  onDealView={handleDealView}
-                  onDealEdit={handleDealEdit}
-                />
-              ))}
-            </Box>
+            <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+              <Box sx={{ display: 'flex', gap: 1.5, height: '100%', overflowX: 'auto', pb: 2 }}>
+                {allStages.map(stage => (
+                  <DroppableKanbanColumn
+                    key={stage}
+                    stage={stage}
+                    deals={(pipeline[stageKeyMap[stage]] as Deal[]) || []}
+                    onDealView={handleDealView}
+                    onDealEdit={handleDealEdit}
+                  />
+                ))}
+              </Box>
+              <DragOverlay>
+                {activeDeal ? (
+                  <Card
+                    sx={{
+                      width: 200,
+                      boxShadow: 6,
+                      opacity: 0.9,
+                      transform: 'rotate(3deg)'
+                    }}
+                  >
+                    <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                      <Typography variant="subtitle2" fontWeight={600} noWrap>
+                        {activeDeal.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {formatCurrency(activeDeal.pipeline_value)}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
           ) : (
             <Paper sx={{ p: 2 }}>
               <Typography variant="body2" color="text.secondary">
@@ -424,6 +568,17 @@ export const SalesHome: React.FC = () => {
           )}
         </Box>
       )}
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
 
       <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>Add New Deal</DialogTitle>
