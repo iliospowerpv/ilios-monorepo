@@ -5,10 +5,15 @@ import Paper from '@mui/material/Paper';
 import Grid from '@mui/material/Grid';
 import SolarPowerIcon from '@mui/icons-material/SolarPower';
 import BusinessIcon from '@mui/icons-material/Business';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import WhatshotIcon from '@mui/icons-material/Whatshot';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
 import Chip from '@mui/material/Chip';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAccessibleEntities } from '../../hooks/useAccessibleEntities';
 import { useEntityContext } from '../../contexts/entityContext';
+import { buildLensRoute, ModuleType } from '../../utils/routing';
 
 export const ProjectView: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -89,30 +94,29 @@ export const ProjectView: React.FC = () => {
           Quick Links
         </Typography>
         <Grid container spacing={2}>
-          <Grid item>
-            <Paper
-              sx={{ p: 2, cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}
-              onClick={() => navigate(`/asset-management/project/${project.id}`)}
-            >
-              Asset Management
-            </Paper>
-          </Grid>
-          <Grid item>
-            <Paper
-              sx={{ p: 2, cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}
-              onClick={() => navigate(`/finance/project/${project.id}`)}
-            >
-              Finance
-            </Paper>
-          </Grid>
-          <Grid item>
-            <Paper
-              sx={{ p: 2, cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}
-              onClick={() => navigate(`/operations-and-maintenance/project/${project.id}`)}
-            >
-              O&M
-            </Paper>
-          </Grid>
+          {[
+            { module: 'asset-management' as ModuleType, label: 'Asset Management', icon: <AccountBalanceIcon /> },
+            { module: 'finance' as ModuleType, label: 'Finance', icon: <AccountBalanceWalletIcon /> },
+            { module: 'operations-and-maintenance' as ModuleType, label: 'O&M', icon: <WhatshotIcon /> },
+            { module: 'due-diligence' as ModuleType, label: 'Due Diligence', icon: <FactCheckIcon /> }
+          ].map(({ module, label, icon }) => (
+            <Grid item key={module}>
+              <Paper
+                sx={{
+                  p: 2,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  '&:hover': { bgcolor: 'action.hover' }
+                }}
+                onClick={() => navigate(buildLensRoute(module, 'project', { projectId: project.id }))}
+              >
+                {icon}
+                {label}
+              </Paper>
+            </Grid>
+          ))}
         </Grid>
       </Box>
     </Box>

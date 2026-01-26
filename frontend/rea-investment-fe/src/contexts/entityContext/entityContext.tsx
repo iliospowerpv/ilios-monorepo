@@ -206,7 +206,7 @@ export const EntityContextProvider: React.FC<{ children: React.ReactNode }> = ({
       case 'my-portfolio':
         return '/my-portfolio';
       default:
-        return '/dashboard';
+        return '/my-portfolio';
     }
   }, []);
 
@@ -316,16 +316,22 @@ export const EntityContextProvider: React.FC<{ children: React.ReactNode }> = ({
 
       switch (level) {
         case 'portfolio':
-          navigate(basePath);
+          navigate(`${basePath}/scope/portfolio`);
           break;
         case 'company':
           if (currentCompany) {
-            navigate(`${basePath}/companies/${currentCompany.id}`);
+            navigate(`${basePath}/scope/company/${currentCompany.id}`);
+          } else {
+            navigate('/companies');
           }
           break;
         case 'project':
-          if (currentCompany && currentProject) {
-            navigate(`${basePath}/companies/${currentCompany.id}/sites/${currentProject.id}`);
+          if (currentProject) {
+            navigate(`${basePath}/scope/project/${currentProject.id}`);
+          } else if (currentCompany) {
+            navigate(`/projects?companyId=${currentCompany.id}`);
+          } else {
+            navigate('/projects');
           }
           break;
       }

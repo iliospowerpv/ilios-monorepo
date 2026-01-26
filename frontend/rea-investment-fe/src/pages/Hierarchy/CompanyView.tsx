@@ -5,9 +5,14 @@ import Paper from '@mui/material/Paper';
 import Grid from '@mui/material/Grid';
 import BusinessIcon from '@mui/icons-material/Business';
 import SolarPowerIcon from '@mui/icons-material/SolarPower';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import WhatshotIcon from '@mui/icons-material/Whatshot';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAccessibleEntities } from '../../hooks/useAccessibleEntities';
 import { useEntityContext } from '../../contexts/entityContext';
+import { buildLensRoute, ModuleType } from '../../utils/routing';
 
 export const CompanyView: React.FC = () => {
   const { companyId } = useParams<{ companyId: string }>();
@@ -69,6 +74,37 @@ export const CompanyView: React.FC = () => {
           </Paper>
         </Grid>
       </Grid>
+
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h5" gutterBottom>
+          Quick Links
+        </Typography>
+        <Grid container spacing={2}>
+          {[
+            { module: 'asset-management' as ModuleType, label: 'Asset Management', icon: <AccountBalanceIcon /> },
+            { module: 'finance' as ModuleType, label: 'Finance', icon: <AccountBalanceWalletIcon /> },
+            { module: 'operations-and-maintenance' as ModuleType, label: 'O&M', icon: <WhatshotIcon /> },
+            { module: 'due-diligence' as ModuleType, label: 'Due Diligence', icon: <FactCheckIcon /> }
+          ].map(({ module, label, icon }) => (
+            <Grid item key={module}>
+              <Paper
+                sx={{
+                  p: 2,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  '&:hover': { bgcolor: 'action.hover' }
+                }}
+                onClick={() => navigate(buildLensRoute(module, 'company', { companyId: company.id }))}
+              >
+                {icon}
+                {label}
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
 
       <Box>
         <Typography variant="h5" gutterBottom>
