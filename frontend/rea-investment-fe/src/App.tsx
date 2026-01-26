@@ -25,6 +25,7 @@ import { AccountSettings } from './pages/Account';
 import { SecuritySettings } from './pages/Security';
 import { HelpResources } from './pages/Help';
 import { PortfolioView, CompaniesPickerView, CompanyView, ProjectsPickerView, ProjectView } from './pages/Hierarchy';
+import { ScopedModuleRoute } from './components/layout/ScopedModuleRoute';
 
 import {
   SiteTask as AMSiteTask,
@@ -135,14 +136,123 @@ const router = createBrowserRouter(
         <Route path="/companies/:companyId" element={<CompanyView />} />
         <Route path="/projects" element={<ProjectsPickerView />} />
         <Route path="/projects/:projectId" element={<ProjectView />} />
+
+        {/* Dashboard Module with Scoped Lens Routes */}
+        <Route path="/dashboard" element={<DashboardModuleContainer />}>
+          <Route
+            path="scope/portfolio"
+            element={
+              <ScopedModuleRoute scope="portfolio">
+                <DashboardPage.Component />
+              </ScopedModuleRoute>
+            }
+          />
+          <Route
+            path="scope/company/:companyId"
+            element={
+              <ScopedModuleRoute scope="company">
+                <DashboardPage.Component />
+              </ScopedModuleRoute>
+            }
+          />
+          <Route
+            path="scope/project/:projectId"
+            element={
+              <ScopedModuleRoute scope="project">
+                <DashboardPage.Component />
+              </ScopedModuleRoute>
+            }
+          />
+        </Route>
         <Route path="/dashboard" element={<DashboardModuleContainer />}>
           <Route index handle={DashboardPage.createHandle()} element={<DashboardPage.Component />} />
+        </Route>
+        {/* My Portfolio Module with Scoped Lens Routes */}
+        <Route path="/my-portfolio" element={<PortfolioModuleContainer />}>
+          <Route
+            path="scope/portfolio"
+            element={
+              <ScopedModuleRoute scope="portfolio">
+                <PortfolioPage.Component />
+              </ScopedModuleRoute>
+            }
+          />
+          <Route
+            path="scope/company/:companyId"
+            element={
+              <ScopedModuleRoute scope="company">
+                <PortfolioPage.Component />
+              </ScopedModuleRoute>
+            }
+          />
+          <Route
+            path="scope/project/:projectId"
+            element={
+              <ScopedModuleRoute scope="project">
+                <PortfolioPage.Component />
+              </ScopedModuleRoute>
+            }
+          />
         </Route>
         <Route path="/my-portfolio" element={<PortfolioModuleContainer />}>
           <Route index handle={PortfolioPage.createHandle()} element={<PortfolioPage.Component />} />
         </Route>
+        {/* Reports Module with Scoped Lens Routes */}
+        <Route path="/reports" element={<ReportsModuleContainer />}>
+          <Route
+            path="scope/portfolio"
+            element={
+              <ScopedModuleRoute scope="portfolio">
+                <AllReports.Component />
+              </ScopedModuleRoute>
+            }
+          />
+          <Route
+            path="scope/company/:companyId"
+            element={
+              <ScopedModuleRoute scope="company">
+                <AllReports.Component />
+              </ScopedModuleRoute>
+            }
+          />
+          <Route
+            path="scope/project/:projectId"
+            element={
+              <ScopedModuleRoute scope="project">
+                <AllReports.Component />
+              </ScopedModuleRoute>
+            }
+          />
+        </Route>
         <Route path="/reports" element={<ReportsModuleContainer />}>
           <Route index handle={AllReports.createHandle()} element={<AllReports.Component />} />
+        </Route>
+        {/* Finance Module with Scoped Lens Routes */}
+        <Route path="/finance" element={<FinanceModuleContainer />}>
+          <Route
+            path="scope/portfolio"
+            element={
+              <ScopedModuleRoute scope="portfolio">
+                <FinanceLanding />
+              </ScopedModuleRoute>
+            }
+          />
+          <Route
+            path="scope/company/:companyId"
+            element={
+              <ScopedModuleRoute scope="company">
+                <FinanceHome />
+              </ScopedModuleRoute>
+            }
+          />
+          <Route
+            path="scope/project/:projectId"
+            element={
+              <ScopedModuleRoute scope="project">
+                <SiteFinance />
+              </ScopedModuleRoute>
+            }
+          />
         </Route>
         <Route path="/finance" element={<FinanceModuleContainer />}>
           <Route index handle={createFinanceLandingHandle()} element={<FinanceLanding />} />
@@ -153,9 +263,63 @@ const router = createBrowserRouter(
             element={<SiteFinance />}
           />
         </Route>
+        {/* Sales Module with Scoped Lens Routes */}
+        <Route path="/sales" element={<SalesModuleContainer />}>
+          <Route
+            path="scope/portfolio"
+            element={
+              <ScopedModuleRoute scope="portfolio">
+                <SalesHome />
+              </ScopedModuleRoute>
+            }
+          />
+          <Route
+            path="scope/company/:companyId"
+            element={
+              <ScopedModuleRoute scope="company">
+                <SalesHome />
+              </ScopedModuleRoute>
+            }
+          />
+          <Route
+            path="scope/project/:projectId"
+            element={
+              <ScopedModuleRoute scope="project">
+                <SalesHome />
+              </ScopedModuleRoute>
+            }
+          />
+        </Route>
         <Route path="/sales" element={<SalesModuleContainer />}>
           <Route index handle={createSalesHomeHandle(queryClient)} element={<SalesHome />} />
           <Route path="deal/:dealId" element={<DealDetail />} />
+        </Route>
+        {/* Due Diligence Module with Scoped Lens Routes */}
+        <Route path="/due-diligence" element={<DDModuleContainer />}>
+          <Route
+            path="scope/portfolio"
+            element={
+              <ScopedModuleRoute scope="portfolio">
+                <DPDiligencePage.Component />
+              </ScopedModuleRoute>
+            }
+          />
+          <Route
+            path="scope/company/:companyId"
+            element={
+              <ScopedModuleRoute scope="company">
+                <DPDiligencePage.Component />
+              </ScopedModuleRoute>
+            }
+          />
+          <Route
+            path="scope/project/:projectId"
+            element={
+              <ScopedModuleRoute scope="project">
+                <DPDiligencePage.Component />
+              </ScopedModuleRoute>
+            }
+          />
         </Route>
         <Route path="/due-diligence" element={<DDModuleContainer />}>
           <Route index handle={DPDiligencePage.createHandle()} element={<DPDiligencePage.Component />} />
@@ -188,6 +352,33 @@ const router = createBrowserRouter(
             handle={DPDueDiligenceDocument.createHandle(queryClient)}
             loader={withAuthControl(DPDueDiligenceDocument.createLoader(queryClient))}
             element={<DPDueDiligenceDocument.Component />}
+          />
+        </Route>
+        {/* O&M Module with Scoped Lens Routes */}
+        <Route path="/operations-and-maintenance" element={<OMModuleContainer />}>
+          <Route
+            path="scope/portfolio"
+            element={
+              <ScopedModuleRoute scope="portfolio">
+                <OMAllCompanies.Component />
+              </ScopedModuleRoute>
+            }
+          />
+          <Route
+            path="scope/company/:companyId"
+            element={
+              <ScopedModuleRoute scope="company">
+                <OMCompanyDetails />
+              </ScopedModuleRoute>
+            }
+          />
+          <Route
+            path="scope/project/:projectId"
+            element={
+              <ScopedModuleRoute scope="project">
+                <OMSiteDetails />
+              </ScopedModuleRoute>
+            }
           />
         </Route>
         <Route path="/operations-and-maintenance" element={<OMModuleContainer />}>
@@ -290,6 +481,33 @@ const router = createBrowserRouter(
           {/*  loader={withAuthControl(createDeviceDetailsLoader(queryClient))}*/}
           {/*  element={<OMDeviceDetails tabId="alerts" />}*/}
           {/*/>*/}
+        </Route>
+        {/* Asset Management Module with Scoped Lens Routes */}
+        <Route path="/asset-management" element={<AMModuleContainer />}>
+          <Route
+            path="scope/portfolio"
+            element={
+              <ScopedModuleRoute scope="portfolio">
+                <AMRoot.Component />
+              </ScopedModuleRoute>
+            }
+          />
+          <Route
+            path="scope/company/:companyId"
+            element={
+              <ScopedModuleRoute scope="company">
+                <AMCompanyDetails.Component />
+              </ScopedModuleRoute>
+            }
+          />
+          <Route
+            path="scope/project/:projectId"
+            element={
+              <ScopedModuleRoute scope="project">
+                <AMSiteDetails.Component />
+              </ScopedModuleRoute>
+            }
+          />
         </Route>
         <Route path="/asset-management" element={<AMModuleContainer />}>
           <Route path="/asset-management" handle={AMRoot.createHandle()} element={<AMRoot.Component />} />

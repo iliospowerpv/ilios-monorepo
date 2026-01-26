@@ -86,11 +86,19 @@ export const EntityContextProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const currentLevel = useMemo((): EntityLevel => {
     const path = location.pathname;
-    if (path.includes('/sites/') || path.includes('/projects/') || path.match(/\/project\/\d+/)) {
+    if (
+      path.includes('/scope/project/') ||
+      path.includes('/sites/') ||
+      path.includes('/projects/') ||
+      path.match(/\/project\/\d+/)
+    ) {
       return 'project';
     }
-    if (path.includes('/companies/') || path.match(/\/company\/\d+/)) {
+    if (path.includes('/scope/company/') || path.includes('/companies/') || path.match(/\/company\/\d+/)) {
       return 'company';
+    }
+    if (path.includes('/scope/portfolio')) {
+      return 'portfolio';
     }
     return 'portfolio';
   }, [location.pathname]);
@@ -123,7 +131,19 @@ export const EntityContextProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const path = location.pathname;
 
-    if (path.includes('/project/') || path.includes('/sites/') || path.includes('/projects/')) {
+    if (path.includes('/scope/project/')) {
+      const projectMatch = path.match(/\/scope\/project\/(\d+)/);
+      if (projectMatch) {
+        setCurrentScopeState('project');
+      }
+    } else if (path.includes('/scope/company/')) {
+      const companyMatch = path.match(/\/scope\/company\/(\d+)/);
+      if (companyMatch) {
+        setCurrentScopeState('company');
+      }
+    } else if (path.includes('/scope/portfolio')) {
+      setCurrentScopeState('portfolio');
+    } else if (path.includes('/project/') || path.includes('/sites/') || path.includes('/projects/')) {
       const projectMatch = path.match(/\/(?:project|sites|projects)\/(\d+)/);
       if (projectMatch) {
         setCurrentScopeState('project');
@@ -216,15 +236,15 @@ export const EntityContextProvider: React.FC<{ children: React.ReactNode }> = ({
 
       switch (scope) {
         case 'portfolio':
-          return `${basePath}/portfolio`;
+          return `${basePath}/scope/portfolio`;
         case 'company':
           if (currentCompany) {
-            return `${basePath}/company/${currentCompany.id}`;
+            return `${basePath}/scope/company/${currentCompany.id}`;
           }
           return '/companies';
         case 'project':
           if (currentProject) {
-            return `${basePath}/project/${currentProject.id}`;
+            return `${basePath}/scope/project/${currentProject.id}`;
           }
           if (currentCompany) {
             return `/projects?companyId=${currentCompany.id}`;
@@ -263,7 +283,7 @@ export const EntityContextProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (stayInModule && currentModule) {
         const basePath = getModuleBasePath(currentModule);
-        navigate(`${basePath}/company/${company.id}`);
+        navigate(`${basePath}/scope/company/${company.id}`);
       } else {
         navigate(`/companies/${company.id}`);
       }
@@ -281,7 +301,7 @@ export const EntityContextProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (stayInModule && currentModule) {
         const basePath = getModuleBasePath(currentModule);
-        navigate(`${basePath}/project/${project.id}`);
+        navigate(`${basePath}/scope/project/${project.id}`);
       } else {
         navigate(`/projects/${project.id}`);
       }
