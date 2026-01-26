@@ -43,7 +43,7 @@ const tabsData: TabData[] = [
   },
   {
     id: 'sites',
-    label: 'Sites',
+    label: 'Projects',
     link: '/operations-and-maintenance/companies/:companyId/sites',
     disabled: false,
     icon: <LocationOnIcon />,

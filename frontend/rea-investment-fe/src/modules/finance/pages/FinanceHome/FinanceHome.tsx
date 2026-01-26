@@ -183,7 +183,7 @@ export const FinanceHome: React.FC = () => {
                     {summary.sites_finance_ready}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Sites Finance Ready
+                    Projects Finance Ready
                   </Typography>
                 </Box>
               </Stack>
@@ -200,7 +200,7 @@ export const FinanceHome: React.FC = () => {
                     {summary.sites_not_ready}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Sites Not Ready
+                    Projects Not Ready
                   </Typography>
                 </Box>
               </Stack>
@@ -233,13 +233,13 @@ export const FinanceHome: React.FC = () => {
         </Grid>
       </Grid>
       <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mt: 4, mb: 2 }}>
-        Sites
+        Projects
       </Typography>
       <TableContainer component={Paper} variant="outlined">
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Site</TableCell>
+              <TableCell>Project</TableCell>
               <TableCell>Status</TableCell>
               <TableCell align="right">Planned</TableCell>
               <TableCell align="right">Authorized</TableCell>

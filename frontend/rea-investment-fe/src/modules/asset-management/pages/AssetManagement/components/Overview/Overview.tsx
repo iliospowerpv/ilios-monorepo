@@ -16,7 +16,7 @@ const columns = [
     sortable: true
   },
   {
-    headerName: 'Number of Sites',
+    headerName: 'Number of Projects',
     field: 'total_sites',
     flex: 1,
     editable: false,

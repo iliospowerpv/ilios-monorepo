@@ -51,7 +51,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = props => {
       {!hideEditActions && (
         <>
           {isAdd && (
-            <IconButton title="Add a New Site" onClick={() => onAdd && navigate(onAdd)} size="small">
+            <IconButton title="Add a New Project" onClick={() => onAdd && navigate(onAdd)} size="small">
               <AddIcon fontSize="small" />
             </IconButton>
           )}

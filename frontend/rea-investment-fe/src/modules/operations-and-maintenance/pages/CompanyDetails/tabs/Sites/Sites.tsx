@@ -103,7 +103,7 @@ const columns: ColDef[] = [
     cellRenderer: alertsIndicatorCellRenderer
   },
   {
-    headerName: 'Site Name',
+    headerName: 'Project Name',
     field: 'name',
     flex: 1,
     sortable: false,
@@ -225,7 +225,7 @@ const SitesTab: React.FC<CompanyDetailsTabProps> = ({ companyDetails }) => {
       {showAddBtn && (
         <Box display="flex" flexDirection="row" justifyContent="flex-end" marginBottom="16px">
           <Button variant="contained" color="primary" data-testid="actions__add-btn" onClick={handleAddClick}>
-            Add a New Site
+            Add a New Project
           </Button>
         </Box>
       )}

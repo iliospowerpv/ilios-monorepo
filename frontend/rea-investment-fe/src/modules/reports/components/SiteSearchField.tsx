@@ -79,9 +79,9 @@ export const SiteSearchField: React.ForwardRefExoticComponent<AssigneeSearchFiel
     const inputRenderer = (params: AutocompleteRenderInputParams) => (
       <TextField
         {...params}
-        placeholder={placeholder || 'Site'}
+        placeholder={placeholder || 'Project'}
         error={!!error}
-        helperText={error ? 'An error occurred while retrieving the site list' : undefined}
+        helperText={error ? 'An error occurred while retrieving the project list' : undefined}
         inputRef={ref}
         InputProps={{
           ...params.InputProps,

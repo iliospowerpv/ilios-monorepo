@@ -7,7 +7,7 @@ import formatFloatValue from '../../../../../../utils/formatters/formatFloatValu
 
 const columns = [
   {
-    headerName: 'Site Name',
+    headerName: 'Project Name',
     field: 'name',
     flex: 1,
     checked: true,

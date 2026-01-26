@@ -372,7 +372,7 @@ export const SiteFinance: React.FC = () => {
   useEffect(() => {
     if (summary && companyId && siteId) {
       setCurrentCompany({ id: Number(companyId), name: summary.company_name || `Company ${companyId}` });
-      setCurrentProject({ id: Number(siteId), name: summary.site_name || `Site ${siteId}` });
+      setCurrentProject({ id: Number(siteId), name: summary.site_name || `Project ${siteId}` });
     }
   }, [summary, companyId, siteId, setCurrentCompany, setCurrentProject]);
 
@@ -412,7 +412,7 @@ export const SiteFinance: React.FC = () => {
     <Box p={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
         <Typography variant="h5" sx={{ fontWeight: 600 }}>
-          Site Finance: {summary.site_name}
+          Project Finance: {summary.site_name}
         </Typography>
         <Button variant="outlined" startIcon={<DownloadIcon />} onClick={handleDownloadPackage} size="small">
           Export Data Room Package

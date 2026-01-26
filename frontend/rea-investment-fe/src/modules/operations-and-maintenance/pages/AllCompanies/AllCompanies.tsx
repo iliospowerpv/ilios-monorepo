@@ -37,7 +37,7 @@ const columns: ColDef[] = [
     flex: 1
   },
   {
-    headerName: 'Number of Sites',
+    headerName: 'Number of Projects',
     field: 'total_sites',
     flex: 1
   },

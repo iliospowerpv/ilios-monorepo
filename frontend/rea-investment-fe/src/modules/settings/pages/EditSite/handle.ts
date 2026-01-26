@@ -2,7 +2,7 @@ import { RouteHandle } from '../../../../handles';
 
 export const createEditSiteHandle = () => {
   return RouteHandle.createHandle({
-    crumbsBuilder: () => [{ title: 'Settings', link: '/settings' }, { title: 'Edit Site' }]
+    crumbsBuilder: () => [{ title: 'Settings', link: '/settings' }, { title: 'Edit Project' }]
   });
 };
 

@@ -30,7 +30,7 @@ const tabData: TabInfo[] = [
   {
     id: 'sites',
     link: '/asset-management/sites',
-    label: 'Sites',
+    label: 'Projects',
     disabled: false,
     icon: <LocationOnIcon />,
     content: <Sites />
@@ -43,7 +43,7 @@ interface AssetManagementProps {
 
 const AssetManagement: React.FC<AssetManagementProps> = ({ tabId }) => {
   const activeTab = tabId || 'overview';
-  const title = activeTab === 'sites' ? 'Sites' : 'Companies';
+  const title = activeTab === 'sites' ? 'Projects' : 'Companies';
 
   const content = React.useMemo(() => {
     const tab = tabData.find(({ id }) => id === activeTab);

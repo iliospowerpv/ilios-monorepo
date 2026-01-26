@@ -129,11 +129,11 @@ const SitesTable: React.FC<SitesTableProps> = ({ columns, companyId }) => {
         showFilter={false}
         showColumns={true}
         reversOrder={true}
-        searchPlaceholder="Search by Site Name"
+        searchPlaceholder="Search by Project Name"
         onSearch={handleSearch}
         onFilter={handleFilterOpen}
         onColumns={handleColumnsOpen}
-        btnAddLabel="Add a New Site"
+        btnAddLabel="Add a New Project"
         onAdd={handleAddClick}
         showAdd={showAddBtn}
       />

@@ -40,7 +40,7 @@ const tabsData: TabData[] = [
   },
   {
     id: 'sites',
-    label: 'Sites',
+    label: 'Projects',
     link: '/settings/my-company/sites',
     disabled: false,
     icon: <LocationOnIcon />,

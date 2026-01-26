@@ -41,7 +41,7 @@ const tabsData: TabData[] = [
   },
   {
     id: 'sites',
-    label: 'Sites',
+    label: 'Projects',
     link: '/asset-management/companies/:companyId/sites',
     disabled: false,
     icon: <LocationOnIcon />,

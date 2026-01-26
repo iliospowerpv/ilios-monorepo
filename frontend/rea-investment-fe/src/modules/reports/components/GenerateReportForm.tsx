@@ -126,7 +126,7 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({ onFilterChange }) => {
           name="site"
           control={control}
           rules={{
-            required: 'Site is required field'
+            required: 'Project is required field'
           }}
           render={({ field: { ref, value, onChange, ...field } }) => (
             <SiteSearchField

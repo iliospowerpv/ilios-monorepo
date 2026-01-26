@@ -24,7 +24,7 @@ interface SettingsProps {
 const tabData: TabInfo[] = [
   { id: 'users', link: '/settings/users', label: 'Users', disabled: false, content: <Users /> },
   { id: 'companies', link: '/settings/companies', label: 'Companies', disabled: false, content: <Companies /> },
-  { id: 'sites', link: '/settings/sites', label: 'Sites', disabled: false, content: <Sites /> },
+  { id: 'sites', link: '/settings/sites', label: 'Projects', disabled: false, content: <Sites /> },
   { id: 'audit-logs', link: '/settings/audit-logs', label: 'Audit Logs', disabled: false, content: <AuditLogs /> },
   { id: 'notification', link: '/', label: 'Notification', disabled: true, content: <Box>Notification Tab</Box> },
   { id: 'alerts', link: '/', label: 'Alerts', disabled: true, content: <Box>Alerts</Box> }

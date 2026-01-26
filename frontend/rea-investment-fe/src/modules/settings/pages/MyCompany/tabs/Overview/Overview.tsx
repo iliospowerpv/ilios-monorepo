@@ -87,7 +87,7 @@ export const OverviewTab: React.FC<CompanyDetailsTabProps> = ({ companyDetails }
   const sitesSummary = {
     title: 'Portfolio Summary',
     infoTableData: [
-      { field: 'Total Sites', value: companyDetails.total_sites },
+      { field: 'Total Projects', value: companyDetails.total_sites },
       { field: 'Projects Placed in Service', value: companyDetails.sites_placed_in_service },
       { field: 'Projects Under Construction', value: companyDetails.sites_under_construction },
       { field: 'Projects Sold', value: companyDetails.sites_sold },

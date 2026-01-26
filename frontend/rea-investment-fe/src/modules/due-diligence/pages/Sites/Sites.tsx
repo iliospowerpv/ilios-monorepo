@@ -10,7 +10,7 @@ import { useAccess } from '../../../../hooks/access/access';
 
 const columns = [
   {
-    headerName: 'Site Name',
+    headerName: 'Project Name',
     field: 'name',
     flex: 1
   },
@@ -87,13 +87,13 @@ const SitesTab: React.FC = () => {
   return (
     <>
       <Typography variant="h4" marginBottom="24px" sx={{ fontWeight: 600 }} fontSize="34px" lineHeight="42px">
-        Sites
+        Projects
       </Typography>
       <SearchAndActions
         showSearch={true}
-        searchPlaceholder="Search by Site Name"
+        searchPlaceholder="Search by Project Name"
         onSearch={handleSearch}
-        btnAddLabel="Add a New Site"
+        btnAddLabel="Add a New Project"
         onAdd={handleAddClick}
         showAdd={showAddBtn}
       />

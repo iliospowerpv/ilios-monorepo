@@ -12,7 +12,7 @@ export interface CompanyDetailsTabProps {
 
 const getColumns = () => [
   {
-    headerName: 'Site Name',
+    headerName: 'Project Name',
     field: 'name',
     flex: 1
   },
@@ -95,7 +95,7 @@ export const SitesTab: React.FC<CompanyDetailsTabProps> = () => {
         showExport={false}
         showAdd={true}
         searchPlaceholder="Search by Name"
-        btnAddLabel="Add a New Site"
+        btnAddLabel="Add a New Project"
         onSearch={handleSearch}
         onAdd={handleAddClick}
       />

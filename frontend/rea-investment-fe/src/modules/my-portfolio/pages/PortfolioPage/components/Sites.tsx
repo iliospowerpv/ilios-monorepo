@@ -75,7 +75,7 @@ const defaultColDefOverrides: ColDef = {
 
 const columns: ColDef[] = [
   {
-    headerName: 'Site Name',
+    headerName: 'Project Name',
     field: 'name',
     flex: 1,
     sortable: false,
