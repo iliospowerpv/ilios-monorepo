@@ -5,6 +5,8 @@ iliOS is a real estate asset investment management platform. It provides compreh
 
 Key capabilities include:
 - **User Authentication and Authorization**: Secure access control.
+- **Multi-Company User Membership**: Users can belong to multiple companies with different roles (company_admin, contributor, read_only) without requiring project assignments.
+- **Workspace Landing Page**: User-centric dashboard showing accessible companies, projects, and pending tasks.
 - **Asset Management**: Tracking and managing real estate assets.
 - **Due Diligence**: Tools to support the diligence process for new acquisitions.
 - **Task Management**: Organization of investment-related tasks.
@@ -42,8 +44,13 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
 **Backend:**
 - **Technology Stack**: Python 3.11, FastAPI for API development, SQLAlchemy for ORM, Alembic for database migrations, PostgreSQL as the primary database.
 - **Core Modules**:
+    - **Workspace Module**: User-centric landing page (`/workspace`) showing summary cards (companies, projects, tasks) and a list of accessible companies with access source indicators. Features context-aware Company Admin page for managing company membership.
     - **Finance Module**: Capital governance, authorization, and compliance engine. Features budget vs. actual tracking, vendor visibility, authorization gating, approval workflows with audit trails, portfolio/fund rollups, and data room package export.
     - **Sales Module**: Manages a 14-stage deal acquisition pipeline, tracking deals separately until conversion into "Site" entities (referred to as "Projects" in the UI).
+- **Multi-Company Access System**:
+    - **UserCompanyAccess Model**: Manages user-company relationships with roles (company_admin, contributor, read_only) and statuses (active, invited, suspended).
+    - **Access Source Types**: Direct assignment via UserCompanyAccess, project-inherited via UserProject → parent_company_id, or both.
+    - **Authorization**: System users and company admins can manage company membership; regular users can only view members they have access to.
 - **Architectural Guardrails (Asset Management Overview)**: The Asset Management Overview page is designed as a static site record and readiness surface, intentionally avoiding operational data leakage, telemetry, or live performance data. It clearly defines cross-module boundaries, linking to operations modules for live metrics rather than embedding them.
 
 ## External Dependencies
