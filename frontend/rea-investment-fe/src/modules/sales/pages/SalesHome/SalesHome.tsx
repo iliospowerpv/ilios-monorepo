@@ -64,6 +64,7 @@ import {
   NextActionStatus,
   NEXT_ACTION_STATUS_LABELS
 } from '../../types';
+import { DealsListView } from './DealsListView';
 
 type ViewMode = 'kanban' | 'list';
 
@@ -455,6 +456,12 @@ export const SalesHome: React.FC = () => {
         .reduce((sum, d: Deal) => sum + (d.pipeline_value || 0), 0)
     : 0;
 
+  const allDeals: Deal[] = pipeline
+    ? Object.values(pipeline)
+        .flat()
+        .filter((d): d is Deal => typeof d === 'object' && d !== null)
+    : [];
+
   const stageKeyMap: Record<SalesStage, keyof DealPipelineResponse> = {
     [SalesStage.Prospect]: 'prospect',
     [SalesStage.NDASigned]: 'nda_signed',
@@ -560,11 +567,7 @@ export const SalesHome: React.FC = () => {
               </DragOverlay>
             </DndContext>
           ) : (
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                List view coming soon...
-              </Typography>
-            </Paper>
+            <DealsListView deals={allDeals} />
           )}
         </Box>
       )}

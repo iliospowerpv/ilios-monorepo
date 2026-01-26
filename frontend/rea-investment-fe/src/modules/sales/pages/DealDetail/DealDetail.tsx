@@ -1,12 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
   Paper,
-  Grid,
-  Chip,
   Button,
-  Divider,
   TextField,
   MenuItem,
   Dialog,
@@ -19,37 +16,42 @@ import {
   CardContent,
   Stack,
   IconButton,
-  Tooltip
+  Tooltip,
+  Chip
 } from '@mui/material';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import SaveIcon from '@mui/icons-material/Save';
+import CancelIcon from '@mui/icons-material/Cancel';
 
 import { useEntityContext } from '../../../../contexts/entityContext';
 import { dealsApi } from '../../api/sales';
 import {
+  Deal,
   DealUpdate,
   SalesStage,
   SALES_STAGE_LABELS,
-  SALES_STAGE_COLORS,
   ACTIVE_PIPELINE_STAGES,
   CLOSED_STAGES,
   NEXT_ACTION_STATUS_LABELS,
   SalesStateTransition
 } from '../../types';
-
-const formatCurrency = (value?: number): string => {
-  if (value === undefined || value === null) return '-';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value);
-};
+import {
+  DealExecutiveSummary,
+  DealReadinessWidget,
+  DealDraggableCardLayout,
+  DealCardItem,
+  DealOverviewCard,
+  LocationCard,
+  SystemDetailsCard,
+  FinancialsCard,
+  OfftakerCard,
+  TimelineCard
+} from './components';
 
 const formatDate = (dateString?: string): string => {
   if (!dateString) return '-';
@@ -60,26 +62,55 @@ const formatDate = (dateString?: string): string => {
   });
 };
 
-interface InfoRowProps {
-  label: string;
-  value: React.ReactNode;
-}
+const CARD_REQUIRED_FIELDS: Record<string, (keyof Deal)[]> = {
+  overview: ['name', 'developer_name'],
+  location: ['address', 'city', 'state'],
+  system: ['system_size_ac', 'system_size_dc', 'ownership_structure'],
+  financials: ['pipeline_value', 'probability', 'utility_rate'],
+  offtaker: ['offtaker_name'],
+  timeline: ['next_action_date']
+};
 
-const InfoRow: React.FC<InfoRowProps> = ({ label, value }) => (
-  <Box sx={{ py: 1 }}>
-    <Typography variant="caption" color="text.secondary">
-      {label}
-    </Typography>
-    <Typography variant="body2">{value || '-'}</Typography>
-  </Box>
-);
+const getMissingFields = (deal: Deal, fields: (keyof Deal)[]): string[] => {
+  return fields.filter(field => {
+    const value = deal[field];
+    return value === null || value === undefined || value === '';
+  });
+};
+
+const generateHeaderSummary = (cardId: string, deal: Deal): string => {
+  switch (cardId) {
+    case 'overview':
+      return [deal.developer_name, deal.company_name].filter(Boolean).join(' | ');
+    case 'location':
+      return [deal.city, deal.state].filter(Boolean).join(', ') || deal.address || '';
+    case 'system': {
+      const parts = [];
+      if (deal.system_size_ac) parts.push(`${deal.system_size_ac} MW AC`);
+      if (deal.system_size_dc) parts.push(`${deal.system_size_dc} MW DC`);
+      return parts.join(' / ');
+    }
+    case 'financials':
+      if (deal.pipeline_value) {
+        return `$${(deal.pipeline_value / 1000000).toFixed(1)}M pipeline`;
+      }
+      return '';
+    case 'offtaker':
+      return deal.offtaker_name || '';
+    case 'timeline':
+      return deal.next_action_date ? `Next: ${formatDate(deal.next_action_date)}` : '';
+    default:
+      return '';
+  }
+};
 
 export const DealDetail: React.FC = () => {
   const { dealId } = useParams<{ dealId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { setCurrentModule, setCurrentProject } = useEntityContext();
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(searchParams.get('mode') === 'edit');
   const [editForm, setEditForm] = useState<DealUpdate>({});
   const [stageDialogOpen, setStageDialogOpen] = useState(false);
   const [newStage, setNewStage] = useState<SalesStage | ''>('');
@@ -114,6 +145,7 @@ export const DealDetail: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['deal', dealId] });
       queryClient.invalidateQueries({ queryKey: ['deals-pipeline'] });
       setIsEditing(false);
+      setEditForm({});
     }
   });
 
@@ -144,31 +176,24 @@ export const DealDetail: React.FC = () => {
     }
   });
 
-  const handleStartEdit = () => {
+  const handleStartEdit = React.useCallback(() => {
     if (deal) {
-      setEditForm({
-        name: deal.name,
-        developer_name: deal.developer_name,
-        address: deal.address,
-        city: deal.city,
-        state: deal.state,
-        system_size_ac: deal.system_size_ac,
-        system_size_dc: deal.system_size_dc,
-        mipa_per_watt: deal.mipa_per_watt,
-        pipeline_value: deal.pipeline_value,
-        probability: deal.probability,
-        target_close_date: deal.target_close_date,
-        next_action: deal.next_action,
-        next_action_date: deal.next_action_date,
-        next_action_status: deal.next_action_status,
-        sales_notes: deal.sales_notes
-      });
+      setEditForm({});
       setIsEditing(true);
     }
+  }, [deal]);
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditForm({});
   };
 
   const handleSaveEdit = () => {
     updateMutation.mutate(editForm);
+  };
+
+  const handleFormChange = (field: keyof DealUpdate, value: any) => {
+    setEditForm(prev => ({ ...prev, [field]: value }));
   };
 
   const handleStageTransition = () => {
@@ -184,6 +209,68 @@ export const DealDetail: React.FC = () => {
       notes: convertNotes || undefined
     });
   };
+
+  const cards: DealCardItem[] = useMemo(() => {
+    if (!deal) return [];
+
+    const cardConfigs = [
+      {
+        id: 'overview',
+        title: 'Deal Overview',
+        component: DealOverviewCard
+      },
+      {
+        id: 'location',
+        title: 'Location',
+        component: LocationCard
+      },
+      {
+        id: 'system',
+        title: 'System Details',
+        component: SystemDetailsCard
+      },
+      {
+        id: 'financials',
+        title: 'Financials',
+        component: FinancialsCard
+      },
+      {
+        id: 'offtaker',
+        title: 'Offtaker',
+        component: OfftakerCard
+      },
+      {
+        id: 'timeline',
+        title: 'Timeline & Dates',
+        component: TimelineCard
+      }
+    ];
+
+    return cardConfigs.map(config => {
+      const requiredFields = CARD_REQUIRED_FIELDS[config.id] || [];
+      const missingFields = getMissingFields(deal, requiredFields);
+      const Component = config.component;
+
+      return {
+        id: config.id,
+        title: config.title,
+        hasMissingFields: missingFields.length > 0,
+        missingFieldCount: missingFields.length,
+        missingFieldNames: missingFields,
+        headerSummary: generateHeaderSummary(config.id, deal),
+        content: (
+          <Component
+            deal={deal}
+            isEditing={isEditing}
+            editForm={editForm}
+            onFormChange={handleFormChange}
+            onStartEdit={handleStartEdit}
+            showEditButton={!isEditing}
+          />
+        )
+      };
+    });
+  }, [deal, isEditing, editForm, handleStartEdit]);
 
   if (isLoading) {
     return (
@@ -225,347 +312,119 @@ export const DealDetail: React.FC = () => {
           <IconButton onClick={() => navigate('/sales')}>
             <ArrowBackIcon />
           </IconButton>
-          <Box>
-            <Typography variant="h5" fontWeight={600}>
-              {deal.name}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {deal.company_name || `Company ${deal.company_id}`}
-            </Typography>
-          </Box>
+          <Typography variant="h6" fontWeight={600}>
+            Deal Details
+          </Typography>
         </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Chip
-            label={SALES_STAGE_LABELS[deal.sales_stage]}
-            sx={{ bgcolor: SALES_STAGE_COLORS[deal.sales_stage], fontWeight: 500 }}
-          />
-          {deal.is_converted && <Chip label="Converted to Project" color="success" icon={<CheckCircleIcon />} />}
-        </Box>
+        <Stack direction="row" spacing={1}>
+          {isEditing ? (
+            <>
+              <Button
+                variant="outlined"
+                startIcon={<CancelIcon />}
+                onClick={handleCancelEdit}
+                disabled={updateMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<SaveIcon />}
+                onClick={handleSaveEdit}
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outlined"
+                startIcon={<EditIcon />}
+                onClick={handleStartEdit}
+                disabled={deal.is_converted}
+              >
+                Edit Deal
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<SwapHorizIcon />}
+                onClick={() => setStageDialogOpen(true)}
+                disabled={deal.is_converted}
+              >
+                Change Stage
+              </Button>
+              <Tooltip title={!canConvert ? 'Deal must be in MIPA Signed stage to convert' : ''}>
+                <span>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    startIcon={<CheckCircleIcon />}
+                    onClick={() => setConvertDialogOpen(true)}
+                    disabled={!canConvert}
+                  >
+                    Convert to Project
+                  </Button>
+                </span>
+              </Tooltip>
+            </>
+          )}
+        </Stack>
       </Box>
 
       <Box sx={{ p: 3 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
-            <Paper sx={{ p: 3, mb: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6">Deal Information</Typography>
-                {!isEditing ? (
-                  <Button startIcon={<EditIcon />} onClick={handleStartEdit} disabled={deal.is_converted}>
-                    Edit
-                  </Button>
-                ) : (
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button onClick={() => setIsEditing(false)}>Cancel</Button>
-                    <Button variant="contained" onClick={handleSaveEdit} disabled={updateMutation.isPending}>
-                      Save
-                    </Button>
-                  </Box>
-                )}
-              </Box>
+        <DealExecutiveSummary deal={deal} />
 
-              {isEditing ? (
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      label="Deal Name"
-                      value={editForm.name || ''}
-                      onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      label="Developer Name"
-                      value={editForm.developer_name || ''}
-                      onChange={e => setEditForm(prev => ({ ...prev, developer_name: e.target.value }))}
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <TextField
-                      label="Address"
-                      value={editForm.address || ''}
-                      onChange={e => setEditForm(prev => ({ ...prev, address: e.target.value }))}
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <TextField
-                      label="City"
-                      value={editForm.city || ''}
-                      onChange={e => setEditForm(prev => ({ ...prev, city: e.target.value }))}
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <TextField
-                      label="State"
-                      value={editForm.state || ''}
-                      onChange={e => setEditForm(prev => ({ ...prev, state: e.target.value }))}
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <TextField
-                      label="System Size (AC MW)"
-                      type="number"
-                      value={editForm.system_size_ac || ''}
-                      onChange={e =>
-                        setEditForm(prev => ({
-                          ...prev,
-                          system_size_ac: e.target.value ? parseFloat(e.target.value) : undefined
-                        }))
-                      }
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <TextField
-                      label="System Size (DC MW)"
-                      type="number"
-                      value={editForm.system_size_dc || ''}
-                      onChange={e =>
-                        setEditForm(prev => ({
-                          ...prev,
-                          system_size_dc: e.target.value ? parseFloat(e.target.value) : undefined
-                        }))
-                      }
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <TextField
-                      label="MIPA $/Watt"
-                      type="number"
-                      value={editForm.mipa_per_watt || ''}
-                      onChange={e =>
-                        setEditForm(prev => ({
-                          ...prev,
-                          mipa_per_watt: e.target.value ? parseFloat(e.target.value) : undefined
-                        }))
-                      }
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <TextField
-                      label="Pipeline Value"
-                      type="number"
-                      value={editForm.pipeline_value || ''}
-                      onChange={e =>
-                        setEditForm(prev => ({
-                          ...prev,
-                          pipeline_value: e.target.value ? parseFloat(e.target.value) : undefined
-                        }))
-                      }
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <TextField
-                      label="Probability (%)"
-                      type="number"
-                      value={editForm.probability || ''}
-                      onChange={e =>
-                        setEditForm(prev => ({
-                          ...prev,
-                          probability: e.target.value ? parseInt(e.target.value) : undefined
-                        }))
-                      }
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <TextField
-                      label="Target Close Date"
-                      type="date"
-                      value={editForm.target_close_date || ''}
-                      onChange={e => setEditForm(prev => ({ ...prev, target_close_date: e.target.value }))}
-                      fullWidth
-                      InputLabelProps={{ shrink: true }}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      label="Notes"
-                      value={editForm.sales_notes || ''}
-                      onChange={e => setEditForm(prev => ({ ...prev, sales_notes: e.target.value }))}
-                      fullWidth
-                      multiline
-                      rows={3}
-                    />
-                  </Grid>
-                </Grid>
-              ) : (
-                <Grid container spacing={2}>
-                  <Grid item xs={6} md={3}>
-                    <InfoRow label="Developer" value={deal.developer_name} />
-                  </Grid>
-                  <Grid item xs={6} md={3}>
-                    <InfoRow label="Quoted By" value={deal.quoted_by} />
-                  </Grid>
-                  <Grid item xs={6} md={3}>
-                    <InfoRow label="System Size (AC)" value={deal.system_size_ac ? `${deal.system_size_ac} MW` : '-'} />
-                  </Grid>
-                  <Grid item xs={6} md={3}>
-                    <InfoRow label="System Size (DC)" value={deal.system_size_dc ? `${deal.system_size_dc} MW` : '-'} />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Divider sx={{ my: 1 }} />
-                  </Grid>
-                  <Grid item xs={6} md={3}>
-                    <InfoRow label="Address" value={deal.address} />
-                  </Grid>
-                  <Grid item xs={6} md={3}>
-                    <InfoRow label="City" value={deal.city} />
-                  </Grid>
-                  <Grid item xs={6} md={3}>
-                    <InfoRow label="State" value={deal.state} />
-                  </Grid>
-                  <Grid item xs={6} md={3}>
-                    <InfoRow label="Utility Zone" value={deal.utility_zone} />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Divider sx={{ my: 1 }} />
-                  </Grid>
-                  <Grid item xs={6} md={3}>
-                    <InfoRow label="Pipeline Value" value={formatCurrency(deal.pipeline_value)} />
-                  </Grid>
-                  <Grid item xs={6} md={3}>
-                    <InfoRow label="Probability" value={deal.probability ? `${deal.probability}%` : '-'} />
-                  </Grid>
-                  <Grid item xs={6} md={3}>
-                    <InfoRow label="MIPA $/Watt" value={deal.mipa_per_watt ? `$${deal.mipa_per_watt}` : '-'} />
-                  </Grid>
-                  <Grid item xs={6} md={3}>
-                    <InfoRow label="Target Close" value={formatDate(deal.target_close_date)} />
-                  </Grid>
-                  {deal.sales_notes && (
-                    <Grid item xs={12}>
-                      <Divider sx={{ my: 1 }} />
-                      <InfoRow label="Notes" value={deal.sales_notes} />
-                    </Grid>
-                  )}
-                </Grid>
-              )}
-            </Paper>
+        {!deal.is_converted && <DealReadinessWidget deal={deal} />}
 
-            <Paper sx={{ p: 3, mb: 3 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Financial Details
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6} md={3}>
-                  <InfoRow label="ITC %" value={deal.itc_percent ? `${deal.itc_percent}%` : '-'} />
-                </Grid>
-                <Grid item xs={6} md={3}>
-                  <InfoRow label="ITC Amount" value={formatCurrency(deal.itc_amount)} />
-                </Grid>
-                <Grid item xs={6} md={3}>
-                  <InfoRow label="FMV" value={formatCurrency(deal.fmv)} />
-                </Grid>
-                <Grid item xs={6} md={3}>
-                  <InfoRow label="Grant Amount" value={formatCurrency(deal.grant_amount)} />
-                </Grid>
-                <Grid item xs={6} md={3}>
-                  <InfoRow label="Tax Equity" value={formatCurrency(deal.tax_equity)} />
-                </Grid>
-                <Grid item xs={6} md={3}>
-                  <InfoRow label="Offtaker" value={deal.offtaker_name} />
-                </Grid>
-                <Grid item xs={6} md={3}>
-                  <InfoRow label="Offtaker Legal Name" value={deal.offtaker_legal_name} />
-                </Grid>
-                <Grid item xs={6} md={3}>
-                  <InfoRow label="Project Company" value={deal.project_company} />
-                </Grid>
-              </Grid>
-            </Paper>
+        <Box sx={{ display: 'flex', gap: 3 }}>
+          <Box sx={{ flex: 1 }}>
+            <DealDraggableCardLayout
+              cards={cards}
+              storageKey={`deal_cards_${dealId}`}
+              columns={2}
+              defaultOpenCards={['overview', 'location']}
+            />
+          </Box>
 
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Key Dates
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6} md={3}>
-                  <InfoRow label="Notice to Proceed" value={formatDate(deal.notice_to_proceed_date)} />
-                </Grid>
-                <Grid item xs={6} md={3}>
-                  <InfoRow label="Mechanical Completion" value={formatDate(deal.mechanical_completion_date)} />
-                </Grid>
-                <Grid item xs={6} md={3}>
-                  <InfoRow label="Permission to Operate" value={formatDate(deal.permission_to_operate_date)} />
-                </Grid>
-                <Grid item xs={6} md={3}>
-                  <InfoRow label="Substantial Completion" value={formatDate(deal.substantial_completion_date)} />
-                </Grid>
-              </Grid>
-            </Paper>
-          </Grid>
-
-          <Grid item xs={12} md={4}>
-            <Paper sx={{ p: 3, mb: 3 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Actions
-              </Typography>
-              <Stack spacing={2}>
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  startIcon={<SwapHorizIcon />}
-                  onClick={() => setStageDialogOpen(true)}
-                  disabled={deal.is_converted}
-                >
-                  Change Stage
-                </Button>
-                <Tooltip title={!canConvert ? 'Deal must be in MIPA Signed stage to convert' : ''}>
-                  <span>
-                    <Button
-                      variant="contained"
-                      color="success"
-                      fullWidth
-                      startIcon={<CheckCircleIcon />}
-                      onClick={() => setConvertDialogOpen(true)}
-                      disabled={!canConvert}
-                    >
-                      Convert to Project
-                    </Button>
-                  </span>
-                </Tooltip>
-              </Stack>
-            </Paper>
-
-            <Paper sx={{ p: 3, mb: 3 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Next Action
-              </Typography>
-              <InfoRow label="Action" value={deal.next_action} />
-              <InfoRow label="Due Date" value={formatDate(deal.next_action_date)} />
-              <InfoRow
-                label="Status"
-                value={deal.next_action_status ? NEXT_ACTION_STATUS_LABELS[deal.next_action_status] : '-'}
-              />
-              <InfoRow label="Last Action" value={deal.last_action} />
-            </Paper>
-
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>
+          <Box sx={{ width: 320, flexShrink: 0 }}>
+            <Paper sx={{ p: 2, mb: 2 }}>
+              <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1.5 }}>
                 Stage History
               </Typography>
               {transitions && transitions.length > 0 ? (
                 <Stack spacing={1}>
-                  {transitions.slice(0, 10).map((t: SalesStateTransition) => (
+                  {transitions.slice(0, 8).map((t: SalesStateTransition) => (
                     <Card key={t.id} variant="outlined">
-                      <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
+                      <CardContent sx={{ py: 1, px: 1.5, '&:last-child': { pb: 1 } }}>
                         <Typography variant="caption" color="text.secondary">
                           {formatDate(t.created_at)}
                         </Typography>
-                        <Typography variant="body2">
-                          {t.from_state ? `${t.from_state} → ` : ''}
-                          {t.to_state}
+                        <Typography variant="body2" fontSize="0.85rem">
+                          {t.from_state ? (
+                            <>
+                              <Chip
+                                label={SALES_STAGE_LABELS[t.from_state as SalesStage] || t.from_state}
+                                size="small"
+                                sx={{ height: 18, fontSize: '0.65rem', mr: 0.5 }}
+                              />
+                              →
+                              <Chip
+                                label={SALES_STAGE_LABELS[t.to_state as SalesStage] || t.to_state}
+                                size="small"
+                                sx={{ height: 18, fontSize: '0.65rem', ml: 0.5 }}
+                              />
+                            </>
+                          ) : (
+                            <Chip
+                              label={SALES_STAGE_LABELS[t.to_state as SalesStage] || t.to_state}
+                              size="small"
+                              sx={{ height: 18, fontSize: '0.65rem' }}
+                            />
+                          )}
                         </Typography>
                         {t.notes && (
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                             {t.notes}
                           </Typography>
                         )}
@@ -579,8 +438,34 @@ export const DealDetail: React.FC = () => {
                 </Typography>
               )}
             </Paper>
-          </Grid>
-        </Grid>
+
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1.5 }}>
+                Next Action
+              </Typography>
+              <Box sx={{ py: 0.5 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Action
+                </Typography>
+                <Typography variant="body2">{deal.next_action || '-'}</Typography>
+              </Box>
+              <Box sx={{ py: 0.5 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Due Date
+                </Typography>
+                <Typography variant="body2">{formatDate(deal.next_action_date)}</Typography>
+              </Box>
+              <Box sx={{ py: 0.5 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Status
+                </Typography>
+                <Typography variant="body2">
+                  {deal.next_action_status ? NEXT_ACTION_STATUS_LABELS[deal.next_action_status] : '-'}
+                </Typography>
+              </Box>
+            </Paper>
+          </Box>
+        </Box>
       </Box>
 
       <Dialog open={stageDialogOpen} onClose={() => setStageDialogOpen(false)} maxWidth="sm" fullWidth>

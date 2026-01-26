@@ -1,0 +1,123 @@
+You are the Replit agent in the Ilios codebase. Enhance the user profile dropdown (top-right user icon) to include structured placeholder destinations for future account, security, and help functionality.
+
+INTENT
+- Improve perceived completeness and professionalism of the platform.
+- Establish stable navigation contracts for user-level settings and help content.
+- Do NOT implement full functionality yet; these are placeholders with clear messaging.
+- Avoid introducing auth, billing, or support complexity prematurely.
+
+CURRENT STATE
+- User avatar/name appears in the top-right.
+- Dropdown currently contains only “Logout.”
+
+REQUIRED DROPDOWN STRUCTURE
+Update the dropdown to include the following items, in this order:
+
+1) Account Settings
+2) Security
+3) Help & Resources
+4) Divider
+5) Logout
+
+Each item should route to a placeholder page (or modal if consistent with existing patterns).
+
+PLACEHOLDER PAGE REQUIREMENTS
+
+A) Account Settings (Placeholder)
+Route: /account (or equivalent)
+
+Display:
+- Page title: “Account Settings”
+- Read-only summary block showing:
+  - User name
+  - Email
+  - Role(s)
+  - Company/companies user belongs to
+- Placeholder sections (clearly marked “Coming Soon”):
+  - Profile information
+  - Notification preferences
+  - Timezone & locale
+  - Account deactivation (disabled)
+- Banner note:
+  “Account management features will be enabled in a future release.”
+
+NO editing, no save actions, no API changes.
+
+---
+
+B) Security (Placeholder)
+Route: /security
+
+Display:
+- Page title: “Security”
+- Sections (all read-only placeholders):
+  - Password management (Coming Soon)
+  - Multi-factor authentication (Coming Soon)
+  - Active sessions (Coming Soon)
+  - Audit activity (Coming Soon)
+- Banner note:
+  “Security controls are managed centrally during this phase of the platform.”
+
+If password reset already exists elsewhere, include a link; otherwise do not invent one.
+
+---
+
+C) Help & Resources
+Route: /help
+
+This page SHOULD be functional as a content shell, not just a blank placeholder.
+
+Structure:
+- Page title: “Help & Resources”
+- Intro text:
+  “Guides, FAQs, and walkthroughs for using the Ilios platform.”
+
+Include placeholder sections/cards:
+1) Getting Started
+   - “Understanding Projects vs Deals”
+   - “Navigating Portfolio, Companies, and Projects”
+2) Finance & Diligence
+   - “How finance readiness works”
+   - “Deal to Project conversion explained”
+3) Operations & Lifecycle
+   - “Lifecycle stages explained”
+   - “When modules become active”
+4) FAQs
+   - Empty list with “Content coming soon”
+
+Each item can link to a stub route (e.g., /help/getting-started) or open a placeholder detail view with:
+“Documentation coming soon.”
+
+This page should be designed so real content can be dropped in later without redesign.
+
+---
+
+DESIGN + UX REQUIREMENTS
+- Match existing Ilios styling, spacing, and typography.
+- Make it obvious these are intentional placeholders, not broken features.
+- Do NOT show disabled form fields that look editable.
+- Do NOT add new backend models unless absolutely required for routing.
+
+SECURITY / RBAC
+- These pages are user-specific but not role-restricted.
+- No sensitive data beyond what is already available in the session/user object.
+
+DO NOT DO
+- Do not implement password reset flows
+- Do not add billing, subscriptions, or API keys
+- Do not integrate external helpdesk tools
+- Do not add permissions editing
+
+DELIVERABLES
+1) Updated user dropdown menu with new items
+2) Placeholder routes/pages for Account, Security, and Help
+3) Short note in a README or /docs/user_menu_placeholders.md describing:
+   - What is implemented
+   - What is intentionally deferred
+   - How future teams should extend these pages
+
+ACCEPTANCE TESTS
+- Clicking each dropdown item routes correctly
+- Logout still works as expected
+- Pages render without errors and clearly communicate “Coming Soon”
+- No impact to existing auth/session behavior
