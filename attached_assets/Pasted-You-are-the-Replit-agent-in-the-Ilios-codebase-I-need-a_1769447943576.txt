@@ -1,0 +1,93 @@
+You are the Replit agent in the Ilios codebase. I need a strict audit of the new Sales “Deal” form and the “Convert Deal to Project” function to confirm it aligns with our platform guidelines and does not introduce architectural drift.
+
+NON-NEGOTIABLE GUIDELINES (MUST ENFORCE)
+1) Canonical asset record remains the existing physical-asset table (sites). “Project” is UI terminology for that canonical record.
+2) Deals are pre-asset pipeline objects. They must not become a second canonical identity for the same asset after conversion.
+3) After conversion, all downstream modules (Diligence, Finance, Implementation/Asset Mgmt, Operations) must reference the canonical project/site record.
+4) Navigation must remain stable; lifecycle changes must not cause “vanishing navigation.”
+5) Finance must not become a general ledger (no double-entry, no reconciliation, no invoicing engine).
+6) State transitions must be auditable and permissioned (who, when, what changed, why).
+7) The conversion must be deterministic and idempotent: converting the same deal twice must not create duplicate projects/sites.
+
+AUDIT TASKS (PRODUCE A REPORT + APPLY SAFE FIXES ONLY)
+
+A) DATA MODEL + IDENTITY INTEGRITY
+- Inventory all tables/entities involved:
+  - deals (or equivalent)
+  - sites/projects
+  - junction/access control tables
+- Confirm “project” is not implemented as a separate table from sites (unless we intentionally renamed sites).
+- Confirm conversion creates exactly one canonical site record and stores a reference back to the originating deal (deal_id) OR creates a mapping row.
+- Check for risk of identity drift:
+  - Are there duplicate fields (address, capacity, utility, owner) stored in both deal and site that can diverge?
+  - If yes, document which fields are authoritative pre- vs post-conversion.
+- Ensure conversion does NOT copy data in a way that creates two competing “truths” after conversion.
+
+B) CONVERSION LOGIC (CORRECTNESS + SAFETY)
+- Locate conversion endpoint(s) and UI handler(s). Provide file paths.
+- Verify:
+  1) Permissions: only authorized roles can convert a deal.
+  2) Validation: minimum required deal fields are enforced before conversion (address/location, estimated size, company association, etc.).
+  3) Transaction safety: conversion is performed atomically (DB transaction) so partial creation cannot occur.
+  4) Idempotency: if a deal was already converted, conversion attempts return the existing project/site and do NOT create duplicates.
+  5) Mapping: deal → site relationship is persisted explicitly and queryable.
+
+C) LIFECYCLE + MODULE ACTIVATION CONTRACT
+- Verify what lifecycle state is set on the new site/project upon conversion:
+  - It should land in Sales/Pre-Diligence or Due Diligence depending on design.
+- Confirm conversion triggers appropriate readiness defaults:
+  - Due Diligence module should reflect “not started” or “initiated”
+  - Finance should show readiness not ready and required prerequisites
+  - Operations remains inactive until Placed In Service (no telemetry assumptions)
+- Confirm lifecycle controls are contextual within a selected project and do not hide global modules in navigation.
+
+D) NAVIGATION + TERMINOLOGY CONSISTENCY
+- Confirm user-facing terminology:
+  - Deals live under Sales module
+  - Projects are canonical site records and live under Projects module and project detail pages
+- Confirm no ambiguous “Overview” links were reintroduced.
+- Confirm breadcrumbs and deep links behave correctly:
+  - From Deal → Convert → land on Project Overview (canonical)
+  - From Project → link back to originating Deal (read-only reference) if applicable
+
+E) FINANCE AND DILIGENCE BOUNDARIES
+- Confirm the conversion does NOT automatically create finance obligations, invoices, or accounting entries.
+- Confirm it only sets up lightweight placeholders (budget shell, readiness flags) if needed.
+- Confirm Due Diligence checklists are not duplicated inside Sales/Deals; only a minimal handoff checklist is allowed.
+
+F) AUDIT TRAIL + HISTORY
+- Confirm the following are logged:
+  - Deal created/updated
+  - Deal converted to project (who, when)
+  - New site/project created (id, time)
+  - Lifecycle state changes
+- If no audit trail exists, implement a minimal append-only event log table (e.g., entity_events) with:
+  - entity_type, entity_id, action, actor_user_id, timestamp, metadata(json)
+  Keep it minimal and consistent with existing patterns.
+
+SAFE FIXES ALLOWED NOW
+- Add idempotency guards
+- Add DB unique constraints where appropriate (e.g., deal_id unique in sites if using direct FK)
+- Add missing validations for conversion
+- Add audit/event logging for conversion
+- Rename UI labels for clarity (Deal vs Project)
+- Fix breadcrumbs / routing issues
+- Add a “Converted” status indicator on deals and a link to the resulting project
+
+DO NOT DO NOW
+- Do not build CRM contact management beyond the minimal fields already present
+- Do not introduce accounting logic, bank feeds, or reconciliation
+- Do not redesign other modules unrelated to conversion
+
+OUTPUT FORMAT
+1) Create /docs/deal_to_project_audit.md with:
+   - Summary of findings: compliant vs non-compliant items
+   - Data model diagram (textual) of Deal ↔ Project/Site relationship
+   - Exact file paths for:
+     - Deal create form
+     - Deal conversion handler
+     - Routing/redirect behavior
+     - Any DB migrations
+   - Risks and recommended fixes
+2) If you apply fixes, list each fix and why it is safe.
+3) Provide a short manual test plan (10 minutes) to validate conversion end-to-end.

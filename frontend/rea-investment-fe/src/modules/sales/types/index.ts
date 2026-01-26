@@ -255,7 +255,8 @@ export interface SalesListFilters {
 }
 
 export interface ConvertToProjectRequest {
-  notes?: string;
+  company_id: number;
+  additional_notes?: string;
 }
 
 export interface ConvertToProjectResponse {

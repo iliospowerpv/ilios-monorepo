@@ -131,7 +131,11 @@ export const DealDetail: React.FC = () => {
   });
 
   const convertMutation = useMutation({
-    mutationFn: (notes?: string) => dealsApi.convertToProject(Number(dealId), { notes }),
+    mutationFn: (data: { company_id: number; notes?: string }) =>
+      dealsApi.convertToProject(Number(dealId), {
+        company_id: data.company_id,
+        additional_notes: data.notes
+      }),
     onSuccess: response => {
       queryClient.invalidateQueries({ queryKey: ['deal', dealId] });
       queryClient.invalidateQueries({ queryKey: ['deals-pipeline'] });
@@ -174,7 +178,11 @@ export const DealDetail: React.FC = () => {
   };
 
   const handleConvert = () => {
-    convertMutation.mutate(convertNotes || undefined);
+    if (!deal?.company_id) return;
+    convertMutation.mutate({
+      company_id: deal.company_id,
+      notes: convertNotes || undefined
+    });
   };
 
   if (isLoading) {

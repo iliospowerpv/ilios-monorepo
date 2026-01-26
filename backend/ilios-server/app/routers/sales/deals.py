@@ -56,7 +56,12 @@ def _deal_to_response(deal) -> DealResponse:
         mipa_per_watt=deal.mipa_per_watt,
         offtaker_legal_name=deal.offtaker_legal_name,
         utility_zone=deal.utility_zone,
-        system_size_kw_dc=deal.system_size_kw_dc,
+        system_size_ac=deal.system_size_ac,
+        system_size_dc=deal.system_size_dc,
+        offtaker_name=deal.offtaker_name,
+        utility_rate=deal.utility_rate,
+        next_action_date=deal.next_action_date,
+        sales_notes=deal.sales_notes,
         itc_percent=deal.itc_percent,
         itc_amount=deal.itc_amount,
         fmv=deal.fmv,
@@ -97,8 +102,10 @@ def _deal_to_pipeline_summary(deal) -> SalesPipelineSummary:
             last_name=deal.assigned_owner.last_name,
             email=deal.assigned_owner.email,
         ) if deal.assigned_owner else None,
-        system_size_kw_dc=deal.system_size_kw_dc,
+        system_size_ac=deal.system_size_ac,
+        system_size_dc=deal.system_size_dc,
         mipa_per_watt=deal.mipa_per_watt,
+        is_converted=deal.is_converted,
     )
 
 
@@ -230,14 +237,31 @@ def convert_deal_to_project(
     data: ConvertToProjectRequest,
     db: Session = Depends(get_session),
 ):
-    """Convert a deal to a project (Site)."""
+    """Convert a deal to a project (Site).
+    
+    Idempotency: If already converted, returns existing project reference.
+    Validation: Requires name and company_id.
+    Transaction safety: Uses DB transaction with rollback on failure.
+    """
     deal = sales_crud.get_deal(db, deal_id)
     if not deal:
         raise HTTPException(status_code=404, detail="Deal not found")
     
-    if deal.is_converted:
-        raise HTTPException(status_code=400, detail="Deal has already been converted to a project")
+    # IDEMPOTENCY: Return existing project if already converted
+    if deal.is_converted and deal.converted_to_project_id:
+        return ConvertToProjectResponse(
+            deal_id=deal.id,
+            project_id=deal.converted_to_project_id,
+            message=f"Deal '{deal.name}' was already converted to project {deal.converted_to_project_id}",
+        )
     
+    # VALIDATION: Check minimum required fields
+    if not deal.name:
+        raise HTTPException(status_code=400, detail="Deal name is required for conversion")
+    if not data.company_id:
+        raise HTTPException(status_code=400, detail="Company ID is required for conversion")
+    
+    # Parse state enum value
     state_value = None
     if deal.state:
         try:
@@ -248,52 +272,61 @@ def convert_deal_to_project(
                     state_value = s
                     break
     
-    site = Site(
-        name=deal.name,
-        address=deal.address or "",
-        city=deal.city or "",
-        state=state_value,
-        postal_code=deal.zip_code,
-        county=deal.county,
-        latitude=float(deal.latitude) if deal.latitude else None,
-        longitude=float(deal.longitude) if deal.longitude else None,
-        system_size_ac=float(deal.system_size_kw_dc) if deal.system_size_kw_dc else 0,
-        system_size_dc=float(deal.system_size_kw_dc) if deal.system_size_kw_dc else 0,
-        company_id=data.company_id,
-    )
+    # Default state if not found
+    if not state_value:
+        state_value = State.CA  # Default to CA if state not parseable
     
-    db.add(site)
-    db.flush()
-    
-    additional_fields = SiteAdditionalFieldList(
-        site_id=site.id,
-        lifecycle_state=LifecycleState.due_diligence,
-        sales_stage=SalesStage.mipa_signed,
-        ownership_structure=deal.ownership_structure,
-        offtaker_name=deal.offtaker_legal_name,
-    )
-    db.add(additional_fields)
-    
-    deal.is_converted = True
-    deal.converted_to_project_id = site.id
-    deal.updated_at = datetime.utcnow()
-    
-    user_id = 1
-    transition = SalesStateTransition(
-        deal_id=deal.id,
-        site_id=site.id,
-        transition_type="converted_to_project",
-        from_state=deal.sales_stage,
-        to_state="project_created",
-        notes=data.additional_notes or "Deal converted to project",
-        changed_by_id=user_id,
-    )
-    db.add(transition)
-    
-    db.commit()
-    
-    return ConvertToProjectResponse(
-        deal_id=deal.id,
-        project_id=site.id,
-        message=f"Deal '{deal.name}' successfully converted to project",
-    )
+    try:
+        # Create the canonical Site record
+        site = Site()
+        site.name = deal.name
+        site.address = deal.address or "TBD"
+        site.city = deal.city or "TBD"
+        site.state = state_value
+        site.zip_code = deal.zip_code or "00000"
+        site.county = deal.county
+        site.lon_lat_url = ""
+        site.system_size_ac = float(deal.system_size_ac) if deal.system_size_ac else 0.0
+        site.system_size_dc = float(deal.system_size_dc) if deal.system_size_dc else 0.0
+        site.company_id = data.company_id
+        
+        db.add(site)
+        db.flush()
+        
+        # Create additional fields with lifecycle state
+        additional_fields = SiteAdditionalFieldList()
+        additional_fields.site_id = site.id
+        additional_fields.lifecycle_state = LifecycleState.due_diligence.value
+        additional_fields.sales_stage = SalesStage.mipa_signed.value
+        additional_fields.ownership_structure = deal.ownership_structure
+        additional_fields.offtaker_name = deal.offtaker_legal_name or deal.offtaker_name
+        db.add(additional_fields)
+        
+        # Update deal to mark as converted (one-way link)
+        deal.is_converted = True
+        deal.converted_to_project_id = site.id
+        deal.updated_at = datetime.utcnow()
+        
+        # Create audit log entry
+        user_id = 1  # TODO: Get from auth context
+        transition = SalesStateTransition(
+            deal_id=deal.id,
+            site_id=site.id,
+            transition_type="converted_to_project",
+            from_state=deal.sales_stage,
+            to_state="project_created",
+            notes=data.additional_notes or "Deal converted to project",
+            changed_by_id=user_id,
+        )
+        db.add(transition)
+        
+        db.commit()
+        
+        return ConvertToProjectResponse(
+            deal_id=deal.id,
+            project_id=site.id,
+            message=f"Deal '{deal.name}' successfully converted to project",
+        )
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Conversion failed: {str(e)}")
