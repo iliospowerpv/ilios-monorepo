@@ -1,0 +1,117 @@
+You are the Replit agent in the Ilios codebase. Implement Step 2: a user-friendly hierarchy administration and onboarding experience, built on top of the new Context Bar + lens route contract.
+
+CONTEXT (CURRENT STATE)
+- Canonical project entity is sites table (UI term: Projects).
+- Users can access projects/companies via UserProject junction today, but admin UX assumes a single “home” company via users.parent_company_id.
+- Context Bar + module lens routes are implemented and quicklinks/fallbacks are hardened.
+- We now want clean hierarchy setup, multi-company membership, and a user-centric workspace.
+
+NON-NEGOTIABLE INTENT
+1) Support users belonging to MULTIPLE companies (HoldCo/ProjectCo).
+2) Do NOT require assigning a user to a project just to grant company access.
+3) Keep global navigation stable; do not hide modules based on lifecycle.
+4) Preserve existing access checks as much as possible; evolve safely.
+5) “Project” remains sites table; no new Project table.
+
+PRIMARY DELIVERABLES
+A) Add UserCompanyAccess table (minimal, first-class company membership)
+B) Add Workspace (user-centric landing view)
+C) Refactor “My Company” admin flows into a context-aware Company Admin area
+D) Improve Create flows (Company / Project / User) and make them discoverable
+
+A) DATA MODEL: USER COMPANY MEMBERSHIP (REQUIRED)
+Create a minimal table, e.g. user_company_access (or user_company_memberships):
+- id (or composite PK)
+- user_id (FK users.id)
+- company_id (FK companies.id)
+- role (enum: company_admin, contributor, read_only)
+- status (enum: active, invited, disabled) [optional but helpful]
+- created_at, created_by_user_id (optional)
+
+Constraints:
+- Unique(user_id, company_id)
+- Index(company_id), Index(user_id)
+
+IMPORTANT: Do NOT remove UserProject. It remains for project-level assignment.
+Update “accessible companies” logic to be:
+- union of companies from user_company_access AND distinct company_id from UserProject AND users.parent_company_id (if present)
+Prefer user_company_access as the authoritative “membership” signal when present.
+
+B) WORKSPACE (NEW, USER-CENTRIC)
+Route: /workspace (make it a primary nav item; you can decide whether it replaces current landing).
+Page sections:
+1) My Portfolio summary tiles:
+   - Accessible companies count
+   - Accessible projects count
+   - Needs-attention counts (reuse existing readiness/variance flags where available)
+2) My Companies list/grid (from accessible companies):
+   - Company name
+   - Badge showing my role in that company (from user_company_access if exists, otherwise “Assigned via Projects”)
+   - Project count
+   - CTA: “Open Company”
+3) My Projects list:
+   - Projects I can access (from UserProject)
+   - Filter by Company
+   - Search
+4) Primary CTAs (permission-aware):
+   - Create Company
+   - Create Project
+   - Invite User
+
+Workspace must respect Context Bar:
+- Selecting a company should set currentCompanyId and route to the Company canonical page or company lens page.
+
+C) COMPANY ADMIN (CONTEXT-AWARE)
+Replace singular “My Company” assumptions with context:
+- Route: /company-admin (or similar) that operates on currentCompanyId from Context Bar.
+If no currentCompanyId, show a picker to select a company.
+
+Company Admin tabs:
+1) Overview (basic)
+2) Users
+   - List company members from user_company_access
+   - Invite/Add user:
+     - If user exists: add membership row (no project required)
+     - If user new: create user (or invitation record) + membership row
+   - Assign role within company
+3) Projects
+   - List projects (sites) under this company
+   - Create Project (defaults to this company)
+   - Optional: assign users to projects via UserProject
+
+Permissions:
+- System admin can manage any company.
+- Company admin can manage only companies where they have company_admin role (or parent_company_id if you need a transitional rule, but prefer role-based).
+
+D) CREATE FLOWS (UNCLUNKY)
+Implement clean entry points and forms:
+1) Create Company
+   - accessible from Workspace and Company Admin (if system admin)
+   - after creation, set currentCompanyId and go to Company view
+2) Create Project
+   - accessible from Workspace and Company Admin
+   - must select company (default to currentCompanyId)
+   - after creation, go to Project Overview
+3) Invite/Add User
+   - accessible from Workspace and Company Admin Users tab
+   - must select company membership + role
+   - optional project assignment
+
+E) NAVIGATION
+- Add primary nav item: Workspace
+- Add admin nav item: Company Admin (context-aware)
+Do not bury core actions under Settings.
+
+F) DOCUMENTATION
+Create /docs/workspace_and_company_access.md covering:
+- how user_company_access works
+- how it coexists with UserProject
+- how roles are enforced
+- how to extend later (e.g., invitations, deal/fund roles)
+
+ACCEPTANCE TESTS
+1) A user belonging to 2 companies via user_company_access sees both on Workspace and can open each.
+2) A company admin can add a user to their company WITHOUT assigning a project.
+3) Project creation defaults to current company but can be changed if user has access to multiple.
+4) Existing project-level permissions via UserProject continue to work.
+5) No regressions to Context Bar routing; links respect lens routes.

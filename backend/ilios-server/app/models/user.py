@@ -1,8 +1,24 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Identity, Integer, String
+from enum import Enum as PyEnum
+
+from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Identity, Integer, String, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 
 from app.db.base_class import Base
 from app.models.helpers import utcnow
+
+
+class CompanyRole(PyEnum):
+    """Role a user can have within a company."""
+    company_admin = "company_admin"
+    contributor = "contributor"
+    read_only = "read_only"
+
+
+class MembershipStatus(PyEnum):
+    """Status of a user's membership in a company."""
+    active = "active"
+    invited = "invited"
+    disabled = "disabled"
 
 
 class User(Base):
@@ -59,6 +75,12 @@ class User(Base):
     invitation = relationship("UserInvitation", back_populates="user")
     password_recovery = relationship("UserPasswordRecovery", back_populates="user")
     sessions = relationship("Session", back_populates="user")
+    
+    company_memberships = relationship(
+        "UserCompanyAccess",
+        back_populates="user",
+        foreign_keys="UserCompanyAccess.user_id"
+    )
 
     def get_limited_sites_ids(self):
         """Return IDs of sites user has access to. If user is system - return None"""
@@ -103,3 +125,28 @@ class UserPasswordRecovery(Base, UserPasswordDeeplinkBase):
     __tablename__ = "user_password_recovery"
 
     user = relationship("User", back_populates="password_recovery")
+
+
+class UserCompanyAccess(Base):
+    """First-class company membership for users - independent of project assignments."""
+    __tablename__ = "user_company_access"
+    
+    __table_args__ = (
+        UniqueConstraint('user_id', 'company_id', name='uq_user_company_access'),
+        Index('ix_user_company_access_company_id', 'company_id'),
+        Index('ix_user_company_access_user_id', 'user_id'),
+    )
+
+    id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    role = Column(Enum(CompanyRole), nullable=False, default=CompanyRole.contributor)
+    status = Column(Enum(MembershipStatus), nullable=False, default=MembershipStatus.active)
+    
+    created_at = Column(DateTime, server_default=utcnow())
+    created_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    updated_at = Column(DateTime, server_default=utcnow(), onupdate=utcnow())
+
+    user = relationship("User", back_populates="company_memberships", foreign_keys=[user_id])
+    company = relationship("Company", back_populates="member_users")
+    created_by = relationship("User", foreign_keys=[created_by_user_id])

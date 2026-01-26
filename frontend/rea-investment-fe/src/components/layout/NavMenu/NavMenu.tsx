@@ -13,6 +13,8 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import WorkspacesIcon from '@mui/icons-material/Workspaces';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { NavMenuButtonContainer } from './NavMenu.styles';
 import { useNavigate, useMatches } from 'react-router-dom';
 import { RouteHandle } from '../../../handles';
@@ -67,6 +69,7 @@ const AnchorElTooltip: React.FC<AnchorElTooltip> = ({ children, anchor, title })
 };
 
 const menuItems: [string, React.ReactNode, string, string, boolean][] = [
+  ['workspace', <WorkspacesIcon key="workspace" />, 'Workspace', '/workspace', false],
   ['portfolio', <DashboardIcon key="portfolio" />, 'Portfolio', '/portfolio', false],
   ['dashboard', <DashboardIcon key="dashboard" />, 'Dashboard', '/dashboard', false],
   ['sales', <TrendingUpIcon key="sales" />, 'Sales', '/sales', false],
@@ -80,7 +83,8 @@ const menuItems: [string, React.ReactNode, string, string, boolean][] = [
   ],
   ['asset-management', <AccountBalanceIcon key="asset-management" />, 'Asset Management', '/asset-management', false],
   ['finance', <AccountBalanceWalletIcon key="finance" />, 'Finance', '/finance', false],
-  ['reports', <AssessmentIcon key="reports" />, 'Reports', '/reports', false]
+  ['reports', <AssessmentIcon key="reports" />, 'Reports', '/reports', false],
+  ['company-admin', <AdminPanelSettingsIcon key="company-admin" />, 'Company Admin', '/company-admin', false]
 ];
 
 interface MenuItemProps {

@@ -25,6 +25,8 @@ class Company(RelatedBoards, Base):
     sites = relationship("Site", back_populates="company")
     users = relationship("User", back_populates="parent_company")
     das_connections = relationship("DASConnection", back_populates="company", order_by="DASConnection.name")
+    
+    member_users = relationship("UserCompanyAccess", back_populates="company")
 
     created_at = Column(TIMESTAMP, server_default=utcnow())
     updated_at = Column(TIMESTAMP, server_default=utcnow())

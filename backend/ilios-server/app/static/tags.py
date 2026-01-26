@@ -55,3 +55,5 @@ FINANCE_BUDGETS_TAG = "[Finance] Budgets"
 FINANCE_OBLIGATIONS_TAG = "[Finance] Obligations"
 FINANCE_ACTUALS_TAG = "[Finance] Actuals"
 FINANCE_PORTFOLIO_TAG = "[Finance] Portfolio"
+
+WORKSPACE_TAG = "Workspace"

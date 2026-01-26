@@ -43,3 +43,4 @@ from .task_tracker import (
     tasks_router,
 )
 from .sales import router as sales_router
+from .workspace import workspace_router

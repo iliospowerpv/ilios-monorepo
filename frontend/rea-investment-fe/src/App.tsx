@@ -89,6 +89,7 @@ import {
   createSiteFinanceHandle
 } from './modules/finance';
 import { SalesHome, SalesModuleContainer, createSalesHomeHandle, DealDetail } from './modules/sales';
+import { WorkspacePage, CompanyAdminPage, ModuleContainer as WorkspaceModuleContainer } from './modules/workspace';
 
 // initialization
 const queryClient = new QueryClient();
@@ -132,6 +133,12 @@ const router = createBrowserRouter(
         <Route path="/security" element={<SecuritySettings />} />
         <Route path="/help" element={<HelpResources />} />
         <Route path="/portfolio" element={<PortfolioView />} />
+        <Route path="/workspace" element={<WorkspaceModuleContainer />}>
+          <Route index element={<WorkspacePage />} />
+        </Route>
+        <Route path="/company-admin" element={<WorkspaceModuleContainer />}>
+          <Route index element={<CompanyAdminPage />} />
+        </Route>
         <Route path="/companies" element={<CompaniesPickerView />} />
         <Route path="/companies/:companyId" element={<CompanyView />} />
         <Route path="/projects" element={<ProjectsPickerView />} />

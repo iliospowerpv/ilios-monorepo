@@ -16,6 +16,7 @@ import { buildInvestorDashboardApi } from './investor-dashboard';
 import { buildBreadcrumbsApi } from './breadcrumbs';
 import { buildReportsApi } from './reports';
 import { buildAccessibleEntitiesApi } from './accessible-entities';
+import { buildWorkspaceApi } from './workspace';
 
 export const ApiClient = Object.freeze({
   _tokenManager: tokenManager,
@@ -35,7 +36,8 @@ export const ApiClient = Object.freeze({
   investorDashboard: buildInvestorDashboardApi(httpClient),
   breadcrumbs: buildBreadcrumbsApi(httpClient),
   reports: buildReportsApi(httpClient),
-  accessibleEntities: buildAccessibleEntitiesApi(httpClient)
+  accessibleEntities: buildAccessibleEntitiesApi(httpClient),
+  workspace: buildWorkspaceApi(httpClient)
 });
 
 export type {
@@ -120,3 +122,12 @@ export type {
 } from './connections';
 
 export type { AccessibleCompany, AccessibleProject, AccessibleEntitiesResponse } from './accessible-entities';
+
+export type {
+  WorkspaceResponse,
+  WorkspaceSummary,
+  WorkspaceCompany,
+  CompanyMember,
+  AddMemberRequest,
+  UpdateMemberRequest
+} from './workspace';

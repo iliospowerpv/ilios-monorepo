@@ -153,7 +153,7 @@ async def password_recovery(reset_data: ResetPasswordSchema, db_session: Session
     response_model=AccessibleEntitiesResponse,
     summary="Get accessible companies and projects for context bar",
     description="Returns all companies and projects the current user has access to, "
-                "based on UserProject assignments and parent_company_id. "
+                "based on UserCompanyAccess memberships, UserProject assignments, and parent_company_id. "
                 "System users get all companies and projects.",
 )
 async def get_accessible_entities(
@@ -162,6 +162,7 @@ async def get_accessible_entities(
 ) -> AccessibleEntitiesResponse:
     from app.models.company import Company
     from app.models.site import Site
+    from app.models.user import UserCompanyAccess, MembershipStatus
     
     companies: list[AccessibleCompanySchema] = []
     projects: list[AccessibleProjectSchema] = []
@@ -187,16 +188,30 @@ async def get_accessible_entities(
     else:
         company_ids_seen = set()
         
+        company_memberships = db_session.query(UserCompanyAccess).filter(
+            UserCompanyAccess.user_id == current_user.id,
+            UserCompanyAccess.status == MembershipStatus.active
+        ).all()
+        
+        for membership in company_memberships:
+            if membership.company and membership.company_id not in company_ids_seen:
+                companies.append(AccessibleCompanySchema(
+                    id=membership.company.id,
+                    name=membership.company.name
+                ))
+                company_ids_seen.add(membership.company_id)
+        
         for company in current_user.companies:
             if company.id not in company_ids_seen:
                 companies.append(AccessibleCompanySchema(id=company.id, name=company.name))
                 company_ids_seen.add(company.id)
         
         if current_user.parent_company and current_user.parent_company.id not in company_ids_seen:
-            companies.insert(0, AccessibleCompanySchema(
+            companies.append(AccessibleCompanySchema(
                 id=current_user.parent_company.id,
                 name=current_user.parent_company.name
             ))
+            company_ids_seen.add(current_user.parent_company.id)
         
         projects = [
             AccessibleProjectSchema(
