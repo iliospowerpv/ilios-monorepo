@@ -1,0 +1,71 @@
+You are the Replit agent in the Ilios codebase. We have implemented the Context Bar contract with module-scoped lens routes:
+
+/[module]/scope/portfolio
+/[module]/scope/company/:companyId
+/[module]/scope/project/:projectId
+
+ISSUE TO FIX
+Some UI quicklinks (especially on Company Overview) and some null/overview fallbacks are routing users back to the main dashboard instead of navigating to the correct module-scoped lens page. This violates the contract.
+
+SCOPE (DO NOT EXPAND)
+- Do not redesign pages.
+- Do not change permissions logic.
+- Only fix routing targets and fallback behavior to align with the context contract.
+- Keep canonical routes supported, but quicklinks inside module-aware pages should prefer module-scoped lens routes.
+
+TASKS
+
+1) AUDIT ALL QUICKLINKS / MODULE SHORTCUTS
+- Find all “quicklinks” UI elements (cards/buttons/links) that navigate to other modules from:
+  - Company overview pages
+  - Project overview pages
+  - Any dashboard-like overview pages
+- For each quicklink, document:
+  - file path
+  - current href/route generation
+  - expected route under the new contract
+
+2) FIX ROUTE GENERATION (SINGLE SOURCE OF TRUTH)
+- Implement or use a central route helper (e.g., buildLensRoute(module, scope, id?)) that returns:
+  - /{module}/scope/portfolio
+  - /{module}/scope/company/{companyId}
+  - /{module}/scope/project/{projectId}
+- Update all quicklinks to use this helper based on the current context:
+  - If user is on a Company page and clicks Finance, route to /finance/scope/company/:companyId
+  - If user is on a Project page and clicks Finance, route to /finance/scope/project/:projectId
+  - If user is at Portfolio scope, route to /finance/scope/portfolio
+
+3) NULL / DEFAULT FALLBACK BEHAVIOR (IMPORTANT)
+- Identify where pickers or “Overview” actions currently default to /dashboard when companyId or projectId is null.
+- Replace “go to dashboard” with contract-compliant behavior:
+  - If Company scope is selected but companyId is null → navigate to a company-picker page:
+    - Prefer /companies (canonical picker) OR /{module}/scope/company (if such a picker route exists)
+  - If Project scope is selected but projectId is null → navigate to a project-picker page:
+    - Prefer /projects (canonical picker) OR /{module}/scope/project (picker)
+- Ensure “Overview” actions remain context-aware:
+  - Company Overview should stay within the Company context and not drop to /dashboard.
+  - Project Overview should stay within Project context.
+
+4) PRESERVE CANONICAL ROUTES FOR EXTERNAL LINKS
+- Do not remove canonical routes.
+- But internal quicklinks from context pages must prefer lens routes so users stay oriented.
+
+5) DOCUMENTATION UPDATE
+- Update the existing context bar contract doc (or add /docs/quicklinks_routing_alignment.md) to include:
+  - Rules for quicklinks
+  - Rules for null selection fallbacks
+  - Examples
+
+DELIVERABLES
+A) Fix routing for all quicklinks and null fallbacks.
+B) Add a short test checklist in docs:
+   - From Company Overview, clicking each module quicklink routes to /{module}/scope/company/:companyId
+   - From Project Overview, clicking each module quicklink routes to /{module}/scope/project/:projectId
+   - From Portfolio scope, quicklinks route to /{module}/scope/portfolio
+   - If no company/project selected, Company/Project scope takes user to picker view—not dashboard.
+
+ACCEPTANCE TESTS (MUST PASS)
+- No quicklink from Company or Project pages routes to /dashboard unless explicitly intended for a “Home” button.
+- Switching modules from Company context preserves Company scope.
+- Switching modules from Project context preserves Project scope.
+- Null company/project selection routes to picker views, not the main dashboard.
