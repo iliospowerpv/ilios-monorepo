@@ -261,20 +261,24 @@ def convert_deal_to_project(
     if not data.company_id:
         raise HTTPException(status_code=400, detail="Company ID is required for conversion")
     
-    # Parse state enum value
+    # Parse and validate US state (required for compliance)
     state_value = None
     if deal.state:
         try:
             state_value = State(deal.state)
         except ValueError:
+            # Try case-insensitive match
             for s in State:
                 if s.name.upper() == deal.state.upper() or s.value.upper() == deal.state.upper():
                     state_value = s
                     break
     
-    # Default state if not found
+    # VALIDATION: State is required for downstream compliance - no fallback to CA
     if not state_value:
-        state_value = State.CA  # Default to CA if state not parseable
+        raise HTTPException(
+            status_code=400,
+            detail=f"Valid US state is required for conversion. '{deal.state or '(empty)'}' is not a recognized state. Please update the deal with a valid 2-letter US state code."
+        )
     
     try:
         # Create the canonical Site record
@@ -327,6 +331,20 @@ def convert_deal_to_project(
             project_id=site.id,
             message=f"Deal '{deal.name}' successfully converted to project",
         )
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Conversion failed: {str(e)}")
+        error_msg = str(e)
+        # Handle unique constraint violation (race condition: two requests tried to convert same deal)
+        if "uq_deals_converted_to_project_id" in error_msg or "unique constraint" in error_msg.lower():
+            # Re-fetch the deal to check if it was converted by another request
+            db.refresh(deal)
+            if deal.is_converted and deal.converted_to_project_id:
+                return ConvertToProjectResponse(
+                    deal_id=deal.id,
+                    project_id=deal.converted_to_project_id,
+                    message=f"Deal '{deal.name}' was already converted to project {deal.converted_to_project_id} (concurrent request)",
+                )
+        raise HTTPException(status_code=500, detail=f"Conversion failed: {error_msg}")

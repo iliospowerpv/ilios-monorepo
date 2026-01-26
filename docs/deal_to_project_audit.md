@@ -250,7 +250,9 @@ This is correct per the designed flow:
 | Fixed field name mismatch | `system_size_kw_dc` → `system_size_ac/dc` |
 | Updated frontend types | `ConvertToProjectRequest` now requires `company_id` |
 | Fixed Site creation pattern | Uses property assignment instead of constructor |
-| Added default state value | Fallback to CA if state not parseable |
+| **Removed CA fallback** | State validation now required (see Hardening Pass below) |
+| **Added unique constraint** | `uq_deals_converted_to_project_id` enforces one-to-one mapping |
+| **Race condition handling** | Catches unique constraint violations and returns existing project |
 
 ---
 
@@ -297,16 +299,84 @@ This is correct per the designed flow:
 
 ---
 
+## Hardening Pass (January 2026)
+
+### 1) State Parsing / Default Behavior - RESOLVED
+
+**Issue Identified**: Line 277 had `state_value = State.CA` as a fallback when US state couldn't be parsed. This could silently assign incorrect location data.
+
+**Resolution**: Since `Site.state` is NOT NULL in the database schema, we cannot use NULL. Instead:
+- **Removed CA fallback** completely
+- **Replaced with validation error**: Returns HTTP 400 with clear message if state is invalid
+- **Error message format**: `"Valid US state is required for conversion. '{state}' is not a recognized state. Please update the deal with a valid 2-letter US state code."`
+
+**Why this approach**: 
+- Downstream modules (Finance, Due Diligence) depend on accurate location for tax jurisdiction, utility zone calculations
+- Silently defaulting to CA could cause compliance issues
+- Explicit validation forces data quality before conversion
+
+**Files Changed**:
+- `backend/ilios-server/app/routers/sales/deals.py` - State validation logic (lines 267-284)
+
+### 2) Transaction Atomicity + DB Safety - ENFORCED
+
+**Verification**: The conversion runs within SQLAlchemy's default transaction context:
+1. All operations (`db.add(site)`, `db.flush()`, `db.add(additional_fields)`, deal update, `db.add(transition)`) are within a single try block
+2. Single `db.commit()` at end commits all changes atomically
+3. `db.rollback()` in exception handler reverts all changes on failure
+
+**Unique Constraint Added**:
+- **Migration**: `ecaeb0d4307a_add_unique_constraint_converted_project_.py`
+- **Constraint**: `uq_deals_converted_to_project_id` on `deals.converted_to_project_id`
+- **Model updated**: `converted_to_project_id = Column(..., unique=True)`
+
+**Race Condition Handling**:
+- If two concurrent requests try to convert the same deal:
+  1. First request succeeds and commits
+  2. Second request hits unique constraint violation
+  3. Exception handler catches it, re-fetches deal, and returns existing project reference
+- Result: Idempotent behavior even under concurrent load
+
+**Files Changed**:
+- `backend/ilios-server/app/models/sales.py` - Added `unique=True` to converted_to_project_id
+- `backend/ilios-server/alembic/versions/ecaeb0d4307a_*.py` - Migration for unique constraint
+- `backend/ilios-server/app/routers/sales/deals.py` - Race condition handling in exception block
+
+---
+
+## 5-Minute Validation Test
+
+### Test 1: State Validation (1 min)
+1. Create a deal with invalid state (e.g., "XX" or empty)
+2. Try to convert → Should get 400 error with clear message
+3. Update deal with valid state (e.g., "CA")
+4. Convert → Should succeed
+
+### Test 2: Unique Constraint (2 min)
+1. Create a deal with valid data
+2. Call convert API twice quickly (curl or parallel tabs)
+3. Both should return success with same project_id
+4. Check database: Only one Site record created
+
+### Test 3: Atomicity (2 min)
+1. Create a deal
+2. Temporarily break the audit log insert (e.g., invalid changed_by_id)
+3. Try to convert → Should fail
+4. Verify: No orphan Site record created (rollback worked)
+5. Restore and verify normal conversion works
+
+---
+
 ## Risks and Recommendations
 
 ### Low Risk
 - Hardcoded `user_id = 1` in conversion handler
   - **Recommendation**: Extract from auth context in production
 
-### Medium Risk
-- No unique constraint on `deals.converted_to_project_id`
-  - **Recommendation**: Add unique constraint to prevent mapping collision
-  - Currently safe due to idempotency guard
+### RESOLVED (was Medium Risk)
+- ~~No unique constraint on `deals.converted_to_project_id`~~
+  - **Fixed**: Added `uq_deals_converted_to_project_id` unique constraint
+  - Race condition handling added in exception block
 
 ### Not Applicable
 - No CRM contact management needed

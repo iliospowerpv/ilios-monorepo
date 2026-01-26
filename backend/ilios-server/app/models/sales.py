@@ -71,7 +71,7 @@ class Deal(Base):
     company_id = Column(Integer, ForeignKey("companies.id", ondelete="SET NULL"), nullable=True)
     assigned_owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     
-    converted_to_project_id = Column(Integer, ForeignKey("sites.id", ondelete="SET NULL"), nullable=True)
+    converted_to_project_id = Column(Integer, ForeignKey("sites.id", ondelete="SET NULL"), nullable=True, unique=True)
     is_converted = Column(Boolean, default=False, nullable=False)
     
     created_at = Column(TIMESTAMP, server_default=utcnow())
