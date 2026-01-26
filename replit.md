@@ -102,6 +102,40 @@ A capital governance, authorization, and compliance engine (NOT a general ledger
 
 **Navigation**: Enabled at `/finance` with Finance permission check in NavMenu.tsx
 
+### Cross-Module Navigation Architecture (Jan 2026)
+A three-tier navigation system providing consistent navigation across all modules:
+
+**1. Entity Context Navigation (Top Bar)**
+- Component: `EntityContextNav.tsx` in PageHeader
+- Displays Portfolio → Company → Project hierarchy with icons
+- Persists selection to localStorage (key: `ilios_entity_context`)
+- Context-aware: icons enable/disable based on selected entity level
+- Clicking icons navigates to the appropriate level within the current module
+
+**2. Module Sidebar Navigation (Left)**
+- Component: `PageSidebar.tsx` with `NavMenu.tsx`
+- Shows modules: Asset Management, O&M, Due Diligence, Finance, Reports
+- Permission-based visibility (checks user permissions per module)
+- Active state tracked by URL path
+
+**3. Breadcrumb Navigation (Header)**
+- Uses React Router's `handle` pattern with `RouteHandle` type
+- Each route defines breadcrumb config via `createRouteHandle()` function
+- Breadcrumbs auto-generate from route hierarchy
+- Dynamic segments resolved from URL params
+
+**Key Components**:
+- `EntityContextProvider` - React context for entity state management (contexts/entityContext/)
+- `EntityContextNav` - Icon navigation component (components/layout/EntityContextNav/)
+- `createRouteHandle()` - Utility for consistent breadcrumb configuration (handles/handles.ts)
+
+**Entity Context Updates**:
+All company/site detail pages update entity context automatically:
+- Asset Management: AssetManagementCompanyDetails, AssetManagementSiteDetails
+- O&M: CompanyDetails, SiteDetails
+- Due Diligence: SiteDetails
+- Finance: FinanceHome, SiteFinance
+
 ### Asset Management Overview - Investor/Lender Diligence Workflow (Jan 2026)
 - **Drag-and-drop reordering**: Cards can be reordered using @dnd-kit library with rectSortingStrategy for grid layouts
 - **Collapsible cards**: Each card has a collapse/expand toggle in the header
