@@ -76,15 +76,8 @@ async def get_companies_list(
     # for response companies, get their alerts overview
     # return alerts only for sites user has access to
     companies_alerts = alert_crud.get_company_alerts_overview({company.id for company in companies}, site_ids_to_limit)
-    # get sites telemetry data - gracefully handle missing BigQuery credentials
-    try:
-        sites_actual_production = TelemetryCompanyBigQuery().get_companies_list_actual_production(site_ids_to_limit)
-    except FileNotFoundError:
-        logger.warning("BigQuery credentials not found (key.json missing), skipping telemetry data")
-        sites_actual_production = []
-    except Exception as e:
-        logger.warning(f"Failed to fetch telemetry data from BigQuery: {e}")
-        sites_actual_production = []
+    # get sites telemetry data
+    sites_actual_production = TelemetryCompanyBigQuery().get_companies_list_actual_production(site_ids_to_limit)
 
     # extend companies with details from other sources
     response = []
