@@ -151,6 +151,13 @@ All company/site detail pages update entity context automatically:
 1. **No operational data leakage** - This page is a static site record and readiness surface. It must not require telemetry, alerts, or live performance data to be useful.
 2. **Clear cross-module boundaries** - Where operational metrics exist, link out to the Operations module. Do not embed time-series charts or live KPIs in the Canonical Site Overview.
 
+### UI Terminology Standardization (Jan 2026)
+All user-facing content now uses "Projects" terminology instead of "Sites":
+- **Updated labels**: Navigation tabs, table column headers, page titles, form labels, search placeholders, breadcrumbs
+- **Affected modules**: Asset Management, O&M, Due Diligence, Finance, Reports, Settings, My Portfolio
+- **Preserved identifiers**: API endpoints, variable names (`site_id`, `total_sites`), database fields remain unchanged for backward compatibility
+- **Key changes**: "Number of Sites" → "Number of Projects", "Add Site" → "Add Project", "Search by Site Name" → "Search by Project Name"
+
 ## Integration Status
 - **Redis**: ✅ Working (Upstash with TLS) - Health check at `/api/internal/health`
 - **PostgreSQL**: ✅ Working (Replit built-in)
