@@ -70,15 +70,15 @@ export const salesApi = {
 
 export const dealsApi = {
   getPipeline: async (companyId?: number): Promise<DealPipelineResponse> => {
-    const response = await httpClient.get<DealPipelineResponse>('/api/sales/deals/pipeline', {
+    const response = await httpClient.get<DealPipelineResponse>('/api/sales/pipeline', {
       params: companyId ? { company_id: companyId } : undefined
     });
     return response.data;
   },
 
   getList: async (companyId?: number, stage?: SalesStage, skip?: number, limit?: number): Promise<Deal[]> => {
-    const response = await httpClient.get<Deal[]>('/api/sales/deals', {
-      params: { company_id: companyId, stage, skip, limit }
+    const response = await httpClient.get<Deal[]>('/api/sales/list', {
+      params: { company_id: companyId, sales_stage: stage, skip, limit }
     });
     return response.data;
   },
