@@ -1,0 +1,86 @@
+You are the Replit agent in the Ilios codebase. I need a sanity-check audit to confirm the platform matches our intended architecture and that recent changes did not introduce unwanted entities or ambiguous navigation.
+
+INTENT (DO NOT DEVIATE)
+- “Project” is ONLY a relabel of the existing “Site” concept in UI/UX language. It must NOT become a new entity.
+- We will add a separate Sales/Pipeline module later; do not build pipeline entities now unless they already exist.
+- Navigation must remain stable across the app regardless of project lifecycle state. Avoid “vanishing navigation.”
+- Lifecycle stage should control availability CONTEXTUALLY (within the selected Project), via:
+  - banners / status indicators
+  - disabled actions
+  - “inactive until X” messaging
+  - read-only placeholders
+NOT by hiding or removing modules from global navigation.
+
+CURRENT SYSTEM CONTEXT (ASSUME)
+- Ilios is modular with Company → Project hierarchy.
+- Canonical Project Overview exists (collapsible cards) and should remain the single “project record.”
+- Separate Operations module exists for baseline performance models + telemetry.
+- Due Diligence module exists.
+- Finance module exists and should remain cross-cutting and state-aware.
+
+AUDIT TASKS (OUTPUT A REPORT + ONLY MAKE SAFE FIXES)
+
+1) DATA MODEL VERIFICATION
+   - Confirm there is exactly one canonical entity for the physical asset record (formerly “Site”).
+   - Verify “Project” is not implemented as a separate table/entity or separate ID space.
+   - If a new “Project” entity/table exists, identify where it was introduced and propose a rollback plan:
+     - Restore the original canonical table
+     - Keep “Project” as UI terminology only
+   - Confirm foreign keys and references across modules still point to the canonical Project record.
+
+2) ROUTING + NAVIGATION CONTRACT (NO AMBIGUOUS OVERVIEW)
+   - Inventory all nav links and routes that contain the term “Overview” or point to overview-like pages.
+   - Enforce strict naming in navigation:
+     - Portfolio (rollups)
+     - Companies (org scope)
+     - Projects (single asset record scope)
+   - Eliminate ambiguous “Overview” label in global nav. If needed, rename to:
+     - Portfolio Overview
+     - Company Overview
+     - Project Overview
+   - Provide a route map showing how users move between:
+     Portfolio → Company → Project → (Project tabs/sections for Finance, Diligence, Operations, etc.)
+
+3) CONTEXTUAL ACTIVATION BY LIFECYCLE (DO NOT HIDE GLOBAL MODULES)
+   - Identify the lifecycle/state field(s) on the canonical Project record and where used.
+   - Confirm global nav remains stable regardless of lifecycle.
+   - Within a selected Project context, confirm each module handles lifecycle appropriately:
+     - Sales (future) is not required now.
+     - Due Diligence: should be accessible but show “Not started / Not applicable yet” as appropriate.
+     - Finance: always accessible; readiness and allowed actions change by lifecycle.
+     - Operations: always accessible; if not Placed In Service, show clear inactive state and disable telemetry-dependent actions.
+     - Implementation/Asset Mgmt: always accessible; if early stage, show inactive messaging and disable actions that assume construction underway.
+   - If lifecycle state doesn’t exist, DO NOT build a pipeline. Instead:
+     - Add a minimal lifecycleState enum to the canonical Project record (safe defaults, minimal migration risk)
+     - Use it only for contextual UI messaging and action gating (not nav gating)
+
+4) FINANCE MODULE BOUNDARIES CHECK
+   - Confirm Finance does not behave like a general ledger:
+     - No double-entry accounting
+     - No reconciliation logic
+     - Actuals treated as a feed for variance, not the accounting book
+   - Confirm Finance references other modules’ completion signals without copying their underlying data.
+
+5) SEEDED TEST DATA SAFETY
+   - Confirm synthesized test dataset lives only under the test company and is protected by dev flag/environment guard.
+   - Ensure no test data can leak into production orgs or be created unintentionally.
+
+SAFE FIXES ALLOWED NOW
+- Navigation label/route naming fixes
+- Remove/rename ambiguous “Overview” nav items
+- Pure relabel changes (Site → Project) in UI text
+- Add minimal lifecycleState enum ONLY if required for contextual messaging
+
+DO NOT DO NOW
+- Do not create Sales/Pipeline tables
+- Do not build workflow engines or complex stage automations
+- Do not add new dependencies unless absolutely required
+
+OUTPUT FORMAT
+A) Create a markdown report: /docs/finance_sanity_check_report.md including:
+   - Findings
+   - Any misalignments
+   - Exact file paths for key code points (models, routes, nav)
+   - Safe fixes applied
+   - Remaining recommendations (no code changes) for the Sales module roadmap
+B) If fixes are applied, summarize each change and why it is safe.

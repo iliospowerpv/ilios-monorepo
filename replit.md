@@ -168,3 +168,34 @@ All user-facing content now uses "Projects" terminology instead of "Sites":
 
 ## Tips
 - **Upstash copy/paste**: Always paste URLs to a text editor first to verify completeness. The Upstash console copy function may truncate URLs.
+
+## Operational Guidance
+
+### Sidebar Layout Pattern (Critical for All Applications)
+When implementing a collapsible sidebar navigation with a fixed position:
+
+1. **Main content must respond to sidebar width changes**:
+   - The main content area MUST set both `marginLeft` AND `width` based on sidebar state
+   - Use: `marginLeft: sidebarWidth` AND `width: calc(100% - sidebarWidth)`
+   - Without explicit width, the main content will be overlapped by the fixed sidebar
+
+2. **Centralized width constants**:
+   - Define sidebar widths as constants (e.g., `SIDEBAR_WIDTH_OPEN = 30`, `SIDEBAR_WIDTH_CLOSED = 8`)
+   - Use the same constants in both sidebar styles and main content styles
+
+3. **Required CSS properties for main content**:
+   ```typescript
+   {
+     marginLeft: sidebarWidth,
+     width: `calc(100% - ${sidebarWidth})`,
+     maxWidth: `calc(100% - ${sidebarWidth})`,
+     boxSizing: 'border-box',
+     transition: theme.transitions.create(['margin-left', 'width', 'max-width'], {...})
+   }
+   ```
+
+4. **Sidebar state persistence**:
+   - Always persist sidebar open/closed state to localStorage
+   - Never auto-close sidebar on navigation clicks - let user control it via toggle button only
+
+**Files to check**: `Main.styles.ts`, `PageSidebar.styles.ts`, sidebar context/provider
