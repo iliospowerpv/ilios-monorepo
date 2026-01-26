@@ -13,6 +13,9 @@ import Stack from '@mui/material/Stack';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import Logout from '@mui/icons-material/Logout';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { Link, useNavigate } from 'react-router-dom';
 import Tooltip from '@mui/material/Tooltip';
 
@@ -100,6 +103,40 @@ export const PageHeader: React.FC = () => {
               <KeyboardArrowDownIcon />
             </IconButton>
             <MenuStyled id="basic-menu" anchorEl={anchorEl} open={open} onClose={handleClose}>
+              <MenuItem
+                onClick={() => {
+                  handleClose();
+                  navigate('/account');
+                }}
+              >
+                <ListItemIcon>
+                  <PersonOutlineIcon fontSize="small" />
+                </ListItemIcon>
+                Account Settings
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  handleClose();
+                  navigate('/security');
+                }}
+              >
+                <ListItemIcon>
+                  <SecurityOutlinedIcon fontSize="small" />
+                </ListItemIcon>
+                Security
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  handleClose();
+                  navigate('/help');
+                }}
+              >
+                <ListItemIcon>
+                  <HelpOutlineIcon fontSize="small" />
+                </ListItemIcon>
+                Help & Resources
+              </MenuItem>
+              <Divider />
               <MenuItem onClick={onLogout}>
                 <ListItemIcon>
                   <Logout fontSize="small" />

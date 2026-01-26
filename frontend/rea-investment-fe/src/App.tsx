@@ -21,6 +21,9 @@ import PasswordResetSuccess from './pages/PasswordResetSuccess/PasswordResetSucc
 import PasswordResetInvalid from './pages/PasswordResetInvalid/PasswordResetInvalid';
 import SignUp from './pages/SignUp/SignUp';
 import Index from './pages/Index/Index';
+import { AccountSettings } from './pages/Account';
+import { SecuritySettings } from './pages/Security';
+import { HelpResources } from './pages/Help';
 
 import {
   SiteTask as AMSiteTask,
@@ -123,6 +126,9 @@ const router = createBrowserRouter(
     <Route>
       <Route element={<BaseLayout />} errorElement={<ErrorLayout />}>
         <Route index element={<Index />} />
+        <Route path="/account" element={<AccountSettings />} />
+        <Route path="/security" element={<SecuritySettings />} />
+        <Route path="/help" element={<HelpResources />} />
         <Route path="/dashboard" element={<DashboardModuleContainer />}>
           <Route index handle={DashboardPage.createHandle()} element={<DashboardPage.Component />} />
         </Route>
