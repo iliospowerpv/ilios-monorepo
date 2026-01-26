@@ -75,7 +75,7 @@ const SortableDocumentList: React.FC<SortableDocumentListProps> = ({ documents: 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8
+        distance: 5
       }
     }),
     useSensor(KeyboardSensor, {

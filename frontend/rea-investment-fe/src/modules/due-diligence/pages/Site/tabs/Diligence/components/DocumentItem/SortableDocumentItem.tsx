@@ -13,7 +13,7 @@ interface SortableDocumentItemProps {
 }
 
 const SortableDocumentItem: React.FC<SortableDocumentItemProps> = ({ document, onRefresh }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
     id: document.id
   });
 
@@ -21,12 +21,13 @@ const SortableDocumentItem: React.FC<SortableDocumentItemProps> = ({ document, o
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    position: 'relative' as const
+    zIndex: isDragging ? 1000 : 'auto'
   };
 
   return (
     <Box ref={setNodeRef} style={style} sx={{ display: 'flex', alignItems: 'stretch' }}>
       <Box
+        ref={setActivatorNodeRef}
         {...attributes}
         {...listeners}
         sx={{
@@ -34,19 +35,17 @@ const SortableDocumentItem: React.FC<SortableDocumentItemProps> = ({ document, o
           alignItems: 'center',
           justifyContent: 'center',
           width: '32px',
-          cursor: 'grab',
+          cursor: isDragging ? 'grabbing' : 'grab',
           backgroundColor: 'rgba(0, 0, 0, 0.02)',
           borderBottom: '1px solid #E0E0E0',
+          touchAction: 'none',
+          userSelect: 'none',
           '&:hover': {
             backgroundColor: 'rgba(0, 0, 0, 0.06)'
-          },
-          '&:active': {
-            cursor: 'grabbing'
           }
         }}
-        onClick={e => e.stopPropagation()}
       >
-        <DragIndicatorIcon sx={{ color: 'rgba(0, 0, 0, 0.4)', fontSize: '20px' }} />
+        <DragIndicatorIcon sx={{ color: 'rgba(0, 0, 0, 0.4)', fontSize: '20px', pointerEvents: 'none' }} />
       </Box>
       <Box sx={{ flex: 1 }}>
         <DocumentItem document={document} onRefresh={onRefresh} />
