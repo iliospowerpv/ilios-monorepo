@@ -12,7 +12,7 @@ export const Breadcrumbs: React.FC = () => {
 
   return (
     <MuiBreadcrumbs
-      sx={{ flexGrow: 1, color: 'text.secondary', fontWeight: '400', fontSize: '14px', lineHeight: '1.4' }}
+      sx={{ flexGrow: 1, color: 'text.secondary', fontWeight: '600', fontSize: '24px', lineHeight: '1.4' }}
     >
       {crumbList.map(({ title, link }) =>
         link ? (

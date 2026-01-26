@@ -100,7 +100,7 @@ export const EntityContextNav: React.FC = () => {
     >
       <NavItem
         level="portfolio"
-        icon={<FolderSpecialIcon />}
+        icon={<FolderSpecialIcon sx={{ fontSize: '28px' }} />}
         label="Portfolio"
         isActive={currentLevel === 'portfolio'}
         isAvailable={true}
@@ -108,7 +108,7 @@ export const EntityContextNav: React.FC = () => {
       />
       <NavItem
         level="company"
-        icon={<BusinessIcon />}
+        icon={<BusinessIcon sx={{ fontSize: '28px' }} />}
         label={currentCompany ? currentCompany.name : 'Companies'}
         isActive={currentLevel === 'company'}
         isAvailable={!!currentCompany}
@@ -116,7 +116,7 @@ export const EntityContextNav: React.FC = () => {
       />
       <NavItem
         level="project"
-        icon={<SolarPowerIcon />}
+        icon={<SolarPowerIcon sx={{ fontSize: '28px' }} />}
         label={currentProject ? currentProject.name : 'Projects'}
         isActive={currentLevel === 'project'}
         isAvailable={!!currentProject}
