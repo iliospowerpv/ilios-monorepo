@@ -198,4 +198,6 @@ When implementing a collapsible sidebar navigation with a fixed position:
    - Always persist sidebar open/closed state to localStorage
    - Never auto-close sidebar on navigation clicks - let user control it via toggle button only
 
-**Files to check**: `Main.styles.ts`, `PageSidebar.styles.ts`, sidebar context/provider
+**Files to check**: `Main.styles.ts`, `PageHeader.styles.ts`, `PageSidebar.styles.ts`, sidebar context/provider
+
+**Note**: Both the main content area AND the fixed header must respond to sidebar width changes. The header uses the same pattern with `left` and `width` properties.

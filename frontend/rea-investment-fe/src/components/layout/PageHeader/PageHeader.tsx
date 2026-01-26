@@ -23,6 +23,7 @@ import { ApiClient } from '../../../api';
 import { useAuth } from '../../../contexts/auth/auth';
 import { useNotify } from '../../../contexts/notifications/notifications';
 import { useThemeMode } from '../../../contexts/theme/theme';
+import { useSidebar } from '../../../contexts/sidebar';
 
 export const PageHeader: React.FC = () => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -32,6 +33,7 @@ export const PageHeader: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { mode, toggleTheme } = useThemeMode();
+  const { isOpen: sidebarOpen } = useSidebar();
 
   if (!user) {
     throw new Error('PageHeader component requires user authentication');
@@ -64,7 +66,7 @@ export const PageHeader: React.FC = () => {
   const isDisabled = !user?.is_system_user && !user?.role?.permissions?.['Settings Page']?.view;
 
   return (
-    <Header position="fixed">
+    <Header position="fixed" sidebarOpen={sidebarOpen}>
       <Box px={t => t.spacing(3)}>
         <HeaderToolbar>
           <Stack direction="row" alignItems="center" spacing={2} sx={{ flexGrow: 1 }}>

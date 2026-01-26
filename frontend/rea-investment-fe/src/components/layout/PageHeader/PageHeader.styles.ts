@@ -4,6 +4,9 @@ import Toolbar from '@mui/material/Toolbar';
 import AppBar from '@mui/material/AppBar';
 import Menu from '@mui/material/Menu';
 
+const SIDEBAR_WIDTH_OPEN = 30;
+const SIDEBAR_WIDTH_CLOSED = 8;
+
 export const HeaderMenuAvatar = styled(Avatar)(({ theme }) => ({
   width: 48,
   height: 48,
@@ -21,12 +24,26 @@ export const HeaderToolbar = styled(Toolbar)(({ theme }) => ({
   color: theme.palette.text.secondary
 }));
 
-export const Header = styled(AppBar)(({ theme }) => ({
-  left: theme.spacing(8),
-  width: `calc(100% - ${theme.spacing(8)})`,
-  backgroundColor: theme.palette.background.paper,
-  boxShadow: 'none'
-}));
+interface HeaderProps {
+  sidebarOpen?: boolean;
+}
+
+export const Header = styled(AppBar, {
+  shouldForwardProp: prop => prop !== 'sidebarOpen'
+})<HeaderProps>(({ theme, sidebarOpen }) => {
+  const sidebarWidth = sidebarOpen ? theme.spacing(SIDEBAR_WIDTH_OPEN) : theme.spacing(SIDEBAR_WIDTH_CLOSED);
+
+  return {
+    left: sidebarWidth,
+    width: `calc(100% - ${sidebarWidth})`,
+    backgroundColor: theme.palette.background.paper,
+    boxShadow: 'none',
+    transition: theme.transitions.create(['left', 'width'], {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.enteringScreen
+    })
+  };
+});
 
 export const MenuStyled = styled(Menu)(({ theme }) => ({
   '& .MuiPaper-root': {
