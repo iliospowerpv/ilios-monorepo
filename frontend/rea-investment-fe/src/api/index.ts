@@ -15,6 +15,7 @@ import { buildConnectionsApi } from './connections';
 import { buildInvestorDashboardApi } from './investor-dashboard';
 import { buildBreadcrumbsApi } from './breadcrumbs';
 import { buildReportsApi } from './reports';
+import { buildAccessibleEntitiesApi } from './accessible-entities';
 
 export const ApiClient = Object.freeze({
   _tokenManager: tokenManager,
@@ -33,7 +34,8 @@ export const ApiClient = Object.freeze({
   connections: buildConnectionsApi(httpClient),
   investorDashboard: buildInvestorDashboardApi(httpClient),
   breadcrumbs: buildBreadcrumbsApi(httpClient),
-  reports: buildReportsApi(httpClient)
+  reports: buildReportsApi(httpClient),
+  accessibleEntities: buildAccessibleEntitiesApi(httpClient)
 });
 
 export type {
@@ -116,3 +118,5 @@ export type {
   CreateSiteMappingAttributes,
   SiteMapping
 } from './connections';
+
+export type { AccessibleCompany, AccessibleProject, AccessibleEntitiesResponse } from './accessible-entities';

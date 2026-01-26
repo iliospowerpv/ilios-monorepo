@@ -74,7 +74,10 @@ const BaseTableNoPagination = forwardRef((props: BaseTableProps, ref) => {
   );
 
   return (
-    <div className={`${theme.palette.mode === 'dark' ? 'ag-theme-quartz-dark' : 'ag-theme-quartz'} full-width-grid no-borders`} data-testid="grid__base-table">
+    <div
+      className={`${theme.palette.mode === 'dark' ? 'ag-theme-quartz-dark' : 'ag-theme-quartz'} full-width-grid no-borders`}
+      data-testid="grid__base-table"
+    >
       <AgGridReact
         ref={agGridRef}
         domLayout="autoHeight"

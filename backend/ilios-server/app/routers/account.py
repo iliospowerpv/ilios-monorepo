@@ -17,6 +17,11 @@ from app.helpers.authorization.custom.diligence_overview_page import DiligenceOv
 from app.helpers.email import EmailTokenValidator, EmailUtility
 from app.helpers.password_recovery_handler import UserPasswordRecoveryHandler
 from app.schema.account import PasswordCreationSuccess, PasswordSetupPayload
+from app.schema.accessible_entities import (
+    AccessibleCompanySchema,
+    AccessibleEntitiesResponse,
+    AccessibleProjectSchema,
+)
 from app.schema.auth_token import ResetPasswordSchema
 from app.schema.message import Success
 from app.schema.user import AccountMgmtModeEnum, CurrentUserSchema, InvitationTokenValidationSuccess, MyUserSchema
@@ -141,3 +146,69 @@ async def password_recovery(reset_data: ResetPasswordSchema, db_session: Session
             "The reset password email could not be send. Please try again.",
         )
     return {"code": status.HTTP_200_OK, "message": "Email with password reset instructions was sent"}
+
+
+@account_router.get(
+    "/me/accessible-entities",
+    response_model=AccessibleEntitiesResponse,
+    summary="Get accessible companies and projects for context bar",
+    description="Returns all companies and projects the current user has access to, "
+                "based on UserProject assignments and parent_company_id. "
+                "System users get all companies and projects.",
+)
+async def get_accessible_entities(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+) -> AccessibleEntitiesResponse:
+    from app.models.company import Company
+    from app.models.site import Site
+    
+    companies: list[AccessibleCompanySchema] = []
+    projects: list[AccessibleProjectSchema] = []
+    
+    if current_user.is_system_user:
+        all_companies = db_session.query(Company).order_by(Company.name).all()
+        all_sites = db_session.query(Site).join(Company).order_by(Company.name, Site.name).all()
+        
+        companies = [
+            AccessibleCompanySchema(id=c.id, name=c.name)
+            for c in all_companies
+        ]
+        
+        projects = [
+            AccessibleProjectSchema(
+                id=s.id,
+                name=s.name,
+                company_id=s.company_id,
+                company_name=s.company.name if s.company else "Unknown"
+            )
+            for s in all_sites
+        ]
+    else:
+        company_ids_seen = set()
+        
+        for company in current_user.companies:
+            if company.id not in company_ids_seen:
+                companies.append(AccessibleCompanySchema(id=company.id, name=company.name))
+                company_ids_seen.add(company.id)
+        
+        if current_user.parent_company and current_user.parent_company.id not in company_ids_seen:
+            companies.insert(0, AccessibleCompanySchema(
+                id=current_user.parent_company.id,
+                name=current_user.parent_company.name
+            ))
+        
+        projects = [
+            AccessibleProjectSchema(
+                id=s.id,
+                name=s.name,
+                company_id=s.company_id,
+                company_name=s.company.name if s.company else "Unknown"
+            )
+            for s in current_user.sites
+        ]
+    
+    companies.sort(key=lambda c: c.name.lower())
+    projects.sort(key=lambda p: (p.company_name.lower(), p.name.lower()))
+    
+    return AccessibleEntitiesResponse(companies=companies, projects=projects)

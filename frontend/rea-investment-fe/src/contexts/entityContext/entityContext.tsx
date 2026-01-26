@@ -2,22 +2,41 @@ import React, { createContext, useContext, useState, useCallback, useMemo, useEf
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export type EntityLevel = 'portfolio' | 'company' | 'project';
+export type ScopeType = 'portfolio' | 'company' | 'project';
 
 export interface EntityInfo {
   id: number;
   name: string;
 }
 
+export type ModuleType =
+  | 'asset-management'
+  | 'operations-and-maintenance'
+  | 'due-diligence'
+  | 'finance'
+  | 'sales'
+  | 'reports'
+  | 'dashboard'
+  | 'my-portfolio'
+  | null;
+
 interface EntityContextType {
   currentLevel: EntityLevel;
+  currentScope: ScopeType;
   currentCompany: EntityInfo | null;
   currentProject: EntityInfo | null;
-  currentModule: string | null;
+  currentModule: ModuleType;
   setCurrentCompany: (company: EntityInfo | null) => void;
   setCurrentProject: (project: EntityInfo | null) => void;
-  setCurrentModule: (module: string | null) => void;
+  setCurrentModule: (module: ModuleType) => void;
+  setCurrentScope: (scope: ScopeType) => void;
   navigateToLevel: (level: EntityLevel) => void;
+  navigateToScope: (scope: ScopeType, options?: { stayInModule?: boolean }) => void;
+  navigateToCompany: (company: EntityInfo, options?: { stayInModule?: boolean }) => void;
+  navigateToProject: (project: EntityInfo, options?: { stayInModule?: boolean }) => void;
   getModuleBasePath: (module: string) => string;
+  getCanonicalPath: (scope: ScopeType) => string;
+  getModuleScopedPath: (module: string, scope: ScopeType) => string;
 }
 
 const EntityContext = createContext<EntityContextType | undefined>(undefined);
@@ -27,18 +46,24 @@ const STORAGE_KEY = 'ilios_entity_context';
 interface StoredContext {
   company: EntityInfo | null;
   project: EntityInfo | null;
+  scope: ScopeType;
 }
 
 const loadStoredContext = (): StoredContext => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      return {
+        company: parsed.company || null,
+        project: parsed.project || null,
+        scope: parsed.scope || 'portfolio'
+      };
     }
   } catch {
     // ignore
   }
-  return { company: null, project: null };
+  return { company: null, project: null, scope: 'portfolio' };
 };
 
 const saveContext = (context: StoredContext): void => {
@@ -56,14 +81,15 @@ export const EntityContextProvider: React.FC<{ children: React.ReactNode }> = ({
   const storedContext = loadStoredContext();
   const [currentCompany, setCurrentCompanyState] = useState<EntityInfo | null>(storedContext.company);
   const [currentProject, setCurrentProjectState] = useState<EntityInfo | null>(storedContext.project);
-  const [currentModule, setCurrentModule] = useState<string | null>(null);
+  const [currentScope, setCurrentScopeState] = useState<ScopeType>(storedContext.scope);
+  const [currentModule, setCurrentModule] = useState<ModuleType>(null);
 
   const currentLevel = useMemo((): EntityLevel => {
     const path = location.pathname;
-    if (path.includes('/sites/') || path.includes('/projects/')) {
+    if (path.includes('/sites/') || path.includes('/projects/') || path.match(/\/project\/\d+/)) {
       return 'project';
     }
-    if (path.includes('/companies/')) {
+    if (path.includes('/companies/') || path.match(/\/company\/\d+/)) {
       return 'company';
     }
     return 'portfolio';
@@ -87,8 +113,28 @@ export const EntityContextProvider: React.FC<{ children: React.ReactNode }> = ({
       setCurrentModule('dashboard');
     } else if (path.startsWith('/my-portfolio')) {
       setCurrentModule('my-portfolio');
+    } else if (path.startsWith('/portfolio') || path.startsWith('/companies') || path.startsWith('/projects')) {
+      setCurrentModule(null);
     } else {
       setCurrentModule(null);
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const path = location.pathname;
+
+    if (path.includes('/project/') || path.includes('/sites/') || path.includes('/projects/')) {
+      const projectMatch = path.match(/\/(?:project|sites|projects)\/(\d+)/);
+      if (projectMatch) {
+        setCurrentScopeState('project');
+      }
+    } else if (path.includes('/company/') || path.includes('/companies/')) {
+      const companyMatch = path.match(/\/(?:company|companies)\/(\d+)/);
+      if (companyMatch) {
+        setCurrentScopeState('company');
+      }
+    } else if (path.startsWith('/portfolio') || path.includes('/portfolio')) {
+      setCurrentScopeState('portfolio');
     }
   }, [location.pathname]);
 
@@ -97,18 +143,28 @@ export const EntityContextProvider: React.FC<{ children: React.ReactNode }> = ({
       setCurrentCompanyState(company);
       if (!company) {
         setCurrentProjectState(null);
+        saveContext({ company: null, project: null, scope: currentScope });
+      } else {
+        saveContext({ company, project: currentProject, scope: currentScope });
       }
-      saveContext({ company, project: company ? currentProject : null });
     },
-    [currentProject]
+    [currentProject, currentScope]
   );
 
   const setCurrentProject = useCallback(
     (project: EntityInfo | null) => {
       setCurrentProjectState(project);
-      saveContext({ company: currentCompany, project });
+      saveContext({ company: currentCompany, project, scope: currentScope });
     },
-    [currentCompany]
+    [currentCompany, currentScope]
+  );
+
+  const setCurrentScope = useCallback(
+    (scope: ScopeType) => {
+      setCurrentScopeState(scope);
+      saveContext({ company: currentCompany, project: currentProject, scope });
+    },
+    [currentCompany, currentProject]
   );
 
   const getModuleBasePath = useCallback((module: string): string => {
@@ -121,12 +177,117 @@ export const EntityContextProvider: React.FC<{ children: React.ReactNode }> = ({
         return '/due-diligence';
       case 'finance':
         return '/finance';
+      case 'sales':
+        return '/sales';
       case 'reports':
         return '/reports';
+      case 'dashboard':
+        return '/dashboard';
+      case 'my-portfolio':
+        return '/my-portfolio';
       default:
         return '/dashboard';
     }
   }, []);
+
+  const getCanonicalPath = useCallback(
+    (scope: ScopeType): string => {
+      switch (scope) {
+        case 'portfolio':
+          return '/portfolio';
+        case 'company':
+          if (currentCompany) {
+            return `/companies/${currentCompany.id}`;
+          }
+          return '/companies';
+        case 'project':
+          if (currentProject) {
+            return `/projects/${currentProject.id}`;
+          }
+          return '/projects';
+      }
+    },
+    [currentCompany, currentProject]
+  );
+
+  const getModuleScopedPath = useCallback(
+    (module: string, scope: ScopeType): string => {
+      const basePath = getModuleBasePath(module);
+
+      switch (scope) {
+        case 'portfolio':
+          return `${basePath}/portfolio`;
+        case 'company':
+          if (currentCompany) {
+            return `${basePath}/company/${currentCompany.id}`;
+          }
+          return '/companies';
+        case 'project':
+          if (currentProject) {
+            return `${basePath}/project/${currentProject.id}`;
+          }
+          if (currentCompany) {
+            return `/projects?companyId=${currentCompany.id}`;
+          }
+          return '/projects';
+      }
+    },
+    [currentCompany, currentProject, getModuleBasePath]
+  );
+
+  const navigateToScope = useCallback(
+    (scope: ScopeType, options?: { stayInModule?: boolean }) => {
+      const stayInModule = options?.stayInModule ?? true;
+
+      setCurrentScopeState(scope);
+      saveContext({ company: currentCompany, project: currentProject, scope });
+
+      if (stayInModule && currentModule) {
+        const path = getModuleScopedPath(currentModule, scope);
+        navigate(path);
+      } else {
+        const path = getCanonicalPath(scope);
+        navigate(path);
+      }
+    },
+    [currentModule, currentCompany, currentProject, navigate, getModuleScopedPath, getCanonicalPath]
+  );
+
+  const navigateToCompany = useCallback(
+    (company: EntityInfo, options?: { stayInModule?: boolean }) => {
+      const stayInModule = options?.stayInModule ?? true;
+
+      setCurrentCompanyState(company);
+      setCurrentScopeState('company');
+      saveContext({ company, project: currentProject, scope: 'company' });
+
+      if (stayInModule && currentModule) {
+        const basePath = getModuleBasePath(currentModule);
+        navigate(`${basePath}/company/${company.id}`);
+      } else {
+        navigate(`/companies/${company.id}`);
+      }
+    },
+    [currentModule, currentProject, navigate, getModuleBasePath]
+  );
+
+  const navigateToProject = useCallback(
+    (project: EntityInfo, options?: { stayInModule?: boolean }) => {
+      const stayInModule = options?.stayInModule ?? true;
+
+      setCurrentProjectState(project);
+      setCurrentScopeState('project');
+      saveContext({ company: currentCompany, project, scope: 'project' });
+
+      if (stayInModule && currentModule) {
+        const basePath = getModuleBasePath(currentModule);
+        navigate(`${basePath}/project/${project.id}`);
+      } else {
+        navigate(`/projects/${project.id}`);
+      }
+    },
+    [currentModule, currentCompany, navigate, getModuleBasePath]
+  );
 
   const navigateToLevel = useCallback(
     (level: EntityLevel) => {
@@ -155,24 +316,38 @@ export const EntityContextProvider: React.FC<{ children: React.ReactNode }> = ({
   const value = useMemo(
     () => ({
       currentLevel,
+      currentScope,
       currentCompany,
       currentProject,
       currentModule,
       setCurrentCompany,
       setCurrentProject,
       setCurrentModule,
+      setCurrentScope,
       navigateToLevel,
-      getModuleBasePath
+      navigateToScope,
+      navigateToCompany,
+      navigateToProject,
+      getModuleBasePath,
+      getCanonicalPath,
+      getModuleScopedPath
     }),
     [
       currentLevel,
+      currentScope,
       currentCompany,
       currentProject,
       currentModule,
       setCurrentCompany,
       setCurrentProject,
+      setCurrentScope,
       navigateToLevel,
-      getModuleBasePath
+      navigateToScope,
+      navigateToCompany,
+      navigateToProject,
+      getModuleBasePath,
+      getCanonicalPath,
+      getModuleScopedPath
     ]
   );
 

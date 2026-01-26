@@ -24,6 +24,7 @@ import Index from './pages/Index/Index';
 import { AccountSettings } from './pages/Account';
 import { SecuritySettings } from './pages/Security';
 import { HelpResources } from './pages/Help';
+import { PortfolioView, CompaniesPickerView, CompanyView, ProjectsPickerView, ProjectView } from './pages/Hierarchy';
 
 import {
   SiteTask as AMSiteTask,
@@ -129,6 +130,11 @@ const router = createBrowserRouter(
         <Route path="/account" element={<AccountSettings />} />
         <Route path="/security" element={<SecuritySettings />} />
         <Route path="/help" element={<HelpResources />} />
+        <Route path="/portfolio" element={<PortfolioView />} />
+        <Route path="/companies" element={<CompaniesPickerView />} />
+        <Route path="/companies/:companyId" element={<CompanyView />} />
+        <Route path="/projects" element={<ProjectsPickerView />} />
+        <Route path="/projects/:projectId" element={<ProjectView />} />
         <Route path="/dashboard" element={<DashboardModuleContainer />}>
           <Route index handle={DashboardPage.createHandle()} element={<DashboardPage.Component />} />
         </Route>
