@@ -6,7 +6,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
+from app.db.session import get_session
 from app.crud import sales as sales_crud
 from app.schema.sales import (
     DataRoomPackageResponse,
@@ -61,7 +61,7 @@ def _project_to_response(project) -> SalesProjectResponse:
 @router.get("/projects/{site_id}", response_model=SalesProjectResponse)
 def get_sales_project(
     site_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_session),
 ):
     """Get a single project with sales data."""
     project = sales_crud.get_project_with_sales(db, site_id)
@@ -74,7 +74,7 @@ def get_sales_project(
 def update_sales_project(
     site_id: int,
     data: SalesProjectUpdate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_session),
 ):
     """Update sales fields on a project."""
     project = sales_crud.get_project_with_sales(db, site_id)
@@ -91,7 +91,7 @@ def update_sales_project(
 def transition_sales_stage(
     site_id: int,
     data: SalesStageTransition,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_session),
 ):
     """Transition sales stage with audit logging."""
     project = sales_crud.get_project_with_sales(db, site_id)
@@ -124,7 +124,7 @@ def transition_sales_stage(
 def transition_lifecycle_state(
     site_id: int,
     data: LifecycleStateTransition,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_session),
 ):
     """Transition lifecycle state with audit logging."""
     project = sales_crud.get_project_with_sales(db, site_id)
@@ -142,7 +142,7 @@ def transition_lifecycle_state(
 @router.get("/projects/{site_id}/handoff-checklist", response_model=HandoffChecklistResponse)
 def get_handoff_checklist(
     site_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_session),
 ):
     """Get handoff checklist status for a project."""
     project = sales_crud.get_project_with_sales(db, site_id)
@@ -161,7 +161,7 @@ def get_handoff_checklist(
 @router.get("/projects/{site_id}/transitions", response_model=List[SalesStateTransitionResponse])
 def get_state_transitions(
     site_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_session),
 ):
     """Get audit log of state transitions for a project."""
     project = sales_crud.get_project_with_sales(db, site_id)
@@ -193,7 +193,7 @@ def get_state_transitions(
 @router.get("/projects/{site_id}/data-room-package", response_model=DataRoomPackageResponse)
 def get_data_room_package(
     site_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_session),
 ):
     """Generate data room package (stub for future expansion)."""
     project = sales_crud.get_project_with_sales(db, site_id)

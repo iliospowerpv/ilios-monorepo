@@ -5,7 +5,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
+from app.db.session import get_session
 from app.crud import sales as sales_crud
 from app.schema.sales import (
     SalesListFilters,
@@ -79,7 +79,7 @@ def _project_to_response(project) -> SalesProjectResponse:
 @router.get("/pipeline", response_model=SalesPipelineResponse)
 def get_sales_pipeline(
     company_id: Optional[int] = Query(None, description="Filter by company"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_session),
 ):
     """Get sales pipeline grouped by stage (for kanban view)."""
     pipeline = sales_crud.get_sales_pipeline(db, company_id=company_id)
@@ -102,7 +102,7 @@ def get_sales_list(
     needs_action: Optional[bool] = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_session),
 ):
     """Get list of sales projects with filters."""
     filters = SalesListFilters(
