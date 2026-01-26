@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import Box from '@mui/material/Box';
@@ -12,7 +12,8 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import Diligence from './tabs/Diligence/DiligenceList';
 import { useAuth } from '../../../../contexts/auth/auth';
 import { BootstrapTooltip } from '../../../../components/common/BootstrapTooltip/BootstrapTooltip';
-import { siteCrumbsQuery } from './loader';
+import { siteCrumbsQuery, companyCrumbsQuery } from './loader';
+import { useEntityContext } from '../../../../contexts/entityContext';
 
 interface TabData {
   id: string;
@@ -32,37 +33,53 @@ interface SiteDetailsProps {
 export const SiteDetailsPage: React.FC<SiteDetailsProps> = ({ tabId }) => {
   const { companyId, siteId } = useParams();
   const isValidId = !!siteId && Number.isSafeInteger(Number.parseInt(siteId));
+  const isValidCompanyId = !!companyId && Number.isSafeInteger(Number.parseInt(companyId));
   const { user } = useAuth();
   const access = user?.diligence_overview_access || user?.is_system_user;
+  const { setCurrentCompany, setCurrentProject } = useEntityContext();
   let activeTab = tabId || 'overview';
   if (!access) {
     activeTab = 'diligence';
   }
 
-  const tabsData: TabData[] = [
-    {
-      id: 'overview',
-      label: 'Overview',
-      link: '/due-diligence/companies/:companyId/sites/:siteId/overview',
-      disabled: !access,
-      icon: <SpaceDashboardIcon />,
-      content: Overview
-    },
-    {
-      id: 'diligence',
-      label: 'Diligence',
-      link: '/due-diligence/companies/:companyId/sites/:siteId/due-diligence',
-      disabled: false,
-      icon: <DescriptionIcon />,
-      content: Diligence
-    }
-  ];
+  const tabsData: TabData[] = React.useMemo(
+    () => [
+      {
+        id: 'overview',
+        label: 'Overview',
+        link: '/due-diligence/companies/:companyId/sites/:siteId/overview',
+        disabled: !access,
+        icon: <SpaceDashboardIcon />,
+        content: Overview
+      },
+      {
+        id: 'diligence',
+        label: 'Diligence',
+        link: '/due-diligence/companies/:companyId/sites/:siteId/due-diligence',
+        disabled: false,
+        icon: <DescriptionIcon />,
+        content: Diligence
+      }
+    ],
+    [access]
+  );
 
   const {
     data: siteDetails,
     isLoading: isLoadingSiteDetails,
     error: siteDetailsLoadingError
   } = useQuery(siteCrumbsQuery(isValidId ? Number.parseInt(siteId) : -1, isValidId));
+
+  const { data: companyDetails } = useQuery(
+    companyCrumbsQuery(isValidCompanyId ? Number.parseInt(companyId) : -1, isValidCompanyId)
+  );
+
+  useEffect(() => {
+    if (siteDetails && companyDetails) {
+      setCurrentCompany({ id: companyDetails.id, name: companyDetails.name });
+      setCurrentProject({ id: siteDetails.id, name: siteDetails.name });
+    }
+  }, [siteDetails, companyDetails, setCurrentCompany, setCurrentProject]);
 
   React.useEffect(() => {
     if (siteDetailsLoadingError) {
@@ -73,7 +90,7 @@ export const SiteDetailsPage: React.FC<SiteDetailsProps> = ({ tabId }) => {
   const DisplayContent = React.useMemo(() => {
     const tab = tabsData.find(({ id }) => id === activeTab);
     return tab ? tab.content : null;
-  }, [activeTab]);
+  }, [activeTab, tabsData]);
 
   if (!DisplayContent || isLoadingSiteDetails || !siteDetails) {
     return null;

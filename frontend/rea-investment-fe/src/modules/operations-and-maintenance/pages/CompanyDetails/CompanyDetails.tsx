@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import Box from '@mui/material/Box';
@@ -15,6 +15,7 @@ import Alerts from './tabs/Alerts/Alerts';
 import type { CompanyDetailsTabProps } from './tabs/types';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import Tasks from './tabs/Tasks/Tasks';
+import { useEntityContext } from '../../../../contexts/entityContext';
 
 interface TabData {
   id: string;
@@ -70,12 +71,20 @@ export const CompanyDetailsPage: React.FC<CompanyDetailsProps> = ({ tabId }) => 
   const { companyId } = useParams();
   const isValidId = !!companyId && Number.isSafeInteger(Number.parseInt(companyId));
   const activeTab = tabId || 'overview';
+  const { setCurrentCompany, setCurrentProject } = useEntityContext();
 
   const {
     data: companyDetails,
     isLoading: isLoadingCompanyDetails,
     error: companyDetailsLoadingError
   } = useQuery(companyDetailsQuery(isValidId ? Number.parseInt(companyId) : -1, isValidId));
+
+  useEffect(() => {
+    if (companyDetails) {
+      setCurrentCompany({ id: companyDetails.id, name: companyDetails.name });
+      setCurrentProject(null);
+    }
+  }, [companyDetails, setCurrentCompany, setCurrentProject]);
 
   React.useEffect(() => {
     if (companyDetailsLoadingError) {

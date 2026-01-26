@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import Box from '@mui/material/Box';
@@ -17,6 +17,7 @@ import VideocamIcon from '@mui/icons-material/Videocam';
 import { SecurityPage } from '../../../security';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import Tasks from './tabs/Tasks/Tasks';
+import { useEntityContext } from '../../../../contexts/entityContext';
 
 interface TabData {
   id: string;
@@ -81,6 +82,7 @@ export const SiteDetailsPage: React.FC<SiteDetailsProps> = ({ tabId }) => {
   const isValidId = !!siteId && Number.isSafeInteger(Number.parseInt(siteId));
   const isValidCompanyId = !!companyId && Number.isSafeInteger(Number.parseInt(companyId));
   const activeTab = tabId || 'overview';
+  const { setCurrentCompany, setCurrentProject } = useEntityContext();
 
   const {
     data: siteDetails,
@@ -93,6 +95,13 @@ export const SiteDetailsPage: React.FC<SiteDetailsProps> = ({ tabId }) => {
     isLoading: isLoadingComapnyDetails,
     error: companyDetailsLoadingError
   } = useQuery(companyDetailsQuery(isValidCompanyId ? Number.parseInt(companyId) : -1, isValidCompanyId));
+
+  useEffect(() => {
+    if (siteDetails && companyDetails) {
+      setCurrentCompany({ id: companyDetails.id, name: companyDetails.name });
+      setCurrentProject({ id: siteDetails.id, name: siteDetails.name });
+    }
+  }, [siteDetails, companyDetails, setCurrentCompany, setCurrentProject]);
 
   React.useEffect(() => {
     if (siteDetailsLoadingError) {

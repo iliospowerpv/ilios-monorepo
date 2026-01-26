@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
@@ -26,6 +26,7 @@ import { useTheme } from '@mui/material/styles';
 
 import { financeApi } from '../../api/finance';
 import type { FinanceBudget, FinanceObligation, FinanceVendor, FinanceActual } from '../../types';
+import { useEntityContext } from '../../../../contexts/entityContext';
 
 const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('en-US', {
@@ -360,12 +361,20 @@ const ActualsTab: React.FC<{ companyId: number; siteId: number }> = ({ companyId
 export const SiteFinance: React.FC = () => {
   const { companyId, siteId } = useParams<{ companyId: string; siteId: string }>();
   const [tabValue, setTabValue] = useState(0);
+  const { setCurrentCompany, setCurrentProject } = useEntityContext();
 
   const { data: summary, isLoading } = useQuery({
     queryKey: ['finance-site-summary', companyId, siteId],
     queryFn: () => financeApi.getSiteSummary(Number(companyId), Number(siteId)),
     enabled: !!companyId && !!siteId
   });
+
+  useEffect(() => {
+    if (summary && companyId && siteId) {
+      setCurrentCompany({ id: Number(companyId), name: summary.company_name || `Company ${companyId}` });
+      setCurrentProject({ id: Number(siteId), name: summary.site_name || `Site ${siteId}` });
+    }
+  }, [summary, companyId, siteId, setCurrentCompany, setCurrentProject]);
 
   const handleDownloadPackage = async () => {
     try {

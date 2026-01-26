@@ -74,7 +74,15 @@ import {
 import { ErrorLayout } from './components/layout/ErrorLayout/ErrorLayout';
 import { PortfolioPage, ModuleContainer as PortfolioModuleContainer } from './modules/my-portfolio';
 import { AllReports, ModuleContainer as ReportsModuleContainer } from './modules/reports';
-import { FinanceLanding, FinanceHome, SiteFinance, ModuleContainer as FinanceModuleContainer } from './modules/finance';
+import {
+  FinanceLanding,
+  FinanceHome,
+  SiteFinance,
+  ModuleContainer as FinanceModuleContainer,
+  createFinanceLandingHandle,
+  createFinanceHomeHandle,
+  createSiteFinanceHandle
+} from './modules/finance';
 
 // initialization
 const queryClient = new QueryClient();
@@ -124,9 +132,13 @@ const router = createBrowserRouter(
           <Route index handle={AllReports.createHandle()} element={<AllReports.Component />} />
         </Route>
         <Route path="/finance" element={<FinanceModuleContainer />}>
-          <Route index element={<FinanceLanding />} />
-          <Route path="companies/:companyId" element={<FinanceHome />} />
-          <Route path="companies/:companyId/sites/:siteId" element={<SiteFinance />} />
+          <Route index handle={createFinanceLandingHandle()} element={<FinanceLanding />} />
+          <Route path="companies/:companyId" handle={createFinanceHomeHandle(queryClient)} element={<FinanceHome />} />
+          <Route
+            path="companies/:companyId/sites/:siteId"
+            handle={createSiteFinanceHandle(queryClient)}
+            element={<SiteFinance />}
+          />
         </Route>
         <Route path="/due-diligence" element={<DDModuleContainer />}>
           <Route index handle={DPDiligencePage.createHandle()} element={<DPDiligencePage.Component />} />

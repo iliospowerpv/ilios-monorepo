@@ -14,7 +14,8 @@ type ModuleId =
   | 'dashboard'
   | 'due-diligence'
   | 'my-portfolio'
-  | 'reports';
+  | 'reports'
+  | 'finance';
 
 interface AIAssistantConfig {
   generateConfig: (data?: unknown) => {

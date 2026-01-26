@@ -169,6 +169,7 @@ export interface FinanceActual {
 export interface FinanceSiteSummary {
   site_id: number;
   site_name: string;
+  company_name?: string;
   total_budget_planned: number;
   total_budget_authorized: number;
   total_budget_actual: number;
@@ -193,6 +194,7 @@ export interface FinancePortfolioSummary {
 export interface FinancePortfolioResponse {
   summary: FinancePortfolioSummary;
   sites: FinanceSiteSummary[];
+  company_name?: string;
 }
 
 export interface PaginatedResponse<T> {

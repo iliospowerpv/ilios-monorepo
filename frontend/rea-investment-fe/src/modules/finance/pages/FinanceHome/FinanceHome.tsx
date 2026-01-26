@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
@@ -22,6 +22,7 @@ import { useTheme } from '@mui/material/styles';
 
 import { financeApi } from '../../api/finance';
 import type { FinanceSiteSummary } from '../../types';
+import { useEntityContext } from '../../../../contexts/entityContext';
 
 const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('en-US', {
@@ -115,12 +116,20 @@ export const FinanceHome: React.FC = () => {
   const { companyId } = useParams<{ companyId: string }>();
   const navigate = useNavigate();
   const theme = useTheme();
+  const { setCurrentCompany, setCurrentProject } = useEntityContext();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['finance-portfolio', companyId],
     queryFn: () => financeApi.getPortfolioSummary(Number(companyId)),
     enabled: !!companyId
   });
+
+  useEffect(() => {
+    if (data && companyId) {
+      setCurrentCompany({ id: Number(companyId), name: data.company_name || `Company ${companyId}` });
+      setCurrentProject(null);
+    }
+  }, [data, companyId, setCurrentCompany, setCurrentProject]);
 
   if (isLoading) {
     return (

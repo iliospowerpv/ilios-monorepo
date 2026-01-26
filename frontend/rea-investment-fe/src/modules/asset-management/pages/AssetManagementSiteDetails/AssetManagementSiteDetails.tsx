@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import Box from '@mui/material/Box';
@@ -13,6 +13,7 @@ import Devices from './tabs/Devices/Devices';
 import Tasks from './tabs/Tasks/Tasks';
 import type { AssetManagementSiteDetailsTabProps } from './tabs/types';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
+import { useEntityContext } from '../../../../contexts/entityContext';
 
 interface TabData {
   id: string;
@@ -60,10 +61,18 @@ export const AssetManagementSiteDetails: React.FC<AssetManagementSiteDetailsProp
   const { siteId } = useParams();
   const isValidId = !!siteId && Number.isSafeInteger(Number.parseInt(siteId));
   const activeTab = tabId || 'overview';
+  const { setCurrentCompany, setCurrentProject } = useEntityContext();
 
   const { data: siteDetails, isLoading: isLoadingSiteDetails } = useQuery(
     siteDetailsQuery(isValidId ? Number.parseInt(siteId) : -1, isValidId, true)
   );
+
+  useEffect(() => {
+    if (siteDetails) {
+      setCurrentCompany({ id: siteDetails.company.id, name: siteDetails.company.name });
+      setCurrentProject({ id: siteDetails.id, name: siteDetails.name });
+    }
+  }, [siteDetails, setCurrentCompany, setCurrentProject]);
 
   const DisplayContent = React.useMemo(() => {
     const tab = tabsData.find(({ id }) => id === activeTab);

@@ -18,6 +18,7 @@ import Tooltip from '@mui/material/Tooltip';
 
 import { HeaderMenuAvatar, HeaderToolbar, Header, MenuStyled } from './PageHeader.styles';
 import { Breadcrumbs } from '../Breadcrumbs/Breadcrumbs';
+import { EntityContextNav } from '../EntityContextNav/EntityContextNav';
 import { ApiClient } from '../../../api';
 import { useAuth } from '../../../contexts/auth/auth';
 import { useNotify } from '../../../contexts/notifications/notifications';
@@ -66,7 +67,10 @@ export const PageHeader: React.FC = () => {
     <Header position="fixed">
       <Box px={t => t.spacing(3)}>
         <HeaderToolbar>
-          <Breadcrumbs />
+          <Stack direction="row" alignItems="center" spacing={2} sx={{ flexGrow: 1 }}>
+            <EntityContextNav />
+            <Breadcrumbs />
+          </Stack>
           <Stack direction="row" alignItems="center">
             <Tooltip title={mode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}>
               <IconButton onClick={toggleTheme} sx={{ mr: t => t.spacing(2), color: 'text.secondary' }}>
