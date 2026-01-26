@@ -79,6 +79,8 @@ export const EntityContextProvider: React.FC<{ children: React.ReactNode }> = ({
       setCurrentModule('due-diligence');
     } else if (path.startsWith('/finance')) {
       setCurrentModule('finance');
+    } else if (path.startsWith('/sales')) {
+      setCurrentModule('sales');
     } else if (path.startsWith('/reports')) {
       setCurrentModule('reports');
     } else if (path.startsWith('/dashboard')) {

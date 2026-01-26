@@ -12,6 +12,7 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { NavMenuButtonContainer } from './NavMenu.styles';
 import { useNavigate, useMatches } from 'react-router-dom';
 import { RouteHandle } from '../../../handles';
@@ -68,6 +69,7 @@ const AnchorElTooltip: React.FC<AnchorElTooltip> = ({ children, anchor, title })
 const menuItems: [string, React.ReactNode, string, string, boolean][] = [
   ['my-portfolio', <DashboardIcon key="my-portfolio" />, 'My Portfolio', '/my-portfolio', false],
   ['dashboard', <DashboardIcon key="dashboard" />, 'Dashboard', '/dashboard', false],
+  ['sales', <TrendingUpIcon key="sales" />, 'Sales', '/sales', false],
   [
     'operations-and-maintenance',
     <WhatshotIcon key="operations-and-maintenance" />,
@@ -132,6 +134,8 @@ export const NavMenu: React.FC<NavMenuProps> = ({ containerRef, isMenuOpen }) =>
         return !user?.role?.permissions?.['Diligence']?.view;
       case 'Finance':
         return !user?.role?.permissions?.['Finance']?.view;
+      case 'Sales':
+        return !user?.role?.permissions?.['Sales']?.view;
       case 'Asset Management':
         return !user?.role?.permissions?.['Asset Management']?.view;
       case 'Reports':
