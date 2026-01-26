@@ -201,3 +201,31 @@ When implementing a collapsible sidebar navigation with a fixed position:
 **Files to check**: `Main.styles.ts`, `PageHeader.styles.ts`, `PageSidebar.styles.ts`, sidebar context/provider
 
 **Note**: Both the main content area AND the fixed header must respond to sidebar width changes. The header uses the same pattern with `left` and `width` properties.
+
+### Project vs Site Terminology (Critical Architecture Note)
+
+**"Project" is a UI terminology change ONLY - NOT a new entity.**
+
+| Aspect | Implementation |
+|--------|---------------|
+| **Database Entity** | `sites` table (canonical, unchanged) |
+| **Primary Key** | `id` (column name in sites table) |
+| **FK Convention** | Other tables use `site_id` → `sites.id` |
+| **User-Facing Label** | "Project" (displayed in UI text) |
+| **API Endpoints** | Use `/sites/` or `:siteId` params (preserved for backward compatibility) |
+| **Variable Names** | Use `site_id`, `siteId`, `siteDetails` (internal identifiers) |
+| **Junction Table** | `UserProject` - for user access control, NOT a separate entity |
+
+**DO NOT:**
+- Create a separate `projects` table
+- Create `project_id` as a new identifier
+- Duplicate the Site model under a different name
+- Build pipeline/deal entities as "Projects"
+
+**Lifecycle States** (on `SiteAdditionalFieldList.status`):
+- `Construction` - Project under construction
+- `Placed in Service` - Operational, telemetry available
+- `Decommissioned` - No longer active
+- `Sold` - Ownership transferred
+
+These states control contextual UI messaging and action availability, NOT global navigation visibility. All modules remain visible in the sidebar regardless of lifecycle state.

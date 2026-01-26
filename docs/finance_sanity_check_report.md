@@ -17,7 +17,8 @@ The audit confirms that the Ilios platform architecture is sound. **"Project" is
 
 #### Canonical Entity: `Site` (table: `sites`)
 - **Location:** `backend/ilios-server/app/models/site.py` (line 100-155)
-- **Primary Key:** `id` (Integer, Identity)
+- **Primary Key:** `id` (Integer, Identity) - Note: The column name is `id`, not `site_id`
+- **FK Convention:** Other tables reference this as `site_id` → `sites.id`
 - **Parent:** `company_id` (FK to `companies.id`)
 - **Status:** The `Site` model is the single source of truth for physical asset records
 
