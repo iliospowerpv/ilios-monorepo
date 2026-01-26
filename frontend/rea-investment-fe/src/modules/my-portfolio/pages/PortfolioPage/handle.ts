@@ -2,8 +2,8 @@ import { RouteHandle } from '../../../../handles';
 
 export const createPortfolioPageHandle = () => {
   return RouteHandle.createHandle({
-    moduleId: 'my-portfolio',
-    crumbsBuilder: () => [{ title: 'My Portfolio' }]
+    moduleId: 'portfolio',
+    crumbsBuilder: () => [{ title: 'Portfolio' }]
   });
 };
 

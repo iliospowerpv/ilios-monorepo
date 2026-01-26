@@ -13,7 +13,7 @@ type ModuleId =
   | 'operations-and-maintenance'
   | 'dashboard'
   | 'due-diligence'
-  | 'my-portfolio'
+  | 'portfolio'
   | 'reports'
   | 'finance'
   | 'sales';

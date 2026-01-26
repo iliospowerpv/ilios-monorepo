@@ -96,7 +96,7 @@ buildLensRoute('finance', 'project', { companyId: 123 })
 | `src/utils/routing.test.ts` | Unit tests for routing utilities |
 | `src/pages/Hierarchy/ProjectView.tsx` | Updated quicklinks to use buildLensRoute() |
 | `src/pages/Hierarchy/CompanyView.tsx` | Added module quicklinks using buildLensRoute() |
-| `src/contexts/entityContext/entityContext.tsx` | Changed default fallback from /dashboard to /my-portfolio; Updated navigateToLevel() to use lens routes |
+| `src/contexts/entityContext/entityContext.tsx` | Changed default fallback from /dashboard to /portfolio; Updated navigateToLevel() to use lens routes |
 
 ## Before/After Examples
 
@@ -135,7 +135,7 @@ default:
 **After:**
 ```typescript
 default:
-  return '/my-portfolio';
+  return '/portfolio';
 ```
 
 ## 10-Minute Manual Test Checklist

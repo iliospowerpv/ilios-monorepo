@@ -74,7 +74,7 @@ Routes that set scope context and render module content:
 
 **Supported Modules:**
 - `/dashboard`
-- `/my-portfolio`
+- `/portfolio`
 - `/reports`
 - `/finance`
 - `/sales`

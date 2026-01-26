@@ -17,7 +17,7 @@ export type ModuleType =
   | 'sales'
   | 'reports'
   | 'dashboard'
-  | 'my-portfolio'
+  | 'portfolio'
   | null;
 
 interface EntityContextType {
@@ -119,9 +119,9 @@ export const EntityContextProvider: React.FC<{ children: React.ReactNode }> = ({
       setCurrentModule('reports');
     } else if (path.startsWith('/dashboard')) {
       setCurrentModule('dashboard');
-    } else if (path.startsWith('/my-portfolio')) {
-      setCurrentModule('my-portfolio');
-    } else if (path.startsWith('/portfolio') || path.startsWith('/companies') || path.startsWith('/projects')) {
+    } else if (path.startsWith('/portfolio')) {
+      setCurrentModule('portfolio');
+    } else if (path.startsWith('/companies') || path.startsWith('/projects')) {
       setCurrentModule(null);
     } else {
       setCurrentModule(null);
@@ -203,10 +203,10 @@ export const EntityContextProvider: React.FC<{ children: React.ReactNode }> = ({
         return '/reports';
       case 'dashboard':
         return '/dashboard';
-      case 'my-portfolio':
-        return '/my-portfolio';
+      case 'portfolio':
+        return '/portfolio';
       default:
-        return '/my-portfolio';
+        return '/portfolio';
     }
   }, []);
 

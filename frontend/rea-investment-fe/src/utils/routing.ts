@@ -8,7 +8,7 @@ export type ModuleType =
   | 'sales'
   | 'reports'
   | 'dashboard'
-  | 'my-portfolio';
+  | 'portfolio';
 
 export interface LensRouteParams {
   companyId?: number | string | null;

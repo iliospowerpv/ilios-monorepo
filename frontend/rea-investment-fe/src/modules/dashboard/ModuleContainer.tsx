@@ -9,7 +9,7 @@ const ModuleGate: React.FC<React.PropsWithChildren> = ({ children }) => {
   if (!isAuthenticated || !user) return <Navigate to="/login" replace />;
 
   if (user.role?.permissions?.['Investor Dashboard']?.view) {
-    return <Navigate to="/my-portfolio" replace />;
+    return <Navigate to="/portfolio" replace />;
   }
 
   return <>{children}</>;

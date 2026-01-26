@@ -21,7 +21,7 @@ export const CompanyLogo: React.FC = () => {
         height: theme => theme.spacing(8)
       }}
       onClick={() => {
-        navigate(hasMyPortfolioAccess ? '/my-portfolio' : '/dashboard');
+        navigate(hasMyPortfolioAccess ? '/portfolio' : '/dashboard');
       }}
     >
       <SvgIcon sx={{ fontSize: 16 }}>

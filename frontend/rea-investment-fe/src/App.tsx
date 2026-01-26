@@ -167,8 +167,10 @@ const router = createBrowserRouter(
         <Route path="/dashboard" element={<DashboardModuleContainer />}>
           <Route index handle={DashboardPage.createHandle()} element={<DashboardPage.Component />} />
         </Route>
-        {/* My Portfolio Module with Scoped Lens Routes */}
-        <Route path="/my-portfolio" element={<PortfolioModuleContainer />}>
+        {/* Legacy redirect: /my-portfolio → /portfolio */}
+        <Route path="/my-portfolio/*" element={<Navigate to="/portfolio" replace />} />
+        {/* Portfolio Module with Scoped Lens Routes */}
+        <Route path="/portfolio" element={<PortfolioModuleContainer />}>
           <Route
             path="scope/portfolio"
             element={
@@ -193,8 +195,6 @@ const router = createBrowserRouter(
               </ScopedModuleRoute>
             }
           />
-        </Route>
-        <Route path="/my-portfolio" element={<PortfolioModuleContainer />}>
           <Route index handle={PortfolioPage.createHandle()} element={<PortfolioPage.Component />} />
         </Route>
         {/* Reports Module with Scoped Lens Routes */}

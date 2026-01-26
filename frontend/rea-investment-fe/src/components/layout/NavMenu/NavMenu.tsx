@@ -67,7 +67,7 @@ const AnchorElTooltip: React.FC<AnchorElTooltip> = ({ children, anchor, title })
 };
 
 const menuItems: [string, React.ReactNode, string, string, boolean][] = [
-  ['my-portfolio', <DashboardIcon key="my-portfolio" />, 'My Portfolio', '/my-portfolio', false],
+  ['portfolio', <DashboardIcon key="portfolio" />, 'Portfolio', '/portfolio', false],
   ['dashboard', <DashboardIcon key="dashboard" />, 'Dashboard', '/dashboard', false],
   ['sales', <TrendingUpIcon key="sales" />, 'Sales', '/sales', false],
   ['due-diligence', <FactCheckIcon key="due-diligence" />, 'Diligence', '/due-diligence', false],
@@ -146,9 +146,9 @@ export const NavMenu: React.FC<NavMenuProps> = ({ containerRef, isMenuOpen }) =>
   };
 
   const showModule = (moduleKey: string): boolean => {
-    const hasMyPortfolioAccess = user?.role?.permissions?.['Investor Dashboard']?.view;
-    if (moduleKey === 'dashboard') return !hasMyPortfolioAccess;
-    if (moduleKey === 'my-portfolio') return !!hasMyPortfolioAccess;
+    const hasPortfolioAccess = user?.role?.permissions?.['Investor Dashboard']?.view;
+    if (moduleKey === 'dashboard') return !hasPortfolioAccess;
+    if (moduleKey === 'portfolio') return !!hasPortfolioAccess;
     return true;
   };
 
