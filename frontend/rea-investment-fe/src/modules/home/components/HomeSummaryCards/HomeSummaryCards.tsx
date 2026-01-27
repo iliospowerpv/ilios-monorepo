@@ -7,7 +7,7 @@ import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
 import BusinessIcon from '@mui/icons-material/Business';
-import FolderIcon from '@mui/icons-material/Folder';
+import SolarPowerIcon from '@mui/icons-material/SolarPower';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 
@@ -104,7 +104,7 @@ export const HomeSummaryCards: React.FC<HomeSummaryCardsProps> = ({
     {
       title: 'Projects',
       value: projectsCount,
-      icon: <FolderIcon />,
+      icon: <SolarPowerIcon />,
       color: '#2e7d32',
       onClick: () => navigate('/settings/sites')
     },
