@@ -33,7 +33,11 @@ export const useOnboardingState = () => {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      // If no user yet, still mark as loaded with default state
+      setIsLoaded(true);
+      return;
+    }
     
     try {
       const stored = localStorage.getItem(getStorageKey(userId));
