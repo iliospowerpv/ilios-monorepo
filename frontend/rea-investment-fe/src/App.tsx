@@ -68,7 +68,6 @@ import {
   SettingsAddMyCompanySite
 } from './modules/settings';
 import { SiteTask as OMSiteTask } from './modules/security';
-import { DashboardPage, ModuleContainer as DashboardModuleContainer } from './modules/dashboard';
 import {
   DueDiligencePage as DPDiligencePage,
   SitesPage as DPSitesPage,
@@ -89,7 +88,9 @@ import {
   createSiteFinanceHandle
 } from './modules/finance';
 import { SalesHome, SalesModuleContainer, createSalesHomeHandle, DealDetail } from './modules/sales';
-import { WorkspacePage, CompanyAdminPage, ModuleContainer as WorkspaceModuleContainer } from './modules/workspace';
+import { CompanyAdminPage, ModuleContainer as WorkspaceModuleContainer } from './modules/workspace';
+import { HomePage, createHomeHandle } from './modules/home/pages';
+import { ModuleContainer as HomeModuleContainer } from './modules/home';
 
 // initialization
 const queryClient = new QueryClient();
@@ -133,9 +134,17 @@ const router = createBrowserRouter(
         <Route path="/security" element={<SecuritySettings />} />
         <Route path="/help" element={<HelpResources />} />
         <Route path="/portfolio" element={<PortfolioView />} />
-        <Route path="/workspace" element={<WorkspaceModuleContainer />}>
-          <Route index element={<WorkspacePage />} />
+
+        {/* Home - Unified landing page (combines Dashboard + Workspace) */}
+        <Route path="/home" element={<HomeModuleContainer />}>
+          <Route index handle={createHomeHandle()} element={<HomePage />} />
         </Route>
+
+        {/* Legacy redirects to Home */}
+        <Route path="/workspace" element={<Navigate to="/home" replace />} />
+        <Route path="/workspace/*" element={<Navigate to="/home" replace />} />
+
+        {/* Company Admin remains accessible */}
         <Route path="/company-admin" element={<WorkspaceModuleContainer />}>
           <Route index element={<CompanyAdminPage />} />
         </Route>
@@ -144,36 +153,9 @@ const router = createBrowserRouter(
         <Route path="/projects" element={<ProjectsPickerView />} />
         <Route path="/projects/:projectId" element={<ProjectView />} />
 
-        {/* Dashboard Module with Scoped Lens Routes */}
-        <Route path="/dashboard" element={<DashboardModuleContainer />}>
-          <Route
-            path="scope/portfolio"
-            element={
-              <ScopedModuleRoute scope="portfolio">
-                <DashboardPage.Component />
-              </ScopedModuleRoute>
-            }
-          />
-          <Route
-            path="scope/company/:companyId"
-            element={
-              <ScopedModuleRoute scope="company">
-                <DashboardPage.Component />
-              </ScopedModuleRoute>
-            }
-          />
-          <Route
-            path="scope/project/:projectId"
-            element={
-              <ScopedModuleRoute scope="project">
-                <DashboardPage.Component />
-              </ScopedModuleRoute>
-            }
-          />
-        </Route>
-        <Route path="/dashboard" element={<DashboardModuleContainer />}>
-          <Route index handle={DashboardPage.createHandle()} element={<DashboardPage.Component />} />
-        </Route>
+        {/* Dashboard redirects to Home (deprecated) */}
+        <Route path="/dashboard" element={<Navigate to="/home" replace />} />
+        <Route path="/dashboard/*" element={<Navigate to="/home" replace />} />
         {/* Legacy redirect: /my-portfolio → /portfolio */}
         <Route path="/my-portfolio/*" element={<Navigate to="/portfolio" replace />} />
         {/* Portfolio Module with Scoped Lens Routes */}

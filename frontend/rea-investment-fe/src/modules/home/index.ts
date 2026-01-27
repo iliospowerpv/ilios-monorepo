@@ -1,0 +1,1 @@
+export { ModuleContainer } from './ModuleContainer';

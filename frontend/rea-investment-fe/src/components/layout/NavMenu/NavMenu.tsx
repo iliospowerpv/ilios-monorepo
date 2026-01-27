@@ -13,7 +13,7 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import WorkspacesIcon from '@mui/icons-material/Workspaces';
+import HomeIcon from '@mui/icons-material/Home';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { NavMenuButtonContainer } from './NavMenu.styles';
 import { useNavigate, useMatches } from 'react-router-dom';
@@ -69,9 +69,8 @@ const AnchorElTooltip: React.FC<AnchorElTooltip> = ({ children, anchor, title })
 };
 
 const menuItems: [string, React.ReactNode, string, string, boolean][] = [
-  ['workspace', <WorkspacesIcon key="workspace" />, 'Workspace', '/workspace', false],
+  ['home', <HomeIcon key="home" />, 'Home', '/home', false],
   ['portfolio', <DashboardIcon key="portfolio" />, 'Portfolio', '/portfolio', false],
-  ['dashboard', <DashboardIcon key="dashboard" />, 'Dashboard', '/dashboard', false],
   ['sales', <TrendingUpIcon key="sales" />, 'Sales', '/sales', false],
   ['due-diligence', <FactCheckIcon key="due-diligence" />, 'Diligence', '/due-diligence', false],
   [
