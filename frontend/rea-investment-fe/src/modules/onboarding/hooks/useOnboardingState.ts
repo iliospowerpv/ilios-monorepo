@@ -38,7 +38,7 @@ export const useOnboardingState = () => {
       setIsLoaded(true);
       return;
     }
-    
+
     try {
       const stored = localStorage.getItem(getStorageKey(userId));
       if (stored) {
@@ -51,37 +51,52 @@ export const useOnboardingState = () => {
     setIsLoaded(true);
   }, [userId]);
 
-  const saveState = useCallback((newState: OnboardingDraftState) => {
-    if (!userId) return;
-    
-    setState(newState);
-    try {
-      localStorage.setItem(getStorageKey(userId), JSON.stringify(newState));
-    } catch {
-      // Ignore storage errors
-    }
-  }, [userId]);
+  const saveState = useCallback(
+    (newState: OnboardingDraftState) => {
+      if (!userId) return;
 
-  const setStep = useCallback((step: OnboardingStep) => {
-    saveState({ ...state, currentStep: step });
-  }, [state, saveState]);
+      setState(newState);
+      try {
+        localStorage.setItem(getStorageKey(userId), JSON.stringify(newState));
+      } catch {
+        // Ignore storage errors
+      }
+    },
+    [userId]
+  );
 
-  const setCompany = useCallback((companyId: number, companyName: string) => {
-    saveState({ ...state, companyId, companyName, currentStep: 'project' });
-  }, [state, saveState]);
+  const setStep = useCallback(
+    (step: OnboardingStep) => {
+      saveState({ ...state, currentStep: step });
+    },
+    [state, saveState]
+  );
 
-  const setProject = useCallback((projectId: number, projectName: string) => {
-    saveState({ ...state, projectId, projectName, currentStep: 'invite' });
-  }, [state, saveState]);
+  const setCompany = useCallback(
+    (companyId: number, companyName: string) => {
+      saveState({ ...state, companyId, companyName, currentStep: 'project' });
+    },
+    [state, saveState]
+  );
 
-  const addInvitedUser = useCallback((email: string) => {
-    if (!state.invitedUserEmails.includes(email)) {
-      saveState({
-        ...state,
-        invitedUserEmails: [...state.invitedUserEmails, email]
-      });
-    }
-  }, [state, saveState]);
+  const setProject = useCallback(
+    (projectId: number, projectName: string) => {
+      saveState({ ...state, projectId, projectName, currentStep: 'invite' });
+    },
+    [state, saveState]
+  );
+
+  const addInvitedUser = useCallback(
+    (email: string) => {
+      if (!state.invitedUserEmails.includes(email)) {
+        saveState({
+          ...state,
+          invitedUserEmails: [...state.invitedUserEmails, email]
+        });
+      }
+    },
+    [state, saveState]
+  );
 
   const completeOnboarding = useCallback(() => {
     saveState({ ...state, currentStep: 'complete' });
@@ -89,7 +104,7 @@ export const useOnboardingState = () => {
 
   const clearDraft = useCallback(() => {
     if (!userId) return;
-    
+
     setState(defaultState);
     try {
       localStorage.removeItem(getStorageKey(userId));
@@ -98,21 +113,24 @@ export const useOnboardingState = () => {
     }
   }, [userId]);
 
-  const resetToStep = useCallback((step: OnboardingStep) => {
-    const newState: OnboardingDraftState = { ...defaultState };
-    
-    if (step === 'project' || step === 'invite' || step === 'complete') {
-      newState.companyId = state.companyId;
-      newState.companyName = state.companyName;
-    }
-    if (step === 'invite' || step === 'complete') {
-      newState.projectId = state.projectId;
-      newState.projectName = state.projectName;
-    }
-    
-    newState.currentStep = step;
-    saveState(newState);
-  }, [state, saveState]);
+  const resetToStep = useCallback(
+    (step: OnboardingStep) => {
+      const newState: OnboardingDraftState = { ...defaultState };
+
+      if (step === 'project' || step === 'invite' || step === 'complete') {
+        newState.companyId = state.companyId;
+        newState.companyName = state.companyName;
+      }
+      if (step === 'invite' || step === 'complete') {
+        newState.projectId = state.projectId;
+        newState.projectName = state.projectName;
+      }
+
+      newState.currentStep = step;
+      saveState(newState);
+    },
+    [state, saveState]
+  );
 
   return {
     state,

@@ -31,7 +31,7 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
   const isSystemUser = user?.is_system_user ?? false;
 
   const [mode, setMode] = useState<'select' | 'create' | null>(currentCompany ? null : null);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<number | ''>(currentCompany?.id ?? '');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(currentCompany?.id ?? null);
   const [newCompanyName, setNewCompanyName] = useState('');
   const [newCompanyEmail, setNewCompanyEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +52,7 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
         phone: null,
         address: null
       }),
-    onSuccess: (response) => {
+    onSuccess: response => {
       const newCompanyId = (response as unknown as { id?: number }).id;
       if (newCompanyId) {
         setCurrentCompany({ id: newCompanyId, name: newCompanyName });
@@ -71,7 +71,7 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
   };
 
   const handleSelectExisting = () => {
-    if (!selectedCompanyId) {
+    if (selectedCompanyId === null) {
       setError('Please select a company');
       return;
     }
@@ -118,30 +118,16 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
         </Card>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Button
-            variant="contained"
-            size="large"
-            endIcon={<ArrowForwardIcon />}
-            onClick={handleContinueWithCurrent}
-          >
+          <Button variant="contained" size="large" endIcon={<ArrowForwardIcon />} onClick={handleContinueWithCurrent}>
             Continue with {currentCompany.name}
           </Button>
 
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button
-              variant="outlined"
-              onClick={() => setMode('select')}
-              sx={{ flex: 1 }}
-            >
+            <Button variant="outlined" onClick={() => setMode('select')} sx={{ flex: 1 }}>
               Change Company
             </Button>
             {isSystemUser && (
-              <Button
-                variant="outlined"
-                startIcon={<AddIcon />}
-                onClick={() => setMode('create')}
-                sx={{ flex: 1 }}
-              >
+              <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setMode('create')} sx={{ flex: 1 }}>
                 Create New
               </Button>
             )}
@@ -168,12 +154,15 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
             <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel>Company</InputLabel>
               <Select
-                value={selectedCompanyId}
-                onChange={e => setSelectedCompanyId(e.target.value as number)}
+                value={selectedCompanyId !== null ? String(selectedCompanyId) : ''}
+                onChange={e => {
+                  const val = e.target.value as string;
+                  setSelectedCompanyId(val ? Number(val) : null);
+                }}
                 label="Company"
               >
                 {companies.map(company => (
-                  <MenuItem key={company.company_id} value={company.company_id}>
+                  <MenuItem key={company.company_id} value={String(company.company_id)}>
                     {company.company_name}
                   </MenuItem>
                 ))}
@@ -182,7 +171,7 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
             <Button
               variant="contained"
               onClick={handleSelectExisting}
-              disabled={!selectedCompanyId}
+              disabled={selectedCompanyId === null}
               endIcon={<ArrowForwardIcon />}
             >
               Continue
@@ -238,15 +227,12 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
 
       {!isSystemUser && companies.length === 0 && (
         <Alert severity="info">
-          You don't have access to any companies yet. Please contact your administrator to get access.
+          You do not have access to any companies yet. Please contact your administrator to get access.
         </Alert>
       )}
 
       {mode !== null && (
-        <Button
-          sx={{ mt: 2 }}
-          onClick={() => setMode(null)}
-        >
+        <Button sx={{ mt: 2 }} onClick={() => setMode(null)}>
           Back
         </Button>
       )}
