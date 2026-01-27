@@ -1,0 +1,117 @@
+You are the Replit agent in the Ilios codebase. Unify the existing Dashboard and Workspace into a single Home/Landing page, and add missing CTAs + streamlined create/invite flows that default scope from the Context Bar current company.
+
+CURRENT STATE (CONFIRMED)
+- Dashboard module exists: tasks grid + notifications panel; some permission-based redirect behavior.
+- Workspace exists: summary cards (companies/projects/tasks), accessible companies list, and Company Admin member management.
+- Context Bar contract is implemented with lens routes and correct quicklink behavior.
+- UserCompanyAccess exists with role/status and company membership management.
+
+PRIMARY GOALS
+1) Single landing page to eliminate ambiguity:
+   - Replace “Dashboard” + “Workspace” as separate user landing experiences with ONE “Home” page.
+2) Home combines:
+   - Summary cards (Companies, Projects, Pending Tasks)
+   - Task list (from Dashboard)
+   - Notifications panel (from Dashboard)
+   - Company list with access source indicators (from Workspace)
+   - Quick Actions (Create Company/Project, Invite User)
+3) Add missing CTAs and streamline forms:
+   - Create Company
+   - Create Project (defaults to currentCompanyId but allows selection)
+   - Invite User (defaults to currentCompanyId but allows selection)
+   - Optional “Assign Projects” during invite (NOT required)
+4) Ensure all actions and default scoping use Context Bar currentCompanyId when present.
+5) Keep scope tight: NO drag-and-drop, NO full widget registry, NO customization UI. But structure code so it can evolve later.
+
+ROUTING / NAVIGATION REQUIREMENTS
+- Add a primary nav item: Home
+- Home route: /home (and optionally set / to redirect to /home if safe)
+- Deprecate confusion:
+  - If /workspace exists, keep it as an alias that redirects to /home OR remove from nav.
+  - If /dashboard exists, keep it as an alias that redirects to /home OR remove from nav.
+- Preserve /portfolio as the canonical portfolio rollup route (do not change).
+
+HOME PAGE LAYOUT (NO WIDGET FRAMEWORK YET)
+Use a clean, predictable layout (no user customization):
+Top row: Summary cards (Companies | Projects | Tasks/Notifications count)
+Main column: Task list (existing AG Grid)
+Side column: Notifications panel + Quick Actions
+Below: Accessible Companies list/grid with access source indicators and “Open Company” action
+
+Quick Actions (permission-aware):
+- Create Company (system users only unless existing rules allow others)
+- Create Project
+- Invite User
+- Go to Company Admin (context-aware)
+
+DEFAULT SCOPING RULES (CRITICAL)
+- If currentCompanyId exists in Context Bar:
+  - Create Project defaults company_id = currentCompanyId
+  - Invite User defaults company_id = currentCompanyId
+- If currentCompanyId does NOT exist:
+  - Create Project requires company selection (picker)
+  - Invite User requires company selection (picker)
+- Never drop users to /portfolio or /dashboard as a fallback; use pickers as needed.
+
+FORM STREAMLINING REQUIREMENTS
+
+A) Create Company
+- Minimal fields only (name, optional metadata)
+- On success:
+  - set currentCompanyId in context
+  - navigate to company view (canonical /companies/:id OR a relevant lens route if initiated from a module)
+
+B) Create Project (sites table)
+- Minimal required fields + company association
+- Default company to currentCompanyId if present
+- Allow selection of company from user’s accessible companies
+- On success:
+  - navigate to /projects/:projectId (or module lens route if initiated from within a module)
+
+C) Invite User (Company Membership) + Optional Project Assignment
+- Must create or invite a user and create UserCompanyAccess membership:
+  - role: company_admin | contributor | read_only
+  - status: invited (or active if your current user creation flow instantly activates)
+- Optional section: “Assign Projects (optional)”
+  - Multi-select projects within the selected company
+  - If selected, create UserProject assignments/rows as needed
+  - If not selected, membership still succeeds (this is the key UX improvement)
+- On success:
+  - show confirmation toast and update member list if in Company Admin context
+
+IMPORTANT: Do not build external email delivery if not already present. “Invite” may be internal account creation + invited status.
+
+PERMISSIONS / SECURITY
+- Only system users and company admins can manage company membership (preserve current authorization rules).
+- Ensure suspended/invited statuses behave consistently:
+  - invited users should not receive full access unless your auth model already supports it; document behavior.
+  - suspended users must not be able to access company resources even if inherited by project assignment (enforce or document current behavior).
+
+TECHNICAL IMPLEMENTATION NOTES
+- Reuse existing components from Dashboard and Workspace rather than rewriting.
+- Avoid introducing a full widget registry; however:
+  - Organize the Home sections as composable components (HomeSummaryCards, HomeTasks, HomeNotifications, HomeCompanies, HomeQuickActions).
+  - Add a lightweight “home section config” constant that defines section order; no persistence yet. This creates a seam for future widgets.
+
+DOCUMENTATION
+- Create /docs/home_unification.md describing:
+  - Home page purpose and composition
+  - Which routes redirect to Home (/workspace, /dashboard)
+  - Default scoping rules and how contextCompany is used
+  - How to extend later into a widget framework (explicitly deferred)
+
+ACCEPTANCE TESTS
+1) Logging in lands on /home (or Home is 1 click from nav).
+2) Home shows:
+   - summary cards
+   - tasks grid
+   - notifications
+   - companies list with access source indicators
+3) Create Project from Home:
+   - defaults to currentCompany if set
+   - otherwise requires selecting a company
+4) Invite User from Home:
+   - defaults to currentCompany if set
+   - allows optional project assignment but does not require it
+5) /workspace and /dashboard do not create ambiguity (redirect to /home and are removed from primary nav)
+6) No regressions to Context Bar lens routing or quicklinks.
