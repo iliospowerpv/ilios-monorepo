@@ -30,8 +30,8 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
   const { currentCompany, setCurrentCompany } = useEntityContext();
   const isSystemUser = user?.is_system_user ?? false;
 
-  const [mode, setMode] = useState<'select' | 'create' | null>(currentCompany ? null : null);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(currentCompany?.id ?? null);
+  const [mode, setMode] = useState<'select' | 'create' | null>(null);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
   const [newCompanyName, setNewCompanyName] = useState('');
   const [newCompanyEmail, setNewCompanyEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +79,8 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
     if (company) {
       setCurrentCompany({ id: company.company_id, name: company.company_name });
       onComplete(company.company_id, company.company_name);
+    } else {
+      setError('Selected company not found. Please try again.');
     }
   };
 
