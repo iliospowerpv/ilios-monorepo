@@ -1,6 +1,8 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import CardActionArea from '@mui/material/CardActionArea';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
@@ -22,10 +24,11 @@ interface SummaryCardProps {
   value: number;
   icon: React.ReactNode;
   color: string;
+  onClick?: () => void;
 }
 
-const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, icon, color }) => (
-  <Card sx={{ height: '100%' }}>
+const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, icon, color, onClick }) => {
+  const content = (
     <CardContent>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box>
@@ -50,8 +53,20 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, icon, color }) 
         </Box>
       </Box>
     </CardContent>
-  </Card>
-);
+  );
+
+  return (
+    <Card sx={{ height: '100%' }}>
+      {onClick ? (
+        <CardActionArea onClick={onClick} sx={{ height: '100%' }}>
+          {content}
+        </CardActionArea>
+      ) : (
+        content
+      )}
+    </Card>
+  );
+};
 
 export const HomeSummaryCards: React.FC<HomeSummaryCardsProps> = ({
   companiesCount,
@@ -60,6 +75,8 @@ export const HomeSummaryCards: React.FC<HomeSummaryCardsProps> = ({
   notificationsCount,
   isLoading
 }) => {
+  const navigate = useNavigate();
+
   if (isLoading) {
     return (
       <Grid container spacing={3}>
@@ -81,13 +98,15 @@ export const HomeSummaryCards: React.FC<HomeSummaryCardsProps> = ({
       title: 'Companies',
       value: companiesCount,
       icon: <BusinessIcon />,
-      color: '#1976d2'
+      color: '#1976d2',
+      onClick: () => navigate('/settings/companies')
     },
     {
       title: 'Projects',
       value: projectsCount,
       icon: <FolderIcon />,
-      color: '#2e7d32'
+      color: '#2e7d32',
+      onClick: () => navigate('/settings/sites')
     },
     {
       title: 'Pending Tasks',
