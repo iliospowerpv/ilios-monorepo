@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/auth/auth';
 
 const ModuleGate: React.FC<React.PropsWithChildren> = ({ children }) => {
@@ -10,8 +10,10 @@ const ModuleGate: React.FC<React.PropsWithChildren> = ({ children }) => {
   return <>{children}</>;
 };
 
-export const ModuleContainer: React.FC<React.PropsWithChildren> = ({ children }) => {
-  return <ModuleGate>{children}</ModuleGate>;
-};
+export const ModuleContainer: React.FC = () => (
+  <ModuleGate>
+    <Outlet />
+  </ModuleGate>
+);
 
 export default ModuleContainer;

@@ -3,6 +3,7 @@ import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
+import CircularProgress from '@mui/material/CircularProgress';
 
 import { OnboardingProgress } from '../../components/OnboardingProgress/OnboardingProgress';
 import { CompanyStep } from '../../components/CompanyStep/CompanyStep';
@@ -12,20 +13,8 @@ import { CompletionScreen } from '../../components/CompletionScreen/CompletionSc
 import { useOnboardingState } from '../../hooks/useOnboardingState';
 
 export const OnboardingPage: React.FC = () => {
-  const {
-    state,
-    isLoaded,
-    setCompany,
-    setProject,
-    addInvitedUser,
-    completeOnboarding,
-    clearDraft,
-    resetToStep
-  } = useOnboardingState();
-
-  if (!isLoaded) {
-    return null;
-  }
+  const { state, isLoaded, setCompany, setProject, addInvitedUser, completeOnboarding, clearDraft, resetToStep } =
+    useOnboardingState();
 
   const handleCompanyComplete = (companyId: number, companyName: string) => {
     setCompany(companyId, companyName);
@@ -55,11 +44,21 @@ export const OnboardingPage: React.FC = () => {
     resetToStep('project');
   };
 
+  if (!isLoaded) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
+
   const renderStep = () => {
     switch (state.currentStep) {
       case 'company':
         return <CompanyStep onComplete={handleCompanyComplete} />;
-      
+
       case 'project':
         if (!state.companyId || !state.companyName) {
           resetToStep('company');
@@ -73,7 +72,7 @@ export const OnboardingPage: React.FC = () => {
             onBack={handleBackToCompany}
           />
         );
-      
+
       case 'invite':
         if (!state.companyId || !state.companyName || !state.projectId || !state.projectName) {
           resetToStep(state.companyId ? 'project' : 'company');
@@ -91,7 +90,7 @@ export const OnboardingPage: React.FC = () => {
             onBack={handleBackToProject}
           />
         );
-      
+
       case 'complete':
         if (!state.companyId || !state.companyName || !state.projectId || !state.projectName) {
           resetToStep('company');
@@ -107,7 +106,7 @@ export const OnboardingPage: React.FC = () => {
             onStartNew={handleStartNew}
           />
         );
-      
+
       default:
         return <CompanyStep onComplete={handleCompanyComplete} />;
     }
