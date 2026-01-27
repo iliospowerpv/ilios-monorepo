@@ -91,6 +91,7 @@ import { SalesHome, SalesModuleContainer, createSalesHomeHandle, DealDetail } fr
 import { CompanyAdminPage, ModuleContainer as WorkspaceModuleContainer } from './modules/workspace';
 import { HomePage, createHomeHandle } from './modules/home/pages';
 import { ModuleContainer as HomeModuleContainer } from './modules/home';
+import { OnboardingPage, createOnboardingHandle, ModuleContainer as OnboardingModuleContainer } from './modules/onboarding';
 
 // initialization
 const queryClient = new QueryClient();
@@ -138,6 +139,11 @@ const router = createBrowserRouter(
         {/* Home - Unified landing page (combines Dashboard + Workspace) */}
         <Route path="/home" element={<HomeModuleContainer />}>
           <Route index handle={createHomeHandle()} element={<HomePage />} />
+        </Route>
+
+        {/* Onboarding wizard */}
+        <Route path="/onboarding" element={<OnboardingModuleContainer />}>
+          <Route index handle={createOnboardingHandle()} element={<OnboardingPage />} />
         </Route>
 
         {/* Legacy redirects to Home */}

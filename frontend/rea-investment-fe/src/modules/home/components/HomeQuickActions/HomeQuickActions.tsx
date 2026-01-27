@@ -11,6 +11,7 @@ import AddBusinessIcon from '@mui/icons-material/AddBusiness';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 
 import { useAuth } from '../../../../contexts/auth/auth';
 import { useEntityContext } from '../../../../contexts/entityContext/entityContext';
@@ -41,6 +42,20 @@ export const HomeQuickActions: React.FC<HomeQuickActionsProps> = ({
           Quick Actions
         </Typography>
         <Stack spacing={1.5}>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<RocketLaunchIcon />}
+            onClick={() => navigate('/onboarding')}
+            fullWidth
+            size="large"
+            sx={{ mb: 1 }}
+          >
+            Set Up a New Project
+          </Button>
+
+          <Divider sx={{ my: 0.5 }} />
+
           {canCreateCompany && (
             <Button
               variant="outlined"

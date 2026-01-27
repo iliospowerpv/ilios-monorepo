@@ -1,0 +1,111 @@
+You are the Replit agent in the Ilios codebase. Implement a guided onboarding flow that helps users set up Ilios in the correct hierarchy order: Company → Project → Invite Users. This should be lightweight, user-friendly, and built on existing components.
+
+CONTEXT (CURRENT STATE)
+- /home is the unified landing page with Quick Actions (Create Company, Create Project, Invite User, Go to Company Admin).
+- Context Bar exists with Portfolio/Company/Project scope and pickers; currentCompanyId should be the default scoping mechanism.
+- UserCompanyAccess exists and supports multi-company membership with roles and statuses.
+- Company Admin exists for member management.
+- We do NOT want a complex workflow engine.
+
+PRIMARY GOALS
+1) Provide an “Onboarding” experience for first-time setup and repeated setup (new company/project).
+2) Keep it fast: 3 steps, minimal required fields.
+3) Make it context-aware using the currentCompanyId from Context Bar.
+4) Avoid duplicate forms: reuse existing create/invite components.
+5) Persist progress lightly so users can leave and come back.
+
+USER EXPERIENCE REQUIREMENTS
+A) Entry points:
+- Add a prominent button on /home: “Set up a new project” (or “Get Started”)
+- Also allow access from Company Admin and Projects list pages if appropriate
+
+B) Onboarding container:
+Route: /onboarding
+Display a 3-step wizard with a progress indicator:
+Step 1: Company
+Step 2: Project
+Step 3: Invite Users (optional)
+
+C) Step behaviors:
+STEP 1 — Company
+- If currentCompanyId is already set, show:
+  “Company selected: {Company Name}” with options:
+   - Continue to Step 2
+   - Change Company (open company picker)
+   - Create New Company (if permitted)
+- If no company selected:
+  - Show two choices:
+    1) Select an existing company (picker)
+    2) Create a new company (system admins only)
+- On completion: set currentCompanyId and persist wizard state.
+
+STEP 2 — Project
+- Defaults company to currentCompanyId (required).
+- Provide:
+  - “Create new project” (use existing Create Project form)
+  - OR “Select existing project” under this company (picker)
+- On completion:
+  - set currentProjectId (optional but recommended)
+  - persist wizard state
+
+STEP 3 — Invite Users (OPTIONAL)
+- Clear message: “Optional — you can do this later.”
+- Use existing Invite User flow but embedded in wizard:
+  - Company defaults to currentCompanyId (required)
+  - Role selection required
+  - Status: invited (or active if your current system immediately creates active users)
+  - Optional “Assign Projects” multi-select (NOT required)
+- Allow skipping Step 3.
+
+D) Completion screen:
+After step completion (Step 2 or Step 3), show:
+- “Setup complete”
+- Buttons:
+  - “Go to Project Overview” (canonical /projects/:projectId)
+  - “Go to Company Admin”
+  - “Back to Home”
+- Also show a mini checklist:
+  - Company configured ✅
+  - Project created/selected ✅
+  - Users invited ☐/✅
+
+PERSISTENCE / STATE
+- Implement lightweight persistence so onboarding can resume:
+  - store onboarding draft state in localStorage keyed by userId, e.g.:
+    { currentStep, companyId, projectId, invitedUserEmails[] }
+- If user completes, clear the draft state.
+
+PERMISSIONS
+- Create Company visible only to system admins (respect existing rules).
+- Invite/assign user only for system users and company admins (respect existing rules).
+- If user lacks permissions, show read-only explanation instead of hiding the step entirely.
+
+DESIGN REQUIREMENTS
+- Must match Ilios styling.
+- Wizard should be clean and non-intrusive.
+- Use toasts/snackbars for success/failure.
+- No modal nesting chaos—prefer inline forms in wizard.
+
+DO NOT DO
+- Do not build a generalized workflow engine.
+- Do not add new database tables for onboarding state.
+- Do not add email delivery systems for invitations (unless already present).
+- Do not add role systems beyond what UserCompanyAccess already supports.
+
+DELIVERABLES
+1) /onboarding route + wizard UI
+2) Home CTA linking to onboarding
+3) Reuse existing Create Company, Create Project, Invite User flows inside wizard
+4) Doc: /docs/onboarding_flow.md describing:
+   - flow steps
+   - how state persists
+   - how context bar integration works
+   - what is deferred
+
+ACCEPTANCE TESTS
+- From /home, click “Set up a new project,” complete:
+  - choose or create company → create or select project → optionally invite user
+- Company and Project pickers respect user access.
+- Defaults use currentCompanyId and do not silently fall back to another company.
+- Wizard state survives refresh and resumes.
+- Completion routes go to correct canonical pages.
