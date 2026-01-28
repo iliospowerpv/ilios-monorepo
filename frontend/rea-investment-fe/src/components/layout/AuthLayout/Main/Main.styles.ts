@@ -6,7 +6,12 @@ import CardContent from '@mui/material/CardContent';
 export const MainContainer = styled(Box)(() => ({
   minHeight: '100vh',
   width: '100%',
-  backgroundImage: 'url(/background.png)',
+  background: `
+    radial-gradient(ellipse at 50% 100%, rgba(138, 43, 226, 0.6) 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 0%, rgba(70, 100, 200, 0.8) 0%, transparent 40%),
+    radial-gradient(ellipse at 0% 50%, rgba(80, 60, 160, 0.5) 0%, transparent 40%),
+    linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%)
+  `,
   backgroundSize: 'cover',
   display: 'flex',
   flexDirection: 'column',
