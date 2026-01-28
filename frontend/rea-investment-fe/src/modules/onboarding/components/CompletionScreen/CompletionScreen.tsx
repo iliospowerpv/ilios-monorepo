@@ -96,7 +96,7 @@ export const CompletionScreen: React.FC<CompletionScreenProps> = ({
           onClick={() => navigate(`/workspace/companies/${companyId}/admin`)}
           fullWidth
         >
-          Go to Company Admin
+          Go to Portfolio Admin
         </Button>
 
         <Button

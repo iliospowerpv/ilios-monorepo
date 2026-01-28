@@ -144,7 +144,7 @@ export const CompanyAdminPage: React.FC = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h4" component="h1" gutterBottom>
-            Company Admin
+            Portfolio Admin
           </Typography>
           <Typography variant="subtitle1" color="text.secondary">
             Managing members for {companyName}

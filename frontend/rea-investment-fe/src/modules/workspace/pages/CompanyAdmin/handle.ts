@@ -1,3 +1,3 @@
 export const createCompanyAdminHandle = () => ({
-  crumb: () => 'Company Admin'
+  crumb: () => 'Portfolio Admin'
 });

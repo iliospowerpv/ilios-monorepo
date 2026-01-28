@@ -165,7 +165,7 @@ export const InviteStep: React.FC<InviteStepProps> = ({
       </Card>
 
       <Alert severity="info" sx={{ mb: 3 }}>
-        This step is optional. You can skip it and invite users later from Company Admin.
+        This step is optional. You can skip it and invite users later from Portfolio Admin.
       </Alert>
 
       {error && (
