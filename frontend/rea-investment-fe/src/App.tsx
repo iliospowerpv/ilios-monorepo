@@ -88,10 +88,22 @@ import {
   createSiteFinanceHandle
 } from './modules/finance';
 import { SalesHome, SalesModuleContainer, createSalesHomeHandle, DealDetail } from './modules/sales';
-import { CompanyAdminPage, ModuleContainer as WorkspaceModuleContainer } from './modules/workspace';
 import { HomePage, createHomeHandle } from './modules/home/pages';
 import { ModuleContainer as HomeModuleContainer } from './modules/home';
-import { OnboardingPage, createOnboardingHandle, ModuleContainer as OnboardingModuleContainer } from './modules/onboarding';
+import {
+  OnboardingPage,
+  createOnboardingHandle,
+  ModuleContainer as OnboardingModuleContainer
+} from './modules/onboarding';
+import {
+  PortfolioAdminModuleContainer,
+  PortfolioLevelPage,
+  createPortfolioLevelHandle,
+  CompanyLevelPage,
+  createCompanyLevelHandle,
+  ProjectLevelPage,
+  createProjectLevelHandle
+} from './modules/portfolio-admin';
 
 // initialization
 const queryClient = new QueryClient();
@@ -150,10 +162,15 @@ const router = createBrowserRouter(
         <Route path="/workspace" element={<Navigate to="/home" replace />} />
         <Route path="/workspace/*" element={<Navigate to="/home" replace />} />
 
-        {/* Company Admin remains accessible */}
-        <Route path="/company-admin" element={<WorkspaceModuleContainer />}>
-          <Route index element={<CompanyAdminPage />} />
+        {/* Portfolio Admin - Three-tier hierarchy for administration */}
+        <Route path="/portfolio-admin" element={<PortfolioAdminModuleContainer />}>
+          <Route index handle={createPortfolioLevelHandle()} element={<PortfolioLevelPage />} />
+          <Route path="companies/:companyId" handle={createCompanyLevelHandle()} element={<CompanyLevelPage />} />
+          <Route path="projects/:projectId" handle={createProjectLevelHandle()} element={<ProjectLevelPage />} />
         </Route>
+
+        {/* Legacy Company Admin redirects to Portfolio Admin */}
+        <Route path="/company-admin" element={<Navigate to="/portfolio-admin" replace />} />
         <Route path="/companies" element={<CompaniesPickerView />} />
         <Route path="/companies/:companyId" element={<CompanyView />} />
         <Route path="/projects" element={<ProjectsPickerView />} />

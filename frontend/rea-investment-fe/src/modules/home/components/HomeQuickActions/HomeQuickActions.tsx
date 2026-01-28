@@ -98,7 +98,7 @@ export const HomeQuickActions: React.FC<HomeQuickActionsProps> = ({
                 <Button
                   variant="text"
                   startIcon={<AdminPanelSettingsIcon />}
-                  onClick={() => navigate('/company-admin')}
+                  onClick={() => navigate('/portfolio-admin')}
                   fullWidth
                   sx={{ justifyContent: 'flex-start' }}
                 >

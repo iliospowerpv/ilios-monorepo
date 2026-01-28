@@ -40,6 +40,12 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
         - **Persistence**: Current scope persisted to localStorage with 5-minute React Query cache for accessible entities
     - **Asset Management Overview**: Features a canonical site overview with drag-and-drop reordering, collapsible cards, persistence of state to `localStorage`, an executive summary, an underwriting readiness widget, and enhanced card headers with completeness indicators.
     - **Sidebar Layout Pattern**: Critical guidance for implementing collapsible sidebar navigation, ensuring main content and fixed headers correctly adapt to sidebar width changes using `marginLeft`, `width`, and `maxWidth` properties. Sidebar state is persisted to `localStorage`.
+    - **Portfolio Admin Module**: Three-tier administration hierarchy for managing companies, projects, and users:
+        - **Portfolio Level** (`/portfolio-admin`): Rollup view of all companies and projects with summary statistics. Actions include Add Company and Add User (portfolio-wide access).
+        - **Company Level** (`/portfolio-admin/companies/:id`): Company details, summary cards, quick links to modules, and project list. Actions include Add Project and Add User (company-wide access).
+        - **Project Level** (`/portfolio-admin/projects/:id`): Auto-generated project overview with data completeness scoring and readiness assessment. Actions include Add User (project-only access).
+        - **Access Warnings**: AddUserDialog displays appropriate warnings about access scope implications when adding users at different levels.
+        - **Centralized Entity Management**: All "Add" actions in Settings module redirect to Portfolio Admin to enforce consistent management flows.
 
 **Backend:**
 - **Technology Stack**: Python 3.11, FastAPI for API development, SQLAlchemy for ORM, Alembic for database migrations, PostgreSQL as the primary database.

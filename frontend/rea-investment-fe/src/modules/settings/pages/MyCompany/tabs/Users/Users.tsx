@@ -110,7 +110,7 @@ export const UsersTab: React.FC<CompanyDetailsTabProps> = () => {
   };
 
   const handleAddClick = () => {
-    navigate(`/settings/my-company/users/add`);
+    navigate('/portfolio-admin');
   };
 
   const getRowStyle = React.useCallback(
@@ -129,7 +129,7 @@ export const UsersTab: React.FC<CompanyDetailsTabProps> = () => {
         showExport={false}
         showAdd={true}
         searchPlaceholder="Search by Name or Email"
-        btnAddLabel="Add a New User"
+        btnAddLabel="Go to Portfolio Admin"
         onSearch={handleSearch}
         onAdd={handleAddClick}
       />

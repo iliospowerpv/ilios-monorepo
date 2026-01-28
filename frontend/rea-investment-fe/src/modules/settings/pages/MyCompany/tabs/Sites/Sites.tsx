@@ -85,7 +85,7 @@ export const SitesTab: React.FC<CompanyDetailsTabProps> = () => {
   };
 
   const handleAddClick = () => {
-    navigate(`/settings/my-company/sites/add`);
+    navigate('/portfolio-admin');
   };
 
   return (
@@ -95,7 +95,7 @@ export const SitesTab: React.FC<CompanyDetailsTabProps> = () => {
         showExport={false}
         showAdd={true}
         searchPlaceholder="Search by Name"
-        btnAddLabel="Add a New Project"
+        btnAddLabel="Go to Portfolio Admin"
         onSearch={handleSearch}
         onAdd={handleAddClick}
       />

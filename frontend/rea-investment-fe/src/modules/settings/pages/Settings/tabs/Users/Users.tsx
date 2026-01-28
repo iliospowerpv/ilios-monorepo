@@ -22,7 +22,7 @@ const Users = () => {
       {alignment === 'list' && (
         <UsersTable
           searchPlaceholder="Search by Name or Email"
-          btnAddLabel="Add a New User"
+          btnAddLabel="Go to Portfolio Admin"
           customActions={<ToggleGroup alignment={alignment} setAlignment={setAlignment} />}
         />
       )}

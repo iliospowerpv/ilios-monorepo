@@ -107,7 +107,7 @@ const Companies = () => {
   };
 
   const handleAddClick = () => {
-    navigate('/settings/company/add');
+    navigate('/portfolio-admin');
   };
 
   return (
@@ -117,7 +117,7 @@ const Companies = () => {
         showExport={false}
         showAdd={true}
         searchPlaceholder="Search by Name"
-        btnAddLabel="Add a New Company"
+        btnAddLabel="Go to Portfolio Admin"
         onSearch={handleSearch}
         onAdd={handleAddClick}
       />

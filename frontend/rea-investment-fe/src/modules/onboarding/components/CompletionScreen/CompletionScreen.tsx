@@ -39,7 +39,11 @@ export const CompletionScreen: React.FC<CompletionScreenProps> = ({
   const checklist = [
     { label: 'Company configured', value: companyName, complete: true },
     { label: 'Project created/selected', value: projectName, complete: true },
-    { label: 'Users invited', value: invitedCount > 0 ? `${invitedCount} user(s)` : 'Skipped', complete: invitedCount > 0 }
+    {
+      label: 'Users invited',
+      value: invitedCount > 0 ? `${invitedCount} user(s)` : 'Skipped',
+      complete: invitedCount > 0
+    }
   ];
 
   return (
@@ -50,7 +54,7 @@ export const CompletionScreen: React.FC<CompletionScreenProps> = ({
           Setup Complete!
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Your project is ready. Here's what was configured:
+          Your project is ready. Here&apos;s what was configured:
         </Typography>
       </Box>
 
@@ -62,16 +66,9 @@ export const CompletionScreen: React.FC<CompletionScreenProps> = ({
                 {index > 0 && <Divider />}
                 <ListItem>
                   <ListItemIcon>
-                    {item.complete ? (
-                      <CheckCircleIcon color="success" />
-                    ) : (
-                      <RadioButtonUncheckedIcon color="action" />
-                    )}
+                    {item.complete ? <CheckCircleIcon color="success" /> : <RadioButtonUncheckedIcon color="action" />}
                   </ListItemIcon>
-                  <ListItemText
-                    primary={item.label}
-                    secondary={item.value}
-                  />
+                  <ListItemText primary={item.label} secondary={item.value} />
                 </ListItem>
               </React.Fragment>
             ))}
@@ -93,28 +90,19 @@ export const CompletionScreen: React.FC<CompletionScreenProps> = ({
         <Button
           variant="outlined"
           startIcon={<SettingsIcon />}
-          onClick={() => navigate(`/workspace/companies/${companyId}/admin`)}
+          onClick={() => navigate(`/portfolio-admin/companies/${companyId}`)}
           fullWidth
         >
           Go to Portfolio Admin
         </Button>
 
-        <Button
-          variant="outlined"
-          startIcon={<HomeIcon />}
-          onClick={() => navigate('/home')}
-          fullWidth
-        >
+        <Button variant="outlined" startIcon={<HomeIcon />} onClick={() => navigate('/home')} fullWidth>
           Back to Home
         </Button>
 
         <Divider sx={{ my: 1 }} />
 
-        <Button
-          variant="text"
-          onClick={onStartNew}
-          size="small"
-        >
+        <Button variant="text" onClick={onStartNew} size="small">
           Set up another project
         </Button>
       </Box>

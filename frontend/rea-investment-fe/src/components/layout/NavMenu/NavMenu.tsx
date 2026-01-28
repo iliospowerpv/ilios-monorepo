@@ -83,7 +83,7 @@ const menuItems: [string, React.ReactNode, string, string, boolean][] = [
   ['asset-management', <AccountBalanceIcon key="asset-management" />, 'Asset Management', '/asset-management', false],
   ['finance', <AccountBalanceWalletIcon key="finance" />, 'Finance', '/finance', false],
   ['reports', <AssessmentIcon key="reports" />, 'Reports', '/reports', false],
-  ['company-admin', <AdminPanelSettingsIcon key="company-admin" />, 'Portfolio Admin', '/company-admin', false]
+  ['portfolio-admin', <AdminPanelSettingsIcon key="portfolio-admin" />, 'Portfolio Admin', '/portfolio-admin', false]
 ];
 
 interface MenuItemProps {

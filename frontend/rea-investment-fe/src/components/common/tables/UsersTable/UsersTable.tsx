@@ -74,7 +74,7 @@ const UsersTable: React.FC<UsersTableProps> = ({ customActions, searchPlaceholde
   };
 
   const handleAddClick = () => {
-    navigate('/settings/users/add');
+    navigate('/portfolio-admin');
   };
 
   const handleExport = useCallback(() => {
