@@ -24,6 +24,7 @@ import Snackbar from '@mui/material/Snackbar';
 import { ApiClient } from '../../../../../api';
 import { useEntityContext } from '../../../../../contexts/entityContext/entityContext';
 import { SelectOrCreateUser } from '../../../../../components/forms/SelectOrCreate';
+import { useAccess } from '../../../../../hooks/access/access';
 
 interface InviteUserDialogProps {
   open: boolean;
@@ -47,6 +48,9 @@ export const InviteUserDialog: React.FC<InviteUserDialogProps> = ({ open, onClos
   const [showProjectAssignment, setShowProjectAssignment] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const { isSystemUser, isCompanyAdminFull } = useAccess(companyId || undefined);
+  const canCreateUsers = isSystemUser || isCompanyAdminFull;
 
   const { data: companiesData } = useQuery({
     queryKey: ['invite-accessible-companies'],
@@ -162,7 +166,7 @@ export const InviteUserDialog: React.FC<InviteUserDialogProps> = ({ open, onClos
               <SelectOrCreateUser
                 value={selectedUserId}
                 onChange={setSelectedUserId}
-                canCreate={true}
+                canCreate={canCreateUsers}
                 defaultCompanyId={companyId ? (companyId as number) : undefined}
                 label="Select User"
                 required

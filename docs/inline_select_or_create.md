@@ -19,13 +19,17 @@ A user picker component with inline creation capability.
 |------|------|---------|-------------|
 | `value` | `number \| null` | required | Currently selected user ID |
 | `onChange` | `(userId: number \| null) => void` | required | Callback when selection changes |
-| `canCreate` | `boolean` | `true` | Whether to show "Create New..." option |
-| `defaultCompanyId` | `number` | - | Default company for new user creation |
+| `canCreate` | `boolean` | `true` | Whether user has permission to create (combined with defaultCompanyId validity) |
+| `defaultCompanyId` | `number` | - | Default company for new user creation (required for "Create New" option to appear) |
 | `label` | `string` | `"Select User"` | Input label |
 | `required` | `boolean` | `false` | Whether field is required |
 | `disabled` | `boolean` | `false` | Whether field is disabled |
 | `helperText` | `string` | - | Helper text below input |
 | `error` | `boolean` | `false` | Whether to show error state |
+
+**Important Notes:**
+- The "Create New User..." option only appears when BOTH `canCreate=true` AND `defaultCompanyId` is a valid positive number
+- This prevents user creation without a valid parent company context (e.g., portfolio-level without company selection)
 
 **Usage:**
 ```tsx

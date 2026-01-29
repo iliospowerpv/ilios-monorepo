@@ -73,6 +73,8 @@ export const SelectOrCreateUser: React.FC<SelectOrCreateUserProps> = ({
     phone: ''
   });
 
+  const canShowCreateOption = canCreate && defaultCompanyId !== undefined && defaultCompanyId > 0;
+
   const { data: usersData, isLoading: isLoadingUsers } = useQuery({
     queryKey: ['users'],
     queryFn: () => ApiClient.user.users({ skip: 0, limit: 100 })
@@ -133,6 +135,11 @@ export const SelectOrCreateUser: React.FC<SelectOrCreateUserProps> = ({
       return;
     }
 
+    if (!defaultCompanyId || defaultCompanyId <= 0) {
+      setCreateError('A company must be selected before creating a user');
+      return;
+    }
+
     const defaultRole = rolesData?.find(r => r.name.toLowerCase() === 'read only') || rolesData?.[0];
     if (!defaultRole) {
       setCreateError('No roles available');
@@ -144,7 +151,7 @@ export const SelectOrCreateUser: React.FC<SelectOrCreateUserProps> = ({
       first_name: formData.first_name.trim(),
       last_name: formData.last_name.trim(),
       phone: formData.phone.trim() || '',
-      parent_company_id: defaultCompanyId || 0,
+      parent_company_id: defaultCompanyId,
       role_id: defaultRole.id,
       sites_ids: []
     };
@@ -159,7 +166,7 @@ export const SelectOrCreateUser: React.FC<SelectOrCreateUserProps> = ({
   };
 
   const options: OptionType[] = [
-    ...(canCreate
+    ...(canShowCreateOption
       ? [
           {
             id: CREATE_NEW_SENTINEL as typeof CREATE_NEW_SENTINEL,
