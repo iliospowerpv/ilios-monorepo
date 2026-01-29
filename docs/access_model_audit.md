@@ -351,3 +351,52 @@ If divestiture causes issues:
 1. **Restore from checkpoint** - Replit checkpoints preserve database state
 2. **Re-grant access manually** - Use exported access lists to restore
 3. **Audit access** - Run validation queries to ensure consistency
+
+---
+
+## Access Health Admin Tool
+
+### Overview
+
+The Access Health tool provides system administrators with automated validation checks and repair utilities for access model data integrity.
+
+**Location**: `/settings/access-health` (System Admin only)
+
+### Validation Checks
+
+| Check | Description | Auto-Repairable |
+|-------|-------------|-----------------|
+| **INV-1 Integrity** | UserProject.company_id must match sites.company_id | Yes |
+| **Orphaned Memberships** | References to deleted companies or projects | Yes |
+| **Inactive Users with Active Memberships** | Disabled users should not have active memberships | Manual review |
+| **Duplicate Memberships** | Same user-entity combination appearing multiple times | Manual review |
+
+### Database Trigger (INV-1 Enforcement)
+
+A database trigger `trg_enforce_inv1_user_project_company_id` on the `user_projects` table automatically enforces INV-1:
+
+```sql
+-- On INSERT/UPDATE of user_projects:
+-- 1. If company_id is NULL, auto-set to sites.company_id
+-- 2. If company_id doesn't match sites.company_id, raise exception
+```
+
+### API Endpoints
+
+```
+GET  /api/admin/access-health
+     Returns all validation results with issue details
+
+POST /api/admin/access-health/repair/orphaned
+     Removes membership rows referencing deleted entities
+
+POST /api/admin/access-health/repair/inv1
+     Normalizes company_id values in user_projects
+```
+
+### Recommended Workflow
+
+1. **Routine Check**: Run validation weekly or after major data changes
+2. **Before Divestiture**: Verify no existing issues before ownership changes
+3. **Post-Migration**: Always run after database migrations affecting access tables
+4. **Repair with Caution**: Review issues before running automated repairs

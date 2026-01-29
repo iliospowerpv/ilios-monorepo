@@ -61,6 +61,7 @@ from .routers import (
     tasks_router,
     users_router,
     workspace_router,
+    access_health_router,
 )
 from .routers.internal.base import internal_telemetry_router
 from .routers.investor_dashboard import investor_sites_router
@@ -235,6 +236,8 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
     app.include_router(breadcrumbs_router, prefix="/api/breadcrumbs", tags=[tags.BREADCRUMBS_TAG])
     # Sales related APIs
     app.include_router(sales_router)
+    # Admin APIs
+    app.include_router(access_health_router, prefix="/api/admin/access-health", tags=[tags.ADMIN_ACCESS_HEALTH_TAG])
     return app
 
 

@@ -12,6 +12,7 @@ import SettingsEditMyCompanyUser from './EditMyCompanyUser';
 import SettingsAddMyCompanyUser from './AddMyCompanyUser';
 import SettingsManageConnections from './ManageConnections';
 import SettingsAddMyCompanySite from './AddMyCompanySite';
+import { AccessHealthPage } from './AccessHealth';
 
 export {
   SettingsPage,
@@ -27,5 +28,6 @@ export {
   SettingsEditMyCompanyUser,
   SettingsAddMyCompanyUser,
   SettingsManageConnections,
-  SettingsAddMyCompanySite
+  SettingsAddMyCompanySite,
+  AccessHealthPage
 };

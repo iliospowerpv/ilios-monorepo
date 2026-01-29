@@ -17,6 +17,7 @@ import { buildBreadcrumbsApi } from './breadcrumbs';
 import { buildReportsApi } from './reports';
 import { buildAccessibleEntitiesApi } from './accessible-entities';
 import { buildWorkspaceApi } from './workspace';
+import { buildAdminApi } from './admin';
 
 export const ApiClient = Object.freeze({
   _tokenManager: tokenManager,
@@ -37,7 +38,8 @@ export const ApiClient = Object.freeze({
   breadcrumbs: buildBreadcrumbsApi(httpClient),
   reports: buildReportsApi(httpClient),
   accessibleEntities: buildAccessibleEntitiesApi(httpClient),
-  workspace: buildWorkspaceApi(httpClient)
+  workspace: buildWorkspaceApi(httpClient),
+  admin: buildAdminApi(httpClient)
 });
 
 export type {
@@ -129,5 +131,13 @@ export type {
   WorkspaceCompany,
   CompanyMember,
   AddMemberRequest,
-  UpdateMemberRequest
+  UpdateMemberRequest,
+  PortfolioMember,
+  PortfolioMembersResponse,
+  AddPortfolioMemberRequest,
+  ProjectMember,
+  ProjectMembersResponse,
+  AddProjectMemberRequest
 } from './workspace';
+
+export type { AccessHealthResponse, ValidationResult, ValidationIssue, RepairResult } from './admin';

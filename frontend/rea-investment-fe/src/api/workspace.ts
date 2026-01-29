@@ -31,6 +31,50 @@ export interface CompanyMember {
   access_source: string;
 }
 
+export interface PortfolioMember {
+  access_id: number;
+  user_id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: 'company_admin' | 'contributor' | 'read_only';
+  status: 'active' | 'invited' | 'disabled';
+}
+
+export interface PortfolioMembersResponse {
+  members: PortfolioMember[];
+  total: number;
+}
+
+export interface AddPortfolioMemberRequest {
+  user_id: number;
+  role: 'company_admin' | 'contributor' | 'read_only';
+}
+
+export interface ProjectMember {
+  membership_id: number | null;
+  user_id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  resolved_role: 'project_admin' | 'contributor' | 'read_only';
+  resolved_status: 'active' | 'invited' | 'disabled';
+  access_source: 'direct_project' | 'inherited_company' | 'inherited_portfolio';
+  direct_role?: 'project_admin' | 'contributor' | 'read_only' | null;
+  inherited_role?: 'project_admin' | 'contributor' | 'read_only' | null;
+  has_access: boolean;
+}
+
+export interface ProjectMembersResponse {
+  members: ProjectMember[];
+  total: number;
+}
+
+export interface AddProjectMemberRequest {
+  user_id: number;
+  role: 'project_admin' | 'contributor' | 'read_only';
+}
+
 export interface AddMemberRequest {
   user_id: number;
   company_id: number;
@@ -74,11 +118,45 @@ export const buildWorkspaceApi = (httpClient: AxiosInstance) => {
     await httpClient.delete(`/api/workspace/companies/${companyId}/members/${membershipId}`);
   };
 
+  const getPortfolioMembers = async (): Promise<PortfolioMembersResponse> => {
+    const response = await httpClient.get<PortfolioMembersResponse>('/api/workspace/portfolio/members');
+    return response.data;
+  };
+
+  const addPortfolioMember = async (request: AddPortfolioMemberRequest): Promise<PortfolioMember> => {
+    const response = await httpClient.post<PortfolioMember>('/api/workspace/portfolio/members', request);
+    return response.data;
+  };
+
+  const removePortfolioMember = async (accessId: number): Promise<void> => {
+    await httpClient.delete(`/api/workspace/portfolio/members/${accessId}`);
+  };
+
+  const getProjectMembers = async (projectId: number): Promise<ProjectMembersResponse> => {
+    const response = await httpClient.get<ProjectMembersResponse>(`/api/workspace/projects/${projectId}/members`);
+    return response.data;
+  };
+
+  const addProjectMember = async (projectId: number, request: AddProjectMemberRequest): Promise<ProjectMember> => {
+    const response = await httpClient.post<ProjectMember>(`/api/workspace/projects/${projectId}/members`, request);
+    return response.data;
+  };
+
+  const removeProjectMember = async (projectId: number, membershipId: number): Promise<void> => {
+    await httpClient.delete(`/api/workspace/projects/${projectId}/members/${membershipId}`);
+  };
+
   return Object.freeze({
     getWorkspace,
     getCompanyMembers,
     addCompanyMember,
     updateCompanyMember,
-    removeCompanyMember
+    removeCompanyMember,
+    getPortfolioMembers,
+    addPortfolioMember,
+    removePortfolioMember,
+    getProjectMembers,
+    addProjectMember,
+    removeProjectMember
   });
 };

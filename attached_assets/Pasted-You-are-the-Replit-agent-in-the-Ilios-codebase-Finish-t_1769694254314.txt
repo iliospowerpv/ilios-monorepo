@@ -1,0 +1,132 @@
+You are the Replit agent in the Ilios codebase. Finish the access management feature by wiring the Portfolio and Project membership UIs to the existing backend APIs and computed access model, then implement the final hardening items: a DB-level guard for INV-1 and an admin validate/recompute access utility.
+
+CONTEXT (CURRENT STATE)
+- Portfolio access is computed at runtime (no fan-out company rows).
+- Central helper exists: app/helpers/access_resolution.py with resolve_company_access() and resolve_project_access().
+- Member list endpoints return provenance + resolved fields:
+  - access_source, resolved_role/resolved_status, direct_role/inherited_role where applicable.
+- UserCompanyAccess already has a working UI in Company Admin.
+- Portfolio and Project AddUserDialog / member management UI currently shows “Coming Soon” (not wired).
+- UserProject includes company_id and is validated in code to match the site’s company.
+
+PRIMARY GOALS
+1) Portfolio member management UI: list/add/remove portfolio users (system admin only).
+2) Project member management UI: list/add/remove project members with role/status and provenance display.
+3) Implement DB-level guard for INV-1 (UserProject.company_id must match sites.company_id).
+4) Implement Admin Validate/Recompute utility:
+   - Validate invariants and highlight issues
+   - Provide safe “recompute” or “repair” actions only where appropriate
+
+NON-NEGOTIABLE LIMITATIONS
+- Do not rebuild the access model; use existing APIs and access_resolution outputs.
+- Do not introduce a new RBAC system.
+- Do not add external invitation email delivery.
+- Keep UI consistent with Home/Workspace/Company Admin design patterns.
+- Keep navigation stable and context-aware (Context Bar + lens routes).
+
+PART 1 — PORTFOLIO UI (SYSTEM ADMIN)
+A) Add a Portfolio Admin page and wire it to backend APIs:
+- Route (choose consistent location): /portfolio-admin OR /admin/portfolio-access
+- Show:
+  - Portfolio members list (name, email, role if any, status, added_at)
+  - Actions: Add member, Remove member
+- Authorization:
+  - Visible/accessible only to system users/admins
+  - If non-system user navigates there, show “Not authorized” (do not crash)
+
+B) Add member flow:
+- Dialog:
+  - Input: email (or pick existing users if you have a user search)
+  - Role/status if supported at portfolio level; otherwise keep minimal and default status=active or invited based on your current user creation pattern.
+- Calls POST /api/workspace/portfolio/members
+- On success: list refresh + toast
+
+C) Remove member:
+- Calls DELETE /api/workspace/portfolio/members/{id}
+- Confirm modal + toast
+
+D) Navigation:
+- Add link to this page under an “Admin” section for system admins only
+- Do NOT clutter primary nav for all users
+
+PART 2 — PROJECT MEMBERS UI (PROJECT-SCOPED)
+A) Add “Members” panel/tab on Project pages (canonical /projects/:id and/or project lens routes):
+- Show list of project members using GET /api/workspace/projects/{id}/members
+- Columns:
+  - Name, Email
+  - Resolved Role, Resolved Status
+  - Access Source (direct_project, inherited_company, inherited_portfolio, etc.)
+  - Show “Direct Role” and “Inherited Role” subtly when both exist (tooltip or secondary text)
+- Make it obvious that inherited access cannot be edited at the project level unless you add a direct project assignment.
+
+B) Actions (permissioned):
+- Add member (Project):
+  - Dialog with:
+    - Email/user selection
+    - Direct project role (project_admin/contributor/read_only — use existing enum if present)
+    - Status (active/invited/suspended if supported)
+  - Calls POST /api/workspace/projects/{id}/members
+  - Optional checkbox:
+    “Also add to company membership” (default unchecked). If checked, create UserCompanyAccess too.
+    (This is optional; only implement if low-risk and consistent with existing company admin permissions.)
+- Remove member (Project):
+  - Calls DELETE /api/workspace/projects/{id}/members/{memberId}
+  - Must only remove direct project membership rows.
+  - If member is inherited (company/portfolio), show “Inherited access – manage at Company/Portfolio level” with link.
+
+C) Ensure context behavior:
+- On project lens routes and canonical routes, members tab should work.
+- Do not route to /home on null; show a picker or error state consistent with Context Bar contract.
+
+PART 3 — DB-LEVEL GUARD FOR INV-1
+Invariant INV-1: For any UserProject row, user_project.company_id must match sites.company_id for user_project.site_id.
+
+Implement a DB-level guard:
+- Preferred in Postgres: a trigger (BEFORE INSERT/UPDATE) on user_project that:
+  - looks up sites.company_id
+  - raises exception if mismatch
+- Keep current application-level validation as well (defense in depth).
+
+Deliverable:
+- Alembic migration adding trigger/function
+- Update docs/access_model_audit.md with the DB guard implementation notes
+
+PART 4 — ADMIN VALIDATE / RECOMPUTE ACCESS UTILITY
+A) Create an Admin page: /admin/access-health (system users only)
+This should be safe and informative.
+
+B) It must run and display:
+- Validation checks (read-only):
+  1) INV-1 violations (should be zero if trigger works, but include check anyway)
+  2) Orphaned memberships (company_id/site_id references missing)
+  3) Suspended users who still appear with resolved access (should be blocked)
+  4) Conflicting statuses/roles (if any)
+- Show counts + expandable details tables.
+
+C) Provide optional repair actions (guarded by confirmation and system-admin only):
+- “Remove orphaned rows” (safe cleanup)
+- “Normalize mismatched company_id in UserProject”:
+  - Only if you can deterministically set company_id from site.company_id and it doesn’t violate business logic.
+  - Otherwise, keep read-only and instruct manual fix.
+
+D) Add a “Recompute” button if your system caches computed access anywhere:
+- If no caching exists, do NOT invent recomputation. Instead label it “Re-run validation.”
+- The goal is to give operators confidence, not build a new subsystem.
+
+E) Document:
+- Create docs/access_health_utility.md describing checks and safe repairs.
+
+DELIVERABLES
+- Portfolio Admin page wired to portfolio membership APIs
+- Project Members tab/panel wired to project membership APIs
+- INV-1 DB trigger guard + migration
+- Admin Access Health page + docs
+- Update any “Coming Soon” placeholders in the UI to the real connected screens
+
+ACCEPTANCE TESTS (MUST PASS)
+1) System admin can add/remove portfolio members and see list update.
+2) Project admin can add/remove direct project members.
+3) Inherited members are visible and clearly marked, and cannot be removed from project scope.
+4) Attempting to insert/update UserProject with mismatched company_id fails at DB level.
+5) Access Health page loads for system admin, shows validation results, and optional repairs are confirmation-gated.
+6) No navigation regressions; Context Bar behavior remains correct.

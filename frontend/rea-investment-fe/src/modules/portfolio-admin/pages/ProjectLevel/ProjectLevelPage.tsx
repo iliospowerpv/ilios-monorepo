@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
@@ -12,6 +12,19 @@ import Chip from '@mui/material/Chip';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Link from '@mui/material/Link';
 import Divider from '@mui/material/Divider';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import IconButton from '@mui/material/IconButton';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Alert from '@mui/material/Alert';
+import Tooltip from '@mui/material/Tooltip';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import FolderIcon from '@mui/icons-material/Folder';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -20,9 +33,14 @@ import BoltIcon from '@mui/icons-material/Bolt';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import DeleteIcon from '@mui/icons-material/Delete';
+import PeopleIcon from '@mui/icons-material/People';
+import InfoIcon from '@mui/icons-material/Info';
 
 import { ApiClient } from '../../../../api';
+import type { ProjectMember } from '../../../../api';
 import { AddUserDialog } from '../../components/dialogs';
+import { useNotify } from '../../../../contexts/notifications/notifications';
 
 const getStatusColor = (status: string | undefined): 'success' | 'warning' | 'error' | 'default' => {
   switch (status?.toLowerCase()) {
@@ -40,10 +58,42 @@ const getStatusColor = (status: string | undefined): 'success' | 'warning' | 'er
   }
 };
 
+const getAccessSourceLabel = (source: string) => {
+  switch (source) {
+    case 'direct_project':
+      return 'Direct';
+    case 'inherited_company':
+      return 'Company';
+    case 'inherited_portfolio':
+      return 'Portfolio';
+    default:
+      return source;
+  }
+};
+
+const getAccessSourceColor = (source: string): 'primary' | 'secondary' | 'warning' | 'default' => {
+  switch (source) {
+    case 'direct_project':
+      return 'primary';
+    case 'inherited_company':
+      return 'secondary';
+    case 'inherited_portfolio':
+      return 'warning';
+    default:
+      return 'default';
+  }
+};
+
 export const ProjectLevelPage: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const notify = useNotify();
   const { projectId } = useParams<{ projectId: string }>();
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [removeMemberDialog, setRemoveMemberDialog] = useState<{ open: boolean; member: ProjectMember | null }>({
+    open: false,
+    member: null
+  });
 
   const projectIdNum = parseInt(projectId || '0', 10);
 
@@ -54,9 +104,29 @@ export const ProjectLevelPage: React.FC = () => {
     staleTime: 5 * 60 * 1000
   });
 
+  const { data: projectMembersData, isLoading: isLoadingMembers } = useQuery({
+    queryKey: ['projectMembers', projectIdNum],
+    queryFn: () => ApiClient.workspace.getProjectMembers(projectIdNum),
+    enabled: projectIdNum > 0,
+    staleTime: 5 * 60 * 1000
+  });
+
+  const removeMemberMutation = useMutation({
+    mutationFn: (membershipId: number) => ApiClient.workspace.removeProjectMember(projectIdNum, membershipId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projectMembers', projectIdNum] });
+      notify('Member removed from project');
+      setRemoveMemberDialog({ open: false, member: null });
+    },
+    onError: () => {
+      notify('Failed to remove member');
+    }
+  });
+
   const projectName = project?.name || 'Project';
   const companyId = project?.company?.id;
   const companyName = project?.company?.name || 'Company';
+  const projectMembers = projectMembersData?.members || [];
 
   const readinessScore = React.useMemo(() => {
     if (!project) return 0;
@@ -358,12 +428,173 @@ export const ProjectLevelPage: React.FC = () => {
         </Grid>
       </Grid>
 
+      <Card sx={{ mt: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6">
+              <PeopleIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
+              Project Members
+            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<PersonAddIcon />}
+              onClick={() => setIsAddUserOpen(true)}
+            >
+              Add Member
+            </Button>
+          </Box>
+          <Divider sx={{ mb: 2 }} />
+          
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Role</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      Access Source
+                      <Tooltip title="Direct: assigned to this project. Company: inherited from company membership. Portfolio: inherited from portfolio access.">
+                        <InfoIcon fontSize="small" color="action" />
+                      </Tooltip>
+                    </Box>
+                  </TableCell>
+                  <TableCell align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {isLoadingMembers ? (
+                  [1, 2, 3].map(i => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton /></TableCell>
+                      <TableCell><Skeleton /></TableCell>
+                      <TableCell><Skeleton width={80} /></TableCell>
+                      <TableCell><Skeleton width={60} /></TableCell>
+                      <TableCell><Skeleton width={80} /></TableCell>
+                      <TableCell><Skeleton width={40} /></TableCell>
+                    </TableRow>
+                  ))
+                ) : projectMembers.length > 0 ? (
+                  projectMembers.map(member => {
+                    const isDirect = member.access_source === 'direct_project';
+                    return (
+                      <TableRow key={member.user_id}>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <PeopleIcon fontSize="small" color="action" />
+                            {member.first_name} {member.last_name}
+                          </Box>
+                        </TableCell>
+                        <TableCell>{member.email}</TableCell>
+                        <TableCell>
+                          <Tooltip
+                            title={
+                              member.direct_role && member.inherited_role && member.direct_role !== member.inherited_role
+                                ? `Direct: ${member.direct_role}, Inherited: ${member.inherited_role}`
+                                : ''
+                            }
+                          >
+                            <Chip
+                              size="small"
+                              label={member.resolved_role === 'project_admin' ? 'Admin' : member.resolved_role === 'contributor' ? 'Contributor' : 'Read Only'}
+                              color={member.resolved_role === 'project_admin' ? 'primary' : 'default'}
+                            />
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            size="small"
+                            label={member.resolved_status}
+                            color={member.resolved_status === 'active' ? 'success' : member.resolved_status === 'invited' ? 'warning' : 'error'}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            size="small"
+                            label={getAccessSourceLabel(member.access_source)}
+                            color={getAccessSourceColor(member.access_source)}
+                            variant={isDirect ? 'filled' : 'outlined'}
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          {isDirect && member.membership_id ? (
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => setRemoveMemberDialog({ open: true, member })}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          ) : (
+                            <Tooltip
+                              title={`Inherited access - manage at ${member.access_source === 'inherited_company' ? 'Company' : 'Portfolio'} level`}
+                            >
+                              <span>
+                                <IconButton size="small" disabled>
+                                  <DeleteIcon />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      <Typography color="text.secondary" sx={{ py: 3 }}>
+                        No members assigned to this project. Click "Add Member" to add someone.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
+
+      <Dialog
+        open={removeMemberDialog.open}
+        onClose={() => setRemoveMemberDialog({ open: false, member: null })}
+      >
+        <DialogTitle>Remove Project Member</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to remove{' '}
+            <strong>{removeMemberDialog.member?.first_name} {removeMemberDialog.member?.last_name}</strong>{' '}
+            from this project?
+          </Typography>
+          <Alert severity="info" sx={{ mt: 2 }}>
+            This will only remove their direct project membership. If they have company or portfolio access, they will retain access through that.
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRemoveMemberDialog({ open: false, member: null })}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => removeMemberDialog.member?.membership_id && removeMemberMutation.mutate(removeMemberDialog.member.membership_id)}
+            disabled={removeMemberMutation.isPending}
+          >
+            {removeMemberMutation.isPending ? 'Removing...' : 'Remove'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <AddUserDialog
         open={isAddUserOpen}
         onClose={() => setIsAddUserOpen(false)}
         level="project"
         entityId={projectIdNum}
         entityName={projectName}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['projectMembers', projectIdNum] })}
       />
     </Box>
   );

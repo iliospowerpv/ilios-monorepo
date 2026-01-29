@@ -65,7 +65,8 @@ import {
   SettingsEditMyCompanyUser,
   SettingsAddMyCompanyUser,
   SettingsManageConnections,
-  SettingsAddMyCompanySite
+  SettingsAddMyCompanySite,
+  AccessHealthPage
 } from './modules/settings';
 import { SiteTask as OMSiteTask } from './modules/security';
 import {
@@ -669,6 +670,10 @@ const router = createBrowserRouter(
               />
             }
             handle={SettingsPage.createHandle()}
+          />
+          <Route
+            path="access-health"
+            element={<ProtectedSettingsRoute element={<AccessHealthPage />} permission={[AdminType.system]} />}
           />
           <Route
             path="users/add"

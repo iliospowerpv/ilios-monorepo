@@ -19,7 +19,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import InfoIcon from '@mui/icons-material/Info';
 
 import { ApiClient } from '../../../../api';
-import type { AddMemberRequest } from '../../../../api';
+import type { AddMemberRequest, AddPortfolioMemberRequest, AddProjectMemberRequest } from '../../../../api';
 import { useNotify } from '../../../../contexts/notifications/notifications';
 
 export type AccessLevel = 'portfolio' | 'company' | 'project';
@@ -48,8 +48,7 @@ const ACCESS_LEVEL_INFO: Record<AccessLevel, AccessLevelInfo> = {
     title: 'Portfolio-Level Access',
     description: 'This user will have access to ALL companies and ALL projects in the portfolio. Only grant this level to users who need visibility across the entire organization.',
     severity: 'warning',
-    supported: false,
-    unsupportedMessage: 'Portfolio-level user addition is coming soon. For now, please add users at the company level to give them access to all projects within that company.'
+    supported: true
   },
   company: {
     title: 'Company-Level Access',
@@ -61,8 +60,7 @@ const ACCESS_LEVEL_INFO: Record<AccessLevel, AccessLevelInfo> = {
     title: 'Project-Level Access',
     description: 'This user will only have access to this specific project. This is the most restricted access level.',
     severity: 'info',
-    supported: false,
-    unsupportedMessage: 'Project-level user addition is coming soon. For now, please add users at the company level and manage their project access through permissions.'
+    supported: true
   }
 };
 
@@ -94,21 +92,41 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
   });
 
   const addMemberMutation = useMutation({
-    mutationFn: (request: AddMemberRequest) => {
-      if (level === 'company' && entityId) {
+    mutationFn: async (params: { userId: number; role: RoleType }) => {
+      if (level === 'portfolio') {
+        const request: AddPortfolioMemberRequest = {
+          user_id: params.userId,
+          role: params.role
+        };
+        return ApiClient.workspace.addPortfolioMember(request);
+      } else if (level === 'company' && entityId) {
+        const request: AddMemberRequest = {
+          user_id: params.userId,
+          company_id: entityId,
+          role: params.role
+        };
         return ApiClient.workspace.addCompanyMember(entityId, request);
+      } else if (level === 'project' && entityId) {
+        const projectRole = params.role === 'company_admin' ? 'project_admin' : params.role;
+        const request: AddProjectMemberRequest = {
+          user_id: params.userId,
+          role: projectRole as 'project_admin' | 'contributor' | 'read_only'
+        };
+        return ApiClient.workspace.addProjectMember(entityId, request);
       }
       throw new Error('Unsupported level for add member');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['companyMembers'] });
+      queryClient.invalidateQueries({ queryKey: ['portfolioMembers'] });
+      queryClient.invalidateQueries({ queryKey: ['projectMembers'] });
       queryClient.invalidateQueries({ queryKey: ['workspace'] });
       notify('User added successfully');
       handleClose();
       onSuccess?.();
     },
     onError: (err: any) => {
-      setError(err.response?.data?.message || 'Failed to add user');
+      setError(err.response?.data?.detail || err.response?.data?.message || 'Failed to add user');
     }
   });
 
@@ -123,13 +141,10 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
       return;
     }
 
-    if (level === 'company' && entityId) {
-      addMemberMutation.mutate({
-        user_id: selectedUserId,
-        company_id: entityId,
-        role: selectedRole
-      });
-    }
+    addMemberMutation.mutate({
+      userId: selectedUserId,
+      role: selectedRole
+    });
   };
 
   const levelInfo = ACCESS_LEVEL_INFO[level];
