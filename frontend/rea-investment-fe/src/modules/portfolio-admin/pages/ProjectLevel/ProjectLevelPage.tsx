@@ -125,7 +125,7 @@ export const ProjectLevelPage: React.FC = () => {
   });
 
   const projectName = project?.name || 'Project';
-  const companyId = project?.company?.id;
+  const companyId = project?.company?.id || (project as any)?.company_id;
   const companyName = project?.company?.name || 'Company';
   const projectMembers = projectMembersData?.members || [];
 

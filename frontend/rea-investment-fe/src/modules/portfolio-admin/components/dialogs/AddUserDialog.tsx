@@ -216,16 +216,19 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
 
         {isSupported && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {level === 'portfolio' && companies.length > 0 && (
+            {level === 'portfolio' && (
               <FormControl fullWidth size="small">
                 <InputLabel>Company for New User</InputLabel>
                 <Select
                   value={selectedCompanyForCreate ? String(selectedCompanyForCreate) : ''}
                   onChange={e => setSelectedCompanyForCreate(Number(e.target.value) || null)}
                   label="Company for New User"
+                  disabled={companies.length === 0}
                 >
                   <MenuItem value="">
-                    <em>Select a company to enable user creation</em>
+                    <em>
+                      {companies.length === 0 ? 'Loading companies...' : 'Select a company to enable user creation'}
+                    </em>
                   </MenuItem>
                   {companies.map(c => (
                     <MenuItem key={c.company_id} value={String(c.company_id)}>
@@ -234,6 +237,11 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
                   ))}
                 </Select>
               </FormControl>
+            )}
+            {level === 'project' && !parentCompanyId && (
+              <Alert severity="warning" sx={{ py: 1 }}>
+                Unable to determine parent company for this project. User creation is disabled.
+              </Alert>
             )}
 
             <SelectOrCreateUser
