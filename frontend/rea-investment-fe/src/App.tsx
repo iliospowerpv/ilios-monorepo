@@ -170,6 +170,14 @@ const router = createBrowserRouter(
           <Route path="projects/:projectId" handle={createProjectLevelHandle()} element={<ProjectLevelPage />} />
         </Route>
 
+        {/* Admin - System administration tools */}
+        <Route path="/admin">
+          <Route
+            path="access-health"
+            element={<ProtectedSettingsRoute element={<AccessHealthPage />} permission={[AdminType.system]} />}
+          />
+        </Route>
+
         {/* Legacy Company Admin redirects to Portfolio Admin */}
         <Route path="/company-admin" element={<Navigate to="/portfolio-admin" replace />} />
         <Route path="/companies" element={<CompaniesPickerView />} />
@@ -671,10 +679,7 @@ const router = createBrowserRouter(
             }
             handle={SettingsPage.createHandle()}
           />
-          <Route
-            path="access-health"
-            element={<ProtectedSettingsRoute element={<AccessHealthPage />} permission={[AdminType.system]} />}
-          />
+          <Route path="access-health" element={<Navigate to="/admin/access-health" replace />} />
           <Route
             path="users/add"
             handle={SettingsAddUser.createHandle()}

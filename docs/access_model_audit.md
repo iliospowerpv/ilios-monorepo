@@ -360,7 +360,9 @@ If divestiture causes issues:
 
 The Access Health tool provides system administrators with automated validation checks and repair utilities for access model data integrity.
 
-**Location**: `/settings/access-health` (System Admin only)
+**Location**: `/admin/access-health` (System Admin only)
+
+*Note: `/settings/access-health` redirects to `/admin/access-health` for backward compatibility.*
 
 ### Validation Checks
 

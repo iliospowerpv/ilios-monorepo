@@ -15,6 +15,7 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import HomeIcon from '@mui/icons-material/Home';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { NavMenuButtonContainer } from './NavMenu.styles';
 import { useNavigate, useMatches } from 'react-router-dom';
 import { RouteHandle } from '../../../handles';
@@ -83,7 +84,8 @@ const menuItems: [string, React.ReactNode, string, string, boolean][] = [
   ['asset-management', <AccountBalanceIcon key="asset-management" />, 'Asset Management', '/asset-management', false],
   ['finance', <AccountBalanceWalletIcon key="finance" />, 'Finance', '/finance', false],
   ['reports', <AssessmentIcon key="reports" />, 'Reports', '/reports', false],
-  ['portfolio-admin', <AdminPanelSettingsIcon key="portfolio-admin" />, 'Portfolio Admin', '/portfolio-admin', false]
+  ['portfolio-admin', <AdminPanelSettingsIcon key="portfolio-admin" />, 'Portfolio Admin', '/portfolio-admin', false],
+  ['admin', <SettingsIcon key="admin" />, 'Admin', '/admin/access-health', false]
 ];
 
 interface MenuItemProps {
@@ -152,6 +154,7 @@ export const NavMenu: React.FC<NavMenuProps> = ({ containerRef, isMenuOpen }) =>
     const hasPortfolioAccess = user?.role?.permissions?.['Investor Dashboard']?.view;
     if (moduleKey === 'dashboard') return !hasPortfolioAccess;
     if (moduleKey === 'portfolio') return !!hasPortfolioAccess;
+    if (moduleKey === 'admin') return !!user?.is_system_user;
     return true;
   };
 
