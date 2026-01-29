@@ -1,0 +1,119 @@
+You are the Replit agent in the Ilios codebase. Implement a project-scoped telemetry hookup workflow that aligns with the Ilios UX architecture: Context Bar scoped navigation, canonical Project (sites table), Operations module visibility, and lender/operator-grade readiness and health indicators. Preserve the existing GCP pipeline (Secrets Manager + Firestore + Cloud Functions + BigQuery). Do not redesign the pipeline unless required for health visibility.
+
+NON-NEGOTIABLE UX CONSTRAINTS
+- Telemetry hookup MUST live at the Project level (sites table).
+- Primary entry points:
+  1) Project page (/projects/:id) with a Telemetry tab/section
+  2) Operations module project lens route (/operations/scope/project/:projectId) for a full-page experience
+- Do NOT hide setup under Settings or embed setup inside SiteForm/DeviceForm.
+- Use the established guided workflow pattern (like onboarding): step-by-step wizard, readiness indicator, explicit blockers.
+- Keep navigation stable; do not gate/hide modules by lifecycle state—use messaging instead.
+
+CURRENT STATE (FROM AUDIT)
+- Connections managed via Settings routes and das_connections table (company scoped) with secret_token_name referencing GCP Secrets Manager.
+- Site mapping stored in telemetry_sites_mapping (unique per site).
+- Device mapping stored in telemetry_devices_mapping (unique per device) currently only during device creation.
+- Firestore stores FSCompanyConfig used by Cloud Functions to poll providers; BigQuery stores timeseries.
+- Cloud Functions validate credentials, list sites/devices, fetch device static info.
+- No test connection feedback, no sync health in-app, no mapping deletion endpoint.
+
+PRIMARY DELIVERABLES
+A) Project Telemetry Wizard (project scoped)
+B) Telemetry Health widget (project scoped)
+C) Bulk device mapping UI (project scoped)
+D) Minimal backend endpoints to support test, mapping CRUD, health
+E) Audit trail for connect/disconnect + mapping changes
+
+PART A — PROJECT TELEMETRY TAB + WIZARD
+1) Add a Telemetry tab/section on Project pages (and a full-page mirror under Operations).
+2) The Telemetry page must show:
+   - Readiness strip: Connected? Site mapped? Devices mapped? Data flowing?
+   - Health strip: last success, last attempt, status, last error (sanitized)
+   - Primary CTA: “Connect Telemetry” or “Manage Telemetry” depending on state
+3) Implement a guided wizard with steps:
+
+Step 1: Choose / Create Connection (Company-scoped connection)
+- Allow selecting existing das_connections for the project’s company.
+- Allow “Create new connection” inline (Select-or-Create pattern), NOT in Settings.
+- Add “Test Connection” button BEFORE save:
+  - Calls a backend test endpoint; displays provider-specific success/failure.
+  - On success, show number of available DAS sites (if possible).
+- Save creates/updates das_connections + stores secrets in Secrets Manager (existing behavior).
+
+Step 2: Map Project to DAS Site
+- Fetch DAS sites list using existing Cloud Function via backend.
+- Save mapping to telemetry_sites_mapping and ensure Firestore config is updated.
+
+Step 3: Map Devices (Bulk)
+- Show a table/grid of Ilios devices for the project that are telemetry-eligible (inverter/module/weather_station).
+- Show DAS devices from provider.
+- Support:
+  - Auto-match by name (best-effort)
+  - Manual select per row
+  - Bulk “Map selected” action
+- Must support mapping for EXISTING devices (not only during device creation).
+- Persist to telemetry_devices_mapping and update Firestore config.
+
+Step 4: Confirm + Health
+- Show “Data expected every 15 minutes” and a health view:
+  - last reported timestamps (device_last_report_ts)
+  - if no data, show clear troubleshooting steps
+
+PART B — TELEMETRY HEALTH VISIBILITY (IN-APP)
+Implement a project-level health endpoint and UI widget.
+Option 1 (preferred, minimal disruption): derive “health” from BigQuery
+- Use device_last_report_ts() and/or recent site metrics to compute:
+  - last_data_at
+  - data_delay_minutes
+  - status: HEALTHY/WARN/ERROR
+Option 2 (if needed): create a telemetry_sync_health table
+- Cloud Functions can optionally update it later, but do NOT require pipeline rewrite now.
+
+Expose API:
+- GET /api/telemetry/sites/{site_id}/health
+Return:
+- status, last_data_at, data_delay_minutes, last_error (if available), mapped_device_count, expected_interval_minutes
+
+PART C — MAPPING CRUD IMPROVEMENTS (NEEDED FOR OPS)
+Add endpoints:
+- DELETE /api/telemetry/sites/{site_id}/mapping (remove site mapping cleanly; update Firestore)
+- PUT /api/telemetry/sites/{site_id}/mapping (update mapping; update Firestore)
+- POST /api/telemetry/sites/{site_id}/devices/bulk-mapping (bulk map devices; update Firestore)
+- DELETE /api/telemetry/devices/{device_id}/mapping (remove a device mapping)
+
+PART D — PERMISSIONS + AUDIT TRAIL
+- Viewing telemetry health/charts requires project view permission.
+- Editing connection/mapping requires appropriate admin permission (company/project admin).
+- Add audit events for:
+  - connection created/updated/deleted
+  - site mapping created/updated/deleted
+  - device mapping created/updated/deleted
+Store who/when/what in your existing audit log mechanism.
+
+PART E — DEPRECATE EMBEDDED FORM BEHAVIOR (WITHOUT BREAKING)
+- Keep SiteForm/DeviceForm fields for backward compatibility if needed, but:
+  - Remove or hide telemetry mapping controls from those forms
+  - Replace with a link: “Manage Telemetry in Project → Telemetry”
+- Ensure existing device creation still works without forcing telemetry mapping.
+
+SECURITY HARDENING (ARCHITECTURE NOTE, NOT REQUIRED FOR THIS PASS)
+- Document current service account key file usage and propose migration to workload identity/ADC.
+- Do not implement cloud infra changes in this prompt unless trivially supported.
+
+DOCUMENTATION
+Create docs/telemetry_hookup_redesign.md including:
+- New user flow and screens
+- Endpoints added/changed
+- Health calculation method
+- Firestore update responsibility
+- Troubleshooting checklist
+
+ACCEPTANCE TESTS
+1) From Project → Telemetry:
+   - create/select connection → test → save
+   - map DAS site → save
+   - bulk map existing devices → save
+2) Health widget shows status using recent data.
+3) Mapping can be removed/updated cleanly via UI.
+4) No dependency on Settings to complete telemetry hookup.
+5) No regressions to existing O&M charts reading from BigQuery.
