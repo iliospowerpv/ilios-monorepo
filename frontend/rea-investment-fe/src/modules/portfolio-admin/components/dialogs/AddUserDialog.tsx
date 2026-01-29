@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -13,14 +13,13 @@ import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Autocomplete from '@mui/material/Autocomplete';
-import TextField from '@mui/material/TextField';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import InfoIcon from '@mui/icons-material/Info';
 
 import { ApiClient } from '../../../../api';
 import type { AddMemberRequest, AddPortfolioMemberRequest, AddProjectMemberRequest } from '../../../../api';
 import { useNotify } from '../../../../contexts/notifications/notifications';
+import { SelectOrCreateUser } from '../../../../components/forms/SelectOrCreate';
 
 export type AccessLevel = 'portfolio' | 'company' | 'project';
 
@@ -46,13 +45,15 @@ interface AccessLevelInfo {
 const ACCESS_LEVEL_INFO: Record<AccessLevel, AccessLevelInfo> = {
   portfolio: {
     title: 'Portfolio-Level Access',
-    description: 'This user will have access to ALL companies and ALL projects in the portfolio. Only grant this level to users who need visibility across the entire organization.',
+    description:
+      'This user will have access to ALL companies and ALL projects in the portfolio. Only grant this level to users who need visibility across the entire organization.',
     severity: 'warning',
     supported: true
   },
   company: {
     title: 'Company-Level Access',
-    description: 'This user will have access to ALL projects within this company. They will be able to view and interact with all project data under this company.',
+    description:
+      'This user will have access to ALL projects within this company. They will be able to view and interact with all project data under this company.',
     severity: 'warning',
     supported: true
   },
@@ -84,12 +85,6 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [selectedRole, setSelectedRole] = useState<RoleType>('read_only');
   const [confirmAccess, setConfirmAccess] = useState(false);
-
-  const { data: usersData, isLoading: isLoadingUsers } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => ApiClient.user.users({ skip: 0, limit: 100 }),
-    enabled: open
-  });
 
   const addMemberMutation = useMutation({
     mutationFn: async (params: { userId: number; role: RoleType }) => {
@@ -158,7 +153,8 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
     onClose();
   };
 
-  const levelLabel = level === 'portfolio' ? 'Portfolio' : level === 'company' ? entityName || 'Company' : entityName || 'Project';
+  const levelLabel =
+    level === 'portfolio' ? 'Portfolio' : level === 'company' ? entityName || 'Company' : entityName || 'Project';
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
@@ -194,27 +190,13 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
 
         {isSupported && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <Autocomplete
-              options={usersData?.items || []}
-              getOptionLabel={(option) => `${option.first_name} ${option.last_name} (${option.email})`}
-              loading={isLoadingUsers}
-              onChange={(_, value) => setSelectedUserId(value?.id ?? null)}
-              renderInput={params => (
-                <TextField
-                  {...params}
-                  label="Select User"
-                  required
-                  InputProps={{
-                    ...params.InputProps,
-                    endAdornment: (
-                      <>
-                        {isLoadingUsers ? <CircularProgress color="inherit" size={20} /> : null}
-                        {params.InputProps.endAdornment}
-                      </>
-                    )
-                  }}
-                />
-              )}
+            <SelectOrCreateUser
+              value={selectedUserId}
+              onChange={setSelectedUserId}
+              canCreate={true}
+              defaultCompanyId={level === 'company' ? entityId : undefined}
+              label="Select User"
+              required
             />
 
             <FormControl fullWidth>
@@ -229,7 +211,12 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
             <Alert severity="info" icon={<InfoIcon />}>
               <Typography variant="body2">
                 <strong>
-                  {selectedRole === 'company_admin' ? 'Admin' : selectedRole === 'contributor' ? 'Contributor' : 'Read Only'}:
+                  {selectedRole === 'company_admin'
+                    ? 'Admin'
+                    : selectedRole === 'contributor'
+                      ? 'Contributor'
+                      : 'Read Only'}
+                  :
                 </strong>{' '}
                 {ROLE_DESCRIPTIONS[selectedRole]}
               </Typography>
@@ -262,11 +249,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
           <Button
             variant="contained"
             onClick={handleSubmit}
-            disabled={
-              !selectedUserId ||
-              addMemberMutation.isPending ||
-              (level !== 'project' && !confirmAccess)
-            }
+            disabled={!selectedUserId || addMemberMutation.isPending || (level !== 'project' && !confirmAccess)}
             startIcon={addMemberMutation.isPending ? <CircularProgress size={16} /> : null}
           >
             {addMemberMutation.isPending ? 'Adding...' : 'Add User'}

@@ -9,11 +9,9 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
-import TextField from '@mui/material/TextField';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import Chip from '@mui/material/Chip';
-import Autocomplete from '@mui/material/Autocomplete';
 import Collapse from '@mui/material/Collapse';
 import Checkbox from '@mui/material/Checkbox';
 import ListItemText from '@mui/material/ListItemText';
@@ -26,6 +24,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 import { ApiClient } from '../../../../api';
 import { useAccess } from '../../../../hooks/access/access';
+import { SelectOrCreateUser } from '../../../../components/forms/SelectOrCreate';
 
 interface InviteStepProps {
   companyId: number;
@@ -36,13 +35,6 @@ interface InviteStepProps {
   onInviteSuccess: (email: string) => void;
   onComplete: () => void;
   onBack: () => void;
-}
-
-interface User {
-  id: number;
-  email: string;
-  first_name: string;
-  last_name: string;
 }
 
 interface Project {
@@ -65,29 +57,18 @@ export const InviteStep: React.FC<InviteStepProps> = ({
   const { isSystemUser, isCompanyAdminFull } = useAccess(companyId);
   const canInvite = isSystemUser || isCompanyAdminFull;
 
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [role, setRole] = useState<RoleType>('contributor');
   const [selectedProjects, setSelectedProjects] = useState<number[]>([projectId]);
   const [showProjectAssignment, setShowProjectAssignment] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  const { data: usersData, isLoading: isLoadingUsers } = useQuery({
-    queryKey: ['onboarding-users'],
-    queryFn: () => ApiClient.user.users({ skip: 0, limit: 500 })
-  });
+  const [lastInvitedEmail, setLastInvitedEmail] = useState<string | null>(null);
 
   const { data: projectsData } = useQuery({
     queryKey: ['onboarding-company-projects', companyId],
     queryFn: () => ApiClient.assetManagement.sites({ skip: 0, limit: 100 })
   });
-
-  const users: User[] = (usersData?.items ?? []).map((u: { id: number; email: string; first_name: string; last_name: string }) => ({
-    id: u.id,
-    email: u.email,
-    first_name: u.first_name,
-    last_name: u.last_name
-  }));
 
   const projects: Project[] = (projectsData?.items ?? [])
     .filter((site: { company_id?: number }) => site.company_id === companyId)
@@ -98,22 +79,24 @@ export const InviteStep: React.FC<InviteStepProps> = ({
 
   const inviteMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedUser) throw new Error('User is required');
+      if (!selectedUserId) throw new Error('User is required');
 
       await ApiClient.workspace.addCompanyMember(companyId, {
-        user_id: selectedUser.id,
+        user_id: selectedUserId,
         company_id: companyId,
         role
       });
 
-      return selectedUser;
+      return selectedUserId;
     },
-    onSuccess: (invitedUser) => {
-      const userName = `${invitedUser.first_name} ${invitedUser.last_name}`;
-      setSuccessMessage(`${userName} has been added to ${companyName}`);
-      onInviteSuccess(invitedUser.email);
-      setSelectedUser(null);
+    onSuccess: () => {
+      setSuccessMessage(`User has been added to ${companyName}`);
+      if (lastInvitedEmail) {
+        onInviteSuccess(lastInvitedEmail);
+      }
+      setSelectedUserId(null);
       setRole('contributor');
+      setLastInvitedEmail(null);
       setTimeout(() => setSuccessMessage(null), 3000);
     },
     onError: (err: Error) => {
@@ -123,7 +106,7 @@ export const InviteStep: React.FC<InviteStepProps> = ({
 
   const handleInvite = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedUser) {
+    if (!selectedUserId) {
       setError('Please select a user');
       return;
     }
@@ -153,12 +136,7 @@ export const InviteStep: React.FC<InviteStepProps> = ({
               </Typography>
             </Box>
             {invitedEmails.length > 0 && (
-              <Chip
-                icon={<CheckCircleIcon />}
-                label={`${invitedEmails.length} invited`}
-                color="success"
-                size="small"
-              />
+              <Chip icon={<CheckCircleIcon />} label={`${invitedEmails.length} invited`} color="success" size="small" />
             )}
           </Box>
         </CardContent>
@@ -188,20 +166,12 @@ export const InviteStep: React.FC<InviteStepProps> = ({
             </Typography>
             <form onSubmit={handleInvite}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Autocomplete
-                  options={users}
-                  loading={isLoadingUsers}
-                  value={selectedUser}
-                  onChange={(_, newValue) => setSelectedUser(newValue)}
-                  getOptionLabel={option => `${option.first_name} ${option.last_name} (${option.email})`}
-                  renderInput={params => (
-                    <TextField
-                      {...params}
-                      label="Select User"
-                      placeholder="Search by name or email"
-                    />
-                  )}
-                  isOptionEqualToValue={(option, value) => option.id === value.id}
+                <SelectOrCreateUser
+                  value={selectedUserId}
+                  onChange={setSelectedUserId}
+                  canCreate={canInvite}
+                  defaultCompanyId={companyId}
+                  label="Select User"
                 />
 
                 <FormControl fullWidth>
@@ -259,7 +229,7 @@ export const InviteStep: React.FC<InviteStepProps> = ({
                 <Button
                   type="submit"
                   variant="contained"
-                  disabled={inviteMutation.isPending || !selectedUser}
+                  disabled={inviteMutation.isPending || !selectedUserId}
                   startIcon={inviteMutation.isPending ? <CircularProgress size={16} /> : <PersonAddIcon />}
                 >
                   Add User
@@ -270,7 +240,7 @@ export const InviteStep: React.FC<InviteStepProps> = ({
         </Card>
       ) : (
         <Alert severity="warning" sx={{ mb: 3 }}>
-          You don't have permission to invite users. Only system administrators and company admins can add users.
+          You do not have permission to invite users. Only system administrators and company admins can add users.
         </Alert>
       )}
 
@@ -293,11 +263,7 @@ export const InviteStep: React.FC<InviteStepProps> = ({
         <Button startIcon={<ArrowBackIcon />} onClick={onBack}>
           Back to Project
         </Button>
-        <Button
-          variant="contained"
-          endIcon={<SkipNextIcon />}
-          onClick={onComplete}
-        >
+        <Button variant="contained" endIcon={<SkipNextIcon />} onClick={onComplete}>
           {invitedEmails.length > 0 ? 'Finish Setup' : 'Skip & Finish'}
         </Button>
       </Box>

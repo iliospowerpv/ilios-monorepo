@@ -20,23 +20,15 @@ import Collapse from '@mui/material/Collapse';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import Snackbar from '@mui/material/Snackbar';
-import Autocomplete from '@mui/material/Autocomplete';
-import TextField from '@mui/material/TextField';
 
 import { ApiClient } from '../../../../../api';
 import { useEntityContext } from '../../../../../contexts/entityContext/entityContext';
+import { SelectOrCreateUser } from '../../../../../components/forms/SelectOrCreate';
 
 interface InviteUserDialogProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
-}
-
-interface User {
-  id: number;
-  email: string;
-  first_name: string;
-  last_name: string;
 }
 
 interface Project {
@@ -49,7 +41,7 @@ type RoleType = 'company_admin' | 'contributor' | 'read_only';
 export const InviteUserDialog: React.FC<InviteUserDialogProps> = ({ open, onClose, onSuccess }) => {
   const { currentCompany } = useEntityContext();
   const [companyId, setCompanyId] = useState<number | ''>('');
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [role, setRole] = useState<RoleType>('contributor');
   const [selectedProjects, setSelectedProjects] = useState<number[]>([]);
   const [showProjectAssignment, setShowProjectAssignment] = useState(false);
@@ -59,12 +51,6 @@ export const InviteUserDialog: React.FC<InviteUserDialogProps> = ({ open, onClos
   const { data: companiesData } = useQuery({
     queryKey: ['invite-accessible-companies'],
     queryFn: () => ApiClient.workspace.getWorkspace(),
-    enabled: open
-  });
-
-  const { data: usersData, isLoading: isLoadingUsers } = useQuery({
-    queryKey: ['invite-users'],
-    queryFn: () => ApiClient.user.users({ skip: 0, limit: 500 }),
     enabled: open
   });
 
@@ -91,10 +77,10 @@ export const InviteUserDialog: React.FC<InviteUserDialogProps> = ({ open, onClos
 
   const inviteMutation = useMutation({
     mutationFn: async () => {
-      if (!companyId || !selectedUser) throw new Error('Company and user are required');
+      if (!companyId || !selectedUserId) throw new Error('Company and user are required');
 
       const response = await ApiClient.workspace.addCompanyMember(companyId as number, {
-        user_id: selectedUser.id,
+        user_id: selectedUserId,
         company_id: companyId as number,
         role
       });
@@ -102,8 +88,7 @@ export const InviteUserDialog: React.FC<InviteUserDialogProps> = ({ open, onClos
       return response;
     },
     onSuccess: () => {
-      const userName = selectedUser ? `${selectedUser.first_name} ${selectedUser.last_name}` : 'User';
-      setSuccessMessage(`${userName} has been added to the company`);
+      setSuccessMessage('User has been added to the company');
       resetForm();
       onSuccess();
     },
@@ -114,7 +99,7 @@ export const InviteUserDialog: React.FC<InviteUserDialogProps> = ({ open, onClos
 
   const resetForm = () => {
     setCompanyId(currentCompany?.id ?? '');
-    setSelectedUser(null);
+    setSelectedUserId(null);
     setRole('contributor');
     setSelectedProjects([]);
     setShowProjectAssignment(false);
@@ -132,7 +117,7 @@ export const InviteUserDialog: React.FC<InviteUserDialogProps> = ({ open, onClos
       setError('Please select a company');
       return;
     }
-    if (!selectedUser) {
+    if (!selectedUserId) {
       setError('Please select a user');
       return;
     }
@@ -141,12 +126,6 @@ export const InviteUserDialog: React.FC<InviteUserDialogProps> = ({ open, onClos
   };
 
   const companies = companiesData?.companies ?? [];
-  const users: User[] = (usersData?.items ?? []).map((u: { id: number; email: string; first_name: string; last_name: string }) => ({
-    id: u.id,
-    email: u.email,
-    first_name: u.first_name,
-    last_name: u.last_name
-  }));
   const projects: Project[] = (projectsData?.items ?? []).map((site: { id: number; name: string }) => ({
     id: site.id,
     name: site.name
@@ -171,11 +150,7 @@ export const InviteUserDialog: React.FC<InviteUserDialogProps> = ({ open, onClos
 
               <FormControl fullWidth required>
                 <InputLabel>Company</InputLabel>
-                <Select
-                  value={companyId}
-                  onChange={e => setCompanyId(e.target.value as number)}
-                  label="Company"
-                >
+                <Select value={companyId} onChange={e => setCompanyId(e.target.value as number)} label="Company">
                   {companies.map(company => (
                     <MenuItem key={company.company_id} value={company.company_id}>
                       {company.company_name}
@@ -184,16 +159,13 @@ export const InviteUserDialog: React.FC<InviteUserDialogProps> = ({ open, onClos
                 </Select>
               </FormControl>
 
-              <Autocomplete
-                options={users}
-                loading={isLoadingUsers}
-                value={selectedUser}
-                onChange={(_, newValue) => setSelectedUser(newValue)}
-                getOptionLabel={option => `${option.first_name} ${option.last_name} (${option.email})`}
-                renderInput={params => (
-                  <TextField {...params} label="Select User" required placeholder="Search by name or email" />
-                )}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
+              <SelectOrCreateUser
+                value={selectedUserId}
+                onChange={setSelectedUserId}
+                canCreate={true}
+                defaultCompanyId={companyId ? (companyId as number) : undefined}
+                label="Select User"
+                required
               />
 
               <FormControl fullWidth>
@@ -256,7 +228,7 @@ export const InviteUserDialog: React.FC<InviteUserDialogProps> = ({ open, onClos
             <Button
               type="submit"
               variant="contained"
-              disabled={inviteMutation.isPending || !companyId || !selectedUser}
+              disabled={inviteMutation.isPending || !companyId || !selectedUserId}
               startIcon={inviteMutation.isPending ? <CircularProgress size={16} /> : null}
             >
               Add User
