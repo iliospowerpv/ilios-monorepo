@@ -73,6 +73,80 @@ def delete_device_telemetry_config(device: Device):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, message)
 
 
+def delete_site_mapping_for_telemetry(site: Site, db_session: Session):
+    """Delete site mapping from database and Firestore"""
+    if not site.telemetry_mapping:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, TelemetryMessages.site_mapping_not_found)
+
+    telemetry_mapping_crud = TelemetrySiteMappingCRUD(db_session)
+    mapping_id = site.telemetry_mapping.id
+
+    # First update Firestore to remove site
+    try:
+        firestore_client = FirestoreClient()
+        fs_company_config = firestore_client.get_company_config(site.company_id)
+        if fs_company_config:
+            fs_company_config.sites = [fs_site for fs_site in fs_company_config.sites if fs_site.id != site.id]
+            firestore_client.update_company_config(fs_company_config)
+    except Exception as exception:
+        logger.exception(f"Failed to update Firestore config: {str(exception)}")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Failed to update telemetry config: {str(exception)}")
+
+    # Then delete from database
+    telemetry_mapping_crud.delete_by_id(mapping_id)
+    logger.info(f"Deleted telemetry site mapping with id {mapping_id}")
+
+
+def update_site_mapping_for_telemetry(site: Site, telemetry_mapping: dict, db_session: Session):
+    """Update existing site mapping in database and Firestore"""
+    if not site.telemetry_mapping:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, TelemetryMessages.site_mapping_not_found)
+
+    telemetry_mapping_crud = TelemetrySiteMappingCRUD(db_session)
+    mapping_id = site.telemetry_mapping.id
+    old_connection_id = site.telemetry_mapping.connection_id
+
+    # Update database record
+    telemetry_mapping_crud.update_by_id(mapping_id, telemetry_mapping)
+    logger.info(f"Updated telemetry site mapping with id {mapping_id}")
+
+    # Update Firestore config
+    try:
+        firestore_client = FirestoreClient()
+        fs_company_config = firestore_client.get_company_config(site.company_id)
+        if fs_company_config:
+            # Find and update the existing site in Firestore
+            for fs_site in fs_company_config.sites:
+                if fs_site.id == site.id:
+                    fs_site.external_id = str(telemetry_mapping.get("telemetry_site_id", fs_site.external_id))
+                    fs_site.connection_id = telemetry_mapping.get("connection_id", old_connection_id)
+                    break
+            firestore_client.update_company_config(fs_company_config)
+    except Exception as exception:
+        logger.exception(f"Failed to update Firestore config: {str(exception)}")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Failed to update telemetry config: {str(exception)}")
+
+
+def delete_device_mapping_for_telemetry(device: Device, db_session: Session):
+    """Delete device mapping from database and Firestore"""
+    if not device.telemetry_mapping:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, TelemetryMessages.device_mapping_not_found)
+
+    telemetry_mapping_crud = TelemetryDeviceMappingCRUD(db_session)
+    mapping_id = device.telemetry_mapping.id
+
+    # First update Firestore
+    try:
+        delete_device_telemetry_config(device)
+    except Exception as exception:
+        logger.exception(f"Failed to update Firestore config: {str(exception)}")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Failed to update telemetry config: {str(exception)}")
+
+    # Then delete from database
+    telemetry_mapping_crud.delete_by_id(mapping_id)
+    logger.info(f"Deleted telemetry device mapping with id {mapping_id}")
+
+
 def format_das_credentials(
     provider: DASProvidersEnum, das_connection: Union[ConnectionCreateSchema, ConnectionUpdateSchema]
 ):

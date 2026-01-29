@@ -193,7 +193,7 @@ export const SiteForm: React.FC<SiteFormProps> = props => {
           id: isEdit ? siteId : response.id,
           attributes: {
             connection_id: selectedConnection?.id,
-            telemetry_site_id: selectedSite?.id,
+            telemetry_site_id: selectedSite?.id !== undefined ? String(selectedSite.id) : undefined,
             telemetry_site_name: selectedSite?.name
           }
         });

@@ -7,10 +7,12 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import SpaceDashboardIcon from '@mui/icons-material/SpaceDashboard';
 import CastConnectedIcon from '@mui/icons-material/CastConnected';
+import SettingsInputAntennaIcon from '@mui/icons-material/SettingsInputAntenna';
 import { siteDetailsQuery } from './loader';
 import Overview from './tabs/Overview/Overview';
 import Devices from './tabs/Devices/Devices';
 import Tasks from './tabs/Tasks/Tasks';
+import Telemetry from './tabs/Telemetry/Telemetry';
 import type { AssetManagementSiteDetailsTabProps } from './tabs/types';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import { useEntityContext } from '../../../../contexts/entityContext';
@@ -24,7 +26,7 @@ interface TabData {
   content: React.FC<AssetManagementSiteDetailsTabProps> | null;
 }
 
-type TabType = 'overview' | 'devices' | 'diligence' | 'tasks';
+type TabType = 'overview' | 'devices' | 'diligence' | 'tasks' | 'telemetry';
 
 interface AssetManagementSiteDetailsProps {
   tabId?: TabType;
@@ -54,6 +56,14 @@ const tabsData: TabData[] = [
     disabled: false,
     icon: <AssignmentTurnedInIcon />,
     content: Tasks
+  },
+  {
+    id: 'telemetry',
+    label: 'Telemetry',
+    link: '/asset-management/companies/:companyId/sites/:siteId/telemetry',
+    disabled: false,
+    icon: <SettingsInputAntennaIcon />,
+    content: Telemetry
   }
 ];
 

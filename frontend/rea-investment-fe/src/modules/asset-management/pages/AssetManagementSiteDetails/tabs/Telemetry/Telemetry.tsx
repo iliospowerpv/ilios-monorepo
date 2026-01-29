@@ -1,0 +1,233 @@
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import WarningIcon from '@mui/icons-material/Warning';
+import ErrorIcon from '@mui/icons-material/Error';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import SettingsInputAntennaIcon from '@mui/icons-material/SettingsInputAntenna';
+
+import { ApiClient } from '../../../../../../api';
+import type {
+  TelemetryHealthStatus,
+  TelemetryReadinessResponse,
+  TelemetryHealthResponse,
+} from '../../../../../../api/connections';
+import { AssetManagementSiteDetailsTabProps } from '../types';
+import { TelemetryWizard } from './TelemetryWizard';
+
+const getStatusColor = (status: TelemetryHealthStatus): 'success' | 'warning' | 'error' | 'default' => {
+  switch (status) {
+    case 'HEALTHY':
+      return 'success';
+    case 'WARN':
+      return 'warning';
+    case 'ERROR':
+      return 'error';
+    case 'NO_DATA':
+    case 'NOT_CONFIGURED':
+    default:
+      return 'default';
+  }
+};
+
+const getStatusIcon = (status: TelemetryHealthStatus) => {
+  switch (status) {
+    case 'HEALTHY':
+      return <CheckCircleIcon fontSize="small" />;
+    case 'WARN':
+      return <WarningIcon fontSize="small" />;
+    case 'ERROR':
+      return <ErrorIcon fontSize="small" />;
+    case 'NO_DATA':
+    case 'NOT_CONFIGURED':
+    default:
+      return <HelpOutlineIcon fontSize="small" />;
+  }
+};
+
+const formatTimestamp = (timestamp: string | null): string => {
+  if (!timestamp) return 'Never';
+  const date = new Date(timestamp);
+  return date.toLocaleString();
+};
+
+interface ReadinessStripProps {
+  readiness: TelemetryReadinessResponse;
+}
+
+const ReadinessStrip: React.FC<ReadinessStripProps> = ({ readiness }) => {
+  const steps = [
+    { label: 'Connected', done: readiness.is_connected },
+    { label: 'Site Mapped', done: readiness.is_site_mapped },
+    { label: 'Devices Mapped', done: readiness.is_devices_mapped },
+    { label: 'Data Flowing', done: readiness.is_data_flowing },
+  ];
+
+  return (
+    <Paper sx={{ p: 2, mb: 2 }}>
+      <Typography variant="h6" gutterBottom>
+        Telemetry Readiness
+      </Typography>
+      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+        {steps.map((step, index) => (
+          <Chip
+            key={step.label}
+            label={`${index + 1}. ${step.label}`}
+            color={step.done ? 'success' : 'default'}
+            icon={step.done ? <CheckCircleIcon /> : undefined}
+            variant={step.done ? 'filled' : 'outlined'}
+          />
+        ))}
+      </Box>
+      {readiness.is_connected && (
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            Connection: {readiness.connection_name} ({readiness.provider})
+          </Typography>
+          {readiness.is_site_mapped && (
+            <Typography variant="body2" color="text.secondary">
+              Mapped to: {readiness.telemetry_site_name}
+            </Typography>
+          )}
+          <Typography variant="body2" color="text.secondary">
+            Devices: {readiness.mapped_device_count} / {readiness.total_eligible_device_count} mapped
+          </Typography>
+        </Box>
+      )}
+    </Paper>
+  );
+};
+
+interface HealthStripProps {
+  health: TelemetryHealthResponse;
+}
+
+const HealthStrip: React.FC<HealthStripProps> = ({ health }) => {
+  if (health.status === 'NOT_CONFIGURED') {
+    return null;
+  }
+
+  return (
+    <Paper sx={{ p: 2, mb: 2 }}>
+      <Typography variant="h6" gutterBottom>
+        Data Health
+      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+        <Chip label={health.status} color={getStatusColor(health.status)} icon={getStatusIcon(health.status)} />
+        <Typography variant="body2" color="text.secondary">
+          Last data: {formatTimestamp(health.last_data_at)}
+        </Typography>
+        {health.data_delay_minutes !== null && (
+          <Typography variant="body2" color="text.secondary">
+            Delay: {health.data_delay_minutes} minutes
+          </Typography>
+        )}
+      </Box>
+      {health.last_error && (
+        <Alert severity="error" sx={{ mt: 1 }}>
+          {health.last_error}
+        </Alert>
+      )}
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+        {health.mapped_device_count} device(s) mapped | Expected interval: {health.expected_interval_minutes} min
+      </Typography>
+    </Paper>
+  );
+};
+
+export const Telemetry: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDetails }) => {
+  const [wizardOpen, setWizardOpen] = useState(false);
+
+  const {
+    data: readiness,
+    isLoading: isLoadingReadiness,
+    refetch: refetchReadiness,
+  } = useQuery({
+    queryKey: ['telemetry-readiness', siteDetails.id],
+    queryFn: () => ApiClient.connections.getTelemetryReadiness(siteDetails.id),
+    enabled: !!siteDetails.id,
+  });
+
+  const {
+    data: health,
+    isLoading: isLoadingHealth,
+    refetch: refetchHealth,
+  } = useQuery({
+    queryKey: ['telemetry-health', siteDetails.id],
+    queryFn: () => ApiClient.connections.getTelemetryHealth(siteDetails.id),
+    enabled: !!siteDetails.id,
+  });
+
+  const handleWizardClose = () => {
+    setWizardOpen(false);
+    refetchReadiness();
+    refetchHealth();
+  };
+
+  if (isLoadingReadiness || isLoadingHealth) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  const isConfigured = readiness?.is_connected && readiness?.is_site_mapped;
+
+  return (
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5">
+          <SettingsInputAntennaIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+          Telemetry
+        </Typography>
+        <Button variant="contained" color="primary" onClick={() => setWizardOpen(true)}>
+          {isConfigured ? 'Manage Telemetry' : 'Connect Telemetry'}
+        </Button>
+      </Box>
+
+      {readiness && <ReadinessStrip readiness={readiness} />}
+
+      {health && <HealthStrip health={health} />}
+
+      {!isConfigured && (
+        <Alert severity="info" sx={{ mt: 2 }}>
+          <Typography variant="body2">
+            This project is not yet connected to a Data Acquisition System (DAS). Click &quot;Connect Telemetry&quot;
+            to set up real-time performance monitoring.
+          </Typography>
+        </Alert>
+      )}
+
+      {isConfigured && health?.status === 'NO_DATA' && (
+        <Alert severity="warning" sx={{ mt: 2 }}>
+          <Typography variant="body2" fontWeight="bold" gutterBottom>
+            Troubleshooting Steps:
+          </Typography>
+          <ul style={{ margin: 0, paddingLeft: 20 }}>
+            <li>Data is expected every 15 minutes from your DAS provider</li>
+            <li>Verify your DAS connection credentials are still valid</li>
+            <li>Check that devices are correctly mapped to their DAS identifiers</li>
+            <li>Contact your DAS provider if the issue persists</li>
+          </ul>
+        </Alert>
+      )}
+
+      <TelemetryWizard
+        open={wizardOpen}
+        onClose={handleWizardClose}
+        siteDetails={siteDetails}
+        readiness={readiness}
+      />
+    </Box>
+  );
+};
+
+export default Telemetry;

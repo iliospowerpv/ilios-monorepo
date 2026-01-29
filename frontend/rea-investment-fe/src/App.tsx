@@ -597,6 +597,12 @@ const router = createBrowserRouter(
             element={<AMSiteDetails.Component tabId="tasks" />}
           />
           <Route
+            path="/asset-management/companies/:companyId/sites/:siteId/telemetry"
+            handle={AMSiteDetails.createHandle(queryClient)}
+            loader={withAuthControl(AMSiteDetails.createLoader(queryClient))}
+            element={<AMSiteDetails.Component tabId="telemetry" />}
+          />
+          <Route
             path="/asset-management/companies/:companyId/sites/:siteId/devices/add"
             loader={withAuthControl(AMAddDevice.createLoader(queryClient))}
             handle={AMAddDevice.createHandle(queryClient)}

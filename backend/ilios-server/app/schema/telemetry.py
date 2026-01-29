@@ -1,3 +1,5 @@
+from datetime import datetime
+from enum import Enum
 from typing import ClassVar, Optional, Union
 
 from pydantic import BaseModel, Field, model_validator
@@ -5,6 +7,14 @@ from pydantic import BaseModel, Field, model_validator
 from app.models.telemetry import DASProvidersEnum
 from app.schema.message import Success
 from app.static import TelemetryMessages
+
+
+class TelemetryHealthStatus(str, Enum):
+    healthy = "HEALTHY"
+    warn = "WARN"
+    error = "ERROR"
+    no_data = "NO_DATA"
+    not_configured = "NOT_CONFIGURED"
 
 
 class ConnectionNameSchema(BaseModel):
@@ -93,3 +103,80 @@ class TelemetrySiteMappingSchema(BaseModel):
 
 class SiteMappingCreateSuccess(Success):
     message: str = Field(description="Success message", examples=[TelemetryMessages.site_mapping_create_success])
+
+
+class SiteMappingUpdateSuccess(Success):
+    message: str = Field(description="Success message", examples=[TelemetryMessages.site_mapping_update_success])
+
+
+class SiteMappingDeleteSuccess(Success):
+    message: str = Field(description="Success message", examples=[TelemetryMessages.site_mapping_delete_success])
+
+
+class ConnectionTestSchema(ConnectionPayloadSchema):
+    provider: DASProvidersEnum = Field(examples=["Also Energy"])
+
+    @model_validator(mode="after")
+    def verify_credentials_payload(self):
+        if self.provider == DASProvidersEnum.kmc:
+            if not self.token:
+                raise ValueError(f"The field <token> is required for the {DASProvidersEnum.kmc.value} provider")
+        elif self.provider == DASProvidersEnum.also_energy:
+            if not self.username or not self.password:
+                raise ValueError(
+                    f"The fields <username> and <password> are required for the {DASProvidersEnum.also_energy.value} provider"
+                )
+        return self
+
+
+class ConnectionTestResponse(BaseModel):
+    success: bool = Field(description="Whether connection test was successful")
+    message: str = Field(description="Test result message")
+    available_sites_count: Optional[int] = Field(None, description="Number of available DAS sites if test succeeded")
+    provider: str = Field(description="DAS provider name")
+
+
+class TelemetryHealthResponse(BaseModel):
+    status: TelemetryHealthStatus = Field(description="Health status of telemetry data flow")
+    last_data_at: Optional[datetime] = Field(None, description="Timestamp of last received data")
+    data_delay_minutes: Optional[int] = Field(None, description="Minutes since last data received")
+    last_error: Optional[str] = Field(None, description="Last error message if any")
+    mapped_device_count: int = Field(0, description="Number of devices with telemetry mapping")
+    expected_interval_minutes: int = Field(15, description="Expected data interval in minutes")
+    is_connected: bool = Field(False, description="Whether site has a DAS connection")
+    is_site_mapped: bool = Field(False, description="Whether site is mapped to a DAS site")
+
+
+class TelemetryReadinessResponse(BaseModel):
+    is_connected: bool = Field(False, description="Whether project has a DAS connection")
+    is_site_mapped: bool = Field(False, description="Whether project is mapped to a DAS site")
+    is_devices_mapped: bool = Field(False, description="Whether project has devices mapped")
+    is_data_flowing: bool = Field(False, description="Whether telemetry data is flowing")
+    connection_id: Optional[int] = Field(None, description="DAS connection ID if connected")
+    connection_name: Optional[str] = Field(None, description="DAS connection name if connected")
+    provider: Optional[str] = Field(None, description="DAS provider name if connected")
+    telemetry_site_id: Optional[str] = Field(None, description="Mapped DAS site ID")
+    telemetry_site_name: Optional[str] = Field(None, description="Mapped DAS site name")
+    mapped_device_count: int = Field(0, description="Number of devices with telemetry mapping")
+    total_eligible_device_count: int = Field(0, description="Total telemetry-eligible devices")
+
+
+class DeviceMappingSchema(BaseModel):
+    device_id: int = Field(description="Ilios device ID")
+    telemetry_device_id: str = Field(description="External DAS device ID")
+    telemetry_device_name: str = Field(description="External DAS device name")
+
+
+class BulkDeviceMappingSchema(BaseModel):
+    mappings: list[DeviceMappingSchema] = Field(description="List of device mappings")
+
+
+class BulkDeviceMappingResponse(Success):
+    message: str = Field(description="Success message", examples=[TelemetryMessages.bulk_device_mapping_success])
+    successful_count: int = Field(description="Number of successful mappings")
+    failed_count: int = Field(description="Number of failed mappings")
+    errors: Optional[list[str]] = Field(None, description="List of error messages for failed mappings")
+
+
+class DeviceMappingDeleteSuccess(Success):
+    message: str = Field(description="Success message", examples=[TelemetryMessages.device_mapping_delete_success])

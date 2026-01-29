@@ -58,6 +58,16 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
     - **Access Source Types**: Direct assignment via UserCompanyAccess, project-inherited via UserProject → parent_company_id, or both.
     - **Authorization**: System users and company admins can manage company membership; regular users can only view members they have access to.
 - **Architectural Guardrails (Asset Management Overview)**: The Asset Management Overview page is designed as a static site record and readiness surface, intentionally avoiding operational data leakage, telemetry, or live performance data. It clearly defines cross-module boundaries, linking to operations modules for live metrics rather than embedding them.
+- **Telemetry Module**: Project-scoped telemetry hookup for connecting Data Acquisition Systems (DAS) directly from the Project → Telemetry tab:
+    - **4-Step Wizard**: Connection → Site Mapping → Device Mapping → Confirm/Health flow for guided telemetry setup
+    - **Health Monitoring**: Derives telemetry health status from BigQuery device_last_report_ts with thresholds (≤30min=HEALTHY, ≤120min=WARN, >120min=ERROR)
+    - **Readiness Strip**: Visual 4-step progress indicator showing connection, site mapping, device mapping, and data flow status
+    - **DAS Providers**: Supports KMC (token auth) and Also Energy (username:password base64)
+    - **Telemetry-Eligible Devices**: Inverter, module, weather_station categories only
+    - **Mapping CRUD**: Site and device mapping with Firestore synchronization via GCP Cloud Functions
+    - **Audit Trail**: All telemetry operations (connection, site mapping, device mapping changes) are logged to the audit system
+    - **Route**: `/asset-management/companies/:companyId/sites/:siteId/telemetry`
+    - **API Endpoints**: `/api/telemetry/sites/:siteId/*` for readiness, health, site/device mappings
 
 ## External Dependencies
 - **PostgreSQL**: Used as the primary relational database (Replit built-in for production, separate setup for development).
