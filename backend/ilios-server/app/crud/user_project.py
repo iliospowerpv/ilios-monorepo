@@ -1,13 +1,13 @@
 """CRUD operations on UserProject model."""
 
-from typing import Iterable
+from typing import Iterable, List, Optional
 
 from fastapi_filter.contrib.sqlalchemy import Filter
 from sqlalchemy import String, and_, cast, or_
 
 from app.crud.base_crud import BaseCRUD
 from app.models.role import Role
-from app.models.user import User, UserProject
+from app.models.user import User, UserProject, CompanyRole, MembershipStatus
 
 
 class UserProjectCRUD(BaseCRUD):
@@ -74,3 +74,82 @@ class UserProjectCRUD(BaseCRUD):
             query = search_filter.filter(query)
         query = self._add_order_by(query, User.first_name, "asc")
         return query.all()
+
+    def get_by_user_and_site(self, user_id: int, site_id: int) -> Optional[UserProject]:
+        """Get project membership by user and site."""
+        return (
+            self.db_session.query(self.model)
+            .filter_by(user_id=user_id, site_id=site_id)
+            .first()
+        )
+
+    def get_memberships_by_user(
+        self,
+        user_id: int,
+        status: Optional[MembershipStatus] = None
+    ) -> List[UserProject]:
+        """Get all project memberships for a user."""
+        query = self.db_session.query(self.model).filter_by(user_id=user_id)
+        if status:
+            query = query.filter_by(status=status)
+        return query.all()
+
+    def get_memberships_by_site(
+        self,
+        site_id: int,
+        status: Optional[MembershipStatus] = None
+    ) -> List[UserProject]:
+        """Get all user memberships for a site/project."""
+        query = self.db_session.query(self.model).filter_by(site_id=site_id)
+        if status:
+            query = query.filter_by(status=status)
+        return query.all()
+
+    def add_membership(
+        self,
+        user_id: int,
+        site_id: int,
+        company_id: int,
+        role: CompanyRole = CompanyRole.contributor,
+        status: MembershipStatus = MembershipStatus.active,
+        created_by_user_id: Optional[int] = None
+    ) -> UserProject:
+        """Add a user to a project with specified role."""
+        return self.create_item({
+            "user_id": user_id,
+            "site_id": site_id,
+            "company_id": company_id,
+            "role": role,
+            "status": status,
+            "created_by_user_id": created_by_user_id
+        })
+
+    def update_membership_role(
+        self,
+        membership_id: int,
+        role: CompanyRole
+    ) -> int:
+        """Update a project membership's role."""
+        return self.update_by_id(membership_id, {"role": role})
+
+    def update_membership_status(
+        self,
+        membership_id: int,
+        status: MembershipStatus
+    ) -> int:
+        """Update a project membership's status."""
+        return self.update_by_id(membership_id, {"status": status})
+
+    def has_project_access(self, user_id: int, site_id: int) -> bool:
+        """Check if user has active access to the given project."""
+        membership = self.get_by_user_and_site(user_id, site_id)
+        return membership is not None and membership.status == MembershipStatus.active
+
+    def is_project_admin(self, user_id: int, site_id: int) -> bool:
+        """Check if user is an admin of the given project."""
+        membership = self.get_by_user_and_site(user_id, site_id)
+        return (
+            membership is not None
+            and membership.status == MembershipStatus.active
+            and membership.role == CompanyRole.company_admin
+        )

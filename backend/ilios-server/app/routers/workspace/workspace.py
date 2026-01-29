@@ -7,11 +7,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.crud.user_company_access import UserCompanyAccessCRUD
+from app.crud.user_portfolio_access import UserPortfolioAccessCRUD
+from app.crud.user_project import UserProjectCRUD
 from app.db.session import get_session
 from app.helpers.authentication import get_current_user
 from app.models.company import Company
 from app.models.site import Site
-from app.models.user import UserCompanyAccess, CompanyRole, MembershipStatus
+from app.models.user import UserCompanyAccess, UserPortfolioAccess, UserProject, CompanyRole, MembershipStatus
 from app.schema.user import CurrentUserSchema
 from app.schema.user_company_access import (
     CompanyMemberSchema,
@@ -23,6 +25,20 @@ from app.schema.user_company_access import (
     UserCompanySchema,
     WorkspaceResponseSchema,
     WorkspaceSummarySchema,
+)
+from app.schema.user_portfolio_access import (
+    PortfolioMemberSchema,
+    PortfolioMembersListSchema,
+    UserPortfolioAccessCreate,
+    UserPortfolioAccessSchema,
+    UserPortfolioAccessUpdate,
+)
+from app.schema.user_project_access import (
+    ProjectMemberSchema,
+    ProjectMembersListSchema,
+    UserProjectAccessCreate,
+    UserProjectAccessSchema,
+    UserProjectAccessUpdate,
 )
 
 workspace_router = APIRouter()
@@ -291,4 +307,298 @@ async def remove_company_member(
         )
     
     crud.delete_by_id(membership_id)
+    return None
+
+
+@workspace_router.get(
+    "/portfolio/members",
+    response_model=PortfolioMembersListSchema,
+    summary="Get all portfolio-level users",
+    description="Returns all users who have portfolio-level access.",
+)
+async def get_portfolio_members(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+) -> PortfolioMembersListSchema:
+    """Get all users with portfolio-level access."""
+    from app.models.user import User
+    
+    if not current_user.is_system_user:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only system administrators can view portfolio members"
+        )
+    
+    crud = UserPortfolioAccessCRUD(db_session)
+    access_list = crud.get_all_portfolio_users()
+    
+    members = []
+    for access in access_list:
+        user = db_session.query(User).get(access.user_id)
+        if user:
+            members.append(PortfolioMemberSchema(
+                access_id=access.id,
+                user_id=user.id,
+                email=user.email,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                role=CompanyRoleEnum(access.role.value) if access.role else CompanyRoleEnum.contributor,
+                status=MembershipStatusEnum(access.status.value) if access.status else MembershipStatusEnum.active,
+            ))
+    
+    return PortfolioMembersListSchema(members=members, total=len(members))
+
+
+@workspace_router.post(
+    "/portfolio/members",
+    response_model=UserPortfolioAccessSchema,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add a user to portfolio level",
+    description="Grant a user portfolio-level access, giving them access to all companies.",
+)
+async def add_portfolio_member(
+    payload: UserPortfolioAccessCreate,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+) -> UserPortfolioAccessSchema:
+    """Add a user to portfolio level (grants access to all companies)."""
+    if not current_user.is_system_user:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only system administrators can add portfolio members"
+        )
+    
+    portfolio_crud = UserPortfolioAccessCRUD(db_session)
+    company_crud = UserCompanyAccessCRUD(db_session)
+    
+    existing = portfolio_crud.get_by_user(payload.user_id)
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User already has portfolio-level access"
+        )
+    
+    portfolio_access = portfolio_crud.add_portfolio_access(
+        user_id=payload.user_id,
+        role=CompanyRole(payload.role.value),
+        status=MembershipStatus.active,
+        created_by_user_id=current_user.id
+    )
+    
+    all_companies = db_session.query(Company).all()
+    for company in all_companies:
+        existing_company_access = company_crud.get_by_user_and_company(payload.user_id, company.id)
+        if not existing_company_access:
+            company_crud.add_membership(
+                user_id=payload.user_id,
+                company_id=company.id,
+                role=CompanyRole(payload.role.value),
+                status=MembershipStatus.active,
+                created_by_user_id=current_user.id,
+                created_from_portfolio=True
+            )
+    
+    return UserPortfolioAccessSchema(
+        id=portfolio_access.id,
+        user_id=portfolio_access.user_id,
+        role=CompanyRoleEnum(portfolio_access.role.value) if portfolio_access.role else CompanyRoleEnum.contributor,
+        status=MembershipStatusEnum(portfolio_access.status.value) if portfolio_access.status else MembershipStatusEnum.active,
+        created_at=portfolio_access.created_at,
+        created_by_user_id=portfolio_access.created_by_user_id,
+        updated_at=portfolio_access.updated_at
+    )
+
+
+@workspace_router.delete(
+    "/portfolio/members/{access_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove portfolio-level access",
+    description="Remove a user's portfolio-level access and all auto-created company access records.",
+)
+async def remove_portfolio_member(
+    access_id: int,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+):
+    """Remove portfolio-level access for a user and clean up company access records."""
+    if not current_user.is_system_user:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only system administrators can remove portfolio members"
+        )
+    
+    portfolio_crud = UserPortfolioAccessCRUD(db_session)
+    access = portfolio_crud.get_by_id(access_id)
+    if not access:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Portfolio access not found"
+        )
+    
+    user_id = access.user_id
+    
+    portfolio_crud.delete_by_id(access_id)
+    
+    company_crud = UserCompanyAccessCRUD(db_session)
+    portfolio_memberships = company_crud.get_portfolio_memberships_by_user(user_id)
+    for membership in portfolio_memberships:
+        company_crud.delete_by_id(membership.id)
+    
+    return None
+
+
+@workspace_router.get(
+    "/projects/{project_id}/members",
+    response_model=ProjectMembersListSchema,
+    summary="Get members of a project",
+    description="Returns all users who are members of the specified project.",
+)
+async def get_project_members(
+    project_id: int,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+) -> ProjectMembersListSchema:
+    """Get all members of a project."""
+    from app.models.user import User
+    
+    project = db_session.query(Site).get(project_id)
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found"
+        )
+    
+    project_crud = UserProjectCRUD(db_session)
+    company_crud = UserCompanyAccessCRUD(db_session)
+    
+    if not current_user.is_system_user:
+        has_project_access = project_crud.has_project_access(current_user.id, project_id)
+        has_company_access = company_crud.has_company_access(current_user.id, project.company_id)
+        if not has_project_access and not has_company_access:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this project"
+            )
+    
+    memberships = project_crud.get_memberships_by_site(project_id)
+    
+    members = []
+    for m in memberships:
+        user = db_session.query(User).get(m.user_id)
+        if user:
+            members.append(ProjectMemberSchema(
+                membership_id=m.id,
+                user_id=user.id,
+                email=user.email,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                role=CompanyRoleEnum(m.role.value) if m.role else CompanyRoleEnum.contributor,
+                status=MembershipStatusEnum(m.status.value) if m.status else MembershipStatusEnum.active,
+            ))
+    
+    return ProjectMembersListSchema(members=members, total=len(members))
+
+
+@workspace_router.post(
+    "/projects/{project_id}/members",
+    response_model=UserProjectAccessSchema,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add a user to a project",
+    description="Add a user as a member of a project with a specific role.",
+)
+async def add_project_member(
+    project_id: int,
+    payload: UserProjectAccessCreate,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+) -> UserProjectAccessSchema:
+    """Add a user to a project."""
+    project = db_session.query(Site).get(project_id)
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found"
+        )
+    
+    project_crud = UserProjectCRUD(db_session)
+    company_crud = UserCompanyAccessCRUD(db_session)
+    
+    if not current_user.is_system_user:
+        is_company_admin = company_crud.is_company_admin(current_user.id, project.company_id)
+        is_project_admin = project_crud.is_project_admin(current_user.id, project_id)
+        if not is_company_admin and not is_project_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only company or project admins can add members"
+            )
+    
+    existing = project_crud.get_by_user_and_site(payload.user_id, project_id)
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is already a member of this project"
+        )
+    
+    membership = project_crud.add_membership(
+        user_id=payload.user_id,
+        site_id=project_id,
+        company_id=project.company_id,
+        role=CompanyRole(payload.role.value),
+        status=MembershipStatus.active,
+        created_by_user_id=current_user.id
+    )
+    
+    return UserProjectAccessSchema(
+        id=membership.id,
+        user_id=membership.user_id,
+        site_id=membership.site_id,
+        company_id=membership.company_id,
+        role=CompanyRoleEnum(membership.role.value) if membership.role else CompanyRoleEnum.contributor,
+        status=MembershipStatusEnum(membership.status.value) if membership.status else MembershipStatusEnum.active,
+        created_at=membership.created_at,
+        created_by_user_id=membership.created_by_user_id,
+        updated_at=membership.updated_at
+    )
+
+
+@workspace_router.delete(
+    "/projects/{project_id}/members/{membership_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove a project membership",
+    description="Remove a user's membership from a project.",
+)
+async def remove_project_member(
+    project_id: int,
+    membership_id: int,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+):
+    """Remove a project membership."""
+    project = db_session.query(Site).get(project_id)
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found"
+        )
+    
+    project_crud = UserProjectCRUD(db_session)
+    company_crud = UserCompanyAccessCRUD(db_session)
+    
+    if not current_user.is_system_user:
+        is_company_admin = company_crud.is_company_admin(current_user.id, project.company_id)
+        is_project_admin = project_crud.is_project_admin(current_user.id, project_id)
+        if not is_company_admin and not is_project_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only company or project admins can remove members"
+            )
+    
+    membership = project_crud.get_by_id(membership_id)
+    if not membership or membership.site_id != project_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Membership not found"
+        )
+    
+    project_crud.delete_by_id(membership_id)
     return None

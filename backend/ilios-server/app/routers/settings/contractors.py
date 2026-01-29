@@ -8,7 +8,10 @@ from sqlalchemy.orm import Session
 
 from app.crud.base_crud import UniqueConstraintViolationError
 from app.crud.company import CompanyCRUD
+from app.crud.user_company_access import UserCompanyAccessCRUD
+from app.crud.user_portfolio_access import UserPortfolioAccessCRUD
 from app.db.session import get_session
+from app.models.user import CompanyRole, MembershipStatus
 from app.helpers.authentication import api_key_check
 from app.helpers.authorization import AuthorizedUser, SettingsPermissions, get_current_admin_user
 from app.helpers.pagination import pagination_details
@@ -51,6 +54,23 @@ async def create(
     create_default_board(company_data.id, BoardRelatedEntityTypeEnum.company, db_session, module=BoardModuleEnum.asset)
     # Create O&M default company board
     create_default_board(company_data.id, BoardRelatedEntityTypeEnum.company, db_session, module=BoardModuleEnum.om)
+    
+    portfolio_crud = UserPortfolioAccessCRUD(db_session)
+    company_access_crud = UserCompanyAccessCRUD(db_session)
+    portfolio_users = portfolio_crud.get_all_portfolio_users()
+    for portfolio_access in portfolio_users:
+        existing = company_access_crud.get_by_user_and_company(portfolio_access.user_id, company_data.id)
+        if not existing:
+            company_access_crud.add_membership(
+                user_id=portfolio_access.user_id,
+                company_id=company_data.id,
+                role=portfolio_access.role,
+                status=MembershipStatus.active,
+                created_by_user_id=None,
+                created_from_portfolio=True
+            )
+            logger.info(f"Auto-created company access for portfolio user {portfolio_access.user_id} to company {company_data.id}")
+    
     return {"code": status.HTTP_201_CREATED, "message": "Company has been successfully created"}
 
 

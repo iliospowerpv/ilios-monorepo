@@ -48,7 +48,8 @@ class UserCompanyAccessCRUD(BaseCRUD):
         company_id: int,
         role: CompanyRole = CompanyRole.contributor,
         status: MembershipStatus = MembershipStatus.active,
-        created_by_user_id: Optional[int] = None
+        created_by_user_id: Optional[int] = None,
+        created_from_portfolio: bool = False
     ) -> UserCompanyAccess:
         """Add a user to a company with specified role."""
         return self.create_item({
@@ -56,8 +57,20 @@ class UserCompanyAccessCRUD(BaseCRUD):
             "company_id": company_id,
             "role": role,
             "status": status,
-            "created_by_user_id": created_by_user_id
+            "created_by_user_id": created_by_user_id,
+            "created_from_portfolio": created_from_portfolio
         })
+
+    def get_portfolio_memberships_by_user(
+        self,
+        user_id: int
+    ) -> List[UserCompanyAccess]:
+        """Get all company memberships for a user that were auto-created from portfolio access."""
+        return (
+            self.db_session.query(self.model)
+            .filter_by(user_id=user_id, created_from_portfolio=True)
+            .all()
+        )
 
     def update_membership_role(
         self,

@@ -131,7 +131,16 @@ class Site(RelatedBoards, Base):
     created_at = Column(DateTime, server_default=utcnow())
     updated_at = Column(DateTime, server_default=utcnow())
 
-    _allowed_users = relationship("User", secondary="user_projects", back_populates="sites", overlaps="_allowed_users")
+    _allowed_users = relationship(
+        "User",
+        secondary="user_projects",
+        primaryjoin="Site.id == foreign(UserProject.site_id)",
+        secondaryjoin="foreign(UserProject.user_id) == User.id",
+        overlaps="sites,project_memberships,member_users,companies",
+        viewonly=True
+    )
+    
+    member_users = relationship("UserProject", back_populates="site")
 
     def get_active_users_ids(self, permissions_module_name):
         """Filter full list of allowed users to return only users who complete registration"""

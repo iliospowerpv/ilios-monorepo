@@ -45,9 +45,22 @@ class User(Base):
     parent_company = relationship("Company", back_populates="users")
     role = relationship("Role", back_populates="users")
     # site is the primary entity access given to
-    sites = relationship("Site", secondary="user_projects", overlaps="_allowed_users")
+    sites = relationship(
+        "Site",
+        secondary="user_projects",
+        primaryjoin="User.id == foreign(UserProject.user_id)",
+        secondaryjoin="foreign(UserProject.site_id) == Site.id",
+        overlaps="_allowed_users,project_memberships,member_users"
+    )
     # have companies as well to minimize efforts for company-related APIs serving
-    companies = relationship("Company", secondary="user_projects", viewonly=True)
+    companies = relationship(
+        "Company",
+        secondary="user_projects",
+        primaryjoin="User.id == foreign(UserProject.user_id)",
+        secondaryjoin="foreign(UserProject.company_id) == Company.id",
+        viewonly=True,
+        overlaps="sites,_allowed_users,project_memberships,member_users"
+    )
     # have files and attachments as user is an author
     files = relationship("File", back_populates="user")
     attachments = relationship("Attachment", back_populates="user")
@@ -81,6 +94,18 @@ class User(Base):
         back_populates="user",
         foreign_keys="UserCompanyAccess.user_id"
     )
+    
+    project_memberships = relationship(
+        "UserProject",
+        back_populates="user",
+        foreign_keys="UserProject.user_id"
+    )
+    
+    portfolio_access = relationship(
+        "UserPortfolioAccess",
+        back_populates="user",
+        foreign_keys="UserPortfolioAccess.user_id"
+    )
 
     def get_limited_sites_ids(self):
         """Return IDs of sites user has access to. If user is system - return None"""
@@ -92,16 +117,31 @@ class User(Base):
 
 
 class UserProject(Base):
+    """Project-level user access - gives user access to a specific project/site."""
     __tablename__ = "user_projects"
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'site_id', name='uq_user_project_access'),
+        Index('ix_user_project_site_id', 'site_id'),
+        Index('ix_user_project_user_id', 'user_id'),
+    )
 
     id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
 
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
-    site_id = Column(Integer, ForeignKey("sites.id", ondelete="CASCADE"), primary_key=True)
-    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    site_id = Column(Integer, ForeignKey("sites.id", ondelete="CASCADE"), nullable=False)
+    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    role = Column(Enum(CompanyRole), nullable=False, default=CompanyRole.contributor)
+    status = Column(Enum(MembershipStatus), nullable=False, default=MembershipStatus.active)
 
     created_at = Column(DateTime, server_default=utcnow())
+    created_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     updated_at = Column(DateTime, server_default=utcnow(), onupdate=utcnow())
+
+    user = relationship("User", back_populates="project_memberships", foreign_keys=[user_id], overlaps="sites,companies,_allowed_users")
+    site = relationship("Site", back_populates="member_users", overlaps="sites,_allowed_users")
+    company = relationship("Company", overlaps="companies,_allowed_users")
+    created_by = relationship("User", foreign_keys=[created_by_user_id])
 
 
 class UserPasswordDeeplinkBase:
@@ -142,6 +182,7 @@ class UserCompanyAccess(Base):
     company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
     role = Column(Enum(CompanyRole), nullable=False, default=CompanyRole.contributor)
     status = Column(Enum(MembershipStatus), nullable=False, default=MembershipStatus.active)
+    created_from_portfolio = Column(Boolean, default=False)
     
     created_at = Column(DateTime, server_default=utcnow())
     created_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
@@ -149,4 +190,26 @@ class UserCompanyAccess(Base):
 
     user = relationship("User", back_populates="company_memberships", foreign_keys=[user_id])
     company = relationship("Company", back_populates="member_users")
+    created_by = relationship("User", foreign_keys=[created_by_user_id])
+
+
+class UserPortfolioAccess(Base):
+    """Portfolio-level user access - gives user access to all companies and projects."""
+    __tablename__ = "user_portfolio_access"
+    
+    __table_args__ = (
+        UniqueConstraint('user_id', name='uq_user_portfolio_access'),
+        Index('ix_user_portfolio_access_user_id', 'user_id'),
+    )
+
+    id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    role = Column(Enum(CompanyRole), nullable=False, default=CompanyRole.contributor)
+    status = Column(Enum(MembershipStatus), nullable=False, default=MembershipStatus.active)
+    
+    created_at = Column(DateTime, server_default=utcnow())
+    created_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    updated_at = Column(DateTime, server_default=utcnow(), onupdate=utcnow())
+
+    user = relationship("User", back_populates="portfolio_access", foreign_keys=[user_id])
     created_by = relationship("User", foreign_keys=[created_by_user_id])
