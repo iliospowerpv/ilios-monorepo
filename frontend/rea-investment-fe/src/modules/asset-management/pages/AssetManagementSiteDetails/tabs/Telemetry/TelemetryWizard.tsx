@@ -106,7 +106,8 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
       setDeviceMappings({});
       setSelectedDevices(new Set());
     }
-  }, [open, readiness]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const { data: connections, isLoading: isLoadingConnections } = useQuery({
     queryKey: ['connections', companyId],
