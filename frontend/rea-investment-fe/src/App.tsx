@@ -25,6 +25,7 @@ import { AccountSettings } from './pages/Account';
 import { SecuritySettings } from './pages/Security';
 import { HelpResources } from './pages/Help';
 import { PortfolioView, CompaniesPickerView, CompanyView, ProjectsPickerView, ProjectView } from './pages/Hierarchy';
+import { TelemetryPage, createTelemetryHandle, TelemetryRedirect } from './pages/Telemetry';
 import { ScopedModuleRoute } from './components/layout/ScopedModuleRoute';
 
 import {
@@ -184,6 +185,7 @@ const router = createBrowserRouter(
         <Route path="/companies/:companyId" element={<CompanyView />} />
         <Route path="/projects" element={<ProjectsPickerView />} />
         <Route path="/projects/:projectId" element={<ProjectView />} />
+        <Route path="/projects/:projectId/telemetry" handle={createTelemetryHandle()} element={<TelemetryPage />} />
 
         {/* Dashboard redirects to Home (deprecated) */}
         <Route path="/dashboard" element={<Navigate to="/home" replace />} />
@@ -401,6 +403,14 @@ const router = createBrowserRouter(
               </ScopedModuleRoute>
             }
           />
+          <Route
+            path="scope/project/:projectId/telemetry"
+            element={
+              <ScopedModuleRoute scope="project">
+                <TelemetryPage />
+              </ScopedModuleRoute>
+            }
+          />
         </Route>
         <Route path="/operations-and-maintenance" element={<OMModuleContainer />}>
           <Route index handle={OMAllCompanies.createHandle()} element={<OMAllCompanies.Component />} />
@@ -596,11 +606,10 @@ const router = createBrowserRouter(
             loader={withAuthControl(AMSiteDetails.createLoader(queryClient))}
             element={<AMSiteDetails.Component tabId="tasks" />}
           />
+          {/* Redirect Asset Management telemetry to canonical project telemetry route */}
           <Route
             path="/asset-management/companies/:companyId/sites/:siteId/telemetry"
-            handle={AMSiteDetails.createHandle(queryClient)}
-            loader={withAuthControl(AMSiteDetails.createLoader(queryClient))}
-            element={<AMSiteDetails.Component tabId="telemetry" />}
+            element={<TelemetryRedirect />}
           />
           <Route
             path="/asset-management/companies/:companyId/sites/:siteId/devices/add"

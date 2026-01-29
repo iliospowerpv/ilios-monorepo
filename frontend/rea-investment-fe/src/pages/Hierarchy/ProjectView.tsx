@@ -9,6 +9,7 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
+import SettingsInputAntennaIcon from '@mui/icons-material/SettingsInputAntenna';
 import Chip from '@mui/material/Chip';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAccessibleEntities } from '../../hooks/useAccessibleEntities';
@@ -117,6 +118,22 @@ export const ProjectView: React.FC = () => {
               </Paper>
             </Grid>
           ))}
+          <Grid item>
+            <Paper
+              sx={{
+                p: 2,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                '&:hover': { bgcolor: 'action.hover' }
+              }}
+              onClick={() => navigate(`/projects/${project.id}/telemetry`)}
+            >
+              <SettingsInputAntennaIcon />
+              Telemetry
+            </Paper>
+          </Grid>
         </Grid>
       </Box>
     </Box>

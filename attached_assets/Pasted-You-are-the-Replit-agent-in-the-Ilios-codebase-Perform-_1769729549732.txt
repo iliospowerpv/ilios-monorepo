@@ -1,0 +1,38 @@
+You are the Replit agent in the Ilios codebase. Perform a final alignment pass on the Telemetry UI so it conforms to the Context Bar + module lens navigation contract. The current Telemetry tab exists under Asset Management site details; keep the components, but fix routing and placement.
+
+NON-NEGOTIABLE
+- Telemetry must be accessible from the canonical Project context (projects table / sites table) without entering Asset Management.
+- Add canonical routes and make the existing Asset Management route an alias only.
+- Do not move telemetry setup back into Settings.
+
+TASKS
+1) Add canonical Project Telemetry entry:
+   - Implement Telemetry as a tab/section on /projects/:projectId
+     OR add route /projects/:projectId/telemetry that renders the same Telemetry.tsx + wizard.
+   - Ensure the page uses the Context Bar currentProject/currentCompany for scoping.
+
+2) Add Operations mirror:
+   - Add /operations/scope/project/:projectId/telemetry (or an Operations project-scope Telemetry section)
+   - Must render the same UI and keep users inside Operations module scope.
+
+3) Alias/redirect legacy Asset Management route:
+   - Keep /asset-management/companies/:companyId/sites/:siteId/telemetry working
+   - But redirect it to the canonical Project telemetry route (or share the component with route params mapping).
+   - The canonical route should not require companyId.
+
+4) Update quicklinks/navigation:
+   - Add “Telemetry” link in Project quick actions / project navigation
+   - Ensure switching scope in Context Bar doesn’t break telemetry routes.
+
+5) Documentation + test checklist:
+   - Create docs/telemetry_routing_alignment.md describing:
+     - canonical routes
+     - lens routes
+     - alias behavior
+     - 10-minute smoke test
+
+ACCEPTANCE CRITERIA
+- A user can complete telemetry hookup from Project pages without entering Asset Management.
+- Operations lens route works and stays in-module.
+- Existing Asset Management deep links still work via alias/redirect.
+- No regressions to Context Bar scope behavior.
