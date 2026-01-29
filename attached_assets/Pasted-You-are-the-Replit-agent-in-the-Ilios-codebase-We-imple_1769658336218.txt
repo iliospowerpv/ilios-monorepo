@@ -1,0 +1,132 @@
+You are the Replit agent in the Ilios codebase. We implemented portfolio-, company-, and project-level user access. Before deploying this, refactor and harden the access model so portfolio access is computed (inherited) rather than materialized into per-company rows, and ensure the system is divestiture-safe (company/project can be sold off and access can be reassigned cleanly).
+
+CRITICAL INTENT (NON-NEGOTIABLE)
+1) Users can be granted access at three levels:
+   - Portfolio (access to all companies/projects)
+   - Company (membership/role within a company)
+   - Project (membership/role within a single project/site)
+2) Portfolio access must NOT be implemented by auto-creating UserCompanyAccess rows for every company. Portfolio access must be inherited/computed at runtime (and in listings), not duplicated in stored rows.
+3) The system must explain “why user has access” (provenance):
+   - Direct portfolio grant
+   - Direct company membership
+   - Direct project assignment
+   - Inherited via portfolio (computed, not stored)
+   - Inherited via company to project (if applicable; computed)
+4) Divestiture safety:
+   - A company or project can be sold off.
+   - Seller access must be removable cleanly from divested assets while preserving access to retained assets.
+   - No orphaned auto-created rows or ambiguous truth sources.
+
+CURRENT IMPLEMENTATION (ASSUME)
+- UserPortfolioAccess exists (or was introduced).
+- UserCompanyAccess exists with role/status and possibly created_from_portfolio flag.
+- UserProject exists and may now include company_id, role, status.
+- Portfolio endpoints currently auto-create company access for all companies (fan-out).
+- Frontend may show “Coming Soon” for portfolio/project add dialogs, but backend APIs exist.
+
+DELIVERABLES
+A) Refactor portfolio access to computed/inherited (no fan-out rows)
+B) Harden authorization and membership listing to incorporate computed access
+C) Enforce integrity invariants around UserProject company_id (or remove redundancy if low risk)
+D) Add tests/manual checklist focused on divestiture scenarios
+E) Create /docs/access_model_audit.md explaining rules, precedence, and examples
+
+STEP 1 — AUDIT AND DOCUMENT (REQUIRED)
+Create /docs/access_model_audit.md that includes:
+- Entities/tables involved (UserPortfolioAccess, UserCompanyAccess, UserProject, sites, companies, users)
+- Text ERD showing relationships
+- Access precedence rules (portfolio vs company vs project)
+- Provenance definitions and how they are computed and displayed
+- Divestiture scenarios and expected behavior
+
+STEP 2 — PORTFOLIO ACCESS REFACTOR (NO MATERIALIZED COMPANY ROWS)
+Change the portfolio membership endpoints so:
+- POST /api/workspace/portfolio/members:
+  - Creates only a UserPortfolioAccess record (and does NOT create per-company UserCompanyAccess rows).
+- DELETE /api/workspace/portfolio/members/{id}:
+  - Removes only the UserPortfolioAccess record.
+  - Does NOT delete any UserCompanyAccess rows (since we will no longer auto-create them).
+- Remove or deprecate created_from_portfolio logic in UserCompanyAccess if it exists solely for fan-out provenance.
+  - If needed for backward compatibility, keep the column but stop writing it and stop depending on it.
+
+STEP 3 — COMPUTED/INHERITED MEMBERSHIP LISTING (WITH PROVENANCE)
+Update member list endpoints and UI-facing responses so they can include computed inherited access without storing rows:
+
+A) Company member list behavior (for any company_id):
+- Return members from:
+  1) Direct company members (UserCompanyAccess where company_id = X)
+  2) Portfolio members (UserPortfolioAccess) as computed/inherited entries
+  3) Optionally: project-only users who have UserProject assignments within this company but no direct company membership
+- Each returned row must include:
+  - access_source: 'direct_company' | 'inherited_portfolio' | 'project_only' | 'both'
+  - role: resolved role for display (see precedence rules)
+  - status: resolved status (invited/suspended/active) (see enforcement rules)
+
+B) Project member list behavior (for site_id):
+- Return members from:
+  1) Direct project members (UserProject where site_id = Y)
+  2) Direct company members (UserCompanyAccess for the project’s company) if project inherits company access (decide and document)
+  3) Portfolio members as inherited entries if portfolio access is intended to grant project visibility
+- Include access_source with the same semantics.
+
+IMPORTANT: Do not create “synthetic” DB rows. These are computed in responses only.
+
+STEP 4 — PRECEDENCE AND ENFORCEMENT RULES (DEFINE + IMPLEMENT)
+Define clear rules and implement them consistently in auth checks and listing resolution:
+
+A) Access grant precedence (for visibility):
+- If user has portfolio access → they can see all companies/projects (unless suspended at portfolio level if supported).
+- Else if user has company access → they can see the company’s projects (unless your model requires explicit project assignment; choose one and document).
+- Else if user has direct project access → they can see only that project.
+Document the chosen model and implement consistently.
+
+B) Role resolution precedence (when multiple sources apply):
+Choose ONE rule and implement everywhere:
+- Either “most permissive wins” or “direct beats inherited” (recommended: direct beats inherited, but portfolio may have a global admin override if intended).
+Document the rule in /docs/access_model_audit.md.
+
+C) Status enforcement (non-negotiable):
+- suspended at any relevant level must block access, even if inherited elsewhere.
+- invited should not grant full access unless your auth already supports invited users logging in; if it does, invited should still have limited capability. Document current behavior.
+
+STEP 5 — USERPROJECT company_id INTEGRITY (HARDEN)
+If UserProject includes company_id:
+- Enforce invariant: UserProject.company_id must equal sites.company_id for the referenced site_id.
+- Add validation in create/update paths.
+- If feasible in your stack, add DB-level constraint enforcement or a safe application-level guard with tests.
+If company_id is unnecessary and safe to remove:
+- Propose removing it (but only if low blast radius). Prefer enforcement over removal if unsure.
+
+STEP 6 — DIVESTITURE SAFETY TESTS / CHECKLIST
+Add:
+- Either automated tests OR a runnable manual checklist in docs that covers:
+  1) Portfolio user sees Company A and Company B without stored company rows
+  2) Remove portfolio access → user loses visibility everywhere unless they have direct company/project access
+  3) Company sale scenario:
+     - Seller loses direct company/project access to divested company/projects
+     - Seller retains access to retained assets
+     - Buyer users get access via direct company/project grants
+  4) Project sale scenario (project assigned to new owner company):
+     - Project member access updates correctly without stale company_id in UserProject
+  5) Member list provenance displays correctly (direct vs inherited vs project-only vs both)
+
+STEP 7 — API COMPATIBILITY
+Keep existing endpoint paths if possible, but update response payloads to include:
+- access_source
+- resolved_role
+- resolved_status
+Do not break frontend unless necessary; if breaking changes are unavoidable, document them clearly.
+
+DO NOT DO
+- Do not build full invitation email delivery.
+- Do not redesign the entire RBAC system.
+- Do not create new workflow engines.
+- Do not introduce new dependencies.
+
+ACCEPTANCE CRITERIA (MUST PASS)
+- Adding a portfolio user creates only ONE portfolio grant record and no per-company UserCompanyAccess fan-out rows.
+- Company/project member lists can show inherited portfolio access with explicit provenance without stored rows.
+- Removing portfolio access removes access everywhere except where direct grants exist.
+- No duplicate/competing truth sources for access.
+- UserProject.company_id cannot drift from sites.company_id.
+- Divestiture scenarios are documented and verifiable.

@@ -96,14 +96,35 @@ class UserProjectCRUD(BaseCRUD):
 
     def get_memberships_by_site(
         self,
-        site_id: int,
+        site_id: Optional[int] = None,
+        company_id: Optional[int] = None,
         status: Optional[MembershipStatus] = None
     ) -> List[UserProject]:
-        """Get all user memberships for a site/project."""
-        query = self.db_session.query(self.model).filter_by(site_id=site_id)
+        """Get all user memberships for a site/project or company."""
+        query = self.db_session.query(self.model)
+        if site_id:
+            query = query.filter_by(site_id=site_id)
+        if company_id:
+            query = query.filter_by(company_id=company_id)
         if status:
             query = query.filter_by(status=status)
         return query.all()
+
+    def validate_company_id_integrity(self, site_id: int, company_id: int) -> bool:
+        """Validate that company_id matches the site's actual company_id.
+        
+        INVARIANT: UserProject.company_id MUST equal sites.company_id
+        """
+        from app.models.site import Site
+        site = self.db_session.query(Site).get(site_id)
+        if not site:
+            raise ValueError(f"Site {site_id} not found")
+        if site.company_id != company_id:
+            raise ValueError(
+                f"company_id mismatch: UserProject.company_id ({company_id}) "
+                f"does not match Site.company_id ({site.company_id})"
+            )
+        return True
 
     def add_membership(
         self,
@@ -114,7 +135,11 @@ class UserProjectCRUD(BaseCRUD):
         status: MembershipStatus = MembershipStatus.active,
         created_by_user_id: Optional[int] = None
     ) -> UserProject:
-        """Add a user to a project with specified role."""
+        """Add a user to a project with specified role.
+        
+        Enforces INV-1: UserProject.company_id MUST equal sites.company_id
+        """
+        self.validate_company_id_integrity(site_id, company_id)
         return self.create_item({
             "user_id": user_id,
             "site_id": site_id,
@@ -139,6 +164,20 @@ class UserProjectCRUD(BaseCRUD):
     ) -> int:
         """Update a project membership's status."""
         return self.update_by_id(membership_id, {"status": status})
+
+    def update_membership_company_id(
+        self,
+        membership_id: int,
+        company_id: int
+    ) -> int:
+        """Update a project membership's company_id.
+        
+        Enforces INV-1: UserProject.company_id MUST equal sites.company_id
+        """
+        membership = self.get_by_id(membership_id)
+        if membership:
+            self.validate_company_id_integrity(membership.site_id, company_id)
+        return self.update_by_id(membership_id, {"company_id": company_id})
 
     def has_project_access(self, user_id: int, site_id: int) -> bool:
         """Check if user has active access to the given project."""

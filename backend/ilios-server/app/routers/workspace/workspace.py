@@ -81,49 +81,67 @@ async def get_workspace(
             needs_attention_count=0
         )
     else:
-        company_memberships = db_session.query(UserCompanyAccess).filter(
-            UserCompanyAccess.user_id == current_user.id,
-            UserCompanyAccess.status == MembershipStatus.active
-        ).all()
+        portfolio_crud = UserPortfolioAccessCRUD(db_session)
+        project_crud = UserProjectCRUD(db_session)
         
-        for membership in company_memberships:
-            if membership.company and membership.company_id not in company_ids_seen:
-                project_count = db_session.query(Site).filter_by(company_id=membership.company_id).count()
-                companies_data.append(UserCompanySchema(
-                    company_id=membership.company.id,
-                    company_name=membership.company.name,
-                    role=CompanyRoleEnum(membership.role.value) if membership.role else None,
-                    access_source="membership",
-                    project_count=project_count
-                ))
-                company_ids_seen.add(membership.company_id)
+        portfolio_access = portfolio_crud.get_by_user(current_user.id)
+        if portfolio_access and portfolio_access.status == MembershipStatus.active:
+            all_companies = db_session.query(Company).order_by(Company.name).all()
+            for c in all_companies:
+                if c.id not in company_ids_seen:
+                    project_count = db_session.query(Site).filter_by(company_id=c.id).count()
+                    companies_data.append(UserCompanySchema(
+                        company_id=c.id,
+                        company_name=c.name,
+                        role=CompanyRoleEnum(portfolio_access.role.value) if portfolio_access.role else None,
+                        access_source="inherited_portfolio",
+                        project_count=project_count
+                    ))
+                    company_ids_seen.add(c.id)
+        else:
+            company_memberships = db_session.query(UserCompanyAccess).filter(
+                UserCompanyAccess.user_id == current_user.id,
+                UserCompanyAccess.status == MembershipStatus.active
+            ).all()
+            
+            for membership in company_memberships:
+                if membership.company and membership.company_id not in company_ids_seen:
+                    project_count = db_session.query(Site).filter_by(company_id=membership.company_id).count()
+                    companies_data.append(UserCompanySchema(
+                        company_id=membership.company.id,
+                        company_name=membership.company.name,
+                        role=CompanyRoleEnum(membership.role.value) if membership.role else None,
+                        access_source="direct_company",
+                        project_count=project_count
+                    ))
+                    company_ids_seen.add(membership.company_id)
+            
+            project_memberships = project_crud.get_memberships_by_user(
+                user_id=current_user.id,
+                status=MembershipStatus.active
+            )
+            for pm in project_memberships:
+                site = db_session.query(Site).get(pm.site_id)
+                if site and site.company_id not in company_ids_seen:
+                    company = db_session.query(Company).get(site.company_id)
+                    if company:
+                        project_count = db_session.query(Site).filter_by(company_id=company.id).count()
+                        companies_data.append(UserCompanySchema(
+                            company_id=company.id,
+                            company_name=company.name,
+                            role=CompanyRoleEnum(pm.role.value) if pm.role else None,
+                            access_source="project_context",
+                            project_count=project_count
+                        ))
+                        company_ids_seen.add(company.id)
         
-        for company in current_user.companies:
-            if company.id not in company_ids_seen:
-                project_count = db_session.query(Site).filter_by(company_id=company.id).count()
-                companies_data.append(UserCompanySchema(
-                    company_id=company.id,
-                    company_name=company.name,
-                    role=None,
-                    access_source="project",
-                    project_count=project_count
-                ))
-                company_ids_seen.add(company.id)
-        
-        if current_user.parent_company and current_user.parent_company.id not in company_ids_seen:
-            project_count = db_session.query(Site).filter_by(company_id=current_user.parent_company.id).count()
-            companies_data.append(UserCompanySchema(
-                company_id=current_user.parent_company.id,
-                company_name=current_user.parent_company.name,
-                role=None,
-                access_source="parent_company",
-                project_count=project_count
-            ))
-            company_ids_seen.add(current_user.parent_company.id)
+        total_projects = 0
+        for company in companies_data:
+            total_projects += company.project_count
         
         summary = WorkspaceSummarySchema(
             companies_count=len(companies_data),
-            projects_count=len(current_user.sites) if current_user.sites else 0,
+            projects_count=total_projects,
             pending_tasks_count=0,
             needs_attention_count=0
         )
@@ -140,40 +158,105 @@ async def get_workspace(
     "/companies/{company_id}/members",
     response_model=List[CompanyMemberSchema],
     summary="Get members of a company",
-    description="Returns all users who are members of the specified company.",
+    description="Returns all users who have access to the company (direct and inherited).",
 )
 async def get_company_members(
     company_id: int,
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ) -> List[CompanyMemberSchema]:
-    """Get all members of a company."""
+    """Get all members of a company including computed inherited access.
+    
+    Uses centralized access resolution for consistent precedence and status blocking.
+    """
     from app.models.user import User
+    from app.schema.user_company_access import AccessSourceEnum
+    from app.helpers.access_resolution import (
+        AccessGrant, ResolvedAccessSource, resolve_company_access
+    )
     
-    crud = UserCompanyAccessCRUD(db_session)
+    company_crud = UserCompanyAccessCRUD(db_session)
+    portfolio_crud = UserPortfolioAccessCRUD(db_session)
+    project_crud = UserProjectCRUD(db_session)
     
-    if not current_user.is_system_user and not crud.has_company_access(current_user.id, company_id):
+    has_portfolio_access = portfolio_crud.get_by_user(current_user.id) is not None
+    has_company_access = company_crud.has_company_access(current_user.id, company_id)
+    
+    if not current_user.is_system_user and not has_company_access and not has_portfolio_access:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have access to this company"
         )
     
-    memberships = crud.get_memberships_by_company(company_id)
+    direct_by_user = {}
+    direct_memberships = company_crud.get_memberships_by_company(company_id)
+    for m in direct_memberships:
+        direct_role = CompanyRoleEnum(m.role.value) if m.role else CompanyRoleEnum.contributor
+        direct_status = MembershipStatusEnum(m.status.value) if m.status else MembershipStatusEnum.active
+        direct_by_user[m.user_id] = AccessGrant(
+            source=ResolvedAccessSource.direct_company,
+            role=direct_role,
+            status=direct_status,
+            membership_id=m.id,
+        )
+    
+    portfolio_by_user = {}
+    portfolio_users = portfolio_crud.get_all_portfolio_users()
+    for p in portfolio_users:
+        inherited_role = CompanyRoleEnum(p.role.value) if p.role else CompanyRoleEnum.contributor
+        inherited_status = MembershipStatusEnum(p.status.value) if p.status else MembershipStatusEnum.active
+        portfolio_by_user[p.user_id] = AccessGrant(
+            source=ResolvedAccessSource.inherited_portfolio,
+            role=inherited_role,
+            status=inherited_status,
+            membership_id=None,
+        )
+    
+    project_only_by_user = {}
+    project_memberships = project_crud.get_memberships_by_site(company_id=company_id)
+    for pm in project_memberships:
+        project_role = CompanyRoleEnum(pm.role.value) if pm.role else CompanyRoleEnum.contributor
+        project_status = MembershipStatusEnum(pm.status.value) if pm.status else MembershipStatusEnum.active
+        if pm.user_id not in project_only_by_user:
+            project_only_by_user[pm.user_id] = AccessGrant(
+                source=ResolvedAccessSource.project_only,
+                role=project_role,
+                status=project_status,
+                membership_id=None,
+            )
+    
+    all_user_ids = set(direct_by_user.keys()) | set(portfolio_by_user.keys()) | set(project_only_by_user.keys())
     
     members = []
-    for m in memberships:
-        user = db_session.query(User).get(m.user_id)
-        if user:
-            members.append(CompanyMemberSchema(
-                membership_id=m.id,
-                user_id=user.id,
-                email=user.email,
-                first_name=user.first_name,
-                last_name=user.last_name,
-                role=CompanyRoleEnum(m.role.value) if m.role else CompanyRoleEnum.contributor,
-                status=MembershipStatusEnum(m.status.value) if m.status else MembershipStatusEnum.active,
-                access_source="membership"
-            ))
+    for user_id in all_user_ids:
+        user = db_session.query(User).get(user_id)
+        if not user:
+            continue
+        
+        resolved = resolve_company_access(
+            direct_grant=direct_by_user.get(user_id),
+            portfolio_grant=portfolio_by_user.get(user_id),
+            project_only_grant=project_only_by_user.get(user_id),
+        )
+        
+        access_source_map = {
+            ResolvedAccessSource.direct_company: AccessSourceEnum.direct_company,
+            ResolvedAccessSource.inherited_portfolio: AccessSourceEnum.inherited_portfolio,
+            ResolvedAccessSource.project_only: AccessSourceEnum.project_only,
+        }
+        
+        members.append(CompanyMemberSchema(
+            membership_id=resolved.membership_id,
+            user_id=user.id,
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            access_source=access_source_map.get(resolved.access_source, AccessSourceEnum.direct_company),
+            resolved_role=resolved.resolved_role,
+            resolved_status=resolved.resolved_status,
+            direct_role=resolved.direct_role,
+            inherited_role=resolved.inherited_role,
+        ))
     
     return members
 
@@ -361,7 +444,7 @@ async def add_portfolio_member(
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ) -> UserPortfolioAccessSchema:
-    """Add a user to portfolio level (grants access to all companies)."""
+    """Add a user to portfolio level (grants computed access to all companies)."""
     if not current_user.is_system_user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -369,7 +452,6 @@ async def add_portfolio_member(
         )
     
     portfolio_crud = UserPortfolioAccessCRUD(db_session)
-    company_crud = UserCompanyAccessCRUD(db_session)
     
     existing = portfolio_crud.get_by_user(payload.user_id)
     if existing:
@@ -384,19 +466,6 @@ async def add_portfolio_member(
         status=MembershipStatus.active,
         created_by_user_id=current_user.id
     )
-    
-    all_companies = db_session.query(Company).all()
-    for company in all_companies:
-        existing_company_access = company_crud.get_by_user_and_company(payload.user_id, company.id)
-        if not existing_company_access:
-            company_crud.add_membership(
-                user_id=payload.user_id,
-                company_id=company.id,
-                role=CompanyRole(payload.role.value),
-                status=MembershipStatus.active,
-                created_by_user_id=current_user.id,
-                created_from_portfolio=True
-            )
     
     return UserPortfolioAccessSchema(
         id=portfolio_access.id,
@@ -413,14 +482,14 @@ async def add_portfolio_member(
     "/portfolio/members/{access_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Remove portfolio-level access",
-    description="Remove a user's portfolio-level access and all auto-created company access records.",
+    description="Remove a user's portfolio-level access. Direct company/project grants are preserved.",
 )
 async def remove_portfolio_member(
     access_id: int,
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    """Remove portfolio-level access for a user and clean up company access records."""
+    """Remove portfolio-level access for a user. Does not affect direct company/project grants."""
     if not current_user.is_system_user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -435,14 +504,7 @@ async def remove_portfolio_member(
             detail="Portfolio access not found"
         )
     
-    user_id = access.user_id
-    
     portfolio_crud.delete_by_id(access_id)
-    
-    company_crud = UserCompanyAccessCRUD(db_session)
-    portfolio_memberships = company_crud.get_portfolio_memberships_by_user(user_id)
-    for membership in portfolio_memberships:
-        company_crud.delete_by_id(membership.id)
     
     return None
 
@@ -451,15 +513,22 @@ async def remove_portfolio_member(
     "/projects/{project_id}/members",
     response_model=ProjectMembersListSchema,
     summary="Get members of a project",
-    description="Returns all users who are members of the specified project.",
+    description="Returns all users who have access to the project (direct and inherited).",
 )
 async def get_project_members(
     project_id: int,
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ) -> ProjectMembersListSchema:
-    """Get all members of a project."""
+    """Get all members of a project including computed inherited access.
+    
+    Uses centralized access resolution for consistent precedence and status blocking.
+    """
     from app.models.user import User
+    from app.schema.user_project_access import ProjectAccessSourceEnum
+    from app.helpers.access_resolution import (
+        AccessGrant, ResolvedAccessSource, resolve_project_access
+    )
     
     project = db_session.query(Site).get(project_id)
     if not project:
@@ -470,31 +539,84 @@ async def get_project_members(
     
     project_crud = UserProjectCRUD(db_session)
     company_crud = UserCompanyAccessCRUD(db_session)
+    portfolio_crud = UserPortfolioAccessCRUD(db_session)
     
-    if not current_user.is_system_user:
-        has_project_access = project_crud.has_project_access(current_user.id, project_id)
-        has_company_access = company_crud.has_company_access(current_user.id, project.company_id)
-        if not has_project_access and not has_company_access:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You don't have access to this project"
-            )
+    has_portfolio_access = portfolio_crud.get_by_user(current_user.id) is not None
+    has_company_access = company_crud.has_company_access(current_user.id, project.company_id)
+    has_project_access = project_crud.has_project_access(current_user.id, project_id)
     
-    memberships = project_crud.get_memberships_by_site(project_id)
+    if not current_user.is_system_user and not has_project_access and not has_company_access and not has_portfolio_access:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this project"
+        )
+    
+    direct_by_user = {}
+    direct_memberships = project_crud.get_memberships_by_site(site_id=project_id)
+    for m in direct_memberships:
+        direct_role = CompanyRoleEnum(m.role.value) if m.role else CompanyRoleEnum.contributor
+        direct_status = MembershipStatusEnum(m.status.value) if m.status else MembershipStatusEnum.active
+        direct_by_user[m.user_id] = AccessGrant(
+            source=ResolvedAccessSource.direct_project,
+            role=direct_role,
+            status=direct_status,
+            membership_id=m.id,
+        )
+    
+    company_by_user = {}
+    company_memberships = company_crud.get_memberships_by_company(project.company_id)
+    for cm in company_memberships:
+        company_role = CompanyRoleEnum(cm.role.value) if cm.role else CompanyRoleEnum.contributor
+        company_status = MembershipStatusEnum(cm.status.value) if cm.status else MembershipStatusEnum.active
+        company_by_user[cm.user_id] = AccessGrant(
+            source=ResolvedAccessSource.inherited_company,
+            role=company_role,
+            status=company_status,
+            membership_id=None,
+        )
+    
+    portfolio_by_user = {}
+    portfolio_users = portfolio_crud.get_all_portfolio_users()
+    for p in portfolio_users:
+        portfolio_role = CompanyRoleEnum(p.role.value) if p.role else CompanyRoleEnum.contributor
+        portfolio_status = MembershipStatusEnum(p.status.value) if p.status else MembershipStatusEnum.active
+        portfolio_by_user[p.user_id] = AccessGrant(
+            source=ResolvedAccessSource.inherited_portfolio,
+            role=portfolio_role,
+            status=portfolio_status,
+            membership_id=None,
+        )
+    
+    all_user_ids = set(direct_by_user.keys()) | set(company_by_user.keys()) | set(portfolio_by_user.keys())
     
     members = []
-    for m in memberships:
-        user = db_session.query(User).get(m.user_id)
-        if user:
-            members.append(ProjectMemberSchema(
-                membership_id=m.id,
-                user_id=user.id,
-                email=user.email,
-                first_name=user.first_name,
-                last_name=user.last_name,
-                role=CompanyRoleEnum(m.role.value) if m.role else CompanyRoleEnum.contributor,
-                status=MembershipStatusEnum(m.status.value) if m.status else MembershipStatusEnum.active,
-            ))
+    for user_id in all_user_ids:
+        user = db_session.query(User).get(user_id)
+        if not user:
+            continue
+        
+        resolved = resolve_project_access(
+            direct_grant=direct_by_user.get(user_id),
+            company_grant=company_by_user.get(user_id),
+            portfolio_grant=portfolio_by_user.get(user_id),
+        )
+        
+        source_map = {
+            ResolvedAccessSource.direct_project: ProjectAccessSourceEnum.direct_project,
+            ResolvedAccessSource.inherited_company: ProjectAccessSourceEnum.inherited_company,
+            ResolvedAccessSource.inherited_portfolio: ProjectAccessSourceEnum.inherited_portfolio,
+        }
+        
+        members.append(ProjectMemberSchema(
+            membership_id=resolved.membership_id,
+            user_id=user.id,
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            access_source=source_map.get(resolved.access_source, ProjectAccessSourceEnum.direct_project),
+            resolved_role=resolved.resolved_role,
+            resolved_status=resolved.resolved_status,
+        ))
     
     return ProjectMembersListSchema(members=members, total=len(members))
 

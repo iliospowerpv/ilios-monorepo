@@ -50,18 +50,30 @@ class UserCompanyAccessSchema(UserCompanyAccessBase):
     updated_at: Optional[datetime] = None
 
 
+class AccessSourceEnum(str, Enum):
+    """Source of a user's access to an entity."""
+    direct_company = "direct_company"
+    direct_project = "direct_project"
+    inherited_portfolio = "inherited_portfolio"
+    inherited_company = "inherited_company"
+    project_only = "project_only"
+    project_context = "project_context"
+
+
 class CompanyMemberSchema(BaseModel):
     """Schema for a company member in the member list."""
     model_config = ConfigDict(from_attributes=True)
     
-    membership_id: int = Field(examples=[1])
+    membership_id: Optional[int] = Field(default=None, examples=[1], description="Direct membership ID (null if inherited)")
     user_id: int = Field(examples=[1])
     email: str = Field(examples=["user@example.com"])
     first_name: str = Field(examples=["John"])
     last_name: str = Field(examples=["Doe"])
-    role: CompanyRoleEnum = Field(examples=[CompanyRoleEnum.contributor])
-    status: MembershipStatusEnum = Field(examples=[MembershipStatusEnum.active])
-    access_source: str = Field(examples=["membership"], description="Source of access: 'membership', 'project', or 'parent_company'")
+    access_source: AccessSourceEnum = Field(examples=[AccessSourceEnum.direct_company])
+    resolved_role: CompanyRoleEnum = Field(examples=[CompanyRoleEnum.contributor], description="Effective role after precedence resolution")
+    resolved_status: MembershipStatusEnum = Field(examples=[MembershipStatusEnum.active], description="Effective status")
+    direct_role: Optional[CompanyRoleEnum] = Field(default=None, description="Role from direct grant if exists")
+    inherited_role: Optional[CompanyRoleEnum] = Field(default=None, description="Role from portfolio if exists")
 
 
 class UserCompanySchema(BaseModel):
