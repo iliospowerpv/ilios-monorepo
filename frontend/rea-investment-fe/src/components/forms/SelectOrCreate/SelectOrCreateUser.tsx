@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import Autocomplete from '@mui/material/Autocomplete';
+import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
@@ -49,6 +49,25 @@ type OptionType = User | SentinelOption;
 
 const isSentinel = (option: OptionType): option is SentinelOption => {
   return option.id === CREATE_NEW_SENTINEL;
+};
+
+const createNewSentinel: SentinelOption = {
+  id: CREATE_NEW_SENTINEL as typeof CREATE_NEW_SENTINEL,
+  first_name: '',
+  last_name: '',
+  email: ''
+};
+
+const defaultFilter = createFilterOptions<OptionType>();
+
+const customFilterOptions = (options: OptionType[], state: Parameters<typeof defaultFilter>[1]): OptionType[] => {
+  const nonSentinelOptions = options.filter(opt => !isSentinel(opt));
+  const filtered = defaultFilter(nonSentinelOptions, state);
+  const sentinel = options.find(opt => isSentinel(opt));
+  if (sentinel) {
+    filtered.push(sentinel);
+  }
+  return filtered;
 };
 
 export const SelectOrCreateUser: React.FC<SelectOrCreateUserProps> = ({
@@ -165,19 +184,7 @@ export const SelectOrCreateUser: React.FC<SelectOrCreateUserProps> = ({
     setCreateError(null);
   };
 
-  const options: OptionType[] = [
-    ...(canShowCreateOption
-      ? [
-          {
-            id: CREATE_NEW_SENTINEL as typeof CREATE_NEW_SENTINEL,
-            first_name: '+ Create',
-            last_name: 'New User',
-            email: ''
-          }
-        ]
-      : []),
-    ...(usersData?.items || [])
-  ];
+  const options: OptionType[] = [...(usersData?.items || []), ...(canShowCreateOption ? [createNewSentinel] : [])];
 
   if (mode === 'create') {
     return (
@@ -264,6 +271,7 @@ export const SelectOrCreateUser: React.FC<SelectOrCreateUserProps> = ({
     <Autocomplete
       value={selectedUser}
       options={options}
+      filterOptions={customFilterOptions}
       getOptionLabel={option => {
         if (isSentinel(option)) {
           return '+ Create New User...';
@@ -280,12 +288,16 @@ export const SelectOrCreateUser: React.FC<SelectOrCreateUserProps> = ({
       renderOption={(props, option) => {
         if (isSentinel(option)) {
           return (
-            <Box component="li" {...props} key="create-new">
-              <Divider sx={{ width: '100%', my: 1 }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main', fontWeight: 600 }}>
+            <Box key="create-new">
+              <Divider sx={{ my: 1 }} />
+              <Box
+                component="li"
+                {...props}
+                sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main', py: 1.5 }}
+              >
                 <AddIcon fontSize="small" />
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  Create New User...
+                  + Create New User...
                 </Typography>
               </Box>
             </Box>
