@@ -402,3 +402,148 @@ POST /api/admin/access-health/repair/inv1
 2. **Before Divestiture**: Verify no existing issues before ownership changes
 3. **Post-Migration**: Always run after database migrations affecting access tables
 4. **Repair with Caution**: Review issues before running automated repairs
+
+---
+
+## Audit Findings (January 2026)
+
+### Audit Summary
+
+This audit was conducted to verify the access model is correctly hardened for divestiture scenarios.
+
+#### Findings
+
+| Check | Status | Details |
+|-------|--------|---------|
+| No materialized portfolio fan-out | **PASS** | `add_portfolio_member` endpoint creates only `user_portfolio_access` row, no company rows |
+| No dual-truth rows | **PASS** | Zero `user_company_access` rows with `created_from_portfolio=true` |
+| INV-1 integrity | **PASS** | Zero violations; database trigger `trg_enforce_inv1_user_projects_company_id` enforces |
+| Provenance computed | **PASS** | Member listings use `access_resolution.py` for computed inheritance |
+| Precedence implemented | **PASS** | `SOURCE_PRIORITY` in `access_resolution.py` defines clear precedence |
+
+#### Architecture Verification
+
+1. **Portfolio Access Handling**
+   - `add_portfolio_member` (workspace.py:442) creates ONLY a `user_portfolio_access` row
+   - No auto-provisioning of `user_company_access` rows
+   - Member listings compute inherited access at runtime via `resolve_company_access()`
+
+2. **Company/Project Provenance**
+   - `get_company_members` returns `access_source` field with values:
+     - `direct_company`: UserCompanyAccess row exists
+     - `inherited_portfolio`: UserPortfolioAccess (computed)
+     - `project_only`: UserProject without company access
+   - `get_project_members` returns `access_source` with:
+     - `direct_project`: UserProject row exists
+     - `inherited_company`: UserCompanyAccess (computed)
+     - `inherited_portfolio`: UserPortfolioAccess (computed)
+
+3. **UserProject.company_id Integrity**
+   - Application-level: `validate_company_id_integrity()` in CRUD
+   - Database-level: `trg_enforce_inv1_user_projects_company_id` trigger
+   - Both enforce: `UserProject.company_id = sites.company_id`
+
+### Divestiture Safety: Test Plan
+
+#### Test Scenario 1: Company Divestiture
+
+**Setup**:
+- User A: Portfolio access (active)
+- User B: Direct company access to Company X
+- User C: Direct project access to Project P1 (in Company X)
+
+**Action**: Divest Company X (remove seller access)
+
+**Validation**:
+```sql
+-- Step 1: Remove direct company access for sellers
+DELETE FROM user_company_access WHERE company_id = [Company X] AND user_id IN ([seller_ids]);
+
+-- Step 2: Remove project access for sellers
+DELETE FROM user_projects WHERE company_id = [Company X] AND user_id IN ([seller_ids]);
+
+-- Step 3: Verify no orphaned access
+SELECT * FROM user_projects WHERE company_id = [Company X];
+SELECT * FROM user_company_access WHERE company_id = [Company X];
+```
+
+**Expected Results**:
+- User A (portfolio): Still sees Company X (portfolio grants access to all)
+- User B: No longer sees Company X
+- User C: No longer sees Project P1 or Company X context
+- Buyer users: Granted new UserCompanyAccess rows
+
+**Note**: To fully remove seller portfolio users from divested company, either:
+1. Revoke their portfolio access entirely
+2. Implement divestiture exclusion list (future enhancement)
+
+#### Test Scenario 2: Project Transfer Between Companies
+
+**Setup**:
+- Project P moves from Company A to Company B
+- User D: Company A member
+- User E: Company B member
+- User F: Direct project access to P
+
+**Action**: Transfer project ownership
+
+**Validation**:
+```sql
+-- Step 1: Update site record
+UPDATE sites SET company_id = [Company B] WHERE id = [Project P];
+
+-- Step 2: Update project memberships (CRITICAL: maintains INV-1)
+UPDATE user_projects SET company_id = [Company B] WHERE site_id = [Project P];
+
+-- Step 3: Verify invariant
+SELECT up.id, up.company_id, s.company_id 
+FROM user_projects up 
+JOIN sites s ON up.site_id = s.id 
+WHERE up.site_id = [Project P] AND up.company_id != s.company_id;
+-- Should return 0 rows
+```
+
+**Expected Results**:
+- User D: No longer sees Project P (unless also has Company B access)
+- User E: Now sees Project P via company inheritance
+- User F: Still sees Project P (direct project access retained)
+
+#### Test Scenario 3: Portfolio Access Removal
+
+**Setup**:
+- User G: Portfolio access + direct Company A access
+
+**Action**: Remove portfolio access
+
+**Validation**:
+```sql
+-- Remove portfolio access
+DELETE FROM user_portfolio_access WHERE user_id = [User G];
+
+-- Verify direct grants retained
+SELECT * FROM user_company_access WHERE user_id = [User G];
+-- Should show Company A membership
+```
+
+**Expected Results**:
+- User G: Loses visibility to companies B, C, D (portfolio-inherited)
+- User G: Retains visibility to Company A (direct grant preserved)
+
+### Risk Mitigations Implemented
+
+| Risk | Mitigation | Enforcement |
+|------|------------|-------------|
+| Portfolio fan-out creates dual truth | No auto-provisioning of company rows | API logic |
+| company_id drift in UserProject | Integrity check on create/update | App + DB trigger |
+| Orphaned memberships after entity deletion | Cascade deletes via FK constraints | Database |
+| Privilege escalation via multiple grants | Precedence rules (direct > inherited) | `access_resolution.py` |
+
+### Recommendations for Future Enhancements
+
+1. **Divestiture Exclusion Lists**: Allow portfolio users to be excluded from specific companies without revoking portfolio access entirely
+
+2. **Audit Trail**: Add logging for all access grant changes (create/update/delete) for compliance
+
+3. **Bulk Access Revocation API**: Add endpoint for bulk-removing access during divestiture events
+
+4. **Access Diff Tool**: Pre-divestiture tool showing which users will lose/gain access

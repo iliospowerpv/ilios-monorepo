@@ -1,0 +1,62 @@
+You are the Replit agent in the Ilios codebase. We implemented portfolio-, company-, and project-level access APIs. Now audit and harden the access model specifically for divestiture (selling off a company or project) so access can be cleanly reassigned without duplicated “truths” or orphaned grants.
+
+NON-NEGOTIABLE INTENT
+- Users must be grantable at three levels: Portfolio, Company, Project.
+- Portfolio access means “access to all companies/projects,” but should NOT require materializing company access rows for every company.
+- Company/project can be sold off; seller access must be removable cleanly from divested assets while preserving access to retained assets.
+- The system must be able to explain “why this user has access” (provenance) for auditability.
+
+AUDIT TASKS
+1) Identify all access models/tables:
+   - UserPortfolioAccess
+   - UserCompanyAccess
+   - UserProject (junction)
+   - any other role/permission tables
+Document them in /docs/access_model_audit.md with relationships and precedence rules.
+
+2) Identify “dual truth” risks:
+   - Where portfolio access is expanded into company access rows
+   - Where UserProject duplicates company_id that can drift from sites.company_id
+Document concrete failure scenarios for divestiture.
+
+3) HARDENING CHANGES (MINIMAL)
+A) Portfolio access handling
+- Remove auto-provisioning behavior that writes UserCompanyAccess rows for all companies when adding portfolio access.
+- Update list endpoints to still show portfolio users as inherited access:
+  - company member lists should optionally include “inherited from portfolio” entries
+  - but these should be computed, not stored
+- Ensure removing portfolio access is safe and does not delete explicitly granted company access.
+
+B) Company/project membership provenance
+- Expand provenance flags so membership listings can show:
+  - direct company membership
+  - inherited from portfolio
+  - direct project assignment
+  - inherited from company (if project access inherits)
+- Do NOT create extra rows to represent inherited access; compute it.
+
+C) UserProject company_id integrity
+- If UserProject.company_id exists:
+  - enforce invariant: it must equal the sites.company_id for the referenced site
+  - add validation on create/update
+  - if possible add DB constraint or trigger-like enforcement via application logic
+- If not necessary, propose removing company_id from UserProject and using joins instead (but only do so if low risk).
+
+4) AUTHORIZATION + PRECEDENCE RULES
+Define and implement clear precedence:
+- PortfolioAccess grants baseline read access to everything (or whatever scope is intended).
+- Company access grants access within that company; role controls admin rights.
+- Project access grants access to that project; may override company role only within that project.
+Ensure no privilege escalation occurs unintentionally.
+
+5) DIVESTITURE SAFETY CHECKS
+Add a short test plan (and if feasible, automated tests) covering:
+- Seller portfolio user + direct company member + direct project member
+- Sale of one company: remove seller company/project access for that company while retaining access elsewhere
+- Sale of one project: remove seller project access; company access remains if seller still owns company
+- Confirm member listing accurately shows access source without duplicative stored rows
+
+DELIVERABLES
+- /docs/access_model_audit.md
+- Updated endpoints/logic implementing computed inherited access (no materialized company rows for portfolio access)
+- Tests or a runnable manual checklist validating divestiture scenarios
