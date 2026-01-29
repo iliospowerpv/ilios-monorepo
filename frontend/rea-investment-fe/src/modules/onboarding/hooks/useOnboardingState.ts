@@ -53,9 +53,9 @@ export const useOnboardingState = () => {
 
   const saveState = useCallback(
     (newState: OnboardingDraftState) => {
+      setState(newState);
       if (!userId) return;
 
-      setState(newState);
       try {
         localStorage.setItem(getStorageKey(userId), JSON.stringify(newState));
       } catch {
