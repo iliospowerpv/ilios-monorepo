@@ -42,6 +42,7 @@ import type { ProjectMember } from '../../../../api';
 import { AddUserDialog } from '../../components/dialogs';
 import { useNotify } from '../../../../contexts/notifications/notifications';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getStatusColor = (status: string | undefined): 'success' | 'warning' | 'error' | 'default' => {
   switch (status?.toLowerCase()) {
     case 'active':
@@ -150,12 +151,7 @@ export const ProjectLevelPage: React.FC = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Breadcrumbs sx={{ mb: 2 }}>
-        <Link
-          component="button"
-          underline="hover"
-          color="inherit"
-          onClick={() => navigate('/portfolio-admin')}
-        >
+        <Link component="button" underline="hover" color="inherit" onClick={() => navigate('/portfolio-admin')}>
           Portfolio
         </Link>
         {companyId && (
@@ -180,23 +176,13 @@ export const ProjectLevelPage: React.FC = () => {
             <Typography variant="h4" component="h1">
               {isLoading ? <Skeleton width={200} /> : projectName}
             </Typography>
-            {project && (
-              <Chip
-                size="small"
-                label="Active"
-                color="success"
-              />
-            )}
+            {project && <Chip size="small" label="Active" color="success" />}
           </Box>
           <Typography variant="subtitle1" color="text.secondary">
             Project overview and administration
           </Typography>
         </Box>
-        <Button
-          variant="outlined"
-          startIcon={<PersonAddIcon />}
-          onClick={() => setIsAddUserOpen(true)}
-        >
+        <Button variant="outlined" startIcon={<PersonAddIcon />} onClick={() => setIsAddUserOpen(true)}>
           Add User
         </Button>
       </Box>
@@ -209,7 +195,7 @@ export const ProjectLevelPage: React.FC = () => {
                 Project Overview
               </Typography>
               <Divider sx={{ mb: 2 }} />
-              
+
               {isLoading ? (
                 <Box>
                   {[1, 2, 3, 4].map(i => (
@@ -275,9 +261,7 @@ export const ProjectLevelPage: React.FC = () => {
                         <Typography variant="caption" color="text.secondary">
                           Full Address
                         </Typography>
-                        <Typography variant="body1">
-                          {project?.address || 'Not specified'}
-                        </Typography>
+                        <Typography variant="body1">{project?.address || 'Not specified'}</Typography>
                       </Box>
                     </Box>
                   </Grid>
@@ -292,7 +276,7 @@ export const ProjectLevelPage: React.FC = () => {
                 Project Status
               </Typography>
               <Divider sx={{ mb: 2 }} />
-              
+
               {isLoading ? (
                 <Skeleton height={100} />
               ) : (
@@ -343,15 +327,11 @@ export const ProjectLevelPage: React.FC = () => {
                 Data Readiness
               </Typography>
               <Divider sx={{ mb: 2 }} />
-              
+
               <Box sx={{ mb: 2 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography variant="body2">Completeness</Typography>
-                  <Chip
-                    size="small"
-                    label={`${readinessScore}%`}
-                    color={getReadinessColor(readinessScore)}
-                  />
+                  <Chip size="small" label={`${readinessScore}%`} color={getReadinessColor(readinessScore)} />
                 </Box>
                 <Box
                   sx={{
@@ -376,15 +356,11 @@ export const ProjectLevelPage: React.FC = () => {
                 {readinessScore >= 80
                   ? 'Project data is complete and ready for operations.'
                   : readinessScore >= 50
-                  ? 'Some project information is missing. Consider updating the project details.'
-                  : 'Critical project information is missing. Please complete the project setup.'}
+                    ? 'Some project information is missing. Consider updating the project details.'
+                    : 'Critical project information is missing. Please complete the project setup.'}
               </Typography>
 
-              <Button
-                fullWidth
-                variant="outlined"
-                onClick={() => navigate(`/asset-management/sites/${projectIdNum}`)}
-              >
+              <Button fullWidth variant="outlined" onClick={() => navigate(`/asset-management/sites/${projectIdNum}`)}>
                 Edit Project Details
               </Button>
             </CardContent>
@@ -396,7 +372,7 @@ export const ProjectLevelPage: React.FC = () => {
                 Quick Actions
               </Typography>
               <Divider sx={{ mb: 2 }} />
-              
+
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Button
                   fullWidth
@@ -445,7 +421,7 @@ export const ProjectLevelPage: React.FC = () => {
             </Button>
           </Box>
           <Divider sx={{ mb: 2 }} />
-          
+
           <TableContainer>
             <Table size="small">
               <TableHead>
@@ -469,12 +445,24 @@ export const ProjectLevelPage: React.FC = () => {
                 {isLoadingMembers ? (
                   [1, 2, 3].map(i => (
                     <TableRow key={i}>
-                      <TableCell><Skeleton /></TableCell>
-                      <TableCell><Skeleton /></TableCell>
-                      <TableCell><Skeleton width={80} /></TableCell>
-                      <TableCell><Skeleton width={60} /></TableCell>
-                      <TableCell><Skeleton width={80} /></TableCell>
-                      <TableCell><Skeleton width={40} /></TableCell>
+                      <TableCell>
+                        <Skeleton />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton width={80} />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton width={60} />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton width={80} />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton width={40} />
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : projectMembers.length > 0 ? (
@@ -492,14 +480,22 @@ export const ProjectLevelPage: React.FC = () => {
                         <TableCell>
                           <Tooltip
                             title={
-                              member.direct_role && member.inherited_role && member.direct_role !== member.inherited_role
+                              member.direct_role &&
+                              member.inherited_role &&
+                              member.direct_role !== member.inherited_role
                                 ? `Direct: ${member.direct_role}, Inherited: ${member.inherited_role}`
                                 : ''
                             }
                           >
                             <Chip
                               size="small"
-                              label={member.resolved_role === 'project_admin' ? 'Admin' : member.resolved_role === 'contributor' ? 'Contributor' : 'Read Only'}
+                              label={
+                                member.resolved_role === 'project_admin'
+                                  ? 'Admin'
+                                  : member.resolved_role === 'contributor'
+                                    ? 'Contributor'
+                                    : 'Read Only'
+                              }
                               color={member.resolved_role === 'project_admin' ? 'primary' : 'default'}
                             />
                           </Tooltip>
@@ -508,7 +504,13 @@ export const ProjectLevelPage: React.FC = () => {
                           <Chip
                             size="small"
                             label={member.resolved_status}
-                            color={member.resolved_status === 'active' ? 'success' : member.resolved_status === 'invited' ? 'warning' : 'error'}
+                            color={
+                              member.resolved_status === 'active'
+                                ? 'success'
+                                : member.resolved_status === 'invited'
+                                  ? 'warning'
+                                  : 'error'
+                            }
                           />
                         </TableCell>
                         <TableCell>
@@ -547,7 +549,7 @@ export const ProjectLevelPage: React.FC = () => {
                   <TableRow>
                     <TableCell colSpan={6} align="center">
                       <Typography color="text.secondary" sx={{ py: 3 }}>
-                        No members assigned to this project. Click "Add Member" to add someone.
+                        No members assigned to this project. Click &quot;Add Member&quot; to add someone.
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -558,29 +560,30 @@ export const ProjectLevelPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Dialog
-        open={removeMemberDialog.open}
-        onClose={() => setRemoveMemberDialog({ open: false, member: null })}
-      >
+      <Dialog open={removeMemberDialog.open} onClose={() => setRemoveMemberDialog({ open: false, member: null })}>
         <DialogTitle>Remove Project Member</DialogTitle>
         <DialogContent>
           <Typography>
             Are you sure you want to remove{' '}
-            <strong>{removeMemberDialog.member?.first_name} {removeMemberDialog.member?.last_name}</strong>{' '}
+            <strong>
+              {removeMemberDialog.member?.first_name} {removeMemberDialog.member?.last_name}
+            </strong>{' '}
             from this project?
           </Typography>
           <Alert severity="info" sx={{ mt: 2 }}>
-            This will only remove their direct project membership. If they have company or portfolio access, they will retain access through that.
+            This will only remove their direct project membership. If they have company or portfolio access, they will
+            retain access through that.
           </Alert>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setRemoveMemberDialog({ open: false, member: null })}>
-            Cancel
-          </Button>
+          <Button onClick={() => setRemoveMemberDialog({ open: false, member: null })}>Cancel</Button>
           <Button
             variant="contained"
             color="error"
-            onClick={() => removeMemberDialog.member?.membership_id && removeMemberMutation.mutate(removeMemberDialog.member.membership_id)}
+            onClick={() =>
+              removeMemberDialog.member?.membership_id &&
+              removeMemberMutation.mutate(removeMemberDialog.member.membership_id)
+            }
             disabled={removeMemberMutation.isPending}
           >
             {removeMemberMutation.isPending ? 'Removing...' : 'Remove'}
@@ -594,6 +597,7 @@ export const ProjectLevelPage: React.FC = () => {
         level="project"
         entityId={projectIdNum}
         entityName={projectName}
+        parentCompanyId={companyId}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ['projectMembers', projectIdNum] })}
       />
     </Box>

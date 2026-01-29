@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -29,6 +29,7 @@ interface AddUserDialogProps {
   level: AccessLevel;
   entityId?: number;
   entityName?: string;
+  parentCompanyId?: number;
   onSuccess?: () => void;
 }
 
@@ -77,6 +78,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
   level,
   entityId,
   entityName,
+  parentCompanyId,
   onSuccess
 }) => {
   const queryClient = useQueryClient();
@@ -85,6 +87,29 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [selectedRole, setSelectedRole] = useState<RoleType>('read_only');
   const [confirmAccess, setConfirmAccess] = useState(false);
+  const [selectedCompanyForCreate, setSelectedCompanyForCreate] = useState<number | null>(null);
+
+  const { data: workspace } = useQuery({
+    queryKey: ['workspace'],
+    queryFn: () => ApiClient.workspace.getWorkspace(),
+    enabled: level === 'portfolio',
+    staleTime: 5 * 60 * 1000
+  });
+
+  const companies = workspace?.companies || [];
+
+  const getDefaultCompanyId = (): number | undefined => {
+    if (level === 'company' && entityId) {
+      return entityId;
+    }
+    if (level === 'project' && parentCompanyId) {
+      return parentCompanyId;
+    }
+    if (level === 'portfolio' && selectedCompanyForCreate) {
+      return selectedCompanyForCreate;
+    }
+    return undefined;
+  };
 
   const addMemberMutation = useMutation({
     mutationFn: async (params: { userId: number; role: RoleType }) => {
@@ -149,6 +174,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
     setSelectedUserId(null);
     setSelectedRole('read_only');
     setConfirmAccess(false);
+    setSelectedCompanyForCreate(null);
     setError(null);
     onClose();
   };
@@ -190,11 +216,31 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
 
         {isSupported && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {level === 'portfolio' && companies.length > 0 && (
+              <FormControl fullWidth size="small">
+                <InputLabel>Company for New User</InputLabel>
+                <Select
+                  value={selectedCompanyForCreate ? String(selectedCompanyForCreate) : ''}
+                  onChange={e => setSelectedCompanyForCreate(Number(e.target.value) || null)}
+                  label="Company for New User"
+                >
+                  <MenuItem value="">
+                    <em>Select a company to enable user creation</em>
+                  </MenuItem>
+                  {companies.map(c => (
+                    <MenuItem key={c.company_id} value={String(c.company_id)}>
+                      {c.company_name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+
             <SelectOrCreateUser
               value={selectedUserId}
               onChange={setSelectedUserId}
               canCreate={true}
-              defaultCompanyId={level === 'company' ? entityId : undefined}
+              defaultCompanyId={getDefaultCompanyId()}
               label="Select User"
               required
             />
