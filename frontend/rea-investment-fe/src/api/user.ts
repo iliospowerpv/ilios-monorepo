@@ -53,7 +53,7 @@ interface CreateUserAttributes {
   phone: string;
   first_name: string;
   last_name: string;
-  parent_company_id: number;
+  parent_company_id?: number;
   role_id: number;
   sites_ids: number[];
 }

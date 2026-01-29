@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -45,9 +45,9 @@ interface AccessLevelInfo {
 
 const ACCESS_LEVEL_INFO: Record<AccessLevel, AccessLevelInfo> = {
   portfolio: {
-    title: 'Portfolio-Level Access',
+    title: 'Portfolio Access (all companies)',
     description:
-      'This user will have access to ALL companies and ALL projects in the portfolio. Only grant this level to users who need visibility across the entire organization.',
+      'No company selection required. This grants access across the entire portfolio. The user will appear in all company and project member lists as inherited portfolio access.',
     severity: 'warning',
     supported: true
   },
@@ -87,16 +87,6 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [selectedRole, setSelectedRole] = useState<RoleType>('read_only');
   const [confirmAccess, setConfirmAccess] = useState(false);
-  const [selectedCompanyForCreate, setSelectedCompanyForCreate] = useState<number | null>(null);
-
-  const { data: workspace } = useQuery({
-    queryKey: ['workspace'],
-    queryFn: () => ApiClient.workspace.getWorkspace(),
-    enabled: level === 'portfolio',
-    staleTime: 5 * 60 * 1000
-  });
-
-  const companies = workspace?.companies || [];
 
   const getDefaultCompanyId = (): number | undefined => {
     if (level === 'company' && entityId) {
@@ -104,9 +94,6 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
     }
     if (level === 'project' && parentCompanyId) {
       return parentCompanyId;
-    }
-    if (level === 'portfolio' && selectedCompanyForCreate) {
-      return selectedCompanyForCreate;
     }
     return undefined;
   };
@@ -174,7 +161,6 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
     setSelectedUserId(null);
     setSelectedRole('read_only');
     setConfirmAccess(false);
-    setSelectedCompanyForCreate(null);
     setError(null);
     onClose();
   };
@@ -216,28 +202,6 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
 
         {isSupported && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {level === 'portfolio' && (
-              <FormControl fullWidth size="small">
-                <InputLabel>Company for New User</InputLabel>
-                <Select
-                  value={selectedCompanyForCreate ? String(selectedCompanyForCreate) : ''}
-                  onChange={e => setSelectedCompanyForCreate(Number(e.target.value) || null)}
-                  label="Company for New User"
-                  disabled={companies.length === 0}
-                >
-                  <MenuItem value="">
-                    <em>
-                      {companies.length === 0 ? 'Loading companies...' : 'Select a company to enable user creation'}
-                    </em>
-                  </MenuItem>
-                  {companies.map(c => (
-                    <MenuItem key={c.company_id} value={String(c.company_id)}>
-                      {c.company_name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            )}
             {level === 'project' && !parentCompanyId && (
               <Alert severity="warning" sx={{ py: 1 }}>
                 Unable to determine parent company for this project. User creation is disabled.
@@ -249,6 +213,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
               onChange={setSelectedUserId}
               canCreate={true}
               defaultCompanyId={getDefaultCompanyId()}
+              requireCompanyContext={level !== 'portfolio'}
               label="Select User"
               required
             />

@@ -27,6 +27,7 @@ interface SelectOrCreateUserProps {
   disabled?: boolean;
   helperText?: string;
   error?: boolean;
+  requireCompanyContext?: boolean;
 }
 
 interface CreateUserFormData {
@@ -79,7 +80,8 @@ export const SelectOrCreateUser: React.FC<SelectOrCreateUserProps> = ({
   required = false,
   disabled = false,
   helperText,
-  error = false
+  error = false,
+  requireCompanyContext = true
 }) => {
   const queryClient = useQueryClient();
   const notify = useNotify();
@@ -92,7 +94,8 @@ export const SelectOrCreateUser: React.FC<SelectOrCreateUserProps> = ({
     phone: ''
   });
 
-  const canShowCreateOption = canCreate && defaultCompanyId !== undefined && defaultCompanyId > 0;
+  const hasCompanyContext = defaultCompanyId !== undefined && defaultCompanyId > 0;
+  const canShowCreateOption = canCreate && (!requireCompanyContext || hasCompanyContext);
 
   const { data: usersData, isLoading: isLoadingUsers } = useQuery({
     queryKey: ['users'],
@@ -154,7 +157,7 @@ export const SelectOrCreateUser: React.FC<SelectOrCreateUserProps> = ({
       return;
     }
 
-    if (!defaultCompanyId || defaultCompanyId <= 0) {
+    if (requireCompanyContext && (!defaultCompanyId || defaultCompanyId <= 0)) {
       setCreateError('A company must be selected before creating a user');
       return;
     }
@@ -170,7 +173,7 @@ export const SelectOrCreateUser: React.FC<SelectOrCreateUserProps> = ({
       first_name: formData.first_name.trim(),
       last_name: formData.last_name.trim(),
       phone: formData.phone.trim() || '',
-      parent_company_id: defaultCompanyId,
+      parent_company_id: hasCompanyContext ? defaultCompanyId : undefined,
       role_id: defaultRole.id,
       sites_ids: []
     };
