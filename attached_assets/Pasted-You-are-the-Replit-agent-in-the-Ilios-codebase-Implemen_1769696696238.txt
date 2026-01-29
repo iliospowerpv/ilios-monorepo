@@ -1,0 +1,98 @@
+You are the Replit agent in the Ilios codebase. Implement an inline “Create New…” option inside dropdown pickers used for Add User / Add Project flows so users can select existing entities OR create new ones without leaving the current workflow (Home, Onboarding, Company Admin, Project Members, Portfolio Admin). This must NOT be hidden under Settings.
+
+CURRENT STATE (CONFIRMED)
+- AddCompanyDialog already supports creating new companies directly (verify UX, ensure it’s accessible from the main flows).
+- AddUserDialog uses a dropdown picker for existing users and needs an inline “Create New User” path.
+- AddProjectDialog likely uses a dropdown picker for existing projects and needs an inline “Create New Project” path.
+- We have unified Home (/home) and an onboarding flow (/onboarding) with CTAs.
+- We have Company Admin, Project Members, Portfolio Admin, and Access Health in the admin area.
+
+PRIMARY GOALS
+1) Anywhere the UI asks the user to select an existing User or Project in a dialog, provide a “Create New…” option in the picker.
+2) Selecting “Create New…” expands inline creation fields inside the same dialog (no navigation away).
+3) After creation succeeds, auto-select the newly created entity and return to the selection state.
+4) Keep permissions intact:
+   - Only authorized roles can create users/projects.
+   - If user lacks permission, the “Create New…” option should be hidden or disabled with explanation.
+
+NON-NEGOTIABLE UX RULES
+- No redirect to Settings.
+- No modal stacking (avoid opening a second modal on top of a modal). Use inline expansion within the dialog.
+- Creation must be minimal fields only. We are optimizing for speed and correct scoping.
+- Ensure scoping uses Context Bar currentCompanyId where applicable (default company).
+
+SCOPE LOCATIONS (MUST UPDATE)
+Identify and update all relevant pickers/dialogs:
+- Home Quick Actions: Invite User, Create Project (if any picker involved)
+- Onboarding step dialogs (select or create company/project/user)
+- Company Admin: Add member / Invite user
+- Project Members: Add member
+- Portfolio Admin: Add portfolio member (if it selects user) and any project-member assignments if present
+
+IMPLEMENTATION DETAILS
+
+A) Create a reusable pattern component/helper
+Implement a reusable UI pattern, e.g.:
+- SelectOrCreateUser
+- SelectOrCreateProject
+(or a generic SelectOrCreate<T> if easy)
+Requirements:
+- Accepts:
+  - options list (existing entities)
+  - onSelect(entityId)
+  - onCreate(payload) which calls existing create API
+  - permission flags and error handling
+- Inject a sentinel dropdown option like:
+  value="__create_new__"
+  label="Create new…"
+- When selected, switch dialog mode:
+  - mode = "select" | "create"
+
+B) Inline Create New User
+Inside AddUserDialog:
+- Create fields (minimal):
+  - Email (required)
+  - Name (optional if your system supports)
+  - Status defaults appropriately (invited/active)
+- On success:
+  - return created user object/id
+  - auto-select that user in the dialog
+  - proceed with membership assignment (company/project/portfolio) as intended
+- Do NOT implement external email sending.
+
+C) Inline Create New Project (sites table)
+Inside AddProjectDialog or project picker:
+- Required fields:
+  - Project name
+  - Company (defaults to currentCompanyId; allow selection if none)
+  - Optional: address/state if required by schema (only include if truly required)
+- On success:
+  - auto-select new project
+  - proceed with assigning user membership if the flow requires it
+
+D) Verify Company creation UX
+- Confirm AddCompanyDialog already has create form.
+- Ensure it is reachable from main flows (Home + Onboarding + Admin), not only Settings.
+- If it’s currently only reachable in Settings, add “Create Company” CTA where appropriate (permission-aware).
+
+E) Error handling & validation
+- Inline validation with clear error messages.
+- If creation fails, remain in create mode with errors shown; do not close dialog.
+- After creation, show a toast and return to select mode with the new item selected.
+
+F) Docs
+Create or update docs/inline_select_or_create.md describing:
+- pattern
+- where it’s used
+- permissions behavior
+- how to extend
+
+ACCEPTANCE TESTS
+1) Add user flow:
+   - Open Add User dialog → user not in list → select “Create new…” → create user → user auto-selected → membership created → no navigation away.
+2) Add project flow:
+   - Open Add Project dialog → project not in list → select “Create new…” → create project (defaults to currentCompany if set) → project auto-selected.
+3) Permissions:
+   - A non-authorized user cannot create new users/projects; option is hidden/disabled with explanation.
+4) Consistency:
+   - The “Create new…” option and inline form behavior is consistent across Home, Onboarding, Company Admin, Project Members, Portfolio Admin.
