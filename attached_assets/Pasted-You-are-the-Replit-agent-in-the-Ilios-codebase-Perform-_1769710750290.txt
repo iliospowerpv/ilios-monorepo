@@ -1,0 +1,95 @@
+You are the Replit agent in the Ilios codebase. Perform a comprehensive audit of the existing per-project telemetry hookup workflow (KMC / AlsoEnergy / equivalent). This is an analysis + mapping task only. Do not redesign yet.
+
+GOAL
+Produce a single report that explains:
+- what telemetry hookup currently does
+- how it works end-to-end (UI → API → DB → background jobs → external system)
+- where it’s confusing/fragile
+- what must be preserved for compliance and operations
+
+SCOPE
+- Read-only audit. No refactors unless a blocking bug prevents the audit from being performed.
+- If you find a critical security issue (e.g., plaintext credentials), document it clearly and propose a fix, but do not apply it unless it’s an immediate vulnerability.
+
+AUDIT QUESTIONS (MUST ANSWER)
+
+1) SUPPORTED SYSTEMS + INTEGRATION MODES
+- Which telemetry systems are currently supported? (KMC, AlsoEnergy, others)
+- For each system:
+  - What is the integration mode? (API polling, webhook, file import, OAuth, manual CSV, iframe, etc.)
+  - What credentials are required? (API key, username/password, OAuth tokens)
+  - Where are credentials stored? (DB table/fields; encryption at rest or not)
+  - What data is pulled? (production kWh, power kW, inverter status, uptime, alarms, revenue, etc.)
+  - What is the time granularity? (5-min, hourly, daily)
+
+2) DATA MODEL
+- Identify all telemetry-related tables/entities:
+  - telemetry providers
+  - project telemetry configs
+  - meter mappings
+  - timeseries storage
+  - last_sync timestamps
+  - error logs / sync attempts
+- Show a textual ERD:
+  - how telemetry config ties to sites/projects
+  - how telemetry data ties to projects, inverters, meters
+
+3) UI WORKFLOW (CURRENT USER EXPERIENCE)
+- Where does telemetry hookup live in the UI?
+  - Project detail page tab? Operations module? Settings?
+- What is the exact flow today?
+  - steps shown to user
+  - required fields
+  - “test connection” behavior
+  - success state / readiness indicator
+  - error states (and how they’re shown)
+- Note any dependency on lifecycle state (Construction / Placed in Service / etc.)
+
+4) BACKEND FLOW + JOBS
+- List all API endpoints involved (routes + controllers).
+- Describe any background jobs/cron:
+  - schedule frequency
+  - what triggers a sync
+  - retries/backoff
+  - idempotency
+- Identify where failures are recorded and how they surface to UI.
+
+5) SECURITY + COMPLIANCE
+- Credential handling:
+  - encryption at rest?
+  - secrets in logs?
+  - RBAC: who can view/edit telemetry credentials?
+- Audit trail:
+  - do we log who connected/disconnected telemetry?
+- Data retention:
+  - what’s retained and for how long?
+
+6) “WHAT’S BROKEN / WHAT’S CONFUSING”
+- Top 10 UX issues (why Jeff doesn’t like it)
+- Top 10 engineering issues (fragility, poor abstraction, missing invariants)
+- Quick wins vs structural changes
+
+DELIVERABLE
+Create: /docs/telemetry_hookup_audit.md containing:
+- Supported systems + integration modes
+- Data model (ERD)
+- UI flow screenshots description (textual) + route/component names
+- API endpoints + job flow diagram (textual)
+- Security findings
+- Pain points + recommendations (ranked)
+Also include a “Proposed Target Workflow” section at a high level (no code changes) describing:
+- a guided step-by-step hookup UX
+- readiness indicator + blockers
+- test connection
+- mapping/meters
+- sync health status
+- how it should connect to Operations and Finance later
+
+OUTPUT FORMAT
+Make the report concrete:
+- file paths (frontend components + backend handlers)
+- exact route paths
+- table/field names
+- example payloads (brief)
+
+Do not start the redesign until the audit report is complete.
