@@ -1,0 +1,51 @@
+You are the Replit agent in the Ilios codebase. Fix the portfolio-level “Add User” workflow so it does NOT require selecting a company. Portfolio-level access must grant access to the entire portfolio via UserPortfolioAccess (computed inheritance). Company selection remains required only for company/project membership assignment.
+
+CURRENT ISSUE
+- The SelectOrCreateUser component currently requires a valid company context for user creation.
+- In Portfolio Admin, adding a user at portfolio scope incorrectly forces a company selection, deviating from our access model.
+
+TARGET BEHAVIOR
+A) Portfolio-level Add User (Portfolio Admin)
+- User can:
+  1) Select existing user OR
+  2) Create new user inline
+- No company selection is required.
+- On submit, grant portfolio-level access by calling the portfolio membership endpoint (UserPortfolioAccess).
+- After success, the user should appear as inherited_portfolio access in company/project member lists (computed).
+
+B) Company-level and Project-level Add/Invite User
+- Keep current requirement: valid company context is required to create a user.
+- No change to scoped flows except refactoring component props.
+
+IMPLEMENTATION REQUIREMENTS
+1) Update SelectOrCreateUser to support a new prop, e.g.:
+   - requireCompanyContext: boolean (default true)
+   - When false:
+     - allow inline user creation without currentCompanyId
+     - do not block creation with “no company selected”
+2) Update Portfolio Admin AddUserDialog:
+   - When the user selects “Portfolio level” assignment:
+     - pass requireCompanyContext=false
+     - remove/disable company picker requirement
+     - create user (if needed) and then call POST /api/workspace/portfolio/members
+3) Ensure permission gating remains:
+   - Only system admins can add portfolio members (as designed)
+4) Keep UI clear:
+   - Label the scope explicitly:
+     “Portfolio Access (all companies)”
+   - Add helper text:
+     “No company selection required. This grants access across the portfolio.”
+5) Regression tests / manual checklist:
+   - Add a new portfolio user without selecting a company
+   - Confirm they appear across all companies as inherited_portfolio
+   - Ensure company/project invite flows still require company context and still work
+
+DO NOT DO
+- Do not implement fan-out creation of UserCompanyAccess rows for portfolio users.
+- Do not change the computed access resolution logic.
+- Do not add new access tables (UserPortfolioAccess already exists).
+
+DELIVERABLES
+- Updated SelectOrCreateUser component supporting company-optional mode
+- Updated Portfolio Admin AddUserDialog: portfolio add no longer requires company selection
+- Updated docs/inline_select_or_create.md (or relevant doc) to document requireCompanyContext behavior
