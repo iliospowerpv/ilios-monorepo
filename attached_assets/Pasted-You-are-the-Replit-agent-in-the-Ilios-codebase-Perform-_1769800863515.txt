@@ -1,0 +1,118 @@
+You are the Replit agent in the Ilios codebase. Perform a READ-ONLY audit of the current Finance module implementation and all existing finance-related integrations, data models, routes, and workflows. Do not build new features yet. The goal is to map the current state, identify gaps vs Ilios’ “capital governance / decision engine” intent, and produce a concrete v1 implementation plan.
+
+CONTEXT (ILIos Finance Intent)
+- Ilios is NOT an accounting system and should NOT replicate a general ledger.
+- Ilios is a capital governance / decision engine:
+  - What to pay, when to pay, is payment authorized?
+  - Are prior workflow steps completed (DD, compliance, placed-in-service, etc.)?
+  - Track performance vs baseline financial models (revenue, costs, warranties, O&M).
+  - Support long-term hold assets AND assets that will be sold; produce investor/lender-ready reporting packages.
+- Ilios will integrate with external systems (e.g., QuickBooks) for accounting/invoicing and possibly other tools (Gravity, banking, etc.).
+
+AUDIT SCOPE
+A) Finance module UI/Routes
+B) Backend finance APIs
+C) Finance-related database schema and invariants
+D) External integrations (QuickBooks, bank feeds, AP tools, dashboards)
+E) Decision-engine gating rules and “readiness” concepts
+F) Reporting outputs (data room packs, lender packages, audit trails)
+
+REQUIRED DELIVERABLE
+Create: /docs/finance_module_audit.md with concrete findings, including file paths, routes, tables/fields, and a prioritized gap list. Include a proposed “Finance v1” plan that is tightly scoped and aligned with Ilios intent.
+
+AUDIT QUESTIONS (MUST ANSWER)
+
+1) MODULE OVERVIEW: WHAT EXISTS TODAY
+- What finance pages exist? (routes, components)
+- What entities does Finance operate on? (portfolio/company/project)
+- What finance widgets/sections are present (budgets, actuals, payments, invoices, cap table, etc.)?
+- What is “built and working” vs stubbed/placeholder?
+
+2) DATA MODEL + SOURCE OF TRUTH
+Identify all finance-related tables/entities and how they relate to:
+- companies
+- sites/projects (sites table)
+- deals (if relevant)
+- vendors/service providers
+- contracts/SOWs/invoices (if present)
+- budgets / pro formas / baseline models
+- actuals (from integrations)
+- approvals / authorizations
+For each entity:
+- list table name, key columns, FK relationships
+- what creates/updates it (UI, imports, integrations)
+- what is the source of truth (Ilios vs external)
+
+3) INTEGRATIONS AUDIT (CRITICAL)
+Inventory every integration and its current status:
+- QuickBooks: OAuth, tokens, scopes, sync jobs, webhooks (if any), data imported (customers, invoices, bills, payments, chart of accounts, classes/locations, etc.)
+- Banking/transactions feeds (if any)
+- Any other finance/reporting sources (QuickSight, spreadsheets, etc.)
+
+For each integration:
+- where credentials/tokens are stored (and encryption method)
+- what endpoints exist for sync
+- what data mapping strategy is used (company/project attribution, classes/locations, customer/job mapping)
+- what failure handling exists (retries, logs, last_sync_at, status)
+- how the UI shows integration health (if at all)
+
+4) FINANCE WORKFLOWS: “DECISION ENGINE” CHECK
+Document what gating/authorization logic currently exists or is intended:
+- Payment authorization flow (who can approve, what thresholds)
+- Required prerequisites before spending (DD complete, interconnection, insurance, placed-in-service, etc.)
+- Budget vs actual variance checks
+- Warranty / O&M cost tracking
+- Vendor/service provider management (who, what, cost, on budget?)
+
+If gating does NOT exist yet, explicitly say “not implemented” and list where it should attach in the UX.
+
+5) REPORTING OUTPUTS
+What outputs exist today (if any)?
+- Investor/lender packages
+- Project close-out packages
+- Monthly operating statements / SOR
+- Data room export assembly
+- Audit trails
+If none, state that and list the minimum v1 outputs we should support.
+
+6) PERMISSIONS + AUDIT TRAIL
+- Who can see Finance? (module permissions)
+- Who can edit budgets? approve payments? configure integrations?
+- Are finance actions audited (who/when/what)?
+- Any risky permission bypasses (e.g., is_system_user)?
+
+7) ARCHITECTURE SOUNDNESS + ROADMAP FIT
+Assess whether the current architecture supports:
+- Multiple companies per user
+- Portfolio roll-ups + project drill-down
+- Sale/divestiture workflows (ownership changes, access changes, reporting)
+- Telemetry linkage for revenue/performance
+- Minimal duplication with QuickBooks (avoid double-truth)
+
+Call out:
+- “keep as-is”
+- “refactor soon”
+- “remove/replace”
+…for each major subsystem.
+
+OUTPUT FORMAT REQUIREMENTS
+The report must be concrete and actionable:
+- Enumerate routes with exact paths
+- List backend routers/controllers + key methods
+- List DB tables + key fields
+- Show a textual ERD for finance entities
+- Include a gap list ranked: Critical / High / Medium / Low
+- Include a “Finance v1 Implementation Plan” with:
+  - v1 scope (what is IN, what is OUT)
+  - required endpoints/data model changes
+  - UX entry points (Home, Project Finance tab, Portfolio roll-ups)
+  - integration health widgets
+  - acceptance tests (10-minute manual checklist)
+
+CONSTRAINTS
+- DO NOT build v1 in this prompt.
+- DO NOT add new dependencies.
+- DO NOT change schemas, integrations, or environment configs.
+- If a severe security issue is found (plaintext tokens), document it and propose a fix, but do not implement.
+
+When complete, output a brief summary plus the path to /docs/finance_module_audit.md.
