@@ -376,7 +376,8 @@ export const ProjectLevelPage: React.FC = () => {
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Button
                   fullWidth
-                  variant="text"
+                  variant="outlined"
+                  startIcon={<FolderIcon />}
                   onClick={() => navigate(`/asset-management/sites/${projectIdNum}`)}
                   sx={{ justifyContent: 'flex-start' }}
                 >
@@ -384,7 +385,8 @@ export const ProjectLevelPage: React.FC = () => {
                 </Button>
                 <Button
                   fullWidth
-                  variant="text"
+                  variant="outlined"
+                  startIcon={<BoltIcon />}
                   onClick={() => navigate(`/operations-and-maintenance/sites/${projectIdNum}`)}
                   sx={{ justifyContent: 'flex-start' }}
                 >
@@ -392,7 +394,8 @@ export const ProjectLevelPage: React.FC = () => {
                 </Button>
                 <Button
                   fullWidth
-                  variant="text"
+                  variant="outlined"
+                  startIcon={<InfoIcon />}
                   onClick={() => navigate(`/due-diligence/sites/${projectIdNum}`)}
                   sx={{ justifyContent: 'flex-start' }}
                 >

@@ -3,6 +3,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import Grid from '@mui/material/Grid';
+import Button from '@mui/material/Button';
 import SolarPowerIcon from '@mui/icons-material/SolarPower';
 import BusinessIcon from '@mui/icons-material/Business';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
@@ -90,52 +91,43 @@ export const ProjectView: React.FC = () => {
         </Grid>
       </Grid>
 
-      <Box sx={{ mt: 4 }}>
-        <Typography variant="h6" gutterBottom>
-          Quick Links
-        </Typography>
-        <Grid container spacing={2}>
-          {[
-            { module: 'asset-management' as ModuleType, label: 'Asset Management', icon: <AccountBalanceIcon /> },
-            { module: 'finance' as ModuleType, label: 'Finance', icon: <AccountBalanceWalletIcon /> },
-            { module: 'operations-and-maintenance' as ModuleType, label: 'O&M', icon: <WhatshotIcon /> },
-            { module: 'due-diligence' as ModuleType, label: 'Due Diligence', icon: <FactCheckIcon /> }
-          ].map(({ module, label, icon }) => (
-            <Grid item key={module}>
-              <Paper
-                sx={{
-                  p: 2,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  '&:hover': { bgcolor: 'action.hover' }
-                }}
-                onClick={() => navigate(buildLensRoute(module, 'project', { projectId: project.id }))}
+      <Grid container spacing={3} sx={{ mt: 1 }}>
+        <Grid item xs={12} md={4}>
+          <Paper sx={{ p: 2, height: '100%' }}>
+            <Typography variant="h6" gutterBottom>
+              Quick Actions
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {[
+                { module: 'asset-management' as ModuleType, label: 'Asset Management', icon: <AccountBalanceIcon /> },
+                { module: 'finance' as ModuleType, label: 'Finance', icon: <AccountBalanceWalletIcon /> },
+                { module: 'operations-and-maintenance' as ModuleType, label: 'O&M', icon: <WhatshotIcon /> },
+                { module: 'due-diligence' as ModuleType, label: 'Due Diligence', icon: <FactCheckIcon /> }
+              ].map(({ module, label, icon }) => (
+                <Button
+                  key={module}
+                  variant="outlined"
+                  startIcon={icon}
+                  fullWidth
+                  sx={{ justifyContent: 'flex-start' }}
+                  onClick={() => navigate(buildLensRoute(module, 'project', { projectId: project.id }))}
+                >
+                  {label}
+                </Button>
+              ))}
+              <Button
+                variant="outlined"
+                startIcon={<SettingsInputAntennaIcon />}
+                fullWidth
+                sx={{ justifyContent: 'flex-start' }}
+                onClick={() => navigate(`/projects/${project.id}/telemetry`)}
               >
-                {icon}
-                {label}
-              </Paper>
-            </Grid>
-          ))}
-          <Grid item>
-            <Paper
-              sx={{
-                p: 2,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                '&:hover': { bgcolor: 'action.hover' }
-              }}
-              onClick={() => navigate(`/projects/${project.id}/telemetry`)}
-            >
-              <SettingsInputAntennaIcon />
-              Telemetry
-            </Paper>
-          </Grid>
+                Telemetry
+              </Button>
+            </Box>
+          </Paper>
         </Grid>
-      </Box>
+      </Grid>
     </Box>
   );
 };

@@ -18,7 +18,6 @@ import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Link from '@mui/material/Link';
-import Divider from '@mui/material/Divider';
 import AddIcon from '@mui/icons-material/Add';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import BusinessIcon from '@mui/icons-material/Business';
@@ -93,18 +92,10 @@ export const CompanyLevelPage: React.FC = () => {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            variant="outlined"
-            startIcon={<PersonAddIcon />}
-            onClick={() => setIsAddUserOpen(true)}
-          >
+          <Button variant="outlined" startIcon={<PersonAddIcon />} onClick={() => setIsAddUserOpen(true)}>
             Add User
           </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setIsAddProjectOpen(true)}
-          >
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsAddProjectOpen(true)}>
             Add Project
           </Button>
         </Box>
@@ -144,21 +135,25 @@ export const CompanyLevelPage: React.FC = () => {
         <Grid item xs={12} md={4}>
           <Card sx={{ height: '100%' }}>
             <CardContent>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Quick Links
+              <Typography variant="h6" gutterBottom>
+                Quick Actions
               </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Button
-                  size="small"
+                  variant="outlined"
+                  fullWidth
                   startIcon={<AssessmentIcon />}
                   onClick={() => navigate(`/asset-management/sites?company_id=${companyIdNum}`)}
+                  sx={{ justifyContent: 'flex-start' }}
                 >
                   Asset Management
                 </Button>
                 <Button
-                  size="small"
+                  variant="outlined"
+                  fullWidth
                   startIcon={<SettingsIcon />}
                   onClick={() => navigate(`/settings/my-company`)}
+                  sx={{ justifyContent: 'flex-start' }}
                 >
                   Settings
                 </Button>
@@ -189,10 +184,18 @@ export const CompanyLevelPage: React.FC = () => {
                     {isLoadingSites ? (
                       [1, 2, 3].map(i => (
                         <TableRow key={i}>
-                          <TableCell><Skeleton /></TableCell>
-                          <TableCell><Skeleton /></TableCell>
-                          <TableCell><Skeleton width={80} /></TableCell>
-                          <TableCell><Skeleton width={40} /></TableCell>
+                          <TableCell>
+                            <Skeleton />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton width={80} />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton width={40} />
+                          </TableCell>
                         </TableRow>
                       ))
                     ) : projectList.length > 0 ? (
@@ -211,11 +214,7 @@ export const CompanyLevelPage: React.FC = () => {
                           </TableCell>
                           <TableCell>{project.state}</TableCell>
                           <TableCell>
-                            <Chip
-                              size="small"
-                              label={project.status || 'Active'}
-                              color="success"
-                            />
+                            <Chip size="small" label={project.status || 'Active'} color="success" />
                           </TableCell>
                           <TableCell align="right">
                             <IconButton size="small">
