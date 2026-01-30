@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -45,9 +45,9 @@ interface AccessLevelInfo {
 
 const ACCESS_LEVEL_INFO: Record<AccessLevel, AccessLevelInfo> = {
   portfolio: {
-    title: 'Portfolio Access (all companies)',
+    title: 'Portfolio Hub Access',
     description:
-      'No company selection required. This grants access across the entire portfolio. The user will appear in all company and project member lists as inherited portfolio access.',
+      'Select a portfolio hub to grant access. The user will have access to all companies and projects within the selected portfolio hub.',
     severity: 'warning',
     supported: true
   },
@@ -87,6 +87,16 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [selectedRole, setSelectedRole] = useState<RoleType>('read_only');
   const [confirmAccess, setConfirmAccess] = useState(false);
+  const [selectedHubId, setSelectedHubId] = useState<number | null>(null);
+
+  const { data: hubsData, isLoading: isLoadingHubs } = useQuery({
+    queryKey: ['portfolioHubs'],
+    queryFn: () => ApiClient.workspace.getPortfolioHubs(),
+    enabled: open && level === 'portfolio',
+    staleTime: 5 * 60 * 1000
+  });
+
+  const availableHubs = hubsData?.hubs || [];
 
   const getDefaultCompanyId = (): number | undefined => {
     if (level === 'company' && entityId) {
@@ -95,14 +105,21 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
     if (level === 'project' && parentCompanyId) {
       return parentCompanyId;
     }
+    if (level === 'portfolio' && selectedHubId) {
+      return selectedHubId;
+    }
     return undefined;
   };
 
   const addMemberMutation = useMutation({
-    mutationFn: async (params: { userId: number; role: RoleType }) => {
+    mutationFn: async (params: { userId: number; role: RoleType; hubId?: number }) => {
       if (level === 'portfolio') {
+        if (!params.hubId) {
+          throw new Error('Portfolio hub must be selected');
+        }
         const request: AddPortfolioMemberRequest = {
           user_id: params.userId,
+          portfolio_hub_company_id: params.hubId,
           role: params.role
         };
         return ApiClient.workspace.addPortfolioMember(request);
@@ -143,6 +160,11 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
       return;
     }
 
+    if (level === 'portfolio' && !selectedHubId) {
+      setError('Please select a portfolio hub');
+      return;
+    }
+
     if (!ACCESS_LEVEL_INFO[level].supported) {
       setError(ACCESS_LEVEL_INFO[level].unsupportedMessage || 'This feature is not yet available.');
       return;
@@ -150,7 +172,8 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
 
     addMemberMutation.mutate({
       userId: selectedUserId,
-      role: selectedRole
+      role: selectedRole,
+      hubId: selectedHubId || undefined
     });
   };
 
@@ -161,6 +184,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
     setSelectedUserId(null);
     setSelectedRole('read_only');
     setConfirmAccess(false);
+    setSelectedHubId(null);
     setError(null);
     onClose();
   };
@@ -208,12 +232,41 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
               </Alert>
             )}
 
+            {level === 'portfolio' && (
+              <FormControl fullWidth required>
+                <InputLabel>Portfolio Hub</InputLabel>
+                <Select<number | ''>
+                  value={selectedHubId ?? ''}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setSelectedHubId(val === '' ? null : Number(val));
+                  }}
+                  label="Portfolio Hub"
+                  disabled={isLoadingHubs}
+                >
+                  {isLoadingHubs ? (
+                    <MenuItem value="">Loading...</MenuItem>
+                  ) : availableHubs.length > 0 ? (
+                    availableHubs.map(hub => (
+                      <MenuItem key={hub.hub_company_id} value={hub.hub_company_id}>
+                        {hub.hub_company_name} ({hub.companies_count} companies)
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem value="" disabled>
+                      No portfolio hubs available
+                    </MenuItem>
+                  )}
+                </Select>
+              </FormControl>
+            )}
+
             <SelectOrCreateUser
               value={selectedUserId}
               onChange={setSelectedUserId}
               canCreate={true}
               defaultCompanyId={getDefaultCompanyId()}
-              requireCompanyContext={level !== 'portfolio'}
+              requireCompanyContext={level !== 'portfolio' || !!selectedHubId}
               label="Select User"
               required
             />
@@ -252,7 +305,9 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
                 <label htmlFor="confirm-access">
                   <Typography variant="body2">
                     I understand that this user will have access to{' '}
-                    {level === 'portfolio' ? 'all companies and projects' : 'all projects in this company'}
+                    {level === 'portfolio'
+                      ? 'all companies and projects within the selected portfolio hub'
+                      : 'all projects in this company'}
                   </Typography>
                 </label>
               </Box>

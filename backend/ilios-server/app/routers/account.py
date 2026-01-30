@@ -153,7 +153,7 @@ async def password_recovery(reset_data: ResetPasswordSchema, db_session: Session
     response_model=AccessibleEntitiesResponse,
     summary="Get accessible companies and projects for context bar",
     description="Returns all companies and projects the current user has access to, "
-                "based on UserCompanyAccess memberships, UserProject assignments, and parent_company_id. "
+                "based on UserCompanyAccess memberships, UserProject assignments, portfolio hub access, and parent_company_id. "
                 "System users get all companies and projects.",
 )
 async def get_accessible_entities(
@@ -162,7 +162,8 @@ async def get_accessible_entities(
 ) -> AccessibleEntitiesResponse:
     from app.models.company import Company
     from app.models.site import Site
-    from app.models.user import UserCompanyAccess, MembershipStatus
+    from app.models.user import UserCompanyAccess, UserPortfolioAccess, MembershipStatus
+    from app.crud.user_portfolio_access import UserPortfolioAccessCRUD
     
     companies: list[AccessibleCompanySchema] = []
     projects: list[AccessibleProjectSchema] = []
@@ -187,6 +188,33 @@ async def get_accessible_entities(
         ]
     else:
         company_ids_seen = set()
+        project_ids_seen = set()
+        
+        portfolio_crud = UserPortfolioAccessCRUD(db_session)
+        user_hub_ids = portfolio_crud.get_user_hub_ids(current_user.id)
+        
+        if user_hub_ids:
+            hub_companies = db_session.query(Company).filter(
+                (Company.portfolio_hub_id.in_(user_hub_ids)) | (Company.id.in_(user_hub_ids))
+            ).order_by(Company.name).all()
+            
+            for company in hub_companies:
+                if company.id not in company_ids_seen:
+                    companies.append(AccessibleCompanySchema(id=company.id, name=company.name))
+                    company_ids_seen.add(company.id)
+            
+            hub_sites = db_session.query(Site).filter(
+                Site.company_id.in_([c.id for c in hub_companies])
+            ).all()
+            for site in hub_sites:
+                if site.id not in project_ids_seen:
+                    projects.append(AccessibleProjectSchema(
+                        id=site.id,
+                        name=site.name,
+                        company_id=site.company_id,
+                        company_name=site.company.name if site.company else "Unknown"
+                    ))
+                    project_ids_seen.add(site.id)
         
         company_memberships = db_session.query(UserCompanyAccess).filter(
             UserCompanyAccess.user_id == current_user.id,
@@ -213,15 +241,15 @@ async def get_accessible_entities(
             ))
             company_ids_seen.add(current_user.parent_company.id)
         
-        projects = [
-            AccessibleProjectSchema(
-                id=s.id,
-                name=s.name,
-                company_id=s.company_id,
-                company_name=s.company.name if s.company else "Unknown"
-            )
-            for s in current_user.sites
-        ]
+        for site in current_user.sites:
+            if site.id not in project_ids_seen:
+                projects.append(AccessibleProjectSchema(
+                    id=site.id,
+                    name=site.name,
+                    company_id=site.company_id,
+                    company_name=site.company.name if site.company else "Unknown"
+                ))
+                project_ids_seen.add(site.id)
     
     companies.sort(key=lambda c: c.name.lower())
     projects.sort(key=lambda p: (p.company_name.lower(), p.name.lower()))

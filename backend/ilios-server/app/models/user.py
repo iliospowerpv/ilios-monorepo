@@ -194,16 +194,22 @@ class UserCompanyAccess(Base):
 
 
 class UserPortfolioAccess(Base):
-    """Portfolio-level user access - gives user access to all companies and projects."""
+    """Portfolio-level user access - gives user access to companies within a portfolio hub."""
     __tablename__ = "user_portfolio_access"
     
     __table_args__ = (
-        UniqueConstraint('user_id', name='uq_user_portfolio_access'),
+        UniqueConstraint('user_id', 'portfolio_hub_company_id', name='uq_user_portfolio_access_per_hub'),
         Index('ix_user_portfolio_access_user_id', 'user_id'),
+        Index('ix_user_portfolio_access_hub_id', 'portfolio_hub_company_id'),
     )
 
     id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    portfolio_hub_company_id = Column(
+        Integer,
+        ForeignKey("companies.id", ondelete="CASCADE"),
+        nullable=True
+    )
     role = Column(Enum(CompanyRole), nullable=False, default=CompanyRole.contributor)
     status = Column(Enum(MembershipStatus), nullable=False, default=MembershipStatus.active)
     
@@ -212,4 +218,5 @@ class UserPortfolioAccess(Base):
     updated_at = Column(DateTime, server_default=utcnow(), onupdate=utcnow())
 
     user = relationship("User", back_populates="portfolio_access", foreign_keys=[user_id])
+    portfolio_hub_company = relationship("Company", foreign_keys=[portfolio_hub_company_id])
     created_by = relationship("User", foreign_keys=[created_by_user_id])

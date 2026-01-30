@@ -110,6 +110,41 @@ async def test_connection(
         )
 
 
+@telemetry_router.get(
+    "/sites/{site_id}/available-connections",
+    response_model=dict,
+    description="Get DAS connections available for this site (company + hub shared)",
+    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.view)))],
+)
+async def get_site_available_connections(
+    site: Site = Depends(get_authorized_site),
+    db_session: Session = Depends(get_session),
+):
+    """Get all DAS connections available for this site.
+    
+    Returns connections from:
+    - The site's own company
+    - Other companies in the same portfolio hub (shared connections)
+    """
+    from app.crud.das_connection import DASConnectionCRUD
+    
+    connections = DASConnectionCRUD(db_session).get_hub_connections(site.company_id)
+    
+    items = []
+    for conn in connections:
+        is_own_company = conn.company_id == site.company_id
+        items.append({
+            "id": conn.id,
+            "name": conn.name,
+            "provider": conn.provider.value,
+            "company_id": conn.company_id,
+            "company_name": conn.company.name if conn.company else "Unknown",
+            "is_shared": not is_own_company,
+        })
+    
+    return {"items": items}
+
+
 @telemetry_router.post(
     "/sites/{site_id}/mapping",
     status_code=status.HTTP_201_CREATED,
@@ -122,10 +157,16 @@ async def create_site_mapping(
     site: Site = Depends(get_authorized_site_with_company_admin),
     db_session: Session = Depends(get_session),
 ) -> dict:
+    from app.crud.das_connection import DASConnectionCRUD
+    
     telemetry_mapping = mapping.model_dump()
     telemetry_mapping["site_id"] = site.id
-    if mapping.connection_id not in [connection.id for connection in site.company.das_connections]:
-        raise HTTPException(status.HTTP_403_FORBIDDEN)
+    
+    accessible_connections = DASConnectionCRUD(db_session).get_hub_connections(site.company_id)
+    accessible_connection_ids = [conn.id for conn in accessible_connections]
+    
+    if mapping.connection_id not in accessible_connection_ids:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Connection not accessible to this company")
     create_site_mapping_for_telemetry(site, telemetry_mapping, db_session)
 
     _create_audit_log(

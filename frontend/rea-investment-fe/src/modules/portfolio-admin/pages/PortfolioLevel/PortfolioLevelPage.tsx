@@ -238,7 +238,7 @@ export const PortfolioLevelPage: React.FC = () => {
           {activeTab === 1 && isSystemAdmin && (
             <>
               <Alert severity="info" sx={{ mb: 2 }}>
-                Portfolio members have access to ALL companies and projects. Manage access carefully.
+                Portfolio members have access to all companies and projects within their assigned portfolio hub(s). Manage access carefully.
               </Alert>
               <TableContainer>
                 <Table>
@@ -246,6 +246,7 @@ export const PortfolioLevelPage: React.FC = () => {
                     <TableRow>
                       <TableCell>Name</TableCell>
                       <TableCell>Email</TableCell>
+                      <TableCell>Portfolio Hub</TableCell>
                       <TableCell>Role</TableCell>
                       <TableCell>Status</TableCell>
                       <TableCell align="right">Actions</TableCell>
@@ -257,6 +258,7 @@ export const PortfolioLevelPage: React.FC = () => {
                         <TableRow key={i}>
                           <TableCell><Skeleton /></TableCell>
                           <TableCell><Skeleton /></TableCell>
+                          <TableCell><Skeleton width={100} /></TableCell>
                           <TableCell><Skeleton width={80} /></TableCell>
                           <TableCell><Skeleton width={60} /></TableCell>
                           <TableCell><Skeleton width={40} /></TableCell>
@@ -272,6 +274,19 @@ export const PortfolioLevelPage: React.FC = () => {
                             </Box>
                           </TableCell>
                           <TableCell>{member.email}</TableCell>
+                          <TableCell>
+                            {member.portfolio_hub_company_name ? (
+                              <Chip
+                                size="small"
+                                label={member.portfolio_hub_company_name}
+                                variant="outlined"
+                              />
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">
+                                Unassigned
+                              </Typography>
+                            )}
+                          </TableCell>
                           <TableCell>
                             <Chip
                               size="small"
@@ -299,9 +314,9 @@ export const PortfolioLevelPage: React.FC = () => {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={5} align="center">
+                        <TableCell colSpan={6} align="center">
                           <Typography color="text.secondary" sx={{ py: 3 }}>
-                            No portfolio-level users. Click "Add User" to grant someone access to the entire portfolio.
+                            No portfolio-level users. Click "Add User" to grant someone access to a portfolio hub.
                           </Typography>
                         </TableCell>
                       </TableRow>

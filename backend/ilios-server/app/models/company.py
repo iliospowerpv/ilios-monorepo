@@ -1,6 +1,6 @@
 """Company DB models."""
 
-from sqlalchemy import TIMESTAMP, VARCHAR, Column, Enum, Identity, Integer
+from sqlalchemy import TIMESTAMP, VARCHAR, Column, Enum, ForeignKey, Identity, Index, Integer
 from sqlalchemy.orm import relationship
 
 from app.db.base_class import Base
@@ -13,6 +13,10 @@ class Company(RelatedBoards, Base):
     """Model of the company entity."""
 
     __tablename__ = "companies"
+    
+    __table_args__ = (
+        Index('ix_companies_portfolio_hub_id', 'portfolio_hub_id'),
+    )
 
     id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
 
@@ -21,10 +25,23 @@ class Company(RelatedBoards, Base):
     phone = Column(VARCHAR, nullable=True)
     address = Column(VARCHAR, nullable=True)
     company_type = Column(Enum(CompanyTypes), nullable=False)
+    
+    portfolio_hub_id = Column(
+        Integer,
+        ForeignKey("companies.id", ondelete="SET NULL"),
+        nullable=True
+    )
 
     sites = relationship("Site", back_populates="company")
     users = relationship("User", back_populates="parent_company")
     das_connections = relationship("DASConnection", back_populates="company", order_by="DASConnection.name")
+    
+    portfolio_hub = relationship(
+        "Company",
+        remote_side="Company.id",
+        foreign_keys=[portfolio_hub_id],
+        backref="portfolio_members"
+    )
     
     member_users = relationship("UserCompanyAccess", back_populates="company")
 

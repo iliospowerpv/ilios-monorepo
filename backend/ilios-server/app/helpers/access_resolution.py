@@ -281,21 +281,25 @@ class WorkspaceAccessResult:
 
 
 def resolve_workspace_access(
-    portfolio_grant: Optional[AccessGrant],
+    portfolio_grants: List[AccessGrant],
     direct_company_grants: List[AccessGrant],
     project_context_grants: List[AccessGrant],
 ) -> WorkspaceAccessResult:
-    """Resolve access to all companies for workspace listing.
+    """Resolve access to companies for workspace listing.
     
     Returns WorkspaceAccessResult indicating how to display companies.
     
-    If portfolio access is active, all companies are visible with inherited_portfolio.
+    With hub-scoped portfolio access, users see only companies within their
+    accessible portfolio hubs. The portfolio_grants parameter now contains
+    hub-specific grants rather than a single global grant.
+    
     Otherwise, shows direct company grants and project context companies.
     """
-    if portfolio_grant and portfolio_grant.status == MembershipStatusEnum.active:
+    active_portfolio_grants = [g for g in portfolio_grants if g.status == MembershipStatusEnum.active]
+    if active_portfolio_grants:
         return WorkspaceAccessResult(
             use_portfolio=True,
-            portfolio_role=portfolio_grant.role,
+            portfolio_role=active_portfolio_grants[0].role,
         )
     
     result: Dict[int, ResolvedAccess] = {}

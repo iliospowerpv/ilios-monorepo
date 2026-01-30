@@ -57,6 +57,12 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
     - **UserCompanyAccess Model**: Manages user-company relationships with roles (company_admin, contributor, read_only) and statuses (active, invited, suspended).
     - **Access Source Types**: Direct assignment via UserCompanyAccess, project-inherited via UserProject → parent_company_id, or both.
     - **Authorization**: System users and company admins can manage company membership; regular users can only view members they have access to.
+- **Portfolio Hub Boundary Model**: Introduced to fix global portfolio access bug. See `docs/portfolio_hub_model.md` for full specification.
+    - **Self-Referencing Hub**: `companies.portfolio_hub_id` column links companies to a hub company (NULL = is a hub)
+    - **Hub-Scoped Portfolio Access**: `user_portfolio_access.portfolio_hub_company_id` requires hub selection when granting portfolio access
+    - **Bounded Access**: Portfolio users only see companies within their assigned hub(s), not all companies globally
+    - **Shared Resources**: DAS connections within a hub are discoverable by all companies in that hub for telemetry setup
+    - **Helper Functions**: `app/helpers/portfolio_hub.py` provides `resolve_company_hub_id()`, `get_portfolio_group_company_ids()`, and access checks
 - **Architectural Guardrails (Asset Management Overview)**: The Asset Management Overview page is designed as a static site record and readiness surface, intentionally avoiding operational data leakage, telemetry, or live performance data. It clearly defines cross-module boundaries, linking to operations modules for live metrics rather than embedding them.
 - **Telemetry Module**: Project-scoped telemetry hookup for connecting Data Acquisition Systems (DAS) directly from the Project → Telemetry tab:
     - **4-Step Wizard**: Connection → Site Mapping → Device Mapping → Confirm/Health flow for guided telemetry setup

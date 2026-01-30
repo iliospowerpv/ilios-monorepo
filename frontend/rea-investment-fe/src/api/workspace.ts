@@ -39,6 +39,8 @@ export interface PortfolioMember {
   last_name: string;
   role: 'company_admin' | 'contributor' | 'read_only';
   status: 'active' | 'invited' | 'disabled';
+  portfolio_hub_company_id: number | null;
+  portfolio_hub_company_name: string | null;
 }
 
 export interface PortfolioMembersResponse {
@@ -46,8 +48,19 @@ export interface PortfolioMembersResponse {
   total: number;
 }
 
+export interface PortfolioHub {
+  hub_company_id: number;
+  hub_company_name: string;
+  companies_count: number;
+}
+
+export interface PortfolioHubsResponse {
+  hubs: PortfolioHub[];
+}
+
 export interface AddPortfolioMemberRequest {
   user_id: number;
+  portfolio_hub_company_id: number;
   role: 'company_admin' | 'contributor' | 'read_only';
 }
 
@@ -123,6 +136,11 @@ export const buildWorkspaceApi = (httpClient: AxiosInstance) => {
     return response.data;
   };
 
+  const getPortfolioHubs = async (): Promise<PortfolioHubsResponse> => {
+    const response = await httpClient.get<PortfolioHubsResponse>('/api/workspace/portfolio/hubs');
+    return response.data;
+  };
+
   const addPortfolioMember = async (request: AddPortfolioMemberRequest): Promise<PortfolioMember> => {
     const response = await httpClient.post<PortfolioMember>('/api/workspace/portfolio/members', request);
     return response.data;
@@ -153,6 +171,7 @@ export const buildWorkspaceApi = (httpClient: AxiosInstance) => {
     updateCompanyMember,
     removeCompanyMember,
     getPortfolioMembers,
+    getPortfolioHubs,
     addPortfolioMember,
     removePortfolioMember,
     getProjectMembers,

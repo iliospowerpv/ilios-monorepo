@@ -27,6 +27,8 @@ from app.schema.user_company_access import (
     WorkspaceSummarySchema,
 )
 from app.schema.user_portfolio_access import (
+    AvailableHubsSchema,
+    PortfolioHubSchema,
     PortfolioMemberSchema,
     PortfolioMembersListSchema,
     UserPortfolioAccessCreate,
@@ -81,24 +83,37 @@ async def get_workspace(
             needs_attention_count=0
         )
     else:
+        from app.helpers.portfolio_hub import resolve_company_hub_id
+        
         portfolio_crud = UserPortfolioAccessCRUD(db_session)
         project_crud = UserProjectCRUD(db_session)
         
-        portfolio_access = portfolio_crud.get_by_user(current_user.id)
-        if portfolio_access and portfolio_access.status == MembershipStatus.active:
-            all_companies = db_session.query(Company).order_by(Company.name).all()
-            for c in all_companies:
+        user_hub_ids = portfolio_crud.get_user_hub_ids(current_user.id)
+        if user_hub_ids:
+            portfolio_companies = db_session.query(Company).filter(
+                (Company.portfolio_hub_id.in_(user_hub_ids)) | (Company.id.in_(user_hub_ids))
+            ).order_by(Company.name).all()
+            
+            portfolio_accesses = {
+                a.portfolio_hub_company_id: a 
+                for a in portfolio_crud.get_all_by_user(current_user.id, status=MembershipStatus.active)
+            }
+            
+            for c in portfolio_companies:
                 if c.id not in company_ids_seen:
+                    hub_id = resolve_company_hub_id(db_session, c.id)
+                    portfolio_access = portfolio_accesses.get(hub_id)
                     project_count = db_session.query(Site).filter_by(company_id=c.id).count()
                     companies_data.append(UserCompanySchema(
                         company_id=c.id,
                         company_name=c.name,
-                        role=CompanyRoleEnum(portfolio_access.role.value) if portfolio_access.role else None,
+                        role=CompanyRoleEnum(portfolio_access.role.value) if portfolio_access and portfolio_access.role else None,
                         access_source="inherited_portfolio",
                         project_count=project_count
                     ))
                     company_ids_seen.add(c.id)
-        else:
+        
+        if True:
             company_memberships = db_session.query(UserCompanyAccess).filter(
                 UserCompanyAccess.user_id == current_user.id,
                 UserCompanyAccess.status == MembershipStatus.active
@@ -394,16 +409,52 @@ async def remove_company_member(
 
 
 @workspace_router.get(
+    "/portfolio/hubs",
+    response_model=AvailableHubsSchema,
+    summary="Get available portfolio hubs",
+    description="Returns all portfolio hubs (companies that serve as hub roots) with counts of companies in each.",
+)
+async def get_portfolio_hubs(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+) -> AvailableHubsSchema:
+    """Get all available portfolio hubs for granting access."""
+    if not current_user.is_system_user:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only system administrators can view portfolio hubs"
+        )
+    
+    hub_companies = db_session.query(Company).filter(
+        (Company.portfolio_hub_id == None) | (Company.portfolio_hub_id == Company.id)
+    ).order_by(Company.name).all()
+    
+    hubs = []
+    for hub in hub_companies:
+        companies_count = db_session.query(Company).filter(
+            (Company.portfolio_hub_id == hub.id) | (Company.id == hub.id)
+        ).count()
+        hubs.append(PortfolioHubSchema(
+            hub_company_id=hub.id,
+            hub_company_name=hub.name,
+            companies_count=companies_count,
+        ))
+    
+    return AvailableHubsSchema(hubs=hubs)
+
+
+@workspace_router.get(
     "/portfolio/members",
     response_model=PortfolioMembersListSchema,
     summary="Get all portfolio-level users",
-    description="Returns all users who have portfolio-level access.",
+    description="Returns all users who have portfolio-level access. Optionally filter by hub.",
 )
 async def get_portfolio_members(
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
+    hub_company_id: Optional[int] = None,
 ) -> PortfolioMembersListSchema:
-    """Get all users with portfolio-level access."""
+    """Get all users with portfolio-level access, optionally filtered by hub."""
     from app.models.user import User
     
     if not current_user.is_system_user:
@@ -413,11 +464,14 @@ async def get_portfolio_members(
         )
     
     crud = UserPortfolioAccessCRUD(db_session)
-    access_list = crud.get_all_portfolio_users()
+    access_list = crud.get_all_portfolio_users(hub_company_id=hub_company_id)
     
     members = []
     for access in access_list:
         user = db_session.query(User).get(access.user_id)
+        hub_company = None
+        if access.portfolio_hub_company_id:
+            hub_company = db_session.query(Company).get(access.portfolio_hub_company_id)
         if user:
             members.append(PortfolioMemberSchema(
                 access_id=access.id,
@@ -427,6 +481,8 @@ async def get_portfolio_members(
                 last_name=user.last_name,
                 role=CompanyRoleEnum(access.role.value) if access.role else CompanyRoleEnum.contributor,
                 status=MembershipStatusEnum(access.status.value) if access.status else MembershipStatusEnum.active,
+                portfolio_hub_company_id=access.portfolio_hub_company_id,
+                portfolio_hub_company_name=hub_company.name if hub_company else None,
             ))
     
     return PortfolioMembersListSchema(members=members, total=len(members))
@@ -437,31 +493,39 @@ async def get_portfolio_members(
     response_model=UserPortfolioAccessSchema,
     status_code=status.HTTP_201_CREATED,
     summary="Add a user to portfolio level",
-    description="Grant a user portfolio-level access, giving them access to all companies.",
+    description="Grant a user portfolio-level access to a specific portfolio hub.",
 )
 async def add_portfolio_member(
     payload: UserPortfolioAccessCreate,
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ) -> UserPortfolioAccessSchema:
-    """Add a user to portfolio level (grants computed access to all companies)."""
+    """Add a user to portfolio level (grants access to companies within the hub)."""
     if not current_user.is_system_user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only system administrators can add portfolio members"
         )
     
+    hub_company = db_session.query(Company).get(payload.portfolio_hub_company_id)
+    if not hub_company:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Portfolio hub company not found"
+        )
+    
     portfolio_crud = UserPortfolioAccessCRUD(db_session)
     
-    existing = portfolio_crud.get_by_user(payload.user_id)
+    existing = portfolio_crud.get_by_user_and_hub(payload.user_id, payload.portfolio_hub_company_id)
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User already has portfolio-level access"
+            detail="User already has portfolio-level access to this hub"
         )
     
     portfolio_access = portfolio_crud.add_portfolio_access(
         user_id=payload.user_id,
+        portfolio_hub_company_id=payload.portfolio_hub_company_id,
         role=CompanyRole(payload.role.value),
         status=MembershipStatus.active,
         created_by_user_id=current_user.id
@@ -470,6 +534,7 @@ async def add_portfolio_member(
     return UserPortfolioAccessSchema(
         id=portfolio_access.id,
         user_id=portfolio_access.user_id,
+        portfolio_hub_company_id=portfolio_access.portfolio_hub_company_id,
         role=CompanyRoleEnum(portfolio_access.role.value) if portfolio_access.role else CompanyRoleEnum.contributor,
         status=MembershipStatusEnum(portfolio_access.status.value) if portfolio_access.status else MembershipStatusEnum.active,
         created_at=portfolio_access.created_at,
@@ -724,3 +789,51 @@ async def remove_project_member(
     
     project_crud.delete_by_id(membership_id)
     return None
+
+
+@workspace_router.get(
+    "/portfolio/hubs",
+    response_model=AvailableHubsSchema,
+    summary="Get available portfolio hubs",
+    description="Returns all companies that serve as portfolio hubs (for admin hub picker).",
+)
+async def get_portfolio_hubs(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+) -> AvailableHubsSchema:
+    """Get all companies that serve as portfolio hubs.
+    
+    A company is a hub if it's either:
+    - Has portfolio_hub_id = NULL (is its own hub)
+    - Is referenced by other companies as their portfolio_hub_id
+    
+    For system admins, returns all potential hubs.
+    For regular users, returns hubs they have access to.
+    """
+    from sqlalchemy import func
+    from app.helpers.portfolio_hub import resolve_company_hub_id
+    
+    if current_user.is_system_user:
+        hub_ids_query = db_session.query(Company.id).filter(
+            Company.portfolio_hub_id.is_(None)
+        ).all()
+        hub_ids = {row[0] for row in hub_ids_query}
+    else:
+        portfolio_crud = UserPortfolioAccessCRUD(db_session)
+        hub_ids = portfolio_crud.get_user_hub_ids(current_user.id)
+    
+    hubs = []
+    for hub_id in hub_ids:
+        hub_company = db_session.query(Company).get(hub_id)
+        if hub_company:
+            companies_count = db_session.query(func.count(Company.id)).filter(
+                (Company.portfolio_hub_id == hub_id) | (Company.id == hub_id)
+            ).scalar()
+            hubs.append(PortfolioHubSchema(
+                hub_company_id=hub_company.id,
+                hub_company_name=hub_company.name,
+                companies_count=companies_count or 1
+            ))
+    
+    hubs.sort(key=lambda h: h.hub_company_name.lower())
+    return AvailableHubsSchema(hubs=hubs)
