@@ -17,7 +17,7 @@ import { ApiClient } from '../../../../../../api';
 import type {
   TelemetryHealthStatus,
   TelemetryReadinessResponse,
-  TelemetryHealthResponse,
+  TelemetryHealthResponse
 } from '../../../../../../api/connections';
 import { AssetManagementSiteDetailsTabProps } from '../types';
 import { TelemetryWizard } from './TelemetryWizard';
@@ -52,6 +52,23 @@ const getStatusIcon = (status: TelemetryHealthStatus) => {
   }
 };
 
+const getStatusLabel = (status: TelemetryHealthStatus, mappedDeviceCount: number): string => {
+  switch (status) {
+    case 'HEALTHY':
+      return 'Healthy';
+    case 'WARN':
+      return 'Warning';
+    case 'ERROR':
+      return 'Error';
+    case 'NO_DATA':
+      return mappedDeviceCount === 0 ? 'Mapped, No Devices' : 'No Data Yet';
+    case 'NOT_CONFIGURED':
+      return 'Not Configured';
+    default:
+      return status;
+  }
+};
+
 const formatTimestamp = (timestamp: string | null): string => {
   if (!timestamp) return 'Never';
   const date = new Date(timestamp);
@@ -67,7 +84,7 @@ const ReadinessStrip: React.FC<ReadinessStripProps> = ({ readiness }) => {
     { label: 'Connected', done: readiness.is_connected },
     { label: 'Site Mapped', done: readiness.is_site_mapped },
     { label: 'Devices Mapped', done: readiness.is_devices_mapped },
-    { label: 'Data Flowing', done: readiness.is_data_flowing },
+    { label: 'Data Flowing', done: readiness.is_data_flowing }
   ];
 
   return (
@@ -110,8 +127,22 @@ interface HealthStripProps {
 }
 
 const HealthStrip: React.FC<HealthStripProps> = ({ health }) => {
+  const statusLabel = getStatusLabel(health.status, health.mapped_device_count);
+
   if (health.status === 'NOT_CONFIGURED') {
-    return null;
+    return (
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Typography variant="h6" gutterBottom>
+          Data Health
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Chip label={statusLabel} color="default" icon={getStatusIcon(health.status)} variant="outlined" />
+          <Typography variant="body2" color="text.secondary">
+            Connect to a DAS provider to start receiving telemetry data
+          </Typography>
+        </Box>
+      </Paper>
+    );
   }
 
   return (
@@ -120,7 +151,7 @@ const HealthStrip: React.FC<HealthStripProps> = ({ health }) => {
         Data Health
       </Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-        <Chip label={health.status} color={getStatusColor(health.status)} icon={getStatusIcon(health.status)} />
+        <Chip label={statusLabel} color={getStatusColor(health.status)} icon={getStatusIcon(health.status)} />
         <Typography variant="body2" color="text.secondary">
           Last data: {formatTimestamp(health.last_data_at)}
         </Typography>
@@ -148,21 +179,21 @@ export const Telemetry: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDe
   const {
     data: readiness,
     isLoading: isLoadingReadiness,
-    refetch: refetchReadiness,
+    refetch: refetchReadiness
   } = useQuery({
     queryKey: ['telemetry-readiness', siteDetails.id],
     queryFn: () => ApiClient.connections.getTelemetryReadiness(siteDetails.id),
-    enabled: !!siteDetails.id,
+    enabled: !!siteDetails.id
   });
 
   const {
     data: health,
     isLoading: isLoadingHealth,
-    refetch: refetchHealth,
+    refetch: refetchHealth
   } = useQuery({
     queryKey: ['telemetry-health', siteDetails.id],
     queryFn: () => ApiClient.connections.getTelemetryHealth(siteDetails.id),
-    enabled: !!siteDetails.id,
+    enabled: !!siteDetails.id
   });
 
   const handleWizardClose = () => {
@@ -200,8 +231,8 @@ export const Telemetry: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDe
       {!isConfigured && (
         <Alert severity="info" sx={{ mt: 2 }}>
           <Typography variant="body2">
-            This project is not yet connected to a Data Acquisition System (DAS). Click &quot;Connect Telemetry&quot;
-            to set up real-time performance monitoring.
+            This project is not yet connected to a Data Acquisition System (DAS). Click &quot;Connect Telemetry&quot; to
+            set up real-time performance monitoring.
           </Typography>
         </Alert>
       )}
@@ -220,12 +251,7 @@ export const Telemetry: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDe
         </Alert>
       )}
 
-      <TelemetryWizard
-        open={wizardOpen}
-        onClose={handleWizardClose}
-        siteDetails={siteDetails}
-        readiness={readiness}
-      />
+      <TelemetryWizard open={wizardOpen} onClose={handleWizardClose} siteDetails={siteDetails} readiness={readiness} />
     </Box>
   );
 };
