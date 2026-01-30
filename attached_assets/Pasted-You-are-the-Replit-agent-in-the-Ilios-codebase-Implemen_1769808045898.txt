@@ -1,0 +1,152 @@
+You are the Replit agent in the Ilios codebase. Implement a portfolio boundary model so that “Portfolio” means “the user’s portfolio of companies/projects”, NOT “all companies in the platform.” Then update the telemetry connection-sharing plan to use this portfolio boundary (portfolio hub) safely. This is a controlled build with strict constraints.
+
+====================================================
+CORE DEFINITIONS (NON-NEGOTIABLE)
+====================================================
+1) “Portfolio” in the UI is the logged-in user’s accessible portfolio:
+   - Only companies/projects they created or were granted access to.
+   - Never “all companies in the database.”
+2) “Portfolio access” must be scoped to a portfolio boundary (hub), not global.
+3) Portfolio boundary is represented by a portfolio hub company:
+   - companies.portfolio_hub_id defines grouping.
+
+====================================================
+PART 0 — DO NOT DO
+====================================================
+- Do NOT keep global portfolio access behavior.
+- Do NOT allow any API or UI route labeled “Portfolio” to return all companies unless user is_system_user and explicitly requests global admin view.
+- Do NOT implement telemetry portfolio-shared connections until boundary exists.
+
+====================================================
+PART A — SCHEMA: PORTFOLIO HUB BOUNDARY
+====================================================
+1) Add column to companies (Alembic migration):
+   - portfolio_hub_id INTEGER NULL REFERENCES companies(id)
+
+Semantics:
+- If portfolio_hub_id is NULL, the company is its own hub (implicit hub = company.id).
+- If portfolio_hub_id is set, the company belongs to that hub company.
+
+2) Add indexes:
+- companies(portfolio_hub_id)
+
+3) Add helper:
+- resolve_company_hub_id(company): returns company.portfolio_hub_id or company.id
+
+====================================================
+PART B — SCHEMA: PORTFOLIO ACCESS MUST BE HUB-SCOPED
+====================================================
+1) Modify user_portfolio_access model to be scoped:
+   - Add portfolio_hub_company_id INTEGER NOT NULL REFERENCES companies(id)
+   - Add UNIQUE(user_id, portfolio_hub_company_id)
+
+If a user should have access to multiple portfolios, they can have multiple rows.
+
+2) Migration/backfill:
+- Current data may have global portfolio members.
+- Convert existing UserPortfolioAccess rows into hub-scoped rows:
+  Strategy:
+   - If there is a “primary/root” company concept today, map to that hub.
+   - If not possible to infer, create a safe default:
+       * For system users: allow global admin capabilities via is_system_user only.
+       * For non-system users: require explicit assignment (set status to invited or suspended) and provide admin tool to assign hub.
+  Document the chosen backfill approach and make it safe (no accidental global access).
+
+====================================================
+PART C — ACCESS RESOLUTION UPDATE (CRITICAL)
+====================================================
+Update access resolution so portfolio membership is limited to a hub group.
+
+1) Replace any logic that does:
+   all_companies = query(Company).all()
+when portfolio access is present.
+
+Instead:
+- Determine the user’s portfolio hubs they have active access to:
+   hubs = user_portfolio_access where status=active
+- Accessible companies include:
+   - companies where resolve_company_hub_id(company) in hubs
+   - plus any companies the user has direct company membership to
+   - plus any companies inferred via project access (existing logic)
+
+2) Workspace/home/portfolio views must only show accessible companies.
+
+3) Preserve is_system_user bypass for true system admins, but ensure it is not used accidentally for standard “portfolio” views.
+
+====================================================
+PART D — UI / NAV: PORTFOLIO MEANS “MY PORTFOLIO”
+====================================================
+1) Update “Portfolio” lens pages to reflect the user’s accessible portfolio.
+2) Update /portfolio-admin warning text:
+   - Remove “Portfolio members have access to ALL companies and projects.”
+   - Replace with hub-scoped explanation: “Portfolio members have access to all companies within the assigned portfolio hub(s).”
+
+3) Ensure Context Bar “Portfolio” scope uses user-accessible rollup only.
+
+4) Add an admin workflow to assign portfolio membership to a hub:
+   - In Portfolio Admin member invite / edit flow, require selecting the portfolio hub (company).
+   - This should be a picker constrained to companies user can administrate (system admin can pick any).
+====================================================
+PART D2 — TOP NAVIGATION / CONTEXT BAR CONTRACT (REQUIRED)
+====================================================
+The top navigation includes Portfolio / Company / Project scope controls. After this change:
+
+1) Portfolio (top nav) MUST mean “My Portfolio”:
+   - It shows only companies/projects accessible to the logged-in user (post-access-resolution).
+   - It must never display all companies in the database except for explicit system-admin-only views.
+
+2) Company (top nav) MUST be constrained:
+   - The Company picker lists only companies accessible to the user.
+   - If a user has access to multiple portfolio hubs, the Company picker is the union of those hubs’ companies plus any direct/inherited access.
+
+3) Project (top nav) MUST be constrained:
+   - The Project picker lists only projects accessible to the user.
+   - If a Company is selected, the Project picker filters to that company’s projects.
+
+4) Portfolio Admin and Company Admin are administrative modules and MUST NOT redefine “Portfolio”:
+   - Portfolio Admin may manage hub-scoped portfolio memberships.
+   - It must not imply “global access” in UI copy.
+   - System admin may have a separate “Global Admin” capability, but it must not be labeled as “Portfolio.”
+
+5) Copy changes:
+   - Replace any label “Portfolio members have access to ALL companies and projects” with hub-scoped language:
+     “Portfolio members have access to all companies/projects within the assigned portfolio hub(s).”
+
+Acceptance Tests:
+A) Create Hub A + Hub B, with distinct companies/projects.
+B) User1 has portfolio access to Hub A only.
+   - Top nav Portfolio view shows only Hub A companies/projects.
+   - Company picker excludes Hub B companies.
+   - Project picker excludes Hub B projects.
+C) User2 has portfolio access to Hub B only.
+   - Sees only Hub B.
+D) System admin can still access all companies, but via an explicitly labeled admin mode/view (not “Portfolio”).
+
+====================================================
+PART E — TELEMETRY PLAN PREREQUISITE ENABLEMENT
+====================================================
+After Parts A–D are complete, update telemetry “portfolio-owned” connection logic to use portfolio hub boundary:
+
+- A “portfolio shared” telemetry connection is shared only within the portfolio hub group:
+   companies with resolve_company_hub_id(company) == hub_id
+
+When listing available connections for a company/project:
+- Include portfolio connections where owner_company_id (hub company) == resolve_company_hub_id(current_company)
+
+====================================================
+PART F — DOCUMENTATION + TESTING
+====================================================
+1) Create docs/portfolio_hub_model.md:
+- Schema
+- Semantics
+- Access rules
+- Divestiture scenarios (moving a company between hubs)
+
+2) Update docs/access_model_audit.md and any workspace docs to reflect hub scoping.
+
+3) Add a 10-minute manual test:
+- Create 2 hubs (Hub A, Hub B)
+- Create Company A1 under Hub A, Company B1 under Hub B
+- Create User1 with portfolio access to Hub A only
+- Verify User1 cannot see Hub B companies/projects anywhere (home, pickers, portfolio scope)
+- Verify system user can still see all

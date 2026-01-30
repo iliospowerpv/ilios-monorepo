@@ -1,0 +1,223 @@
+You are the Replit agent in the Ilios codebase. Implement portfolio-owned (shared) DAS connections to support AlsoEnergy’s portfolio-level licensing model, add detailed error payload reporting, and place telemetry connection management in the correct administrative UI. Preserve the existing GCP Cloud Function + Secrets Manager + Firestore + BigQuery architecture. This is a controlled build; do not introduce scope creep.
+
+====================================================
+CORE INTENT (DO NOT VIOLATE)
+====================================================
+- Ilios is a capital governance and operations platform, not an accounting system.
+- Telemetry setup is PROJECT-SCOPED for usage (mapping, health), but
+  credential/connection management is ADMINISTRATIVE and may be PORTFOLIO-SCOPED.
+- AlsoEnergy credentials are portfolio-account credentials and must be reusable
+  across multiple companies/projects without duplication.
+- Cloud Functions remain the boundary for provider auth and polling.
+- Detailed, user-visible error reporting is REQUIRED (no more generic “DAS unavailable”).
+
+====================================================
+NON-NEGOTIABLE CONSTRAINTS
+====================================================
+1) Do NOT persist AlsoEnergy access_tokens anywhere (tokens are ~15 min).
+2) Do NOT duplicate credentials across companies (no fan-out copies).
+3) Do NOT require Settings-first configuration for project telemetry hookup.
+4) Do NOT change Cloud Function code, Firestore schema, or BigQuery datasets.
+5) Telemetry hookup remains project-scoped; connection management is admin-scoped.
+6) Errors must surface meaningful, sanitized provider feedback in the UI.
+
+====================================================
+PART A — DATA MODEL CHANGES (BACKEND)
+====================================================
+Modify das_connections to support portfolio-owned connections.
+
+1) Add columns (Alembic migration):
+   - owner_type VARCHAR constrained to ('company','portfolio'), default 'company'
+   - owner_company_id INTEGER NULL REFERENCES companies(id)
+
+2) Semantics:
+   - company_id = administrative creator / legacy owner (do not remove)
+   - owner_type='company' → company-only connection (default behavior)
+   - owner_type='portfolio' → shared connection usable across portfolio group
+   - owner_company_id identifies the portfolio hub company
+
+3) Backfill:
+   - Set owner_type='company', owner_company_id=company_id for all existing rows
+
+4) Add indexes:
+   - (owner_type, owner_company_id)
+   - (company_id)
+
+====================================================
+PART B — PORTFOLIO GROUPING & AUTHORIZATION
+====================================================
+1) Determine portfolio grouping using existing model:
+   - Prefer Company.portfolio_id if present and stable
+   - Otherwise use existing parent/holdco linkage already in Ilios
+
+2) Implement helper:
+   get_portfolio_group_company_ids(company_id) -> List[int]
+
+3) Access rules:
+   - A user may see/use portfolio-owned connections ONLY if they have access
+     to at least one company in that same portfolio group.
+   - Creating/editing portfolio-owned connections requires:
+     system admin OR portfolio/company admin role.
+
+====================================================
+PART C — NEW CONNECTION DISCOVERY ENDPOINT
+====================================================
+Add endpoint for Telemetry Wizard Step 1:
+
+GET /api/telemetry/connections/available?company_id={id}
+
+Returns:
+{
+  company_connections: [...],
+  portfolio_connections: [...]
+}
+
+Rules:
+- company_connections = das_connections where company_id == requested company
+- portfolio_connections = das_connections where:
+    owner_type='portfolio'
+    AND owner_company_id belongs to same portfolio group
+- Response fields must include:
+  id, name, provider, owner_type, owner_company_id
+
+Keep existing:
+GET /api/contractors/{company_id}/connections
+for backwards compatibility.
+
+====================================================
+PART D — CONNECTION CREATE / UPDATE ENHANCEMENTS
+====================================================
+1) Extend connection POST/PUT to accept:
+   - owner_type (optional; default 'company')
+   - owner_company_id (required if owner_type='portfolio')
+
+2) Enforce:
+   - Only authorized admins can create portfolio-shared connections
+
+3) Audit events:
+   - CONNECTION_CREATED (include owner_type)
+   - CONNECTION_UPDATED (include owner_type changes)
+   - CONNECTION_DELETED
+
+====================================================
+PART E — UI PLACEMENT (CRITICAL)
+====================================================
+
+A) ADMIN UI — PORTFOLIO / COMPANY MANAGER VIEW
+------------------------------------------------
+Add a new admin area for managing telemetry connections:
+
+Location:
+- Company Admin → Integrations → Telemetry Connections
+
+This is NOT under Settings.
+
+UI Requirements:
+1) Connection Registry Table:
+   - Name
+   - Provider (KMC / AlsoEnergy)
+   - Scope badge: Company | Portfolio (Shared)
+   - Owner company
+   - Used by: number of projects mapped
+   - Last test status + timestamp
+   - Actions: View, Edit, Test, Rotate Credentials, Disable/Delete (if allowed)
+
+2) Create Connection:
+   - “Add Telemetry Connection” CTA
+   - Modal/form with:
+     - Provider
+     - Name
+     - Credentials
+     - Scope toggle: Company-only vs Portfolio shared
+     - If Portfolio: show owner_company (read-only or selectable if admin)
+
+3) Connection Detail Drawer/Page:
+   - Test Connection button
+   - Last test result with detailed error (sanitized)
+   - Audit trail excerpt
+   - List of projects using this connection (links to Project → Telemetry)
+
+B) PROJECT UI — TELEMETRY CONSUMPTION
+------------------------------------
+Keep existing Project → Telemetry tab and wizard:
+
+Wizard Step 1 changes:
+- Replace company-only list with:
+  GET /api/telemetry/connections/available
+- Render grouped select:
+  - “Company Connections”
+  - “Portfolio Connections (Shared)” (clearly badged)
+
+Inline creation:
+- Allowed if user is authorized
+- Includes scope toggle (“Share with Portfolio”)
+
+====================================================
+PART F — DETAILED ERROR PAYLOAD REPORTING (REQUIRED)
+====================================================
+1) Backend error handling:
+   - When Cloud Function returns an error payload, extract:
+     http_status
+     provider_error_code (if present)
+     provider_error_message (sanitized)
+     error_category (AUTH / RATE_LIMIT / PERMISSION / PROVIDER_DOWN / VALIDATION)
+   - Do NOT log secrets or raw credentials.
+   - Return structured error response to frontend (not generic message).
+
+2) Persist last test result:
+   - Add fields to das_connections OR a lightweight table:
+     last_test_at
+     last_test_status (SUCCESS / FAILURE)
+     last_test_http_status
+     last_test_message_sanitized
+
+3) Expose:
+   GET /api/telemetry/connections/{id}/health-lite
+   - Returns last test result for admin UI
+
+4) Frontend:
+   - Telemetry Wizard “Test Connection” shows:
+     - Friendly summary
+     - Expandable “Details” with sanitized provider message/code
+   - Admin registry shows last test status inline
+
+====================================================
+PART G — FIRESTORE & PIPELINE INTERACTION
+====================================================
+- Continue writing Firestore config per operating company as today.
+- Portfolio-owned connections must reference the SAME secret path.
+- Do NOT duplicate secrets or credentials.
+- Do NOT change Cloud Function behavior in this pass.
+
+====================================================
+PART H — DOCUMENTATION & VERIFICATION
+====================================================
+1) Create docs/alsoenergy_portfolio_connections.md covering:
+   - Data model changes
+   - Sharing rules
+   - UI locations
+   - Error reporting model
+
+2) Include 10-minute manual test checklist:
+   - Create portfolio-shared AlsoEnergy connection once
+   - Test connection and view detailed error/success
+   - Map projects from two different companies in same portfolio
+   - Confirm no duplicate secrets created
+   - Confirm wizard shows shared connection
+   - Confirm admin UI shows usage and last test status
+   - Confirm unauthorized users cannot see shared connections
+
+====================================================
+DO NOT DO
+====================================================
+- Do not modify Cloud Function code.
+- Do not persist access tokens.
+- Do not move telemetry setup back into Settings.
+- Do not introduce a new Portfolio table unless absolutely necessary.
+
+Deliverables:
+- Code changes + Alembic migration
+- Admin UI for Telemetry Connections
+- Updated Telemetry Wizard Step 1
+- Documentation file
+- Summary of files changed and endpoints added
