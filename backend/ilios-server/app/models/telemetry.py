@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Identity, Integer, String
+from sqlalchemy import CheckConstraint, Column, DateTime, Enum, ForeignKey, Identity, Integer, String
 from sqlalchemy.orm import relationship
 
 from app.db.base_class import Base
@@ -8,9 +8,13 @@ from app.models.helpers import utcnow
 
 
 class DASProvidersEnum(enum.Enum):
-    # Make sure enum name is same as in telemetry
     kmc = "KMC"
     also_energy = "Also Energy"
+
+
+class DASConnectionOwnerType(enum.Enum):
+    company = "company"
+    portfolio = "portfolio"
 
 
 class DASConnection(Base):
@@ -21,12 +25,15 @@ class DASConnection(Base):
     name = Column(String, nullable=False)
     provider = Column(Enum(DASProvidersEnum), nullable=False)
     secret_token_name = Column(String, nullable=False)
+    
+    owner_type = Column(String(20), nullable=False, default="company")
+    owner_company_id = Column(Integer, ForeignKey("companies.id", ondelete="SET NULL"), nullable=True)
 
-    # setting up the server_default value, that will be filled on the database side
     created_at = Column(DateTime, server_default=utcnow())
     updated_at = Column(DateTime, server_default=utcnow(), onupdate=utcnow())
 
-    company = relationship("Company", back_populates="das_connections")
+    company = relationship("Company", back_populates="das_connections", foreign_keys=[company_id])
+    owner_company = relationship("Company", foreign_keys=[owner_company_id])
     site_mapping = relationship("TelemetrySiteMapping", back_populates="connection", uselist=False)
 
 
