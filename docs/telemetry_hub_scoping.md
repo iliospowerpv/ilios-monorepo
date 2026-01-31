@@ -19,8 +19,9 @@ DAS connections support two ownership types:
 ### Company-Owned Connections (`owner_type = 'company'`)
 - Traditional behavior - connection belongs to a single company
 - `company_id` identifies the owning company
-- `owner_company_id` is NULL
+- `owner_company_id` is **NULL** (not set for company-owned)
 - Only visible to the owning company
+- This is the default behavior when `share_with_portfolio` is false or omitted
 
 ### Portfolio-Shared Connections (`owner_type = 'portfolio'`)
 - Connection shared across all companies in a portfolio hub
@@ -91,10 +92,16 @@ last_test_message TEXT  -- Error details on failure
 ```
 
 When `share_with_portfolio: true`:
-1. System resolves the company's portfolio hub
-2. Sets `owner_type = 'portfolio'`
-3. Sets `owner_company_id = hub_company_id`
-4. Connection becomes discoverable by all hub members
+1. System resolves the company's portfolio hub via `resolve_company_hub_id()`
+2. **Validation**: If company is not part of a hub (hub_id is NULL), returns HTTP 400
+3. Sets `owner_type = 'portfolio'`
+4. Sets `owner_company_id = hub_company_id`
+5. Connection becomes discoverable by all hub members
+
+When `share_with_portfolio: false` (default):
+1. Sets `owner_type = 'company'`
+2. Sets `owner_company_id = NULL`
+3. Connection only visible to the owning company
 
 ## Hub Resolution Logic
 

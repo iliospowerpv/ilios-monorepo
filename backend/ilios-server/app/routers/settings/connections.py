@@ -85,8 +85,18 @@ async def create_das_connection(
         test_message = str(e)
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Connection validation failed: {test_message}")
 
-    owner_type = "portfolio" if das_connection.share_with_portfolio else "company"
-    hub_id = resolve_company_hub_id(db_session, company_id) if das_connection.share_with_portfolio else None
+    owner_type = "company"
+    owner_company_id = None
+    
+    if das_connection.share_with_portfolio:
+        hub_id = resolve_company_hub_id(db_session, company_id)
+        if hub_id is None:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                "Cannot share connection with portfolio: company is not part of a portfolio hub"
+            )
+        owner_type = "portfolio"
+        owner_company_id = hub_id
     
     das_connection_record = {
         "company_id": company_id,
@@ -94,7 +104,7 @@ async def create_das_connection(
         "provider": das_connection.provider,
         "secret_token_name": "",
         "owner_type": owner_type,
-        "owner_company_id": hub_id if owner_type == "portfolio" else company_id,
+        "owner_company_id": owner_company_id,
         "last_test_at": datetime.utcnow(),
         "last_test_status": test_status,
         "last_test_message": test_message,

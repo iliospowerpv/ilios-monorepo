@@ -1,11 +1,11 @@
-"""Backfill owner_company_id and add last_test columns
+"""Add last_test columns for error tracking
 
 Revision ID: b94da896de34
 Revises: a85ca895cd23
 Create Date: 2026-01-31
 
-Backfills existing connections with owner_company_id = company_id
-and adds last_test_* columns for error tracking.
+Adds last_test_* columns for credential validation tracking.
+Existing connections remain with owner_type='company' and owner_company_id=NULL.
 """
 
 from alembic import op
@@ -19,11 +19,6 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute("""
-        UPDATE das_connections
-        SET owner_company_id = company_id
-        WHERE owner_company_id IS NULL
-    """)
     
     op.add_column(
         "das_connections",
