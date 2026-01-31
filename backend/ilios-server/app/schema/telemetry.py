@@ -14,7 +14,9 @@ class TelemetryHealthStatus(str, Enum):
     warn = "WARN"
     error = "ERROR"
     no_data = "NO_DATA"
+    no_data_yet = "NO_DATA_YET"
     not_configured = "NOT_CONFIGURED"
+    mapped_no_devices = "MAPPED_NO_DEVICES"
 
 
 class ConnectionNameSchema(BaseModel):

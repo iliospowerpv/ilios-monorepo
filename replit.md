@@ -74,6 +74,13 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
     - **Audit Trail**: All telemetry operations (connection, site mapping, device mapping changes) are logged to the audit system
     - **Route**: `/asset-management/companies/:companyId/sites/:siteId/telemetry`
     - **API Endpoints**: `/api/telemetry/sites/:siteId/*` for readiness, health, site/device mappings
+    - **Dual-Ownership DAS Connections**: See `docs/telemetry_hub_scoping.md` for full specification
+        - **Company-Owned** (`owner_type='company'`): Traditional single-company connections
+        - **Portfolio-Shared** (`owner_type='portfolio'`): Connections shared across all companies in a portfolio hub
+        - **Hub Boundaries**: All connections, sharing, and discovery constrained to `portfolio_hub_id` boundaries
+        - **Grouped Discovery**: `/api/telemetry/connections/available` returns `company_connections` and `portfolio_connections` arrays
+        - **Test Status Tracking**: `last_test_at`, `last_test_status`, `last_test_message` track credential validation results
+    - **Health Status States**: HEALTHY, WARN, ERROR, NO_DATA, NO_DATA_YET, NOT_CONFIGURED, MAPPED_NO_DEVICES
 
 ## External Dependencies
 - **PostgreSQL**: Used as the primary relational database (Replit built-in for production, separate setup for development).
