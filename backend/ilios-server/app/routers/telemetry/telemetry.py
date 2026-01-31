@@ -192,9 +192,14 @@ async def update_site_mapping(
     db_session: Session = Depends(get_session),
 ) -> dict:
     """Update existing site mapping"""
+    from app.crud.das_connection import DASConnectionCRUD
+    
     telemetry_mapping = mapping.model_dump()
-    if mapping.connection_id not in [connection.id for connection in site.company.das_connections]:
-        raise HTTPException(status.HTTP_403_FORBIDDEN)
+    accessible_connections = DASConnectionCRUD(db_session).get_hub_connections(site.company_id)
+    accessible_connection_ids = [conn.id for conn in accessible_connections]
+    
+    if mapping.connection_id not in accessible_connection_ids:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Connection not accessible to this company")
     update_site_mapping_for_telemetry(site, telemetry_mapping, db_session)
 
     _create_audit_log(

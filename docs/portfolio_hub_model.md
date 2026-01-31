@@ -100,6 +100,35 @@ company_ids = get_portfolio_group_company_ids(db_session, hub_id)
 # Returns [1, 5, 8, 12] - hub + member companies
 ```
 
+## Security Guardrails
+
+### Telemetry Hub Boundary Enforcement
+
+**GUARDRAIL: All telemetry connections, sharing, discovery, and UI visibility MUST be constrained to portfolio_hub_id boundaries.**
+
+No telemetry object, credential, or health signal may be visible outside its hub scope, except to system administrators in explicit admin views.
+
+#### Enforcement Points
+
+| Endpoint/Operation | Scope | Implementation |
+|-------------------|-------|----------------|
+| Connection CRUD (`/settings/.../connections`) | Company-only | Uses `get_authorized_company` - can only manage own connections |
+| Connection Discovery (`/telemetry/.../available-connections`) | Hub-scoped | Uses `get_hub_connections()` - sees own + hub-shared connections |
+| Site Mapping Create | Hub-scoped | Validates `connection_id` against `get_hub_connections()` |
+| Site Mapping Update | Hub-scoped | Validates `connection_id` against `get_hub_connections()` |
+| Health Monitoring | Site-scoped | Only queries site's own devices from BigQuery |
+| Device Mapping | Site-scoped | Only site's own devices can be mapped |
+
+#### Key Implementation Details
+
+1. **DASConnectionCRUD.get_hub_connections(company_id)**: Returns all connections accessible to a company:
+   - Own company's connections
+   - Connections from other companies in the same portfolio hub
+
+2. **Connection ID Validation**: Both `create_site_mapping()` and `update_site_mapping()` must validate that the provided `connection_id` is in the accessible connections list
+
+3. **No Cross-Hub Leakage**: A company in Hub A cannot use connections from Hub B, even if both hubs exist in the same database
+
 ## Future Considerations
 
 - Admin UI for managing hub assignments (companies → hubs)
