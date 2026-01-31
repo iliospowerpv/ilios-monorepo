@@ -28,6 +28,10 @@ class DASConnection(Base):
     
     owner_type = Column(String(20), nullable=False, default="company")
     owner_company_id = Column(Integer, ForeignKey("companies.id", ondelete="SET NULL"), nullable=True)
+    
+    last_test_at = Column(DateTime, nullable=True)
+    last_test_status = Column(String(20), nullable=True)
+    last_test_message = Column(String(500), nullable=True)
 
     created_at = Column(DateTime, server_default=utcnow())
     updated_at = Column(DateTime, server_default=utcnow(), onupdate=utcnow())

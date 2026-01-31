@@ -34,7 +34,12 @@ class Company(RelatedBoards, Base):
 
     sites = relationship("Site", back_populates="company")
     users = relationship("User", back_populates="parent_company")
-    das_connections = relationship("DASConnection", back_populates="company", order_by="DASConnection.name")
+    das_connections = relationship(
+        "DASConnection",
+        back_populates="company",
+        order_by="DASConnection.name",
+        foreign_keys="DASConnection.company_id"
+    )
     
     portfolio_hub = relationship(
         "Company",

@@ -1,4 +1,7 @@
-from typing import List
+from datetime import datetime
+from typing import Dict, List, Optional
+
+from sqlalchemy.orm import joinedload
 
 from app.crud.base_crud import BaseCRUD
 from app.models.company import Company
@@ -23,8 +26,8 @@ class DASConnectionCRUD(BaseCRUD):
         """Get all DAS connections accessible to a company through portfolio hub.
         
         This includes:
-        - Connections owned by the company itself
-        - Connections from other companies in the same portfolio hub (shared connections)
+        - Company-owned connections (owner_type='company', company_id matches)
+        - Portfolio-shared connections (owner_type='portfolio', same hub)
         
         Args:
             company_id: The company ID to find hub connections for
@@ -34,14 +37,75 @@ class DASConnectionCRUD(BaseCRUD):
         """
         from app.helpers.portfolio_hub import resolve_company_hub_id, get_portfolio_group_company_ids
         
-        hub_id = resolve_company_hub_id(self.db_session, company_id)
-        if hub_id is None:
-            return list(self.db_session.query(self.model).filter(self.model.company_id == company_id).all())
-        
-        hub_company_ids = get_portfolio_group_company_ids(self.db_session, hub_id)
-        return list(
+        company_connections = list(
             self.db_session.query(self.model)
-            .filter(self.model.company_id.in_(hub_company_ids))
-            .order_by(self.model.company_id, self.model.name)
+            .filter(self.model.company_id == company_id)
+            .filter(self.model.owner_type == "company")
             .all()
         )
+        
+        hub_id = resolve_company_hub_id(self.db_session, company_id)
+        if hub_id is None:
+            return company_connections
+        
+        hub_company_ids = get_portfolio_group_company_ids(self.db_session, hub_id)
+        portfolio_connections = list(
+            self.db_session.query(self.model)
+            .filter(self.model.owner_type == "portfolio")
+            .filter(self.model.owner_company_id.in_(hub_company_ids))
+            .all()
+        )
+        
+        return company_connections + portfolio_connections
+
+    def get_available_connections_grouped(self, company_id: int) -> Dict[str, List[DASConnection]]:
+        """Get connections grouped by ownership type for the wizard UI.
+        
+        Args:
+            company_id: The company ID to find connections for
+            
+        Returns:
+            Dict with 'company_connections' and 'portfolio_connections' lists
+        """
+        from app.helpers.portfolio_hub import resolve_company_hub_id, get_portfolio_group_company_ids
+        
+        company_connections = list(
+            self.db_session.query(self.model)
+            .options(joinedload(self.model.company))
+            .filter(self.model.company_id == company_id)
+            .filter(self.model.owner_type == "company")
+            .order_by(self.model.name)
+            .all()
+        )
+        
+        hub_id = resolve_company_hub_id(self.db_session, company_id)
+        portfolio_connections = []
+        
+        if hub_id is not None:
+            hub_company_ids = get_portfolio_group_company_ids(self.db_session, hub_id)
+            portfolio_connections = list(
+                self.db_session.query(self.model)
+                .options(joinedload(self.model.company), joinedload(self.model.owner_company))
+                .filter(self.model.owner_type == "portfolio")
+                .filter(self.model.owner_company_id.in_(hub_company_ids))
+                .order_by(self.model.name)
+                .all()
+            )
+        
+        return {
+            "company_connections": company_connections,
+            "portfolio_connections": portfolio_connections,
+        }
+
+    def update_test_status(
+        self,
+        connection_id: int,
+        status: str,
+        message: Optional[str] = None
+    ) -> None:
+        """Update the last test status for a connection."""
+        self.update_by_id(connection_id, {
+            "last_test_at": datetime.utcnow(),
+            "last_test_status": status,
+            "last_test_message": message[:500] if message else None,
+        })

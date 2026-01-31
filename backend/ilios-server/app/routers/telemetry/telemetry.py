@@ -26,6 +26,8 @@ from app.helpers.telemetry.telemetry_helper import (
 from app.models.device import Device, DeviceCategories
 from app.models.site import Site
 from app.schema.telemetry import (
+    AvailableConnectionSchema,
+    AvailableConnectionsResponse,
     BulkDeviceMappingResponse,
     BulkDeviceMappingSchema,
     ConnectionTestResponse,
@@ -111,8 +113,54 @@ async def test_connection(
 
 
 @telemetry_router.get(
+    "/connections/available",
+    response_model=AvailableConnectionsResponse,
+    description="Get DAS connections available for a company, grouped by ownership type",
+    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.view)))],
+)
+async def get_available_connections(
+    company_id: int,
+    db_session: Session = Depends(get_session),
+):
+    """Get all DAS connections available for a company.
+    
+    Returns connections grouped by:
+    - company_connections: Connections owned by this company
+    - portfolio_connections: Portfolio-shared connections from other companies in same hub
+    """
+    from app.crud.das_connection import DASConnectionCRUD
+    from app.models.company import Company
+    
+    company = db_session.query(Company).get(company_id)
+    if not company:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Company not found")
+    
+    grouped = DASConnectionCRUD(db_session).get_available_connections_grouped(company_id)
+    
+    def _serialize_connection(conn):
+        return AvailableConnectionSchema(
+            id=conn.id,
+            name=conn.name,
+            provider=conn.provider.value,
+            company_id=conn.company_id,
+            company_name=conn.company.name if conn.company else "Unknown",
+            owner_type=conn.owner_type,
+            owner_company_id=conn.owner_company_id,
+            owner_company_name=conn.owner_company.name if conn.owner_company else None,
+            last_test_at=conn.last_test_at,
+            last_test_status=conn.last_test_status,
+            last_test_message=conn.last_test_message,
+        )
+    
+    return AvailableConnectionsResponse(
+        company_connections=[_serialize_connection(c) for c in grouped["company_connections"]],
+        portfolio_connections=[_serialize_connection(c) for c in grouped["portfolio_connections"]],
+    )
+
+
+@telemetry_router.get(
     "/sites/{site_id}/available-connections",
-    response_model=dict,
+    response_model=AvailableConnectionsResponse,
     description="Get DAS connections available for this site (company + hub shared)",
     dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.view)))],
 )
@@ -122,27 +170,33 @@ async def get_site_available_connections(
 ):
     """Get all DAS connections available for this site.
     
-    Returns connections from:
-    - The site's own company
-    - Other companies in the same portfolio hub (shared connections)
+    Returns connections grouped by:
+    - company_connections: Connections owned by the site's company
+    - portfolio_connections: Portfolio-shared connections from other companies in same hub
     """
     from app.crud.das_connection import DASConnectionCRUD
     
-    connections = DASConnectionCRUD(db_session).get_hub_connections(site.company_id)
+    grouped = DASConnectionCRUD(db_session).get_available_connections_grouped(site.company_id)
     
-    items = []
-    for conn in connections:
-        is_own_company = conn.company_id == site.company_id
-        items.append({
-            "id": conn.id,
-            "name": conn.name,
-            "provider": conn.provider.value,
-            "company_id": conn.company_id,
-            "company_name": conn.company.name if conn.company else "Unknown",
-            "is_shared": not is_own_company,
-        })
+    def _serialize_connection(conn):
+        return AvailableConnectionSchema(
+            id=conn.id,
+            name=conn.name,
+            provider=conn.provider.value,
+            company_id=conn.company_id,
+            company_name=conn.company.name if conn.company else "Unknown",
+            owner_type=conn.owner_type,
+            owner_company_id=conn.owner_company_id,
+            owner_company_name=conn.owner_company.name if conn.owner_company else None,
+            last_test_at=conn.last_test_at,
+            last_test_status=conn.last_test_status,
+            last_test_message=conn.last_test_message,
+        )
     
-    return {"items": items}
+    return AvailableConnectionsResponse(
+        company_connections=[_serialize_connection(c) for c in grouped["company_connections"]],
+        portfolio_connections=[_serialize_connection(c) for c in grouped["portfolio_connections"]],
+    )
 
 
 @telemetry_router.post(

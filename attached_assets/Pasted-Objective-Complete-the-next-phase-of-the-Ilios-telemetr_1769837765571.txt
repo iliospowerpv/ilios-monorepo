@@ -1,0 +1,313 @@
+Objective
+
+Complete the next phase of the Ilios telemetry system by enhancing project-scoped telemetry management, supporting portfolio hub–scoped shared DAS connections (AlsoEnergy & KMC), and improving error transparency and health visibility, while preserving the existing cloud pipeline.
+
+This work builds directly on:
+
+The completed Telemetry Wizard + Project Telemetry Tab
+
+The portfolio hub boundary fix (portfolio_hub_id)
+
+The existing GCP Cloud Functions + Secrets Manager + Firestore + BigQuery architecture
+
+NON-NEGOTIABLE GUARDRAILS
+
+Portfolio hub enforcement
+
+All telemetry connections, discovery, sharing, and visibility MUST be constrained to portfolio_hub_id.
+
+No telemetry object (connection, credential, mapping, health signal) may be visible outside its hub scope.
+
+“Portfolio” NEVER means global. It means the user’s portfolio of companies within a hub.
+
+Project-first UX
+
+Telemetry hookup and management MUST be initiated from:
+
+Project → Telemetry tab (Asset Management)
+
+Mirrored read-only view in Operations
+
+Settings / Admin views may exist for registry & oversight, but must NOT be required to complete telemetry setup.
+
+Preserve existing cloud architecture
+
+Keep: GCP Secrets Manager, Firestore, Cloud Functions, BigQuery.
+
+Do NOT introduce new cloud services, schedulers, or token persistence.
+
+Only extend what already exists.
+
+Scoped build
+
+Implement ONLY what is required for:
+
+hub-scoped connections
+
+improved error payload reporting
+
+health visibility
+
+safe CRUD for mappings
+
+No new role systems, workflow engines, or dashboards beyond telemetry scope.
+
+CURRENT STATE (CONFIRMED)
+
+Telemetry Wizard (4-step) exists and works
+
+Project Telemetry tab exists with readiness + health strips
+
+DAS connections are currently company-scoped only
+
+AlsoEnergy credentials are portfolio-licensed in reality
+
+Portfolio hub boundary is implemented and enforced
+
+Access resolution correctly filters companies by hub
+
+BUILD REQUIREMENTS
+PART A — Data Model Enhancements (Backend)
+
+Extend das_connections to support hub-scoped ownership:
+
+ALTER TABLE das_connections
+ADD COLUMN owner_type VARCHAR(20) NOT NULL DEFAULT 'company'
+  CHECK (owner_type IN ('company', 'portfolio')),
+ADD COLUMN owner_company_id INTEGER NULL REFERENCES companies(id);
+
+CREATE INDEX idx_das_connections_owner
+ON das_connections(owner_type, owner_company_id);
+
+
+Semantics:
+
+company → visible only to that company
+
+portfolio → visible to all companies sharing the same portfolio_hub_id
+
+owner_company_id identifies the managing (hub) company
+
+Backfill existing records:
+
+owner_type = 'company'
+
+owner_company_id = company_id
+
+PART B — Connection Discovery (Backend API)
+
+Create new endpoint:
+
+GET /api/telemetry/connections/available?company_id={id}
+
+
+Behavior:
+
+Resolve the company’s portfolio_hub_id
+
+Return:
+
+company_connections → owned by this company
+
+portfolio_connections → owned by companies within the same hub where owner_type = 'portfolio'
+
+Response shape:
+
+{
+  "company_connections": [...],
+  "portfolio_connections": [...]
+}
+
+
+Authorization:
+
+User must have access to the company
+
+Portfolio connections only returned if hub matches
+
+PART C — Connection Creation & Management
+
+Extend existing connection create/update flows to support:
+
+owner_type: 'company' | 'portfolio'
+
+owner_company_id automatically set when portfolio
+
+Rules:
+
+Only company admins or portfolio admins may create portfolio-shared connections
+
+Portfolio connections are managed by the hub company
+
+Audit all create/update/delete events
+
+PART D — Telemetry Wizard (Frontend Updates)
+Step 1: Connection Selection
+
+Replace existing connection query with /connections/available
+
+Render grouped select:
+
+Company Connections
+
+Portfolio Connections (Shared) with badge
+
+When creating a new connection:
+
+Add toggle: “Share with Portfolio”
+
+Only visible if user has portfolio admin privileges
+
+Error Handling in Wizard
+
+Display provider-specific errors returned from backend (when available)
+
+Fall back gracefully if only generic errors are present
+
+PART E — Error Payload Reporting (Backend + UI)
+Backend
+
+Enhance Cloud Function response handling to extract:
+
+provider error message (if present)
+
+error category (auth, permission, rate-limit, unavailable)
+
+Do NOT require Cloud Function changes to proceed
+
+Add optional fields to responses
+
+Persist last test results on das_connections:
+last_test_at TIMESTAMP NULL
+last_test_status VARCHAR(20) NULL  -- SUCCESS | FAILURE
+last_test_message VARCHAR(500) NULL
+
+Frontend
+
+Show last test status in:
+
+Telemetry Wizard Step 1
+
+Telemetry Tab health section
+
+Surface sanitized error messages to users
+
+Never expose credentials or tokens
+
+PART F — Health & Sync Visibility
+
+Derive health using existing BigQuery functions:
+
+device_last_report_ts
+
+existing Redis caching
+
+Health states:
+
+NOT_CONFIGURED
+
+MAPPED_NO_DEVICES
+
+NO_DATA_YET
+
+HEALTHY
+
+WARN
+
+ERROR
+
+Display:
+
+Status badge
+
+Last data timestamp
+
+Troubleshooting guidance for NO_DATA_YET and ERROR
+
+PART G — Mapping CRUD Enhancements
+
+Add missing safe operations:
+
+DELETE site mapping endpoint
+
+Update device mappings for existing devices
+
+Bulk device mapping already exists — keep it
+
+Ensure:
+
+Cache invalidation on mapping changes
+
+Audit trail entries for all mapping changes
+
+PART H — UI Placement Rules
+
+Project → Telemetry tab
+
+Primary place for setup and management
+
+Wizard launched from here
+
+Portfolio Admin → Integrations / Telemetry
+
+Registry view of connections
+
+Hub-scoped management only
+
+No site/device mapping here
+
+Settings
+
+Optional legacy access only
+
+Must NOT be required for telemetry setup
+
+PART I — Documentation
+
+Update or create:
+
+docs/telemetry_hub_scoping.md
+
+docs/telemetry_error_handling.md
+
+Update replit.md telemetry section
+
+Include:
+
+Ownership model
+
+Hub sharing rules
+
+Error handling behavior
+
+Operational runbook notes
+
+ACCEPTANCE TESTS (REQUIRED)
+
+User with access to Hub A cannot see or use connections from Hub B
+
+Portfolio-shared AlsoEnergy connection appears for all companies in same hub
+
+Project Telemetry Wizard completes without visiting Settings
+
+Invalid AlsoEnergy credentials surface meaningful error
+
+Health reflects BigQuery data accurately
+
+Removing a mapping cleans up health and cache safely
+
+System admin can see all connections ONLY in admin views
+
+OUTPUT EXPECTATION
+
+When complete, provide:
+
+List of files changed
+
+New endpoints added
+
+Schema migrations
+
+Any deferred follow-ups explicitly listed (none hidden)
+
+Proceed to Build Mode using this prompt.

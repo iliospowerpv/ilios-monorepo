@@ -1,14 +1,17 @@
 """Telemetry related endpoint serves O&M connections to telemetry providers"""
 
 import logging
+from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
+from app.crud.audit_log import AuditLogCRUD
 from app.crud.das_connection import DASConnectionCRUD
 from app.db.session import get_session
 from app.firestore_models.firestore_company_config import FSCompanyConfig, FSConnection
 from app.helpers.authorization import AuthorizedUser, SettingsPermissions
 from app.helpers.authorization.project_access import get_authorized_company, get_authorized_connection
+from app.helpers.portfolio_hub import resolve_company_hub_id
 from app.helpers.telemetry.firestore_client import FirestoreClient
 from app.helpers.telemetry.secrets_manager import GCPSecretsManager
 from app.helpers.telemetry.telemetry_cloud_function_client import TelemetryFuncHTTPClient
@@ -32,6 +35,21 @@ logger = logging.getLogger(__name__)
 settings_connections_router = APIRouter()
 
 
+def _create_audit_log(request: Request, db_session: Session, action: str, details: str, is_success: bool = True):
+    """Create an audit log entry for connection operations"""
+    try:
+        user_id = getattr(request.state, "current_user_id", None)
+        AuditLogCRUD(db_session).create_item({
+            "source": "telemetry_connections",
+            "action": action,
+            "details": details,
+            "is_success": is_success,
+            "user_id": user_id,
+        })
+    except Exception as e:
+        logger.warning(f"Failed to create audit log: {e}")
+
+
 @settings_connections_router.post(
     "/",
     status_code=status.HTTP_201_CREATED,
@@ -43,38 +61,53 @@ settings_connections_router = APIRouter()
     ],
 )
 async def create_das_connection(
+    request: Request,
     company_id: int,
     das_connection: ConnectionCreateSchema,
     db_session: Session = Depends(get_session),
 ):
     das_connection_crud = DASConnectionCRUD(db_session)
-    # Validate connection name is unique within company
     if das_connection_crud.get_company_connection_by_name(company_id, das_connection.name):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, TelemetryMessages.connection_name_already_exists)
 
     credentials = format_das_credentials(das_connection.provider, das_connection)
+    
+    test_status = "SUCCESS"
+    test_message = None
+    try:
+        TelemetryFuncHTTPClient().validate_token(das_connection.provider.name, credentials)
+    except HTTPException as e:
+        test_status = "FAILURE"
+        test_message = str(e.detail) if hasattr(e, "detail") else "Connection validation failed"
+        raise
+    except Exception as e:
+        test_status = "FAILURE"
+        test_message = str(e)
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Connection validation failed: {test_message}")
 
-    # Validate credentials
-    TelemetryFuncHTTPClient().validate_token(das_connection.provider.name, credentials)
-
+    owner_type = "portfolio" if das_connection.share_with_portfolio else "company"
+    hub_id = resolve_company_hub_id(db_session, company_id) if das_connection.share_with_portfolio else None
+    
     das_connection_record = {
         "company_id": company_id,
         "name": das_connection.name,
         "provider": das_connection.provider,
         "secret_token_name": "",
+        "owner_type": owner_type,
+        "owner_company_id": hub_id if owner_type == "portfolio" else company_id,
+        "last_test_at": datetime.utcnow(),
+        "last_test_status": test_status,
+        "last_test_message": test_message,
     }
     connection = das_connection_crud.create_item(das_connection_record)
-    # Prepare auth secret name in format `{env_name}-company-{company_id}-connection-{connection_id}
     secret_name = f"{settings.environment_name}-company-{company_id}-connection-{connection.id}"
     connection.secret_token_name = secret_name
 
     try:
-        # Create secret in GCP
         secret_manager = GCPSecretsManager()
         secret_manager.create_secret(secret_name)
         secret_manager.add_secret_version(secret_name, credentials)
 
-        # Create pipeline config in Firestore if not exists, otherwise update with new connection
         fs_connection = FSConnection(
             _id=connection.id,
             data_provider=das_connection.provider.name,
@@ -90,6 +123,13 @@ async def create_das_connection(
             firestore_client.update_company_config(fs_company_config)
 
         db_session.commit()
+        
+        _create_audit_log(
+            request,
+            db_session,
+            "connection_created",
+            f"Created {owner_type} connection '{das_connection.name}' (ID: {connection.id}) for company {company_id}",
+        )
     except Exception as exception:
         das_connection_crud.delete_by_id(connection.id)
         raise exception
@@ -117,27 +157,43 @@ async def get_company_connections(
     dependencies=[Depends(AuthorizedUser(SettingsPermissions(PermissionsActions.edit)))],
 )
 async def update_das_connection(
+    request: Request,
     payload: ConnectionUpdateSchema,
     connection: DASConnection = Depends(get_authorized_connection),
     db_session: Session = Depends(get_session),
 ):
     das_connection_crud = DASConnectionCRUD(db_session)
 
-    # Validate connection name is unique within company if name was updated
     if connection.name != payload.name:
         if das_connection_crud.get_company_connection_by_name(connection.company_id, payload.name):
             raise HTTPException(status.HTTP_400_BAD_REQUEST, TelemetryMessages.connection_name_already_exists)
-        # Update connection name in DB
         das_connection_crud.update_by_id(connection.id, {"name": payload.name})
 
-    # Update secret credentials has been changed
     credentials = format_das_credentials(connection.provider, payload)
     if credentials is not None:
-        # Validate token
-        TelemetryFuncHTTPClient().validate_token(connection.provider.name, credentials)
+        try:
+            TelemetryFuncHTTPClient().validate_token(connection.provider.name, credentials)
+            das_connection_crud.update_test_status(connection.id, "SUCCESS")
+        except HTTPException as e:
+            das_connection_crud.update_test_status(
+                connection.id,
+                "FAILURE",
+                str(e.detail) if hasattr(e, "detail") else "Validation failed"
+            )
+            raise
+        except Exception as e:
+            das_connection_crud.update_test_status(connection.id, "FAILURE", str(e))
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Connection validation failed: {e}")
 
         secret_manager = GCPSecretsManager()
         secret_manager.add_secret_version(connection.secret_token_name, credentials)
+
+    _create_audit_log(
+        request,
+        db_session,
+        "connection_updated",
+        f"Updated connection '{connection.name}' (ID: {connection.id})",
+    )
 
     return {"code": status.HTTP_202_ACCEPTED, "message": TelemetryMessages.connection_update_success}
 
@@ -150,21 +206,34 @@ async def update_das_connection(
     dependencies=[Depends(AuthorizedUser(SettingsPermissions(PermissionsActions.edit)))],
 )
 async def delete_das_connection(
+    request: Request,
     connection: DASConnection = Depends(get_authorized_connection),
     db_session: Session = Depends(get_session),
 ):
+    connection_name = connection.name
+    connection_id = connection.id
+    company_id = connection.company_id
+    
     firestore_client = FirestoreClient()
     fs_company_config = firestore_client.get_company_config(connection.company_id)
-    fs_company_config.delete_connection(connection.id)
-    # If no other connections remove config from Firestore, otherwise update with new connections list
-    if not fs_company_config.connections:
-        firestore_client.delete_company_config(fs_company_config.id)
-    else:
-        firestore_client.update_company_config(fs_company_config)
+    if fs_company_config:
+        fs_company_config.delete_connection(connection.id)
+        if not fs_company_config.connections:
+            firestore_client.delete_company_config(fs_company_config.id)
+        else:
+            firestore_client.update_company_config(fs_company_config)
 
     secret_manager = GCPSecretsManager()
     secret_manager.delete_secret(connection.secret_token_name)
     DASConnectionCRUD(db_session).delete_by_id(connection.id)
+    
+    _create_audit_log(
+        request,
+        db_session,
+        "connection_deleted",
+        f"Deleted connection '{connection_name}' (ID: {connection_id}) from company {company_id}",
+    )
+    
     return {"code": status.HTTP_200_OK, "message": TelemetryMessages.connection_delete_success}
 
 

@@ -37,6 +37,11 @@ class ConnectionPayloadSchema(BaseModel):
 
 class ConnectionCreateSchema(ConnectionBaseSchema, ConnectionPayloadSchema):
     """Extend connection name+provider with payload"""
+    
+    share_with_portfolio: bool = Field(
+        default=False,
+        description="If True, connection will be shared with all companies in the portfolio hub"
+    )
 
     @model_validator(mode="after")
     def verify_credentials_payload(self):
@@ -66,6 +71,31 @@ class ConnectionSchema(ConnectionBaseSchema):
 
 class ConnectionsListSchema(BaseModel):
     items: list[ConnectionSchema]
+
+
+class AvailableConnectionSchema(BaseModel):
+    id: int = Field(examples=[1])
+    name: str = Field(examples=["AlsoEnergy Production"])
+    provider: str = Field(examples=["Also Energy"])
+    company_id: int = Field(examples=[1])
+    company_name: str = Field(examples=["Acme Solar"])
+    owner_type: str = Field(examples=["company"])
+    owner_company_id: Optional[int] = Field(None, examples=[1])
+    owner_company_name: Optional[str] = Field(None, examples=["Portfolio Hub Co"])
+    last_test_at: Optional[datetime] = Field(None)
+    last_test_status: Optional[str] = Field(None, examples=["SUCCESS"])
+    last_test_message: Optional[str] = Field(None)
+
+
+class AvailableConnectionsResponse(BaseModel):
+    company_connections: list[AvailableConnectionSchema] = Field(
+        default_factory=list,
+        description="Connections owned by the company"
+    )
+    portfolio_connections: list[AvailableConnectionSchema] = Field(
+        default_factory=list,
+        description="Portfolio-shared connections from other companies in the same hub"
+    )
 
 
 class ConnectionUpdateSchema(ConnectionCreateSchema):
