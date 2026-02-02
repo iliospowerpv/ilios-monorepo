@@ -38,7 +38,7 @@ export const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ open, 
         phone: phone || null,
         address: address || null
       }),
-    onSuccess: (response) => {
+    onSuccess: response => {
       const newCompanyId = (response as unknown as { id?: number }).id;
       if (newCompanyId) {
         setCurrentCompany({ id: newCompanyId, name });
@@ -92,17 +92,18 @@ export const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ open, 
               autoFocus
             />
 
-            <TextField
-              label="Email"
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              fullWidth
-            />
+            <TextField label="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} fullWidth />
 
             <TextField label="Phone" value={phone} onChange={e => setPhone(e.target.value)} fullWidth />
 
-            <TextField label="Address" value={address} onChange={e => setAddress(e.target.value)} fullWidth multiline rows={2} />
+            <TextField
+              label="Address"
+              value={address}
+              onChange={e => setAddress(e.target.value)}
+              fullWidth
+              multiline
+              rows={2}
+            />
           </Box>
         </DialogContent>
         <DialogActions>

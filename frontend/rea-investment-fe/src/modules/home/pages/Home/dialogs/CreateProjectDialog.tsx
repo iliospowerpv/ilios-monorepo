@@ -58,8 +58,8 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, 
         city,
         state,
         zip_code: zipCode,
-        system_size_ac: systemSizeAc as number || 0,
-        system_size_dc: systemSizeDc as number || 0,
+        system_size_ac: (systemSizeAc as number) || 0,
+        system_size_dc: (systemSizeDc as number) || 0,
         lon_lat_url: ''
       }),
     onSuccess: response => {
@@ -117,11 +117,7 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, 
 
             <FormControl fullWidth required>
               <InputLabel>Company</InputLabel>
-              <Select
-                value={companyId}
-                onChange={e => setCompanyId(e.target.value as number)}
-                label="Company"
-              >
+              <Select value={companyId} onChange={e => setCompanyId(e.target.value as number)} label="Company">
                 {companies.map(company => (
                   <MenuItem key={company.company_id} value={company.company_id}>
                     {company.company_name}
@@ -130,30 +126,19 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, 
               </Select>
             </FormControl>
 
-            <TextField
-              label="Project Name"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              required
-              fullWidth
-            />
+            <TextField label="Project Name" value={name} onChange={e => setName(e.target.value)} required fullWidth />
 
-            <TextField
-              label="Address"
-              value={address}
-              onChange={e => setAddress(e.target.value)}
-              fullWidth
-            />
+            <TextField label="Address" value={address} onChange={e => setAddress(e.target.value)} fullWidth />
 
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField label="City" value={city} onChange={e => setCity(e.target.value)} fullWidth />
+              <TextField label="State" value={state} onChange={e => setState(e.target.value)} sx={{ width: 100 }} />
               <TextField
-                label="State"
-                value={state}
-                onChange={e => setState(e.target.value)}
-                sx={{ width: 100 }}
+                label="Zip Code"
+                value={zipCode}
+                onChange={e => setZipCode(e.target.value)}
+                sx={{ width: 120 }}
               />
-              <TextField label="Zip Code" value={zipCode} onChange={e => setZipCode(e.target.value)} sx={{ width: 120 }} />
             </Box>
 
             <Box sx={{ display: 'flex', gap: 2 }}>

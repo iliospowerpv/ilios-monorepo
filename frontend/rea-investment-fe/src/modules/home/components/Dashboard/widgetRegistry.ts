@@ -1,5 +1,3 @@
-import { ComponentType } from 'react';
-
 export interface WidgetDefinition {
   id: string;
   title: string;
@@ -55,7 +53,6 @@ export const DEFAULT_VISIBLE_WIDGETS = ['tasks', 'notifications', 'quickActions'
 
 export const getDefaultLayout = (visibleWidgets: string[]) => {
   const layout: Array<{ i: string; x: number; y: number; w: number; h: number; minW?: number; minH?: number }> = [];
-  let currentY = 0;
 
   visibleWidgets.forEach(widgetId => {
     const widget = WIDGET_DEFINITIONS[widgetId];
@@ -65,7 +62,7 @@ export const getDefaultLayout = (visibleWidgets: string[]) => {
       layout.push({
         i: widgetId,
         x: 0,
-        y: currentY,
+        y: 0,
         w: widget.defaultWidth,
         h: widget.defaultHeight,
         minW: widget.minWidth,

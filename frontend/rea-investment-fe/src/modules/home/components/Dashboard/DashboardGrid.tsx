@@ -31,6 +31,36 @@ interface DashboardGridProps {
   containerWidth?: number;
 }
 
+const reconcileLayout = (savedLayout: LayoutItem[], visibleWidgets: string[]): LayoutItem[] => {
+  const layoutMap = new Map(savedLayout.map(item => [item.i, item]));
+  const reconciledLayout: LayoutItem[] = [];
+  let maxY = 0;
+
+  visibleWidgets.forEach(widgetId => {
+    const existingItem = layoutMap.get(widgetId);
+    if (existingItem) {
+      reconciledLayout.push(existingItem);
+      maxY = Math.max(maxY, existingItem.y + existingItem.h);
+    } else {
+      const widget = WIDGET_DEFINITIONS[widgetId];
+      if (widget) {
+        reconciledLayout.push({
+          i: widgetId,
+          x: 0,
+          y: maxY,
+          w: widget.defaultWidth,
+          h: widget.defaultHeight,
+          minW: widget.minWidth,
+          minH: widget.minHeight
+        });
+        maxY += widget.defaultHeight;
+      }
+    }
+  });
+
+  return reconciledLayout;
+};
+
 export const DashboardGrid: React.FC<DashboardGridProps> = ({ widgetComponents, containerWidth = 1200 }) => {
   const [layout, setLayout] = useState<LayoutItem[]>([]);
   const [visibleWidgets, setVisibleWidgets] = useState<string[]>([]);
@@ -41,18 +71,23 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ widgetComponents, 
     const savedLayout = localStorage.getItem(STORAGE_KEY_LAYOUT);
     const savedWidgets = localStorage.getItem(STORAGE_KEY_WIDGETS);
 
+    let widgets: string[];
     if (savedWidgets) {
-      const widgets = JSON.parse(savedWidgets) as string[];
-      setVisibleWidgets(widgets);
-      if (savedLayout) {
-        setLayout(JSON.parse(savedLayout) as LayoutItem[]);
-      } else {
-        setLayout(getDefaultLayout(widgets) as LayoutItem[]);
-      }
+      widgets = JSON.parse(savedWidgets) as string[];
+      widgets = widgets.filter(id => WIDGET_DEFINITIONS[id]);
     } else {
-      setVisibleWidgets(DEFAULT_VISIBLE_WIDGETS);
-      setLayout(getDefaultLayout(DEFAULT_VISIBLE_WIDGETS) as LayoutItem[]);
+      widgets = DEFAULT_VISIBLE_WIDGETS;
     }
+
+    setVisibleWidgets(widgets);
+
+    if (savedLayout) {
+      const parsedLayout = JSON.parse(savedLayout) as LayoutItem[];
+      setLayout(reconcileLayout(parsedLayout, widgets));
+    } else {
+      setLayout(getDefaultLayout(widgets) as LayoutItem[]);
+    }
+
     setIsInitialized(true);
   }, []);
 
@@ -140,11 +175,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ widgetComponents, 
       >
         {visibleWidgets.map(widgetId => (
           <div key={widgetId}>
-            <WidgetWrapper
-              widgetId={widgetId}
-              onRemove={handleRemoveWidget}
-              showHeader={widgetId !== 'tasks' && widgetId !== 'notifications'}
-            >
+            <WidgetWrapper widgetId={widgetId} onRemove={handleRemoveWidget}>
               {widgetComponents[widgetId]}
             </WidgetWrapper>
           </div>

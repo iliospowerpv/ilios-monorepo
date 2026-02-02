@@ -1,7 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 
@@ -11,6 +10,7 @@ import { HomeTasks } from '../../components/HomeTasks';
 import { HomeNotifications } from '../../components/HomeNotifications';
 import { HomeCompanies } from '../../components/HomeCompanies';
 import { HomeQuickActions } from '../../components/HomeQuickActions';
+import { DashboardGrid } from '../../components/Dashboard/DashboardGrid';
 import { CreateCompanyDialog, CreateProjectDialog, InviteUserDialog } from './dialogs';
 
 export const HomePage: React.FC = () => {
@@ -18,6 +18,8 @@ export const HomePage: React.FC = () => {
   const [createCompanyOpen, setCreateCompanyOpen] = useState(false);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [inviteUserOpen, setInviteUserOpen] = useState(false);
+  const [containerWidth, setContainerWidth] = useState(1200);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const {
     data: workspace,
@@ -29,6 +31,18 @@ export const HomePage: React.FC = () => {
     queryFn: () => ApiClient.workspace.getWorkspace(),
     staleTime: 5 * 60 * 1000
   });
+
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth);
+      }
+    };
+
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
 
   const handleNotificationsLoaded = useCallback((count: number) => {
     setNotificationsCount(count);
@@ -48,6 +62,22 @@ export const HomePage: React.FC = () => {
     setInviteUserOpen(false);
   }, []);
 
+  const widgetComponents = useMemo(
+    () => ({
+      tasks: <HomeTasks />,
+      notifications: <HomeNotifications onNotificationsLoaded={handleNotificationsLoaded} />,
+      quickActions: (
+        <HomeQuickActions
+          onCreateCompany={() => setCreateCompanyOpen(true)}
+          onCreateProject={() => setCreateProjectOpen(true)}
+          onInviteUser={() => setInviteUserOpen(true)}
+        />
+      ),
+      companies: <HomeCompanies companies={workspace?.companies ?? []} isLoading={isLoadingWorkspace} />
+    }),
+    [workspace?.companies, isLoadingWorkspace, handleNotificationsLoaded]
+  );
+
   if (workspaceError) {
     return (
       <Box sx={{ p: 3 }}>
@@ -64,7 +94,7 @@ export const HomePage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 3 }} ref={containerRef}>
       <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 3 }}>
         Home
       </Typography>
@@ -79,23 +109,7 @@ export const HomePage: React.FC = () => {
         />
       </Box>
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} lg={8}>
-          <HomeTasks />
-        </Grid>
-        <Grid item xs={12} lg={4}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <HomeNotifications onNotificationsLoaded={handleNotificationsLoaded} />
-            <HomeQuickActions
-              onCreateCompany={() => setCreateCompanyOpen(true)}
-              onCreateProject={() => setCreateProjectOpen(true)}
-              onInviteUser={() => setInviteUserOpen(true)}
-            />
-          </Box>
-        </Grid>
-      </Grid>
-
-      <HomeCompanies companies={workspace?.companies ?? []} isLoading={isLoadingWorkspace} />
+      <DashboardGrid widgetComponents={widgetComponents} containerWidth={containerWidth} />
 
       <CreateCompanyDialog
         open={createCompanyOpen}
@@ -109,11 +123,7 @@ export const HomePage: React.FC = () => {
         onSuccess={handleProjectCreated}
       />
 
-      <InviteUserDialog
-        open={inviteUserOpen}
-        onClose={() => setInviteUserOpen(false)}
-        onSuccess={handleUserInvited}
-      />
+      <InviteUserDialog open={inviteUserOpen} onClose={() => setInviteUserOpen(false)} onSuccess={handleUserInvited} />
     </Box>
   );
 };

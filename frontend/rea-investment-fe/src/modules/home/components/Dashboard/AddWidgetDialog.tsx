@@ -9,7 +9,6 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
-import Checkbox from '@mui/material/Checkbox';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import AddIcon from '@mui/icons-material/Add';
@@ -22,15 +21,8 @@ interface AddWidgetDialogProps {
   onAddWidget: (widgetId: string) => void;
 }
 
-export const AddWidgetDialog: React.FC<AddWidgetDialogProps> = ({
-  open,
-  onClose,
-  visibleWidgets,
-  onAddWidget
-}) => {
-  const availableWidgets = Object.values(WIDGET_DEFINITIONS).filter(
-    widget => !visibleWidgets.includes(widget.id)
-  );
+export const AddWidgetDialog: React.FC<AddWidgetDialogProps> = ({ open, onClose, visibleWidgets, onAddWidget }) => {
+  const availableWidgets = Object.values(WIDGET_DEFINITIONS).filter(widget => !visibleWidgets.includes(widget.id));
 
   const handleAddWidget = (widgetId: string) => {
     onAddWidget(widgetId);
@@ -45,9 +37,7 @@ export const AddWidgetDialog: React.FC<AddWidgetDialogProps> = ({
       <DialogContent dividers>
         {availableWidgets.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Typography color="text.secondary">
-              All available widgets are already on your dashboard.
-            </Typography>
+            <Typography color="text.secondary">All available widgets are already on your dashboard.</Typography>
           </Box>
         ) : (
           <List>
