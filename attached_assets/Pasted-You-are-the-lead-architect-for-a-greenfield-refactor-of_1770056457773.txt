@@ -1,0 +1,76 @@
+You are the lead architect for a greenfield refactor of the Ilios platform (no production users, no legacy data constraints). Your job is to enforce the target module boundary architecture and produce a precise build checklist with file-level changes. You may assume breaking changes are acceptable.
+
+TARGET ARCHITECTURE (non-negotiable)
+
+GLOBAL LEFT NAV MODULES (exact names):
+1) Acquisitions
+2) Project Hub
+3) Operations & Maintenance
+4) Finance
+5) Reporting
+6) Admin / Setup
+
+PROJECT HUB (within a project; canonical shell) tabs:
+- Overview
+- Data Room
+- Operations & Maintenance
+- Finance
+- Tasks
+- Reporting
+
+AUTHORITATIVE OWNERSHIP
+- Acquisitions owns Deals only; pipeline ends at conversion to Project (Site).
+- Project Hub owns canonical Project record (Site), lifecycle state, readiness/blockers, and “Next Steps”.
+- Data Room owns Documents + extracted fields workflow + poison pills + configurable diligence checklist.
+- O&M owns devices/telemetry/alerts/work orders (editable only in O&M).
+- Finance owns budgets/approvals/invoices/draws/capital stack (editable only in Finance).
+- Reporting remains first-class, accessible globally and within a project.
+
+DEAL → PROJECT CONVERSION
+- Project entity is `sites` table (Site model). UI uses “Project”.
+- Conversion trigger: signed agreement (MIPA/term sheet). Document may be uploaded after conversion, but must show a blocking “missing signed agreement” status until uploaded or waived.
+- After conversion: Deal becomes read-only and clearly directs user to Project Hub.
+- Conversion creates: Site record + Data Room checklist association + Finance shell + O&M shell placeholders.
+
+PROJECT NAME RULE
+- System-constructed deterministic name at conversion, stored as constructed_name.
+- Optional name_override editable only by Company Admin or Superuser. display_name = name_override ?? constructed_name.
+- Audit name override changes.
+
+LIFECYCLE
+- Lifecycle states: Pre-Diligence, Diligence, Implementation, Placed In Service, Operations.
+- Transitions only by Company Admin or Superuser (is_system_user bypass ok).
+- Every transition is audited.
+- Every transition auto-creates task templates.
+
+DATA ROOM ACCEPTANCE (use existing document_keys as extraction-instance rows)
+- `document_keys` currently stores per-document fields (document_id + name + value). Extend it to support:
+  - source: ai/manual
+  - status: proposed/accepted/overridden/rejected
+  - accepted_by_id, accepted_at
+  - override_value, overridden_by_id, overridden_at
+  - canonical_field (optional mapping to Site canonical field)
+- Canonical site fields must not be overwritten until a user accepts/overrides a proposed extracted value.
+- Record the audit trail and show it in UI.
+
+TASKS
+- Single tasks table exists and must remain the only task model.
+- Ensure task origin typing is consistent (origin_type + origin_id OR derive via existing FK columns).
+- Provide My Work + Project Tasks + Context task creation surfaces.
+
+YOUR OUTPUT IN THIS STEP (NO CODE CHANGES YET)
+1) Confirm current nav/routes and where modules live.
+2) Confirm current conversion flow (Deal → Site) and where it should be adjusted.
+3) List exact DB schema changes needed (tables/columns) with Alembic migrations.
+4) List exact API endpoints needing changes or new endpoints.
+5) List exact frontend components/routes needing changes.
+6) Provide a build checklist with acceptance criteria.
+
+Return a structured document with:
+- Current state inventory (files)
+- Proposed target state mapping
+- Schema changes (DDL-level)
+- Backend changes (endpoints/services)
+- Frontend changes (routes/components)
+- Permission/RBAC changes
+- Acceptance criteria
