@@ -67,7 +67,7 @@ import {
   SettingsAddMyCompanyUser,
   SettingsManageConnections,
   SettingsAddMyCompanySite,
-  AccessHealthPage
+  HealthChecksPage
 } from './modules/settings';
 import { SiteTask as OMSiteTask } from './modules/security';
 import {
@@ -176,13 +176,8 @@ const router = createBrowserRouter(
           <Route path="projects/:projectId" handle={createProjectLevelHandle()} element={<ProjectLevelPage />} />
         </Route>
 
-        {/* Admin - System administration tools */}
-        <Route path="/admin">
-          <Route
-            path="access-health"
-            element={<ProtectedSettingsRoute element={<AccessHealthPage />} permission={[AdminType.system]} />}
-          />
-        </Route>
+        {/* Legacy Admin redirects to Settings Health Checks */}
+        <Route path="/admin/access-health" element={<Navigate to="/settings/health-checks" replace />} />
 
         {/* Legacy Company Admin redirects to Portfolio Admin */}
         <Route path="/company-admin" element={<Navigate to="/portfolio-admin" replace />} />
@@ -696,7 +691,12 @@ const router = createBrowserRouter(
             }
             handle={SettingsPage.createHandle()}
           />
-          <Route path="access-health" element={<Navigate to="/admin/access-health" replace />} />
+          <Route
+            path="health-checks"
+            element={<ProtectedSettingsRoute element={<HealthChecksPage />} permission={[AdminType.system]} />}
+          />
+          {/* Legacy redirect from old access-health path */}
+          <Route path="access-health" element={<Navigate to="/settings/health-checks" replace />} />
           <Route
             path="users/add"
             handle={SettingsAddUser.createHandle()}

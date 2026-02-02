@@ -34,7 +34,7 @@ import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 
 import { ApiClient, type ValidationResult, type ValidationIssue, type RepairResult } from '../../../../api';
 
-const AccessHealthPage: React.FC = () => {
+const HealthChecksPage: React.FC = () => {
   const queryClient = useQueryClient();
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -207,10 +207,10 @@ const AccessHealthPage: React.FC = () => {
           avatar={<HealthAndSafetyIcon color="primary" fontSize="large" />}
           title={
             <Typography variant="h5" fontWeight="medium">
-              Access Model Health
+              Health Checks
             </Typography>
           }
-          subheader="System-wide validation checks for access model data integrity"
+          subheader="System-wide validation checks for data integrity"
           action={
             <Button variant="outlined" startIcon={<RefreshIcon />} onClick={() => refetch()}>
               Refresh
@@ -265,4 +265,4 @@ const AccessHealthPage: React.FC = () => {
   );
 };
 
-export default AccessHealthPage;
+export default HealthChecksPage;

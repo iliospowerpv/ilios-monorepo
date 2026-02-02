@@ -12,7 +12,7 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import HomeIcon from '@mui/icons-material/Home';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import { NavMenuButtonContainer } from './NavMenu.styles';
 import { useNavigate, useMatches } from 'react-router-dom';
 import { RouteHandle } from '../../../handles';
@@ -79,7 +79,7 @@ const menuItems: [string, React.ReactNode, string, string, boolean][] = [
   ],
   ['finance', <AccountBalanceWalletIcon key="finance" />, 'Finance', '/finance', false],
   ['reports', <AssessmentIcon key="reports" />, 'Reports', '/reports', false],
-  ['admin', <AdminPanelSettingsIcon key="admin" />, 'Admin', '/admin', false]
+  ['health-checks', <HealthAndSafetyIcon key="health-checks" />, 'Health Checks', '/settings/health-checks', false]
 ];
 
 interface MenuItemProps {
@@ -137,8 +137,8 @@ export const NavMenu: React.FC<NavMenuProps> = ({ containerRef, isMenuOpen }) =>
         return !user?.role?.permissions?.['Project Hub']?.view && !user?.role?.permissions?.['Asset Management']?.view;
       case 'Reports':
         return !user?.role?.permissions?.['Reports']?.view;
-      case 'Admin':
-        return !user?.role?.permissions?.['Admin']?.view && !user?.role?.permissions?.['Settings Page']?.view;
+      case 'Health Checks':
+        return !user?.is_system_user;
       default:
         return disabled;
     }
@@ -148,7 +148,7 @@ export const NavMenu: React.FC<NavMenuProps> = ({ containerRef, isMenuOpen }) =>
     const hasPortfolioAccess = user?.role?.permissions?.['Investor Dashboard']?.view;
     if (moduleKey === 'dashboard') return !hasPortfolioAccess;
     if (moduleKey === 'portfolio') return !!hasPortfolioAccess;
-    if (moduleKey === 'admin') return !!user?.is_system_user;
+    if (moduleKey === 'health-checks') return !!user?.is_system_user;
     return true;
   };
 
