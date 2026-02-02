@@ -48,12 +48,12 @@ def _safe_lifecycle_state(value: Optional[str]) -> Optional[LifecycleState]:
     except ValueError:
         # Map legacy human-readable values to new snake_case enum values
         legacy_mapping = {
-            "Sales / Pre-Diligence": LifecycleState.PRE_DILIGENCE,
-            "Pre-Diligence": LifecycleState.PRE_DILIGENCE,
-            "Due Diligence": LifecycleState.DUE_DILIGENCE,
-            "Implementation": LifecycleState.IMPLEMENTATION,
-            "Placed in Service": LifecycleState.PLACED_IN_SERVICE,
-            "Operations": LifecycleState.OPERATIONS,
+            "Sales / Pre-Diligence": LifecycleState.pre_diligence,
+            "Pre-Diligence": LifecycleState.pre_diligence,
+            "Due Diligence": LifecycleState.due_diligence,
+            "Implementation": LifecycleState.implementation,
+            "Placed in Service": LifecycleState.placed_in_service,
+            "Operations": LifecycleState.operations,
         }
         return legacy_mapping.get(value, None)
 
