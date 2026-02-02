@@ -27,6 +27,8 @@ import { HelpResources } from './pages/Help';
 import { PortfolioView, CompaniesPickerView, CompanyView, ProjectsPickerView, ProjectView } from './pages/Hierarchy';
 import { TelemetryPage, createTelemetryHandle, TelemetryRedirect } from './pages/Telemetry';
 import { ScopedModuleRoute } from './components/layout/ScopedModuleRoute';
+// DeprecatedRouteRedirect ready to wire for legacy route migration
+// import { DeprecatedRouteRedirect } from './components/common/DeprecatedRouteRedirect';
 
 import {
   SiteTask as PHSiteTask,
@@ -598,7 +600,7 @@ const router = createBrowserRouter(
             path="/project-hub/companies/:companyId/sites/:siteId/devices"
             handle={PHSiteDetails.createHandle(queryClient)}
             loader={withAuthControl(PHSiteDetails.createLoader(queryClient))}
-            element={<PHSiteDetails.Component tabId="devices" />}
+            element={<PHSiteDetails.Component tabId="om" />}
           />
           <Route
             path="/project-hub/companies/:companyId/sites/:siteId/tasks"
@@ -637,6 +639,49 @@ const router = createBrowserRouter(
             handle={PHSiteTask.createHandle(queryClient)}
             loader={withAuthControl(PHSiteTask.createLoader(queryClient))}
             element={<PHSiteTask.Component />}
+          />
+          {/* Simplified project routes without company prefix */}
+          <Route
+            path="/project-hub/projects/:siteId"
+            handle={PHSiteDetails.createHandle(queryClient)}
+            loader={withAuthControl(PHSiteDetails.createLoader(queryClient))}
+            element={<PHSiteDetails.Component />}
+          />
+          <Route
+            path="/project-hub/projects/:siteId/overview"
+            handle={PHSiteDetails.createHandle(queryClient)}
+            loader={withAuthControl(PHSiteDetails.createLoader(queryClient))}
+            element={<PHSiteDetails.Component tabId="overview" />}
+          />
+          <Route
+            path="/project-hub/projects/:siteId/om"
+            handle={PHSiteDetails.createHandle(queryClient)}
+            loader={withAuthControl(PHSiteDetails.createLoader(queryClient))}
+            element={<PHSiteDetails.Component tabId="om" />}
+          />
+          <Route
+            path="/project-hub/projects/:siteId/tasks"
+            handle={PHSiteDetails.createHandle(queryClient)}
+            loader={withAuthControl(PHSiteDetails.createLoader(queryClient))}
+            element={<PHSiteDetails.Component tabId="tasks" />}
+          />
+          <Route
+            path="/project-hub/projects/:siteId/finance"
+            handle={PHSiteDetails.createHandle(queryClient)}
+            loader={withAuthControl(PHSiteDetails.createLoader(queryClient))}
+            element={<PHSiteDetails.Component tabId="finance" />}
+          />
+          <Route
+            path="/project-hub/projects/:siteId/data-room"
+            handle={PHSiteDetails.createHandle(queryClient)}
+            loader={withAuthControl(PHSiteDetails.createLoader(queryClient))}
+            element={<PHSiteDetails.Component tabId="data-room" />}
+          />
+          <Route
+            path="/project-hub/projects/:siteId/reporting"
+            handle={PHSiteDetails.createHandle(queryClient)}
+            loader={withAuthControl(PHSiteDetails.createLoader(queryClient))}
+            element={<PHSiteDetails.Component tabId="reporting" />}
           />
         </Route>
         <Route path="/settings">

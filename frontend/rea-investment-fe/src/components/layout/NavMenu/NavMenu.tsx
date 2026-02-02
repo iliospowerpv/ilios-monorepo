@@ -14,17 +14,19 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import HomeIcon from '@mui/icons-material/Home';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import { NavMenuButtonContainer } from './NavMenu.styles';
-import { useNavigate, useMatches } from 'react-router-dom';
+import { useNavigate, useMatches, useParams } from 'react-router-dom';
 import { RouteHandle } from '../../../handles';
 import { useAuth } from '../../../contexts/auth/auth';
 import { useTheme } from '@mui/material/styles';
+import { ProjectPicker, useProjectNavigation, ProjectHubTab } from '../../common/ProjectPicker';
+import { useEntityContext } from '../../../contexts/entityContext';
 
-interface AnchorElTooltip extends React.PropsWithChildren {
+interface AnchorElTooltipProps extends React.PropsWithChildren {
   anchor: React.RefObject<HTMLDivElement>;
   title: string;
 }
 
-const AnchorElTooltip: React.FC<AnchorElTooltip> = ({ children, anchor, title }) => {
+const AnchorElTooltip: React.FC<AnchorElTooltipProps> = ({ children, anchor, title }) => {
   const elementRef = React.useRef<HTMLDivElement>(null);
   const popperRef = React.useRef<Instance>(null);
   const theme = useTheme();
@@ -75,20 +77,77 @@ const AnchorElTooltip: React.FC<AnchorElTooltip> = ({ children, anchor, title })
   );
 };
 
-const menuItems: [string, React.ReactNode, string, string, boolean][] = [
-  ['home', <HomeIcon key="home" />, 'Home', '/home', false],
-  ['acquisitions', <TrendingUpIcon key="acquisitions" />, 'Acquisitions', '/acquisitions', false],
-  ['project-hub', <AccountBalanceIcon key="project-hub" />, 'Project Hub', '/project-hub', false],
-  [
-    'operations-and-maintenance',
-    <WhatshotIcon key="operations-and-maintenance" />,
-    'O&M',
-    '/operations-and-maintenance',
-    false
-  ],
-  ['finance', <AccountBalanceWalletIcon key="finance" />, 'Finance', '/finance', false],
-  ['reports', <AssessmentIcon key="reports" />, 'Reports', '/reports', false],
-  ['health-checks', <HealthAndSafetyIcon key="health-checks" />, 'Health Checks', '/settings/health-checks', false]
+interface MenuItemConfig {
+  key: string;
+  icon: React.ReactNode;
+  title: string;
+  route: string;
+  disabled: boolean;
+  requiresProject: boolean;
+  projectHubTab?: ProjectHubTab;
+}
+
+const menuItems: MenuItemConfig[] = [
+  {
+    key: 'home',
+    icon: <HomeIcon key="home" />,
+    title: 'Home',
+    route: '/home',
+    disabled: false,
+    requiresProject: false
+  },
+  {
+    key: 'acquisitions',
+    icon: <TrendingUpIcon key="acquisitions" />,
+    title: 'Acquisitions',
+    route: '/acquisitions',
+    disabled: false,
+    requiresProject: false
+  },
+  {
+    key: 'project-hub',
+    icon: <AccountBalanceIcon key="project-hub" />,
+    title: 'Project Hub',
+    route: '/project-hub',
+    disabled: false,
+    requiresProject: true,
+    projectHubTab: 'overview'
+  },
+  {
+    key: 'operations-and-maintenance',
+    icon: <WhatshotIcon key="operations-and-maintenance" />,
+    title: 'O&M',
+    route: '/project-hub',
+    disabled: false,
+    requiresProject: true,
+    projectHubTab: 'om'
+  },
+  {
+    key: 'finance',
+    icon: <AccountBalanceWalletIcon key="finance" />,
+    title: 'Finance',
+    route: '/project-hub',
+    disabled: false,
+    requiresProject: true,
+    projectHubTab: 'finance'
+  },
+  {
+    key: 'reports',
+    icon: <AssessmentIcon key="reports" />,
+    title: 'Reports',
+    route: '/project-hub',
+    disabled: false,
+    requiresProject: true,
+    projectHubTab: 'reporting'
+  },
+  {
+    key: 'health-checks',
+    icon: <HealthAndSafetyIcon key="health-checks" />,
+    title: 'Health Checks',
+    route: '/settings/health-checks',
+    disabled: false,
+    requiresProject: false
+  }
 ];
 
 interface MenuItemProps {
@@ -123,14 +182,37 @@ export const NavMenu: React.FC<NavMenuProps> = ({ containerRef, isMenuOpen }) =>
   const navigate = useNavigate();
   const matches = useMatches();
   const { user } = useAuth();
+  const params = useParams<{ siteId?: string }>();
+  const { currentProject } = useEntityContext();
+  const [pickerOpen, setPickerOpen] = React.useState(false);
+  const [pendingTab, setPendingTab] = React.useState<ProjectHubTab | null>(null);
+  const { navigateToProjectHub } = useProjectNavigation();
+
+  const currentProjectId = params.siteId ? parseInt(params.siteId, 10) : currentProject?.id ?? null;
 
   const currentModuleId =
     matches
       .map(({ handle }) => (handle instanceof RouteHandle ? handle.getModuleId() : null))
       .find(el => el !== null) || '';
 
-  const menuItemClickHandler = (navigateTo: string) => () => {
-    navigate(navigateTo);
+  const handleMenuItemClick = (item: MenuItemConfig) => () => {
+    if (item.requiresProject && item.projectHubTab) {
+      if (currentProjectId) {
+        navigateToProjectHub(currentProjectId, item.projectHubTab);
+      } else {
+        setPendingTab(item.projectHubTab);
+        setPickerOpen(true);
+      }
+    } else {
+      navigate(item.route);
+    }
+  };
+
+  const handleProjectSelect = (project: { id: number }) => {
+    if (pendingTab) {
+      navigateToProjectHub(project.id, pendingTab);
+    }
+    setPendingTab(null);
   };
 
   const disableModule = (disabled: boolean, title: string) => {
@@ -161,54 +243,57 @@ export const NavMenu: React.FC<NavMenuProps> = ({ containerRef, isMenuOpen }) =>
     return true;
   };
 
+  const getPickerTitle = (tab: ProjectHubTab | null): string => {
+    if (!tab) return 'Select a Project';
+    const tabLabels: Record<ProjectHubTab, string> = {
+      overview: 'Overview',
+      'data-room': 'Data Room',
+      om: 'O&M',
+      finance: 'Finance',
+      tasks: 'Tasks',
+      reporting: 'Reporting'
+    };
+    return `Select Project for ${tabLabels[tab]}`;
+  };
+
   return (
-    <Stack direction="column" width={t => t.spacing(30)}>
-      {menuItems.map(
-        ([key, icon, title, route, disabled]) =>
-          showModule(key) &&
-          (isMenuOpen ? (
+    <>
+      <Stack direction="column" width={t => t.spacing(30)}>
+        {menuItems.map(item =>
+          showModule(item.key) ? (
             <AnchorElTooltip
               title={
-                disabled
-                  ? `${title} (coming soon)`
-                  : disableModule(disabled, title)
-                    ? 'You don’t have permission to view this page.'
-                    : ''
+                item.disabled
+                  ? `${item.title} (coming soon)`
+                  : disableModule(item.disabled, item.title)
+                    ? "You don't have permission to view this page."
+                    : isMenuOpen
+                      ? ''
+                      : item.title
               }
-              key={key}
+              key={item.key}
               anchor={containerRef}
             >
               <MenuItem
-                key={title}
-                title={title}
-                icon={icon}
-                onClick={menuItemClickHandler(route)}
-                active={key === currentModuleId}
-                disabled={disableModule(disabled, title)}
+                title={item.title}
+                icon={item.icon}
+                onClick={handleMenuItemClick(item)}
+                active={item.key === currentModuleId}
+                disabled={disableModule(item.disabled, item.title)}
               />
             </AnchorElTooltip>
-          ) : (
-            <AnchorElTooltip
-              title={
-                disabled
-                  ? `${title} (coming soon)`
-                  : disableModule(disabled, title)
-                    ? 'You don’t have permission to view this page.'
-                    : title
-              }
-              key={key}
-              anchor={containerRef}
-            >
-              <MenuItem
-                title={title}
-                icon={icon}
-                onClick={menuItemClickHandler(route)}
-                active={key === currentModuleId}
-                disabled={disableModule(disabled, title)}
-              />
-            </AnchorElTooltip>
-          ))
-      )}
-    </Stack>
+          ) : null
+        )}
+      </Stack>
+      <ProjectPicker
+        open={pickerOpen}
+        onClose={() => {
+          setPickerOpen(false);
+          setPendingTab(null);
+        }}
+        onSelect={handleProjectSelect}
+        title={getPickerTitle(pendingTab)}
+      />
+    </>
   );
 };

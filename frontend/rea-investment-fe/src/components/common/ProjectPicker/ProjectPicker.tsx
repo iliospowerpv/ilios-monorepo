@@ -76,7 +76,7 @@ export const ProjectPicker: React.FC<ProjectPickerProps> = ({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography variant="h6">{title}</Typography>
+        <span>{title}</span>
         <IconButton onClick={onClose} size="small">
           <CloseIcon />
         </IconButton>

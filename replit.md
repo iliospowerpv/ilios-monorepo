@@ -30,8 +30,15 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
     - **Terminology Standardization**: All user-facing content uses "Projects" instead of "Sites" to improve clarity, while backend entities remain `sites`.
     - **Navigation Architecture**:
         1. **Entity Context Navigation (Top Bar)**: Displays `Portfolio → Company → Project` hierarchy, persists selection to `localStorage`, and dynamically enables/disables icons based on selected entity level.
-        2. **Module Sidebar Navigation (Left)**: Permission-based visibility for modules like Asset Management, O&M, Due Diligence, Finance, Reports.
+        2. **Module Sidebar Navigation (Left)**: Permission-based visibility for modules. Clicking project-scoped modules (O&M, Finance, Reports) routes directly to Project Hub with tab pre-selected; shows ProjectPicker dialog if no project selected.
         3. **Breadcrumb Navigation (Header)**: Auto-generates from React Router `handle` patterns, resolving dynamic segments from URL parameters.
+        4. **3-Click Rule**: All workflows from Home to action completion must complete in ≤3 clicks.
+    - **Project Hub Navigation (Feb 2026)**:
+        - **ProjectPicker Component**: Centralized project selection dialog (`src/components/common/ProjectPicker/`) with search functionality, fetching accessible entities from API
+        - **useProjectNavigation Hook**: Reusable hook for navigating to Project Hub tabs with project selection flow
+        - **Simplified Routes**: `/project-hub/projects/:siteId/*` pattern for direct project access without company prefix
+        - **Tab-Centric Module Entry**: Module menu clicks route to Project Hub tab (Overview, Data Room, O&M, Finance, Tasks, Reporting) instead of separate module pages
+        - **Legacy Tab Aliases**: Old tab IDs (devices, telemetry, diligence) map to consolidated tabs (om, data-room)
     - **Context Bar Infrastructure**: Unified three-tier scope management system. See `docs/context_bar_contract.md` for complete specification.
         - **Scope Types**: Portfolio (all entities), Company (single company + its projects), Project (single project)
         - **Dual Route Patterns**: Canonical routes (`/portfolio`, `/companies/:id`, `/projects/:id`) for direct entity access; Module-scoped lens routes (`/[module]/scope/{portfolio|company/:id|project/:id}`) for in-module scope switching

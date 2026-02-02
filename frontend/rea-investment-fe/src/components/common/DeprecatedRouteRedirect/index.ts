@@ -1,0 +1,1 @@
+export { DeprecatedRouteRedirect } from './DeprecatedRouteRedirect';
