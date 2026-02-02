@@ -1,0 +1,119 @@
+You are implementing a navigation/click-path refactor for Ilios based on an approved UX contract. This is GREENFIELD (no production users, no migration/backward-compat requirements). Your goal is to make click paths consistent and short by enforcing a strict navigation contract.
+
+HARD UX CONTRACT (NON-NEGOTIABLE)
+1) Project Hub is the ONLY project-level work surface. No other module may have its own project detail pages.
+   - Disallow module-specific project detail routes like:
+     /operations-and-maintenance/companies/:companyId/sites/:siteId
+     /due-diligence/companies/:companyId/sites/:siteId
+     /finance/companies/:companyId/sites/:siteId
+   These must be removed or replaced with navigation into Project Hub.
+
+2) Project Hub owns exactly 6 tabs for a single project:
+   - Overview
+   - Data Room
+   - Operations & Maintenance
+   - Finance
+   - Tasks
+   - Reporting
+
+3) Modules (O&M, Finance, Data Room) may have CROSS-PROJECT queue/list pages only.
+   - These pages can include filters (company, status, etc.) but they are NOT project detail views.
+   - Clicking an item in a queue must deep-link into Project Hub on the correct tab.
+
+4) Module Entry Rule (deterministic landing):
+   When a user clicks a module from left nav, they MUST either:
+   A) See a Project Picker (if not scoped to a project), OR
+   B) Land in Project Hub on the module’s tab (if a project is already selected in session/UI state).
+   Users must NEVER be routed to a Company Overview as an intermediate step.
+
+5) Company pages are container-only (summary/config/project lists). Company pages must not be required for Ops/Finance/Data Room work.
+
+6) 3-click rule: Common workflows must be reachable in <= 3 clicks from module entry (or Home):
+   - Upload diligence doc
+   - Accept extracted field
+   - Check telemetry
+   - View finance snapshot
+   - Resolve alert
+   - Open assigned task
+
+IMPLEMENTATION GOAL
+Fix routing and click paths without a major UI redesign:
+- Keep existing underlying functionality/screens where possible
+- Change landing behavior, routing, and selection patterns
+- Consolidate single-project work inside Project Hub tabs
+
+PART A — INVENTORY (BRIEF, THEN IMPLEMENT)
+1) Identify current project detail views in O&M, Due Diligence, Finance (components + routes).
+2) Identify current Project Hub project detail view route and its tabs.
+
+PART B — CREATE A SINGLE PROJECT SELECTION MECHANISM (REUSED EVERYWHERE)
+3) Implement a reusable Project Picker:
+   - Can be modal or page, but must be consistent across modules.
+   - Selecting a project sets “currentProjectId” in a central store (e.g., context/zustand/redux/localStorage—use whatever exists).
+   - Provide a single helper: ensureProjectSelected(redirectTab) that:
+     - if currentProjectId exists -> navigate to /project-hub/:id?tab=<tab>
+     - else -> open picker; after selection navigate there.
+
+4) Add a small “Current Project” context indicator in the app header (or module header) with ability to switch project (opens picker). Optional but recommended.
+
+PART C — MODULE LANDING FIXES (THE MAIN CLICK-PATH FIX)
+5) Update left-nav click behavior:
+   - Acquisitions: goes to acquisitions landing (deal pipeline)
+   - Project Hub: goes to project list (NOT company list)
+   - O&M: goes to O&M queue landing (alerts/work orders/telemetry health across projects)
+   - Finance: goes to Finance queue landing (approvals/budgets/obligations across projects)
+   - Data Room (if exists in nav) OR Documents: goes to Data Room queue landing (missing docs/review queue across projects)
+   - Reporting: global reporting landing
+   - Admin: admin landing
+
+6) Remove “Company → Overview → Projects” routing from module entries.
+   - Module entries must not land on company lists by default.
+   - Company can be a FILTER on queues, not a step.
+
+PART D — ELIMINATE MODULE-SPECIFIC PROJECT DETAIL VIEWS
+7) Deprecate these project detail pages (convert them to either redirects or remove):
+   - OMSiteDetails (O&M project view)
+   - DPSitePage (Due Diligence project view)
+   - SiteFinance (Finance project view)
+   Replacement behavior:
+   - Any attempt to open a single-project view from these modules should navigate to:
+     /project-hub/:siteId?tab=<om|data-room|finance>
+   Use the correct tab.
+
+PART E — COMPLETE PROJECT HUB TAB UNIFICATION
+8) Ensure Project Hub renders all 6 tabs and that each tab is functional:
+   - Overview: existing Project Overview
+   - Data Room: embed Due Diligence document UX here (documents, extraction review, checklist, poison pills)
+   - O&M: show project-scoped O&M rollups + deep links into O&M module queues filtered by this project
+   - Finance: show project financial snapshot + deep links into Finance queue filtered by this project
+   - Tasks: project tasks view
+   - Reporting: project-level reporting
+
+NOTE: Tabs should not rely on “arriving the right way.” They must work for direct deep links.
+
+PART F — TASK/ALERT DEEP-LINK ROUTING
+9) Implement a TaskRouter/AlertRouter behavior:
+   - Each task should resolve to:
+     project_id (siteId), target_tab, optional focus entity id (document_id/alert_id/device_id)
+   - Clicking a task/alert must deep-link:
+     /project-hub/:siteId?tab=<tab>&focus=<id>
+   - In the target tab, focus behavior can be minimal (scroll/highlight) but routing must be correct.
+
+PART G — ACCEPTANCE TESTS (MUST PASS)
+10) Validate click paths <= 3 clicks for:
+   - Upload diligence doc: Data Room -> pick project -> Project Hub Data Room -> upload
+   - Accept extracted field: Task/queue -> Project Hub Data Room -> document -> accept
+   - Telemetry status: O&M -> pick project -> Project Hub O&M
+   - Finance snapshot: Finance -> pick project -> Project Hub Finance
+   - Resolve alert: alert -> Project Hub O&M (focused)
+
+DELIVERABLES
+- Implement the changes.
+- Provide a summary:
+  - Routes removed/updated
+  - New Project Picker + where currentProjectId is stored
+  - Updated module landings
+  - Project Hub tab completion status
+  - Any known follow-ups
+
+Proceed now.

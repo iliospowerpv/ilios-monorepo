@@ -1,0 +1,241 @@
+# UX Navigation Contract + Click‑Path Audit (Pre‑Build Prompt)
+
+You are acting as a **UX architect and systems designer** for the Ilios platform. Your task is to **first lock a navigation/UX contract**, and **then audit all major click paths against that contract** before any further code changes are made.
+
+This is a **greenfield system** (no production users, no data migration constraints). You may recommend breaking changes if they improve clarity and reduce clicks.
+
+---
+
+## PART 1 — UX & NAVIGATION CONTRACT (AUTHORITATIVE)
+
+You must treat the following as **hard rules**. Any existing UI that violates these rules should be flagged.
+
+### 1. Core Navigation Model
+
+Users navigate by **WHAT they want to work on**, not **WHERE they are**.
+
+* **Modules answer:** “What type of work am I doing?”
+* **Entities answer:** “Which thing am I doing it to?”
+* **Context is inferred**, not manually traversed
+
+Primary hierarchy:
+
+```
+Module (work mode)
+→ Project selection (entity)
+→ In‑context work surface
+```
+
+---
+
+### 2. Primary Work Surfaces
+
+There are only **three valid primary entry paths** into work:
+
+#### A. Module‑First (most common)
+
+Used when a user knows *what task* they want to perform.
+
+```
+Click Module
+→ Select Project (if not already scoped)
+→ Land directly in Project Hub on the relevant tab
+```
+
+Examples:
+
+* Data Room → Project Hub → Data Room tab
+* Operations & Maintenance → Project Hub → O&M tab
+* Finance → Project Hub → Finance tab
+
+Users must **never** be routed through Company Overview when entering from a module.
+
+---
+
+#### B. Project‑First
+
+Used when a user knows *which project* they are working on.
+
+```
+Project Hub
+→ Select Project
+→ Project Hub Overview
+→ Switch tabs (Data Room, O&M, Finance, Tasks, Reporting)
+```
+
+Project Hub is the **only tabbed project surface** in the system.
+
+---
+
+#### C. Task / Alert‑Driven
+
+Used for reactive work.
+
+```
+Click Task or Alert
+→ Deep‑link directly into Project Hub
+→ Correct tab + correct sub‑context
+```
+
+No intermediate pages.
+
+---
+
+### 3. Company Is a Container, Not a Workspace
+
+Company pages:
+
+* summarize
+* configure
+* report
+* list projects
+
+Company pages must **not**:
+
+* be required to reach project work
+* act as routing hubs
+* sit on the critical path for diligence, ops, or finance
+
+If a click path passes through Company Overview without a clear reason, it is a UX violation.
+
+---
+
+### 4. Project Hub Is the Gravity Well
+
+Rules:
+
+* All project work ultimately resolves inside **Project Hub**
+* Modules do not own their own project UIs
+* Tabs exist **only** inside Project Hub
+
+Modules may:
+
+* show queues/lists across projects, or
+* deep‑link into Project Hub
+
+Modules may **not**:
+
+* create parallel project detail views
+
+---
+
+### 5. Documents / Data Room Accessibility
+
+Data Room must be reachable:
+
+* from Project Hub (primary)
+* from module navigation (secondary)
+
+Behavior:
+
+```
+Data Room (nav)
+→ If project scoped: open Project Hub → Data Room tab
+→ If not scoped: prompt for project, then do the same
+```
+
+Data Room must **never** depend on a specific arrival path (e.g., Company → Overview → Projects → …).
+
+---
+
+### 6. Click‑Path Performance Rule
+
+Any common task should be reachable in **3 clicks or fewer**:
+
+* Upload a diligence document
+* Review/accept extracted field
+* Check telemetry status
+* Respond to an alert
+* View financial snapshot
+
+Paths exceeding this should be flagged.
+
+---
+
+## PART 2 — CLICK‑PATH AUDIT (REQUIRED OUTPUT)
+
+Using the UX contract above, perform a **click‑path audit** of the current application.
+
+### 1. Identify Current Entry Paths
+
+List all current ways a user can enter work, including:
+
+* Module nav entries
+* Company overview links
+* Project lists
+* Task/alert links
+
+---
+
+### 2. Audit Core Workflows
+
+For each workflow below, document:
+
+* Current click path (exact screens)
+* Number of clicks
+* Violations of the UX contract
+* Recommended corrected path
+
+Workflows to audit:
+
+1. Upload a diligence document
+2. Review and accept an extracted field
+3. Navigate to a project’s documents
+4. Check project telemetry status
+5. Resolve an operational alert
+6. View a project’s financial snapshot
+7. Approve a budget or financial item
+8. Open a task assigned to the user
+
+---
+
+### 3. Identify Systemic Problems
+
+Explicitly call out:
+
+* Inconsistent landing behavior (same action, different destinations)
+* Pages acting as unintended routers (especially Company Overview)
+* Places where project context is lost or re‑selected unnecessarily
+* Modules that duplicate project views
+
+---
+
+### 4. Propose Navigation Corrections (No Code Yet)
+
+For each problem identified, propose:
+
+* Which page should be the **landing surface** instead
+* Whether a project selector should appear
+* Whether the user should be routed directly into Project Hub
+
+Do **not** propose UI redesigns yet — focus on **where users land and why**.
+
+---
+
+## REQUIRED OUTPUT FORMAT
+
+Return a structured report with:
+
+1. **UX Contract Confirmation**
+
+   * Any clarifications or edge cases you need to confirm
+
+2. **Click‑Path Audit Table**
+
+   * Workflow | Current Path | Clicks | Violations | Corrected Path
+
+3. **Top UX Violations (Ranked)**
+
+   * Most damaging first
+
+4. **Recommended Navigation Rules (Refined)**
+
+   * Short, enforceable rules we can hand to engineering
+
+5. **Ready‑to‑Build Summary**
+
+   * What must change before any further implementation work
+
+Do not make code changes. Do not refactor UI. This step is about **locking navigation intent** so implementation cannot drift.
+
+Proceed with the UX contract first, then the audit.
