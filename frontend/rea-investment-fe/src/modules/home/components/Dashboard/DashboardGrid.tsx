@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import GridLayout from 'react-grid-layout';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -28,7 +28,6 @@ interface LayoutItem {
 
 interface DashboardGridProps {
   widgetComponents: Record<string, React.ReactNode>;
-  containerWidth?: number;
 }
 
 const reconcileLayout = (savedLayout: LayoutItem[], visibleWidgets: string[]): LayoutItem[] => {
@@ -61,11 +60,34 @@ const reconcileLayout = (savedLayout: LayoutItem[], visibleWidgets: string[]): L
   return reconciledLayout;
 };
 
-export const DashboardGrid: React.FC<DashboardGridProps> = ({ widgetComponents, containerWidth = 1200 }) => {
+export const DashboardGrid: React.FC<DashboardGridProps> = ({ widgetComponents }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
   const [layout, setLayout] = useState<LayoutItem[]>([]);
   const [visibleWidgets, setVisibleWidgets] = useState<string[]>([]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateWidth = () => {
+      setContainerWidth(container.offsetWidth);
+    };
+
+    updateWidth();
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateWidth();
+    });
+
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     const savedLayout = localStorage.getItem(STORAGE_KEY_LAYOUT);
@@ -142,15 +164,15 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ widgetComponents, 
     localStorage.removeItem(STORAGE_KEY_WIDGETS);
   }, []);
 
-  if (!isInitialized) {
-    return null;
+  if (!isInitialized || containerWidth === 0) {
+    return <Box ref={containerRef} sx={{ width: '100%', minHeight: 200 }} />;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const GridLayoutComponent = GridLayout as any;
 
   return (
-    <Box>
+    <Box ref={containerRef} sx={{ width: '100%' }}>
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mb: 2 }}>
         <Button variant="outlined" size="small" startIcon={<AddIcon />} onClick={() => setAddDialogOpen(true)}>
           Add Widget

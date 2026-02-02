@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -18,8 +18,6 @@ export const HomePage: React.FC = () => {
   const [createCompanyOpen, setCreateCompanyOpen] = useState(false);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [inviteUserOpen, setInviteUserOpen] = useState(false);
-  const [containerWidth, setContainerWidth] = useState(1200);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const {
     data: workspace,
@@ -31,18 +29,6 @@ export const HomePage: React.FC = () => {
     queryFn: () => ApiClient.workspace.getWorkspace(),
     staleTime: 5 * 60 * 1000
   });
-
-  useEffect(() => {
-    const updateWidth = () => {
-      if (containerRef.current) {
-        setContainerWidth(containerRef.current.offsetWidth);
-      }
-    };
-
-    updateWidth();
-    window.addEventListener('resize', updateWidth);
-    return () => window.removeEventListener('resize', updateWidth);
-  }, []);
 
   const handleNotificationsLoaded = useCallback((count: number) => {
     setNotificationsCount(count);
@@ -94,7 +80,7 @@ export const HomePage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }} ref={containerRef}>
+    <Box sx={{ p: 3 }}>
       <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 3 }}>
         Home
       </Typography>
@@ -109,7 +95,7 @@ export const HomePage: React.FC = () => {
         />
       </Box>
 
-      <DashboardGrid widgetComponents={widgetComponents} containerWidth={containerWidth} />
+      <DashboardGrid widgetComponents={widgetComponents} />
 
       <CreateCompanyDialog
         open={createCompanyOpen}
