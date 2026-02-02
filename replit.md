@@ -52,7 +52,17 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
 - **Core Modules**:
     - **Workspace Module**: User-centric landing page (`/workspace`) showing summary cards (companies, projects, tasks) and a list of accessible companies with access source indicators. Features context-aware Company Admin page for managing company membership.
     - **Finance Module**: Capital governance, authorization, and compliance engine. Features budget vs. actual tracking, vendor visibility, authorization gating, approval workflows with audit trails, portfolio/fund rollups, and data room package export.
-    - **Sales Module**: Manages a 14-stage deal acquisition pipeline, tracking deals separately until conversion into "Site" entities (referred to as "Projects" in the UI).
+    - **Acquisitions Module** (formerly Sales): Manages a 13-stage deal acquisition pipeline (removed Phase1Diligence, added ClosedWon), tracking deals separately until conversion into "Site" entities (referred to as "Projects" in the UI).
+        - **Pipeline Stages**: prospect, nda_signed, inputs_received, modeling, model_review, model_approved, quoted, term_sheet_neg, term_sheet_signed, mipa_negotiating, mipa_signed, closed_won, passed, dead
+        - **Conversion-Eligible Stages**: TermSheetSigned OR MIPASigned
+        - **System-Constructed Names**: Format `{State}-{CompanyCode}-{Sequence}` (e.g., TX-ACME-0001)
+        - **Read-Only Converted Deals**: Deals marked as converted display a banner and navigation to Project Hub
+    - **Project Hub Module** (consolidated Asset Management + Due Diligence): Unified project management interface with tabbed navigation.
+        - **Tabs**: Overview, Data Room, O&M, Finance, Tasks, Reporting
+        - **Lifecycle States**: pre_diligence, due_diligence, implementation, placed_in_service, operations (snake_case aligned frontend/backend)
+        - **Lifecycle Transitions**: RBAC-gated (Company Admin or Superuser), audit-logged, auto-creates tasks from templates
+        - **Signed Agreement Gating**: Required (uploaded/waived) before advancing past due_diligence lifecycle
+        - **Document Extraction Workflow**: source (ai_extraction/manual_entry), status (proposed/accepted/overridden/rejected)
 - **Multi-Company Access System**:
     - **UserCompanyAccess Model**: Manages user-company relationships with roles (company_admin, contributor, read_only) and statuses (active, invited, suspended).
     - **Access Source Types**: Direct assignment via UserCompanyAccess, project-inherited via UserProject → parent_company_id, or both.
