@@ -26,11 +26,17 @@ export const CompanyLogo: React.FC = () => {
     >
       <SvgIcon sx={{ fontSize: 16 }}>
         <svg width="10" height="16" viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="iliLogoGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stopColor="#8D4BE9" />
+              <stop offset="100%" stopColor="#456CF3" />
+            </linearGradient>
+          </defs>
           <path
             fillRule="evenodd"
             clipRule="evenodd"
             d="M8.06188 0H10V2.16485H8.06188V0ZM1.93812 4.07168H0V6.23652H1.93812V4.07168ZM1.93812 8.14785H0V16H1.93812V8.14785ZM4.0329 16V2.17725H5.97101V16H4.0329ZM8.06189 4.07168H10V16H8.06189V4.07168Z"
-            fill="white"
+            fill="url(#iliLogoGradient)"
           />
         </svg>
       </SvgIcon>
