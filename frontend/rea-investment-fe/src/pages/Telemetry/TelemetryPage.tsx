@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -13,7 +13,7 @@ import BusinessIcon from '@mui/icons-material/Business';
 import { ApiClient } from '../../api';
 import { useEntityContext } from '../../contexts/entityContext';
 import { useAccessibleEntities } from '../../hooks/useAccessibleEntities';
-import { Telemetry } from '../../modules/asset-management/pages/AssetManagementSiteDetails/tabs/Telemetry';
+import { Telemetry } from '../../modules/project-hub/pages/AssetManagementSiteDetails/tabs/Telemetry';
 
 export const TelemetryPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -27,7 +27,7 @@ export const TelemetryPage: React.FC = () => {
   const { data: siteDetails, isLoading: isLoadingSite } = useQuery({
     queryKey: ['site', 'details', { siteId: projectIdNum }],
     queryFn: () => ApiClient.assetManagement.getSiteById(projectIdNum!),
-    enabled: !!projectIdNum,
+    enabled: !!projectIdNum
   });
 
   useEffect(() => {
@@ -98,7 +98,7 @@ export const TelemetryPage: React.FC = () => {
 };
 
 export const createTelemetryHandle = () => ({
-  breadcrumb: 'Telemetry',
+  breadcrumb: 'Telemetry'
 });
 
 export default TelemetryPage;

@@ -1,7 +1,7 @@
 import { QueryClient, queryOptions } from '@tanstack/react-query';
 import { LoaderFunctionArgs } from 'react-router-dom';
 import { ApiClient } from '../../../../../api';
-import { siteDetailsQuery } from '../../../../asset-management/loaders/site-details-loader';
+import { siteDetailsQuery } from '../../../../project-hub/loaders/site-details-loader';
 
 export const taskDetailsQuery = (boardId: number, taskId: number, enabled = true, throwOnError = false) =>
   queryOptions({

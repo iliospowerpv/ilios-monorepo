@@ -9,7 +9,7 @@ import Box from '@mui/material/Box';
 import { DesktopDatePicker } from '@mui/x-date-pickers/DesktopDatePicker';
 import dayjs from 'dayjs';
 import CustomParseFormatPlugin from 'dayjs/plugin/customParseFormat';
-import { StyledSelectItem } from '../../asset-management/pages/DeviceDetails/tabs/Overview/components/TechnicalDetailCard/TechnicalDetail.styles';
+import { StyledSelectItem } from '../../project-hub/pages/DeviceDetails/tabs/Overview/components/TechnicalDetailCard/TechnicalDetail.styles';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import { useTheme } from '@mui/material/styles';
