@@ -1,0 +1,72 @@
+You are the lead architect implementing a workflow and navigation refactor in the Ilios platform. Your first job is to enforce a strict module boundary model and produce a gap report + implementation plan BEFORE making any code changes.
+
+NON-NEGOTIABLE TARGET ARCHITECTURE (must be enforced)
+GLOBAL LEFT NAV MODULES:
+1) Acquisitions
+2) Project Hub
+3) Operations & Maintenance
+4) Finance
+5) Reporting
+6) Admin / Setup
+
+PROJECT HUB (canonical shell) TABS WITHIN A PROJECT:
+- Overview
+- Data Room
+- Operations & Maintenance
+- Finance
+- Tasks
+- Reporting
+
+AUTHORITATIVE OWNERSHIP RULES:
+- Acquisitions owns: Deal/Opportunity pipeline only. It ends at conversion to Project. After conversion, Deal becomes read-only and clearly directs user to Project Hub.
+- Project Hub owns: canonical project record + lifecycle state + readiness/next steps. It is the user’s starting point for a project. Hub shows rollups/snapshots from other modules and deep-links to where work is done.
+- Data Room owns: documents, AI extraction “proposed fields,” poison pills/risk flags, configurable diligence checklist. Extracted fields are PROPOSED until manually ACCEPTED/OVERRIDDEN by a user and then become CANONICAL on the Project record. Audit who/when/what.
+- Operations & Maintenance owns: devices, telemetry, alerts, work orders, maintenance schedules. Project Hub can show read-only rollups + deep links. Do not allow editing devices/telemetry in Project Hub if it causes duplication.
+- Finance owns: budgets, approvals, invoices, draws, capital stack. Project Hub shows read-only finance snapshot + deep links.
+- Reporting remains first-class: both project-level reporting (within Project Hub tab) and portfolio/global reporting.
+
+DEAL → PROJECT CONVERSION RULES:
+- Conversion trigger: Signed document (usually MIPA; sometimes Term Sheet).
+- After conversion: Deal moves to “Closed Won / Signed”, becomes READ-ONLY.
+- UI requirement: Deal page must show a banner “This opportunity has been converted to a Project. Continue in Project Hub” with a button to open the project.
+- Conversion flow must create: Project record, Data Room checklist template, Finance shell, O&M shell (placeholders). All without requiring telemetry or accounting connection immediately.
+- Signed document may be uploaded after conversion, but must be flagged as REQUIRED/MISSING until uploaded or waived. Lifecycle cannot advance past Diligence without upload or explicit waiver.
+
+LIFECYCLE RULES:
+Lifecycle states: Pre-Diligence, Diligence, Implementation, Placed In Service, Operations.
+- Lifecycle transitions only allowed by Company Admin or Superuser.
+- Every transition is audited (who, when, from_state, to_state, reason).
+- Transition must auto-create standard task templates (role-based assignments + due dates).
+
+TASKS RULE:
+- There is ONE Task model and table.
+- Tasks may be created from multiple “surfaces” (Data Room document callouts, O&M alerts, Finance approvals, manual) but must not duplicate models.
+- Provide three views: My Work (user), Project Tasks (within Project Hub), Context Tasks (within module screens).
+
+PROJECT NAME RULE:
+- Project name is system-constructed deterministically at conversion (not free text).
+- It can be edited only by Admin/Superuser, with audit log.
+
+YOUR OUTPUTS IN THIS STEP (NO CODE CHANGES YET):
+1) Inventory current routes/nav items and map them to target modules (include file paths).
+2) Inventory current data models for Deal, Project, Document, ExtractedField, Task, Device/Telemetry, Finance objects.
+3) Identify overlaps/violations of ownership rules.
+4) Propose a minimal-change migration plan that enforces the architecture with the least disruption.
+5) Provide a checklist of acceptance criteria for Prompt 2 implementation.
+6) Call out risks: data migrations, broken links, permission issues, UI regressions, duplicated views.
+
+IMPORTANT CONSTRAINTS:
+- Do NOT remove existing functionality in this step.
+- Do NOT rename database tables yet unless required.
+- Do NOT implement new UI yet.
+- Produce a clear plan and exact list of files/components to change in the build step.
+
+Return the gap report and implementation plan in a structured format with:
+- Current state summary
+- Violations and why
+- Proposed changes grouped by module
+- Data model changes (if any)
+- Route/nav changes
+- Permission changes
+- Acceptance criteria
+`
