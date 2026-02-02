@@ -29,12 +29,12 @@ export const createHandle = (queryClient: QueryClient) => {
 
     return siteDetails && companyInfo && taskDetails
       ? [
-          { title: 'Asset Management', link: '/asset-management' },
-          { title: companyInfo.name, link: `/asset-management/companies/${companyInfo.id}` },
-          { title: siteDetails.name, link: `/asset-management/companies/${companyInfo.id}/sites/${siteDetails.id}` },
+          { title: 'Asset Management', link: '/project-hub' },
+          { title: companyInfo.name, link: `/project-hub/companies/${companyInfo.id}` },
+          { title: siteDetails.name, link: `/project-hub/companies/${companyInfo.id}/sites/${siteDetails.id}` },
           { title: taskDetails.external_id }
         ]
-      : [{ title: 'Asset Management', link: '/asset-management' }, { title: '...' }];
+      : [{ title: 'Asset Management', link: '/project-hub' }, { title: '...' }];
   };
 
   return RouteHandle.createHandle({

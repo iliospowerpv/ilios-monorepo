@@ -27,11 +27,11 @@ export const createHandle = (queryClient: QueryClient) => {
 
     return companyDetails && taskDetails
       ? [
-          { title: 'Asset Management', link: '/asset-management' },
-          { title: companyDetails.name, link: `/asset-management/companies/${companyDetails.id}` },
+          { title: 'Asset Management', link: '/project-hub' },
+          { title: companyDetails.name, link: `/project-hub/companies/${companyDetails.id}` },
           { title: taskDetails.external_id }
         ]
-      : [{ title: 'Asset Management', link: '/asset-management' }, { title: '...' }];
+      : [{ title: 'Asset Management', link: '/project-hub' }, { title: '...' }];
   };
 
   return RouteHandle.createHandle({

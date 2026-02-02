@@ -392,7 +392,7 @@ const DevicesTab: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDetails 
   };
 
   const handleAddClick = () => {
-    navigate(`/asset-management/companies/${siteDetails.company.id}/sites/${siteDetails.id}/devices/add`);
+    navigate(`/project-hub/companies/${siteDetails.company.id}/sites/${siteDetails.id}/devices/add`);
   };
 
   const handleColumnsApply = (columns: any) => {
@@ -404,7 +404,7 @@ const DevicesTab: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDetails 
 
   const onRowClicked = useCallback(
     (e: RowClickedEvent) => {
-      navigate(`/asset-management/companies/${siteDetails.company.id}/sites/${siteDetails.id}/devices/${e.data.id}`);
+      navigate(`/project-hub/companies/${siteDetails.company.id}/sites/${siteDetails.id}/devices/${e.data.id}`);
       setTimeout(() => setLoading(true), 500);
     },
     [navigate, siteDetails]

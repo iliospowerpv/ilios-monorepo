@@ -161,10 +161,10 @@ export const AddTaskForm: React.FC<AddTaskFormProps> = ({
           return;
         }
         if (scope === 'site') {
-          navigate(`/asset-management/companies/${companyId}/sites/${siteId}/tasks/${taskId}?editOnLanding=true`);
+          navigate(`/project-hub/companies/${companyId}/sites/${siteId}/tasks/${taskId}?editOnLanding=true`);
           return;
         }
-        navigate(`/asset-management/companies/${companyId}/tasks/${taskId}?editOnLanding=true`);
+        navigate(`/project-hub/companies/${companyId}/tasks/${taskId}?editOnLanding=true`);
       }, 1000);
     } catch (e: any) {
       notify(e.response?.data?.message || 'Something went wrong when creating a task...');

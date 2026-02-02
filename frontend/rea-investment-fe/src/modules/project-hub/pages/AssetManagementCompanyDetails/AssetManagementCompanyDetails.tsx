@@ -34,7 +34,7 @@ const tabsData: TabData[] = [
   {
     id: 'overview',
     label: 'Overview',
-    link: '/asset-management/companies/:companyId/overview',
+    link: '/project-hub/companies/:companyId/overview',
     disabled: false,
     icon: <SpaceDashboardIcon />,
     content: Overview
@@ -42,7 +42,7 @@ const tabsData: TabData[] = [
   {
     id: 'sites',
     label: 'Projects',
-    link: '/asset-management/companies/:companyId/sites',
+    link: '/project-hub/companies/:companyId/sites',
     disabled: false,
     icon: <LocationOnIcon />,
     content: Sites
@@ -50,7 +50,7 @@ const tabsData: TabData[] = [
   {
     id: 'tasks',
     label: 'Tasks',
-    link: '/asset-management/companies/:companyId/tasks',
+    link: '/project-hub/companies/:companyId/tasks',
     disabled: false,
     icon: <AssignmentTurnedInIcon />,
     content: Tasks

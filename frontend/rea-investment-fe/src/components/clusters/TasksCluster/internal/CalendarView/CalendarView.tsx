@@ -129,9 +129,9 @@ const CalendarView: React.FC<TasksViewProps> = ({ boardId, scope, siteId, compan
           return;
         }
         if (scope === 'site') {
-          navigate(`/asset-management/companies/${companyId}/sites/${siteId}/tasks/${eventInfo.event.id}`);
+          navigate(`/project-hub/companies/${companyId}/sites/${siteId}/tasks/${eventInfo.event.id}`);
         } else {
-          navigate(`/asset-management/companies/${companyId}/tasks/${eventInfo.event.id}`);
+          navigate(`/project-hub/companies/${companyId}/tasks/${eventInfo.event.id}`);
         }
       }
     },

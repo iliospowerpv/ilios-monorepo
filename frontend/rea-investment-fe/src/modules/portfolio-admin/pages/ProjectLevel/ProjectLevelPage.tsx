@@ -360,7 +360,7 @@ export const ProjectLevelPage: React.FC = () => {
                     : 'Critical project information is missing. Please complete the project setup.'}
               </Typography>
 
-              <Button fullWidth variant="outlined" onClick={() => navigate(`/asset-management/sites/${projectIdNum}`)}>
+              <Button fullWidth variant="outlined" onClick={() => navigate(`/project-hub/sites/${projectIdNum}`)}>
                 Edit Project Details
               </Button>
             </CardContent>
@@ -378,7 +378,7 @@ export const ProjectLevelPage: React.FC = () => {
                   fullWidth
                   variant="outlined"
                   startIcon={<FolderIcon />}
-                  onClick={() => navigate(`/asset-management/sites/${projectIdNum}`)}
+                  onClick={() => navigate(`/project-hub/sites/${projectIdNum}`)}
                   sx={{ justifyContent: 'flex-start' }}
                 >
                   View in Asset Management

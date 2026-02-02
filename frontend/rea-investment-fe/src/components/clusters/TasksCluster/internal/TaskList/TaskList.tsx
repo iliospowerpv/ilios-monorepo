@@ -117,10 +117,10 @@ export const TaskList: React.FC<TasksViewProps> = ({ boardId, searchTerm, scope,
         return;
       }
       if (scope === 'site') {
-        navigate(`/asset-management/companies/${companyId}/sites/${siteId}/tasks/${e.data.id}`);
+        navigate(`/project-hub/companies/${companyId}/sites/${siteId}/tasks/${e.data.id}`);
         return;
       }
-      navigate(`/asset-management/companies/${companyId}/tasks/${e.data.id}`);
+      navigate(`/project-hub/companies/${companyId}/tasks/${e.data.id}`);
     },
     [navigate, companyId, siteId, scope, module]
   );

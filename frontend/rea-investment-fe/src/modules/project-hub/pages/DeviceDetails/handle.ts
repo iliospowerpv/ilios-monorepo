@@ -14,9 +14,9 @@ export const createAssetManagementDeviceDetailsHandle = () => {
     const { deviceDetails, siteDetails, companyDetails } = resolvedData;
 
     return [
-      { title: 'Asset Management', link: '/asset-management' },
-      { title: companyDetails.name, link: `/asset-management/companies/${companyDetails.id}` },
-      { title: siteDetails.name, link: `/asset-management/companies/${companyDetails.id}/sites/${siteDetails.id}` },
+      { title: 'Asset Management', link: '/project-hub' },
+      { title: companyDetails.name, link: `/project-hub/companies/${companyDetails.id}` },
+      { title: siteDetails.name, link: `/project-hub/companies/${companyDetails.id}/sites/${siteDetails.id}` },
       { title: deviceDetails.general_info.name }
     ];
   };

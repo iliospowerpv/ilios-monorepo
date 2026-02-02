@@ -29,7 +29,7 @@ const tabsData: TabData[] = [
   {
     id: 'overview',
     label: 'Overview',
-    link: '/asset-management/companies/:companyId/sites/:siteId/devices/:deviceId/overview',
+    link: '/project-hub/companies/:companyId/sites/:siteId/devices/:deviceId/overview',
     disabled: false,
     icon: <SpaceDashboardIcon />,
     content: Overview

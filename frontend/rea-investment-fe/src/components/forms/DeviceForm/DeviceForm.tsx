@@ -101,7 +101,7 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({ siteId, companyId }) => 
         }
       }
       reset();
-      setTimeout(() => navigate(`/asset-management/companies/${companyId}/sites/${siteId}/devices`), 1000);
+      setTimeout(() => navigate(`/project-hub/companies/${companyId}/sites/${siteId}/devices`), 1000);
     } catch (e: any) {
       notify(
         e instanceof AxiosError

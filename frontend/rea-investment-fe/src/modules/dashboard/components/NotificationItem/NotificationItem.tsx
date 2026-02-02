@@ -198,11 +198,11 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification }) => 
       }
       if (notification.site) {
         navigate(
-          `/asset-management/companies/${notification.company.id}/sites/${notification.site.id}/tasks/${notification.task.id}`
+          `/project-hub/companies/${notification.company.id}/sites/${notification.site.id}/tasks/${notification.task.id}`
         );
         return;
       } else {
-        navigate(`/asset-management/companies/${notification.company.id}/tasks/${notification.task.id}`);
+        navigate(`/project-hub/companies/${notification.company.id}/tasks/${notification.task.id}`);
         return;
       }
     },

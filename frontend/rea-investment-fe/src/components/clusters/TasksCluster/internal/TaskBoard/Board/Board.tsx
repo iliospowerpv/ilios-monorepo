@@ -70,10 +70,10 @@ const Board: React.FC<any> = ({ data, scope, siteId, companyId, setDragDetails, 
           return;
         }
         if (scope === 'site') {
-          navigate(`/asset-management/companies/${companyId}/sites/${siteId}/tasks/${id}`);
+          navigate(`/project-hub/companies/${companyId}/sites/${siteId}/tasks/${id}`);
           return;
         }
-        navigate(`/asset-management/companies/${companyId}/tasks/${id}`);
+        navigate(`/project-hub/companies/${companyId}/tasks/${id}`);
       }
     },
     [navigate, companyId, siteId, isDragging, scope]

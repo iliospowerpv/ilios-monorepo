@@ -160,7 +160,7 @@ export const DevicesTab: React.FC<SiteDetailsTabProps> = ({ siteDetails, company
 
   const onRowClicked = React.useCallback(
     (e: RowClickedEvent) => {
-      navigate(`/asset-management/companies/${companyDetails.id}/sites/${siteDetails.id}/devices/${e?.data?.id}`);
+      navigate(`/project-hub/companies/${companyDetails.id}/sites/${siteDetails.id}/devices/${e?.data?.id}`);
       setTimeout(() => setLoading(true), 500);
     },
     [navigate, companyDetails, siteDetails]

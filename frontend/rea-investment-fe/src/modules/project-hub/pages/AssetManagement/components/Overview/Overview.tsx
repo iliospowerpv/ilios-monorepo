@@ -79,7 +79,7 @@ const Overview = () => {
 
   const onRowClicked = useCallback(
     (e: RowClickedEvent) => {
-      navigate(`/asset-management/companies/${e.data.id}`);
+      navigate(`/project-hub/companies/${e.data.id}`);
     },
     [navigate]
   );

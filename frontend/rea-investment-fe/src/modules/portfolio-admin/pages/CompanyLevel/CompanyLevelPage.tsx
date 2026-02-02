@@ -143,7 +143,7 @@ export const CompanyLevelPage: React.FC = () => {
                   variant="outlined"
                   fullWidth
                   startIcon={<AssessmentIcon />}
-                  onClick={() => navigate(`/asset-management/sites?company_id=${companyIdNum}`)}
+                  onClick={() => navigate(`/project-hub/sites?company_id=${companyIdNum}`)}
                   sx={{ justifyContent: 'flex-start' }}
                 >
                   Asset Management

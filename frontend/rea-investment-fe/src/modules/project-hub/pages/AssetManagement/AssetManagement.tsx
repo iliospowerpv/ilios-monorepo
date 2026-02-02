@@ -20,7 +20,7 @@ interface TabInfo {
 const tabData: TabInfo[] = [
   {
     id: 'overview',
-    link: '/asset-management/overview',
+    link: '/project-hub/overview',
     label: 'Overview',
     disabled: false,
     icon: <SpaceDashboardIcon />,
@@ -28,7 +28,7 @@ const tabData: TabInfo[] = [
   },
   {
     id: 'sites',
-    link: '/asset-management/sites',
+    link: '/project-hub/sites',
     label: 'Projects',
     disabled: false,
     icon: <LocationOnIcon />,

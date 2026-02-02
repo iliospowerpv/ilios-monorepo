@@ -121,9 +121,9 @@ export const TaskDashboardList: React.FC = () => {
       const module = e.data.module;
 
       if (module === 'Asset' && e?.data?.company) {
-        navigate(`/asset-management/companies/${e.data.company.id}/tasks/${e.data.id}`);
+        navigate(`/project-hub/companies/${e.data.company.id}/tasks/${e.data.id}`);
       } else if (module === 'Asset') {
-        navigate(`/asset-management/companies/${site.company_id}/sites/${site.id}/tasks/${e.data.id}`);
+        navigate(`/project-hub/companies/${site.company_id}/sites/${site.id}/tasks/${e.data.id}`);
       }
 
       if (module === 'Diligence') {

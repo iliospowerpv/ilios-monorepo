@@ -36,7 +36,7 @@ const tabsData: TabData[] = [
   {
     id: 'overview',
     label: 'Overview',
-    link: '/asset-management/companies/:companyId/sites/:siteId/overview',
+    link: '/project-hub/companies/:companyId/sites/:siteId/overview',
     disabled: false,
     icon: <SpaceDashboardIcon />,
     content: Overview
@@ -44,7 +44,7 @@ const tabsData: TabData[] = [
   {
     id: 'devices',
     label: 'Devices',
-    link: '/asset-management/companies/:companyId/sites/:siteId/devices',
+    link: '/project-hub/companies/:companyId/sites/:siteId/devices',
     disabled: false,
     icon: <CastConnectedIcon />,
     content: Devices
@@ -52,7 +52,7 @@ const tabsData: TabData[] = [
   {
     id: 'tasks',
     label: 'Tasks',
-    link: '/asset-management/companies/:companyId/sites/:siteId/tasks',
+    link: '/project-hub/companies/:companyId/sites/:siteId/tasks',
     disabled: false,
     icon: <AssignmentTurnedInIcon />,
     content: Tasks
@@ -60,7 +60,7 @@ const tabsData: TabData[] = [
   {
     id: 'telemetry',
     label: 'Telemetry',
-    link: '/asset-management/companies/:companyId/sites/:siteId/telemetry',
+    link: '/project-hub/companies/:companyId/sites/:siteId/telemetry',
     disabled: false,
     icon: <SettingsInputAntennaIcon />,
     content: Telemetry

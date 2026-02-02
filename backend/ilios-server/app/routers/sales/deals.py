@@ -39,6 +39,25 @@ def _generate_company_code(company: Company) -> str:
     return letters_only[:4].upper()
 
 
+def _safe_lifecycle_state(value: Optional[str]) -> Optional[LifecycleState]:
+    """Safely convert lifecycle_state string to enum, handling legacy values."""
+    if not value:
+        return None
+    try:
+        return LifecycleState(value)
+    except ValueError:
+        # Map legacy human-readable values to new snake_case enum values
+        legacy_mapping = {
+            "Sales / Pre-Diligence": LifecycleState.PRE_DILIGENCE,
+            "Pre-Diligence": LifecycleState.PRE_DILIGENCE,
+            "Due Diligence": LifecycleState.DUE_DILIGENCE,
+            "Implementation": LifecycleState.IMPLEMENTATION,
+            "Placed in Service": LifecycleState.PLACED_IN_SERVICE,
+            "Operations": LifecycleState.OPERATIONS,
+        }
+        return legacy_mapping.get(value, None)
+
+
 def _generate_constructed_name(db: Session, company_id: int, state_code: str) -> str:
     """Generate deterministic project name: STATE-COMPANYCODE-SEQ."""
     company = db.query(Company).filter(Company.id == company_id).first()
@@ -58,7 +77,7 @@ def _deal_to_response(deal) -> DealResponse:
         name=deal.name,
         developer_name=deal.developer_name,
         sales_stage=SalesStage(deal.sales_stage) if deal.sales_stage else None,
-        lifecycle_state=LifecycleState(deal.lifecycle_state) if deal.lifecycle_state else None,
+        lifecycle_state=_safe_lifecycle_state(deal.lifecycle_state),
         quoted_by=deal.quoted_by,
         last_action=deal.last_action,
         next_action=deal.next_action,
@@ -113,7 +132,7 @@ def _deal_to_pipeline_summary(deal) -> SalesPipelineSummary:
         company_name=deal.company.name if deal.company else None,
         developer_name=deal.developer_name,
         sales_stage=SalesStage(deal.sales_stage) if deal.sales_stage else None,
-        lifecycle_state=LifecycleState(deal.lifecycle_state) if deal.lifecycle_state else None,
+        lifecycle_state=_safe_lifecycle_state(deal.lifecycle_state),
         pipeline_value=deal.pipeline_value,
         probability=deal.probability,
         target_close_date=deal.target_close_date,
