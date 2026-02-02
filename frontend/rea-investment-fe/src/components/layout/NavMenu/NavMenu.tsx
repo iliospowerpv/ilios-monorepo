@@ -27,7 +27,7 @@ interface AnchorElTooltip extends React.PropsWithChildren {
 const AnchorElTooltip: React.FC<AnchorElTooltip> = ({ children, anchor, title }) => {
   const elementRef = React.useRef<HTMLDivElement>(null);
   const popperRef = React.useRef<Instance>(null);
-  const { color } = useTheme();
+  const theme = useTheme();
 
   const handleMouseMove = () => {
     if (popperRef.current != null) {
@@ -41,8 +41,17 @@ const AnchorElTooltip: React.FC<AnchorElTooltip> = ({ children, anchor, title })
       placement="right"
       arrow
       slotProps={{
-        tooltip: { sx: { bgcolor: color.black, padding: '8px 12px', fontSize: '0.8rem', fontWeight: 500 } },
-        arrow: { sx: { color: color.black } }
+        tooltip: {
+          sx: {
+            bgcolor: '#FFFFFF',
+            color: theme.custom.accent.main,
+            padding: '8px 12px',
+            fontSize: '0.8rem',
+            fontWeight: 500,
+            boxShadow: '0px 2px 8px rgba(0,0,0,0.15)'
+          }
+        },
+        arrow: { sx: { color: '#FFFFFF' } }
       }}
       TransitionComponent={Fade}
       TransitionProps={{ timeout: { enter: 700 } }}
