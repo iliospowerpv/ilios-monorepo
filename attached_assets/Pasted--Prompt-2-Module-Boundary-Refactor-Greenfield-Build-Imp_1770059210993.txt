@@ -1,0 +1,228 @@
+# Prompt 2 – Module Boundary Refactor (Greenfield Build)
+
+Implement the module boundary refactor now. This is **GREENFIELD**: no production users, no legacy data, no need for redirects or backward compatibility. You may delete/rename routes and enums directly.
+
+---
+
+## NON‑NEGOTIABLE UX / INFORMATION ARCHITECTURE
+
+### Global Left Nav Modules (exact)
+
+* **Acquisitions** → `/acquisitions`
+* **Project Hub** → `/project-hub`
+* **Operations & Maintenance** → keep existing route `/operations-and-maintenance` (do **not** rename path)
+* **Finance** → `/finance`
+* **Reporting** → `/reports`
+* **Admin / Setup** → `/admin` (consolidate portfolio-admin + admin)
+
+Remove Sales, Due Diligence, and Asset Management as standalone modules from the nav.
+
+### Project Hub (canonical project shell)
+
+* `/project-hub` → project list
+* `/project-hub/:siteId` → project shell
+
+**Project Hub tabs (exact):**
+
+1. Overview
+2. Data Room
+3. Operations & Maintenance
+4. Finance
+5. Tasks
+6. Reporting
+
+---
+
+## MODULE BOUNDARIES (ENFORCE STRICTLY)
+
+* **Acquisitions**: Deals only. Pipeline ends at conversion.
+* **Project Hub**: Canonical project record, lifecycle, readiness, blockers, next steps.
+* **Data Room**: Documents, AI extraction, acceptance workflow, poison pills, diligence checklist.
+* **Operations & Maintenance**: Devices, telemetry, alerts, work orders (editable only here).
+* **Finance**: Budgets, approvals, invoices, draws, capital stack (editable only here).
+* **Reporting**: Portfolio‑level and project‑level reporting.
+
+Project Hub shows **read‑only rollups/snapshots** for Data Room, O&M, and Finance with deep links to the owning module.
+
+---
+
+## A) FRONTEND ROUTES & NAV
+
+1. Update `NavMenu.tsx` to match the target modules and labels above.
+2. Update `App.tsx` routes to:
+
+   * `/acquisitions`, `/acquisitions/deal/:dealId`
+   * `/project-hub`, `/project-hub/:siteId`
+   * keep `/operations-and-maintenance`, `/finance`, `/reports`, `/admin`
+
+---
+
+## B) ACQUISITIONS (formerly Sales)
+
+3. Rename `modules/sales` → `modules/acquisitions` and update imports.
+4. Remove `SalesStage.Phase1Diligence` from enums and all UI usage.
+5. Allow conversion at **MIPA Signed** and optionally **Term Sheet Signed**.
+
+---
+
+## C) DEAL → PROJECT CONVERSION (Deal → Site)
+
+Enhance existing conversion logic in `backend/ilios-server/app/routers/sales/deals.py`.
+
+6. On conversion:
+
+* Create a **Site** (Project) and `SiteAdditionalFieldList`.
+* Set `deal.is_converted = true` and `deal.converted_to_project_id = site.id`.
+* Move deal to **Closed Won / Signed** and enforce read‑only thereafter.
+* **Reuse existing module pages. Do NOT create duplicate UIs.**
+* Create **only minimal backend bootstrap records IF required** so existing Data Room / Finance / O&M pages render without errors:
+
+  * **Data Room**: instantiate per‑site checklist rows only if current UI requires them.
+  * **Finance**: create a single draft budget header *only if* finance screens cannot render empty.
+  * **O&M**: do **not** create fake devices; only create telemetry mapping placeholders if required by existing screens.
+
+7. Frontend (`DealDetail.tsx`):
+
+* Make converted deals fully **read‑only**.
+* Show banner: *“Converted to Project. Continue in Project Hub.”* with link to `/project-hub/:siteId`.
+
+---
+
+## D) PROJECT NAME (SYSTEM‑CONSTRUCTED + ADMIN OVERRIDE)
+
+8. Add to `sites`:
+
+* `constructed_name` (not null)
+* `name_override` (nullable)
+* `name_override_by_id`, `name_override_at`
+
+9. Display name logic:
+
+* `display_name = name_override ?? constructed_name`
+
+10. Deterministic construction algorithm:
+
+* `STATE` = deal/site state else `NA`
+* `COMPANYCODE` = company.slug else first 4 letters of company name (uppercase, letters only)
+* `SEQ` = site.id left‑padded to 4 digits
+* `constructed_name = STATE‑COMPANYCODE‑SEQ`
+
+11. Only Company Admin or Superuser may edit `name_override`; audit who/when.
+
+---
+
+## E) SIGNED AGREEMENT TRACKING & GATING
+
+12. Implement signed agreement status on Site:
+
+* Preferred: `signed_agreement_status` ENUM (`missing | uploaded | waived`)
+* `signed_agreement_document_id` (nullable)
+* `waived_by_id`, `waived_at`, `waiver_reason`
+
+13. Project Hub must show a **blocking warning** if status = `missing`.
+14. Lifecycle cannot advance beyond **Diligence** unless agreement is uploaded or waived by Admin/Superuser.
+15. Data Room checklist must show the agreement as REQUIRED/MISSING until resolved.
+
+---
+
+## F) LIFECYCLE (SINGLE SOURCE, AUDIT, AUTO‑TASKS)
+
+16. Lifecycle is authoritative on `SiteAdditionalFieldList.lifecycle_state`. Ignore Deal lifecycle post‑conversion.
+17. Replace enum values with:
+
+* `pre_diligence`
+* `diligence`
+* `implementation`
+* `placed_in_service`
+* `operations`
+
+18. Lifecycle transition endpoint must:
+
+* Enforce Admin/Superuser RBAC
+* Write audit log (who/when/from/to/reason)
+* Auto‑create tasks from templates
+
+19. Create `lifecycle_task_templates` (seeded; no UI):
+
+* `to_state`, `title`, `due_offset_days`, `assignment_strategy`
+
+20. On transition, create tasks in existing `tasks` table (origin = `lifecycle`).
+
+---
+
+## G) DATA ROOM – EXTRACTED FIELD ACCEPTANCE (document_keys)
+
+21. Extend `document_keys`:
+
+* `source` (`ai_extraction | manual_entry`)
+* `status` (`proposed | accepted | overridden | rejected`)
+* `accepted_by_id`, `accepted_at`
+* `override_value`, `overridden_by_id`, `overridden_at`
+* `canonical_field` (optional)
+
+22. AI extraction creates `status = proposed` only and must **never** write canonical Site fields directly.
+23. Implement Accept / Reject / Override actions:
+
+* Accept/Override writes canonical value to Site (or SiteAdditionalFieldList)
+* Record full audit on `document_keys`
+* Display reviewer name and timestamps
+
+24. Project Hub Overview should show minimal provenance for canonicalized fields (source doc + reviewer + time).
+
+---
+
+## H) PROJECT HUB (formerly Asset Management)
+
+25. Rename `modules/asset-management` → `modules/project-hub`.
+26. Use existing Asset Management Site Overview as Project Hub **Overview** tab.
+27. Add remaining tabs and ensure:
+
+* Data Room is embedded
+* O&M and Finance tabs are **read‑only rollups + deep links**
+* Tasks tab shows project tasks
+* Reporting tab shows project‑level reports
+
+---
+
+## I) O&M & FINANCE BOUNDARY ENFORCEMENT
+
+28. Do **not** add editable devices, telemetry, or finance artifacts inside Project Hub.
+
+---
+
+## RBAC
+
+29. Backend must enforce permissions for:
+
+* lifecycle transitions
+* signed agreement waiver
+* project name override
+* accept/reject/override extracted fields
+
+Frontend must hide/disable controls accordingly.
+
+---
+
+## ACCEPTANCE TESTS (ALL MUST PASS)
+
+* Acquisitions pipeline converts Deal → Project correctly.
+* Converted deal is read‑only and links to Project Hub.
+* Project Hub tabs render correctly.
+* Missing signed agreement blocks lifecycle beyond Diligence unless waived.
+* Lifecycle transitions are audited and auto‑create tasks.
+* AI‑extracted fields remain proposed until accepted/overridden.
+* O&M and Finance edits occur only in their modules.
+* Reporting works globally and per project.
+
+---
+
+## POST‑IMPLEMENTATION OUTPUT
+
+Provide:
+
+* Alembic migrations created
+* Backend files changed
+* Frontend files changed
+* Known follow‑ups or intentional deferrals
+
+**Proceed now.**

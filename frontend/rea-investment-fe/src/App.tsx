@@ -29,15 +29,15 @@ import { TelemetryPage, createTelemetryHandle, TelemetryRedirect } from './pages
 import { ScopedModuleRoute } from './components/layout/ScopedModuleRoute';
 
 import {
-  SiteTask as AMSiteTask,
-  CompanyTask as AMCompanyTask,
-  Root as AMRoot,
-  CompanyDetails as AMCompanyDetails,
-  SiteDetails as AMSiteDetails,
-  DeviceDetails as AMDeviceDetails,
-  AddDevice as AMAddDevice,
-  ModuleContainer as AMModuleContainer
-} from './modules/asset-management';
+  SiteTask as PHSiteTask,
+  CompanyTask as PHCompanyTask,
+  Root as PHRoot,
+  CompanyDetails as PHCompanyDetails,
+  SiteDetails as PHSiteDetails,
+  DeviceDetails as PHDeviceDetails,
+  AddDevice as PHAddDevice,
+  ModuleContainer as PHModuleContainer
+} from './modules/project-hub';
 import {
   AllCompanies as OMAllCompanies,
   CompanyDetails as OMCompanyDetails,
@@ -89,7 +89,12 @@ import {
   createFinanceHomeHandle,
   createSiteFinanceHandle
 } from './modules/finance';
-import { SalesHome, SalesModuleContainer, createSalesHomeHandle, DealDetail } from './modules/sales';
+import {
+  SalesHome as AcquisitionsHome,
+  SalesModuleContainer as AcquisitionsModuleContainer,
+  createSalesHomeHandle as createAcquisitionsHomeHandle,
+  DealDetail
+} from './modules/acquisitions';
 import { HomePage, createHomeHandle } from './modules/home/pages';
 import { ModuleContainer as HomeModuleContainer } from './modules/home';
 import {
@@ -286,13 +291,13 @@ const router = createBrowserRouter(
             element={<SiteFinance />}
           />
         </Route>
-        {/* Sales Module with Scoped Lens Routes */}
-        <Route path="/sales" element={<SalesModuleContainer />}>
+        {/* Acquisitions Module (formerly Sales) */}
+        <Route path="/acquisitions" element={<AcquisitionsModuleContainer />}>
           <Route
             path="scope/portfolio"
             element={
               <ScopedModuleRoute scope="portfolio">
-                <SalesHome />
+                <AcquisitionsHome />
               </ScopedModuleRoute>
             }
           />
@@ -300,7 +305,7 @@ const router = createBrowserRouter(
             path="scope/company/:companyId"
             element={
               <ScopedModuleRoute scope="company">
-                <SalesHome />
+                <AcquisitionsHome />
               </ScopedModuleRoute>
             }
           />
@@ -308,13 +313,13 @@ const router = createBrowserRouter(
             path="scope/project/:projectId"
             element={
               <ScopedModuleRoute scope="project">
-                <SalesHome />
+                <AcquisitionsHome />
               </ScopedModuleRoute>
             }
           />
         </Route>
-        <Route path="/sales" element={<SalesModuleContainer />}>
-          <Route index handle={createSalesHomeHandle(queryClient)} element={<SalesHome />} />
+        <Route path="/acquisitions" element={<AcquisitionsModuleContainer />}>
+          <Route index handle={createAcquisitionsHomeHandle(queryClient)} element={<AcquisitionsHome />} />
           <Route path="deal/:dealId" element={<DealDetail />} />
         </Route>
         {/* Due Diligence Module with Scoped Lens Routes */}
@@ -513,13 +518,13 @@ const router = createBrowserRouter(
           {/*  element={<OMDeviceDetails tabId="alerts" />}*/}
           {/*/>*/}
         </Route>
-        {/* Asset Management Module with Scoped Lens Routes */}
-        <Route path="/asset-management" element={<AMModuleContainer />}>
+        {/* Project Hub Module (formerly Asset Management) with Scoped Lens Routes */}
+        <Route path="/project-hub" element={<PHModuleContainer />}>
           <Route
             path="scope/portfolio"
             element={
               <ScopedModuleRoute scope="portfolio">
-                <AMRoot.Component />
+                <PHRoot.Component />
               </ScopedModuleRoute>
             }
           />
@@ -527,7 +532,7 @@ const router = createBrowserRouter(
             path="scope/company/:companyId"
             element={
               <ScopedModuleRoute scope="company">
-                <AMCompanyDetails.Component />
+                <PHCompanyDetails.Component />
               </ScopedModuleRoute>
             }
           />
@@ -535,111 +540,108 @@ const router = createBrowserRouter(
             path="scope/project/:projectId"
             element={
               <ScopedModuleRoute scope="project">
-                <AMSiteDetails.Component />
+                <PHSiteDetails.Component />
               </ScopedModuleRoute>
             }
           />
         </Route>
-        <Route path="/asset-management" element={<AMModuleContainer />}>
-          <Route path="/asset-management" handle={AMRoot.createHandle()} element={<AMRoot.Component />} />
+        <Route path="/project-hub" element={<PHModuleContainer />}>
+          <Route path="/project-hub" handle={PHRoot.createHandle()} element={<PHRoot.Component />} />
           <Route
-            path="/asset-management/overview"
-            handle={AMRoot.createHandle()}
-            element={<AMRoot.Component tabId="overview" />}
+            path="/project-hub/overview"
+            handle={PHRoot.createHandle()}
+            element={<PHRoot.Component tabId="overview" />}
           />
           <Route
-            path="/asset-management/sites"
-            handle={AMRoot.createHandle()}
-            element={<AMRoot.Component tabId="sites" />}
+            path="/project-hub/sites"
+            handle={PHRoot.createHandle()}
+            element={<PHRoot.Component tabId="sites" />}
           />
           <Route
-            path="/asset-management/companies/:companyId"
-            handle={AMCompanyDetails.createHandle(queryClient)}
-            loader={withAuthControl(AMCompanyDetails.createLoader(queryClient))}
-            element={<AMCompanyDetails.Component />}
+            path="/project-hub/companies/:companyId"
+            handle={PHCompanyDetails.createHandle(queryClient)}
+            loader={withAuthControl(PHCompanyDetails.createLoader(queryClient))}
+            element={<PHCompanyDetails.Component />}
           />
           <Route
-            path="/asset-management/companies/:companyId/overview"
-            handle={AMCompanyDetails.createHandle(queryClient)}
-            loader={withAuthControl(AMCompanyDetails.createLoader(queryClient))}
-            element={<AMCompanyDetails.Component tabId="overview" />}
+            path="/project-hub/companies/:companyId/overview"
+            handle={PHCompanyDetails.createHandle(queryClient)}
+            loader={withAuthControl(PHCompanyDetails.createLoader(queryClient))}
+            element={<PHCompanyDetails.Component tabId="overview" />}
           />
           <Route
-            path="/asset-management/companies/:companyId/sites"
-            handle={AMCompanyDetails.createHandle(queryClient)}
-            loader={withAuthControl(AMCompanyDetails.createLoader(queryClient))}
-            element={<AMCompanyDetails.Component tabId="sites" />}
+            path="/project-hub/companies/:companyId/sites"
+            handle={PHCompanyDetails.createHandle(queryClient)}
+            loader={withAuthControl(PHCompanyDetails.createLoader(queryClient))}
+            element={<PHCompanyDetails.Component tabId="sites" />}
           />
           <Route
-            path="/asset-management/companies/:companyId/tasks"
-            handle={AMCompanyDetails.createHandle(queryClient)}
-            loader={withAuthControl(AMCompanyDetails.createLoader(queryClient))}
-            element={<AMCompanyDetails.Component tabId="tasks" />}
+            path="/project-hub/companies/:companyId/tasks"
+            handle={PHCompanyDetails.createHandle(queryClient)}
+            loader={withAuthControl(PHCompanyDetails.createLoader(queryClient))}
+            element={<PHCompanyDetails.Component tabId="tasks" />}
           />
           <Route
-            path="/asset-management/companies/:companyId/tasks/:taskId"
-            handle={AMCompanyTask.createHandle(queryClient)}
-            loader={withAuthControl(AMCompanyTask.createLoader(queryClient))}
-            element={<AMCompanyTask.Component />}
+            path="/project-hub/companies/:companyId/tasks/:taskId"
+            handle={PHCompanyTask.createHandle(queryClient)}
+            loader={withAuthControl(PHCompanyTask.createLoader(queryClient))}
+            element={<PHCompanyTask.Component />}
           />
           <Route
-            path="/asset-management/companies/:companyId/sites/:siteId"
-            handle={AMSiteDetails.createHandle(queryClient)}
-            loader={withAuthControl(AMSiteDetails.createLoader(queryClient))}
-            element={<AMSiteDetails.Component />}
+            path="/project-hub/companies/:companyId/sites/:siteId"
+            handle={PHSiteDetails.createHandle(queryClient)}
+            loader={withAuthControl(PHSiteDetails.createLoader(queryClient))}
+            element={<PHSiteDetails.Component />}
           />
           <Route
-            path="/asset-management/companies/:companyId/sites/:siteId/overview"
-            handle={AMSiteDetails.createHandle(queryClient)}
-            loader={withAuthControl(AMSiteDetails.createLoader(queryClient))}
-            element={<AMSiteDetails.Component tabId="overview" />}
+            path="/project-hub/companies/:companyId/sites/:siteId/overview"
+            handle={PHSiteDetails.createHandle(queryClient)}
+            loader={withAuthControl(PHSiteDetails.createLoader(queryClient))}
+            element={<PHSiteDetails.Component tabId="overview" />}
           />
           <Route
-            path="/asset-management/companies/:companyId/sites/:siteId/devices"
-            handle={AMSiteDetails.createHandle(queryClient)}
-            loader={withAuthControl(AMSiteDetails.createLoader(queryClient))}
-            element={<AMSiteDetails.Component tabId="devices" />}
+            path="/project-hub/companies/:companyId/sites/:siteId/devices"
+            handle={PHSiteDetails.createHandle(queryClient)}
+            loader={withAuthControl(PHSiteDetails.createLoader(queryClient))}
+            element={<PHSiteDetails.Component tabId="devices" />}
           />
           <Route
-            path="/asset-management/companies/:companyId/sites/:siteId/tasks"
-            handle={AMSiteDetails.createHandle(queryClient)}
-            loader={withAuthControl(AMSiteDetails.createLoader(queryClient))}
-            element={<AMSiteDetails.Component tabId="tasks" />}
+            path="/project-hub/companies/:companyId/sites/:siteId/tasks"
+            handle={PHSiteDetails.createHandle(queryClient)}
+            loader={withAuthControl(PHSiteDetails.createLoader(queryClient))}
+            element={<PHSiteDetails.Component tabId="tasks" />}
           />
           {/* Redirect Asset Management telemetry to canonical project telemetry route */}
+          <Route path="/project-hub/companies/:companyId/sites/:siteId/telemetry" element={<TelemetryRedirect />} />
           <Route
-            path="/asset-management/companies/:companyId/sites/:siteId/telemetry"
-            element={<TelemetryRedirect />}
+            path="/project-hub/companies/:companyId/sites/:siteId/devices/add"
+            loader={withAuthControl(PHAddDevice.createLoader(queryClient))}
+            handle={PHAddDevice.createHandle(queryClient)}
+            element={<PHAddDevice.Component />}
           />
           <Route
-            path="/asset-management/companies/:companyId/sites/:siteId/devices/add"
-            loader={withAuthControl(AMAddDevice.createLoader(queryClient))}
-            handle={AMAddDevice.createHandle(queryClient)}
-            element={<AMAddDevice.Component />}
+            path="/project-hub/companies/:companyId/sites/:siteId/devices/:deviceId"
+            loader={withAuthControl(PHDeviceDetails.createLoader(queryClient))}
+            handle={PHDeviceDetails.createHandle()}
+            element={<PHDeviceDetails.Component />}
           />
           <Route
-            path="/asset-management/companies/:companyId/sites/:siteId/devices/:deviceId"
-            loader={withAuthControl(AMDeviceDetails.createLoader(queryClient))}
-            handle={AMDeviceDetails.createHandle()}
-            element={<AMDeviceDetails.Component />}
+            path="/project-hub/companies/:companyId/sites/:siteId/devices/:deviceId/overview"
+            handle={PHDeviceDetails.createHandle()}
+            loader={withAuthControl(PHDeviceDetails.createLoader(queryClient))}
+            element={<PHDeviceDetails.Component tabId="overview" />}
           />
           <Route
-            path="/asset-management/companies/:companyId/sites/:siteId/devices/:deviceId/overview"
-            handle={AMDeviceDetails.createHandle()}
-            loader={withAuthControl(AMDeviceDetails.createLoader(queryClient))}
-            element={<AMDeviceDetails.Component tabId="overview" />}
+            path="/project-hub/companies/:companyId/sites/:siteId/devices/:deviceId/tasks"
+            handle={PHDeviceDetails.createHandle()}
+            loader={withAuthControl(PHDeviceDetails.createLoader(queryClient))}
+            element={<PHDeviceDetails.Component tabId="tasks" />}
           />
           <Route
-            path="/asset-management/companies/:companyId/sites/:siteId/devices/:deviceId/tasks"
-            handle={AMDeviceDetails.createHandle()}
-            loader={withAuthControl(AMDeviceDetails.createLoader(queryClient))}
-            element={<AMDeviceDetails.Component tabId="tasks" />}
-          />
-          <Route
-            path="/asset-management/companies/:companyId/sites/:siteId/tasks/:taskId"
-            handle={AMSiteTask.createHandle(queryClient)}
-            loader={withAuthControl(AMSiteTask.createLoader(queryClient))}
-            element={<AMSiteTask.Component />}
+            path="/project-hub/companies/:companyId/sites/:siteId/tasks/:taskId"
+            handle={PHSiteTask.createHandle(queryClient)}
+            loader={withAuthControl(PHSiteTask.createLoader(queryClient))}
+            element={<PHSiteTask.Component />}
           />
         </Route>
         <Route path="/settings">

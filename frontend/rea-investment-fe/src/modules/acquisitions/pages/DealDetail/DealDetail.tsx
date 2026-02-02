@@ -172,7 +172,7 @@ export const DealDetail: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['deal', dealId] });
       queryClient.invalidateQueries({ queryKey: ['deals-pipeline'] });
       setConvertDialogOpen(false);
-      navigate(`/asset-management/site/${response.project_id}`);
+      navigate(`/project-hub/companies/${deal?.company_id || 1}/sites/${response.project_id}`);
     }
   });
 
@@ -284,7 +284,7 @@ export const DealDetail: React.FC = () => {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error">Failed to load deal details</Alert>
-        <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/sales')} sx={{ mt: 2 }}>
+        <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/acquisitions')} sx={{ mt: 2 }}>
           Back to Pipeline
         </Button>
       </Box>
@@ -292,10 +292,35 @@ export const DealDetail: React.FC = () => {
   }
 
   const allStages = [...ACTIVE_PIPELINE_STAGES, ...CLOSED_STAGES];
-  const canConvert = !deal.is_converted && deal.sales_stage === SalesStage.MIPASigned;
+  const canConvert =
+    !deal.is_converted &&
+    (deal.sales_stage === SalesStage.MIPASigned || deal.sales_stage === SalesStage.TermSheetSigned);
 
   return (
     <Box sx={{ height: '100%', overflow: 'auto' }}>
+      {deal.is_converted && (
+        <Alert
+          severity="info"
+          sx={{ m: 2, borderRadius: 2, '& .MuiAlert-message': { width: '100%' } }}
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              variant="outlined"
+              onClick={() => navigate(`/project-hub/companies/${deal.company_id}/sites/${deal.converted_project_id}`)}
+            >
+              Continue in Project Hub
+            </Button>
+          }
+        >
+          <Typography variant="subtitle1" fontWeight={600}>
+            Deal Converted to Project
+          </Typography>
+          <Typography variant="body2">
+            This deal has been converted and is now read-only. All further work should be done in the Project Hub.
+          </Typography>
+        </Alert>
+      )}
       <Box
         sx={{
           px: 3,
@@ -309,7 +334,7 @@ export const DealDetail: React.FC = () => {
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <IconButton onClick={() => navigate('/sales')}>
+          <IconButton onClick={() => navigate('/acquisitions')}>
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h6" fontWeight={600}>

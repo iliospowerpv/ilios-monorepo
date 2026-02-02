@@ -114,11 +114,22 @@ class Site(RelatedBoards, Base):
     system_size_dc = Column(Float, nullable=False)
     lon_lat_url = Column(VARCHAR, nullable=False)
 
+    constructed_name = Column(VARCHAR(255), nullable=True)
+    name_override = Column(VARCHAR(255), nullable=True)
+    name_override_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    name_override_at = Column(DateTime, nullable=True)
+
+    signed_agreement_status = Column(VARCHAR(20), nullable=True, default="missing")
+    signed_agreement_document_id = Column(Integer, ForeignKey("documents.id", ondelete="SET NULL"), nullable=True)
+    waived_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    waived_at = Column(DateTime, nullable=True)
+    waiver_reason = Column(VARCHAR, nullable=True)
+
     cameras_uuids = Column(ARRAY(String))
 
     company = relationship("Company", back_populates="sites")
     devices = relationship("Device", back_populates="site")
-    documents = relationship("Document", back_populates="site")
+    documents = relationship("Document", back_populates="site", foreign_keys="Document.site_id")
     co_terminus_check = relationship("CoTerminusCheck", back_populates="site", uselist=False)
     telemetry_mapping = relationship("TelemetrySiteMapping", back_populates="site", uselist=False)
     # temporary table to store the user-input fields for the Asset Management view,
@@ -199,6 +210,25 @@ class Site(RelatedBoards, Base):
     @property
     def latest_weather_info(self):
         return self.weather[0] if self.weather else None
+
+    @property
+    def display_name(self):
+        """Return the display name: name_override if set, else constructed_name, else name."""
+        if self.name_override:
+            return self.name_override
+        if self.constructed_name:
+            return self.constructed_name
+        return self.name
+
+    @property
+    def has_signed_agreement(self):
+        """Check if project has a signed agreement (uploaded or waived)."""
+        return self.signed_agreement_status in ("uploaded", "waived")
+
+    @property
+    def is_agreement_blocking(self):
+        """Check if missing agreement blocks lifecycle advancement."""
+        return self.signed_agreement_status == "missing"
 
 
 class CoTerminusCheck(Base):
@@ -362,7 +392,7 @@ class SiteAdditionalFieldList(RelatedBoards, Base):
     date_of_rating = Column(Date, nullable=True)
 
     # Sales / Pipeline fields
-    lifecycle_state = Column(Enum(LifecycleState), nullable=True, default=LifecycleState.sales_pre_diligence)
+    lifecycle_state = Column(Enum(LifecycleState), nullable=True, default=LifecycleState.pre_diligence)
     sales_stage = Column(Enum(SalesStage), nullable=True)
     sales_source = Column(Enum(SalesSource), nullable=True)
     target_close_date = Column(Date, nullable=True)

@@ -472,9 +472,9 @@ export const SalesHome: React.FC = () => {
     [SalesStage.Quoted]: 'quoted',
     [SalesStage.TermSheetNeg]: 'term_sheet_neg',
     [SalesStage.TermSheetSigned]: 'term_sheet_signed',
-    [SalesStage.Phase1Diligence]: 'phase_1_diligence',
     [SalesStage.MIPANegotiating]: 'mipa_negotiating',
     [SalesStage.MIPASigned]: 'mipa_signed',
+    [SalesStage.ClosedWon]: 'closed_won',
     [SalesStage.Passed]: 'passed',
     [SalesStage.Dead]: 'dead'
   };

@@ -64,9 +64,9 @@ def get_deals_pipeline(db: Session, company_id: Optional[int] = None) -> dict:
         "quoted": [],
         "term_sheet_neg": [],
         "term_sheet_signed": [],
-        "phase_1_diligence": [],
         "mipa_negotiating": [],
         "mipa_signed": [],
+        "closed_won": [],
         "passed": [],
         "dead": [],
     }
@@ -81,9 +81,9 @@ def get_deals_pipeline(db: Session, company_id: Optional[int] = None) -> dict:
         SalesStage.quoted.value: "quoted",
         SalesStage.term_sheet_neg.value: "term_sheet_neg",
         SalesStage.term_sheet_signed.value: "term_sheet_signed",
-        SalesStage.phase_1_diligence.value: "phase_1_diligence",
         SalesStage.mipa_negotiating.value: "mipa_negotiating",
         SalesStage.mipa_signed.value: "mipa_signed",
+        SalesStage.closed_won.value: "closed_won",
         SalesStage.passed.value: "passed",
         SalesStage.dead.value: "dead",
     }

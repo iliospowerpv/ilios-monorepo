@@ -72,7 +72,9 @@ class User(Base):
         "SiteVisit", back_populates="creator", primaryjoin="User.id == SiteVisit.creator_id"
     )
     # edited document keys
-    edited_document_keys = relationship("DocumentKey", back_populates="editor")
+    edited_document_keys = relationship(
+        "DocumentKey", back_populates="editor", foreign_keys="DocumentKey.editor_id"
+    )
     # notifications
     triggered_notifications = relationship(
         "Notification", back_populates="actor", primaryjoin="User.id == Notification.actor_id"

@@ -8,15 +8,15 @@ export enum SalesStage {
   Quoted = 'quoted',
   TermSheetNeg = 'term_sheet_neg',
   TermSheetSigned = 'term_sheet_signed',
-  Phase1Diligence = 'phase_1_diligence',
   MIPANegotiating = 'mipa_negotiating',
   MIPASigned = 'mipa_signed',
+  ClosedWon = 'closed_won',
   Passed = 'passed',
   Dead = 'dead'
 }
 
 export enum LifecycleState {
-  SalesPreDiligence = 'sales_pre_diligence',
+  PreDiligence = 'pre_diligence',
   DueDiligence = 'due_diligence',
   Implementation = 'implementation',
   PlacedInService = 'placed_in_service',
@@ -57,6 +57,7 @@ export interface Deal {
   name: string;
   company_id: number;
   company_name?: string;
+  company?: CompanySummary;
   sales_stage: SalesStage;
   is_converted: boolean;
   converted_project_id?: number;
@@ -153,9 +154,9 @@ export interface DealPipelineResponse {
   quoted: Deal[];
   term_sheet_neg: Deal[];
   term_sheet_signed: Deal[];
-  phase_1_diligence: Deal[];
   mipa_negotiating: Deal[];
   mipa_signed: Deal[];
+  closed_won: Deal[];
   passed: Deal[];
   dead: Deal[];
 }
@@ -275,15 +276,15 @@ export const SALES_STAGE_LABELS: Record<SalesStage, string> = {
   [SalesStage.Quoted]: 'Quoted',
   [SalesStage.TermSheetNeg]: 'Term Sheet Neg',
   [SalesStage.TermSheetSigned]: 'Term Sheet Signed',
-  [SalesStage.Phase1Diligence]: 'Phase 1 Diligence',
   [SalesStage.MIPANegotiating]: 'MIPA Negotiating',
   [SalesStage.MIPASigned]: 'MIPA Signed',
+  [SalesStage.ClosedWon]: 'Closed Won',
   [SalesStage.Passed]: 'Passed',
   [SalesStage.Dead]: 'Dead'
 };
 
 export const LIFECYCLE_STATE_LABELS: Record<LifecycleState, string> = {
-  [LifecycleState.SalesPreDiligence]: 'Pre-Diligence',
+  [LifecycleState.PreDiligence]: 'Pre-Diligence',
   [LifecycleState.DueDiligence]: 'Due Diligence',
   [LifecycleState.Implementation]: 'Implementation',
   [LifecycleState.PlacedInService]: 'Placed in Service',
@@ -317,9 +318,9 @@ export const SALES_STAGE_COLORS: Record<SalesStage, string> = {
   [SalesStage.Quoted]: '#A5D6A7',
   [SalesStage.TermSheetNeg]: '#FFE082',
   [SalesStage.TermSheetSigned]: '#FFD54F',
-  [SalesStage.Phase1Diligence]: '#FFCA28',
   [SalesStage.MIPANegotiating]: '#CE93D8',
   [SalesStage.MIPASigned]: '#4CAF50',
+  [SalesStage.ClosedWon]: '#2E7D32',
   [SalesStage.Passed]: '#BDBDBD',
   [SalesStage.Dead]: '#EF5350'
 };
@@ -334,9 +335,8 @@ export const ACTIVE_PIPELINE_STAGES: SalesStage[] = [
   SalesStage.Quoted,
   SalesStage.TermSheetNeg,
   SalesStage.TermSheetSigned,
-  SalesStage.Phase1Diligence,
   SalesStage.MIPANegotiating,
   SalesStage.MIPASigned
 ];
 
-export const CLOSED_STAGES: SalesStage[] = [SalesStage.Passed, SalesStage.Dead];
+export const CLOSED_STAGES: SalesStage[] = [SalesStage.ClosedWon, SalesStage.Passed, SalesStage.Dead];

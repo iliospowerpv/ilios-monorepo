@@ -279,9 +279,9 @@ class SalesPipelineResponse(BaseModel):
     quoted: List[SalesPipelineSummary] = []
     term_sheet_neg: List[SalesPipelineSummary] = []
     term_sheet_signed: List[SalesPipelineSummary] = []
-    phase_1_diligence: List[SalesPipelineSummary] = []
     mipa_negotiating: List[SalesPipelineSummary] = []
     mipa_signed: List[SalesPipelineSummary] = []
+    closed_won: List[SalesPipelineSummary] = []
     passed: List[SalesPipelineSummary] = []
     dead: List[SalesPipelineSummary] = []
 

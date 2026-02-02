@@ -6,16 +6,13 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Tooltip from '@mui/material/Tooltip';
 import Fade from '@mui/material/Fade';
-import FactCheckIcon from '@mui/icons-material/FactCheck';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import HomeIcon from '@mui/icons-material/Home';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import SettingsIcon from '@mui/icons-material/Settings';
 import { NavMenuButtonContainer } from './NavMenu.styles';
 import { useNavigate, useMatches } from 'react-router-dom';
 import { RouteHandle } from '../../../handles';
@@ -71,9 +68,8 @@ const AnchorElTooltip: React.FC<AnchorElTooltip> = ({ children, anchor, title })
 
 const menuItems: [string, React.ReactNode, string, string, boolean][] = [
   ['home', <HomeIcon key="home" />, 'Home', '/home', false],
-  ['portfolio', <DashboardIcon key="portfolio" />, 'Portfolio', '/portfolio', false],
-  ['sales', <TrendingUpIcon key="sales" />, 'Sales', '/sales', false],
-  ['due-diligence', <FactCheckIcon key="due-diligence" />, 'Diligence', '/due-diligence', false],
+  ['acquisitions', <TrendingUpIcon key="acquisitions" />, 'Acquisitions', '/acquisitions', false],
+  ['project-hub', <AccountBalanceIcon key="project-hub" />, 'Project Hub', '/project-hub', false],
   [
     'operations-and-maintenance',
     <WhatshotIcon key="operations-and-maintenance" />,
@@ -81,11 +77,9 @@ const menuItems: [string, React.ReactNode, string, string, boolean][] = [
     '/operations-and-maintenance',
     false
   ],
-  ['asset-management', <AccountBalanceIcon key="asset-management" />, 'Asset Management', '/asset-management', false],
   ['finance', <AccountBalanceWalletIcon key="finance" />, 'Finance', '/finance', false],
   ['reports', <AssessmentIcon key="reports" />, 'Reports', '/reports', false],
-  ['portfolio-admin', <AdminPanelSettingsIcon key="portfolio-admin" />, 'Portfolio Admin', '/portfolio-admin', false],
-  ['admin', <SettingsIcon key="admin" />, 'Admin', '/admin/access-health', false]
+  ['admin', <AdminPanelSettingsIcon key="admin" />, 'Admin', '/admin', false]
 ];
 
 interface MenuItemProps {
@@ -135,16 +129,16 @@ export const NavMenu: React.FC<NavMenuProps> = ({ containerRef, isMenuOpen }) =>
     switch (title) {
       case 'O&M':
         return !user?.role?.permissions?.['O&M (Production Monitoring)']?.view;
-      case 'Diligence':
-        return !user?.role?.permissions?.['Diligence']?.view;
       case 'Finance':
         return !user?.role?.permissions?.['Finance']?.view;
-      case 'Sales':
-        return !user?.role?.permissions?.['Sales']?.view;
-      case 'Asset Management':
-        return !user?.role?.permissions?.['Asset Management']?.view;
+      case 'Acquisitions':
+        return !user?.role?.permissions?.['Acquisitions']?.view && !user?.role?.permissions?.['Sales']?.view;
+      case 'Project Hub':
+        return !user?.role?.permissions?.['Project Hub']?.view && !user?.role?.permissions?.['Asset Management']?.view;
       case 'Reports':
         return !user?.role?.permissions?.['Reports']?.view;
+      case 'Admin':
+        return !user?.role?.permissions?.['Admin']?.view && !user?.role?.permissions?.['Settings Page']?.view;
       default:
         return disabled;
     }

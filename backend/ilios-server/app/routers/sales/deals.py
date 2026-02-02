@@ -1,5 +1,6 @@
-"""Sales deals endpoints."""
+"""Acquisitions deals endpoints (formerly Sales)."""
 
+import re
 from datetime import datetime
 from typing import List, Optional
 
@@ -10,6 +11,7 @@ from app.db.session import get_session
 from app.crud import sales as sales_crud
 from app.models.site import Site, SiteAdditionalFieldList, State
 from app.models.sales import SalesStateTransition
+from app.models.company import Company
 from app.schema.sales import (
     ConvertToProjectRequest,
     ConvertToProjectResponse,
@@ -23,9 +25,30 @@ from app.schema.sales import (
     UserSummary,
     CompanySummary,
 )
-from app.static.sales import LifecycleState, NextActionStatus, SalesStage
+from app.static.sales import CONVERSION_ELIGIBLE_STAGES, LifecycleState, NextActionStatus, SalesStage
 
 router = APIRouter()
+
+
+def _generate_company_code(company: Company) -> str:
+    """Generate a 4-character company code from company name."""
+    name = company.name or "UNKN"
+    letters_only = re.sub(r'[^A-Za-z]', '', name)
+    if not letters_only:
+        letters_only = "UNKN"
+    return letters_only[:4].upper()
+
+
+def _generate_constructed_name(db: Session, company_id: int, state_code: str) -> str:
+    """Generate deterministic project name: STATE-COMPANYCODE-SEQ."""
+    company = db.query(Company).filter(Company.id == company_id).first()
+    company_code = _generate_company_code(company) if company else "UNKN"
+    
+    site_count = db.query(Site).filter(Site.company_id == company_id).count()
+    seq = site_count + 1
+    
+    state_str = state_code if state_code else "NA"
+    return f"{state_str}-{company_code}-{seq:04d}"
 
 
 def _deal_to_response(deal) -> DealResponse:
@@ -127,9 +150,9 @@ def get_deals_pipeline(
         quoted=[_deal_to_pipeline_summary(d) for d in pipeline["quoted"]],
         term_sheet_neg=[_deal_to_pipeline_summary(d) for d in pipeline["term_sheet_neg"]],
         term_sheet_signed=[_deal_to_pipeline_summary(d) for d in pipeline["term_sheet_signed"]],
-        phase_1_diligence=[_deal_to_pipeline_summary(d) for d in pipeline["phase_1_diligence"]],
         mipa_negotiating=[_deal_to_pipeline_summary(d) for d in pipeline["mipa_negotiating"]],
         mipa_signed=[_deal_to_pipeline_summary(d) for d in pipeline["mipa_signed"]],
+        closed_won=[_deal_to_pipeline_summary(d) for d in pipeline["closed_won"]],
         passed=[_deal_to_pipeline_summary(d) for d in pipeline["passed"]],
         dead=[_deal_to_pipeline_summary(d) for d in pipeline["dead"]],
     )
@@ -281,9 +304,11 @@ def convert_deal_to_project(
         )
     
     try:
-        # Create the canonical Site record
+        constructed_name = _generate_constructed_name(db, data.company_id, state_value.value if state_value else "NA")
+        
         site = Site()
         site.name = deal.name
+        site.constructed_name = constructed_name
         site.address = deal.address or "TBD"
         site.city = deal.city or "TBD"
         site.state = state_value
@@ -293,33 +318,32 @@ def convert_deal_to_project(
         site.system_size_ac = float(deal.system_size_ac) if deal.system_size_ac else 0.0
         site.system_size_dc = float(deal.system_size_dc) if deal.system_size_dc else 0.0
         site.company_id = data.company_id
+        site.signed_agreement_status = "missing"
         
         db.add(site)
         db.flush()
         
-        # Create additional fields with lifecycle state
         additional_fields = SiteAdditionalFieldList()
         additional_fields.site_id = site.id
-        additional_fields.lifecycle_state = LifecycleState.due_diligence.value
-        additional_fields.sales_stage = SalesStage.mipa_signed.value
+        additional_fields.lifecycle_state = LifecycleState.diligence.value
+        additional_fields.sales_stage = SalesStage.closed_won.value
         additional_fields.ownership_structure = deal.ownership_structure
         additional_fields.offtaker_name = deal.offtaker_legal_name or deal.offtaker_name
         db.add(additional_fields)
         
-        # Update deal to mark as converted (one-way link)
         deal.is_converted = True
         deal.converted_to_project_id = site.id
+        deal.sales_stage = SalesStage.closed_won.value
         deal.updated_at = datetime.utcnow()
         
-        # Create audit log entry
         user_id = 1  # TODO: Get from auth context
         transition = SalesStateTransition(
             deal_id=deal.id,
             site_id=site.id,
             transition_type="converted_to_project",
             from_state=deal.sales_stage,
-            to_state="project_created",
-            notes=data.additional_notes or "Deal converted to project",
+            to_state=SalesStage.closed_won.value,
+            notes=data.additional_notes or f"Deal converted to project {constructed_name}",
             changed_by_id=user_id,
         )
         db.add(transition)
@@ -329,7 +353,7 @@ def convert_deal_to_project(
         return ConvertToProjectResponse(
             deal_id=deal.id,
             project_id=site.id,
-            message=f"Deal '{deal.name}' successfully converted to project",
+            message=f"Deal '{deal.name}' successfully converted to project '{constructed_name}'",
         )
     except HTTPException:
         db.rollback()
