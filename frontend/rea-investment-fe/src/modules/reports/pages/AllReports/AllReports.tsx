@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
+
 import EmptyReport from '../../components/EmptyReport';
 import { DeviceForm, DeviceFormFields } from '../../components/GenerateReportForm';
 import Button from '@mui/material/Button';

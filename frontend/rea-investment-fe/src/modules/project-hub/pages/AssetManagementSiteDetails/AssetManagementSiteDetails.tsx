@@ -98,9 +98,7 @@ export const AssetManagementSiteDetails: React.FC<AssetManagementSiteDetailsProp
   const isValidId = !!siteId && Number.isSafeInteger(Number.parseInt(siteId));
   const { setCurrentCompany, setCurrentProject } = useEntityContext();
 
-  const resolvedTab = tabId
-    ? legacyTabAliases[tabId] || tabId
-    : 'overview';
+  const resolvedTab = tabId ? legacyTabAliases[tabId] || tabId : 'overview';
   const activeTab = resolvedTab as TabType;
 
   const { data: siteDetails, isLoading: isLoadingSiteDetails } = useQuery(

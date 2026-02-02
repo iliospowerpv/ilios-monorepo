@@ -12,7 +12,7 @@ import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
-import Divider from '@mui/material/Divider';
+
 import FolderIcon from '@mui/icons-material/Folder';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -28,12 +28,7 @@ interface ProjectStepProps {
   onBack: () => void;
 }
 
-export const ProjectStep: React.FC<ProjectStepProps> = ({
-  companyId,
-  companyName,
-  onComplete,
-  onBack
-}) => {
+export const ProjectStep: React.FC<ProjectStepProps> = ({ companyId, companyName, onComplete, onBack }) => {
   const { setCurrentProject } = useEntityContext();
 
   const [mode, setMode] = useState<'select' | 'create'>('create');
@@ -50,9 +45,7 @@ export const ProjectStep: React.FC<ProjectStepProps> = ({
     queryFn: () => ApiClient.assetManagement.sites({ skip: 0, limit: 100 })
   });
 
-  const projects = (sitesData?.items ?? []).filter(
-    (site: { company_id?: number }) => site.company_id === companyId
-  );
+  const projects = (sitesData?.items ?? []).filter((site: { company_id?: number }) => site.company_id === companyId);
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -67,7 +60,7 @@ export const ProjectStep: React.FC<ProjectStepProps> = ({
         system_size_dc: 0,
         lon_lat_url: ''
       }),
-    onSuccess: (response) => {
+    onSuccess: response => {
       if (response.id) {
         setCurrentProject({ id: response.id, name });
         onComplete(response.id, name);
@@ -206,18 +199,8 @@ export const ProjectStep: React.FC<ProjectStepProps> = ({
                   fullWidth
                 />
                 <Box sx={{ display: 'flex', gap: 2 }}>
-                  <TextField
-                    label="City"
-                    value={city}
-                    onChange={e => setCity(e.target.value)}
-                    fullWidth
-                  />
-                  <TextField
-                    label="State"
-                    value={state}
-                    onChange={e => setState(e.target.value)}
-                    sx={{ width: 100 }}
-                  />
+                  <TextField label="City" value={city} onChange={e => setCity(e.target.value)} fullWidth />
+                  <TextField label="State" value={state} onChange={e => setState(e.target.value)} sx={{ width: 100 }} />
                   <TextField
                     label="Zip"
                     value={zipCode}
@@ -239,11 +222,7 @@ export const ProjectStep: React.FC<ProjectStepProps> = ({
         </Card>
       )}
 
-      <Button
-        sx={{ mt: 3 }}
-        startIcon={<ArrowBackIcon />}
-        onClick={onBack}
-      >
+      <Button sx={{ mt: 3 }} startIcon={<ArrowBackIcon />} onClick={onBack}>
         Back to Company
       </Button>
     </Box>

@@ -18,7 +18,7 @@ import { useNavigate, useMatches, useParams } from 'react-router-dom';
 import { RouteHandle } from '../../../handles';
 import { useAuth } from '../../../contexts/auth/auth';
 import { useTheme } from '@mui/material/styles';
-import { ProjectPicker, useProjectNavigation, ProjectHubTab } from '../../common/ProjectPicker';
+import { ProjectPicker, ProjectHubTab } from '../../common/ProjectPicker';
 import { useEntityContext } from '../../../contexts/entityContext';
 
 interface AnchorElTooltipProps extends React.PropsWithChildren {
@@ -186,9 +186,17 @@ export const NavMenu: React.FC<NavMenuProps> = ({ containerRef, isMenuOpen }) =>
   const { currentProject } = useEntityContext();
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [pendingTab, setPendingTab] = React.useState<ProjectHubTab | null>(null);
-  const { navigateToProjectHub } = useProjectNavigation();
 
+  // Get project from route params or entity context (persisted selection)
   const currentProjectId = params.siteId ? parseInt(params.siteId, 10) : currentProject?.id ?? null;
+
+  const navigateToProjectHub = React.useCallback(
+    (projectId: number, tab: ProjectHubTab = 'overview') => {
+      const tabPath = tab === 'overview' ? '' : `/${tab}`;
+      navigate(`/project-hub/projects/${projectId}${tabPath}`);
+    },
+    [navigate]
+  );
 
   const currentModuleId =
     matches
@@ -208,7 +216,7 @@ export const NavMenu: React.FC<NavMenuProps> = ({ containerRef, isMenuOpen }) =>
     }
   };
 
-  const handleProjectSelect = (project: { id: number }) => {
+  const handleProjectSelect = (project: { id: number; name: string }) => {
     if (pendingTab) {
       navigateToProjectHub(project.id, pendingTab);
     }

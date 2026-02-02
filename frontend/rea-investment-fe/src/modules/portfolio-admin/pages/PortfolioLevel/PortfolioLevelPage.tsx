@@ -93,18 +93,10 @@ export const PortfolioLevelPage: React.FC = () => {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            variant="outlined"
-            startIcon={<PersonAddIcon />}
-            onClick={() => setIsAddUserOpen(true)}
-          >
+          <Button variant="outlined" startIcon={<PersonAddIcon />} onClick={() => setIsAddUserOpen(true)}>
             Add User
           </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddBusinessIcon />}
-            onClick={() => setIsAddCompanyOpen(true)}
-          >
+          <Button variant="contained" startIcon={<AddBusinessIcon />} onClick={() => setIsAddCompanyOpen(true)}>
             Add Company
           </Button>
         </Box>
@@ -180,10 +172,18 @@ export const PortfolioLevelPage: React.FC = () => {
                   {isLoading ? (
                     [1, 2, 3].map(i => (
                       <TableRow key={i}>
-                        <TableCell><Skeleton /></TableCell>
-                        <TableCell><Skeleton /></TableCell>
-                        <TableCell><Skeleton width={80} /></TableCell>
-                        <TableCell><Skeleton width={40} /></TableCell>
+                        <TableCell>
+                          <Skeleton />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton width={80} />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton width={40} />
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : companies.length > 0 ? (
@@ -238,7 +238,8 @@ export const PortfolioLevelPage: React.FC = () => {
           {activeTab === 1 && isSystemAdmin && (
             <>
               <Alert severity="info" sx={{ mb: 2 }}>
-                Portfolio members have access to all companies and projects within their assigned portfolio hub(s). Manage access carefully.
+                Portfolio members have access to all companies and projects within their assigned portfolio hub(s).
+                Manage access carefully.
               </Alert>
               <TableContainer>
                 <Table>
@@ -256,12 +257,24 @@ export const PortfolioLevelPage: React.FC = () => {
                     {isLoadingMembers ? (
                       [1, 2, 3].map(i => (
                         <TableRow key={i}>
-                          <TableCell><Skeleton /></TableCell>
-                          <TableCell><Skeleton /></TableCell>
-                          <TableCell><Skeleton width={100} /></TableCell>
-                          <TableCell><Skeleton width={80} /></TableCell>
-                          <TableCell><Skeleton width={60} /></TableCell>
-                          <TableCell><Skeleton width={40} /></TableCell>
+                          <TableCell>
+                            <Skeleton />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton width={100} />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton width={80} />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton width={60} />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton width={40} />
+                          </TableCell>
                         </TableRow>
                       ))
                     ) : portfolioMembers.length > 0 ? (
@@ -276,11 +289,7 @@ export const PortfolioLevelPage: React.FC = () => {
                           <TableCell>{member.email}</TableCell>
                           <TableCell>
                             {member.portfolio_hub_company_name ? (
-                              <Chip
-                                size="small"
-                                label={member.portfolio_hub_company_name}
-                                variant="outlined"
-                              />
+                              <Chip size="small" label={member.portfolio_hub_company_name} variant="outlined" />
                             ) : (
                               <Typography variant="body2" color="text.secondary">
                                 Unassigned
@@ -290,7 +299,13 @@ export const PortfolioLevelPage: React.FC = () => {
                           <TableCell>
                             <Chip
                               size="small"
-                              label={member.role === 'company_admin' ? 'Admin' : member.role === 'contributor' ? 'Contributor' : 'Read Only'}
+                              label={
+                                member.role === 'company_admin'
+                                  ? 'Admin'
+                                  : member.role === 'contributor'
+                                    ? 'Contributor'
+                                    : 'Read Only'
+                              }
                               color={member.role === 'company_admin' ? 'primary' : 'default'}
                             />
                           </TableCell>
@@ -298,7 +313,13 @@ export const PortfolioLevelPage: React.FC = () => {
                             <Chip
                               size="small"
                               label={member.status}
-                              color={member.status === 'active' ? 'success' : member.status === 'invited' ? 'warning' : 'error'}
+                              color={
+                                member.status === 'active'
+                                  ? 'success'
+                                  : member.status === 'invited'
+                                    ? 'warning'
+                                    : 'error'
+                              }
                             />
                           </TableCell>
                           <TableCell align="right">
@@ -316,7 +337,7 @@ export const PortfolioLevelPage: React.FC = () => {
                       <TableRow>
                         <TableCell colSpan={6} align="center">
                           <Typography color="text.secondary" sx={{ py: 3 }}>
-                            No portfolio-level users. Click "Add User" to grant someone access to a portfolio hub.
+                            No portfolio-level users. Click Add User to grant access to a portfolio hub.
                           </Typography>
                         </TableCell>
                       </TableRow>
@@ -329,29 +350,29 @@ export const PortfolioLevelPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Dialog
-        open={removeMemberDialog.open}
-        onClose={() => setRemoveMemberDialog({ open: false, member: null })}
-      >
+      <Dialog open={removeMemberDialog.open} onClose={() => setRemoveMemberDialog({ open: false, member: null })}>
         <DialogTitle>Remove Portfolio Member</DialogTitle>
         <DialogContent>
           <Typography>
             Are you sure you want to remove{' '}
-            <strong>{removeMemberDialog.member?.first_name} {removeMemberDialog.member?.last_name}</strong>{' '}
+            <strong>
+              {removeMemberDialog.member?.first_name} {removeMemberDialog.member?.last_name}
+            </strong>{' '}
             from portfolio-level access?
           </Typography>
           <Alert severity="info" sx={{ mt: 2 }}>
-            This will only remove their portfolio-level access. Any direct company or project memberships will be preserved.
+            This will only remove their portfolio-level access. Any direct company or project memberships will be
+            preserved.
           </Alert>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setRemoveMemberDialog({ open: false, member: null })}>
-            Cancel
-          </Button>
+          <Button onClick={() => setRemoveMemberDialog({ open: false, member: null })}>Cancel</Button>
           <Button
             variant="contained"
             color="error"
-            onClick={() => removeMemberDialog.member && removeMemberMutation.mutate(removeMemberDialog.member.access_id)}
+            onClick={() =>
+              removeMemberDialog.member && removeMemberMutation.mutate(removeMemberDialog.member.access_id)
+            }
             disabled={removeMemberMutation.isPending}
           >
             {removeMemberMutation.isPending ? 'Removing...' : 'Remove'}
@@ -359,16 +380,9 @@ export const PortfolioLevelPage: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      <AddCompanyDialog
-        open={isAddCompanyOpen}
-        onClose={() => setIsAddCompanyOpen(false)}
-      />
+      <AddCompanyDialog open={isAddCompanyOpen} onClose={() => setIsAddCompanyOpen(false)} />
 
-      <AddUserDialog
-        open={isAddUserOpen}
-        onClose={() => setIsAddUserOpen(false)}
-        level="portfolio"
-      />
+      <AddUserDialog open={isAddUserOpen} onClose={() => setIsAddUserOpen(false)} level="portfolio" />
     </Box>
   );
 };

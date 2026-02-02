@@ -34,11 +34,7 @@ const getStepIndex = (step: OnboardingStep): number => {
   }
 };
 
-export const OnboardingProgress: React.FC<OnboardingProgressProps> = ({
-  currentStep,
-  companyName,
-  projectName
-}) => {
+export const OnboardingProgress: React.FC<OnboardingProgressProps> = ({ currentStep, companyName, projectName }) => {
   const activeStep = getStepIndex(currentStep);
 
   return (
@@ -59,9 +55,7 @@ export const OnboardingProgress: React.FC<OnboardingProgressProps> = ({
 
           return (
             <Step key={step.key} completed={isComplete}>
-              <StepLabel
-                StepIconComponent={isComplete ? () => <CheckCircleIcon color="success" /> : undefined}
-              >
+              <StepLabel StepIconComponent={isComplete ? () => <CheckCircleIcon color="success" /> : undefined}>
                 <Box>
                   <Typography
                     variant="body2"

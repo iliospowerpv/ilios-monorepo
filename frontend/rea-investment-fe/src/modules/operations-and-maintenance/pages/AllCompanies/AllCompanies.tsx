@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
+
 import { ApiClient } from '../../../../api';
 import { GridApi, ColDef, RowClickedEvent } from 'ag-grid-community';
 import SearchAndActions from '../../../../components/common/tables/components/SearchAndActions/SearchAndActions';
