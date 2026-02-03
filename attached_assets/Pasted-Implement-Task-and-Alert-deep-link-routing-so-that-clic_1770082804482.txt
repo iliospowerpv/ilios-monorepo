@@ -1,0 +1,57 @@
+Implement Task and Alert deep-link routing so that clicking any task/alert lands in Project Hub on the correct tab and focuses the relevant entity.
+
+CONTEXT
+Navigation refactor is implemented with:
+- ProjectPicker
+- useProjectNavigation hook
+- /project-hub/projects/:siteId/* canonical route pattern
+- Project Hub tabs: overview, data-room, om, finance, tasks, reporting
+
+GOAL
+Any Task or Alert click must resolve to:
+- siteId (project)
+- targetTab (one of: overview | data-room | om | finance | tasks | reporting)
+- optional focus context (document_id, alert_id, device_id, etc.)
+
+REQUIREMENTS
+1) Add routing metadata for tasks/alerts:
+   - If tasks already store FKs (document_id, alert_id, affected_device_id), derive:
+     * siteId from the linked entity
+     * targetTab based on entity type:
+       - document_id -> data-room
+       - alert_id or affected_device_id -> om
+       - finance approval/obligation (if exists) -> finance
+       - otherwise -> tasks
+   - If needed, add OPTIONAL frontend-only mapping logic first (no DB migration required unless absolutely needed).
+
+2) Implement a centralized resolver utility:
+   resolveTaskDestination(task) -> { siteId, tab, focusType, focusId }
+   resolveAlertDestination(alert) -> { siteId, tab, focusType, focusId }
+
+3) Update all click handlers:
+   - Home task widget items
+   - Notifications panel
+   - Task list views
+   - Alert list views
+   So they navigate using useProjectNavigation to:
+   /project-hub/projects/:siteId/<tab>?focusType=...&focusId=...
+
+4) Focus behavior (minimal acceptable):
+   - When focus params exist, the destination tab should:
+     * scroll to the focused item if present in the DOM list, OR
+     * highlight it if already visible
+   - If the item is not found (e.g., filtered out), show a message:
+     “Item not found in current filter” and still land in correct tab.
+
+5) Safety:
+   - If siteId cannot be resolved, open ProjectPicker and then land in Project Hub -> Tasks tab.
+   - If user lacks access to resolved siteId, open ProjectPicker.
+
+DELIVERABLE
+- Implement resolver + routing changes
+- Provide a short list of touched components/files
+- Confirm with a manual test matrix:
+  * task linked to document -> Data Room focuses doc
+  * task linked to alert -> O&M focuses alert
+  * task without links -> Tasks tab
+  * alert click -> O&M focuses alert
