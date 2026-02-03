@@ -1,11 +1,13 @@
-import React, { useRef, useState, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useRef, useState, useCallback, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
 import { ColDef, GridApi, RowClickedEvent } from 'ag-grid-community';
 import BaseTable from '../../../../components/common/tables/BaseTable/BaseTable';
 import SearchAndActions from '../../../../components/common/tables/components/SearchAndActions/SearchAndActions';
 import { ApiClient } from '../../../../api';
+import { useQuery } from '@tanstack/react-query';
 
 const columns = [
   {
@@ -28,9 +30,29 @@ const columns = [
 
 export const FinanceLanding: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const basicTableRef = useRef<{ getApi: () => GridApi | undefined }>(null);
   const [colDefs] = useState<ColDef[]>(columns);
   const [searchTerm, setSearchTerm] = useState<string>('');
+
+  const siteIdParam = searchParams.get('siteId');
+  const tabParam = searchParams.get('tab');
+
+  const { data: siteData, isLoading: siteLoading } = useQuery({
+    queryKey: ['site-lookup', siteIdParam],
+    queryFn: () => ApiClient.assetManagement.getSiteById(Number(siteIdParam)),
+    enabled: !!siteIdParam
+  });
+
+  useEffect(() => {
+    if (siteData && siteIdParam) {
+      const companyId = siteData.company?.id;
+      if (companyId) {
+        const tabQuery = tabParam ? `?tab=${tabParam}` : '';
+        navigate(`/finance/companies/${companyId}/sites/${siteIdParam}${tabQuery}`, { replace: true });
+      }
+    }
+  }, [siteData, siteIdParam, tabParam, navigate]);
 
   const serverSideDatasource = useMemo(
     () => ({
@@ -78,6 +100,14 @@ export const FinanceLanding: React.FC = () => {
     },
     [navigate]
   );
+
+  if (siteIdParam && siteLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box p={3}>

@@ -137,10 +137,9 @@ const menuItems: MenuItemConfig[] = [
     key: 'finance',
     icon: <AccountBalanceWalletIcon key="finance" />,
     title: 'Finance',
-    route: '/project-hub',
+    route: '/finance',
     disabled: false,
-    requiresProject: true,
-    projectHubTab: 'finance'
+    requiresProject: false
   },
   {
     key: 'tasks',

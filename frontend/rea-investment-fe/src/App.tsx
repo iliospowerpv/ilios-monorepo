@@ -281,11 +281,7 @@ const router = createBrowserRouter(
         <Route path="/finance" element={<FinanceModuleContainer />}>
           <Route index handle={createFinanceLandingHandle()} element={<FinanceLanding />} />
           <Route path="companies/:companyId" handle={createFinanceHomeHandle(queryClient)} element={<FinanceHome />} />
-          {/* Legacy site route - redirect to canonical Project Hub Finance tab */}
-          <Route
-            path="companies/:companyId/sites/:siteId"
-            element={<DeprecatedRouteRedirect targetTab="finance" />}
-          />
+          <Route path="companies/:companyId/sites/:siteId" handle={createSiteFinanceHandle(queryClient)} element={<SiteFinance />} />
         </Route>
         {/* Acquisitions Module (formerly Sales) */}
         <Route path="/acquisitions" element={<AcquisitionsModuleContainer />}>
