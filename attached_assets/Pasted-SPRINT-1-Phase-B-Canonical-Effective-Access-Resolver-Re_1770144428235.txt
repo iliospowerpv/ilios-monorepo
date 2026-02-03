@@ -1,0 +1,67 @@
+SPRINT 1 – Phase B: Canonical Effective-Access Resolver (Restrict-Only)
+
+Context:
+- Settings endpoints are deleted. Portfolio Admin/workspace endpoints are the only mutation paths.
+- Access hierarchy is Portfolio → Company → Project.
+- Overrides are RESTRICT-ONLY (never expand).
+- “Portfolio Admin” is a UI roll-up of owned + granted access; it must not imply data consolidation.
+- Role Profiles exist with module permissions; base roles exist (company_admin, contributor, read_only).
+
+Objective:
+Implement one canonical backend resolver used by all authorization checks:
+resolve_effective_access(user_id, company_id, project_id=None) -> {is_allowed, effective_base_role, effective_module_permissions, grant_sources}
+
+Rules (must implement exactly):
+1) Eligibility:
+- Company-level request (no project_id): allowed if user has portfolio access that covers company OR company access to that company.
+- Project-level request (project_id): allowed if user has portfolio access that covers company OR company access to company OR project access to that project.
+
+2) Restrict-only combination:
+- Collect all applicable grants for the target resource (portfolio grant that covers the company, company grant, and for project requests also project grant).
+- Compute effective_base_role as the MOST restrictive among applicable grants:
+  company_admin > contributor > read_only (effective role is the minimum privilege)
+- Compute effective_module_permissions as intersection of permissions across applicable grants:
+  - Each grant has a permission set derived from:
+    role_profile.default_module_permissions (if role_profile_key set) else base-role default permissions template
+    then apply module_permissions override JSON (if present) at that grant level
+  - Final effective module permissions = intersection across all applicable grants.
+
+3) Intersection semantics:
+- Permissions are module_key -> set(actions: view/edit).
+- Intersection means module exists only if present in all applicable sets AND actions are intersected.
+- edit implies view only if explicitly modeled that way (choose a consistent internal rule and document it).
+  Preferred: treat actions as sets; if edit is present but view absent, either normalize to include view or keep strict—choose ONE and enforce consistently.
+
+4) Explainability:
+Return grant_sources list showing which levels contributed:
+- portfolio/company/project and the IDs of the access rows used.
+Include a reason when denied (e.g., no_applicable_grant, missing_permission finance.edit).
+
+Implementation Tasks:
+A) Create a new module, e.g. app/helpers/access_resolver.py (or similar), containing:
+- resolve_effective_access(...)
+- helper functions:
+  - get_applicable_grants(user_id, company_id, project_id?)
+  - permissions_from_grant(grant) (profile defaults + override)
+  - intersect_permissions(list_of_permissions)
+  - effective_base_role_from_grants(grants)
+
+B) Integrate into existing permission checks:
+- Identify current permission classes (e.g., AssetPermissions, Workspace/PortfolioAdmin permissions).
+- Refactor them to call resolve_effective_access rather than ad-hoc checks.
+
+C) Add unit tests (minimum):
+1) portfolio-only access grants company access and project access under that portfolio.
+2) company-only access grants access to all projects under that company.
+3) project-only access grants access only to that project.
+4) restrict-only: if portfolio grant has finance.edit but company grant lacks finance module, effective permissions exclude finance.
+5) base role restrict-only: portfolio grant company_admin + project grant read_only => effective read_only for that project.
+6) deny case: no grants => denied with reason no_applicable_grant.
+
+Deliverables:
+- Resolver module + integrated usage in permission checks
+- Tests passing
+- Short README/comment block describing rules and intersection semantics
+
+Do NOT change database schema in this phase unless absolutely required; use existing access tables and role_profiles.
+Proceed now with Phase B only.
