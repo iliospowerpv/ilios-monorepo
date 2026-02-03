@@ -58,3 +58,12 @@ class RoleProfileCRUD(BaseCRUD):
             return True
         
         return company_type_key in profile.applicable_company_types
+
+    def delete_by_key(self, key: str) -> bool:
+        """Delete a role profile by its key. Returns True if deleted, False if not found."""
+        profile = self.get_by_key(key)
+        if profile:
+            self.db_session.delete(profile)
+            self.db_session.commit()
+            return True
+        return False

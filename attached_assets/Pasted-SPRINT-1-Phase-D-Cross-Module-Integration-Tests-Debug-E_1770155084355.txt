@@ -1,0 +1,62 @@
+SPRINT 1 – Phase D: Cross-Module Integration Tests + Debug Endpoint Security Tests (Sprint Closure)
+
+Context:
+- Settings endpoints deleted. Resolver is canonical and fail-closed.
+- Module permission guards exist and are wired for finance, assets_management, diligence.
+- Standardized 403 payload schema exists.
+- Debug endpoints exist under /api/debug/* and require company_admin on the target company.
+
+Objective:
+Add integration test coverage that proves authorization behavior end-to-end across modules,
+and add negative tests that debug endpoints cannot be abused across companies.
+
+Tasks:
+
+1) Cross-module integration tests (FastAPI test client + minimal DB fixtures)
+Create a small fixture factory that can:
+- create two companies (CompanyA, CompanyB) with sites/projects under each
+- create a user with specific access grants (portfolio/company/project) and base role + role_profile
+- seed role_profile permissions for:
+  - finance (view/edit)
+  - assets_management (view/edit)
+  - diligence (view/edit)
+
+Required tests (minimum):
+A) Finance GET requires finance:view
+- User has entity access to CompanyA but lacks finance:view => GET /finance/... returns 403 with reason_code=missing_module_permission and module_key/action present.
+B) Finance mutation requires finance:edit
+- User has finance:view but not finance:edit => POST/PUT/DELETE /finance/... returns 403.
+C) Assets mutation requires assets_management:edit
+- User has entity access to SiteA, has assets_management:view only => PUT /assets.../{site_id}/details returns 403.
+D) Diligence GET requires diligence:view
+- User has entity access to SiteA but lacks diligence:view => GET /diligence/... returns 403.
+E) Restrict-only intersection at HTTP level
+- Portfolio grant provides finance:edit, but company-level grant for CompanyA lacks finance permissions entirely.
+- Effective should exclude finance; verify finance endpoints 403 even though portfolio grant had it.
+F) Project-only access scoping
+- User has project-only access to SiteA (CompanyA). Ensure list endpoint (/companies/sites or diligence list) does NOT return sibling sites.
+
+2) Standardized 403 payload shape assertions
+For at least two endpoints (one finance, one diligence), assert the 403 JSON has keys:
+- error == "access_denied"
+- reason_code
+- module_key
+- action
+- grant_sources_summary
+
+3) Debug endpoint negative tests
+A) Cross-company admin rejection:
+- Admin of CompanyA requests /api/debug/effective-access for CompanyB => 403
+B) Non-admin rejection:
+- Contributor for CompanyA requests debug endpoint for CompanyA => 403 (or whatever your policy is; enforce documented behavior)
+
+4) Report
+In your response, include:
+- list of tests added
+- any failures encountered and what code changes (if any) were required to satisfy them
+
+Constraints:
+- No schema changes unless absolutely necessary (avoid).
+- Do not migrate o&m or reporting in this sprint closure phase.
+
+Proceed now.

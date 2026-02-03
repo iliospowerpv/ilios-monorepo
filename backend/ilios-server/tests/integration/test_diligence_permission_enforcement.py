@@ -50,7 +50,7 @@ class TestDiligencePermissionEnforcement:
         })
         
         document = document_crud.create_item({
-            "name": SiteDocumentsEnum.ppa,
+            "name": SiteDocumentsEnum.executive_summary.value,
             "site_id": site.id,
             "section_id": section.id,
         })
