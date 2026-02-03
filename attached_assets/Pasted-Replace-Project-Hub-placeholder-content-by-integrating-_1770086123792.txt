@@ -1,0 +1,81 @@
+Replace Project Hub placeholder content by integrating existing module components, following the UX contract and strict module boundaries.
+
+CONTEXT
+Project Hub route is canonical:
+- /project-hub/projects/:siteId/*
+Project Hub tabs exist:
+- overview, data-room, om, finance, tasks, reporting
+
+Navigation refactor is complete.
+Reporting left-nav goes to global /reports.
+Project Hub Reporting tab is project-scoped.
+
+HARD INTEGRATION CONTRACT (NON-NEGOTIABLE)
+1) All Project Hub tabs must use siteId from the Project Hub route params (no company-first selection).
+2) Data Room tab embeds the existing diligence checklist UI (no placeholder).
+3) Reporting tab is site-scoped (pre-filtered to current site); global reporting remains at /reports.
+4) Finance tab in Project Hub is READ-ONLY SNAPSHOT + DEEP LINKS ONLY.
+   - NO create/edit/approve actions inside Project Hub Finance tab.
+   - All finance mutations occur only in the Finance module.
+
+TASKS
+
+A) DATA ROOM TAB (REPLACE PLACEHOLDER)
+Integrate:
+- src/modules/due-diligence/pages/Site/tabs/Diligence/DiligenceList.tsx
+
+Requirements:
+- Render DiligenceList inside Project Hub Data Room tab.
+- Ensure it works with siteId from /project-hub/projects/:siteId and does NOT require due-diligence module routing.
+- Ensure any “back” or internal links keep the user inside Project Hub routes (not legacy due-diligence pages).
+- Verify: upload/add document, status tracking, search, accordion sections.
+
+B) FINANCE TAB (REPLACE PLACEHOLDER WITH READ-ONLY SNAPSHOT)
+Source reference:
+- src/modules/finance/pages/SiteFinance/SiteFinance.tsx
+
+Implement a ProjectHubFinanceTab that is read-only:
+- Show FinanceSummaryStrip for the current site (read-only).
+- Show compact read-only previews (pick 1–2 max):
+  - Budgets preview (top N rows or most recent)
+  - Obligations preview (top N rows or most relevant)
+- Remove/disable ALL actions in embedded finance UI:
+  - No create budget
+  - No edit line items
+  - No approvals
+  - No vendor edits
+  - No actuals import/edit
+
+Deep links (required):
+1) “Open Finance for this Project” -> route to Finance module filtered to this site:
+   - Prefer canonical site-scoped finance route if present, else use a query param pattern: /finance?siteId=:siteId
+2) “Open Approvals Queue” -> finance approvals queue filtered to site (use existing routes/patterns; if not present, create a filtered view in Finance module but not inside Project Hub).
+
+If the reusable components (BudgetsTab/ObligationsTab/etc.) cannot be rendered without their edit controls:
+- Add a readOnly prop to those components OR wrap them and conditionally hide action controls.
+- Do NOT fork duplicate versions unless absolutely necessary.
+
+C) REPORTING TAB (REPLACE PLACEHOLDER)
+Source reference:
+- src/modules/reports/pages/AllReports/AllReports.tsx
+
+Create a ProjectHubReportingTab variant:
+- Pre-populate Site filter with current siteId from route params.
+- Keep the filter locked to the current site (read-only site selection) for now to avoid scope confusion.
+- Render PowerBIReport exactly as the global Reports module does.
+- Include “Open Global Reports” deep link -> /reports
+
+D) CLEANUP / CONSISTENCY
+- Remove old placeholder components/content from Project Hub Finance/Data Room/Reporting tabs.
+- Ensure tab routes and labels remain stable.
+- Ensure no module-specific project detail pages are reintroduced.
+- Verify Project Hub tab deep links open global modules correctly.
+
+DELIVERABLE
+Provide:
+- Files changed (list)
+- Manual verification checklist:
+  1) Project Hub -> Data Room shows DiligenceList and supports doc upload/status/search
+  2) Project Hub -> Finance shows summary + read-only previews + deep links; confirms no editable controls exist
+  3) Project Hub -> Reporting shows site-scoped report and deep link to /reports
+Proceed now.

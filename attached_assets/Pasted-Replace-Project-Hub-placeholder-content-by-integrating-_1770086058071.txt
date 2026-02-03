@@ -1,0 +1,57 @@
+Replace Project Hub placeholder content by integrating existing module components, following the UX contract and module boundaries.
+
+CONTEXT
+Project Hub route is canonical:
+- /project-hub/projects/:siteId/*
+Project Hub tabs exist:
+- overview, data-room, om, finance, tasks, reporting
+Navigation refactor is complete. Reporting left-nav goes to global /reports. Project Hub Reporting tab is project-scoped.
+
+HARD INTEGRATION CONTRACT
+1) All Project Hub tabs must use siteId from the Project Hub route params (no company-first selection).
+2) Data Room tab must embed the existing diligence checklist UI (no placeholder).
+3) Reporting tab must be site-scoped (pre-filtered to current site); global reporting remains at /reports.
+4) Finance tab in Project Hub is a READ-ONLY SNAPSHOT + deep links. Do NOT move full finance editing workflows into Project Hub.
+
+TASKS
+
+A) DATA ROOM TAB (REPLACE PLACEHOLDER)
+- Integrate: src/modules/due-diligence/pages/Site/tabs/Diligence/DiligenceList.tsx
+- Render it inside Project Hub Data Room tab.
+- Ensure it works with siteId from /project-hub/projects/:siteId and does NOT depend on due-diligence module routing.
+- Verify upload/add document, status updates, search, accordions all work.
+
+B) FINANCE TAB (REPLACE PLACEHOLDER WITH SNAPSHOT)
+Source reference: src/modules/finance/pages/SiteFinance/SiteFinance.tsx
+
+Implement a ProjectHubFinanceTab that:
+- Shows FinanceSummaryStrip for the site (read-only)
+- Shows at most 1–2 compact tables (Budgets and Obligations preferred) as read-only preview (e.g., first N rows or key rows)
+- Hides or removes any create/edit actions in the embedded view
+- Adds clear CTA buttons:
+  1) “Open Finance for this Project” -> /finance (site scoped route if exists) or /finance?siteId=:siteId
+  2) “Open Approvals Queue” -> finance approvals queue filtered to site
+If existing subcomponents contain edit controls, add a readOnly prop or wrap them and disable actions.
+
+C) REPORTING TAB (REPLACE PLACEHOLDER)
+Source reference: src/modules/reports/pages/AllReports/AllReports.tsx
+
+Create a project-scoped variant used in Project Hub Reporting tab:
+- Pre-populate the Site filter with current siteId (from route params)
+- Either lock the site selector OR keep it but default it to current site
+- Render PowerBIReport exactly as global reports do
+- Add a link/button: “Open Global Reports” -> /reports
+
+D) CLEANUP / CONSISTENCY
+- Remove old placeholder components/content from Project Hub tabs.
+- Ensure tab routes and labels remain consistent.
+- Ensure no old module-specific site detail pages are reintroduced.
+- Verify deep links from Hub Finance/Reporting to their global modules work.
+
+DELIVERABLE
+- List files changed
+- Confirm manual tests:
+  1) Project Hub -> Data Room shows DiligenceList and can upload documents
+  2) Project Hub -> Finance shows summary + read-only preview + deep links to full finance
+  3) Project Hub -> Reporting shows report with site preselected and can open global reports
+Proceed now.
