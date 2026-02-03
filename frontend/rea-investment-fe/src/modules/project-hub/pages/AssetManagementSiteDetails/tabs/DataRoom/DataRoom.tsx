@@ -17,6 +17,10 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import AddIcon from '@mui/icons-material/Add';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import DescriptionIcon from '@mui/icons-material/Description';
+import Grid from '@mui/material/Grid';
+import Paper from '@mui/material/Paper';
 
 import type { AssetManagementSiteDetailsTabProps } from '../types';
 import { useFocusHighlight } from '../../../../../../hooks/useFocusHighlight';
@@ -24,6 +28,7 @@ import { ApiClient, DiligenceDocument, DiligenceItem } from '../../../../../../a
 import SearchAndActions from '../../../../../../components/common/tables/components/SearchAndActions/SearchAndActions';
 import { useNotify } from '../../../../../../contexts/notifications/notifications';
 import RecursiveAccordion from '../../../../../../modules/due-diligence/pages/Site/tabs/Diligence/components/RecursiveAccordion/RecursiveAccordion';
+import DocumentList from '../../../../../../modules/due-diligence/pages/DueDiligenceDocument/components/DocumentList';
 
 const siteDiligenceQuery = (siteId: number, enabled = true) => ({
   queryKey: ['site', 'diligence', { siteId }],
@@ -45,19 +50,30 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
   const numericSiteId = siteId ? Number(siteId) : siteDetails.id;
   const isValidId = !!numericSiteId && Number.isSafeInteger(numericSiteId);
 
-  const {
-    data,
-    isLoading,
-    isFetching,
-    error,
-    refetch
-  } = useQuery(siteDiligenceQuery(isValidId ? numericSiteId : -1, isValidId));
+  const { data, isLoading, isFetching, error, refetch } = useQuery(
+    siteDiligenceQuery(isValidId ? numericSiteId : -1, isValidId)
+  );
 
   const [searchTerm, setSearchTerm] = useState('');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newDocName, setNewDocName] = useState('');
   const [newDocDescription, setNewDocDescription] = useState('');
   const [selectedSectionId, setSelectedSectionId] = useState<number | ''>('');
+  const [selectedDocument, setSelectedDocument] = useState<DiligenceDocument | null>(null);
+
+  const { data: documentInfo, isLoading: isLoadingDocumentInfo } = useQuery({
+    queryKey: ['documents', 'info', { siteId: numericSiteId, documentId: selectedDocument?.id }],
+    queryFn: () => ApiClient.dueDiligence.docInfo(numericSiteId, selectedDocument!.id),
+    enabled: !!selectedDocument && isValidId
+  });
+
+  const handleDocumentClick = (document: DiligenceDocument) => {
+    setSelectedDocument(document);
+  };
+
+  const handleBackToList = () => {
+    setSelectedDocument(null);
+  };
 
   const extractSections = useCallback((items: DiligenceItem[]): SectionOption[] => {
     const sections: SectionOption[] = [];
@@ -153,6 +169,73 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
 
   const filterResult = data?.items && filterSections(data.items, searchTerm);
 
+  if (selectedDocument) {
+    return (
+      <Box>
+        <Box display="flex" alignItems="center" gap={2} mb={3}>
+          <Button variant="text" startIcon={<ArrowBackIcon />} onClick={handleBackToList} sx={{ minWidth: 'auto' }}>
+            Back to Data Room
+          </Button>
+        </Box>
+
+        <Paper elevation={0} sx={{ p: 3, border: '1px solid #E0E0E0' }}>
+          <Box display="flex" alignItems="center" gap={2} mb={3}>
+            <DescriptionIcon color="primary" fontSize="large" />
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                {selectedDocument.display_name || selectedDocument.name}
+              </Typography>
+              {selectedDocument.ai_supported && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    background: 'linear-gradient(245.75deg, #456CF3 7.17%, #8D4BE9 89.9%)',
+                    color: 'white',
+                    px: 1,
+                    py: 0.25,
+                    borderRadius: 1,
+                    display: 'inline-block',
+                    mt: 0.5
+                  }}
+                >
+                  AI Extraction Supported
+                </Typography>
+              )}
+            </Box>
+          </Box>
+
+          {isLoadingDocumentInfo ? (
+            <Box display="flex" alignItems="center" justifyContent="center" py={4}>
+              <CircularProgress size={40} />
+            </Box>
+          ) : documentInfo ? (
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <DocumentList
+                  siteId={numericSiteId}
+                  documentId={selectedDocument.id}
+                  documentKind={documentInfo.display_working_zone}
+                  boardId={documentInfo.task?.board_id || 0}
+                  taskId={documentInfo.task?.id || 0}
+                />
+              </Grid>
+              {documentInfo.description && (
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Description
+                  </Typography>
+                  <Typography variant="body2">{documentInfo.description}</Typography>
+                </Grid>
+              )}
+            </Grid>
+          ) : (
+            <Alert severity="info">Upload files to this document to begin the extraction process.</Alert>
+          )}
+        </Paper>
+      </Box>
+    );
+  }
+
   return (
     <Box>
       {focusState.notFoundMessage && (
@@ -236,7 +319,12 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
           <Typography variant="body1">No documents found matching your search</Typography>
         </Box>
       ) : filterResult?.length ? (
-        <RecursiveAccordion items={filterResult} forceExpanded={!!searchTerm} onRefresh={handleRefresh} />
+        <RecursiveAccordion
+          items={filterResult}
+          forceExpanded={!!searchTerm}
+          onRefresh={handleRefresh}
+          onDocumentClick={handleDocumentClick}
+        />
       ) : (
         <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" mt="40px">
           <FolderOpenIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
@@ -244,7 +332,7 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
             No documents in the data room yet
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Click "Add Document" to get started
+            Click &quot;Add Document&quot; to get started
           </Typography>
         </Box>
       )}

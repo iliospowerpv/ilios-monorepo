@@ -22,11 +22,20 @@ import { useNotify } from '../../../../../../../../contexts/notifications/notifi
 interface DocumentItemProps {
   document: DiligenceDocument;
   onRefresh?: () => void;
+  onDocumentClick?: (document: DiligenceDocument) => void;
 }
 
-const DocumentItem: React.FC<DocumentItemProps> = ({ document, onRefresh }) => {
+const DocumentItem: React.FC<DocumentItemProps> = ({ document, onRefresh, onDocumentClick }) => {
   const navigate = useNavigate();
   const { siteId, companyId } = useParams();
+
+  const handleDocumentClick = () => {
+    if (onDocumentClick) {
+      onDocumentClick(document);
+    } else {
+      navigate(`/due-diligence/companies/${companyId}/sites/${siteId}/due-diligence/${document.id}`);
+    }
+  };
   const queryClient = useQueryClient();
   const notify = useNotify();
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -106,10 +115,10 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ document, onRefresh }) => {
         data-testid="document-item__component"
         role="button"
         tabIndex={0}
-        onClick={() => navigate(`/due-diligence/companies/${companyId}/sites/${siteId}/due-diligence/${document.id}`)}
+        onClick={handleDocumentClick}
         onKeyDown={e => {
           if (e.key === 'Enter' || e.key === ' ') {
-            navigate(`/due-diligence/companies/${companyId}/sites/${siteId}/due-diligence/${document.id}`);
+            handleDocumentClick();
           }
         }}
         sx={{
@@ -201,7 +210,7 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ document, onRefresh }) => {
                 sx={{ width: '120px', height: '32px', padding: '0', fontWeight: '500' }}
                 onClick={e => {
                   e.stopPropagation();
-                  navigate(`/due-diligence/companies/${companyId}/sites/${siteId}/due-diligence/${document.id}`);
+                  handleDocumentClick();
                 }}
               >
                 Open

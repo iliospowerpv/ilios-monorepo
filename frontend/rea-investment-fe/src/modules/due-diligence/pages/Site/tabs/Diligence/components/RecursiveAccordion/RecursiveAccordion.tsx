@@ -19,6 +19,7 @@ interface RecursiveAccordionProps {
   items: DiligenceItem[] | undefined;
   forceExpanded?: boolean;
   onRefresh?: () => void;
+  onDocumentClick?: (document: DiligenceDocument) => void;
 }
 
 const ManagedAccordion: React.FC<{ children: NonNullable<React.ReactNode>; forceExpanded?: boolean }> = ({
@@ -49,12 +50,14 @@ interface SortableDocumentListProps {
   documents: DiligenceDocument[];
   sectionName: string;
   onRefresh?: () => void;
+  onDocumentClick?: (document: DiligenceDocument) => void;
 }
 
 const SortableDocumentList: React.FC<SortableDocumentListProps> = ({
   documents: initialDocuments,
   sectionName,
-  onRefresh
+  onRefresh,
+  onDocumentClick
 }) => {
   const { siteId } = useParams();
   const notify = useNotify();
@@ -136,7 +139,7 @@ const SortableDocumentList: React.FC<SortableDocumentListProps> = ({
                       <DragIndicatorIcon sx={{ color: 'rgba(0, 0, 0, 0.4)', fontSize: '20px' }} />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <DocumentItem document={document} onRefresh={onRefresh} />
+                      <DocumentItem document={document} onRefresh={onRefresh} onDocumentClick={onDocumentClick} />
                     </div>
                   </div>
                 )}
@@ -150,7 +153,12 @@ const SortableDocumentList: React.FC<SortableDocumentListProps> = ({
   );
 };
 
-const RecursiveAccordion: React.FC<RecursiveAccordionProps> = ({ items, forceExpanded, onRefresh }) => {
+const RecursiveAccordion: React.FC<RecursiveAccordionProps> = ({
+  items,
+  forceExpanded,
+  onRefresh,
+  onDocumentClick
+}) => {
   return (
     <>
       {items?.map(item => (
@@ -178,10 +186,20 @@ const RecursiveAccordion: React.FC<RecursiveAccordionProps> = ({ items, forceExp
             </Box>
           </AccordionSummary>
           <AccordionDetails sx={{ padding: '0' }}>
-            <SortableDocumentList documents={item.documents} sectionName={item.name} onRefresh={onRefresh} />
+            <SortableDocumentList
+              documents={item.documents}
+              sectionName={item.name}
+              onRefresh={onRefresh}
+              onDocumentClick={onDocumentClick}
+            />
             {!!item?.related_sections.length && (
               <Box sx={{ padding: '16px' }}>
-                <RecursiveAccordion forceExpanded={forceExpanded} items={item.related_sections} onRefresh={onRefresh} />
+                <RecursiveAccordion
+                  forceExpanded={forceExpanded}
+                  items={item.related_sections}
+                  onRefresh={onRefresh}
+                  onDocumentClick={onDocumentClick}
+                />
               </Box>
             )}
           </AccordionDetails>
