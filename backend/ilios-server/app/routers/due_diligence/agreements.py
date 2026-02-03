@@ -1,13 +1,16 @@
 """Agreements - the due diligence documents, which are supported by AI to be parsed"""
 
 import logging
+from typing import Annotated
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.db.session import get_session
-from app.helpers.authorization.custom.diligence_overview_page import DiligenceOverviewPagePermissions
+from app.helpers.authentication import get_current_user
 from app.helpers.authorization.project_access import get_authorized_document, get_authorized_site
+from app.helpers.permission_guards import require_module_permission
+from app.schema.user import CurrentUserSchema
 from app.helpers.configs.ai_parsing_helper import AIParsingHandler
 from app.helpers.files.file_helper import combine_user_ai_parsing_results
 from app.models.document import Document
@@ -24,9 +27,20 @@ agreements_router = APIRouter()
     response_model=ParsableDocumentsListSchema,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
     description="Return list of site agreements (documents) available for AI parsing",
-    dependencies=[Depends(DiligenceOverviewPagePermissions())],
 )
-async def get_site_agreements(site: Site = Depends(get_authorized_site), db_session: Session = Depends(get_session)):
+async def get_site_agreements(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    site: Site = Depends(get_authorized_site),
+    db_session: Session = Depends(get_session),
+):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=site.company_id,
+        project_id=site.id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="view",
+    )
     ai_parsable_documents = AIParsingHandler(db_session).get_parsable_documents_list()
     parsable_documents = []
     for document in site.documents:
@@ -50,9 +64,18 @@ async def get_site_agreements(site: Site = Depends(get_authorized_site), db_sess
     "/{document_id}/overview",
     response_model=DocumentKeysListSchema,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
-    dependencies=[Depends(DiligenceOverviewPagePermissions())],
 )
 async def get_agreement_overview(
-    document: Document = Depends(get_authorized_document), db_session: Session = Depends(get_session)
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    document: Document = Depends(get_authorized_document),
+    db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=document.site.company_id,
+        project_id=document.site_id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="view",
+    )
     return {"items": combine_user_ai_parsing_results(document=document, db_session=db_session)}

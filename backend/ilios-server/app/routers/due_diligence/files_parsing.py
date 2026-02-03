@@ -1,14 +1,16 @@
 import logging
 from datetime import datetime, timezone
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.crud.ai_parsing_result import AIParsingResultCRUD
 from app.crud.commented_entity import CommentedEntityCRUD
 from app.db.session import get_session
-from app.helpers.authorization import AuthorizedUser, DiligencePermissions
+from app.helpers.authentication import get_current_user
 from app.helpers.authorization.project_access import get_authorized_file
+from app.helpers.permission_guards import require_module_permission
 from app.helpers.cloud_function_client import FileParseFuncHTTPClient
 from app.helpers.configs.agreement_names_helper import AgreementNamesMappingHandler
 from app.helpers.configs.ai_parsing_helper import AIParsingHandler
@@ -17,8 +19,9 @@ from app.models.comment import CommentedEntityTypeEnum
 from app.models.file import File as FileModel
 from app.models.file import FileParsingStatuses
 from app.schema.file import FileKeysList, FileParseTriggerSuccess, FileParsingStatus
+from app.schema.user import CurrentUserSchema
 from app.settings import settings
-from app.static import HTTP_403_RESPONSE, HTTP_404_RESPONSE, HTTP_409_RESPONSE, FileMessages, PermissionsActions
+from app.static import HTTP_403_RESPONSE, HTTP_404_RESPONSE, HTTP_409_RESPONSE, FileMessages
 
 logger = logging.getLogger(__name__)
 files_parsing_router = APIRouter()
@@ -34,11 +37,20 @@ files_parsing_router = APIRouter()
         **HTTP_409_RESPONSE(message=FileMessages.file_parse_conflict),
     },
     description="Trigger GCP Cloud Function to start AI file parsing asynchronously without waiting success response",
-    dependencies=[Depends(AuthorizedUser(DiligencePermissions(PermissionsActions.edit)))],
 )
 async def trigger_file_parsing(
-    file: FileModel = Depends(get_authorized_file), db_session: Session = Depends(get_session)
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    file: FileModel = Depends(get_authorized_file),
+    db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=file.document.site.company_id,
+        project_id=file.document.site_id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="edit",
+    )
     if file.document.name.value not in AIParsingHandler(db_session).get_parsable_documents_list():
         logger.warning(message := f"Parsing feature is not available for the <{file.document.name.value}> files")
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=message)
@@ -96,11 +108,20 @@ async def trigger_file_parsing(
     response_model=FileParsingStatus,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
     description="Get actual at the moment file parsing status",
-    dependencies=[Depends(AuthorizedUser(DiligencePermissions(PermissionsActions.view)))],
 )
 async def file_parsing_status(
-    file: File = Depends(get_authorized_file),
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    file: FileModel = Depends(get_authorized_file),
+    db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=file.document.site.company_id,
+        project_id=file.document.site_id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="view",
+    )
     return file.latest_ai_result if file.latest_ai_result else {}
 
 
@@ -109,11 +130,20 @@ async def file_parsing_status(
     response_model=FileKeysList,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
     description="Get list of file keys with custom User values and values received from AI",
-    dependencies=[Depends(AuthorizedUser(DiligencePermissions(PermissionsActions.view)))],
 )
 async def get_file_parsing_results(
-    file: File = Depends(get_authorized_file), db_session: Session = Depends(get_session)
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    file: FileModel = Depends(get_authorized_file),
+    db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=file.document.site.company_id,
+        project_id=file.document.site_id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="view",
+    )
     response = combine_user_ai_parsing_results(document=file.document, due_diligence_file=file, db_session=db_session)
     # post-process to retrieve comments and related to the result key,
     # DB relationship usage on each entity will decrease the performance,

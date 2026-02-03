@@ -11,8 +11,9 @@ from app.crud.document import DocumentCRUD
 from app.crud.document_key import DocumentKeyCRUD
 from app.crud.document_section import DocumentSectionCRUD
 from app.db.session import get_session
-from app.helpers.authorization import AuthorizedUser, DiligencePermissions
+from app.helpers.authentication import get_current_user
 from app.helpers.authorization.project_access import get_authorized_document, get_authorized_site
+from app.helpers.permission_guards import require_module_permission
 from app.helpers.bq_data_sync_helper import SiteDDCharacteristicsHandler
 from app.helpers.configs.ai_parsing_helper import AIParsingHandler
 from app.helpers.configs.co_terminus_helper import CoTerminusHandler
@@ -40,7 +41,7 @@ from app.schema.documents import (
     UpdateDocumentDetailsSchema,
 )
 from app.schema.user import CurrentUserSchema
-from app.static import HTTP_403_RESPONSE, HTTP_404_RESPONSE, DocumentMessages, PermissionsActions
+from app.static import HTTP_403_RESPONSE, HTTP_404_RESPONSE, DocumentMessages
 from app.static.default_site_documents_enum import SiteDocumentsEnum
 from app.static.due_diligence_bq_keys import DueDiligenceBQKeys
 
@@ -52,9 +53,20 @@ documents_router = APIRouter()
     "/{document_id}",
     response_model=DocumentDetailsSchema,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
-    dependencies=[Depends(AuthorizedUser(DiligencePermissions(PermissionsActions.view)))],
 )
-async def get_by_id(document: Document = Depends(get_authorized_document), db_session: Session = Depends(get_session)):
+async def get_by_id(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    document: Document = Depends(get_authorized_document),
+    db_session: Session = Depends(get_session),
+):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=document.site.company_id,
+        project_id=document.site_id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="view",
+    )
     document.display_working_zone = document.name.value in AIParsingHandler(db_session).get_parsable_documents_list()
     return document
 
@@ -65,13 +77,21 @@ async def get_by_id(document: Document = Depends(get_authorized_document), db_se
     response_model=DocumentUpdateSuccess,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
     description="Set document description. To unset the description, send it empty (null)",
-    dependencies=[Depends(AuthorizedUser(DiligencePermissions(PermissionsActions.edit)))],
 )
 async def description_update(
     description: UpdateDocumentDescriptionSchema,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     document: Document = Depends(get_authorized_document),
     db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=document.site.company_id,
+        project_id=document.site_id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="edit",
+    )
     DocumentCRUD(db_session).update_by_id(document.id, description.model_dump())
     return {"code": status.HTTP_202_ACCEPTED, "message": DocumentMessages.document_update_success}
 
@@ -82,13 +102,21 @@ async def description_update(
     response_model=DocumentUpdateSuccess,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
     description="Set/unset document approver",
-    dependencies=[Depends(AuthorizedUser(DiligencePermissions(PermissionsActions.edit)))],
 )
 async def details_update(
     document_details: UpdateDocumentDetailsSchema,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     document: Document = Depends(get_authorized_document),
     db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=document.site.company_id,
+        project_id=document.site_id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="edit",
+    )
     if not document.task:
         logger.warning(f"There is no default task attached to the document with id '{document.id}'")
         raise HTTPException(
@@ -112,9 +140,17 @@ async def details_update(
 async def get_site_documents(
     *,
     site: Site = Depends(get_authorized_site),
-    current_user: Annotated[CurrentUserSchema, Depends(AuthorizedUser(DiligencePermissions(PermissionsActions.view)))],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=site.company_id,
+        project_id=site.id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="view",
+    )
 
     site_sections = DocumentSectionCRUD(db_session).get_site_sections(site.id)
     role_documents_settings = RoleDocumentsHandlerFactory().get_instance(current_user)
@@ -131,9 +167,17 @@ async def create(
     document: DocumentCreationSchema,
     *,
     site: Site = Depends(get_authorized_site),
-    current_user: Annotated[CurrentUserSchema, Depends(AuthorizedUser(DiligencePermissions(PermissionsActions.edit)))],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=site.company_id,
+        project_id=site.id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="edit",
+    )
     document_payload = document.model_dump()
     # Validate document is attached to correct section
     try:
@@ -156,12 +200,20 @@ async def create(
     "/{document_id}",
     response_model=DocumentRemovalSuccess,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
-    dependencies=[Depends(AuthorizedUser(DiligencePermissions(PermissionsActions.edit)))],
 )
 async def remove_document(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
     document: Document = Depends(get_authorized_document),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=document.site.company_id,
+        project_id=document.site_id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="edit",
+    )
     from datetime import datetime, timedelta, timezone
 
     # Check if document has any non-deleted uploaded files
@@ -194,12 +246,20 @@ async def remove_document(
     response_model=DocumentArchiveSuccess,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
     description="Archive a document (soft delete). Use this for documents with uploaded files.",
-    dependencies=[Depends(AuthorizedUser(DiligencePermissions(PermissionsActions.edit)))],
 )
 async def archive_document(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
     document: Document = Depends(get_authorized_document),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=document.site.company_id,
+        project_id=document.site_id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="edit",
+    )
     DocumentCRUD(db_session).update_by_id(document.id, {"is_archived": True})
     return {"code": status.HTTP_200_OK, "message": DocumentMessages.document_archive_success}
 
@@ -210,13 +270,21 @@ async def archive_document(
     response_model=DocumentUpdateSuccess,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
     description="Update document position within its section",
-    dependencies=[Depends(AuthorizedUser(DiligencePermissions(PermissionsActions.edit)))],
 )
 async def reorder_document(
     reorder_data: DocumentReorderSchema,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
     document: Document = Depends(get_authorized_document),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=document.site.company_id,
+        project_id=document.site_id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="edit",
+    )
     DocumentCRUD(db_session).update_by_id(document.id, {"position": reorder_data.position})
     return {"code": status.HTTP_202_ACCEPTED, "message": DocumentMessages.document_reorder_success}
 
@@ -231,9 +299,17 @@ async def create_custom_document(
     document: CustomDocumentCreationSchema,
     *,
     site: Site = Depends(get_authorized_site),
-    current_user: Annotated[CurrentUserSchema, Depends(AuthorizedUser(DiligencePermissions(PermissionsActions.edit)))],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=site.company_id,
+        project_id=site.id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="edit",
+    )
     # Validate section belongs to the site
     section = DocumentSectionCRUD(db_session).get_by_id(document.section_id)
     if not section or section.site_id != site.id:
@@ -277,10 +353,18 @@ async def create_custom_document(
 )
 async def set_key(
     key: DocumentKeyUpdateSchema,
-    current_user: Annotated[CurrentUserSchema, Depends(AuthorizedUser(DiligencePermissions(PermissionsActions.edit)))],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     document: Document = Depends(get_authorized_document),
     db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=document.site.company_id,
+        project_id=document.site_id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="edit",
+    )
     if key.name not in AIParsingHandler(db_session).get_keys_by_document_type(document.name.value):
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,

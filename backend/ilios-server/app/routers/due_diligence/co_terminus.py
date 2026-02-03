@@ -1,5 +1,6 @@
 import logging
 from itertools import groupby
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -7,8 +8,10 @@ from sqlalchemy.orm import Session
 from app.crud.co_terminus_check import CoTerminusCheckCRUD
 from app.db.object_utils import as_dict
 from app.db.session import get_session
-from app.helpers.authorization.custom.diligence_overview_page import DiligenceOverviewPagePermissions
+from app.helpers.authentication import get_current_user
 from app.helpers.authorization.project_access import get_authorized_site
+from app.helpers.permission_guards import require_module_permission
+from app.schema.user import CurrentUserSchema
 from app.helpers.cloud_function_client import AIServerClient
 from app.helpers.common import get_utc_now
 from app.helpers.configs.co_terminus_helper import CoTerminusHandler
@@ -33,9 +36,20 @@ co_terminus_router = APIRouter()
     response_model=CoTerminusCheckResultsList,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
     description="Retrieve the most recent co-terminus check results with summary (if check was completed)",
-    dependencies=[Depends(DiligenceOverviewPagePermissions())],
 )
-async def get_check_results(site: Site = Depends(get_authorized_site), db_session: Session = Depends(get_session)):
+async def get_check_results(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    site: Site = Depends(get_authorized_site),
+    db_session: Session = Depends(get_session),
+):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=site.company_id,
+        project_id=site.id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="view",
+    )
     items, execution_status = [], None
     if site.co_terminus_check:
         db_items, execution_status = site.co_terminus_check.result, site.co_terminus_check.status
@@ -62,9 +76,20 @@ async def get_check_results(site: Site = Depends(get_authorized_site), db_sessio
     description="""Init the check (if there is no check in progress):
     \n1. Run BE comparison for the full-match
     \n2. Trigger AI comparison (for the items which were not matched by BE)""",
-    dependencies=[Depends(DiligenceOverviewPagePermissions())],
 )
-async def init_check(site: Site = Depends(get_authorized_site), db_session: Session = Depends(get_session)):
+async def init_check(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    site: Site = Depends(get_authorized_site),
+    db_session: Session = Depends(get_session),
+):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=site.company_id,
+        project_id=site.id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="edit",
+    )
     # validate there is no running check
     if site.co_terminus_check and site.co_terminus_check.status == FileParsingStatuses.processing:
         logger.warning(f"The co-terminus check is running for the site {site.id}")
@@ -158,11 +183,20 @@ async def init_check(site: Site = Depends(get_authorized_site), db_session: Sess
     response_model=CoTerminusCheckStatus,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
     description="Retrieve details of the most recent co-term check execution",
-    dependencies=[Depends(DiligenceOverviewPagePermissions())],
 )
 async def get_check_execution_status(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     site: Site = Depends(get_authorized_site),
+    db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=site.company_id,
+        project_id=site.id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="view",
+    )
     co_terminus_response = site.co_terminus_check if site.co_terminus_check else {}
     # if co-terminus object exists, additional handling for stick processing
     if co_terminus_response and co_terminus_response.status == FileParsingStatuses.processing:
@@ -186,9 +220,20 @@ async def get_check_execution_status(
     response_model=CoTerminusProcessAbortingSuccess,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
     description="Abort execution of the co-terminus check",
-    dependencies=[Depends(DiligenceOverviewPagePermissions())],
 )
-async def stop_check_execution(site: Site = Depends(get_authorized_site), db_session: Session = Depends(get_session)):
+async def stop_check_execution(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    site: Site = Depends(get_authorized_site),
+    db_session: Session = Depends(get_session),
+):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=site.company_id,
+        project_id=site.id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="edit",
+    )
     if not site.co_terminus_check:
         logger.warning(f"The co-terminus check is not running for the site {site.id}")
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail=CoTerminusMessages.check_is_not_started)
