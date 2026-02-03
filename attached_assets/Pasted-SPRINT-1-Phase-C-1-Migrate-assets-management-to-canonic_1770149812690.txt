@@ -1,0 +1,40 @@
+SPRINT 1 – Phase C.1: Migrate assets_management to canonical module permission guards
+
+Context:
+- permission_guards.py exists and finance module is migrated.
+- Entity access is enforced via GetAuthorizedEntity + canonical resolver (fail-closed).
+- We need to migrate additional modules to use require_module_permission().
+
+Objective:
+Migrate assets_management endpoints to enforce module permissions via require_module_permission(), with consistent view/edit behavior, without breaking existing entity-level authorization.
+
+Tasks:
+1) Identify assets_management routers/endpoints that correspond to the "assets_management" module:
+- Asset list/detail reads -> require assets_management:view
+- Asset updates/mutations (including Project Hub PUT /{site_id}/details) -> require assets_management:edit
+
+2) Implement enforcement pattern:
+- For each assets_management endpoint, call require_module_permission(user_id, company_id, project_id if applicable, module_key="assets_management", action="view|edit")
+- Ensure you pass sufficient context (company_id / project_id) so resolver doesn’t deny due to undetermined_context.
+- Do NOT rely on legacy AuthorizedUser module checks.
+
+3) Keep entity checks:
+- Continue using GetAuthorizedEntity for entity scoping.
+- Module guard should be additive: first confirm entity authorization, then confirm module permission (or vice versa—choose a consistent order and document it).
+
+4) Tests:
+- Add endpoint-level (integration-style) tests for at least 2 assets endpoints:
+  a) A GET endpoint: user has entity access but lacks assets_management:view -> 403
+  b) A mutation endpoint (include PUT /{site_id}/details): user has entity access and assets_management:view but lacks assets_management:edit -> 403
+  c) Positive: user has assets_management:edit -> mutation succeeds
+- If full DB fixtures are heavy, create minimal fixtures to insert access grants + role_profile with permissions and call the FastAPI test client.
+
+Deliverables:
+- List of assets_management routers migrated and endpoints covered
+- Updated docs in replit.md showing assets module usage pattern
+- Tests passing
+
+Constraints:
+- Do NOT add schema changes.
+- Do NOT start diligence module migration yet.
+Proceed with C.1 only.
