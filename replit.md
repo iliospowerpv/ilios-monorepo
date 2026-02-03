@@ -59,6 +59,13 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
 - **Core Modules**:
     - **Workspace Module**: User-centric landing page (`/workspace`) showing summary cards (companies, projects, tasks) and a list of accessible companies with access source indicators. Features context-aware Company Admin page for managing company membership.
     - **Finance Module**: Capital governance, authorization, and compliance engine. Features budget vs. actual tracking, vendor visibility, authorization gating, approval workflows with audit trails, portfolio/fund rollups, and data room package export.
+        - **Navigation Pattern**: Left nav routes to `/finance` (standalone module), Project Hub Finance tab shows read-only snapshot with deep-link buttons using `/finance?siteId=:id`
+        - **Finance Landing Page** (`/finance`): Company selector, KPI strip (total planned/authorized/actual/variance, finance-ready projects, pending approvals), Companies tab with AG Grid, and Approvals Queue tab for processing pending obligations
+        - **SiteFinance Page** (`/finance/companies/:companyId/sites/:siteId`): Full CRUD for budgets, obligations, vendors, and actuals with tabbed interface
+        - **Form Dialogs**: BudgetFormDialog, ObligationFormDialog, VendorFormDialog, ActualFormDialog, ApprovalDialog - all using `Promise<unknown>` return type for type-safe mutation handling
+        - **Workflow States**: Budgets (draft/active/closed), Obligations (draft→submitted→approved/rejected/override), Vendors (active/inactive)
+        - **Approval Workflow**: Obligations capture `prerequisite_snapshot` on submit, support approve/reject/override with required `override_reason`
+        - **Exposed Schema Fields**: reference_number, reference_id, override_reason, prerequisite_snapshot, line item dates
     - **Acquisitions Module** (formerly Sales): Manages a 13-stage deal acquisition pipeline (removed Phase1Diligence, added ClosedWon), tracking deals separately until conversion into "Site" entities (referred to as "Projects" in the UI).
         - **Pipeline Stages**: prospect, nda_signed, inputs_received, modeling, model_review, model_approved, quoted, term_sheet_neg, term_sheet_signed, mipa_negotiating, mipa_signed, closed_won, passed, dead
         - **Conversion-Eligible Stages**: TermSheetSigned OR MIPASigned
