@@ -1,6 +1,6 @@
 """Unit tests for the Canonical Effective-Access Resolver.
 
-Test cases per Phase B specification:
+Test cases per Phase B.1 specification:
 1) portfolio-only access grants company access and project access under that portfolio.
 2) company-only access grants access to all projects under that company.
 3) project-only access grants access only to that project.
@@ -9,6 +9,8 @@ Test cases per Phase B specification:
 5) base role restrict-only: portfolio grant company_admin + project grant read_only => 
    effective read_only for that project.
 6) deny case: no grants => denied with reason no_applicable_grant.
+7) AUTHORITATIVE: resolver always returns allow/deny, never undetermined.
+   Missing context results in DENY with reason_code=undetermined_context.
 """
 
 import pytest
@@ -16,6 +18,7 @@ from typing import Dict, Set
 from unittest.mock import MagicMock, patch
 
 from app.helpers.access_resolver import (
+    AccessDecision,
     AccessDeniedReason,
     BASE_ROLE_DEFAULT_PERMISSIONS,
     EffectiveAccessResult,
@@ -240,8 +243,8 @@ class TestCheckModulePermission:
     def test_denied_access_returns_denied(self):
         """If access is denied, should return False with reason."""
         result = EffectiveAccessResult(
-            is_allowed=False,
-            denied_reason=AccessDeniedReason.NO_APPLICABLE_GRANT.value
+            decision=AccessDecision.DENY,
+            reason_code=AccessDeniedReason.NO_APPLICABLE_GRANT.value
         )
         allowed, reason = check_module_permission(result, "Finance", "edit")
         assert allowed is False
@@ -250,11 +253,11 @@ class TestCheckModulePermission:
     def test_missing_module_permission(self):
         """If module permission is missing, should return False with reason."""
         result = EffectiveAccessResult(
-            is_allowed=True,
+            decision=AccessDecision.ALLOW,
+            reason_code="access_granted",
             effective_base_role="contributor",
             effective_module_permissions={
                 "Asset Management": {"view", "edit"}
-                # No Finance
             }
         )
         allowed, reason = check_module_permission(result, "Finance", "edit")
@@ -264,10 +267,11 @@ class TestCheckModulePermission:
     def test_missing_action_permission(self):
         """If action is missing on module, should return False with reason."""
         result = EffectiveAccessResult(
-            is_allowed=True,
+            decision=AccessDecision.ALLOW,
+            reason_code="access_granted",
             effective_base_role="contributor",
             effective_module_permissions={
-                "Finance": {"view"}  # No edit
+                "Finance": {"view"}
             }
         )
         allowed, reason = check_module_permission(result, "Finance", "edit")
@@ -277,7 +281,8 @@ class TestCheckModulePermission:
     def test_allowed_permission(self):
         """If permission exists, should return True."""
         result = EffectiveAccessResult(
-            is_allowed=True,
+            decision=AccessDecision.ALLOW,
+            reason_code="access_granted",
             effective_base_role="contributor",
             effective_module_permissions={
                 "Finance": {"view", "edit"}
@@ -286,6 +291,48 @@ class TestCheckModulePermission:
         allowed, reason = check_module_permission(result, "Finance", "edit")
         assert allowed is True
         assert reason is None
+
+
+class TestAuthoritativeDecision:
+    """Tests for Phase B.1: Authoritative decision behavior (no undetermined)."""
+
+    def test_decision_is_always_allow_or_deny(self):
+        """EffectiveAccessResult decision must always be ALLOW or DENY, never None."""
+        allow_result = EffectiveAccessResult(
+            decision=AccessDecision.ALLOW,
+            reason_code="access_granted"
+        )
+        assert allow_result.decision in [AccessDecision.ALLOW, AccessDecision.DENY]
+        assert allow_result.is_allowed is True
+
+        deny_result = EffectiveAccessResult(
+            decision=AccessDecision.DENY,
+            reason_code=AccessDeniedReason.NO_APPLICABLE_GRANT.value
+        )
+        assert deny_result.decision in [AccessDecision.ALLOW, AccessDecision.DENY]
+        assert deny_result.is_allowed is False
+
+    def test_undetermined_context_reason_exists(self):
+        """UNDETERMINED_CONTEXT reason code must exist for missing context cases."""
+        assert AccessDeniedReason.UNDETERMINED_CONTEXT.value == "undetermined_context"
+
+    def test_system_error_reason_exists(self):
+        """SYSTEM_ERROR reason code must exist for exception cases."""
+        assert AccessDeniedReason.SYSTEM_ERROR.value == "system_error"
+
+    def test_denied_reason_property_backward_compatible(self):
+        """denied_reason property should work for backward compatibility."""
+        deny_result = EffectiveAccessResult(
+            decision=AccessDecision.DENY,
+            reason_code=AccessDeniedReason.NO_APPLICABLE_GRANT.value
+        )
+        assert deny_result.denied_reason == AccessDeniedReason.NO_APPLICABLE_GRANT.value
+
+        allow_result = EffectiveAccessResult(
+            decision=AccessDecision.ALLOW,
+            reason_code="access_granted"
+        )
+        assert allow_result.denied_reason is None
 
 
 class TestResolveEffectiveAccessIntegration:

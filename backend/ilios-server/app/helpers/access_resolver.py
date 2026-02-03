@@ -53,12 +53,21 @@ from app.static.permissions import PermissionsActions, PermissionsModules
 logger = logging.getLogger(__name__)
 
 
+class AccessDecision(str, Enum):
+    """Authoritative access decision - always allow or deny, never undetermined."""
+    ALLOW = "allow"
+    DENY = "deny"
+
+
 class AccessDeniedReason(str, Enum):
     """Reasons why access was denied."""
     NO_APPLICABLE_GRANT = "no_applicable_grant"
     COMPANY_NOT_FOUND = "company_not_found"
     PROJECT_NOT_FOUND = "project_not_found"
     INACTIVE_MEMBERSHIP = "inactive_membership"
+    UNDETERMINED_CONTEXT = "undetermined_context"
+    PROJECT_COMPANY_MISMATCH = "project_company_mismatch"
+    SYSTEM_ERROR = "system_error"
 
 
 @dataclass
@@ -73,12 +82,26 @@ class GrantSource:
 
 @dataclass
 class EffectiveAccessResult:
-    """Result of resolve_effective_access."""
-    is_allowed: bool
+    """Result of resolve_effective_access.
+    
+    This is the authoritative access decision - always allow or deny, never undetermined.
+    If context is missing or cannot be determined, decision is DENY with appropriate reason_code.
+    """
+    decision: AccessDecision
+    reason_code: str
     effective_base_role: Optional[str] = None
     effective_module_permissions: Dict[str, Set[str]] = field(default_factory=dict)
     grant_sources: List[GrantSource] = field(default_factory=list)
-    denied_reason: Optional[str] = None
+    
+    @property
+    def is_allowed(self) -> bool:
+        """Convenience property for backward compatibility."""
+        return self.decision == AccessDecision.ALLOW
+    
+    @property
+    def denied_reason(self) -> Optional[str]:
+        """Convenience property for backward compatibility."""
+        return self.reason_code if self.decision == AccessDecision.DENY else None
 
 
 # Role restrictiveness ordering (lower = more restrictive)
@@ -328,6 +351,7 @@ def resolve_effective_access(
     """Resolve effective access for a user to a company or project.
     
     This is the canonical resolver used by all authorization checks.
+    AUTHORITATIVE: Always returns allow or deny, never undetermined.
     
     Args:
         user_id: The user requesting access
@@ -337,18 +361,18 @@ def resolve_effective_access(
     
     Returns:
         EffectiveAccessResult with:
-        - is_allowed: Whether access is granted
+        - decision: "allow" or "deny" (never undetermined)
+        - reason_code: Reason for the decision
         - effective_base_role: Most restrictive role from applicable grants
         - effective_module_permissions: Intersection of permissions
         - grant_sources: List of grants that contributed
-        - denied_reason: Reason if denied
     """
     # Verify company exists
     company = db_session.query(Company).get(company_id)
     if not company:
         return EffectiveAccessResult(
-            is_allowed=False,
-            denied_reason=AccessDeniedReason.COMPANY_NOT_FOUND.value
+            decision=AccessDecision.DENY,
+            reason_code=AccessDeniedReason.COMPANY_NOT_FOUND.value
         )
     
     # Verify project exists if specified
@@ -356,8 +380,14 @@ def resolve_effective_access(
         project = db_session.query(Site).get(project_id)
         if not project:
             return EffectiveAccessResult(
-                is_allowed=False,
-                denied_reason=AccessDeniedReason.PROJECT_NOT_FOUND.value
+                decision=AccessDecision.DENY,
+                reason_code=AccessDeniedReason.PROJECT_NOT_FOUND.value
+            )
+        # Verify project belongs to the company (fail-closed)
+        if project.company_id != company_id:
+            return EffectiveAccessResult(
+                decision=AccessDecision.DENY,
+                reason_code=AccessDeniedReason.PROJECT_COMPANY_MISMATCH.value
             )
     
     # Get all applicable grants
@@ -406,20 +436,20 @@ def resolve_effective_access(
             role_profile_key=None
         ))
     
-    # Check eligibility
+    # Check eligibility (fail-closed: no applicable grants = deny)
     if project_id:
         # Project-level: need at least one of portfolio/company/project access
         if not applicable_grants:
             return EffectiveAccessResult(
-                is_allowed=False,
-                denied_reason=AccessDeniedReason.NO_APPLICABLE_GRANT.value
+                decision=AccessDecision.DENY,
+                reason_code=AccessDeniedReason.NO_APPLICABLE_GRANT.value
             )
     else:
         # Company-level: need portfolio or company access
         if not portfolio_grant and not company_grant:
             return EffectiveAccessResult(
-                is_allowed=False,
-                denied_reason=AccessDeniedReason.NO_APPLICABLE_GRANT.value
+                decision=AccessDecision.DENY,
+                reason_code=AccessDeniedReason.NO_APPLICABLE_GRANT.value
             )
     
     # Compute effective base role (most restrictive)
@@ -433,7 +463,8 @@ def resolve_effective_access(
     effective_permissions = intersect_permissions(permissions_list)
     
     return EffectiveAccessResult(
-        is_allowed=True,
+        decision=AccessDecision.ALLOW,
+        reason_code="access_granted",
         effective_base_role=effective_role.value if effective_role else None,
         effective_module_permissions=effective_permissions,
         grant_sources=grant_sources

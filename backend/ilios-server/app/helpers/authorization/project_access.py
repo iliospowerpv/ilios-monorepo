@@ -1,10 +1,12 @@
 """Module includes dependencies which validates company/site entities via project access.
 
-This module now integrates with the Canonical Effective-Access Resolver (Phase B)
+This module now integrates with the Canonical Effective-Access Resolver (Phase B.1)
 for portfolio/company/project access hierarchy validation.
+
+AUTHORITATIVE: The resolver is the single source of truth for entity-level access.
+No legacy fallback exists - if resolver cannot determine access, it DENIES (fail-closed).
 """
 
-# TODO consider refactoring into smaller pieces
 import logging
 from typing import Optional, Union
 
@@ -19,7 +21,12 @@ from app.crud.document import DocumentCRUD
 from app.crud.file import FileCRUD
 from app.crud.site import SiteCRUD
 from app.db.session import get_session
-from app.helpers.access_resolver import resolve_effective_access, EffectiveAccessResult
+from app.helpers.access_resolver import (
+    resolve_effective_access,
+    EffectiveAccessResult,
+    AccessDecision,
+    AccessDeniedReason,
+)
 from app.helpers.authentication import get_current_user
 from app.helpers.roles_documents_mapping.handlers_factory import RoleDocumentsHandlerFactory
 from app.static import PermissionType
@@ -36,8 +43,15 @@ def validate_entity_exists(entity, entity_id: int, entity_type_name: str):
 class GetAuthorizedEntity:
     """Return Site/Company if user has access to it.
     
-    Now integrates with the Canonical Effective-Access Resolver (Phase B)
-    to validate access using the portfolio/company/project hierarchy.
+    AUTHORITATIVE: Uses the Canonical Effective-Access Resolver (Phase B.1)
+    for all entity-level access checks. No legacy fallback exists.
+    
+    If resolver cannot determine access (missing context), access is DENIED (fail-closed).
+    
+    Access is granted via the portfolio/company/project hierarchy:
+    - Portfolio access covers all companies in the hub and their projects
+    - Company access covers all projects under that company
+    - Project access covers only that specific project
     """
 
     def __init__(
@@ -48,110 +62,126 @@ class GetAuthorizedEntity:
         permission_type: PermissionType,
         additional_company_site_id_access: Union[int, None] = None,
     ):
-        # Make sure company_site_id is integer. When shared as a dependent parameter from API it is str.
+        """Initialize the entity authorization handler.
+        
+        Args:
+            company_site_id: The ID of the company or site to access
+            current_user: The current user object
+            db_session: Database session
+            permission_type: Whether accessing a company or site
+            additional_company_site_id_access: DEPRECATED - This parameter was used
+                for legacy fallback logic which has been removed. Company admins now
+                get access to sites through company-level grants in the resolver.
+                This parameter is ignored but kept for API compatibility.
+        """
         self.id = int(company_site_id)
         self.permission_type = permission_type
         self.current_user = current_user
         self.db_session = db_session
-        # additional_company_site_id_access is parameter to explicitly give access for the user
-        # to the specific site/company, which is utilized to provide company admin ability to manipulate
-        # attached to the parent company sources
-        self.additional_company_site_id_access = additional_company_site_id_access
-        # Store access result for explainability
         self._access_result: Optional[EffectiveAccessResult] = None
+        if additional_company_site_id_access is not None:
+            logger.debug(
+                f"DEPRECATED: additional_company_site_id_access={additional_company_site_id_access} "
+                f"is ignored. Access is resolved via company-level grants."
+            )
 
-    def _validate_access_via_resolver(self, entity) -> Optional[bool]:
+    def _validate_access_via_resolver(self, entity) -> EffectiveAccessResult:
         """Use the Canonical Effective-Access Resolver to validate access.
         
-        Returns:
-            True: Access granted by resolver (authoritative)
-            False: Access denied by resolver (authoritative - no fallback)
-            None: Resolver could not determine (missing context - use legacy)
+        AUTHORITATIVE: Always returns a decision (allow/deny), never undetermined.
+        If context is missing or error occurs, returns DENY with appropriate reason.
         """
         try:
             if self.permission_type == PermissionType.site:
-                # For site access, use project-level resolution
                 company_id = entity.company_id if hasattr(entity, 'company_id') else None
-                if company_id:
-                    self._access_result = resolve_effective_access(
-                        user_id=self.current_user.id,
-                        company_id=company_id,
-                        db_session=self.db_session,
-                        project_id=self.id
+                if not company_id:
+                    logger.warning(
+                        f"RESOLVER_CONTEXT_MISSING: user_id={self.current_user.id} "
+                        f"entity_type=site entity_id={self.id} reason=no_company_id"
                     )
-                    # Return actual result - resolver is authoritative
-                    return self._access_result.is_allowed
-                else:
-                    # No company_id context - can't use resolver
-                    return None
+                    return EffectiveAccessResult(
+                        decision=AccessDecision.DENY,
+                        reason_code=AccessDeniedReason.UNDETERMINED_CONTEXT.value
+                    )
+                return resolve_effective_access(
+                    user_id=self.current_user.id,
+                    company_id=company_id,
+                    db_session=self.db_session,
+                    project_id=self.id
+                )
             elif self.permission_type == PermissionType.company:
-                # For company access, use company-level resolution
-                self._access_result = resolve_effective_access(
+                return resolve_effective_access(
                     user_id=self.current_user.id,
                     company_id=self.id,
                     db_session=self.db_session,
                     project_id=None
                 )
-                # Return actual result - resolver is authoritative
-                return self._access_result.is_allowed
+            else:
+                logger.warning(
+                    f"RESOLVER_CONTEXT_MISSING: user_id={self.current_user.id} "
+                    f"entity_type={self.permission_type} entity_id={self.id} reason=unknown_permission_type"
+                )
+                return EffectiveAccessResult(
+                    decision=AccessDecision.DENY,
+                    reason_code=AccessDeniedReason.UNDETERMINED_CONTEXT.value
+                )
         except Exception as e:
-            logger.warning(f"Resolver check failed with exception: {e}")
-            # Exception during resolution - can't determine, use legacy
-            return None
-        return None
+            logger.error(
+                f"RESOLVER_SYSTEM_ERROR: user_id={self.current_user.id} "
+                f"entity_type={self.permission_type.value} entity_id={self.id} "
+                f"exception={type(e).__name__}: {e}",
+                exc_info=True
+            )
+            return EffectiveAccessResult(
+                decision=AccessDecision.DENY,
+                reason_code=AccessDeniedReason.SYSTEM_ERROR.value
+            )
+
+    def _log_access_decision(self, result: EffectiveAccessResult) -> None:
+        """Log access decision for auditing."""
+        if result.decision == AccessDecision.ALLOW:
+            grant_summary = [f"{gs.level}:{gs.role}" for gs in result.grant_sources]
+            logger.debug(
+                f"ACCESS_GRANTED: user_id={self.current_user.id} "
+                f"entity_type={self.permission_type.value} entity_id={self.id} "
+                f"effective_role={result.effective_base_role} sources={grant_summary}"
+            )
+        else:
+            logger.warning(
+                f"ACCESS_DENIED: user_id={self.current_user.id} "
+                f"entity_type={self.permission_type.value} entity_id={self.id} "
+                f"reason_code={result.reason_code} "
+                f"sources={[gs.level for gs in result.grant_sources]}"
+            )
 
     def _validate_access_given(self, entity=None):
         """Check access was given to user.
         
-        Uses the Canonical Effective-Access Resolver as the authoritative source.
-        Only falls back to legacy check when resolver cannot determine access
-        (missing context or resolver error).
+        AUTHORITATIVE: Uses resolver as the single source of truth.
+        No legacy fallback - if resolver denies, access is denied.
         """
         if self.current_user.is_system_user:
             return
 
-        # Use resolver as authoritative source when entity context is available
-        if entity:
-            resolver_result = self._validate_access_via_resolver(entity)
-            
-            if resolver_result is True:
-                # Resolver granted access - authoritative decision
-                logger.debug(
-                    f"User {self.current_user.id} granted access to {self.permission_type} {self.id} "
-                    f"via resolver. Sources: {self._access_result.grant_sources if self._access_result else 'N/A'}"
-                )
-                return
-            
-            if resolver_result is False:
-                # Resolver denied access - authoritative decision, no fallback
-                denied_reason = self._access_result.denied_reason if self._access_result else "resolver_denied"
-                logger.warning(
-                    f"User {self.current_user.id} denied access to {self.permission_type} {self.id} "
-                    f"by resolver. Reason: {denied_reason}"
-                )
-                raise HTTPException(status.HTTP_403_FORBIDDEN)
-            
-            # resolver_result is None - resolver couldn't determine, use legacy
-            logger.debug(f"Resolver could not determine access, falling back to legacy check")
-
-        # Legacy fallback (only when resolver can't determine - not after denial)
-        if self.permission_type == PermissionType.company:
-            user_data = [company.id for company in self.current_user.companies]
-            # TODO think about rewrite it with <additional_company_site_id_access> usage,
-            #  rather than provide full access for the company management
-            user_data.append(self.current_user.parent_company_id)
-        else:
-            user_data = [site.id for site in self.current_user.sites]
-
-        if self.additional_company_site_id_access:
-            user_data.append(self.additional_company_site_id_access)
-
-        if self.id not in user_data:
-            logger.warning(
-                f"User {self.current_user.id} tried to access {self.permission_type} {self.id} "
-                f"without {self.permission_type} access (legacy check)."
+        if not entity:
+            self._access_result = EffectiveAccessResult(
+                decision=AccessDecision.DENY,
+                reason_code=AccessDeniedReason.UNDETERMINED_CONTEXT.value
             )
-            raise HTTPException(status.HTTP_403_FORBIDDEN)
+            self._log_access_decision(self._access_result)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied: {self._access_result.reason_code}"
+            )
+
+        self._access_result = self._validate_access_via_resolver(entity)
+        self._log_access_decision(self._access_result)
+
+        if self._access_result.decision == AccessDecision.DENY:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied: {self._access_result.reason_code}"
+            )
 
     def _retrieve_entity(self):
         """Check entity user tried to access exists and return it"""
@@ -186,9 +216,19 @@ def get_authorized_site(site_id: int, current_user=Depends(get_current_user), db
 def get_authorized_site_with_company_admin(
     site_id: int, current_user=Depends(get_current_user), db_session=Depends(get_session)
 ):
-    """Patch current user object to provide access to the specific site explicitly"""
+    """Get authorized site with company admin context.
+    
+    NOTE: This function previously used legacy fallback to grant explicit access.
+    With the resolver-based authorization (Phase B.1), company admins get access
+    to sites through their company-level grants in the portfolio/company/project
+    hierarchy. The additional_company_site_id_access parameter is now deprecated.
+    
+    Access flow:
+    - User with company access -> Can access all sites under that company
+    - User with portfolio access -> Can access all sites under all companies in hub
+    """
     return GetAuthorizedEntity(
-        site_id, current_user, db_session, PermissionType.site, additional_company_site_id_access=site_id
+        site_id, current_user, db_session, PermissionType.site
     ).get_authorized_entity()
 
 
