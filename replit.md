@@ -25,7 +25,11 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
     - **Context Bar Infrastructure**: Unified three-tier scope management (Portfolio, Company, Project) with dual route patterns (canonical and module-scoped lens routes) and scope persistence to `localStorage`.
     - **Asset Management Overview**: Static site record and readiness surface with drag-and-drop reordering, collapsible cards, executive summary, underwriting readiness, and enhanced card headers.
     - **Sidebar Layout Pattern**: Collapsible sidebar with state persisted to `localStorage`, ensuring main content adapts correctly.
-    - **Portfolio Admin Module**: Three-tier administration hierarchy for managing companies, projects, and users with role-based access warnings and centralized entity management.
+    - **Portfolio Admin Module**: Three-tier administration hierarchy for managing companies, projects, and users with role-based access warnings and centralized entity management. Now serves as the **single authoritative entry point** for all entity management (users, companies, projects). Includes:
+        - **Navigation Access**: Avatar dropdown menu item "Portfolio Admin" and left sidebar navigation with AdminPanelSettingsIcon.
+        - **Edit Dialogs**: EditCompanyDialog and EditProjectDialog for inline editing from CompanyLevelPage and ProjectLevelPage headers.
+        - **Legacy Route Support**: Automatic redirects from deprecated Settings routes (/settings/companies, /settings/sites, /settings/company/:id, etc.) to Portfolio Admin equivalents.
+    - **Settings Module Consolidation**: Settings page now focuses on system configuration only, featuring tabs for Health Checks (default), Audit Logs, Notifications, and Alerts. Entity management (Companies, Sites) has been deprecated from Settings in favor of Portfolio Admin.
 
 **Backend:**
 - **Technology Stack**: Python 3.11, FastAPI, SQLAlchemy, Alembic, PostgreSQL.
