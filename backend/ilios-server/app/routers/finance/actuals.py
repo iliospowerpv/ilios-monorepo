@@ -1,4 +1,10 @@
-"""Finance actuals router."""
+"""Finance actuals router.
+
+This router uses the Canonical Effective-Access Resolver (Phase C) for module-level
+permission enforcement. All endpoints require Finance module permissions:
+- GET endpoints require Finance:view
+- POST/PATCH/DELETE endpoints require Finance:edit
+"""
 
 from typing import Annotated, Optional
 
@@ -7,8 +13,8 @@ from sqlalchemy.orm import Session
 
 from app.crud.finance import FinanceActualCRUD
 from app.db.session import get_session
-from app.helpers.authorization import AuthorizedUser, get_authorized_company
-from app.helpers.authorization.module_based.finance import FinancePermissions
+from app.helpers.authentication import get_current_user
+from app.helpers.permission_guards import require_module_permission
 from app.schema.finance import (
     FinanceActualCreate,
     FinanceActualPaginator,
@@ -16,7 +22,7 @@ from app.schema.finance import (
     FinanceActualUpdate,
 )
 from app.schema.user import CurrentUserSchema
-from app.static.permissions import PermissionsActions
+from app.static.permissions import PermissionsModules
 
 finance_actuals_router = APIRouter()
 
@@ -48,16 +54,19 @@ def _actual_to_schema(actual) -> FinanceActualSchema:
 )
 def get_actuals(
     company_id: int,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.view)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     site_id: Optional[int] = None,
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="view",
+    )
     items, total = FinanceActualCRUD.get_all(db_session, company_id, site_id, skip, limit)
     return FinanceActualPaginator(
         items=[_actual_to_schema(a) for a in items],
@@ -75,13 +84,16 @@ def get_actuals(
 def get_actual(
     company_id: int,
     actual_id: int,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.view)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="view",
+    )
     actual = FinanceActualCRUD.get_by_id(db_session, actual_id)
     if not actual or actual.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Actual not found")
@@ -97,13 +109,16 @@ def get_actual(
 def create_actual(
     company_id: int,
     data: FinanceActualCreate,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="edit",
+    )
     actual = FinanceActualCRUD.create(db_session, company_id, current_user.id, data.model_dump())
     return _actual_to_schema(actual)
 
@@ -117,13 +132,16 @@ def update_actual(
     company_id: int,
     actual_id: int,
     data: FinanceActualUpdate,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="edit",
+    )
     actual = FinanceActualCRUD.get_by_id(db_session, actual_id)
     if not actual or actual.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Actual not found")
@@ -139,13 +157,16 @@ def update_actual(
 def delete_actual(
     company_id: int,
     actual_id: int,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="edit",
+    )
     actual = FinanceActualCRUD.get_by_id(db_session, actual_id)
     if not actual or actual.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Actual not found")

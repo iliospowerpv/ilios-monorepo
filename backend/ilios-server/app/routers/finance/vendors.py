@@ -1,4 +1,10 @@
-"""Finance vendors router."""
+"""Finance vendors router.
+
+This router uses the Canonical Effective-Access Resolver (Phase C) for module-level
+permission enforcement. All endpoints require Finance module permissions:
+- GET endpoints require Finance:view
+- POST/PATCH/DELETE endpoints require Finance:edit
+"""
 
 from typing import Annotated, Optional
 
@@ -7,8 +13,8 @@ from sqlalchemy.orm import Session
 
 from app.crud.finance import FinanceVendorCRUD
 from app.db.session import get_session
-from app.helpers.authorization import AuthorizedUser, get_authorized_company
-from app.helpers.authorization.module_based.finance import FinancePermissions
+from app.helpers.authentication import get_current_user
+from app.helpers.permission_guards import require_module_permission
 from app.schema.finance import (
     FinanceVendorCreate,
     FinanceVendorPaginator,
@@ -16,7 +22,7 @@ from app.schema.finance import (
     FinanceVendorUpdate,
 )
 from app.schema.user import CurrentUserSchema
-from app.static.permissions import PermissionsActions
+from app.static.permissions import PermissionsModules
 
 finance_vendors_router = APIRouter()
 
@@ -28,16 +34,19 @@ finance_vendors_router = APIRouter()
 )
 def get_vendors(
     company_id: int,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.view)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     is_active: Optional[bool] = None,
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="view",
+    )
     items, total = FinanceVendorCRUD.get_all(db_session, company_id, skip, limit, is_active)
     return FinanceVendorPaginator(
         items=[FinanceVendorSchema.model_validate(v, from_attributes=True) for v in items],
@@ -55,13 +64,16 @@ def get_vendors(
 def get_vendor(
     company_id: int,
     vendor_id: int,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.view)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="view",
+    )
     vendor = FinanceVendorCRUD.get_by_id(db_session, vendor_id)
     if not vendor or vendor.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vendor not found")
@@ -77,13 +89,16 @@ def get_vendor(
 def create_vendor(
     company_id: int,
     data: FinanceVendorCreate,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="edit",
+    )
     vendor = FinanceVendorCRUD.create(db_session, company_id, data.model_dump())
     return FinanceVendorSchema.model_validate(vendor, from_attributes=True)
 
@@ -97,13 +112,16 @@ def update_vendor(
     company_id: int,
     vendor_id: int,
     data: FinanceVendorUpdate,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="edit",
+    )
     vendor = FinanceVendorCRUD.get_by_id(db_session, vendor_id)
     if not vendor or vendor.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vendor not found")
@@ -119,13 +137,16 @@ def update_vendor(
 def delete_vendor(
     company_id: int,
     vendor_id: int,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="edit",
+    )
     vendor = FinanceVendorCRUD.get_by_id(db_session, vendor_id)
     if not vendor or vendor.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vendor not found")

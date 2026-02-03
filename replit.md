@@ -39,16 +39,33 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
     - **Acquisitions Module**: Manages a 13-stage deal acquisition pipeline, tracking deals until conversion into "Site" entities (referred to as "Projects" in UI). Supports system-constructed names and read-only views for converted deals.
     - **Project Hub Module**: Consolidates asset management and due diligence into a unified interface with tabbed navigation (Overview, Data Room, O&M, Finance, Tasks, Reporting). Manages project lifecycle states (e.g., `pre_diligence`, `due_diligence`) with RBAC-gated transitions, signed agreement gating, and document extraction workflows.
 - **Multi-Company Access System**: Manages user-company relationships with roles (company_admin, contributor, read_only) and statuses. Supports direct assignment and project-inherited access.
-- **Canonical Effective-Access Resolver (Phase B.1 Complete - Authoritative)**: Single authoritative resolver (`app/helpers/access_resolver.py`) for entity-level authorization checks. **Fully fail-closed** - no legacy fallback exists. Implements:
+- **Canonical Effective-Access Resolver (Phase B.1 + C Complete)**: Single authoritative resolver (`app/helpers/access_resolver.py`) for entity-level and module-level authorization checks. **Fully fail-closed** - no legacy fallback exists. Implements:
     - **Eligibility**: Portfolio access covers company/project; Company access covers all projects; Project access covers only that project.
     - **Restrict-Only Semantics**: Most restrictive base role wins (`read_only < contributor < company_admin`); Module permissions are intersected across applicable grants.
     - **Explainability**: Returns `grant_sources` showing which levels contributed (portfolio/company/project) and `reason_code` (always populated).
     - **Decision Contract**: Uses `decision: AccessDecision` (ALLOW/DENY enum) + `reason_code: str`. Never returns undetermined - all paths return allow or deny.
-    - **Reason Codes**: `no_access_grants`, `project_company_mismatch`, `undetermined_context`, `system_error`.
+    - **Reason Codes**: `no_access_grants`, `project_company_mismatch`, `undetermined_context`, `system_error`, `missing_module_permission`.
     - **Entity-Level Integration**: `GetAuthorizedEntity` in `project_access.py` is fully authoritative - **no legacy fallback**. Missing context → DENY with `undetermined_context`. Exceptions → DENY with `system_error`. Structured logging with `exc_info=True` for debugging.
     - **Deprecated Parameter**: `additional_company_site_id_access` is ignored; company admins get site access through company-level grants in the hierarchy.
     - **Helpers**: `require_effective_permission()` convenience wrapper; `check_module_permission()` for granular permission checks.
-    - **Future Work (Phase C)**: Module-level permission integration into `AuthorizedUser` class for complete resolver coverage.
+    - **Module-Level Permission Enforcement (Phase C)**: 
+        - **Guard Helper**: `app/helpers/permission_guards.py` provides `require_module_permission()` for endpoint protection.
+        - **Normalization Rule**: If "edit" is present for a module, "view" is automatically included (enforced in `_normalize_permissions()`).
+        - **Router Integration**: Finance routers (budgets, vendors, actuals, obligations) now use resolver-based module permission guards.
+        - **Usage Pattern**: 
+          ```python
+          from app.helpers.permission_guards import require_module_permission
+          from app.static.permissions import PermissionsModules
+          
+          require_module_permission(
+              user_id=current_user.id,
+              company_id=company_id,
+              db_session=db_session,
+              module_key=PermissionsModules.finance.value,
+              action="view",  # or "edit" for mutations
+          )
+          ```
+        - **Future Work**: Migrate remaining modules (assets_management, diligence, o&m, reporting) from legacy `AuthorizedUser` to new guards.
 - **Role Profiles System**: Granular stakeholder role definitions (e.g., executive, asset_manager) augmenting base roles, stored in `role_profiles` table with `applicable_company_types` and `default_module_permissions`. Integrates with `UserCompanyAccess` for custom permissions and dashboard keys.
 - **Portfolio Hub Boundary Model**: Introduces `portfolio_hub_id` to link companies within a hub, ensuring portfolio users only see companies within their assigned hub(s). Supports shared resources and provides helper functions for access checks.
 - **Architectural Guardrails (Asset Management Overview)**: Designed as a static record, intentionally avoiding operational data leakage, telemetry, or live performance data, and linking to operational modules for live metrics.

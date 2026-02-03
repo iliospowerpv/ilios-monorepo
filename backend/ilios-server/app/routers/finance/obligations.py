@@ -1,4 +1,10 @@
-"""Finance obligations router."""
+"""Finance obligations router.
+
+This router uses the Canonical Effective-Access Resolver (Phase C) for module-level
+permission enforcement. All endpoints require Finance module permissions:
+- GET endpoints require Finance:view
+- POST/PATCH/DELETE endpoints require Finance:edit
+"""
 
 from typing import Annotated, Optional
 
@@ -7,8 +13,9 @@ from sqlalchemy.orm import Session
 
 from app.crud.finance import FinanceApprovalCRUD, FinanceObligationCRUD, FinancePortfolioCRUD
 from app.db.session import get_session
-from app.helpers.authorization import AuthorizedUser, get_authorized_company, get_authorized_site
-from app.helpers.authorization.module_based.finance import FinancePermissions
+from app.helpers.authentication import get_current_user
+from app.helpers.permission_guards import require_module_permission
+from app.helpers.authorization import get_authorized_site
 from app.schema.finance import (
     FinanceApprovalCreate,
     FinanceApprovalSchema,
@@ -20,7 +27,7 @@ from app.schema.finance import (
 )
 from app.schema.user import CurrentUserSchema
 from app.static.finance import FinanceObligationStatus
-from app.static.permissions import PermissionsActions
+from app.static.permissions import PermissionsModules
 
 finance_obligations_router = APIRouter()
 
@@ -55,17 +62,20 @@ def _obligation_to_schema(obligation) -> FinanceObligationSchema:
 )
 def get_obligations(
     company_id: int,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.view)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     site_id: Optional[int] = None,
     status_filter: Optional[FinanceObligationStatus] = Query(None, alias="status"),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="view",
+    )
     items, total = FinanceObligationCRUD.get_all(db_session, company_id, site_id, status_filter, skip, limit)
     return FinanceObligationPaginator(
         items=[_obligation_to_schema(o) for o in items],
@@ -83,13 +93,16 @@ def get_obligations(
 def get_obligation(
     company_id: int,
     obligation_id: int,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.view)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="view",
+    )
     obligation = FinanceObligationCRUD.get_by_id(db_session, obligation_id)
     if not obligation or obligation.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Obligation not found")
@@ -105,13 +118,16 @@ def get_obligation(
 def create_obligation(
     company_id: int,
     data: FinanceObligationCreate,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="edit",
+    )
     obligation = FinanceObligationCRUD.create(db_session, company_id, current_user.id, data.model_dump())
     obligation = FinanceObligationCRUD.get_by_id(db_session, obligation.id)
     return _obligation_to_schema(obligation)
@@ -126,13 +142,16 @@ def update_obligation(
     company_id: int,
     obligation_id: int,
     data: FinanceObligationUpdate,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="edit",
+    )
     obligation = FinanceObligationCRUD.get_by_id(db_session, obligation_id)
     if not obligation or obligation.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Obligation not found")
@@ -155,13 +174,16 @@ def submit_obligation(
     company_id: int,
     obligation_id: int,
     data: FinanceObligationSubmit,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="edit",
+    )
     obligation = FinanceObligationCRUD.get_by_id(db_session, obligation_id)
     if not obligation or obligation.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Obligation not found")
@@ -195,13 +217,16 @@ def approve_obligation(
     company_id: int,
     obligation_id: int,
     data: FinanceApprovalCreate,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="edit",
+    )
     obligation = FinanceObligationCRUD.get_by_id(db_session, obligation_id)
     if not obligation or obligation.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Obligation not found")
@@ -236,13 +261,16 @@ def approve_obligation(
 def get_approvals(
     company_id: int,
     obligation_id: int,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.view)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="view",
+    )
     obligation = FinanceObligationCRUD.get_by_id(db_session, obligation_id)
     if not obligation or obligation.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Obligation not found")
@@ -270,13 +298,16 @@ def get_approvals(
 def delete_obligation(
     company_id: int,
     obligation_id: int,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="edit",
+    )
     obligation = FinanceObligationCRUD.get_by_id(db_session, obligation_id)
     if not obligation or obligation.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Obligation not found")

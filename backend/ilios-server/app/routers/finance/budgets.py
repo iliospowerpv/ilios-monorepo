@@ -1,4 +1,10 @@
-"""Finance budgets router."""
+"""Finance budgets router.
+
+This router uses the Canonical Effective-Access Resolver (Phase C) for module-level
+permission enforcement. All endpoints require Finance module permissions:
+- GET endpoints require Finance:view
+- POST/PATCH/DELETE endpoints require Finance:edit
+"""
 
 from typing import Annotated, Optional
 
@@ -7,8 +13,8 @@ from sqlalchemy.orm import Session
 
 from app.crud.finance import FinanceApprovalCRUD, FinanceBudgetCRUD, FinanceBudgetLineItemCRUD
 from app.db.session import get_session
-from app.helpers.authorization import AuthorizedUser, get_authorized_company
-from app.helpers.authorization.module_based.finance import FinancePermissions
+from app.helpers.authentication import get_current_user
+from app.helpers.permission_guards import require_module_permission
 from app.schema.finance import (
     FinanceApprovalCreate,
     FinanceApprovalSchema,
@@ -24,7 +30,7 @@ from app.schema.finance import (
 )
 from app.static.finance import FinanceBudgetStatus
 from app.schema.user import CurrentUserSchema
-from app.static.permissions import PermissionsActions
+from app.static.permissions import PermissionsModules
 
 finance_budgets_router = APIRouter()
 
@@ -100,17 +106,20 @@ def _budget_to_detail_schema(budget, db_session) -> FinanceBudgetDetailSchema:
 )
 def get_budgets(
     company_id: int,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.view)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     site_id: Optional[int] = None,
     status: Optional[str] = None,
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="view",
+    )
     status_enum = None
     if status:
         try:
@@ -134,13 +143,16 @@ def get_budgets(
 def get_budget(
     company_id: int,
     budget_id: int,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.view)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="view",
+    )
     budget = FinanceBudgetCRUD.get_by_id(db_session, budget_id)
     if not budget or budget.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found")
@@ -156,13 +168,16 @@ def get_budget(
 def create_budget(
     company_id: int,
     data: FinanceBudgetCreate,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="edit",
+    )
     budget = FinanceBudgetCRUD.create(db_session, company_id, current_user.id, data.model_dump())
     budget = FinanceBudgetCRUD.get_by_id(db_session, budget.id)
     return _budget_to_detail_schema(budget, db_session)
@@ -177,13 +192,16 @@ def update_budget(
     company_id: int,
     budget_id: int,
     data: FinanceBudgetUpdate,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="edit",
+    )
     budget = FinanceBudgetCRUD.get_by_id(db_session, budget_id)
     if not budget or budget.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found")
@@ -205,13 +223,16 @@ def update_budget(
 def delete_budget(
     company_id: int,
     budget_id: int,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="edit",
+    )
     budget = FinanceBudgetCRUD.get_by_id(db_session, budget_id)
     if not budget or budget.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found")
@@ -228,13 +249,16 @@ def create_line_item(
     company_id: int,
     budget_id: int,
     data: FinanceBudgetLineItemCreate,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="edit",
+    )
     budget = FinanceBudgetCRUD.get_by_id(db_session, budget_id)
     if not budget or budget.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found")
@@ -252,13 +276,16 @@ def update_line_item(
     budget_id: int,
     item_id: int,
     data: FinanceBudgetLineItemUpdate,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="edit",
+    )
     budget = FinanceBudgetCRUD.get_by_id(db_session, budget_id)
     if not budget or budget.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found")
@@ -278,13 +305,16 @@ def delete_line_item(
     company_id: int,
     budget_id: int,
     item_id: int,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="edit",
+    )
     budget = FinanceBudgetCRUD.get_by_id(db_session, budget_id)
     if not budget or budget.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found")
@@ -303,13 +333,16 @@ def submit_budget(
     company_id: int,
     budget_id: int,
     data: FinanceBudgetSubmit,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="edit",
+    )
     budget = FinanceBudgetCRUD.get_by_id(db_session, budget_id)
     if not budget or budget.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found")
@@ -333,13 +366,16 @@ def approve_budget(
     company_id: int,
     budget_id: int,
     data: FinanceApprovalCreate,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="edit",
+    )
     budget = FinanceBudgetCRUD.get_by_id(db_session, budget_id)
     if not budget or budget.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found")
@@ -375,13 +411,16 @@ def approve_budget(
 def get_budget_approvals(
     company_id: int,
     budget_id: int,
-    current_user: Annotated[
-        CurrentUserSchema,
-        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.view)])),
-    ],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    get_authorized_company(company_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.finance.value,
+        action="view",
+    )
     budget = FinanceBudgetCRUD.get_by_id(db_session, budget_id)
     if not budget or budget.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found")
