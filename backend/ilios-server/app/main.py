@@ -16,7 +16,6 @@ from .routers import (
     agreements_router,
     alerts_router,
     attachments_router,
-    audit_log_router,
     auth_router,
     board_router,
     board_statuses_router,
@@ -26,7 +25,6 @@ from .routers import (
     co_terminus_router,
     comments_router,
     companies_router,
-    contractors_router,
     dashboard_notifications_router,
     dashboard_tasks_router,
     device_documents_router,
@@ -44,22 +42,17 @@ from .routers import (
     internal_router,
     internal_sites_router,
     investor_companies_router,
-    my_company_router,
     om_companies_router,
     om_site_cameras_router,
     om_sites_router,
     reports_companies_router,
     reports_router,
     reports_sites_router,
-    roles_router,
     sales_router,
-    settings_connections_router,
-    settings_sites_router,
     site_visits_router,
     sites_router,
     sv_uploads_router,
     tasks_router,
-    users_router,
     workspace_router,
     access_health_router,
     role_profiles_router,
@@ -141,18 +134,6 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
         prefix="/api/operations-and-maintenance/sites/{site_id}/cameras",
         tags=[tags.OM_SITE_CAMERAS_TAG],
     )
-    # settings related APIs
-    app.include_router(audit_log_router, prefix="/api/settings/audit-logs", tags=[tags.AUDIT_LOG_TAG])
-    app.include_router(contractors_router, prefix="/api/contractors", tags=[tags.CONTRACTORS_TAG])
-    app.include_router(
-        settings_connections_router,
-        prefix="/api/contractors/{company_id}/connections",
-        tags=[tags.SETTINGS_CONNECTIONS_TAG],
-    )
-    app.include_router(my_company_router, prefix="/api/my-company", tags=[tags.MY_COMPANY_TAG])
-    app.include_router(roles_router, prefix="/api/roles", tags=[tags.ROLES_TAG])
-    app.include_router(settings_sites_router, prefix="/api/settings/sites", tags=[tags.SETTINGS_SITES_TAG])
-    app.include_router(users_router, prefix="/api/users", tags=[tags.USERS_TAG])
     # workspace APIs
     app.include_router(workspace_router, prefix="/api/workspace", tags=[tags.WORKSPACE_TAG])
     # role profiles API

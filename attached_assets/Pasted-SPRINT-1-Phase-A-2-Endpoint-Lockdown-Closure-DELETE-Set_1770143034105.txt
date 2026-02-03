@@ -1,0 +1,38 @@
+SPRINT 1 – Phase A.2: Endpoint Lockdown Closure (DELETE Settings completely)
+
+Context:
+We do NOT need backward compatibility. Settings is not a supported surface. Portfolio Admin is the only authoritative admin plane.
+Phase A removed frontend Settings routes and removed backend mutation endpoints, but Settings GET endpoints and routers were preserved.
+That must be removed.
+
+Objective:
+Remove Settings backend routers entirely so /settings/* returns 404 from the server.
+Also verify no remaining legacy endpoints exist that allow entity/user/access mutation outside Portfolio Admin APIs.
+
+Tasks:
+1) Backend: Unregister Settings routers
+- Remove the inclusion/mounting of any Settings router modules from the FastAPI/Flask app router registration.
+- Ensure /settings/* is not routed at all.
+
+2) Backend: Delete Settings router code
+- Delete the Settings router modules/files (e.g., settings/users.py, settings/companies.py, settings/sites.py, settings/my-company.py, etc.), not just methods.
+- Remove any imports, references, and dead code.
+
+3) Verify endpoint surface
+- Provide a grep/search audit in your response:
+  - Search for "/settings" routes and router prefixes.
+  - Search for legacy endpoint modules that expose create/update/delete for users/companies/projects/access outside Portfolio Admin.
+- Provide a final list of remaining mutation endpoints that are supported (Portfolio Admin/workspace member endpoints, plus any required operational endpoints).
+
+4) Asset Mgmt sanity check
+- Confirm whether PUT /{site_id}/details is required for Project Hub updates.
+- Ensure it is guarded by appropriate auth checks and cannot update company/project membership/access or company_type/profile.
+- If it overlaps with Portfolio Admin responsibilities, refactor it into the Portfolio Admin domain or clearly document its limited scope.
+
+Acceptance Criteria:
+- Server returns 404 for any /settings/* request.
+- No Settings router is mounted.
+- Only Portfolio Admin/workspace endpoints can mutate users/companies/projects/access.
+- App builds and runs.
+
+Proceed now. Do NOT start Phase B (permission resolver) yet.
