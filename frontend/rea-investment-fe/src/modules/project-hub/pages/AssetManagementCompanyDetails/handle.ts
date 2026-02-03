@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { RouteHandle } from '../../../../handles';
 import { createAssetManagementCompanyDetailsLoader } from './loader';
+import { BREADCRUMB_LABELS, CANONICAL_ROUTES } from '../../../../utils/breadcrumbs';
 
 export const createAssetManagementCompanyDetailsHandle = (queryClient: QueryClient) => {
   const crumbsBuilder = (data: any) => {
@@ -12,8 +13,8 @@ export const createAssetManagementCompanyDetailsHandle = (queryClient: QueryClie
     >(['company', 'details', { companyId: data.id }]);
 
     return companyDetails
-      ? [{ title: 'Asset Management', link: '/asset-management' }, { title: companyDetails.name }]
-      : [{ title: 'Asset Management', link: '/asset-management' }, { title: '...' }];
+      ? [{ title: BREADCRUMB_LABELS.PROJECT_HUB, link: CANONICAL_ROUTES.PROJECT_HUB }, { title: companyDetails.name }]
+      : [{ title: BREADCRUMB_LABELS.PROJECT_HUB, link: CANONICAL_ROUTES.PROJECT_HUB }, { title: '...' }];
   };
 
   return RouteHandle.createHandle({

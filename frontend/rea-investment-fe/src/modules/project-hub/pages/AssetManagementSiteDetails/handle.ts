@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { RouteHandle } from '../../../../handles';
 import { createAssetManagementSiteDetailsLoader } from './loader';
+import { BREADCRUMB_LABELS, CANONICAL_ROUTES } from '../../../../utils/breadcrumbs';
 
 type LoaderOutput = Awaited<ReturnType<ReturnType<typeof createAssetManagementSiteDetailsLoader>>>;
 
@@ -10,15 +11,13 @@ export const createAssetManagementSiteDetailsHandle = (queryClient: QueryClient)
       return [];
     }
     const siteDetails = queryClient.getQueryData<LoaderOutput>(['site', 'details', { siteId: data.id }]);
-    const companyInfo = siteDetails?.company;
 
-    return siteDetails && companyInfo
+    return siteDetails
       ? [
-          { title: 'Asset Management', link: '/project-hub' },
-          { title: companyInfo.name, link: `/project-hub/companies/${companyInfo.id}` },
+          { title: BREADCRUMB_LABELS.PROJECT_HUB, link: CANONICAL_ROUTES.PROJECT_HUB },
           { title: siteDetails.name }
         ]
-      : [{ title: 'Asset Management', link: '/project-hub' }, { title: '...' }];
+      : [{ title: BREADCRUMB_LABELS.PROJECT_HUB, link: CANONICAL_ROUTES.PROJECT_HUB }, { title: '...' }];
   };
 
   return RouteHandle.createHandle({

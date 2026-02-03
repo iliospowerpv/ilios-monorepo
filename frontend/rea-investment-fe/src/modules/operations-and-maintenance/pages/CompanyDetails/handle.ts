@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { RouteHandle } from '../../../../handles';
 import { createCompanyDetailsLoader } from './loader';
+import { BREADCRUMB_LABELS } from '../../../../utils/breadcrumbs';
 
 export const createCompanyDetailsHandle = (queryClient: QueryClient) => {
   const crumbsBuilder = (data: any) => {
@@ -12,8 +13,8 @@ export const createCompanyDetailsHandle = (queryClient: QueryClient) => {
     );
 
     return companyDetails
-      ? [{ title: 'O&M', link: '/operations-and-maintenance' }, { title: companyDetails.name }]
-      : [{ title: 'O&M', link: '/operations-and-maintenance' }, { title: '...' }];
+      ? [{ title: BREADCRUMB_LABELS.OM, link: '/operations-and-maintenance' }, { title: companyDetails.name }]
+      : [{ title: BREADCRUMB_LABELS.OM, link: '/operations-and-maintenance' }, { title: '...' }];
   };
 
   return RouteHandle.createHandle({

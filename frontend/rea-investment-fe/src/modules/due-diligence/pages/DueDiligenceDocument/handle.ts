@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { RouteHandle } from '../../../../handles';
 import { createLoader } from './loader';
+import { BREADCRUMB_LABELS, CANONICAL_ROUTES } from '../../../../utils/breadcrumbs';
 
 type LoaderOutput = Awaited<ReturnType<ReturnType<typeof createLoader>>>;
 
@@ -33,12 +34,12 @@ export const createHandle = (queryClient: QueryClient) => {
 
     return siteDetails && companyDetails && documentInfo
       ? [
-          { title: 'Diligence', link: '/due-diligence' },
+          { title: BREADCRUMB_LABELS.DATA_ROOM, link: '/due-diligence' },
           { title: companyDetails.name, link: `/due-diligence/companies/${companyDetails.id}/sites` },
-          { title: siteDetails.name, link: `/due-diligence/companies/${companyDetails.id}/sites/${siteDetails.id}` },
+          { title: siteDetails.name, link: CANONICAL_ROUTES.PROJECT_HUB_PROJECT_TAB(siteDetails.id, 'data-room') },
           { title: documentInfo.name }
         ]
-      : [{ title: 'Diligence', link: '/due-diligence' }, { title: '...' }];
+      : [{ title: BREADCRUMB_LABELS.DATA_ROOM, link: '/due-diligence' }, { title: '...' }];
   };
 
   const getAIAssistantConfig = (data: any) => {

@@ -1,5 +1,6 @@
 import { RouteHandle } from '../../../../handles';
 import { createAssetManagementDeviceDetailsLoader } from './loader';
+import { BREADCRUMB_LABELS, CANONICAL_ROUTES } from '../../../../utils/breadcrumbs';
 
 type LoaderOutput = Awaited<ReturnType<ReturnType<typeof createAssetManagementDeviceDetailsLoader>>>;
 
@@ -11,12 +12,11 @@ export const createAssetManagementDeviceDetailsHandle = () => {
       return [];
     }
 
-    const { deviceDetails, siteDetails, companyDetails } = resolvedData;
+    const { deviceDetails, siteDetails } = resolvedData;
 
     return [
-      { title: 'Asset Management', link: '/project-hub' },
-      { title: companyDetails.name, link: `/project-hub/companies/${companyDetails.id}` },
-      { title: siteDetails.name, link: `/project-hub/companies/${companyDetails.id}/sites/${siteDetails.id}` },
+      { title: BREADCRUMB_LABELS.PROJECT_HUB, link: CANONICAL_ROUTES.PROJECT_HUB },
+      { title: siteDetails.name, link: CANONICAL_ROUTES.PROJECT_HUB_PROJECT_TAB(siteDetails.id, 'om') },
       { title: deviceDetails.general_info.name }
     ];
   };

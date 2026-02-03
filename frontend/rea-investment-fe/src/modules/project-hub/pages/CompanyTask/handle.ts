@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { RouteHandle } from '../../../../handles';
 import { createLoader } from './loader';
+import { BREADCRUMB_LABELS, CANONICAL_ROUTES } from '../../../../utils/breadcrumbs';
 
 type LoaderOutput = Awaited<ReturnType<ReturnType<typeof createLoader>>>;
 
@@ -27,11 +28,11 @@ export const createHandle = (queryClient: QueryClient) => {
 
     return companyDetails && taskDetails
       ? [
-          { title: 'Asset Management', link: '/project-hub' },
+          { title: BREADCRUMB_LABELS.PROJECT_HUB, link: CANONICAL_ROUTES.PROJECT_HUB },
           { title: companyDetails.name, link: `/project-hub/companies/${companyDetails.id}` },
           { title: taskDetails.external_id }
         ]
-      : [{ title: 'Asset Management', link: '/project-hub' }, { title: '...' }];
+      : [{ title: BREADCRUMB_LABELS.PROJECT_HUB, link: CANONICAL_ROUTES.PROJECT_HUB }, { title: '...' }];
   };
 
   return RouteHandle.createHandle({

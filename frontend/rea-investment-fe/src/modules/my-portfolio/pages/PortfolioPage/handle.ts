@@ -1,9 +1,10 @@
 import { RouteHandle } from '../../../../handles';
+import { BREADCRUMB_LABELS } from '../../../../utils/breadcrumbs';
 
 export const createPortfolioPageHandle = () => {
   return RouteHandle.createHandle({
     moduleId: 'portfolio',
-    crumbsBuilder: () => [{ title: 'Portfolio' }]
+    crumbsBuilder: () => [{ title: BREADCRUMB_LABELS.PORTFOLIO }]
   });
 };
 

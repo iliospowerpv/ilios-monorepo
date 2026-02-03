@@ -1,6 +1,7 @@
 import { RouteHandle } from '../../../../handles';
 import { createDiligenceCompanyDetailsLoader } from './loader';
 import { QueryClient } from '@tanstack/react-query';
+import { BREADCRUMB_LABELS } from '../../../../utils/breadcrumbs';
 
 export const createDueDiligenceHandle = (queryClient: QueryClient) => {
   const crumbsBuilder = (data: any) => {
@@ -12,8 +13,8 @@ export const createDueDiligenceHandle = (queryClient: QueryClient) => {
     >(['company', 'crumbs', 'Diligence', { companyId: data.id }]);
 
     return companyDetails
-      ? [{ title: 'Diligence', link: '/due-diligence' }, { title: companyDetails.name }]
-      : [{ title: 'Diligence', link: '/due-diligence' }, { title: '...' }];
+      ? [{ title: BREADCRUMB_LABELS.DATA_ROOM, link: '/due-diligence' }, { title: companyDetails.name }]
+      : [{ title: BREADCRUMB_LABELS.DATA_ROOM, link: '/due-diligence' }, { title: '...' }];
   };
 
   return RouteHandle.createHandle({

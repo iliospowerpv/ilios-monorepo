@@ -1,8 +1,12 @@
 import { RouteHandle } from '../../../../handles';
+import { BREADCRUMB_LABELS } from '../../../../utils/breadcrumbs';
 
 export const createAddMyCompanyUserHandle = () => {
   return RouteHandle.createHandle({
-    crumbsBuilder: () => [{ title: 'My Company Settings', link: '/settings/my-company' }, { title: 'Add User' }]
+    crumbsBuilder: () => [
+      { title: BREADCRUMB_LABELS.MY_COMPANY_SETTINGS, link: '/settings/my-company' },
+      { title: 'Add User' }
+    ]
   });
 };
 

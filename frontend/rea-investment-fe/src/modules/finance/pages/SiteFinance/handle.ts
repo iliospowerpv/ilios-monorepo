@@ -1,10 +1,11 @@
 import { QueryClient } from '@tanstack/react-query';
 import { RouteHandle } from '../../../../handles';
+import { BREADCRUMB_LABELS, CANONICAL_ROUTES } from '../../../../utils/breadcrumbs';
 
 export const createSiteFinanceHandle = (queryClient: QueryClient) => {
   const crumbsBuilder = (data: any) => {
     if (typeof data?.companyId === 'undefined' || typeof data?.siteId === 'undefined') {
-      return [{ title: 'Finance', link: '/finance' }];
+      return [{ title: BREADCRUMB_LABELS.FINANCE, link: '/finance' }];
     }
 
     const companyId = typeof data.companyId === 'string' ? parseInt(data.companyId, 10) : data.companyId;
@@ -15,21 +16,21 @@ export const createSiteFinanceHandle = (queryClient: QueryClient) => {
 
     if (companyDetails && siteDetails) {
       return [
-        { title: 'Finance', link: '/finance' },
+        { title: BREADCRUMB_LABELS.FINANCE, link: '/finance' },
         { title: companyDetails.name, link: `/finance/companies/${companyId}` },
-        { title: siteDetails.name }
+        { title: siteDetails.name, link: CANONICAL_ROUTES.PROJECT_HUB_PROJECT_TAB(siteId, 'finance') }
       ];
     }
 
     if (companyDetails) {
       return [
-        { title: 'Finance', link: '/finance' },
+        { title: BREADCRUMB_LABELS.FINANCE, link: '/finance' },
         { title: companyDetails.name, link: `/finance/companies/${companyId}` },
         { title: '...' }
       ];
     }
 
-    return [{ title: 'Finance', link: '/finance' }, { title: '...' }];
+    return [{ title: BREADCRUMB_LABELS.FINANCE, link: '/finance' }, { title: '...' }];
   };
 
   return RouteHandle.createHandle({

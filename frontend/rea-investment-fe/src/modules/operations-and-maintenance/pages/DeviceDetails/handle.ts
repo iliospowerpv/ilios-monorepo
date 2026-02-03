@@ -1,4 +1,5 @@
 import { RouteHandle } from '../../../../handles';
+import { BREADCRUMB_LABELS, CANONICAL_ROUTES } from '../../../../utils/breadcrumbs';
 
 export const createDeviceDetailsHandle = () => {
   const crumbsBuilder = (data: any) => {
@@ -8,15 +9,15 @@ export const createDeviceDetailsHandle = () => {
 
     return data?.data?.id && data?.siteData?.name && data?.deviceData?.name
       ? [
-          { title: 'O&M', link: '/operations-and-maintenance' },
+          { title: BREADCRUMB_LABELS.OM, link: '/operations-and-maintenance' },
           { title: data?.data?.name, link: `/operations-and-maintenance/companies/${data?.data?.id}` },
           {
             title: data?.siteData?.name,
-            link: `/operations-and-maintenance/companies/${data?.data?.id}/sites/${data?.siteData?.id}`
+            link: CANONICAL_ROUTES.PROJECT_HUB_PROJECT_TAB(data?.siteData?.id, 'om')
           },
           { title: data?.deviceData?.name }
         ]
-      : [{ title: 'O&M', link: '/operations-and-maintenance' }, { title: '...' }];
+      : [{ title: BREADCRUMB_LABELS.OM, link: '/operations-and-maintenance' }, { title: '...' }];
   };
 
   return RouteHandle.createHandle({

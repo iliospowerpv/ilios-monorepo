@@ -1,9 +1,10 @@
 import { RouteHandle } from '../../../../handles';
+import { BREADCRUMB_LABELS } from '../../../../utils/breadcrumbs';
 
 export const createAllCompaniesHandle = () => {
   return RouteHandle.createHandle({
     moduleId: 'operations-and-maintenance',
-    crumbsBuilder: () => [{ title: 'O&M' }]
+    crumbsBuilder: () => [{ title: BREADCRUMB_LABELS.OM }]
   });
 };
 

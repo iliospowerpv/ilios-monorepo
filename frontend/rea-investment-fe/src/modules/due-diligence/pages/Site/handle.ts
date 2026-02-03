@@ -1,4 +1,5 @@
 import { RouteHandle } from '../../../../handles';
+import { BREADCRUMB_LABELS, CANONICAL_ROUTES } from '../../../../utils/breadcrumbs';
 
 export const createHandle = () => {
   const crumbsBuilder = (data: any) => {
@@ -8,11 +9,14 @@ export const createHandle = () => {
 
     return data?.data?.id && data?.siteData?.name
       ? [
-          { title: 'Diligence', link: '/due-diligence' },
+          { title: BREADCRUMB_LABELS.DATA_ROOM, link: '/due-diligence' },
           { title: data?.data?.name, link: `/due-diligence/companies/${data?.data?.id}/sites` },
-          { title: data?.siteData?.name }
+          {
+            title: data?.siteData?.name,
+            link: CANONICAL_ROUTES.PROJECT_HUB_PROJECT_TAB(data?.siteData?.id, 'data-room')
+          }
         ]
-      : [{ title: 'Diligence', link: '/due-diligence' }, { title: '...' }];
+      : [{ title: BREADCRUMB_LABELS.DATA_ROOM, link: '/due-diligence' }, { title: '...' }];
   };
 
   const getAIAssistantConfig = (data: any) => {
