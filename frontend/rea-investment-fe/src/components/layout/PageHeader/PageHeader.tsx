@@ -147,7 +147,7 @@ export const PageHeader: React.FC = () => {
                 <ListItemIcon>
                   <PeopleOutlineIcon fontSize="small" />
                 </ListItemIcon>
-                User Management
+                Portfolio Admin
               </MenuItem>
               <Divider />
               <MenuItem onClick={onLogout}>

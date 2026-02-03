@@ -32,7 +32,13 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 import { ApiClient } from '../../../../api';
 import type { CompanyMember } from '../../../../api';
-import { AddProjectDialog, AddUserDialog, EditUserDialog, RemoveUserDialog } from '../../components/dialogs';
+import {
+  AddProjectDialog,
+  AddUserDialog,
+  EditUserDialog,
+  RemoveUserDialog,
+  EditCompanyDialog
+} from '../../components/dialogs';
 
 const getRoleLabel = (role: string): string => {
   switch (role) {
@@ -65,6 +71,7 @@ export const CompanyLevelPage: React.FC = () => {
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isEditUserOpen, setIsEditUserOpen] = useState(false);
   const [isRemoveUserOpen, setIsRemoveUserOpen] = useState(false);
+  const [isEditCompanyOpen, setIsEditCompanyOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<CompanyMember | null>(null);
 
   const companyIdNum = parseInt(companyId || '0', 10);
@@ -134,6 +141,11 @@ export const CompanyLevelPage: React.FC = () => {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 2 }}>
+          <Tooltip title="Edit Company">
+            <IconButton onClick={() => setIsEditCompanyOpen(true)} color="primary">
+              <EditIcon />
+            </IconButton>
+          </Tooltip>
           <Button variant="outlined" startIcon={<PersonAddIcon />} onClick={() => setIsAddUserOpen(true)}>
             Add User
           </Button>
@@ -397,6 +409,23 @@ export const CompanyLevelPage: React.FC = () => {
         entityId={companyIdNum}
         entityName={companyName}
         member={selectedMember}
+      />
+
+      <EditCompanyDialog
+        open={isEditCompanyOpen}
+        onClose={() => setIsEditCompanyOpen(false)}
+        company={
+          company
+            ? {
+                id: company.id,
+                name: company.name,
+                company_type: company.company_type,
+                email: company.email,
+                phone: company.phone,
+                address: company.address
+              }
+            : null
+        }
       />
     </Box>
   );

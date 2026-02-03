@@ -4,9 +4,8 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
-import Companies from './tabs/Companies/Companies';
-import Sites from './tabs/Sites/Sites';
 import AuditLogs from './tabs/AuditLogs/AuditLogs';
+import HealthChecksPage from '../HealthChecks/HealthChecksPage';
 
 interface TabInfo {
   id: string;
@@ -17,19 +16,18 @@ interface TabInfo {
 }
 
 interface SettingsProps {
-  tabId?: 'users' | 'companies' | 'sites' | 'audit-logs';
+  tabId?: 'health-checks' | 'audit-logs' | 'notification' | 'alerts';
 }
 
 const tabData: TabInfo[] = [
-  { id: 'companies', link: '/settings/companies', label: 'Companies', disabled: false, content: <Companies /> },
-  { id: 'sites', link: '/settings/sites', label: 'Projects', disabled: false, content: <Sites /> },
+  { id: 'health-checks', link: '/settings/health-checks', label: 'Health Checks', disabled: false, content: <HealthChecksPage /> },
   { id: 'audit-logs', link: '/settings/audit-logs', label: 'Audit Logs', disabled: false, content: <AuditLogs /> },
   { id: 'notification', link: '/', label: 'Notification', disabled: true, content: <Box>Notification Tab</Box> },
   { id: 'alerts', link: '/', label: 'Alerts', disabled: true, content: <Box>Alerts</Box> }
 ];
 
 const Settings: React.FC<SettingsProps> = ({ tabId }) => {
-  const activeTab = tabId || 'companies';
+  const activeTab = tabId || 'health-checks';
 
   const content = React.useMemo(() => {
     const tab = tabData.find(({ id }) => id === activeTab);

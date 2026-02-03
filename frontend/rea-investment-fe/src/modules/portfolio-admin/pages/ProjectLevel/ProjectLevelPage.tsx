@@ -36,10 +36,11 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PeopleIcon from '@mui/icons-material/People';
 import InfoIcon from '@mui/icons-material/Info';
+import EditIcon from '@mui/icons-material/Edit';
 
 import { ApiClient } from '../../../../api';
 import type { ProjectMember } from '../../../../api';
-import { AddUserDialog } from '../../components/dialogs';
+import { AddUserDialog, EditProjectDialog } from '../../components/dialogs';
 import { useNotify } from '../../../../contexts/notifications/notifications';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -91,6 +92,7 @@ export const ProjectLevelPage: React.FC = () => {
   const notify = useNotify();
   const { projectId } = useParams<{ projectId: string }>();
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [isEditProjectOpen, setIsEditProjectOpen] = useState(false);
   const [removeMemberDialog, setRemoveMemberDialog] = useState<{ open: boolean; member: ProjectMember | null }>({
     open: false,
     member: null
@@ -182,9 +184,16 @@ export const ProjectLevelPage: React.FC = () => {
             Project overview and administration
           </Typography>
         </Box>
-        <Button variant="outlined" startIcon={<PersonAddIcon />} onClick={() => setIsAddUserOpen(true)}>
-          Add User
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Tooltip title="Edit Project">
+            <IconButton onClick={() => setIsEditProjectOpen(true)} color="primary">
+              <EditIcon />
+            </IconButton>
+          </Tooltip>
+          <Button variant="outlined" startIcon={<PersonAddIcon />} onClick={() => setIsAddUserOpen(true)}>
+            Add User
+          </Button>
+        </Box>
       </Box>
 
       <Grid container spacing={3}>
@@ -602,6 +611,27 @@ export const ProjectLevelPage: React.FC = () => {
         entityName={projectName}
         parentCompanyId={companyId}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ['projectMembers', projectIdNum] })}
+      />
+
+      <EditProjectDialog
+        open={isEditProjectOpen}
+        onClose={() => setIsEditProjectOpen(false)}
+        project={
+          project
+            ? {
+                id: project.id,
+                name: project.name,
+                address: project.address,
+                city: project.city,
+                state: project.state,
+                zip_code: project.zip_code,
+                system_size_ac: project.system_size_ac,
+                system_size_dc: project.system_size_dc,
+                company_id: companyId,
+                lon_lat_url: project.lon_lat_url
+              }
+            : null
+        }
       />
     </Box>
   );

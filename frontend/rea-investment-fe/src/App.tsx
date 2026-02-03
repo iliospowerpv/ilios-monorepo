@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, createBrowserRouter, createRoutesFromElements, Navigate } from 'react-router-dom';
+import { Route, createBrowserRouter, createRoutesFromElements, Navigate, useParams } from 'react-router-dom';
 // Providers
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -30,26 +30,18 @@ import { ScopedModuleRoute } from './components/layout/ScopedModuleRoute';
 import { DeprecatedRouteRedirect } from './components/common/DeprecatedRouteRedirect';
 
 import {
-  SiteTask as PHSiteTask,
   CompanyTask as PHCompanyTask,
   Root as PHRoot,
   CompanyDetails as PHCompanyDetails,
   SiteDetails as PHSiteDetails,
-  DeviceDetails as PHDeviceDetails,
-  AddDevice as PHAddDevice,
   ModuleContainer as PHModuleContainer
 } from './modules/project-hub';
 import {
   AllCompanies as OMAllCompanies,
   CompanyDetails as OMCompanyDetails,
   SiteDetails as OMSiteDetails,
-  // DeviceDetails as OMDeviceDetails,
   createCompanyDetailsHandle,
   createCompanyDetailsLoader,
-  createSiteDetailsHandle,
-  createSiteCrumbsLoader,
-  // createDeviceDetailsHandle,
-  // createDeviceDetailsLoader,
   CompanyTask as OMCompanyTask,
   ModuleContainer as OMModuleContainer
 } from './modules/operations-and-maintenance';
@@ -57,10 +49,6 @@ import {
   SettingsPage,
   SettingsAddUser,
   SettingsEditUser,
-  SettingsAddCompany,
-  SettingsEditCompany,
-  SettingsAddSite,
-  SettingsEditSite,
   SettingsMyCompanyPage,
   SettingsEditMyCompany,
   SettingsMyCompanyEditSite,
@@ -70,12 +58,9 @@ import {
   SettingsAddMyCompanySite,
   HealthChecksPage
 } from './modules/settings';
-import { SiteTask as OMSiteTask } from './modules/security';
 import {
   DueDiligencePage as DPDiligencePage,
   SitesPage as DPSitesPage,
-  SitePage as DPSitePage,
-  DueDiligenceDocument as DPDueDiligenceDocument,
   ModuleContainer as DDModuleContainer
 } from './modules/due-diligence';
 import { ErrorLayout } from './components/layout/ErrorLayout/ErrorLayout';
@@ -144,6 +129,16 @@ const ProtectedSettingsRoute = ({ element, permission, path }: ProtectedRoutePro
   }
 
   return <Navigate to="/" replace />;
+};
+
+const PortfolioAdminCompanyRedirect: React.FC = () => {
+  const { companyId } = useParams<{ companyId: string }>();
+  return <Navigate to={`/portfolio-admin/company/${companyId}`} replace />;
+};
+
+const PortfolioAdminProjectRedirect: React.FC = () => {
+  const { companyId, siteId } = useParams<{ companyId: string; siteId: string }>();
+  return <Navigate to={`/portfolio-admin/company/${companyId}/project/${siteId}`} replace />;
 };
 
 const router = createBrowserRouter(
@@ -281,7 +276,11 @@ const router = createBrowserRouter(
         <Route path="/finance" element={<FinanceModuleContainer />}>
           <Route index handle={createFinanceLandingHandle()} element={<FinanceLanding />} />
           <Route path="companies/:companyId" handle={createFinanceHomeHandle(queryClient)} element={<FinanceHome />} />
-          <Route path="companies/:companyId/sites/:siteId" handle={createSiteFinanceHandle(queryClient)} element={<SiteFinance />} />
+          <Route
+            path="companies/:companyId/sites/:siteId"
+            handle={createSiteFinanceHandle(queryClient)}
+            element={<SiteFinance />}
+          />
         </Route>
         {/* Acquisitions Module (formerly Sales) */}
         <Route path="/acquisitions" element={<AcquisitionsModuleContainer />}>
@@ -442,10 +441,7 @@ const router = createBrowserRouter(
             element={<OMCompanyTask.Component />}
           />
           {/* Legacy site routes - redirect to canonical Project Hub O&M tab */}
-          <Route
-            path="companies/:companyId/sites/:siteId"
-            element={<DeprecatedRouteRedirect targetTab="om" />}
-          />
+          <Route path="companies/:companyId/sites/:siteId" element={<DeprecatedRouteRedirect targetTab="om" />} />
           <Route
             path="companies/:companyId/sites/:siteId/overview"
             element={<DeprecatedRouteRedirect targetTab="overview" />}
@@ -576,10 +572,7 @@ const router = createBrowserRouter(
             path="/project-hub/companies/:companyId/sites/:siteId/tasks"
             element={<DeprecatedRouteRedirect targetTab="tasks" />}
           />
-          <Route
-            path="/project-hub/companies/:companyId/sites/:siteId/telemetry"
-            element={<TelemetryRedirect />}
-          />
+          <Route path="/project-hub/companies/:companyId/sites/:siteId/telemetry" element={<TelemetryRedirect />} />
           <Route
             path="/project-hub/companies/:companyId/sites/:siteId/devices/add"
             element={<DeprecatedRouteRedirect targetTab="om" />}
@@ -656,30 +649,9 @@ const router = createBrowserRouter(
             }
             handle={SettingsPage.createHandle()}
           />
-          <Route
-            path="users"
-            element={<Navigate to="/portfolio-admin" replace />}
-          />
-          <Route
-            path="companies"
-            element={
-              <ProtectedSettingsRoute
-                element={<SettingsPage.Component tabId="companies" />}
-                permission={[AdminType.system]}
-              />
-            }
-            handle={SettingsPage.createHandle()}
-          />
-          <Route
-            path="sites"
-            element={
-              <ProtectedSettingsRoute
-                element={<SettingsPage.Component tabId="sites" />}
-                permission={[AdminType.system]}
-              />
-            }
-            handle={SettingsPage.createHandle()}
-          />
+          <Route path="users" element={<Navigate to="/portfolio-admin" replace />} />
+          <Route path="companies" element={<Navigate to="/portfolio-admin" replace />} />
+          <Route path="sites" element={<Navigate to="/portfolio-admin" replace />} />
           <Route
             path="audit-logs"
             element={
@@ -708,43 +680,10 @@ const router = createBrowserRouter(
               <ProtectedSettingsRoute element={<SettingsEditUser.Component />} permission={[AdminType.system]} />
             }
           />
-          <Route
-            path="company/add"
-            handle={SettingsAddCompany.createHandle()}
-            element={
-              <ProtectedSettingsRoute element={<SettingsAddCompany.Component />} permission={[AdminType.system]} />
-            }
-          />
-          <Route
-            path="company/:companyId"
-            handle={SettingsEditCompany.createHandle()}
-            element={
-              <ProtectedSettingsRoute
-                element={<SettingsEditCompany.Component />}
-                permission={[AdminType.system, AdminType.full]}
-              />
-            }
-          />
-          <Route
-            path="company/:companyId/site/add"
-            handle={SettingsAddSite.createHandle()}
-            element={
-              <ProtectedSettingsRoute
-                element={<SettingsAddSite.Component />}
-                permission={[AdminType.system, AdminType.full]}
-              />
-            }
-          />
-          <Route
-            path="company/:companyId/site/:siteId/edit"
-            handle={SettingsEditSite.createHandle()}
-            element={
-              <ProtectedSettingsRoute
-                element={<SettingsEditSite.Component />}
-                permission={[AdminType.system, AdminType.full]}
-              />
-            }
-          />
+          <Route path="company/add" element={<Navigate to="/portfolio-admin" replace />} />
+          <Route path="company/:companyId" element={<PortfolioAdminCompanyRedirect />} />
+          <Route path="company/:companyId/site/add" element={<PortfolioAdminCompanyRedirect />} />
+          <Route path="company/:companyId/site/:siteId/edit" element={<PortfolioAdminProjectRedirect />} />
           <Route
             path="my-company"
             handle={SettingsMyCompanyPage.createHandle()}
