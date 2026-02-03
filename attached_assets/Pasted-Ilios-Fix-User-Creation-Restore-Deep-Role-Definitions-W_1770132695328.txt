@@ -1,0 +1,80 @@
+Ilios – Fix User Creation + Restore Deep Role Definitions (WITHOUT changing new hierarchy)
+
+Context:
+We rebuilt user admin into the new Portfolio → Company → Project access architecture.
+User creation is failing because legacy role filtering / company_type matching is broken.
+Also, role options are currently reduced to 3, but we need deeper stakeholder role definitions again.
+Do NOT revert to the legacy users.role_id system. Maintain the new access tables and hierarchy.
+
+GOALS (in order):
+1) Hotfix: stop incorrect role assignments + make Add User reliable.
+2) Standardize company_type serialization (use enum KEY everywhere).
+3) Add “Role Profiles” + module permissions so we can have deep roles without 45 hard-coded roles.
+
+REQUIREMENTS:
+- Keep new endpoints and hierarchy:
+  POST /api/workspace/companies/{id}/members
+  user_company_access, user_portfolio_access, user_project_access remain the access model.
+- Do NOT bring back users.role_id FK as the primary permission driver.
+- Backend must validate permissions; never trust frontend.
+
+TASKS:
+
+A) FIX THE BUG (frontend)
+- In Portfolio Admin → Add User UI:
+  - When a company is selected, role/profile options MUST be filtered by selectedCompany.company_type.
+  - If the filtered list is empty, DO NOT fall back to showing all roles/profiles.
+  - Instead: show 0 options + a clear error banner with diagnostics:
+    selectedCompany.company_type value + unique role.company_type values returned by API.
+  - Disable submit when mismatch exists.
+
+B) FIX THE BUG (backend validation)
+- On POST /api/workspace/companies/{id}/members:
+  - Validate that the submitted role/profile is allowed for that company_type.
+  - If mismatch, return 400 with a structured error and expected values.
+
+C) STANDARDIZE ENUMS
+- Ensure company_type is represented as enum KEY across:
+  - DB (companies.company_type)
+  - APIs
+  - frontend comparisons
+- Display labels are derived via mapping only (UI-only).
+- If DB currently stores display values, write a safe migration mapping them to enum keys.
+
+D) IMPLEMENT ROLE PROFILES (new system-friendly deep roles)
+- Keep system roles limited to 3: company_admin, contributor, read_only.
+- Add Role Profiles that control module permissions + dashboard routing, stored in access tables.
+  Proposed new columns (jsonb/string) on user_company_access and optional override on user_project_access:
+    - system_role (enum 3)
+    - role_profile_key (string nullable)
+    - module_permissions (jsonb nullable, shape: {module_key: ["view","edit"]})
+    - dashboard_key (string nullable)
+- Create a role_profiles registry (table or config) with:
+    key, label, applicable_company_types (optional), default_module_permissions, default_dashboard_key
+- Seed an initial set of ~12–18 profiles (Company Admin, Executive, Asset Manager, Ops Manager, Diligence Manager,
+  Finance Specialist, Legal Specialist, Project Manager, Field Technician, Investor, Lender-Construction,
+  Lender-PermDebt, Appraiser, Engineer, Insurance Agent/Claims).
+
+E) UPDATE ADD USER UI FLOW
+- Add User steps:
+  1) Select Company
+  2) Select System Role (3)
+  3) Select Role Profile (filtered by company_type)
+  4) Optional advanced toggle: customize module permissions (edits the JSON)
+- Ensure submitted payload includes: system_role, role_profile_key, module_permissions (optional override).
+
+F) AUTHZ
+- Resolve effective permissions:
+  - Company access provides defaults
+  - Project access can override if present
+- Enforce route/module access using module_permissions (not role name strings).
+
+DELIVERABLES:
+- Code changes + migrations
+- Tests:
+  - enum serialization contract tests
+  - user creation with each company_type + at least one profile
+  - backend rejects mismatched company_type/profile combos
+- Short README section: how to add a new role profile safely.
+
+Do the work in a way that is maintainable, avoids hard-coded role_id lists, and preserves the new hierarchy.

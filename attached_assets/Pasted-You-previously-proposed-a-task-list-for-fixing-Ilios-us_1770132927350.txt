@@ -1,0 +1,73 @@
+You previously proposed a task list for fixing Ilios user creation and restoring deep roles. Revise your plan now into an implementation-grade plan with explicit sequencing, deliverables, acceptance criteria, and guardrails.
+
+CONTEXT (do not change these facts):
+- Ilios has a NEW user admin architecture: Portfolio → Company → Project.
+- The supported Add User path is: Portfolio Admin → Add User, backend endpoint POST /api/workspace/companies/{id}/members.
+- The OLD Settings add-user path (/settings/users/add, POST /api/users/) is legacy and must not be used for new users.
+- The legacy system had 45 roles tied to company types and a module × action permissions matrix (view/edit).
+- The new system collapsed to 3 simplified roles (company_admin, contributor, read_only) and we lost deep role definition.
+- Current bug: role filtering fails; when company_type filter returns empty the UI falls back to showing ALL roles, causing wrong role_id selections and user creation errors due to company_type serialization mismatch.
+
+NON-NEGOTIABLE GUARDRAILS:
+1) Preserve the NEW Portfolio → Company → Project hierarchy and access tables:
+   - user_portfolio_access, user_company_access, user_project_access remain the source of truth.
+2) Do NOT reintroduce users.role_id as the primary authorization model.
+3) Backend must validate role/profile compatibility; never trust the frontend.
+4) Standardize company_type as enum KEY everywhere; UI labels are derived mappings only.
+
+WHAT I WANT YOU TO PRODUCE:
+A revised plan that is structured into phases (P0 Hotfix, P1 Core, P2 Enhancements). For each phase:
+- Specific tasks (with file/component/API targets where possible)
+- Deliverables
+- Acceptance criteria (clear pass/fail)
+- Tests to add (unit/contract/integration)
+- Migration steps (if any) + rollback considerations
+- Notes on how each task preserves the new hierarchy
+
+REQUIRED TECHNICAL OUTCOMES:
+A) HOTFIX (P0):
+- Remove the unsafe “empty filter => show all roles” fallback in Add User UI.
+- If company selected and filter returns empty: show zero options, show a diagnostic banner, disable submit.
+- Add backend validation on POST /api/workspace/companies/{id}/members to reject mismatched company_type/role/profile combos with HTTP 400 + structured error.
+
+B) STANDARDIZE ENUMS (P0/P1):
+- Ensure companies.company_type is stored/serialized as enum KEY (e.g., project_site_owner).
+- Ensure roles/profiles company_type uses the same key.
+- Add a safe DB migration mapping display values (“Project/Site Owner”) to keys if needed.
+- Add a contract test guaranteeing key-only serialization.
+
+C) ROLE PROFILES (P1):
+- Keep system roles limited to 3 (company_admin, contributor, read_only).
+- Add a Role Profiles layer that provides deep stakeholder definitions WITHOUT resurrecting 45 hard-coded legacy roles.
+- Implement role_profiles registry (table or config) with:
+  key, label, applicable_company_types (optional), default_module_permissions (jsonb), default_dashboard_key.
+- Add columns to user_company_access (and optionally user_project_access overrides):
+  system_role, role_profile_key, module_permissions (override jsonb), dashboard_key.
+- Seed ~12–18 initial profiles (Company Admin, Executive, Asset Manager, Ops Manager, Diligence Manager,
+  Finance Specialist, Legal Specialist, Project Manager, Field Technician, Investor, Lender-Construction,
+  Lender-PermDebt, Appraiser, Engineer, Insurance Agent/Claims, etc.).
+
+D) UI FLOW (P1):
+- Add User flow becomes:
+  1) select Company
+  2) select System Role (3)
+  3) select Role Profile (filtered by company_type)
+  4) optional Advanced override for module permissions JSON
+- Ensure payload includes system_role + role_profile_key + optional module_permissions override.
+
+E) AUTHORIZATION (P1/P2):
+- Implement one canonical permission resolver:
+  profile default permissions + access-table overrides, with precedence rules.
+- Use it for route/module gating and API enforcement.
+
+F) CLEANUP:
+- Deprecate/hide legacy Settings Add User route (or make it read-only).
+
+IMPORTANT: When revising the plan, explicitly call out which tasks are “stop-the-bleeding” and must ship first,
+and which tasks are safe follow-ups.
+
+OUTPUT FORMAT:
+1) Phase table (P0/P1/P2) with tasks and order
+2) Detailed bullets per task including acceptance criteria + tests
+3) A short “Implementation Notes” section calling out expected pitfalls (enum mismatch, caching, frontend mapping bugs)
+4) A final checklist of “Definition of Done” for the whole initiative
