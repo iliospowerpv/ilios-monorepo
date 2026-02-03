@@ -30,7 +30,7 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
     - **Terminology Standardization**: All user-facing content uses "Projects" instead of "Sites" to improve clarity, while backend entities remain `sites`.
     - **Navigation Architecture**:
         1. **Entity Context Navigation (Top Bar)**: Displays `Portfolio → Company → Project` hierarchy, persists selection to `localStorage`, and dynamically enables/disables icons based on selected entity level.
-        2. **Module Sidebar Navigation (Left)**: Permission-based visibility for modules. Clicking project-scoped modules (O&M, Finance, Reports) routes directly to Project Hub with tab pre-selected; shows ProjectPicker dialog if no project selected.
+        2. **Module Sidebar Navigation (Left)**: Permission-based visibility for modules. Clicking project-scoped modules (Data Room, O&M, Finance, Tasks, Reports) routes directly to Project Hub with tab pre-selected; shows ProjectPicker dialog if no project selected.
         3. **Breadcrumb Navigation (Header)**: Auto-generates from React Router `handle` patterns, resolving dynamic segments from URL parameters.
         4. **3-Click Rule**: All workflows from Home to action completion must complete in ≤3 clicks.
     - **Project Hub Navigation (Feb 2026)**:
