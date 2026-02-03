@@ -1,5 +1,4 @@
 import React, { useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 
 import { GridApi, RowClickedEvent } from 'ag-grid-community';
@@ -11,9 +10,11 @@ import Avatar from '@mui/material/Avatar';
 import BaseTable from '../../../../common/tables/BaseTable/BaseTable';
 import { ApiClient } from '../../../../../api';
 import { TasksViewProps } from '../../types';
+import { resolveTaskDestination } from '../../../../../utils/navigation/taskDestinationResolver';
+import { useProjectNavigation, ProjectPicker } from '../../../../common/ProjectPicker';
 
-export const TaskList: React.FC<TasksViewProps> = ({ boardId, searchTerm, scope, companyId, siteId, module }) => {
-  const navigate = useNavigate();
+export const TaskList: React.FC<TasksViewProps> = ({ boardId, searchTerm, siteId, module }) => {
+  const { isPickerOpen, closePicker, navigateWithFallback, handleProjectSelect } = useProjectNavigation();
   const { efficiencyColors, color } = useTheme();
   const taskPriority: any = {
     High: <FlagIcon sx={{ color: efficiencyColors.low }} />,
@@ -108,21 +109,20 @@ export const TaskList: React.FC<TasksViewProps> = ({ boardId, searchTerm, scope,
 
   const onRowClicked = React.useCallback(
     (e: RowClickedEvent) => {
-      if (module === 'O&M') {
-        if (scope === 'site') {
-          navigate(`/operations-and-maintenance/companies/${companyId}/sites/${siteId}/tasks/${e.data.id}`);
-          return;
-        }
-        navigate(`/operations-and-maintenance/companies/${companyId}/tasks/${e.data.id}`);
-        return;
-      }
-      if (scope === 'site') {
-        navigate(`/project-hub/companies/${companyId}/sites/${siteId}/tasks/${e.data.id}`);
-        return;
-      }
-      navigate(`/project-hub/companies/${companyId}/tasks/${e.data.id}`);
+      const taskData = {
+        ...e.data,
+        site_id: siteId,
+        module
+      };
+      const destination = resolveTaskDestination(taskData);
+      const effectiveSiteId = destination.siteId || siteId || null;
+
+      navigateWithFallback(effectiveSiteId, destination.tab, {
+        focusType: destination.focusType,
+        focusId: destination.focusId
+      });
     },
-    [navigate, companyId, siteId, scope, module]
+    [navigateWithFallback, siteId, module]
   );
 
   const serverSideDatasource = React.useMemo(
@@ -163,15 +163,18 @@ export const TaskList: React.FC<TasksViewProps> = ({ boardId, searchTerm, scope,
   );
 
   return (
-    <Box sx={{ pt: 1 }}>
-      <BaseTable
-        ref={basicTableRef}
-        rowModelType="serverSide"
-        columnDefs={columns}
-        serverSideDatasource={serverSideDatasource}
-        onRowClicked={onRowClicked}
-      />
-    </Box>
+    <>
+      <Box sx={{ pt: 1 }}>
+        <BaseTable
+          ref={basicTableRef}
+          rowModelType="serverSide"
+          columnDefs={columns}
+          serverSideDatasource={serverSideDatasource}
+          onRowClicked={onRowClicked}
+        />
+      </Box>
+      <ProjectPicker open={isPickerOpen} onClose={closePicker} onSelect={handleProjectSelect} />
+    </>
   );
 };
 

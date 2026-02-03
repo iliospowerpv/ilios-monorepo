@@ -1,5 +1,4 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import ListItem from '@mui/material/ListItem';
@@ -19,6 +18,8 @@ import useParsedComment from '../../../../hooks/common/useParsedComment';
 import { BootstrapTooltip } from '../../../../components/common/BootstrapTooltip/BootstrapTooltip';
 import { useNotify } from '../../../../contexts/notifications/notifications';
 import { useQueryClient } from '@tanstack/react-query';
+import { useProjectNavigation, ProjectPicker } from '../../../../components/common/ProjectPicker';
+import { resolveNotificationDestination } from '../../../../utils/navigation/taskDestinationResolver';
 
 dayjs.extend(CustomParseFormatPlugin);
 
@@ -167,46 +168,19 @@ const MentionTemplate: React.FC<TemplateProps> = ({ notification }) => {
 
 const NotificationItem: React.FC<NotificationItemProps> = ({ notification }) => {
   const notify = useNotify();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { isPickerOpen, closePicker, navigateWithFallback, handleProjectSelect } = useProjectNavigation();
 
   const handleEventClick = React.useCallback(
-    (notification: Notification) => {
-      if (notification.kind === 'comment_mention') {
-        if (notification.comment?.entity_type === 'document_key' && notification.extra) {
-          navigate(
-            `/due-diligence/companies/${notification.company.id}/sites/${notification.site.id}/due-diligence/${notification.extra.document_id}/?fileId=${notification.extra.file_id}`
-          );
-          return;
-        } else if (notification.comment?.entity_type === 'document') {
-          navigate(
-            `/due-diligence/companies/${notification.company.id}/sites/${notification.site.id}/due-diligence/${notification.comment.entity_id}`
-          );
-          return;
-        }
-      }
-      if (notification?.task?.module === 'O&M') {
-        if (notification?.site) {
-          navigate(
-            `/operations-and-maintenance/companies/${notification.company.id}/sites/${notification.site.id}/tasks/${notification.task.id}`
-          );
-          return;
-        } else {
-          navigate(`/operations-and-maintenance/companies/${notification.company.id}/tasks/${notification.task.id}`);
-          return;
-        }
-      }
-      if (notification.site) {
-        navigate(
-          `/project-hub/companies/${notification.company.id}/sites/${notification.site.id}/tasks/${notification.task.id}`
-        );
-        return;
-      } else {
-        navigate(`/project-hub/companies/${notification.company.id}/tasks/${notification.task.id}`);
-        return;
-      }
+    (notif: Notification) => {
+      const destination = resolveNotificationDestination(notif);
+
+      navigateWithFallback(destination.siteId, destination.tab, {
+        focusType: destination.focusType,
+        focusId: destination.focusId
+      });
     },
-    [navigate]
+    [navigateWithFallback]
   );
 
   const handleMarkAsRead = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
@@ -283,6 +257,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification }) => 
           </BootstrapTooltip>
         </Stack>
       </Box>
+      <ProjectPicker open={isPickerOpen} onClose={closePicker} onSelect={handleProjectSelect} />
     </CustomListItem>
   );
 };

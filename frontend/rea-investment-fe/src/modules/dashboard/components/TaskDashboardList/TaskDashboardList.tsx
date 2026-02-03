@@ -1,5 +1,4 @@
 import React, { useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 
 import { GridApi, RowClickedEvent } from 'ag-grid-community';
@@ -11,9 +10,17 @@ import Avatar from '@mui/material/Avatar';
 import BaseTable from '../../../../components/common/tables/BaseTable/BaseTable';
 import { ApiClient } from '../../../../api';
 import Typography from '@mui/material/Typography';
+import { useProjectNavigation, ProjectPicker } from '../../../../components/common/ProjectPicker';
+import { resolveTaskDestination } from '../../../../utils/navigation/taskDestinationResolver';
 
 export const TaskDashboardList: React.FC = () => {
-  const navigate = useNavigate();
+  const {
+    isPickerOpen,
+    closePicker,
+    navigateWithFallback,
+    handleProjectSelect,
+    pendingTab
+  } = useProjectNavigation();
   const { efficiencyColors, color } = useTheme();
   const taskPriority: any = {
     High: <FlagIcon sx={{ color: efficiencyColors.low }} />,
@@ -117,30 +124,15 @@ export const TaskDashboardList: React.FC = () => {
 
   const onRowClicked = React.useCallback(
     (e: RowClickedEvent) => {
-      const site = e.data.site;
-      const module = e.data.module;
+      const taskData = e.data;
+      const destination = resolveTaskDestination(taskData);
 
-      if (module === 'Asset' && e?.data?.company) {
-        navigate(`/project-hub/companies/${e.data.company.id}/tasks/${e.data.id}`);
-      } else if (module === 'Asset') {
-        navigate(`/project-hub/companies/${site.company_id}/sites/${site.id}/tasks/${e.data.id}`);
-      }
-
-      if (module === 'Diligence') {
-        const document = e.data.document;
-        navigate(
-          `/due-diligence/companies/${document.company_id}/sites/${document.site_id}/due-diligence/${document.id}`
-        );
-      }
-
-      if (module === 'O&M') {
-        if (site) {
-          navigate(`/operations-and-maintenance/companies/${site.company_id}/sites/${site.id}/tasks/${e.data.id}`);
-        }
-        navigate(`/operations-and-maintenance/companies/${e.data.company.id}/tasks/${e.data.id}`);
-      }
+      navigateWithFallback(destination.siteId, destination.tab, {
+        focusType: destination.focusType,
+        focusId: destination.focusId
+      });
     },
-    [navigate]
+    [navigateWithFallback]
   );
 
   const serverSideDatasource = React.useMemo(
@@ -180,26 +172,33 @@ export const TaskDashboardList: React.FC = () => {
   );
 
   return (
-    <Box sx={{ pt: 1 }}>
-      <Box
-        sx={{
-          borderTop: theme => `1px solid ${theme.palette.divider}`,
-          borderRight: theme => `1px solid ${theme.palette.divider}`,
-          borderLeft: theme => `1px solid ${theme.palette.divider}`
-        }}
-      >
-        <Typography variant="h6" fontSize="24px" p="16px">
-          Tasks
-        </Typography>
+    <>
+      <Box sx={{ pt: 1 }}>
+        <Box
+          sx={{
+            borderTop: theme => `1px solid ${theme.palette.divider}`,
+            borderRight: theme => `1px solid ${theme.palette.divider}`,
+            borderLeft: theme => `1px solid ${theme.palette.divider}`
+          }}
+        >
+          <Typography variant="h6" fontSize="24px" p="16px">
+            Tasks
+          </Typography>
+        </Box>
+        <BaseTable
+          ref={basicTableRef}
+          rowModelType="serverSide"
+          columnDefs={columns}
+          serverSideDatasource={serverSideDatasource}
+          onRowClicked={onRowClicked}
+        />
       </Box>
-      <BaseTable
-        ref={basicTableRef}
-        rowModelType="serverSide"
-        columnDefs={columns}
-        serverSideDatasource={serverSideDatasource}
-        onRowClicked={onRowClicked}
+      <ProjectPicker
+        open={isPickerOpen}
+        onClose={closePicker}
+        onSelect={handleProjectSelect}
       />
-    </Box>
+    </>
   );
 };
 
