@@ -1,0 +1,104 @@
+Complete the Finance module so all existing schema/API capabilities are reachable through user workflows. Do not redesign the entire UI. Reuse existing pages/components (FinanceLanding, FinanceHome, SiteFinance) and add missing forms/actions/queues.
+
+NON-NEGOTIABLE BOUNDARIES
+- Project Hub Finance tab is READ-ONLY snapshot + deep links only.
+- All finance mutations (create/edit/approve) occur inside the Finance module routes (/finance...).
+
+PRIMARY GOALS
+1) Make Finance module reachable and useful as a daily workflow surface.
+2) Activate CRUD workflows already present in financeApi (create/update/delete where appropriate).
+3) Implement an approvals workflow users can actually execute.
+4) Ensure everything can be filtered by Site (project) and optionally Company.
+
+SCOPE (PHASE 1)
+A) Global Finance Landing (/finance)
+Implement a useful landing that includes:
+- KPI strip (planned/authorized/actual/variance totals) aggregated across accessible projects
+- Queues:
+  1) Approvals Queue (required)
+  2) Exceptions/Watchlist (optional but recommended: overruns, missing actuals, obligations pending too long)
+- Filters:
+  - Company (optional)
+  - Project (optional)
+  - Status (approval status / budget status)
+
+B) Site-scoped Finance view (SiteFinance)
+SiteFinance currently shows view-only tables. Upgrade it to support real workflows:
+1) Budgets
+- Add “Create Budget” button and modal/form:
+  - name
+  - status (draft initially)
+  - effective start/end dates (optional)
+  - line items (at least: name, planned_amount, category; optionally start/end)
+- Add “Edit Budget” (draft only), “Delete Budget” (draft only)
+- Add “Submit Budget” action (moves to submitted)
+- Add “Approve / Reject Budget” action OR if approvals are obligation-only, then clearly show “Budget Approved” workflow. (Pick one and implement consistently.)
+
+2) Obligations
+- Add “Create Obligation” button + form:
+  - type
+  - vendor (select existing or create inline)
+  - amount
+  - due date / invoice date
+  - reference_number (display + editable)
+  - status (draft -> submitted)
+  - optional link to budget line item
+- Add “Submit Obligation”
+- Add “Approve / Reject Obligation” with optional override_reason when approving with conditions
+- Render prerequisite_snapshot if it exists (even simple JSON viewer is fine) so the field is not dead.
+
+3) Vendors
+- Add “Create Vendor” button + form:
+  - name, type, contact info, status
+- Add “Edit Vendor” and ensure vendor can be linked to obligations.
+
+4) Actuals
+- Add “Create Actual” button + form:
+  - vendor (optional)
+  - amount
+  - date
+  - reference_id (display/edit)
+  - optional link to obligation
+- Ensure actuals roll into variance calculations.
+
+C) Approvals Queue (Global + Site filtered)
+Implement a dedicated approvals list page or panel accessible from /finance:
+- Show pending approvals across all projects
+- Each row deep-links to SiteFinance with focus params (siteId + focus entity)
+- Actions:
+  - Approve
+  - Reject
+  - Approve with override_reason (if schema supports)
+- Audit: show who approved and when if fields exist.
+
+D) Display missing schema fields (minimal visibility)
+Expose these fields in the UI so they aren’t dead:
+- FinanceObligation.reference_number
+- FinanceObligation.prerequisite_snapshot (read-only display)
+- FinanceApproval.override_reason (on approve action)
+- FinanceActual.reference_id
+- FinanceBudgetLineItem.start_date/end_date (optional display/edit if supported)
+
+E) Deal-scoped Budgets
+Explicitly defer in Phase 1 unless it is already partially implemented.
+- Do not build new underwriting UI inside Acquisitions for now.
+- Keep schema support; do not remove.
+
+ROUTING / UX REQUIREMENTS
+- /finance is global landing (no project required)
+- /finance?siteId=:siteId (or equivalent) lands in site-scoped finance view
+- All create/edit/approve actions must be discoverable from UI (buttons exist)
+- Preserve existing styling patterns and components (tables, tabs)
+- Add success/error toasts
+- Add permission gates if RBAC already exists (minimum: hide approve actions if not permitted)
+
+DELIVERABLES
+- List files changed
+- Manual test checklist:
+  1) From /finance, view approvals queue and open an item
+  2) Create a budget for a site
+  3) Create an obligation tied to a vendor
+  4) Submit + approve obligation (and capture override_reason where applicable)
+  5) Create an actual and see variance update
+  6) From Project Hub Finance tab, deep link to /finance?siteId=:siteId
+Proceed now.
