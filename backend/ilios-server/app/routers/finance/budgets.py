@@ -5,11 +5,13 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.crud.finance import FinanceBudgetCRUD, FinanceBudgetLineItemCRUD
+from app.crud.finance import FinanceApprovalCRUD, FinanceBudgetCRUD, FinanceBudgetLineItemCRUD
 from app.db.session import get_session
 from app.helpers.authorization import AuthorizedUser, get_authorized_company
 from app.helpers.authorization.module_based.finance import FinancePermissions
 from app.schema.finance import (
+    FinanceApprovalCreate,
+    FinanceApprovalSchema,
     FinanceBudgetCreate,
     FinanceBudgetDetailSchema,
     FinanceBudgetLineItemCreate,
@@ -17,8 +19,10 @@ from app.schema.finance import (
     FinanceBudgetLineItemUpdate,
     FinanceBudgetPaginator,
     FinanceBudgetSchema,
+    FinanceBudgetSubmit,
     FinanceBudgetUpdate,
 )
+from app.static.finance import FinanceBudgetStatus
 from app.schema.user import CurrentUserSchema
 from app.static.permissions import PermissionsActions
 
@@ -276,3 +280,111 @@ def delete_line_item(
     if not item or item.budget_id != budget_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Line item not found")
     FinanceBudgetLineItemCRUD.delete(db_session, item)
+
+
+@finance_budgets_router.post(
+    "/{budget_id}/submit",
+    response_model=FinanceBudgetDetailSchema,
+    summary="Submit a budget for approval",
+)
+def submit_budget(
+    company_id: int,
+    budget_id: int,
+    data: FinanceBudgetSubmit,
+    current_user: Annotated[
+        CurrentUserSchema,
+        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
+    ],
+    db_session: Session = Depends(get_session),
+):
+    get_authorized_company(company_id, current_user, db_session)
+    budget = FinanceBudgetCRUD.get_by_id(db_session, budget_id)
+    if not budget or budget.company_id != company_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found")
+    if budget.status != FinanceBudgetStatus.draft:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Can only submit budgets in Draft status",
+        )
+    updated = FinanceBudgetCRUD.submit(db_session, budget)
+    updated = FinanceBudgetCRUD.get_by_id(db_session, updated.id)
+    return _budget_to_detail_schema(updated, db_session)
+
+
+@finance_budgets_router.post(
+    "/{budget_id}/approve",
+    response_model=FinanceApprovalSchema,
+    status_code=status.HTTP_201_CREATED,
+    summary="Approve or reject a budget",
+)
+def approve_budget(
+    company_id: int,
+    budget_id: int,
+    data: FinanceApprovalCreate,
+    current_user: Annotated[
+        CurrentUserSchema,
+        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.edit)])),
+    ],
+    db_session: Session = Depends(get_session),
+):
+    get_authorized_company(company_id, current_user, db_session)
+    budget = FinanceBudgetCRUD.get_by_id(db_session, budget_id)
+    if not budget or budget.company_id != company_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found")
+    if budget.status != FinanceBudgetStatus.submitted:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Can only approve/reject budgets in Submitted status",
+        )
+    if data.decision.value == "override" and not data.override_reason:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Override reason is required for override decisions",
+        )
+    approval = FinanceApprovalCRUD.create_for_budget(db_session, budget_id, current_user.id, data.model_dump())
+    return FinanceApprovalSchema(
+        id=approval.id,
+        obligation_id=approval.obligation_id,
+        budget_id=approval.budget_id,
+        approved_by_id=approval.approved_by_id,
+        decision=approval.decision,
+        notes=approval.notes,
+        override_reason=approval.override_reason,
+        approved_at=approval.approved_at,
+        approved_by_name=approval.approved_by.email if approval.approved_by else None,
+    )
+
+
+@finance_budgets_router.get(
+    "/{budget_id}/approvals",
+    response_model=list[FinanceApprovalSchema],
+    summary="Get approval history for a budget",
+)
+def get_budget_approvals(
+    company_id: int,
+    budget_id: int,
+    current_user: Annotated[
+        CurrentUserSchema,
+        Depends(AuthorizedUser([FinancePermissions(PermissionsActions.view)])),
+    ],
+    db_session: Session = Depends(get_session),
+):
+    get_authorized_company(company_id, current_user, db_session)
+    budget = FinanceBudgetCRUD.get_by_id(db_session, budget_id)
+    if not budget or budget.company_id != company_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found")
+    approvals = FinanceApprovalCRUD.get_by_budget(db_session, budget_id)
+    return [
+        FinanceApprovalSchema(
+            id=a.id,
+            obligation_id=a.obligation_id,
+            budget_id=a.budget_id,
+            approved_by_id=a.approved_by_id,
+            decision=a.decision,
+            notes=a.notes,
+            override_reason=a.override_reason,
+            approved_at=a.approved_at,
+            approved_by_name=a.approved_by.email if a.approved_by else None,
+        )
+        for a in approvals
+    ]

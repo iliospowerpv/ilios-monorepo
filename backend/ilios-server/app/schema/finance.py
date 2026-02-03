@@ -213,10 +213,15 @@ class FinanceApprovalCreate(FinanceApprovalBase):
 
 class FinanceApprovalSchema(FinanceApprovalBase):
     id: int
-    obligation_id: int
+    obligation_id: Optional[int] = None
+    budget_id: Optional[int] = None
     approved_by_id: Optional[int] = None
     approved_at: datetime
     approved_by_name: Optional[str] = None
+
+
+class FinanceBudgetSubmit(BaseModel):
+    model_config = ConfigDict(extra="forbid")
 
 
 class FinanceActualBase(BaseModel):

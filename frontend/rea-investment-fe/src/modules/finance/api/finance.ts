@@ -65,6 +65,33 @@ export const financeApi = {
     await httpClient.delete(`/api/finance/companies/${companyId}/budgets/${budgetId}`);
   },
 
+  submitBudget: async (companyId: number, budgetId: number): Promise<FinanceBudgetDetail> => {
+    const response = await httpClient.post<FinanceBudgetDetail>(
+      `/api/finance/companies/${companyId}/budgets/${budgetId}/submit`,
+      {}
+    );
+    return response.data;
+  },
+
+  approveBudget: async (
+    companyId: number,
+    budgetId: number,
+    data: { decision: string; notes?: string; override_reason?: string }
+  ): Promise<FinanceApproval> => {
+    const response = await httpClient.post<FinanceApproval>(
+      `/api/finance/companies/${companyId}/budgets/${budgetId}/approve`,
+      data
+    );
+    return response.data;
+  },
+
+  getBudgetApprovals: async (companyId: number, budgetId: number): Promise<FinanceApproval[]> => {
+    const response = await httpClient.get<FinanceApproval[]>(
+      `/api/finance/companies/${companyId}/budgets/${budgetId}/approvals`
+    );
+    return response.data;
+  },
+
   getObligations: async (
     companyId: number,
     params?: { site_id?: number; status?: string; skip?: number; limit?: number }

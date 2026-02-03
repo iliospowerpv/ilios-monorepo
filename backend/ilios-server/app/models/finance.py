@@ -78,6 +78,7 @@ class FinanceBudget(Base):
     site = relationship("Site", backref="finance_budgets")
     created_by = relationship("User", foreign_keys=[created_by_id])
     line_items = relationship("FinanceBudgetLineItem", back_populates="budget", cascade="all, delete-orphan")
+    approvals = relationship("FinanceApproval", back_populates="budget", cascade="all, delete-orphan")
 
 
 class FinanceBudgetLineItem(Base):
@@ -137,12 +138,13 @@ class FinanceObligation(Base):
 
 
 class FinanceApproval(Base):
-    """Approval record for an obligation."""
+    """Approval record for an obligation or budget."""
 
     __tablename__ = "finance_approvals"
 
     id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
-    obligation_id = Column(Integer, ForeignKey("finance_obligations.id", ondelete="CASCADE"), nullable=False)
+    obligation_id = Column(Integer, ForeignKey("finance_obligations.id", ondelete="CASCADE"), nullable=True)
+    budget_id = Column(Integer, ForeignKey("finance_budgets.id", ondelete="CASCADE"), nullable=True)
     approved_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     decision = Column(Enum(FinanceApprovalDecision), nullable=False)
@@ -152,6 +154,7 @@ class FinanceApproval(Base):
     approved_at = Column(TIMESTAMP, server_default=utcnow())
 
     obligation = relationship("FinanceObligation", back_populates="approvals")
+    budget = relationship("FinanceBudget", back_populates="approvals")
     approved_by = relationship("User", foreign_keys=[approved_by_id])
 
 

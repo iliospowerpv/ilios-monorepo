@@ -1,0 +1,70 @@
+FINANCE UI COMPLETION — Activate workflows using existing routes/pages. Project Hub Finance tab remains READ-ONLY snapshot with deep links only.
+
+ROUTES (must use)
+- /finance -> FinanceLanding (global)
+- /finance/scope/project/:projectId -> SiteFinance (project-scoped)
+Legacy routes may remain but primary navigation should use scope/project.
+
+NON-NEGOTIABLE
+- All create/edit/submit/approve occurs in Finance module pages (not Project Hub).
+- Approvals required for BOTH budgets and obligations.
+
+DATA ACCESS CONSTRAINT
+All financeApi calls require companyId. Do NOT route user through company pages.
+Resolve companyId from:
+- project/site loader data (preferred), or
+- entityContext/currentProject that includes company_id, or
+- by fetching site details once and caching companyId.
+Implement a small helper hook (e.g., useFinanceContext(siteId)) that returns { companyId, siteId }.
+
+GLOBAL FINANCE LANDING (/finance)
+Implement:
+1) KPI strip (aggregate; if only company-scoped summary exists, show company selector first)
+2) Approvals Queue (global inbox) that includes BOTH:
+- budgets with status=submitted (use getBudgets with filtering if available, else query and filter client-side)
+- obligations with status=submitted (use getObligations({ status:"submitted" }))
+For each queue row:
+- Show type, project, amount, submitted date
+- Approve / Reject actions call:
+  - financeApi.approveBudget(companyId, budgetId, payload)
+  - financeApi.approveObligation(companyId, obligationId, payload)
+- “Open” deep link:
+  - /finance/scope/project/:projectId?tab=budgets&focusId=<budgetId>
+  - /finance/scope/project/:projectId?tab=obligations&focusId=<obligationId>
+
+SITE FINANCE (SiteFinance)
+Add actionable UI:
+Budgets tab:
+- Create Budget modal -> financeApi.createBudget
+- Edit/Delete only for Draft -> financeApi.updateBudget/deleteBudget
+- Submit -> financeApi.submitBudget
+- Approve/Reject when Submitted -> financeApi.approveBudget
+- Show approvals history -> financeApi.getBudgetApprovals
+
+Obligations tab:
+- Create Obligation modal -> financeApi.createObligation
+- Submit -> financeApi.submitObligation
+- Approve/Reject -> financeApi.approveObligation
+- Show approvals history -> financeApi.getApprovals
+
+Vendors tab:
+- Create/Edit vendor -> financeApi.createVendor/updateVendor
+
+Actuals tab:
+- Create Actual modal -> financeApi.createActual
+
+FOCUS PARAMS
+SiteFinance must consume:
+- ?tab=budgets|obligations|vendors|actuals
+- focusId -> scroll/highlight matching row
+
+PERMISSIONS
+- Hide approve/reject/create/edit buttons if lacking Finance permissions (use existing permission pattern).
+
+DELIVERABLES
+- files changed list
+- manual tests:
+  1) /finance approvals queue approves a submitted obligation and budget
+  2) site finance pages create/submit/approve budget + obligation
+  3) focus deep links highlight rows
+Proceed now.

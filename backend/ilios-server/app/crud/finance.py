@@ -16,7 +16,7 @@ from app.models.finance import (
 )
 from app.models.site import Site
 from app.models.user import User
-from app.static.finance import FinanceObligationStatus
+from app.static.finance import FinanceBudgetStatus, FinanceObligationStatus
 
 
 class FinanceVendorCRUD:
@@ -138,6 +138,14 @@ class FinanceBudgetCRUD:
             "variance": total_planned - total_actual,
         }
 
+    @staticmethod
+    def submit(db: Session, budget: FinanceBudget) -> FinanceBudget:
+        budget.status = FinanceBudgetStatus.submitted
+        budget.updated_at = datetime.utcnow()
+        db.commit()
+        db.refresh(budget)
+        return budget
+
 
 class FinanceBudgetLineItemCRUD:
     @staticmethod
@@ -258,7 +266,7 @@ class FinanceObligationCRUD:
 
 class FinanceApprovalCRUD:
     @staticmethod
-    def create(db: Session, obligation_id: int, user_id: int, data: dict) -> FinanceApproval:
+    def create_for_obligation(db: Session, obligation_id: int, user_id: int, data: dict) -> FinanceApproval:
         approval = FinanceApproval(
             obligation_id=obligation_id,
             approved_by_id=user_id,
@@ -277,11 +285,44 @@ class FinanceApprovalCRUD:
         return approval
 
     @staticmethod
+    def create_for_budget(db: Session, budget_id: int, user_id: int, data: dict) -> FinanceApproval:
+        approval = FinanceApproval(
+            budget_id=budget_id,
+            approved_by_id=user_id,
+            **data,
+        )
+        db.add(approval)
+        budget = db.query(FinanceBudget).filter(FinanceBudget.id == budget_id).first()
+        if budget:
+            if data["decision"].value == "approved" or data["decision"].value == "override":
+                budget.status = FinanceBudgetStatus.approved
+            elif data["decision"].value == "rejected":
+                budget.status = FinanceBudgetStatus.rejected
+            budget.updated_at = datetime.utcnow()
+        db.commit()
+        db.refresh(approval)
+        return approval
+
+    @staticmethod
+    def create(db: Session, obligation_id: int, user_id: int, data: dict) -> FinanceApproval:
+        return FinanceApprovalCRUD.create_for_obligation(db, obligation_id, user_id, data)
+
+    @staticmethod
     def get_by_obligation(db: Session, obligation_id: int) -> list[FinanceApproval]:
         return (
             db.query(FinanceApproval)
             .options(joinedload(FinanceApproval.approved_by))
             .filter(FinanceApproval.obligation_id == obligation_id)
+            .order_by(FinanceApproval.approved_at.desc())
+            .all()
+        )
+
+    @staticmethod
+    def get_by_budget(db: Session, budget_id: int) -> list[FinanceApproval]:
+        return (
+            db.query(FinanceApproval)
+            .options(joinedload(FinanceApproval.approved_by))
+            .filter(FinanceApproval.budget_id == budget_id)
             .order_by(FinanceApproval.approved_at.desc())
             .all()
         )

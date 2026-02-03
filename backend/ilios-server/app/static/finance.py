@@ -34,6 +34,9 @@ class FinanceObligationStatus(BaseMessageEnum):
 
 class FinanceBudgetStatus(BaseMessageEnum):
     draft = "Draft"
+    submitted = "Submitted"
+    approved = "Approved"
+    rejected = "Rejected"
     active = "Active"
     closed = "Closed"
 
