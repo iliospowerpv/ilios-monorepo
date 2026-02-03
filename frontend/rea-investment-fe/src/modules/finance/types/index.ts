@@ -29,6 +29,9 @@ export enum FinanceObligationStatus {
 
 export enum FinanceBudgetStatus {
   Draft = 'draft',
+  Submitted = 'submitted',
+  Approved = 'approved',
+  Rejected = 'rejected',
   Active = 'active',
   Closed = 'closed'
 }
@@ -109,6 +112,7 @@ export interface FinanceBudget {
   total_authorized: number;
   total_actual: number;
   variance: number;
+  site_name?: string;
 }
 
 export interface FinanceBudgetDetail extends FinanceBudget {

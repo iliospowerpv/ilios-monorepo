@@ -39,12 +39,12 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useTheme } from '@mui/material/styles';
 
 import { financeApi } from '../../api/finance';
-import type {
-  FinanceBudget,
-  FinanceObligation,
-  FinanceVendor,
-  FinanceActual,
-  FinanceObligationStatus
+import {
+  FinanceBudgetStatus,
+  type FinanceBudget,
+  type FinanceObligation,
+  type FinanceVendor,
+  type FinanceActual
 } from '../../types';
 import { useEntityContext } from '../../../../contexts/entityContext';
 import {
@@ -168,12 +168,20 @@ interface BudgetsTabProps {
   siteId: number;
   onSuccess: (msg: string) => void;
   onError: (msg: string) => void;
+  focusType?: string | null;
+  focusId?: string | null;
 }
 
-const BudgetsTab: React.FC<BudgetsTabProps> = ({ companyId, siteId, onSuccess, onError }) => {
+const BudgetsTab: React.FC<BudgetsTabProps> = ({ companyId, siteId, onSuccess, onError, focusType, focusId }) => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editBudget, setEditBudget] = useState<FinanceBudget | undefined>();
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
+  const [selectedBudget, setSelectedBudget] = useState<FinanceBudget | null>(null);
+  const [approvalAction, setApprovalAction] = useState<'approve' | 'reject' | null>(null);
+  const [hasScrolled, setHasScrolled] = useState(false);
+
+  const shouldHighlight = (id: number) => focusType === 'budget' && focusId === String(id);
 
   const { data, isLoading } = useQuery({
     queryKey: ['finance-budgets', companyId, siteId],
@@ -211,7 +219,28 @@ const BudgetsTab: React.FC<BudgetsTabProps> = ({ companyId, siteId, onSuccess, o
     onError: () => onError('Failed to delete budget')
   });
 
-  const handleSubmit = async (data: Partial<FinanceBudget>) => {
+  const submitMutation = useMutation({
+    mutationFn: (id: number) => financeApi.submitBudget(companyId, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['finance-budgets', companyId, siteId] });
+      queryClient.invalidateQueries({ queryKey: ['finance-site-summary'] });
+      onSuccess('Budget submitted for approval');
+    },
+    onError: () => onError('Failed to submit budget')
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { decision: string; notes?: string; override_reason?: string } }) =>
+      financeApi.approveBudget(companyId, id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['finance-budgets', companyId, siteId] });
+      queryClient.invalidateQueries({ queryKey: ['finance-site-summary'] });
+      onSuccess('Budget processed successfully');
+    },
+    onError: () => onError('Failed to process budget')
+  });
+
+  const handleFormSubmit = async (data: Partial<FinanceBudget>) => {
     if (editBudget) {
       await updateMutation.mutateAsync({ id: editBudget.id, data });
     } else {
@@ -227,6 +256,30 @@ const BudgetsTab: React.FC<BudgetsTabProps> = ({ companyId, siteId, onSuccess, o
   const handleDelete = (budget: FinanceBudget) => {
     if (window.confirm(`Delete budget "${budget.name}"?`)) {
       deleteMutation.mutate(budget.id);
+    }
+  };
+
+  const handleSubmitBudget = (budget: FinanceBudget) => {
+    if (window.confirm(`Submit budget "${budget.name}" for approval?`)) {
+      submitMutation.mutate(budget.id);
+    }
+  };
+
+  const handleApprove = (budget: FinanceBudget) => {
+    setSelectedBudget(budget);
+    setApprovalAction('approve');
+    setApprovalDialogOpen(true);
+  };
+
+  const handleReject = (budget: FinanceBudget) => {
+    setSelectedBudget(budget);
+    setApprovalAction('reject');
+    setApprovalDialogOpen(true);
+  };
+
+  const handleApprovalSubmit = async (data: { decision: string; notes?: string; override_reason?: string }) => {
+    if (selectedBudget) {
+      await approveMutation.mutateAsync({ id: selectedBudget.id, data });
     }
   };
 
@@ -264,10 +317,35 @@ const BudgetsTab: React.FC<BudgetsTabProps> = ({ companyId, siteId, onSuccess, o
           </TableHead>
           <TableBody>
             {budgets.map((budget: FinanceBudget) => (
-              <TableRow key={budget.id} hover>
+              <TableRow
+                key={budget.id}
+                hover
+                sx={
+                  shouldHighlight(budget.id) ? { bgcolor: 'action.selected', animation: 'pulse 1s ease-in-out 3' } : {}
+                }
+                ref={el => {
+                  if (shouldHighlight(budget.id) && el && !hasScrolled) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setHasScrolled(true);
+                  }
+                }}
+              >
                 <TableCell>{budget.name}</TableCell>
                 <TableCell>
-                  <Chip label={budget.status} size="small" variant="outlined" />
+                  <Chip
+                    label={budget.status}
+                    size="small"
+                    variant="outlined"
+                    color={
+                      budget.status === FinanceBudgetStatus.Approved
+                        ? 'success'
+                        : budget.status === FinanceBudgetStatus.Rejected
+                          ? 'error'
+                          : budget.status === FinanceBudgetStatus.Submitted
+                            ? 'warning'
+                            : 'default'
+                    }
+                  />
                 </TableCell>
                 <TableCell>
                   {budget.period_start && budget.period_end
@@ -279,24 +357,46 @@ const BudgetsTab: React.FC<BudgetsTabProps> = ({ companyId, siteId, onSuccess, o
                 <TableCell align="right">{formatCurrency(budget.total_actual)}</TableCell>
                 <TableCell align="right">{formatCurrency(budget.variance)}</TableCell>
                 <TableCell align="center">
-                  <Tooltip title="Edit">
-                    <span>
-                      <IconButton size="small" onClick={() => handleEdit(budget)} disabled={budget.status !== 'draft'}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                  <Tooltip title="Delete">
-                    <span>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDelete(budget)}
-                        disabled={budget.status !== 'draft'}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
+                  {budget.status === FinanceBudgetStatus.Draft && (
+                    <>
+                      <Tooltip title="Edit">
+                        <IconButton size="small" onClick={() => handleEdit(budget)}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Submit for Approval">
+                        <IconButton size="small" color="primary" onClick={() => handleSubmitBudget(budget)}>
+                          <SendIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete">
+                        <IconButton size="small" onClick={() => handleDelete(budget)}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </>
+                  )}
+                  {budget.status === FinanceBudgetStatus.Submitted && (
+                    <>
+                      <Tooltip title="Approve">
+                        <IconButton size="small" color="success" onClick={() => handleApprove(budget)}>
+                          <CheckIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Reject">
+                        <IconButton size="small" color="error" onClick={() => handleReject(budget)}>
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </>
+                  )}
+                  {(budget.status === FinanceBudgetStatus.Approved ||
+                    budget.status === FinanceBudgetStatus.Rejected) && (
+                    <Chip
+                      label={budget.status === FinanceBudgetStatus.Approved ? 'Approved' : 'Rejected'}
+                      size="small"
+                    />
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -313,9 +413,16 @@ const BudgetsTab: React.FC<BudgetsTabProps> = ({ companyId, siteId, onSuccess, o
       <BudgetFormDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
-        onSubmit={handleSubmit}
+        onSubmit={handleFormSubmit}
         budget={editBudget}
         siteId={siteId}
+      />
+      <ApprovalDialog
+        open={approvalDialogOpen}
+        onClose={() => setApprovalDialogOpen(false)}
+        onSubmit={handleApprovalSubmit}
+        budget={selectedBudget}
+        action={approvalAction}
       />
     </>
   );
@@ -331,7 +438,15 @@ interface ObligationsTabProps {
   focusId?: string | null;
 }
 
-const ObligationsTab: React.FC<ObligationsTabProps> = ({ companyId, siteId, vendors, onSuccess, onError, focusType, focusId }) => {
+const ObligationsTab: React.FC<ObligationsTabProps> = ({
+  companyId,
+  siteId,
+  vendors,
+  onSuccess,
+  onError,
+  focusType,
+  focusId
+}) => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
@@ -470,7 +585,11 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({ companyId, siteId, vend
               <React.Fragment key={obligation.id}>
                 <TableRow
                   hover
-                  sx={shouldHighlight(obligation.id) ? { bgcolor: 'action.selected', animation: 'pulse 1s ease-in-out 3' } : {}}
+                  sx={
+                    shouldHighlight(obligation.id)
+                      ? { bgcolor: 'action.selected', animation: 'pulse 1s ease-in-out 3' }
+                      : {}
+                  }
                   ref={el => {
                     if (shouldHighlight(obligation.id) && el && !hasScrolled) {
                       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -800,8 +919,14 @@ export const SiteFinance: React.FC = () => {
   const focusId = searchParams.get('focusId');
 
   useEffect(() => {
-    if (tabParam === 'obligations') {
-      setTabValue(1);
+    const tabMap: Record<string, number> = {
+      budgets: 0,
+      obligations: 1,
+      vendors: 2,
+      actuals: 3
+    };
+    if (tabParam && tabMap[tabParam] !== undefined) {
+      setTabValue(tabMap[tabParam]);
     }
   }, [tabParam]);
 
@@ -891,6 +1016,8 @@ export const SiteFinance: React.FC = () => {
           siteId={Number(siteId)}
           onSuccess={handleSuccess}
           onError={handleError}
+          focusType={focusType}
+          focusId={focusId}
         />
       </TabPanel>
       <TabPanel value={tabValue} index={1}>

@@ -28,7 +28,7 @@ export const financeApi = {
 
   getBudgets: async (
     companyId: number,
-    params?: { site_id?: number; skip?: number; limit?: number }
+    params?: { site_id?: number; status?: string; skip?: number; limit?: number }
   ): Promise<PaginatedResponse<FinanceBudget>> => {
     const response = await httpClient.get<PaginatedResponse<FinanceBudget>>(
       `/api/finance/companies/${companyId}/budgets`,

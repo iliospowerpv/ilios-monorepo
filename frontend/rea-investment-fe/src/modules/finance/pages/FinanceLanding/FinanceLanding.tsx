@@ -39,7 +39,7 @@ import SearchAndActions from '../../../../components/common/tables/components/Se
 import { ApiClient } from '../../../../api';
 import { financeApi } from '../../api/finance';
 import { ApprovalDialog } from '../../components';
-import type { FinanceObligation, FinancePortfolioSummary } from '../../types';
+import { type FinanceObligation, type FinanceBudget, type FinancePortfolioSummary } from '../../types';
 
 const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('en-US', {
@@ -189,23 +189,43 @@ interface ApprovalsQueueProps {
   onError: (msg: string) => void;
 }
 
+type ApprovalItem = {
+  id: number;
+  type: 'obligation' | 'budget';
+  itemType: string;
+  projectName: string;
+  projectId?: number;
+  amount: number;
+  submittedDate: string;
+  description?: string;
+  original: FinanceObligation | FinanceBudget;
+};
+
 const ApprovalsQueue: React.FC<ApprovalsQueueProps> = ({ companyId, onSuccess, onError }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
-  const [selectedObligation, setSelectedObligation] = useState<FinanceObligation | null>(null);
+  const [selectedItem, setSelectedItem] = useState<ApprovalItem | null>(null);
   const [approvalAction, setApprovalAction] = useState<'approve' | 'reject' | null>(null);
   const [typeFilter, setTypeFilter] = useState<string>('');
 
-  const { data, isLoading } = useQuery({
+  const safeCompanyId = companyId ?? 0;
+
+  const { data: obligationsData, isLoading: obligationsLoading } = useQuery({
     queryKey: ['finance-pending-obligations', companyId],
-    queryFn: () => financeApi.getObligations(companyId!, { status: 'submitted', limit: 100 }),
+    queryFn: () => financeApi.getObligations(safeCompanyId, { status: 'submitted', limit: 100 }),
     enabled: !!companyId
   });
 
-  const approveMutation = useMutation({
+  const { data: budgetsData, isLoading: budgetsLoading } = useQuery({
+    queryKey: ['finance-pending-budgets', companyId],
+    queryFn: () => financeApi.getBudgets(safeCompanyId, { status: 'submitted', limit: 100 }),
+    enabled: !!companyId
+  });
+
+  const approveObligationMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: { decision: string; notes?: string; override_reason?: string } }) =>
-      financeApi.approveObligation(companyId!, id, data),
+      financeApi.approveObligation(safeCompanyId, id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['finance-pending-obligations', companyId] });
       queryClient.invalidateQueries({ queryKey: ['finance-portfolio-summary'] });
@@ -214,27 +234,43 @@ const ApprovalsQueue: React.FC<ApprovalsQueueProps> = ({ companyId, onSuccess, o
     onError: () => onError('Failed to process obligation')
   });
 
-  const handleApprove = (obl: FinanceObligation) => {
-    setSelectedObligation(obl);
+  const approveBudgetMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { decision: string; notes?: string; override_reason?: string } }) =>
+      financeApi.approveBudget(safeCompanyId, id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['finance-pending-budgets', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['finance-portfolio-summary'] });
+      onSuccess('Budget processed successfully');
+    },
+    onError: () => onError('Failed to process budget')
+  });
+
+  const handleApprove = (item: ApprovalItem) => {
+    setSelectedItem(item);
     setApprovalAction('approve');
     setApprovalDialogOpen(true);
   };
 
-  const handleReject = (obl: FinanceObligation) => {
-    setSelectedObligation(obl);
+  const handleReject = (item: ApprovalItem) => {
+    setSelectedItem(item);
     setApprovalAction('reject');
     setApprovalDialogOpen(true);
   };
 
   const handleApprovalSubmit = async (data: { decision: string; notes?: string; override_reason?: string }) => {
-    if (selectedObligation) {
-      await approveMutation.mutateAsync({ id: selectedObligation.id, data });
+    if (!selectedItem) return;
+    if (selectedItem.type === 'obligation') {
+      await approveObligationMutation.mutateAsync({ id: selectedItem.id, data });
+    } else {
+      await approveBudgetMutation.mutateAsync({ id: selectedItem.id, data });
     }
   };
 
-  const handleOpenSite = (obl: FinanceObligation) => {
-    if (obl.site_id) {
-      navigate(`/finance/scope/project/${obl.site_id}?tab=obligations&focusType=obligation&focusId=${obl.id}`);
+  const handleOpenItem = (item: ApprovalItem) => {
+    if (item.projectId) {
+      const tab = item.type === 'obligation' ? 'obligations' : 'budgets';
+      const focusType = item.type;
+      navigate(`/finance/scope/project/${item.projectId}?tab=${tab}&focusType=${focusType}&focusId=${item.id}`);
     }
   };
 
@@ -246,6 +282,7 @@ const ApprovalsQueue: React.FC<ApprovalsQueueProps> = ({ companyId, onSuccess, o
     );
   }
 
+  const isLoading = obligationsLoading || budgetsLoading;
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" py={4}>
@@ -254,12 +291,37 @@ const ApprovalsQueue: React.FC<ApprovalsQueueProps> = ({ companyId, onSuccess, o
     );
   }
 
-  const allObligations = data?.items || [];
-  const obligations = typeFilter
-    ? allObligations.filter((o: FinanceObligation) => o.obligation_type === typeFilter)
-    : allObligations;
+  const allObligations = obligationsData?.items || [];
+  const allBudgets = budgetsData?.items || [];
 
-  const uniqueTypes = Array.from(new Set(allObligations.map((o: FinanceObligation) => o.obligation_type)));
+  const obligationItems: ApprovalItem[] = allObligations.map((o: FinanceObligation) => ({
+    id: o.id,
+    type: 'obligation' as const,
+    itemType: `Obligation: ${o.obligation_type}`,
+    projectName: o.site_name || `Site ${o.site_id}`,
+    projectId: o.site_id,
+    amount: o.amount_requested,
+    submittedDate: o.requested_date,
+    description: o.description,
+    original: o
+  }));
+
+  const budgetItems: ApprovalItem[] = allBudgets.map((b: FinanceBudget) => ({
+    id: b.id,
+    type: 'budget' as const,
+    itemType: 'Budget',
+    projectName: b.site_name || `Site ${b.site_id}`,
+    projectId: b.site_id,
+    amount: b.total_planned,
+    submittedDate: b.updated_at || b.created_at,
+    description: b.name,
+    original: b
+  }));
+
+  const allItems = [...obligationItems, ...budgetItems];
+  const filteredItems = typeFilter ? allItems.filter(item => item.itemType.includes(typeFilter)) : allItems;
+
+  const uniqueTypes = Array.from(new Set(allItems.map(item => (item.type === 'obligation' ? 'Obligation' : 'Budget'))));
 
   return (
     <>
@@ -278,56 +340,62 @@ const ApprovalsQueue: React.FC<ApprovalsQueueProps> = ({ companyId, onSuccess, o
           </Select>
         </FormControl>
         <Typography variant="body2" color="text.secondary">
-          {obligations.length} pending approval{obligations.length !== 1 ? 's' : ''}
+          {filteredItems.length} pending approval{filteredItems.length !== 1 ? 's' : ''} ({obligationItems.length}{' '}
+          obligations, {budgetItems.length} budgets)
         </Typography>
       </Box>
       <TableContainer component={Paper} variant="outlined">
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Project</TableCell>
               <TableCell>Type</TableCell>
-              <TableCell>Vendor</TableCell>
-              <TableCell>Reference</TableCell>
+              <TableCell>Project</TableCell>
+              <TableCell>Description</TableCell>
               <TableCell align="right">Amount</TableCell>
-              <TableCell>Requested</TableCell>
-              <TableCell>Due</TableCell>
+              <TableCell>Submitted</TableCell>
               <TableCell align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {obligations.map((obl: FinanceObligation) => (
-              <TableRow key={obl.id} hover>
+            {filteredItems.map(item => (
+              <TableRow key={`${item.type}-${item.id}`} hover>
                 <TableCell>
-                  <Button size="small" endIcon={<OpenInNewIcon fontSize="small" />} onClick={() => handleOpenSite(obl)}>
-                    {obl.site_name || `Site ${obl.site_id}`}
+                  <Chip
+                    label={item.itemType}
+                    size="small"
+                    variant="outlined"
+                    color={item.type === 'budget' ? 'primary' : 'default'}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Button
+                    size="small"
+                    endIcon={<OpenInNewIcon fontSize="small" />}
+                    onClick={() => handleOpenItem(item)}
+                  >
+                    {item.projectName}
                   </Button>
                 </TableCell>
-                <TableCell>
-                  <Chip label={obl.obligation_type} size="small" variant="outlined" />
-                </TableCell>
-                <TableCell>{obl.vendor_name || '-'}</TableCell>
-                <TableCell>{obl.reference_number || '-'}</TableCell>
-                <TableCell align="right">{formatCurrency(obl.amount_requested)}</TableCell>
-                <TableCell>{formatDate(obl.requested_date)}</TableCell>
-                <TableCell>{obl.due_date ? formatDate(obl.due_date) : '-'}</TableCell>
+                <TableCell>{item.description || '-'}</TableCell>
+                <TableCell align="right">{formatCurrency(item.amount)}</TableCell>
+                <TableCell>{formatDate(item.submittedDate)}</TableCell>
                 <TableCell align="center">
                   <Tooltip title="Approve">
-                    <IconButton size="small" color="success" onClick={() => handleApprove(obl)}>
+                    <IconButton size="small" color="success" onClick={() => handleApprove(item)}>
                       <CheckIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Reject">
-                    <IconButton size="small" color="error" onClick={() => handleReject(obl)}>
+                    <IconButton size="small" color="error" onClick={() => handleReject(item)}>
                       <CloseIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
                 </TableCell>
               </TableRow>
             ))}
-            {obligations.length === 0 && (
+            {filteredItems.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={6} align="center">
                   <Typography color="text.secondary">No pending approvals</Typography>
                 </TableCell>
               </TableRow>
@@ -339,7 +407,8 @@ const ApprovalsQueue: React.FC<ApprovalsQueueProps> = ({ companyId, onSuccess, o
         open={approvalDialogOpen}
         onClose={() => setApprovalDialogOpen(false)}
         onSubmit={handleApprovalSubmit}
-        obligation={selectedObligation}
+        obligation={selectedItem?.type === 'obligation' ? (selectedItem.original as FinanceObligation) : null}
+        budget={selectedItem?.type === 'budget' ? (selectedItem.original as FinanceBudget) : null}
         action={approvalAction}
       />
     </>
@@ -348,7 +417,6 @@ const ApprovalsQueue: React.FC<ApprovalsQueueProps> = ({ companyId, onSuccess, o
 
 export const FinanceLanding: React.FC = () => {
   const navigate = useNavigate();
-  const theme = useTheme();
   const [searchParams] = useSearchParams();
   const basicTableRef = useRef<{ getApi: () => GridApi | undefined }>(null);
   const [colDefs] = useState<ColDef[]>(columns);
@@ -377,7 +445,7 @@ export const FinanceLanding: React.FC = () => {
 
   const { data: portfolioSummary, isLoading: summaryLoading } = useQuery({
     queryKey: ['finance-portfolio-summary', selectedCompanyId],
-    queryFn: () => financeApi.getPortfolioSummary(selectedCompanyId!),
+    queryFn: () => financeApi.getPortfolioSummary(selectedCompanyId ?? 0),
     enabled: !!selectedCompanyId
   });
 

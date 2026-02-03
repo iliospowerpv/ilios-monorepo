@@ -10,13 +10,14 @@ import Typography from '@mui/material/Typography';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import Alert from '@mui/material/Alert';
-import { FinanceObligation, FinanceApprovalDecision } from '../types';
+import { FinanceObligation, FinanceBudget, FinanceApprovalDecision } from '../types';
 
 interface ApprovalDialogProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: { decision: string; notes?: string; override_reason?: string }) => Promise<unknown>;
-  obligation: FinanceObligation | null;
+  obligation?: FinanceObligation | null;
+  budget?: FinanceBudget | null;
   action: 'approve' | 'reject' | null;
 }
 
@@ -29,7 +30,7 @@ const formatCurrency = (value: number): string => {
   }).format(value);
 };
 
-export const ApprovalDialog: React.FC<ApprovalDialogProps> = ({ open, onClose, onSubmit, obligation, action }) => {
+export const ApprovalDialog: React.FC<ApprovalDialogProps> = ({ open, onClose, onSubmit, obligation, budget, action }) => {
   const [notes, setNotes] = useState('');
   const [overrideReason, setOverrideReason] = useState('');
   const [useOverride, setUseOverride] = useState(false);
@@ -60,40 +61,69 @@ export const ApprovalDialog: React.FC<ApprovalDialogProps> = ({ open, onClose, o
     }
   };
 
-  if (!obligation) return null;
+  const isBudget = !!budget;
+  const isObligation = !!obligation;
+
+  if (!obligation && !budget) return null;
 
   const hasPrerequisiteIssues =
-    obligation.prerequisite_snapshot &&
+    obligation?.prerequisite_snapshot &&
     (obligation.prerequisite_snapshot as any).missing_prerequisites?.length > 0;
+
+  const entityType = isBudget ? 'Budget' : 'Obligation';
+  const amount = isBudget ? budget.total_planned : obligation?.amount_requested || 0;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{action === 'approve' ? 'Approve Obligation' : 'Reject Obligation'}</DialogTitle>
+      <DialogTitle>{action === 'approve' ? `Approve ${entityType}` : `Reject ${entityType}`}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <Typography variant="body2">
-            <strong>Amount:</strong> {formatCurrency(obligation.amount_requested)}
+            <strong>Amount:</strong> {formatCurrency(amount)}
           </Typography>
-          <Typography variant="body2">
-            <strong>Type:</strong> {obligation.obligation_type}
-          </Typography>
-          {obligation.vendor_name && (
-            <Typography variant="body2">
-              <strong>Vendor:</strong> {obligation.vendor_name}
-            </Typography>
-          )}
-          {obligation.description && (
-            <Typography variant="body2">
-              <strong>Description:</strong> {obligation.description}
-            </Typography>
-          )}
-          {obligation.reference_number && (
-            <Typography variant="body2">
-              <strong>Reference:</strong> {obligation.reference_number}
-            </Typography>
+
+          {isObligation && obligation && (
+            <>
+              <Typography variant="body2">
+                <strong>Type:</strong> {obligation.obligation_type}
+              </Typography>
+              {obligation.vendor_name && (
+                <Typography variant="body2">
+                  <strong>Vendor:</strong> {obligation.vendor_name}
+                </Typography>
+              )}
+              {obligation.description && (
+                <Typography variant="body2">
+                  <strong>Description:</strong> {obligation.description}
+                </Typography>
+              )}
+              {obligation.reference_number && (
+                <Typography variant="body2">
+                  <strong>Reference:</strong> {obligation.reference_number}
+                </Typography>
+              )}
+            </>
           )}
 
-          {hasPrerequisiteIssues && (
+          {isBudget && budget && (
+            <>
+              <Typography variant="body2">
+                <strong>Budget Name:</strong> {budget.name}
+              </Typography>
+              {budget.description && (
+                <Typography variant="body2">
+                  <strong>Description:</strong> {budget.description}
+                </Typography>
+              )}
+              {budget.period_start && budget.period_end && (
+                <Typography variant="body2">
+                  <strong>Period:</strong> {budget.period_start} - {budget.period_end}
+                </Typography>
+              )}
+            </>
+          )}
+
+          {hasPrerequisiteIssues && obligation && (
             <Alert severity="warning">
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
                 Missing Prerequisites:
