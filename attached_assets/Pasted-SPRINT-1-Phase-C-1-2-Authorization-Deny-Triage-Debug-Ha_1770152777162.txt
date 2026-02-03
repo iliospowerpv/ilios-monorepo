@@ -1,0 +1,47 @@
+SPRINT 1 – Phase C.1.2: Authorization Deny Triage + Debug Harness (no scope drift)
+
+Context:
+After migrating finance and assets modules, we are seeing some Access Denied (403) errors.
+This may be expected due to new enforcement or may be bugs (missing context, wrong module/action, missing defaults).
+We want to finish the sprint without thrash by adding a deterministic debug workflow.
+
+Objective:
+1) Make 403 responses actionable by including standardized fields.
+2) Add a minimal admin-only debug endpoint to inspect effective access and module permissions for a user in a given context.
+3) Provide a short triage checklist in replit.md.
+
+Tasks:
+A) Standardize 403 error payloads (where we raise permission errors)
+- Ensure 403 includes:
+  - reason_code (existing)
+  - module_key and action when missing_module_permission is the cause
+  - decision/grant_sources summary if safe (no sensitive IDs unless admin)
+- Keep payload stable and machine-readable (JSON keys, not string parsing).
+
+B) Add admin-only debug endpoint (read-only)
+Create endpoint e.g. GET /api/debug/effective-access?user_id=...&company_id=...&project_id=...
+- Must be protected (only company_admin at minimum; ideally super-admin).
+- Response includes:
+  - decision, reason_code
+  - effective_base_role
+  - effective_module_permissions (normalized)
+  - grant_sources (levels + IDs ok since admin-only)
+
+C) Add “403 triage checklist” to replit.md
+- If 403 reason_code = missing_module_permission -> check role_profile defaults and overrides
+- If undetermined_context -> fix endpoint to pass company_id/project_id
+- If no_access_grants -> user is missing the correct access row
+- If system_error -> check logs/stack trace
+
+D) Provide a list of the top 10 endpoints most likely to 403 after migrations (finance + assets)
+- Based on where guards were added.
+
+Constraints:
+- No schema changes.
+- Do not migrate diligence yet in this phase.
+
+Deliverables:
+- Standardized 403 JSON payload
+- Debug endpoint working and protected
+- Documentation update
+Proceed now.

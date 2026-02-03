@@ -7,6 +7,10 @@ NORMALIZATION RULE:
 - If "edit" is present for a module, "view" is automatically included.
 - This is enforced in the resolver's _normalize_permissions() function.
 
+STANDARDIZED 403 RESPONSES (Phase C.1.2):
+- All 403 errors include: reason_code, module_key (if applicable), action (if applicable)
+- Use create_authorization_error() for consistent error payloads
+
 USAGE:
     from app.helpers.permission_guards import require_module_permission
 
@@ -41,6 +45,10 @@ from app.helpers.access_resolver import (
     resolve_effective_access,
 )
 from app.helpers.authentication import get_current_user
+from app.schema.authorization_error import (
+    AuthorizationErrorReasonCodes,
+    create_authorization_error,
+)
 from app.schema.user import CurrentUserSchema
 from app.static.permissions import PermissionsActions, PermissionsModules
 
@@ -106,7 +114,12 @@ def require_module_permission_any_context(
         )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Access denied: no accessible context for {module_key}"
+            detail=create_authorization_error(
+                reason_code=AuthorizationErrorReasonCodes.NO_ACCESSIBLE_CONTEXT,
+                module_key=module_key,
+                action=action,
+                grant_sources=[],
+            )
         )
     
     for company_id in company_ids:
@@ -162,7 +175,12 @@ def require_module_permission_any_context(
     )
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail=f"Access denied: missing_module_permission:{module_key}.{action}"
+        detail=create_authorization_error(
+            reason_code=AuthorizationErrorReasonCodes.MISSING_MODULE_PERMISSION,
+            module_key=module_key,
+            action=action,
+            grant_sources=[],
+        )
     )
 
 
@@ -243,22 +261,35 @@ def require_module_permission(
         )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Access denied: {access_result.reason_code}"
+            detail=create_authorization_error(
+                reason_code=access_result.reason_code,
+                module_key=module_key,
+                action=action,
+                grant_sources=access_result.grant_sources,
+                company_id=company_id,
+                project_id=project_id,
+            )
         )
     
     module_perms = access_result.effective_module_permissions.get(module_key, set())
     
     if action not in module_perms:
-        reason = f"{ModulePermissionDeniedReason.MISSING_MODULE_PERMISSION}:{module_key}.{action}"
         logger.warning(
             f"MODULE_PERMISSION_DENIED: user_id={user_id} module={module_key} "
-            f"action={action} reason={reason} "
+            f"action={action} reason={AuthorizationErrorReasonCodes.MISSING_MODULE_PERMISSION} "
             f"effective_permissions={list(module_perms)} "
             f"company_id={company_id} project_id={project_id}"
         )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Access denied: {reason}"
+            detail=create_authorization_error(
+                reason_code=AuthorizationErrorReasonCodes.MISSING_MODULE_PERMISSION,
+                module_key=module_key,
+                action=action,
+                grant_sources=access_result.grant_sources,
+                company_id=company_id,
+                project_id=project_id,
+            )
         )
     
     logger.debug(

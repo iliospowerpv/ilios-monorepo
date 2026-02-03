@@ -12,78 +12,31 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
 
 ## System Architecture
 
-**Frontend:**
+### Frontend
 - **Technology Stack**: React 18, TypeScript, Material UI (MUI), React Query, React Router DOM, AG Grid, Chart.js, Webpack 5.
 - **UI/UX Decisions**:
     - **Terminology**: Standardized "Projects" in UI, while backend retains "Sites".
-    - **Navigation**:
-        - **Entity Context Navigation**: Top bar displaying `Portfolio → Company → Project` hierarchy, persisting selection, and dynamic icon enabling.
-        - **Module Sidebar Navigation**: Permission-based left sidebar, routing to Project Hub with tab pre-selection.
-        - **Breadcrumb Navigation**: Auto-generated from React Router patterns.
-        - **3-Click Rule**: All key workflows from home to action completion aim for three or fewer clicks.
-    - **Project Hub Navigation**: Centralized project selection via `ProjectPicker` component, `useProjectNavigation` hook for consistent routing, simplified `/project-hub/projects/:siteId/*` routes, and tab-centric module entry.
-    - **Context Bar Infrastructure**: Unified three-tier scope management (Portfolio, Company, Project) with dual route patterns (canonical and module-scoped lens routes) and scope persistence to `localStorage`.
-    - **Asset Management Overview**: Static site record and readiness surface with drag-and-drop reordering, collapsible cards, executive summary, underwriting readiness, and enhanced card headers.
-    - **Sidebar Layout Pattern**: Collapsible sidebar with state persisted to `localStorage`, ensuring main content adapts correctly.
-    - **Portfolio Admin Module**: Three-tier administration hierarchy for managing companies, projects, and users with role-based access warnings and centralized entity management. Now serves as the **single authoritative entry point** for all entity management (users, companies, projects). Includes:
-        - **Navigation Access**: Avatar dropdown menu item "Portfolio Admin" and left sidebar navigation with AdminPanelSettingsIcon.
-        - **Edit Dialogs**: EditCompanyDialog and EditProjectDialog for inline editing from CompanyLevelPage and ProjectLevelPage headers.
-        - **Endpoint Lockdown (Phase A Complete)**: All legacy Settings mutation endpoints and routers have been permanently removed. /api/settings/* returns 404. Only Portfolio Admin workspace endpoints (/api/workspace/*) can mutate users, companies, or projects.
-    - **Settings Module Consolidation**: Settings page focuses on system configuration only (Health Checks, Notifications, Alerts). All backend Settings routers have been removed; no /api/settings/* endpoints exist.
+    - **Navigation**: Implements Entity Context Navigation (`Portfolio → Company → Project`), Module Sidebar Navigation (permission-based), Breadcrumb Navigation, and a "3-Click Rule" for key workflows.
+    - **Context Bar Infrastructure**: Unified three-tier scope management (Portfolio, Company, Project) with route patterns and scope persistence.
+    - **Asset Management Overview**: Static site record and readiness surface with drag-and-drop reordering, collapsible cards, and executive summary.
+    - **Sidebar Layout Pattern**: Collapsible sidebar with state persisted.
+    - **Portfolio Admin Module**: Single authoritative entry point for managing companies, projects, and users with role-based access warnings and centralized entity management.
+    - **Settings Module Consolidation**: Settings page focuses on system configuration only, with all backend Settings routers removed.
 
-**Backend:**
+### Backend
 - **Technology Stack**: Python 3.11, FastAPI, SQLAlchemy, Alembic, PostgreSQL.
 - **Core Modules**:
-    - **Workspace Module**: User-centric landing page displaying summary cards and accessible companies, supporting context-aware Company Admin.
-    - **Finance Module**: Capital governance engine with budget vs. actual tracking, vendor visibility, authorization, approval workflows with audit trails, and portfolio/fund rollups. Features a dedicated landing page, `SiteFinance` page for CRUD operations, and robust form dialogs for financial entities.
-    - **Acquisitions Module**: Manages a 13-stage deal acquisition pipeline, tracking deals until conversion into "Site" entities (referred to as "Projects" in UI). Supports system-constructed names and read-only views for converted deals.
-    - **Project Hub Module**: Consolidates asset management and due diligence into a unified interface with tabbed navigation (Overview, Data Room, O&M, Finance, Tasks, Reporting). Manages project lifecycle states (e.g., `pre_diligence`, `due_diligence`) with RBAC-gated transitions, signed agreement gating, and document extraction workflows.
-- **Multi-Company Access System**: Manages user-company relationships with roles (company_admin, contributor, read_only) and statuses. Supports direct assignment and project-inherited access.
-- **Canonical Effective-Access Resolver (Phase B.1 + C Complete)**: Single authoritative resolver (`app/helpers/access_resolver.py`) for entity-level and module-level authorization checks. **Fully fail-closed** - no legacy fallback exists. Implements:
-    - **Eligibility**: Portfolio access covers company/project; Company access covers all projects; Project access covers only that project.
-    - **Restrict-Only Semantics**: Most restrictive base role wins (`read_only < contributor < company_admin`); Module permissions are intersected across applicable grants.
-    - **Explainability**: Returns `grant_sources` showing which levels contributed (portfolio/company/project) and `reason_code` (always populated).
-    - **Decision Contract**: Uses `decision: AccessDecision` (ALLOW/DENY enum) + `reason_code: str`. Never returns undetermined - all paths return allow or deny.
-    - **Reason Codes**: `no_access_grants`, `project_company_mismatch`, `undetermined_context`, `system_error`, `missing_module_permission`.
-    - **Entity-Level Integration**: `GetAuthorizedEntity` in `project_access.py` is fully authoritative - **no legacy fallback**. Missing context → DENY with `undetermined_context`. Exceptions → DENY with `system_error`. Structured logging with `exc_info=True` for debugging.
-    - **Deprecated Parameter**: `additional_company_site_id_access` is ignored; company admins get site access through company-level grants in the hierarchy.
-    - **Helpers**: `require_effective_permission()` convenience wrapper; `check_module_permission()` for granular permission checks.
-    - **Module-Level Permission Enforcement (Phase C)**: 
-        - **Guard Helper**: `app/helpers/permission_guards.py` provides `require_module_permission()` for endpoint protection.
-        - **Normalization Rule**: If "edit" is present for a module, "view" is automatically included (enforced in `_normalize_permissions()`).
-        - **Router Integration**: Finance routers (budgets, vendors, actuals, obligations) now use resolver-based module permission guards.
-        - **Usage Pattern**: 
-          ```python
-          from app.helpers.permission_guards import require_module_permission
-          from app.static.permissions import PermissionsModules
-          
-          require_module_permission(
-              user_id=current_user.id,
-              company_id=company_id,
-              db_session=db_session,
-              module_key=PermissionsModules.finance.value,
-              action="view",  # or "edit" for mutations
-          )
-          ```
-        - **Assets Management Module Migration (Phase C.1 Complete)**: All 4 assets_management routers migrated to canonical guards:
-            - `sites.py`: 5 endpoints (GET /, GET /{site_id}, GET /{site_id}/details, PUT /{site_id}/details, GET /{site_id}/affected-devices)
-            - `devices.py`: 8 endpoints (POST /, GET /, GET /{device_id}, PUT general-info/service-details/technical-details/telemetry-details)
-            - `companies.py`: 3 endpoints (GET /, GET /sites, GET /{company_id})
-            - `device_documents.py`: 5 endpoints (upload-url, download-url, delete, track-uploaded-document, file-preview-url)
-            - **Pattern**: Entity check first (get_authorized_site/device), then module permission check (require_module_permission)
-            - **List Endpoint Pattern**: Uses `require_module_permission_any_context()` to check if user has permission on at least one accessible company OR project (supports project-only users)
-            - **BUG FIX**: PUT /{site_id}/details now correctly requires `edit` permission (was incorrectly `view`)
-            - **Exception**: GET /companies/sites uses direct role permission check (settings:edit) as it's a Settings-related endpoint, not assets_management
-        - **Phase C.1.1 Hardening (Complete)**:
-            - Legacy `settings:edit` role check removed from GET /companies/sites
-            - `require_module_permission_any_context()` now has safety constraints documented in docstring
-            - All endpoints using `any_context` audited - all filter results by accessible scope
-            - FastAPI TestClient endpoint-level tests added for scope filtering validation
-        - **Future Work**: Migrate remaining modules (diligence, o&m, reporting) from legacy `AuthorizedUser` to new guards.
-- **Role Profiles System**: Granular stakeholder role definitions (e.g., executive, asset_manager) augmenting base roles, stored in `role_profiles` table with `applicable_company_types` and `default_module_permissions`. Integrates with `UserCompanyAccess` for custom permissions and dashboard keys.
-- **Portfolio Hub Boundary Model**: Introduces `portfolio_hub_id` to link companies within a hub, ensuring portfolio users only see companies within their assigned hub(s). Supports shared resources and provides helper functions for access checks.
-- **Architectural Guardrails (Asset Management Overview)**: Designed as a static record, intentionally avoiding operational data leakage, telemetry, or live performance data, and linking to operational modules for live metrics.
-- **Telemetry Module**: Project-scoped telemetry hookup for connecting Data Acquisition Systems (DAS) via a 4-step wizard (Connection, Site Mapping, Device Mapping, Confirm/Health). Features health monitoring (deriving status from BigQuery), readiness strip, support for various DAS providers (KMC, Also Energy), and device mapping CRUD with Firestore sync. Supports dual-ownership DAS connections (company-owned vs. portfolio-shared) constrained by `portfolio_hub_id` boundaries.
+    - **Workspace Module**: User-centric landing page with summary cards and accessible companies.
+    - **Finance Module**: Capital governance engine with budget vs. actual tracking, vendor management, authorization, and approval workflows.
+    - **Acquisitions Module**: Manages a 13-stage deal acquisition pipeline, tracking deals until conversion into "Site" entities (referred to as "Projects" in UI).
+    - **Project Hub Module**: Consolidates asset management and due diligence into a unified interface with tabbed navigation and manages project lifecycle states with RBAC-gated transitions.
+- **Multi-Company Access System**: Manages user-company relationships with roles and statuses, supporting direct assignment and project-inherited access.
+- **Canonical Effective-Access Resolver**: Single authoritative resolver for entity-level and module-level authorization checks, implementing fail-closed eligibility, restrict-only semantics, and detailed explainability with decision contracts and reason codes. All legacy access mechanisms are deprecated.
+- **Module-Level Permission Enforcement**: Uses `app/helpers/permission_guards.py` for endpoint protection, normalizing permissions (e.g., "edit" implies "view"), and integrating with router endpoints for granular permission checks.
+- **Role Profiles System**: Granular stakeholder role definitions augmenting base roles, stored in `role_profiles` table with default module permissions and integration with `UserCompanyAccess`.
+- **Portfolio Hub Boundary Model**: Introduces `portfolio_hub_id` to link companies within a hub, ensuring portfolio users only see companies within their assigned hub(s).
+- **Architectural Guardrails (Asset Management Overview)**: Designed as a static record, intentionally avoiding operational data leakage, telemetry, or live performance data, linking to operational modules for live metrics.
+- **Telemetry Module**: Project-scoped telemetry hookup for connecting Data Acquisition Systems (DAS) via a 4-step wizard, featuring health monitoring, readiness strip, support for various DAS providers (KMC, Also Energy), and device mapping CRUD with Firestore sync. Supports dual-ownership DAS connections constrained by `portfolio_hub_id` boundaries.
 
 ## External Dependencies
 - **PostgreSQL**: Primary relational database.
