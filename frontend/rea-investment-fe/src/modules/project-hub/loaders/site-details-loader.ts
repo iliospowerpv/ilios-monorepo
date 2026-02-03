@@ -20,7 +20,8 @@ export const createSiteDetailsLoader =
     if (!isValidId) throw new Error(`Provided site id "${siteId}" is invalid.`);
 
     const siteData = await queryClient.fetchQuery(siteDetailsQuery(Number.parseInt(siteId)));
-    if (siteData.company.id !== Number.parseInt(companyId || '')) {
+    // Only validate company match if companyId is in URL (legacy routes)
+    if (companyId && siteData.company.id !== Number.parseInt(companyId)) {
       throw new Error(`Site with id ${siteId} does not exist in company with id ${companyId}`);
     }
 
