@@ -253,11 +253,11 @@ export const DealsListView: React.FC<DealsListViewProps> = ({ deals }) => {
   }, [deals, searchQuery, stageFilter, sortField, sortDirection]);
 
   const handleDealView = (dealId: number) => {
-    navigate(`/sales/deal/${dealId}`);
+    navigate(`/acquisitions/deal/${dealId}`);
   };
 
   const handleDealEdit = (dealId: number) => {
-    navigate(`/sales/deal/${dealId}?mode=edit`);
+    navigate(`/acquisitions/deal/${dealId}?mode=edit`);
   };
 
   const clearFilters = () => {

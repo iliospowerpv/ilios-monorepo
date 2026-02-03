@@ -418,14 +418,14 @@ export const SalesHome: React.FC = () => {
 
   const handleDealView = useCallback(
     (dealId: number) => {
-      navigate(`/sales/deal/${dealId}`);
+      navigate(`/acquisitions/deal/${dealId}`);
     },
     [navigate]
   );
 
   const handleDealEdit = useCallback(
     (dealId: number) => {
-      navigate(`/sales/deal/${dealId}?mode=edit`);
+      navigate(`/acquisitions/deal/${dealId}?mode=edit`);
     },
     [navigate]
   );
