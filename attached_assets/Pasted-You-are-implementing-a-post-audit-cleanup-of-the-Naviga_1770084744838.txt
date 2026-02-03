@@ -1,0 +1,60 @@
+You are implementing a post-audit cleanup of the Navigation UX refactor. Do the changes below exactly. This is GREENFIELD, but keep minimal route shims (redirect components) for legacy URLs to avoid broken links during active development.
+
+PRIORITY P0 FIXES (MUST DO)
+
+1) REPORTING NAV RULE
+Goal: Left-nav “Reporting/Reports” must ALWAYS route to global /reports and must NOT require a project or open ProjectPicker.
+
+- In NavMenu.tsx, change the Reports/Reporting menu config so:
+  - requiresProject = false
+  - route = '/reports'
+  - remove any projectHubTab assignment (do not call navigateToProjectHub)
+- Verify: from Home, click Reports -> lands on /reports without ProjectPicker.
+
+2) REMOVE MODULE-SPECIFIC PROJECT DETAIL ROUTES OUTSIDE PROJECT HUB (replace with shims)
+Goal: Project Hub is the only project work surface. Legacy module project routes must not render module-specific project detail pages.
+
+In App.tsx (or your routing config), for each legacy pattern below:
+- Remove the existing route that renders a module-specific SiteDetails page
+- Replace with a lightweight “redirect route” that navigates to the canonical Project Hub route
+
+Legacy -> Canonical mappings:
+A) /operations-and-maintenance/companies/:companyId/sites/:siteId/*  -> /project-hub/projects/:siteId/om
+B) /finance/companies/:companyId/sites/:siteId                      -> /project-hub/projects/:siteId/finance
+C) /due-diligence/companies/:companyId/sites/:siteId/*              -> /project-hub/projects/:siteId/data-room
+D) /project-hub/companies/:companyId/sites/:siteId/*                -> /project-hub/projects/:siteId/<tab> (map segment if present; default overview)
+
+Implementation guidance:
+- Create a small reusable <RouteRedirect /> component (or inline element) that reads params and uses <Navigate replace /> to canonical target.
+- Preserve the “tab” portion where possible:
+  - If legacy path includes /overview, /data-room, /om, /finance, /tasks, /reporting, map to same.
+  - Otherwise default to /overview.
+- Do NOT keep any module-specific project detail screens reachable by URL.
+
+Verify:
+- Visiting any legacy URL in the browser lands in the correct canonical /project-hub/projects/:siteId/... route.
+
+P2 FIXES (DO NEXT, SMALL)
+
+3) CONSUME focusType/focusId PARAMS (minimal UX)
+Goal: Query params already exist; make them useful.
+
+- In each Project Hub tab surface that lists items (at minimum: Data Room, O&M, Finance, Tasks):
+  - Read query params: focusType, focusId
+  - If focusId exists, attempt minimal focus behavior:
+    - If the item exists in the current list DOM, scroll into view and apply a temporary highlight (CSS class for 1–2 seconds)
+    - If not found, show a small inline message/banner: “Focused item not found in current view.”
+- Keep this lightweight; no need for complex state.
+- Ensure it does not break rendering when params absent.
+
+VERIFICATION / OUTPUT
+After implementation, provide:
+- Files changed (list)
+- Confirmation tests:
+  1) Nav Reports -> /reports (no ProjectPicker)
+  2) Legacy O&M route -> canonical Project Hub /om
+  3) Legacy Finance route -> canonical Project Hub /finance
+  4) Legacy Due Diligence route -> canonical Project Hub /data-room
+  5) Deep-link task with focus params -> lands on correct tab and scroll/highlights target (or shows not found message)
+
+Proceed now.

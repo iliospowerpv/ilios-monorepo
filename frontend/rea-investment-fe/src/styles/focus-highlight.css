@@ -1,0 +1,20 @@
+@keyframes focusHighlightPulse {
+  0% {
+    background-color: rgba(25, 118, 210, 0.3);
+    box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.2);
+  }
+  50% {
+    background-color: rgba(25, 118, 210, 0.15);
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
+.focus-highlight {
+  animation: focusHighlightPulse 2s ease-out forwards;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}

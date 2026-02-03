@@ -155,10 +155,9 @@ const menuItems: MenuItemConfig[] = [
     key: 'reports',
     icon: <AssessmentIcon key="reports" />,
     title: 'Reports',
-    route: '/project-hub',
+    route: '/reports',
     disabled: false,
-    requiresProject: true,
-    projectHubTab: 'reporting'
+    requiresProject: false
   },
   {
     key: 'health-checks',

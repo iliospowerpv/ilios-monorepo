@@ -28,6 +28,7 @@ type TasksCommonProps = {
   setView: (view: string) => void;
   companyId: number;
   module?: string;
+  focusTaskId?: number | null;
 };
 
 type TasksSiteScopeProps = TasksCommonProps & {
@@ -42,7 +43,7 @@ type TasksCompanyScopeProps = TasksCommonProps & {
 
 type TasksProps = TasksSiteScopeProps | TasksCompanyScopeProps;
 
-export const Tasks: React.FC<TasksProps> = ({ module = '', scope, companyId, siteId, view, setView }) => {
+export const Tasks: React.FC<TasksProps> = ({ module = '', scope, companyId, siteId, view, setView, focusTaskId }) => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [isFormOpen, setIsFormOpen] = React.useState<boolean>(false);
 
@@ -82,6 +83,7 @@ export const Tasks: React.FC<TasksProps> = ({ module = '', scope, companyId, sit
               siteId={siteId}
               searchTerm={searchTerm}
               module={module}
+              focusTaskId={focusTaskId}
             />
           )}
           {view === 'board' && (

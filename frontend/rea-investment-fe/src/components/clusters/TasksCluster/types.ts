@@ -3,6 +3,7 @@ interface TasksViewCommonProps {
   searchTerm?: string;
   companyId: number;
   module?: string;
+  focusTaskId?: number | null;
 }
 
 type TasksViewSiteScopeProps = TasksViewCommonProps & {

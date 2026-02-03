@@ -27,8 +27,7 @@ import { HelpResources } from './pages/Help';
 import { PortfolioView, CompaniesPickerView, CompanyView, ProjectsPickerView, ProjectView } from './pages/Hierarchy';
 import { TelemetryPage, createTelemetryHandle, TelemetryRedirect } from './pages/Telemetry';
 import { ScopedModuleRoute } from './components/layout/ScopedModuleRoute';
-// DeprecatedRouteRedirect ready to wire for legacy route migration
-// import { DeprecatedRouteRedirect } from './components/common/DeprecatedRouteRedirect';
+import { DeprecatedRouteRedirect } from './components/common/DeprecatedRouteRedirect';
 
 import {
   SiteTask as PHSiteTask,
@@ -282,10 +281,10 @@ const router = createBrowserRouter(
         <Route path="/finance" element={<FinanceModuleContainer />}>
           <Route index handle={createFinanceLandingHandle()} element={<FinanceLanding />} />
           <Route path="companies/:companyId" handle={createFinanceHomeHandle(queryClient)} element={<FinanceHome />} />
+          {/* Legacy site route - redirect to canonical Project Hub Finance tab */}
           <Route
             path="companies/:companyId/sites/:siteId"
-            handle={createSiteFinanceHandle(queryClient)}
-            element={<SiteFinance />}
+            element={<DeprecatedRouteRedirect targetTab="finance" />}
           />
         </Route>
         {/* Acquisitions Module (formerly Sales) */}
@@ -354,29 +353,22 @@ const router = createBrowserRouter(
             loader={DPSitesPage.createLoader(queryClient)}
             element={<DPSitesPage.Component />}
           />
+          {/* Legacy site routes - redirect to canonical Project Hub Data Room tab */}
           <Route
             path="/due-diligence/companies/:companyId/sites/:siteId"
-            handle={DPSitePage.createHandle()}
-            loader={DPSitePage.createLoader(queryClient)}
-            element={<DPSitePage.Component />}
+            element={<DeprecatedRouteRedirect targetTab="data-room" />}
           />
           <Route
             path="/due-diligence/companies/:companyId/sites/:siteId/overview"
-            handle={DPSitePage.createHandle()}
-            loader={DPSitePage.createLoader(queryClient)}
-            element={<DPSitePage.Component tabId="overview" />}
+            element={<DeprecatedRouteRedirect targetTab="overview" />}
           />
           <Route
             path="/due-diligence/companies/:companyId/sites/:siteId/due-diligence"
-            handle={DPSitePage.createHandle()}
-            loader={DPSitePage.createLoader(queryClient)}
-            element={<DPSitePage.Component tabId="diligence" />}
+            element={<DeprecatedRouteRedirect targetTab="data-room" />}
           />
           <Route
             path="/due-diligence/companies/:companyId/sites/:siteId/due-diligence/:documentId"
-            handle={DPDueDiligenceDocument.createHandle(queryClient)}
-            loader={withAuthControl(DPDueDiligenceDocument.createLoader(queryClient))}
-            element={<DPDueDiligenceDocument.Component />}
+            element={<DeprecatedRouteRedirect targetTab="data-room" />}
           />
         </Route>
         {/* O&M Module with Scoped Lens Routes */}
@@ -453,47 +445,34 @@ const router = createBrowserRouter(
             loader={withAuthControl(OMCompanyTask.createLoader(queryClient))}
             element={<OMCompanyTask.Component />}
           />
+          {/* Legacy site routes - redirect to canonical Project Hub O&M tab */}
           <Route
             path="companies/:companyId/sites/:siteId"
-            handle={createSiteDetailsHandle()}
-            loader={withAuthControl(createSiteCrumbsLoader(queryClient))}
-            element={<OMSiteDetails />}
+            element={<DeprecatedRouteRedirect targetTab="om" />}
           />
           <Route
             path="companies/:companyId/sites/:siteId/overview"
-            handle={createSiteDetailsHandle()}
-            loader={withAuthControl(createSiteCrumbsLoader(queryClient))}
-            element={<OMSiteDetails tabId="overview" />}
+            element={<DeprecatedRouteRedirect targetTab="overview" />}
           />
           <Route
             path="companies/:companyId/sites/:siteId/devices"
-            handle={createSiteDetailsHandle()}
-            loader={withAuthControl(createSiteCrumbsLoader(queryClient))}
-            element={<OMSiteDetails tabId="devices" />}
+            element={<DeprecatedRouteRedirect targetTab="om" />}
           />
           <Route
             path="companies/:companyId/sites/:siteId/alerts"
-            handle={createSiteDetailsHandle()}
-            loader={withAuthControl(createSiteCrumbsLoader(queryClient))}
-            element={<OMSiteDetails tabId="alerts" />}
+            element={<DeprecatedRouteRedirect targetTab="om" />}
           />
           <Route
             path="companies/:companyId/sites/:siteId/security"
-            handle={createSiteDetailsHandle()}
-            loader={withAuthControl(createSiteCrumbsLoader(queryClient))}
-            element={<OMSiteDetails tabId="security" />}
+            element={<DeprecatedRouteRedirect targetTab="om" />}
           />
           <Route
             path="companies/:companyId/sites/:siteId/tasks"
-            handle={createSiteDetailsHandle()}
-            loader={withAuthControl(createSiteCrumbsLoader(queryClient))}
-            element={<OMSiteDetails tabId="tasks" />}
+            element={<DeprecatedRouteRedirect targetTab="tasks" />}
           />
           <Route
             path="companies/:companyId/sites/:siteId/tasks/:taskId"
-            handle={OMSiteTask.createHandle(queryClient)}
-            loader={withAuthControl(OMSiteTask.createLoader(queryClient))}
-            element={<OMSiteTask.Component />}
+            element={<DeprecatedRouteRedirect targetTab="tasks" />}
           />
           {/*TODO: Device for O&M*/}
           {/*<Route*/}
@@ -584,61 +563,46 @@ const router = createBrowserRouter(
             loader={withAuthControl(PHCompanyTask.createLoader(queryClient))}
             element={<PHCompanyTask.Component />}
           />
+          {/* Legacy company-prefixed site routes - redirect to canonical Project Hub routes */}
           <Route
             path="/project-hub/companies/:companyId/sites/:siteId"
-            handle={PHSiteDetails.createHandle(queryClient)}
-            loader={withAuthControl(PHSiteDetails.createLoader(queryClient))}
-            element={<PHSiteDetails.Component />}
+            element={<DeprecatedRouteRedirect targetTab="overview" />}
           />
           <Route
             path="/project-hub/companies/:companyId/sites/:siteId/overview"
-            handle={PHSiteDetails.createHandle(queryClient)}
-            loader={withAuthControl(PHSiteDetails.createLoader(queryClient))}
-            element={<PHSiteDetails.Component tabId="overview" />}
+            element={<DeprecatedRouteRedirect targetTab="overview" />}
           />
           <Route
             path="/project-hub/companies/:companyId/sites/:siteId/devices"
-            handle={PHSiteDetails.createHandle(queryClient)}
-            loader={withAuthControl(PHSiteDetails.createLoader(queryClient))}
-            element={<PHSiteDetails.Component tabId="om" />}
+            element={<DeprecatedRouteRedirect targetTab="om" />}
           />
           <Route
             path="/project-hub/companies/:companyId/sites/:siteId/tasks"
-            handle={PHSiteDetails.createHandle(queryClient)}
-            loader={withAuthControl(PHSiteDetails.createLoader(queryClient))}
-            element={<PHSiteDetails.Component tabId="tasks" />}
+            element={<DeprecatedRouteRedirect targetTab="tasks" />}
           />
-          {/* Redirect Asset Management telemetry to canonical project telemetry route */}
-          <Route path="/project-hub/companies/:companyId/sites/:siteId/telemetry" element={<TelemetryRedirect />} />
+          <Route
+            path="/project-hub/companies/:companyId/sites/:siteId/telemetry"
+            element={<TelemetryRedirect />}
+          />
           <Route
             path="/project-hub/companies/:companyId/sites/:siteId/devices/add"
-            loader={withAuthControl(PHAddDevice.createLoader(queryClient))}
-            handle={PHAddDevice.createHandle(queryClient)}
-            element={<PHAddDevice.Component />}
+            element={<DeprecatedRouteRedirect targetTab="om" />}
           />
           <Route
             path="/project-hub/companies/:companyId/sites/:siteId/devices/:deviceId"
-            loader={withAuthControl(PHDeviceDetails.createLoader(queryClient))}
-            handle={PHDeviceDetails.createHandle()}
-            element={<PHDeviceDetails.Component />}
+            element={<DeprecatedRouteRedirect targetTab="om" />}
           />
           <Route
             path="/project-hub/companies/:companyId/sites/:siteId/devices/:deviceId/overview"
-            handle={PHDeviceDetails.createHandle()}
-            loader={withAuthControl(PHDeviceDetails.createLoader(queryClient))}
-            element={<PHDeviceDetails.Component tabId="overview" />}
+            element={<DeprecatedRouteRedirect targetTab="om" />}
           />
           <Route
             path="/project-hub/companies/:companyId/sites/:siteId/devices/:deviceId/tasks"
-            handle={PHDeviceDetails.createHandle()}
-            loader={withAuthControl(PHDeviceDetails.createLoader(queryClient))}
-            element={<PHDeviceDetails.Component tabId="tasks" />}
+            element={<DeprecatedRouteRedirect targetTab="tasks" />}
           />
           <Route
             path="/project-hub/companies/:companyId/sites/:siteId/tasks/:taskId"
-            handle={PHSiteTask.createHandle(queryClient)}
-            loader={withAuthControl(PHSiteTask.createLoader(queryClient))}
-            element={<PHSiteTask.Component />}
+            element={<DeprecatedRouteRedirect targetTab="tasks" />}
           />
           {/* Simplified project routes without company prefix */}
           <Route
