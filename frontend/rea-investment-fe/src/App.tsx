@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, createBrowserRouter, createRoutesFromElements, Navigate, useParams } from 'react-router-dom';
+import { Route, createBrowserRouter, createRoutesFromElements, Navigate } from 'react-router-dom';
 // Providers
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -45,19 +45,7 @@ import {
   CompanyTask as OMCompanyTask,
   ModuleContainer as OMModuleContainer
 } from './modules/operations-and-maintenance';
-import {
-  SettingsPage,
-  SettingsAddUser,
-  SettingsEditUser,
-  SettingsMyCompanyPage,
-  SettingsEditMyCompany,
-  SettingsMyCompanyEditSite,
-  SettingsEditMyCompanyUser,
-  SettingsAddMyCompanyUser,
-  SettingsManageConnections,
-  SettingsAddMyCompanySite,
-  HealthChecksPage
-} from './modules/settings';
+import { SettingsPage, HealthChecksPage } from './modules/settings';
 import {
   DueDiligencePage as DPDiligencePage,
   SitesPage as DPSitesPage,
@@ -110,10 +98,9 @@ const AdminType = {
 type ProtectedRouteProps = {
   element: React.ReactElement;
   permission: string[];
-  path?: string;
 };
 
-const ProtectedSettingsRoute = ({ element, permission, path }: ProtectedRouteProps) => {
+const ProtectedSettingsRoute = ({ element, permission }: ProtectedRouteProps) => {
   const { isAuthenticated, user } = useAuth();
 
   if (isAuthenticated) {
@@ -121,24 +108,12 @@ const ProtectedSettingsRoute = ({ element, permission, path }: ProtectedRoutePro
     const isCompanyAdmin = permission.some(perm => perm === 'company_admin_full');
     if (isSystem && user?.is_system_user) {
       return element;
-    } else if (path === '/settings' && user?.role?.permissions?.['Settings Page']?.view) {
-      return <Navigate to="/settings/my-company" replace />;
     } else if (isCompanyAdmin && user?.role?.permissions?.['Settings Page']?.view) {
       return element;
     }
   }
 
   return <Navigate to="/" replace />;
-};
-
-const PortfolioAdminCompanyRedirect: React.FC = () => {
-  const { companyId } = useParams<{ companyId: string }>();
-  return <Navigate to={`/portfolio-admin/company/${companyId}`} replace />;
-};
-
-const PortfolioAdminProjectRedirect: React.FC = () => {
-  const { companyId, siteId } = useParams<{ companyId: string; siteId: string }>();
-  return <Navigate to={`/portfolio-admin/company/${companyId}/project/${siteId}`} replace />;
 };
 
 const router = createBrowserRouter(
@@ -640,18 +615,9 @@ const router = createBrowserRouter(
         <Route path="/settings">
           <Route
             index
-            element={
-              <ProtectedSettingsRoute
-                element={<SettingsPage.Component />}
-                permission={[AdminType.system]}
-                path="/settings"
-              />
-            }
+            element={<ProtectedSettingsRoute element={<SettingsPage.Component />} permission={[AdminType.system]} />}
             handle={SettingsPage.createHandle()}
           />
-          <Route path="users" element={<Navigate to="/portfolio-admin" replace />} />
-          <Route path="companies" element={<Navigate to="/portfolio-admin" replace />} />
-          <Route path="sites" element={<Navigate to="/portfolio-admin" replace />} />
           <Route
             path="audit-logs"
             element={
@@ -666,118 +632,7 @@ const router = createBrowserRouter(
             path="health-checks"
             element={<ProtectedSettingsRoute element={<HealthChecksPage />} permission={[AdminType.system]} />}
           />
-          {/* Legacy redirect from old access-health path */}
           <Route path="access-health" element={<Navigate to="/settings/health-checks" replace />} />
-          <Route
-            path="users/add"
-            handle={SettingsAddUser.createHandle()}
-            element={<ProtectedSettingsRoute element={<SettingsAddUser.Component />} permission={[AdminType.system]} />}
-          />
-          <Route
-            path="users/:id/edit"
-            handle={SettingsEditUser.createHandle()}
-            element={
-              <ProtectedSettingsRoute element={<SettingsEditUser.Component />} permission={[AdminType.system]} />
-            }
-          />
-          <Route path="company/add" element={<Navigate to="/portfolio-admin" replace />} />
-          <Route path="company/:companyId" element={<PortfolioAdminCompanyRedirect />} />
-          <Route path="company/:companyId/site/add" element={<PortfolioAdminCompanyRedirect />} />
-          <Route path="company/:companyId/site/:siteId/edit" element={<PortfolioAdminProjectRedirect />} />
-          <Route
-            path="my-company"
-            handle={SettingsMyCompanyPage.createHandle()}
-            element={
-              <ProtectedSettingsRoute element={<SettingsMyCompanyPage.Component />} permission={[AdminType.full]} />
-            }
-          />
-          <Route
-            path="my-company/edit"
-            handle={SettingsEditMyCompany.createHandle()}
-            element={
-              <ProtectedSettingsRoute element={<SettingsEditMyCompany.Component />} permission={[AdminType.full]} />
-            }
-          />
-          <Route
-            path="my-company/overview"
-            handle={SettingsMyCompanyPage.createHandle()}
-            element={
-              <ProtectedSettingsRoute
-                element={<SettingsMyCompanyPage.Component tabId="overview" />}
-                permission={[AdminType.full, AdminType.view]}
-              />
-            }
-          />
-          <Route
-            path="my-company/sites"
-            handle={SettingsMyCompanyPage.createHandle()}
-            element={
-              <ProtectedSettingsRoute
-                element={<SettingsMyCompanyPage.Component tabId="sites" />}
-                permission={[AdminType.full, AdminType.view]}
-              />
-            }
-          />
-          <Route
-            path="my-company/sites/add"
-            handle={SettingsAddMyCompanySite.createHandle()}
-            element={
-              <ProtectedSettingsRoute
-                element={<SettingsAddMyCompanySite.Component />}
-                permission={[AdminType.full, AdminType.view]}
-              />
-            }
-          />
-          <Route
-            path="my-company/site/:siteId/edit"
-            handle={SettingsMyCompanyEditSite.createHandle()}
-            element={
-              <ProtectedSettingsRoute
-                element={<SettingsMyCompanyEditSite.Component />}
-                permission={[AdminType.full, AdminType.view]}
-              />
-            }
-          />
-          <Route
-            path="my-company/users"
-            handle={SettingsMyCompanyPage.createHandle()}
-            element={
-              <ProtectedSettingsRoute
-                element={<SettingsMyCompanyPage.Component tabId="users" />}
-                permission={[AdminType.full, AdminType.view]}
-              />
-            }
-          />
-          <Route
-            path="my-company/users/:userId/edit"
-            handle={SettingsEditMyCompanyUser.createHandle()}
-            element={
-              <ProtectedSettingsRoute
-                element={<SettingsEditMyCompanyUser.Component />}
-                permission={[AdminType.full, AdminType.view]}
-              />
-            }
-          />
-          <Route
-            path="my-company/users/add"
-            handle={SettingsAddMyCompanyUser.createHandle()}
-            element={
-              <ProtectedSettingsRoute
-                element={<SettingsAddMyCompanyUser.Component />}
-                permission={[AdminType.full, AdminType.view]}
-              />
-            }
-          />
-          <Route
-            path="company/:companyId/connections"
-            handle={SettingsManageConnections.createHandle()}
-            element={
-              <ProtectedSettingsRoute
-                element={<SettingsManageConnections.Component />}
-                permission={[AdminType.system, AdminType.full]}
-              />
-            }
-          />
         </Route>
         <Route path="*" element={<Navigate to="/" />} />
       </Route>

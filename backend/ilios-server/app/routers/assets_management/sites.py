@@ -1,3 +1,9 @@
+"""Sites router - READ and Asset Management endpoints only.
+
+Legacy mutation endpoints (POST/PUT/DELETE) for Settings-based site management
+have been removed. Site management is now done via Portfolio Admin.
+Asset Management detail updates (PUT /{site_id}/details) remain available.
+"""
 import logging
 from copy import deepcopy
 from typing import Annotated, Any, Dict, Type, Union
@@ -5,21 +11,18 @@ from typing import Annotated, Any, Dict, Type, Union
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi_filter import FilterDepends
 from pydantic import BaseModel, ValidationError
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.crud.device import DeviceCRUD
-from app.crud.document import DocumentCRUD
 from app.crud.site import SiteCRUD
 from app.crud.site_additional_fields_list import SiteAdditionalFieldListCRUD
-from app.crud.user_project import UserProjectCRUD
 from app.db.object_utils import as_dict
 from app.db.session import get_session
 from app.filters.device_filters import SearchDeviceByName
 from app.filters.site_filters import SiteFilter
 from app.helpers.assets_management.assets_management_helper import get_site_cards_with_dd_data
 from app.helpers.assets_management.site_details_schema_helper import get_section_schema
-from app.helpers.authentication import api_key_check, get_current_user
+from app.helpers.authentication import get_current_user
 from app.helpers.authorization import (
     AssetPermissions,
     AuthorizedUser,
@@ -29,25 +32,16 @@ from app.helpers.authorization import (
 )
 from app.helpers.authorization.project_access import get_authorized_site
 from app.helpers.bq_data_sync_helper import SiteCharacteristicsHandler
-from app.helpers.due_diligence.due_diligence_helper import (
-    create_default_site_document_sections,
-    generate_default_site_documents,
-)
 from app.helpers.pagination import pagination_details
 from app.helpers.query_params_validator import validate_query_params
-from app.helpers.task_tracker.board_defaults_helper import create_default_board, create_default_document_tasks
-from app.models.board import BoardModuleEnum, BoardRelatedEntityTypeEnum, BoardRelatedEntityTypeExtraEnum
 from app.models.site import Site
 from app.schema.site import (
     AllSitesPaginator,
     BaseSiteSchema,
-    CreateSiteSchema,
     ExtendedSiteSchemaWithConnection,
     PotentialAffectedDevicesList,
-    SiteCreationResponse,
     SiteOrderByFieldEnum,
     SiteUpdateSuccess,
-    UpdateSiteSchema,
 )
 from app.schema.site_details import SiteFullDetailsSchema
 from app.schema.user import CurrentUserSchema
@@ -56,55 +50,6 @@ from app.static.sites import SITE_AM_SECTIONS_SCHEMAS, SiteDetailsSections, site
 
 logger = logging.getLogger(__name__)
 sites_router = APIRouter()
-
-
-@sites_router.post(
-    "/",
-    status_code=status.HTTP_201_CREATED,
-    response_model=SiteCreationResponse,
-    dependencies=[Depends(AuthorizedUser(SettingsPermissions(PermissionsActions.edit)))],
-)
-async def create(
-    site: CreateSiteSchema,
-    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
-    db_session: Session = Depends(get_session),
-) -> dict:
-    # validate user has company access
-    if site.company_id != current_user.parent_company_id and not current_user.is_system_user:
-        raise HTTPException(status.HTTP_403_FORBIDDEN)
-    site_data = site.model_dump()
-    try:
-        site = SiteCRUD(db_session).create_item(site_data)
-        logger.info(f"Created site with id {site.id}")
-    except IntegrityError:
-        logger.exception(message := f"Company with ID: {site.company_id} not found.")
-        raise HTTPException(status.HTTP_404_NOT_FOUND, message)
-    # Create site Due Diligence requirements in the specific order
-    # the 'position' field represents order, considering the nesting
-    # meaning the top-level sections numeration is started from 1,
-    # 1st level nesting numeration is started from 1 for each section, and so on
-    # for example (position in the brackets):
-    # Top Section 1 (1)
-    # Top Section 2 (2) > Sub-section 1 (1), Sub-section 2 (2)
-    # . . . . . . . . . . Document 1 of Sub-section 1 (1)
-    # . . . . . . . . . . Document 1 of Sub-section 2 (1)
-    create_default_site_document_sections([site.id], db_session)
-    DocumentCRUD(db_session).create_items(generate_default_site_documents([site.id], db_session))
-    # Create default site asset board
-    create_default_board(site.id, BoardRelatedEntityTypeEnum.site, db_session)
-    # Create default site O&M board
-    create_default_board(site.id, BoardRelatedEntityTypeEnum.site, db_session, module=BoardModuleEnum.om)
-    # each site should have documents board added and each document own default ticket
-    create_default_board(site.id, BoardRelatedEntityTypeEnum.site, db_session, BoardRelatedEntityTypeExtraEnum.document)
-    create_default_document_tasks(
-        db_session, site.documents_board, site.documents, current_user.id, freeze_external_id=True
-    )
-    # Assign project access to company admin. System user should has access automatically
-    if not current_user.is_system_user:
-        UserProjectCRUD(db_session).create_item(
-            {"user_id": current_user.id, "site_id": site.id, "company_id": site.company_id}
-        )
-    return {"code": 201, "message": "Site has been created", "id": site.id}
 
 
 @sites_router.get(
@@ -263,40 +208,6 @@ async def update_site_details(
         )
 
     return {"code": status.HTTP_202_ACCEPTED, "message": SiteMessages.site_update_success}
-
-
-@sites_router.put(
-    "/{site_id}",
-    status_code=status.HTTP_202_ACCEPTED,
-    response_model=SiteUpdateSuccess,
-    responses={**HTTP_404_RESPONSE},
-)
-async def update(
-    site_id: int,
-    site: UpdateSiteSchema,
-    current_user: Annotated[CurrentUserSchema, Depends(AuthorizedUser(SettingsPermissions(PermissionsActions.edit)))],
-    db_session: Session = Depends(get_session),
-):
-    # Company Admin should be able to edit only sites from parent company.
-    if current_user.parent_company_id and site_id not in [site.id for site in current_user.parent_company.sites]:
-        raise HTTPException(status.HTTP_403_FORBIDDEN)
-
-    updated_site = SiteCRUD(db_session).update_by_id(site_id, site.model_dump())
-    if not updated_site:
-        raise HTTPException(status.HTTP_404_NOT_FOUND)
-    return {"code": status.HTTP_202_ACCEPTED, "message": "Site has been updated"}
-
-
-@sites_router.delete(
-    "/{site_id}/internal",
-    dependencies=[Depends(api_key_check)],
-    status_code=status.HTTP_204_NO_CONTENT,
-    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
-)
-async def delete(site_id: int, db_session: Session = Depends(get_session)):
-    deleted_count = SiteCRUD(db_session).delete_by_id(site_id)
-    if deleted_count == 0:
-        raise HTTPException(status.HTTP_404_NOT_FOUND)
 
 
 @sites_router.get(

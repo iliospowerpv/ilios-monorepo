@@ -1,0 +1,42 @@
+SPRINT 1 – Phase A: Endpoint Lockdown (DELETE legacy mutation paths)
+
+Context:
+Portfolio Admin is the single authoritative entry point for entity/user administration (Portfolio → Company → Project).
+We do NOT need backward compatibility. We want to delete legacy Settings routes and endpoints so there is no alternate data mutation path.
+
+Objective:
+Permanently remove legacy SETTINGS UI routes and legacy backend endpoints that can create/update/delete users, companies, projects, or access records outside Portfolio Admin.
+
+Requirements:
+1) Delete legacy frontend routes (not redirect):
+   - /settings/companies
+   - /settings/sites
+   - /settings/company/:id
+   - /settings/company/:id/site/:siteId/edit
+   - Any other /settings/* admin routes related to users/companies/projects/access
+   These should no longer exist in the router. No redirects.
+
+2) Delete legacy backend mutation endpoints (not disable/410):
+   - Any endpoints used by the old Settings add-user flow (e.g., POST /api/users/ or similar)
+   - Any legacy endpoints that create/update/delete companies/projects
+   - Any legacy endpoints that mutate membership/access
+   If an endpoint is still needed for reads, keep read-only, but remove ALL writes.
+
+3) Ensure only the new mutation paths remain:
+   - POST /api/workspace/companies/{id}/members (and any companion endpoints for editing/removing access) are the supported paths.
+   - Portfolio Admin-related endpoints are the only remaining way to mutate these entities.
+
+Deliverables:
+- A list of removed frontend routes and removed backend endpoints (bullet list in your response).
+- Code changes that compile and run.
+- Grep/verification step included in your response:
+  - Show how you verified no legacy settings mutation endpoints remain (e.g., search for route patterns and HTTP handlers).
+- If removal causes dead imports/components, delete them too.
+
+Acceptance Criteria:
+- Hitting any former /settings/* route yields a 404 (route does not exist).
+- Any former legacy mutation endpoint is gone (framework returns 404).
+- User/company/project/access mutations are only possible via Portfolio Admin APIs.
+- App builds successfully and main flows still work (Portfolio Admin user/company/project management).
+
+Proceed now and implement Phase A. Do NOT start Phase B (permission resolver) yet.
