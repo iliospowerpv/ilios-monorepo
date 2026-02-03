@@ -28,8 +28,8 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
     - **Portfolio Admin Module**: Three-tier administration hierarchy for managing companies, projects, and users with role-based access warnings and centralized entity management. Now serves as the **single authoritative entry point** for all entity management (users, companies, projects). Includes:
         - **Navigation Access**: Avatar dropdown menu item "Portfolio Admin" and left sidebar navigation with AdminPanelSettingsIcon.
         - **Edit Dialogs**: EditCompanyDialog and EditProjectDialog for inline editing from CompanyLevelPage and ProjectLevelPage headers.
-        - **Legacy Route Support**: Automatic redirects from deprecated Settings routes (/settings/companies, /settings/sites, /settings/company/:id, etc.) to Portfolio Admin equivalents.
-    - **Settings Module Consolidation**: Settings page now focuses on system configuration only, featuring tabs for Health Checks (default), Audit Logs, Notifications, and Alerts. Entity management (Companies, Sites) has been deprecated from Settings in favor of Portfolio Admin.
+        - **Endpoint Lockdown (Phase A Complete)**: All legacy Settings mutation endpoints and routers have been permanently removed. /api/settings/* returns 404. Only Portfolio Admin workspace endpoints (/api/workspace/*) can mutate users, companies, or projects.
+    - **Settings Module Consolidation**: Settings page focuses on system configuration only (Health Checks, Notifications, Alerts). All backend Settings routers have been removed; no /api/settings/* endpoints exist.
 
 **Backend:**
 - **Technology Stack**: Python 3.11, FastAPI, SQLAlchemy, Alembic, PostgreSQL.
