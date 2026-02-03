@@ -1,0 +1,69 @@
+AUDIT REQUEST — Budget approval workflow implementation verification.
+
+You previously reported “Budget approval workflow complete” including:
+- new budget statuses (Submitted/Approved/Rejected)
+- unified approvals queue on FinanceLanding with server-side filtering
+- new budget submit/approve workflow
+- focus deep linking and tab query param support
+
+I need an evidence-based audit that proves this is implemented correctly end-to-end (backend + frontend) and not UI-only.
+
+PART 1 — BACKEND ENDPOINT PROOF
+1) List the exact budget endpoints added (paths + methods), and the file paths where they are defined.
+Expected (or equivalent):
+- POST /api/finance/companies/:companyId/budgets/:budgetId/submit
+- POST /api/finance/companies/:companyId/budgets/:budgetId/approve
+- GET  /api/finance/companies/:companyId/budgets/:budgetId/approvals
+
+2) Show where server-side enforcement occurs:
+- Attempt to PATCH/update a budget in Submitted/Approved state must fail server-side (not just disabled UI)
+- Show the code branch that rejects edits and the HTTP error returned.
+
+3) Confirm approvals persistence:
+- Identify the table/model used to store approvals for budgets.
+- If FinanceApproval is reused, show how it references budget_id.
+- If a new model/table was added, show it.
+
+PART 2 — FRONTEND API WIRING PROOF
+1) Update modules/finance/api/finance.ts:
+- Confirm submitBudget / approveBudget / getBudgetApprovals exist and show their route strings.
+If they do NOT exist, explain exactly how the UI is approving budgets (this is likely a defect).
+
+2) Identify where BudgetsTab triggers:
+- Submit for approval
+- Approve
+- Reject
+and what exact financeApi function each calls.
+
+PART 3 — APPROVALS QUEUE PROOF (FinanceLanding)
+1) Show the data fetch logic for the unified queue:
+- What endpoints are called for budgets and obligations?
+- If “server-side filtering” is claimed, show the query params and backend support for filtering budgets by status.
+Note: previously getBudgets had no status param; prove it now exists or explain the actual approach.
+
+2) Confirm the queue actions call:
+- approveBudget for budgets
+- approveObligation for obligations
+and include override_reason when used.
+
+PART 4 — DEEP LINK + FOCUS CONSUMPTION
+1) Show the link format generated from the queue for budgets and obligations (exact URL).
+2) Show where SiteFinance (or the relevant component) consumes:
+- tab=...
+- focusId=...
+- focusType=... (if used)
+and implements scroll + highlight.
+
+PART 5 — SUMMARY TABLE
+Provide a table with each requirement and status:
+- Endpoints exist
+- API client functions exist
+- Server-side edit lock enforced
+- Approvals stored and retrievable
+- Queue includes both types
+- Filtering is server-side (or not)
+- Deep link focus works
+
+If any requirement fails, list the exact fix with file paths.
+
+Proceed with the audit now.

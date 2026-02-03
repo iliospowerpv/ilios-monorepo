@@ -108,9 +108,16 @@ def get_budgets(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     site_id: Optional[int] = None,
+    status: Optional[str] = None,
 ):
     get_authorized_company(company_id, current_user, db_session)
-    items, total = FinanceBudgetCRUD.get_all(db_session, company_id, site_id, skip, limit)
+    status_enum = None
+    if status:
+        try:
+            status_enum = FinanceBudgetStatus(status.lower())
+        except ValueError:
+            pass
+    items, total = FinanceBudgetCRUD.get_all(db_session, company_id, site_id, skip, limit, status_enum)
     return FinanceBudgetPaginator(
         items=[_budget_to_schema(b, db_session) for b in items],
         total=total,
@@ -180,6 +187,11 @@ def update_budget(
     budget = FinanceBudgetCRUD.get_by_id(db_session, budget_id)
     if not budget or budget.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found")
+    if budget.status != FinanceBudgetStatus.draft:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Can only edit budgets in Draft status",
+        )
     updated = FinanceBudgetCRUD.update(db_session, budget, data.model_dump(exclude_unset=True))
     updated = FinanceBudgetCRUD.get_by_id(db_session, updated.id)
     return _budget_to_detail_schema(updated, db_session)

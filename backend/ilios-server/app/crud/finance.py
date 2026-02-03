@@ -81,10 +81,13 @@ class FinanceBudgetCRUD:
         site_id: Optional[int] = None,
         skip: int = 0,
         limit: int = 100,
+        status: Optional[FinanceBudgetStatus] = None,
     ) -> tuple[list[FinanceBudget], int]:
         query = db.query(FinanceBudget).filter(FinanceBudget.company_id == company_id)
         if site_id is not None:
             query = query.filter(FinanceBudget.site_id == site_id)
+        if status is not None:
+            query = query.filter(FinanceBudget.status == status)
         total = query.count()
         items = query.order_by(FinanceBudget.created_at.desc()).offset(skip).limit(limit).all()
         return items, total
