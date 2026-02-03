@@ -1,0 +1,102 @@
+Complete the Finance module workflows so existing schema + API functions become reachable through real user actions. Reuse existing routes and pages; do not invent a new Finance app.
+
+CURRENT ROUTES (must use)
+- /finance (index) -> FinanceLanding
+- /finance/companies/:companyId -> FinanceHome
+- /finance/companies/:companyId/sites/:siteId -> SiteFinance
+Scoped lens routes also exist and should be used for deep linking:
+- /finance/scope/portfolio
+- /finance/scope/company/:companyId
+- /finance/scope/project/:projectId  (IMPORTANT: use this for Project Hub deep links)
+
+BOUNDARIES (NON-NEGOTIABLE)
+- Project Hub Finance tab stays READ-ONLY snapshot + deep links only.
+- All Finance mutations (create/edit/submit/approve) occur inside Finance module routes (/finance...).
+
+PART 0 — REACHABILITY (if not already done)
+1) Ensure left-nav “Finance” routes to /finance (global landing) and does NOT route to Project Hub.
+2) Ensure Project Hub Finance tab deep link uses /finance/scope/project/:siteId (not companyId-based URL).
+
+PART 1 — GLOBAL FINANCE LANDING (/finance)
+Upgrade FinanceLanding into a real daily workflow surface:
+- Show KPI strip: planned, authorized, actual, variance (aggregate across accessible projects)
+- Add an “Approvals Queue” panel:
+  - List pending approvals across all projects
+  - Each row shows: project name, type (budget/obligation), amount, status, created date
+  - Each row has actions: Approve / Reject (if user has permission) OR “Open” if not
+  - Each row deep-links to /finance/scope/project/:projectId with focus params so the target item is visible
+- Filters:
+  - company (optional)
+  - project (optional)
+  - status/type
+
+PART 2 — SITE FINANCE WORKFLOWS (SiteFinance)
+SiteFinance currently renders view-only tabs. Make it fully actionable with minimal UI additions (buttons + dialogs), using the existing financeApi methods.
+
+A) Budgets Tab
+Implement:
+- “Create Budget” button -> modal form:
+  - name (required)
+  - optional date range (start/end)
+  - line items: name, planned_amount, optional start_date/end_date, optional category
+  - status starts as Draft
+- “Edit Budget” allowed only when Draft
+- “Delete Budget” allowed only when Draft
+- “Submit Budget” button (Draft -> Submitted)
+- “Approve / Reject Budget” workflow OR (if approvals are obligation-only) then do NOT add budget approvals. Choose one and implement consistently. Preference: implement Budget approvals if financeApi already supports it; otherwise keep budgets submit-only and approvals on obligations.
+
+B) Obligations Tab
+Implement:
+- “Create Obligation” button -> modal form:
+  - type
+  - vendor (select) + “Create Vendor” inline shortcut
+  - amount
+  - invoice/due date
+  - reference_number (display + editable)
+  - optional budget link (budget or line item if available)
+  - status starts Draft
+- “Submit Obligation”
+- “Approve / Reject Obligation”
+- If approving requires override_reason (schema exists): show text field when override path is used and persist it.
+
+Render fields that currently exist but are dead:
+- prerequisite_snapshot: render read-only JSON viewer or formatted block when present
+- reference_number: show in table + detail
+
+C) Vendors Tab
+Implement minimum viable:
+- “Create Vendor” button -> modal:
+  - name, type, contact fields, status
+- “Edit Vendor” allowed
+- Ensure obligations can pick vendors
+
+D) Actuals Tab
+Implement manual entry:
+- “Create Actual” button -> modal:
+  - date, amount
+  - vendor (optional)
+  - reference_id (display/edit)
+  - optional link to obligation
+- Ensure actuals contribute to variance calculations in summary and tables
+
+PART 3 — FOCUS PARAM CONSUMPTION (if not already done)
+If focus params exist (?focusType=&focusId=) ensure SiteFinance consumes them minimally:
+- On load, if focusId matches a row in the active tab, scroll to and highlight it temporarily
+- If not found, show “Focused item not found” inline message
+
+PART 4 — PERMISSIONS / RBAC (lightweight)
+- Hide approve/reject actions if user lacks the relevant permission.
+- Still allow “Open” deep links.
+
+DELIVERABLES / TESTS
+Provide:
+- Files changed list
+- Manual test checklist:
+  1) Left nav Finance -> /finance
+  2) /finance shows approvals queue and can open an item
+  3) From SiteFinance: create budget, edit draft, submit
+  4) Create vendor
+  5) Create obligation, submit, approve/reject (and override_reason if required)
+  6) Create actual, see variance update
+  7) From Project Hub Finance tab, deep link opens /finance/scope/project/:siteId
+Proceed now.

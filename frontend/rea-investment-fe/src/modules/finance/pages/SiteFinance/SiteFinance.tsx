@@ -327,18 +327,43 @@ interface ObligationsTabProps {
   vendors: FinanceVendor[];
   onSuccess: (msg: string) => void;
   onError: (msg: string) => void;
+  focusType?: string | null;
+  focusId?: string | null;
 }
 
-const ObligationsTab: React.FC<ObligationsTabProps> = ({ companyId, siteId, vendors, onSuccess, onError }) => {
+const ObligationsTab: React.FC<ObligationsTabProps> = ({ companyId, siteId, vendors, onSuccess, onError, focusType, focusId }) => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
   const [selectedObligation, setSelectedObligation] = useState<FinanceObligation | null>(null);
+  const [focusNotFound, setFocusNotFound] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
+
+  const shouldHighlight = (id: number) => focusType === 'obligation' && focusId === String(id);
   const [approvalAction, setApprovalAction] = useState<'approve' | 'reject' | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['finance-obligations', companyId, siteId],
     queryFn: () => financeApi.getObligations(companyId, { site_id: siteId })
+  });
+
+  useEffect(() => {
+    if (!isLoading && data && focusType === 'obligation' && focusId) {
+      const found = data.items?.some((o: FinanceObligation) => String(o.id) === focusId);
+      if (!found) {
+        setFocusNotFound(true);
+      }
+    }
+  }, [isLoading, data, focusType, focusId]);
+
+  const createVendorMutation = useMutation({
+    mutationFn: (vendorData: Partial<FinanceVendor>) => financeApi.createVendor(companyId, vendorData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['finance-vendors', companyId] });
+      onSuccess('Vendor created successfully');
+    },
+    onError: () => onError('Failed to create vendor')
   });
 
   const createMutation = useMutation({
@@ -415,6 +440,11 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({ companyId, siteId, vend
 
   return (
     <>
+      {focusNotFound && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Focused item not found
+        </Alert>
+      )}
       <Box display="flex" justifyContent="flex-end" mb={2}>
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDialogOpen(true)}>
           Create Obligation
@@ -438,7 +468,16 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({ companyId, siteId, vend
           <TableBody>
             {obligations.map((obligation: FinanceObligation) => (
               <React.Fragment key={obligation.id}>
-                <TableRow hover>
+                <TableRow
+                  hover
+                  sx={shouldHighlight(obligation.id) ? { bgcolor: 'action.selected', animation: 'pulse 1s ease-in-out 3' } : {}}
+                  ref={el => {
+                    if (shouldHighlight(obligation.id) && el && !hasScrolled) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      setHasScrolled(true);
+                    }
+                  }}
+                >
                   <TableCell>
                     <Chip label={obligation.obligation_type} size="small" variant="outlined" />
                   </TableCell>
@@ -509,6 +548,12 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({ companyId, siteId, vend
         onSubmit={createMutation.mutateAsync}
         siteId={siteId}
         vendors={vendors}
+        onCreateVendor={() => setVendorDialogOpen(true)}
+      />
+      <VendorFormDialog
+        open={vendorDialogOpen}
+        onClose={() => setVendorDialogOpen(false)}
+        onSubmit={createVendorMutation.mutateAsync}
       />
       <ApprovalDialog
         open={approvalDialogOpen}
@@ -737,17 +782,22 @@ const ActualsTab: React.FC<ActualsTabProps> = ({ companyId, siteId, vendors, onS
 };
 
 export const SiteFinance: React.FC = () => {
-  const { companyId, siteId } = useParams<{ companyId: string; siteId: string }>();
+  const params = useParams<{ companyId?: string; siteId?: string; projectId?: string }>();
   const [searchParams] = useSearchParams();
   const [tabValue, setTabValue] = useState(0);
-  const { setCurrentCompany, setCurrentProject } = useEntityContext();
+  const { currentCompany, currentProject, setCurrentCompany, setCurrentProject } = useEntityContext();
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
     severity: 'success'
   });
 
+  const companyId = params.companyId || (currentCompany?.id ? String(currentCompany.id) : undefined);
+  const siteId = params.siteId || params.projectId || (currentProject?.id ? String(currentProject.id) : undefined);
+
   const tabParam = searchParams.get('tab');
+  const focusType = searchParams.get('focusType');
+  const focusId = searchParams.get('focusId');
 
   useEffect(() => {
     if (tabParam === 'obligations') {
@@ -850,6 +900,8 @@ export const SiteFinance: React.FC = () => {
           vendors={vendors}
           onSuccess={handleSuccess}
           onError={handleError}
+          focusType={focusType}
+          focusId={focusId}
         />
       </TabPanel>
       <TabPanel value={tabValue} index={2}>

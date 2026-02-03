@@ -195,6 +195,7 @@ const ApprovalsQueue: React.FC<ApprovalsQueueProps> = ({ companyId, onSuccess, o
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
   const [selectedObligation, setSelectedObligation] = useState<FinanceObligation | null>(null);
   const [approvalAction, setApprovalAction] = useState<'approve' | 'reject' | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string>('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['finance-pending-obligations', companyId],
@@ -233,7 +234,7 @@ const ApprovalsQueue: React.FC<ApprovalsQueueProps> = ({ companyId, onSuccess, o
 
   const handleOpenSite = (obl: FinanceObligation) => {
     if (obl.site_id) {
-      navigate(`/finance/companies/${obl.company_id}/sites/${obl.site_id}?tab=obligations`);
+      navigate(`/finance/scope/project/${obl.site_id}?tab=obligations&focusType=obligation&focusId=${obl.id}`);
     }
   };
 
@@ -253,10 +254,33 @@ const ApprovalsQueue: React.FC<ApprovalsQueueProps> = ({ companyId, onSuccess, o
     );
   }
 
-  const obligations = data?.items || [];
+  const allObligations = data?.items || [];
+  const obligations = typeFilter
+    ? allObligations.filter((o: FinanceObligation) => o.obligation_type === typeFilter)
+    : allObligations;
+
+  const uniqueTypes = Array.from(new Set(allObligations.map((o: FinanceObligation) => o.obligation_type)));
 
   return (
     <>
+      <Box display="flex" gap={2} mb={2} alignItems="center">
+        <FormControl size="small" sx={{ minWidth: 150 }}>
+          <InputLabel>Type</InputLabel>
+          <Select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} label="Type">
+            <MenuItem value="">
+              <em>All Types</em>
+            </MenuItem>
+            {uniqueTypes.map(type => (
+              <MenuItem key={type} value={type}>
+                {type}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <Typography variant="body2" color="text.secondary">
+          {obligations.length} pending approval{obligations.length !== 1 ? 's' : ''}
+        </Typography>
+      </Box>
       <TableContainer component={Paper} variant="outlined">
         <Table>
           <TableHead>

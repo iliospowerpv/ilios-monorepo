@@ -277,11 +277,11 @@ export const Finance: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDeta
   });
 
   const handleOpenFinance = () => {
-    navigate(`/finance?siteId=${siteId}`);
+    navigate(`/finance/scope/project/${siteId}`);
   };
 
   const handleOpenApprovals = () => {
-    navigate(`/finance?siteId=${siteId}&tab=obligations`);
+    navigate(`/finance/scope/project/${siteId}?tab=obligations`);
   };
 
   const isLoading = summaryLoading || budgetsLoading || obligationsLoading;

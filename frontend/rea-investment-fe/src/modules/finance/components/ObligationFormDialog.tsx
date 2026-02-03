@@ -20,6 +20,7 @@ interface ObligationFormDialogProps {
   obligation?: FinanceObligation;
   siteId?: number;
   vendors: FinanceVendor[];
+  onCreateVendor?: () => void;
 }
 
 export const ObligationFormDialog: React.FC<ObligationFormDialogProps> = ({
@@ -28,7 +29,8 @@ export const ObligationFormDialog: React.FC<ObligationFormDialogProps> = ({
   onSubmit,
   obligation,
   siteId,
-  vendors
+  vendors,
+  onCreateVendor
 }) => {
   const [obligationType, setObligationType] = useState<FinanceObligationType>(FinanceObligationType.Invoice);
   const [vendorId, setVendorId] = useState<number | ''>('');
@@ -100,19 +102,26 @@ export const ObligationFormDialog: React.FC<ObligationFormDialogProps> = ({
               <MenuItem value={FinanceObligationType.Other}>Other</MenuItem>
             </Select>
           </FormControl>
-          <FormControl fullWidth>
-            <InputLabel>Vendor</InputLabel>
-            <Select value={vendorId} onChange={e => setVendorId(e.target.value as number)} label="Vendor">
-              <MenuItem value="">
-                <em>None</em>
-              </MenuItem>
-              {vendors.map(v => (
-                <MenuItem key={v.id} value={v.id}>
-                  {v.name}
+          <Stack direction="row" spacing={1} alignItems="flex-end">
+            <FormControl fullWidth>
+              <InputLabel>Vendor</InputLabel>
+              <Select value={vendorId} onChange={e => setVendorId(e.target.value as number)} label="Vendor">
+                <MenuItem value="">
+                  <em>None</em>
                 </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+                {vendors.map(v => (
+                  <MenuItem key={v.id} value={v.id}>
+                    {v.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            {onCreateVendor && (
+              <Button variant="outlined" size="small" onClick={onCreateVendor} sx={{ whiteSpace: 'nowrap' }}>
+                + New
+              </Button>
+            )}
+          </Stack>
           <TextField
             label="Amount"
             type="number"
