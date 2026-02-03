@@ -49,17 +49,27 @@ class UserCompanyAccessCRUD(BaseCRUD):
         role: CompanyRole = CompanyRole.contributor,
         status: MembershipStatus = MembershipStatus.active,
         created_by_user_id: Optional[int] = None,
-        created_from_portfolio: bool = False
+        created_from_portfolio: bool = False,
+        role_profile_key: Optional[str] = None,
+        module_permissions: Optional[dict] = None,
+        dashboard_key: Optional[str] = None
     ) -> UserCompanyAccess:
-        """Add a user to a company with specified role."""
-        return self.create_item({
+        """Add a user to a company with specified role and optional profile."""
+        data = {
             "user_id": user_id,
             "company_id": company_id,
             "role": role,
             "status": status,
             "created_by_user_id": created_by_user_id,
             "created_from_portfolio": created_from_portfolio
-        })
+        }
+        if role_profile_key:
+            data["role_profile_key"] = role_profile_key
+        if module_permissions:
+            data["module_permissions"] = module_permissions
+        if dashboard_key:
+            data["dashboard_key"] = dashboard_key
+        return self.create_item(data)
 
     def get_portfolio_memberships_by_user(
         self,

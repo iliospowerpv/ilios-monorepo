@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -15,6 +15,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import InfoIcon from '@mui/icons-material/Info';
+import FormHelperText from '@mui/material/FormHelperText';
 
 import { ApiClient } from '../../../../api';
 import type { AddMemberRequest, AddPortfolioMemberRequest, AddProjectMemberRequest } from '../../../../api';
@@ -88,6 +89,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
   const [selectedRole, setSelectedRole] = useState<RoleType>('read_only');
   const [confirmAccess, setConfirmAccess] = useState(false);
   const [selectedHubId, setSelectedHubId] = useState<number | null>(null);
+  const [selectedRoleProfileKey, setSelectedRoleProfileKey] = useState<string | null>(null);
 
   const { data: hubsData, isLoading: isLoadingHubs } = useQuery({
     queryKey: ['portfolioHubs'],
@@ -96,7 +98,26 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
     staleTime: 5 * 60 * 1000
   });
 
+  const companyIdForProfiles = level === 'company' ? entityId : parentCompanyId;
+
+  const { data: roleProfiles, isLoading: isLoadingProfiles } = useQuery({
+    queryKey: ['roleProfiles', companyIdForProfiles],
+    queryFn: () =>
+      companyIdForProfiles
+        ? ApiClient.workspace.getRoleProfilesByCompany(companyIdForProfiles)
+        : ApiClient.workspace.getRoleProfiles(),
+    enabled: open && level !== 'portfolio',
+    staleTime: 5 * 60 * 1000
+  });
+
+  useEffect(() => {
+    if (!open) {
+      setSelectedRoleProfileKey(null);
+    }
+  }, [open]);
+
   const availableHubs = hubsData?.hubs || [];
+  const availableProfiles = roleProfiles || [];
 
   const getDefaultCompanyId = (): number | undefined => {
     if (level === 'company' && entityId) {
@@ -112,7 +133,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
   };
 
   const addMemberMutation = useMutation({
-    mutationFn: async (params: { userId: number; role: RoleType; hubId?: number }) => {
+    mutationFn: async (params: { userId: number; role: RoleType; hubId?: number; roleProfileKey?: string | null }) => {
       if (level === 'portfolio') {
         if (!params.hubId) {
           throw new Error('Portfolio hub must be selected');
@@ -127,7 +148,8 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
         const request: AddMemberRequest = {
           user_id: params.userId,
           company_id: entityId,
-          role: params.role
+          role: params.role,
+          role_profile_key: params.roleProfileKey || undefined
         };
         return ApiClient.workspace.addCompanyMember(entityId, request);
       } else if (level === 'project' && entityId) {
@@ -173,18 +195,21 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
     addMemberMutation.mutate({
       userId: selectedUserId,
       role: selectedRole,
-      hubId: selectedHubId || undefined
+      hubId: selectedHubId || undefined,
+      roleProfileKey: selectedRoleProfileKey
     });
   };
 
   const levelInfo = ACCESS_LEVEL_INFO[level];
   const isSupported = levelInfo.supported;
+  const selectedProfile = availableProfiles.find(p => p.key === selectedRoleProfileKey);
 
   const handleClose = () => {
     setSelectedUserId(null);
     setSelectedRole('read_only');
     setConfirmAccess(false);
     setSelectedHubId(null);
+    setSelectedRoleProfileKey(null);
     setError(null);
     onClose();
   };
@@ -278,21 +303,33 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
                 <MenuItem value="contributor">Contributor</MenuItem>
                 <MenuItem value="read_only">Read Only</MenuItem>
               </Select>
+              <FormHelperText>{ROLE_DESCRIPTIONS[selectedRole]}</FormHelperText>
             </FormControl>
 
-            <Alert severity="info" icon={<InfoIcon />}>
-              <Typography variant="body2">
-                <strong>
-                  {selectedRole === 'company_admin'
-                    ? 'Admin'
-                    : selectedRole === 'contributor'
-                      ? 'Contributor'
-                      : 'Read Only'}
-                  :
-                </strong>{' '}
-                {ROLE_DESCRIPTIONS[selectedRole]}
-              </Typography>
-            </Alert>
+            {level !== 'portfolio' && (
+              <FormControl fullWidth>
+                <InputLabel>Role Profile (Optional)</InputLabel>
+                <Select
+                  value={selectedRoleProfileKey || ''}
+                  onChange={e => setSelectedRoleProfileKey(e.target.value || null)}
+                  label="Role Profile (Optional)"
+                  disabled={isLoadingProfiles}
+                >
+                  <MenuItem value="">
+                    <em>None - Use base role only</em>
+                  </MenuItem>
+                  {availableProfiles.map(profile => (
+                    <MenuItem key={profile.key} value={profile.key}>
+                      {profile.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {selectedProfile && <FormHelperText>{selectedProfile.description}</FormHelperText>}
+                {!selectedRoleProfileKey && (
+                  <FormHelperText>Optionally assign a role profile for specialized module access</FormHelperText>
+                )}
+              </FormControl>
+            )}
 
             {level !== 'project' && (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

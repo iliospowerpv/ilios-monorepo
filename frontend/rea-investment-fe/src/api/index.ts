@@ -137,7 +137,8 @@ export type {
   AddPortfolioMemberRequest,
   ProjectMember,
   ProjectMembersResponse,
-  AddProjectMemberRequest
+  AddProjectMemberRequest,
+  RoleProfile
 } from './workspace';
 
 export type { AccessHealthResponse, ValidationResult, ValidationIssue, RepairResult } from './admin';

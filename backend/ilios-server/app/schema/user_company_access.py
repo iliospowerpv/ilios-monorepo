@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional, List
+from typing import Dict, Optional, List
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -30,13 +30,22 @@ class UserCompanyAccessBase(BaseModel):
 
 class UserCompanyAccessCreate(UserCompanyAccessBase):
     """Schema for creating a new user company access."""
-    pass
+    role_profile_key: Optional[str] = Field(None, examples=["asset_manager"], max_length=50)
+    module_permissions: Optional[Dict[str, Dict[str, bool]]] = Field(
+        None,
+        examples=[{"assets_management": {"view": True, "edit": True}}],
+        description="Override module permissions (optional)"
+    )
+    dashboard_key: Optional[str] = Field(None, examples=["default"], max_length=50)
 
 
 class UserCompanyAccessUpdate(BaseModel):
     """Schema for updating user company access."""
     role: Optional[CompanyRoleEnum] = None
     status: Optional[MembershipStatusEnum] = None
+    role_profile_key: Optional[str] = None
+    module_permissions: Optional[Dict[str, Dict[str, bool]]] = None
+    dashboard_key: Optional[str] = None
 
 
 class UserCompanyAccessSchema(UserCompanyAccessBase):
@@ -45,6 +54,9 @@ class UserCompanyAccessSchema(UserCompanyAccessBase):
     
     id: int = Field(examples=[1])
     status: MembershipStatusEnum = Field(default=MembershipStatusEnum.active)
+    role_profile_key: Optional[str] = Field(None, examples=["asset_manager"])
+    module_permissions: Optional[Dict[str, Dict[str, bool]]] = None
+    dashboard_key: Optional[str] = None
     created_at: Optional[datetime] = None
     created_by_user_id: Optional[int] = None
     updated_at: Optional[datetime] = None

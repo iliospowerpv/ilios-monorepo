@@ -6,6 +6,8 @@ from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.crud.company import CompanyCRUD
+from app.crud.role_profile import RoleProfileCRUD
 from app.crud.user_company_access import UserCompanyAccessCRUD
 from app.crud.user_portfolio_access import UserPortfolioAccessCRUD
 from app.crud.user_project import UserProjectCRUD
@@ -305,12 +307,39 @@ async def add_company_member(
             detail="User is already a member of this company"
         )
     
+    if payload.role_profile_key:
+        company = CompanyCRUD(db_session).get_by_id(company_id)
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company not found"
+            )
+        
+        company_type_key = company.company_type.name if hasattr(company.company_type, 'name') else str(company.company_type)
+        
+        profile_crud = RoleProfileCRUD(db_session)
+        if not profile_crud.validate_profile_for_company_type(payload.role_profile_key, company_type_key):
+            available_profiles = profile_crud.get_profiles_for_company_type(company_type_key)
+            available_keys = [p.key for p in available_profiles]
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "message": "Role profile not valid for this company type",
+                    "company_type": company_type_key,
+                    "requested_profile": payload.role_profile_key,
+                    "allowed_profiles": available_keys
+                }
+            )
+    
     membership = crud.add_membership(
         user_id=payload.user_id,
         company_id=company_id,
         role=CompanyRole(payload.role.value),
         status=MembershipStatus.active,
-        created_by_user_id=current_user.id
+        created_by_user_id=current_user.id,
+        role_profile_key=payload.role_profile_key,
+        module_permissions=payload.module_permissions,
+        dashboard_key=payload.dashboard_key
     )
     
     return UserCompanyAccessSchema(
@@ -319,6 +348,9 @@ async def add_company_member(
         company_id=membership.company_id,
         role=CompanyRoleEnum(membership.role.value) if membership.role else CompanyRoleEnum.contributor,
         status=MembershipStatusEnum(membership.status.value) if membership.status else MembershipStatusEnum.active,
+        role_profile_key=membership.role_profile_key,
+        module_permissions=membership.module_permissions,
+        dashboard_key=membership.dashboard_key,
         created_at=membership.created_at,
         created_by_user_id=membership.created_by_user_id,
         updated_at=membership.updated_at

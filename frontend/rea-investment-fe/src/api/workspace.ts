@@ -88,15 +88,41 @@ export interface AddProjectMemberRequest {
   role: 'project_admin' | 'contributor' | 'read_only';
 }
 
+export interface RoleProfile {
+  key: string;
+  label: string;
+  description: string | null;
+  applicable_company_types: string[] | null;
+  default_module_permissions: Record<string, Record<string, boolean>>;
+  default_dashboard_key: string | null;
+  is_active: boolean;
+  display_order: number;
+}
+
+interface RoleProfileListResponse {
+  items: RoleProfile[];
+}
+
+interface RoleProfileFilteredResponse {
+  company_type: string;
+  profiles: RoleProfile[];
+}
+
 export interface AddMemberRequest {
   user_id: number;
   company_id: number;
   role: 'company_admin' | 'contributor' | 'read_only';
+  role_profile_key?: string | null;
+  module_permissions?: Record<string, Record<string, boolean>> | null;
+  dashboard_key?: string | null;
 }
 
 export interface UpdateMemberRequest {
   role?: 'company_admin' | 'contributor' | 'read_only';
   status?: 'active' | 'invited' | 'disabled';
+  role_profile_key?: string | null;
+  module_permissions?: Record<string, Record<string, boolean>> | null;
+  dashboard_key?: string | null;
 }
 
 export const buildWorkspaceApi = (httpClient: AxiosInstance) => {
@@ -164,6 +190,16 @@ export const buildWorkspaceApi = (httpClient: AxiosInstance) => {
     await httpClient.delete(`/api/workspace/projects/${projectId}/members/${membershipId}`);
   };
 
+  const getRoleProfiles = async (): Promise<RoleProfile[]> => {
+    const response = await httpClient.get<RoleProfileListResponse>('/api/role-profiles/');
+    return response.data.items;
+  };
+
+  const getRoleProfilesByCompany = async (companyId: number): Promise<RoleProfile[]> => {
+    const response = await httpClient.get<RoleProfileFilteredResponse>(`/api/role-profiles/by-company/${companyId}`);
+    return response.data.profiles;
+  };
+
   return Object.freeze({
     getWorkspace,
     getCompanyMembers,
@@ -176,6 +212,8 @@ export const buildWorkspaceApi = (httpClient: AxiosInstance) => {
     removePortfolioMember,
     getProjectMembers,
     addProjectMember,
-    removeProjectMember
+    removeProjectMember,
+    getRoleProfiles,
+    getRoleProfilesByCompany
   });
 };

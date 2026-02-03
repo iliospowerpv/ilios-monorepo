@@ -62,6 +62,7 @@ from .routers import (
     users_router,
     workspace_router,
     access_health_router,
+    role_profiles_router,
 )
 from .routers.internal.base import internal_telemetry_router
 from .routers.investor_dashboard import investor_sites_router
@@ -154,6 +155,8 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
     app.include_router(users_router, prefix="/api/users", tags=[tags.USERS_TAG])
     # workspace APIs
     app.include_router(workspace_router, prefix="/api/workspace", tags=[tags.WORKSPACE_TAG])
+    # role profiles API
+    app.include_router(role_profiles_router, prefix="/api/role-profiles", tags=[tags.ROLES_TAG])
     # due diligence related APIs
     app.include_router(documents_router, prefix="/api/due-diligence/{site_id}/documents", tags=[tags.DOCUMENTS_TAG])
     app.include_router(agreements_router, prefix="/api/due-diligence/{site_id}/agreements", tags=[tags.DOCUMENTS_TAG])

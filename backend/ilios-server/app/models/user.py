@@ -1,6 +1,7 @@
 from enum import Enum as PyEnum
 
 from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Identity, Integer, String, UniqueConstraint, Index
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
 from app.db.base_class import Base
@@ -186,6 +187,10 @@ class UserCompanyAccess(Base):
     status = Column(Enum(MembershipStatus), nullable=False, default=MembershipStatus.active)
     created_from_portfolio = Column(Boolean, default=False)
     
+    role_profile_key = Column(String(50), ForeignKey("role_profiles.key", ondelete="SET NULL"), nullable=True)
+    module_permissions = Column(JSONB, nullable=True)
+    dashboard_key = Column(String(50), nullable=True)
+    
     created_at = Column(DateTime, server_default=utcnow())
     created_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     updated_at = Column(DateTime, server_default=utcnow(), onupdate=utcnow())
@@ -193,6 +198,7 @@ class UserCompanyAccess(Base):
     user = relationship("User", back_populates="company_memberships", foreign_keys=[user_id])
     company = relationship("Company", back_populates="member_users")
     created_by = relationship("User", foreign_keys=[created_by_user_id])
+    role_profile = relationship("RoleProfile", foreign_keys=[role_profile_key])
 
 
 class UserPortfolioAccess(Base):

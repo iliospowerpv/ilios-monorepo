@@ -1,20 +1,9 @@
 # iliOS - REA Investment Platform
 
 ## Overview
-iliOS is a real estate asset investment management platform. It provides comprehensive tools for managing the entire lifecycle of real estate investments, from deal acquisition and due diligence to asset management, financial tracking, and reporting. The platform aims to streamline investment processes, enhance decision-making with data-driven insights, and improve operational efficiency for real estate investors and asset managers.
+iliOS is a real estate asset investment management platform designed to manage the entire lifecycle of real estate investments, from acquisition and due diligence to asset management, financial tracking, and reporting. The platform aims to enhance decision-making through data-driven insights and improve operational efficiency for real estate investors and asset managers.
 
-Key capabilities include:
-- **User Authentication and Authorization**: Secure access control.
-- **Multi-Company User Membership**: Users can belong to multiple companies with different roles (company_admin, contributor, read_only) without requiring project assignments.
-- **Workspace Landing Page**: User-centric dashboard showing accessible companies, projects, and pending tasks.
-- **Asset Management**: Tracking and managing real estate assets.
-- **Due Diligence**: Tools to support the diligence process for new acquisitions.
-- **Task Management**: Organization of investment-related tasks.
-- **Financial Management**: Budgeting, obligation tracking, and vendor management.
-- **Sales Pipeline Management**: Tracking potential deals from prospecting to conversion.
-- **Reporting**: Generating insights and reports on investment performance.
-
-The platform is designed to be a critical tool for real estate professionals, offering a centralized system for investment oversight and operational governance.
+Key capabilities include secure user authentication, multi-company user membership, a user-centric workspace, comprehensive asset and task management, financial oversight with budgeting and vendor management, sales pipeline tracking, and robust reporting tools. iliOS serves as a centralized system for investment oversight and operational governance for real estate professionals.
 
 ## User Preferences
 I prefer detailed explanations and thorough documentation for any implemented features or architectural decisions.
@@ -24,92 +13,37 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
 ## System Architecture
 
 **Frontend:**
-- **Technology Stack**: React 18, TypeScript, Material UI (MUI) for component library, React Query for data fetching, React Router DOM for navigation, AG Grid for complex tables, Chart.js for data visualization, Webpack 5 for bundling.
-- **Deployment**: Configured as a static deployment, building the React app and serving static files.
+- **Technology Stack**: React 18, TypeScript, Material UI (MUI), React Query, React Router DOM, AG Grid, Chart.js, Webpack 5.
 - **UI/UX Decisions**:
-    - **Terminology Standardization**: All user-facing content uses "Projects" instead of "Sites" to improve clarity, while backend entities remain `sites`.
-    - **Navigation Architecture**:
-        1. **Entity Context Navigation (Top Bar)**: Displays `Portfolio → Company → Project` hierarchy, persists selection to `localStorage`, and dynamically enables/disables icons based on selected entity level.
-        2. **Module Sidebar Navigation (Left)**: Permission-based visibility for modules. Clicking project-scoped modules (Data Room, O&M, Finance, Tasks, Reports) routes directly to Project Hub with tab pre-selected; shows ProjectPicker dialog if no project selected.
-        3. **Breadcrumb Navigation (Header)**: Auto-generates from React Router `handle` patterns, resolving dynamic segments from URL parameters.
-        4. **3-Click Rule**: All workflows from Home to action completion must complete in ≤3 clicks.
-    - **Project Hub Navigation (Feb 2026)**:
-        - **ProjectPicker Component**: Centralized project selection dialog (`src/components/common/ProjectPicker/`) with search functionality, fetching accessible entities from API
-        - **useProjectNavigation Hook**: Reusable hook for navigating to Project Hub tabs with project selection flow
-        - **Simplified Routes**: `/project-hub/projects/:siteId/*` pattern for direct project access without company prefix
-        - **Tab-Centric Module Entry**: Module menu clicks route to Project Hub tab (Overview, Data Room, O&M, Finance, Tasks, Reporting) instead of separate module pages
-        - **Legacy Tab Aliases**: Old tab IDs (devices, telemetry, diligence) map to consolidated tabs (om, data-room)
-    - **Context Bar Infrastructure**: Unified three-tier scope management system. See `docs/context_bar_contract.md` for complete specification.
-        - **Scope Types**: Portfolio (all entities), Company (single company + its projects), Project (single project)
-        - **Dual Route Patterns**: Canonical routes (`/portfolio`, `/companies/:id`, `/projects/:id`) for direct entity access; Module-scoped lens routes (`/[module]/scope/{portfolio|company/:id|project/:id}`) for in-module scope switching
-        - **Repaint Navigation**: Switching scope via Context Bar keeps users in current module using lens routes
-        - **ScopedModuleRoute Component**: Wrapper that sets context from URL parameters without navigating away from module
-        - **Persistence**: Current scope persisted to localStorage with 5-minute React Query cache for accessible entities
-    - **Asset Management Overview**: Features a canonical site overview with drag-and-drop reordering, collapsible cards, persistence of state to `localStorage`, an executive summary, an underwriting readiness widget, and enhanced card headers with completeness indicators.
-    - **Sidebar Layout Pattern**: Critical guidance for implementing collapsible sidebar navigation, ensuring main content and fixed headers correctly adapt to sidebar width changes using `marginLeft`, `width`, and `maxWidth` properties. Sidebar state is persisted to `localStorage`.
-    - **Portfolio Admin Module**: Three-tier administration hierarchy for managing companies, projects, and users:
-        - **Portfolio Level** (`/portfolio-admin`): Rollup view of all companies and projects with summary statistics. Actions include Add Company and Add User (portfolio-wide access).
-        - **Company Level** (`/portfolio-admin/companies/:id`): Company details, summary cards, quick links to modules, and project list. Actions include Add Project and Add User (company-wide access).
-        - **Project Level** (`/portfolio-admin/projects/:id`): Auto-generated project overview with data completeness scoring and readiness assessment. Actions include Add User (project-only access).
-        - **Access Warnings**: AddUserDialog displays appropriate warnings about access scope implications when adding users at different levels.
-        - **Centralized Entity Management**: All "Add" actions in Settings module redirect to Portfolio Admin to enforce consistent management flows.
+    - **Terminology**: Standardized "Projects" in UI, while backend retains "Sites".
+    - **Navigation**:
+        - **Entity Context Navigation**: Top bar displaying `Portfolio → Company → Project` hierarchy, persisting selection, and dynamic icon enabling.
+        - **Module Sidebar Navigation**: Permission-based left sidebar, routing to Project Hub with tab pre-selection.
+        - **Breadcrumb Navigation**: Auto-generated from React Router patterns.
+        - **3-Click Rule**: All key workflows from home to action completion aim for three or fewer clicks.
+    - **Project Hub Navigation**: Centralized project selection via `ProjectPicker` component, `useProjectNavigation` hook for consistent routing, simplified `/project-hub/projects/:siteId/*` routes, and tab-centric module entry.
+    - **Context Bar Infrastructure**: Unified three-tier scope management (Portfolio, Company, Project) with dual route patterns (canonical and module-scoped lens routes) and scope persistence to `localStorage`.
+    - **Asset Management Overview**: Static site record and readiness surface with drag-and-drop reordering, collapsible cards, executive summary, underwriting readiness, and enhanced card headers.
+    - **Sidebar Layout Pattern**: Collapsible sidebar with state persisted to `localStorage`, ensuring main content adapts correctly.
+    - **Portfolio Admin Module**: Three-tier administration hierarchy for managing companies, projects, and users with role-based access warnings and centralized entity management.
 
 **Backend:**
-- **Technology Stack**: Python 3.11, FastAPI for API development, SQLAlchemy for ORM, Alembic for database migrations, PostgreSQL as the primary database.
+- **Technology Stack**: Python 3.11, FastAPI, SQLAlchemy, Alembic, PostgreSQL.
 - **Core Modules**:
-    - **Workspace Module**: User-centric landing page (`/workspace`) showing summary cards (companies, projects, tasks) and a list of accessible companies with access source indicators. Features context-aware Company Admin page for managing company membership.
-    - **Finance Module**: Capital governance, authorization, and compliance engine. Features budget vs. actual tracking, vendor visibility, authorization gating, approval workflows with audit trails, portfolio/fund rollups, and data room package export.
-        - **Navigation Pattern**: Left nav routes to `/finance` (standalone module), Project Hub Finance tab shows read-only snapshot with deep-link buttons using `/finance?siteId=:id`
-        - **Finance Landing Page** (`/finance`): Company selector, KPI strip (total planned/authorized/actual/variance, finance-ready projects, pending approvals), Companies tab with AG Grid, and Approvals Queue tab for processing pending obligations
-        - **SiteFinance Page** (`/finance/companies/:companyId/sites/:siteId`): Full CRUD for budgets, obligations, vendors, and actuals with tabbed interface
-        - **Form Dialogs**: BudgetFormDialog, ObligationFormDialog, VendorFormDialog, ActualFormDialog, ApprovalDialog - all using `Promise<unknown>` return type for type-safe mutation handling
-        - **Workflow States**: Budgets (draft/active/closed), Obligations (draft→submitted→approved/rejected/override), Vendors (active/inactive)
-        - **Approval Workflow**: Obligations capture `prerequisite_snapshot` on submit, support approve/reject/override with required `override_reason`
-        - **Exposed Schema Fields**: reference_number, reference_id, override_reason, prerequisite_snapshot, line item dates
-    - **Acquisitions Module** (formerly Sales): Manages a 13-stage deal acquisition pipeline (removed Phase1Diligence, added ClosedWon), tracking deals separately until conversion into "Site" entities (referred to as "Projects" in the UI).
-        - **Pipeline Stages**: prospect, nda_signed, inputs_received, modeling, model_review, model_approved, quoted, term_sheet_neg, term_sheet_signed, mipa_negotiating, mipa_signed, closed_won, passed, dead
-        - **Conversion-Eligible Stages**: TermSheetSigned OR MIPASigned
-        - **System-Constructed Names**: Format `{State}-{CompanyCode}-{Sequence}` (e.g., TX-ACME-0001)
-        - **Read-Only Converted Deals**: Deals marked as converted display a banner and navigation to Project Hub
-    - **Project Hub Module** (consolidated Asset Management + Due Diligence): Unified project management interface with tabbed navigation.
-        - **Tabs**: Overview, Data Room, O&M, Finance, Tasks, Reporting
-        - **Lifecycle States**: pre_diligence, due_diligence, implementation, placed_in_service, operations (snake_case aligned frontend/backend)
-        - **Lifecycle Transitions**: RBAC-gated (Company Admin or Superuser), audit-logged, auto-creates tasks from templates
-        - **Signed Agreement Gating**: Required (uploaded/waived) before advancing past due_diligence lifecycle
-        - **Document Extraction Workflow**: source (ai_extraction/manual_entry), status (proposed/accepted/overridden/rejected)
-- **Multi-Company Access System**:
-    - **UserCompanyAccess Model**: Manages user-company relationships with roles (company_admin, contributor, read_only) and statuses (active, invited, suspended).
-    - **Access Source Types**: Direct assignment via UserCompanyAccess, project-inherited via UserProject → parent_company_id, or both.
-    - **Authorization**: System users and company admins can manage company membership; regular users can only view members they have access to.
-- **Portfolio Hub Boundary Model**: Introduced to fix global portfolio access bug. See `docs/portfolio_hub_model.md` for full specification.
-    - **Self-Referencing Hub**: `companies.portfolio_hub_id` column links companies to a hub company (NULL = is a hub)
-    - **Hub-Scoped Portfolio Access**: `user_portfolio_access.portfolio_hub_company_id` requires hub selection when granting portfolio access
-    - **Bounded Access**: Portfolio users only see companies within their assigned hub(s), not all companies globally
-    - **Shared Resources**: DAS connections within a hub are discoverable by all companies in that hub for telemetry setup
-    - **Helper Functions**: `app/helpers/portfolio_hub.py` provides `resolve_company_hub_id()`, `get_portfolio_group_company_ids()`, and access checks
-- **Architectural Guardrails (Asset Management Overview)**: The Asset Management Overview page is designed as a static site record and readiness surface, intentionally avoiding operational data leakage, telemetry, or live performance data. It clearly defines cross-module boundaries, linking to operations modules for live metrics rather than embedding them.
-- **Telemetry Module**: Project-scoped telemetry hookup for connecting Data Acquisition Systems (DAS) directly from the Project → Telemetry tab:
-    - **4-Step Wizard**: Connection → Site Mapping → Device Mapping → Confirm/Health flow for guided telemetry setup
-    - **Health Monitoring**: Derives telemetry health status from BigQuery device_last_report_ts with thresholds (≤30min=HEALTHY, ≤120min=WARN, >120min=ERROR)
-    - **Readiness Strip**: Visual 4-step progress indicator showing connection, site mapping, device mapping, and data flow status
-    - **DAS Providers**: Supports KMC (token auth) and Also Energy (username:password base64)
-    - **Telemetry-Eligible Devices**: Inverter, module, weather_station categories only
-    - **Mapping CRUD**: Site and device mapping with Firestore synchronization via GCP Cloud Functions
-    - **Audit Trail**: All telemetry operations (connection, site mapping, device mapping changes) are logged to the audit system
-    - **Route**: `/asset-management/companies/:companyId/sites/:siteId/telemetry`
-    - **API Endpoints**: `/api/telemetry/sites/:siteId/*` for readiness, health, site/device mappings
-    - **Dual-Ownership DAS Connections**: See `docs/telemetry_hub_scoping.md` for full specification
-        - **Company-Owned** (`owner_type='company'`): Traditional single-company connections
-        - **Portfolio-Shared** (`owner_type='portfolio'`): Connections shared across all companies in a portfolio hub
-        - **Hub Boundaries**: All connections, sharing, and discovery constrained to `portfolio_hub_id` boundaries
-        - **Grouped Discovery**: `/api/telemetry/connections/available` returns `company_connections` and `portfolio_connections` arrays
-        - **Test Status Tracking**: `last_test_at`, `last_test_status`, `last_test_message` track credential validation results
-    - **Health Status States**: HEALTHY, WARN, ERROR, NO_DATA, NO_DATA_YET, NOT_CONFIGURED, MAPPED_NO_DEVICES
+    - **Workspace Module**: User-centric landing page displaying summary cards and accessible companies, supporting context-aware Company Admin.
+    - **Finance Module**: Capital governance engine with budget vs. actual tracking, vendor visibility, authorization, approval workflows with audit trails, and portfolio/fund rollups. Features a dedicated landing page, `SiteFinance` page for CRUD operations, and robust form dialogs for financial entities.
+    - **Acquisitions Module**: Manages a 13-stage deal acquisition pipeline, tracking deals until conversion into "Site" entities (referred to as "Projects" in UI). Supports system-constructed names and read-only views for converted deals.
+    - **Project Hub Module**: Consolidates asset management and due diligence into a unified interface with tabbed navigation (Overview, Data Room, O&M, Finance, Tasks, Reporting). Manages project lifecycle states (e.g., `pre_diligence`, `due_diligence`) with RBAC-gated transitions, signed agreement gating, and document extraction workflows.
+- **Multi-Company Access System**: Manages user-company relationships with roles (company_admin, contributor, read_only) and statuses. Supports direct assignment and project-inherited access.
+- **Role Profiles System**: Granular stakeholder role definitions (e.g., executive, asset_manager) augmenting base roles, stored in `role_profiles` table with `applicable_company_types` and `default_module_permissions`. Integrates with `UserCompanyAccess` for custom permissions and dashboard keys.
+- **Portfolio Hub Boundary Model**: Introduces `portfolio_hub_id` to link companies within a hub, ensuring portfolio users only see companies within their assigned hub(s). Supports shared resources and provides helper functions for access checks.
+- **Architectural Guardrails (Asset Management Overview)**: Designed as a static record, intentionally avoiding operational data leakage, telemetry, or live performance data, and linking to operational modules for live metrics.
+- **Telemetry Module**: Project-scoped telemetry hookup for connecting Data Acquisition Systems (DAS) via a 4-step wizard (Connection, Site Mapping, Device Mapping, Confirm/Health). Features health monitoring (deriving status from BigQuery), readiness strip, support for various DAS providers (KMC, Also Energy), and device mapping CRUD with Firestore sync. Supports dual-ownership DAS connections (company-owned vs. portfolio-shared) constrained by `portfolio_hub_id` boundaries.
 
 ## External Dependencies
-- **PostgreSQL**: Used as the primary relational database (Replit built-in for production, separate setup for development).
-- **Redis**: Upstash with TLS, used for caching and session management.
+- **PostgreSQL**: Primary relational database.
+- **Redis**: Used for caching and session management.
 - **PowerBI**: Integrated for reporting and business intelligence.
-- **Mailgun**: Configured for email services (US region, domain: iliospower.com).
+- **Mailgun**: Configured for email services.
 - **Rombus**: Integrated for camera/security functionalities.
-- **AG Grid**: Enterprise license configured for advanced table functionalities.
+- **AG Grid**: Enterprise license for advanced table functionalities.
