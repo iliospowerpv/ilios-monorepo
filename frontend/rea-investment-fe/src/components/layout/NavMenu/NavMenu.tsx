@@ -13,6 +13,8 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import HomeIcon from '@mui/icons-material/Home';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
+import FolderIcon from '@mui/icons-material/Folder';
+import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import { NavMenuButtonContainer } from './NavMenu.styles';
 import { useNavigate, useMatches, useParams } from 'react-router-dom';
 import { RouteHandle } from '../../../handles';
@@ -114,6 +116,15 @@ const menuItems: MenuItemConfig[] = [
     projectHubTab: 'overview'
   },
   {
+    key: 'data-room',
+    icon: <FolderIcon key="data-room" />,
+    title: 'Data Room',
+    route: '/project-hub',
+    disabled: false,
+    requiresProject: true,
+    projectHubTab: 'data-room'
+  },
+  {
     key: 'operations-and-maintenance',
     icon: <WhatshotIcon key="operations-and-maintenance" />,
     title: 'O&M',
@@ -130,6 +141,15 @@ const menuItems: MenuItemConfig[] = [
     disabled: false,
     requiresProject: true,
     projectHubTab: 'finance'
+  },
+  {
+    key: 'tasks',
+    icon: <AssignmentTurnedInIcon key="tasks" />,
+    title: 'Tasks',
+    route: '/project-hub',
+    disabled: false,
+    requiresProject: true,
+    projectHubTab: 'tasks'
   },
   {
     key: 'reports',
@@ -233,6 +253,10 @@ export const NavMenu: React.FC<NavMenuProps> = ({ containerRef, isMenuOpen }) =>
       case 'Acquisitions':
         return !user?.role?.permissions?.['Acquisitions']?.view && !user?.role?.permissions?.['Sales']?.view;
       case 'Project Hub':
+        return !user?.role?.permissions?.['Project Hub']?.view && !user?.role?.permissions?.['Asset Management']?.view;
+      case 'Data Room':
+        return !user?.role?.permissions?.['Project Hub']?.view && !user?.role?.permissions?.['Asset Management']?.view;
+      case 'Tasks':
         return !user?.role?.permissions?.['Project Hub']?.view && !user?.role?.permissions?.['Asset Management']?.view;
       case 'Reports':
         return !user?.role?.permissions?.['Reports']?.view;
