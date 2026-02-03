@@ -1,0 +1,92 @@
+Perform a comprehensive Breadcrumbs + Naming + Routing audit and apply fixes. This is GREENFIELD; we are allowed to break or remove legacy UI affordances. However, keep legacy route shims/redirects if they exist.
+
+GOAL
+1) Breadcrumbs must reflect the UX contract and canonical routes.
+2) Breadcrumb clicks must NEVER send users through legacy company-prefixed routes or module-specific project detail routes.
+3) Naming must be consistent across nav titles, page headers, breadcrumbs, and document titles.
+
+CANONICAL ROUTE CONTRACT
+- Project canonical route: /project-hub/projects/:siteId/<tab>
+- Tabs: overview | data-room | om | finance | tasks | reporting
+- Global Reports is /reports (nav)
+- Project Reports is Project Hub tab (/project-hub/projects/:siteId/reporting)
+
+AUDIT (EVIDENCE FIRST)
+A) Inventory all breadcrumb implementations:
+- Locate all breadcrumb components and call sites (search: “Breadcrumb”, “breadcrumbs”, “crumb”, “PageHeader”, “headerTitle”).
+- List each location where breadcrumbs are built and what inputs they use (route params, companyId/siteId, etc.).
+
+B) Route pattern audit for breadcrumb links:
+- Identify any breadcrumb link generation that uses:
+  - /project-hub/companies/:companyId/sites/:siteId/...
+  - /operations-and-maintenance/companies/:companyId/sites/:siteId/...
+  - /finance/companies/:companyId/sites/:siteId/...
+  - /due-diligence/companies/:companyId/sites/:siteId/...
+- These must be replaced to use canonical Project Hub routes.
+
+C) Naming consistency audit (required outputs):
+Create a table:
+Surface | Current Label | Expected Label
+Surfaces to audit:
+- Left nav module labels
+- Page header titles
+- Breadcrumb labels
+- Tab labels
+- Any “legacy aliases” shown in UI
+
+Expected labels (use exactly):
+- Acquisitions
+- Project Hub
+- Data Room
+- Operations & Maintenance
+- Finance
+- Tasks
+- Reporting
+- Reports (global module) OR Reporting (pick one for global and use consistently)
+Rules:
+- Global /reports label should match left nav text.
+- Project Hub tab should be “Reporting”.
+
+IMPLEMENTATION FIXES
+1) Centralize breadcrumb generation
+- Create a single breadcrumb builder utility/hook (e.g., buildBreadcrumbs or useBreadcrumbs) that takes:
+  - current route location
+  - siteId (optional)
+  - tab (optional)
+  - project name (optional)
+  - company name (optional)
+- This must produce consistent breadcrumb output across pages.
+
+2) Canonicalize all breadcrumb hrefs
+- All project breadcrumbs must link to /project-hub/projects/:siteId/<tab> only.
+- If a breadcrumb needs “Company”, it should be informational only OR link to a company summary container page that is not required for workflow. Do not link through company-prefixed project routes.
+
+3) Breadcrumb structure rules (must follow)
+- Global modules:
+  - Reports: Home > Reports
+  - Acquisitions: Home > Acquisitions
+- Project-scoped pages (Project Hub):
+  - Home > Project Hub > {ProjectName} > {TabLabel}
+Optional:
+  - If you have a project list page at /project-hub, breadcrumb can link “Project Hub” there.
+- Avoid showing “Company > Project” unless you have a clear, consistent company container page that is not a required router.
+
+4) Fix document/page titles if present
+- Ensure browser title (document.title or route metadata) matches the current surface:
+  - “Project Hub — {ProjectName} — Finance”
+  - “Reports”
+  - etc.
+
+5) Routing safety checks
+- If any breadcrumb click currently navigates to a removed legacy route, update it.
+- Confirm that any legacy route shim/redirect preserves canonical location after navigation.
+
+DELIVERABLES
+After changes, output:
+- Files changed
+- A “Before vs After” table for 8–12 representative pages with breadcrumb strings + href targets
+- Confirm manual test list:
+  - From Project Hub tabs, breadcrumb clicks keep you in /project-hub/projects/:siteId/*
+  - From global Reports, breadcrumb does not inject project context
+  - No breadcrumb uses /companies/:companyId/sites/:siteId legacy patterns
+Proceed now.
