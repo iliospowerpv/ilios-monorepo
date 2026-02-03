@@ -1,0 +1,67 @@
+SPRINT 1 – Phase C: Enforce Module-Level Permissions (view/edit) via Canonical Resolver
+
+Context:
+- Entity-level access is now enforced via GetAuthorizedEntity using the canonical resolver with fail-closed semantics.
+- Role profiles exist and define module_permissions (module_key -> actions [view/edit]).
+- Overrides may exist on access tables.
+- Restrict-only semantics apply: effective permissions must be intersection across applicable grants.
+
+Objective:
+Make module-level permissions real by enforcing module_key + action (view/edit) on backend endpoints.
+No endpoint that reads/writes module-scoped data should be accessible without the appropriate module permission.
+
+Tasks:
+
+1) Resolver output hardening (if needed)
+- Confirm resolve_effective_access returns effective_module_permissions in a consistent normalized format:
+  { module_key: ["view","edit"] } where actions are de-duplicated and stable.
+- Choose ONE normalization rule and enforce it everywhere:
+  Option A (recommended): if "edit" present, automatically include "view" in that module.
+  Document this.
+
+2) Implement a canonical guard helper
+Create helper(s) (e.g., app/helpers/permission_guards.py):
+- require_module_permission(user_id, company_id, project_id=None, module_key: str, action: "view"|"edit")
+  - Calls resolve_effective_access
+  - If decision DENY => raise 403 with reason_code
+  - If module_key missing or action not present => raise 403 with reason_code="missing_module_permission"
+  - Include module_key/action in error detail (safe)
+- Optionally provide a decorator for FastAPI endpoints if used.
+
+3) Wire guards into endpoints (minimum required coverage)
+Identify the key routers that correspond to the 8 modules:
+- assets_management
+- diligence
+- operation_maintenance
+- finance
+- investor_dashboard
+- role_based_dashboard
+- settings (if this still exists as a module concept in permissions, even though Settings routes are deleted)
+- reporting
+
+For each router/endpoint:
+- Reads require module:view
+- Mutations require module:edit
+
+Start with the highest risk modules first (finance, assets_management, diligence).
+Ensure Project Hub endpoints also enforce module permissions, not just entity access.
+
+4) Tests (add integration-style tests)
+Add tests proving:
+- User with entity access but WITHOUT finance:view gets 403 on finance GET endpoints.
+- User with finance:view but WITHOUT finance:edit gets 403 on finance POST/PUT/DELETE.
+- Restrict-only intersection works:
+  Example: portfolio grant has finance:edit, company grant lacks finance entirely => effective has no finance permissions.
+- Normalization rule works (edit implies view, if you chose that).
+
+Deliverables:
+- Guard helper
+- Endpoint wiring (list which routers were updated)
+- Tests passing
+- Brief documentation in replit.md: normalization rule + how to add module permission checks to new endpoints
+
+Constraints:
+- Do NOT add new schema in Phase C.
+- Do NOT reintroduce Settings endpoints; module name "settings" is only for permission modeling if still used.
+
+Proceed with Phase C now.
