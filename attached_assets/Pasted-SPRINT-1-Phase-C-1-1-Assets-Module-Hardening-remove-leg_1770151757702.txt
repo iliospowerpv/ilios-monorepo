@@ -1,0 +1,38 @@
+SPRINT 1 – Phase C.1.1: Assets Module Hardening (remove legacy checks + constrain any_context)
+
+Context:
+Assets Management migration is mostly complete, but:
+- One endpoint still uses a legacy settings:edit role check (GET /companies/sites).
+- A helper require_module_permission_any_context() was introduced, which can be unsafe if endpoints are not strictly scope-filtered.
+
+Objective:
+Eliminate legacy role checks and ensure any_context usage cannot expand visibility beyond accessible entities.
+
+Tasks:
+1) Remove legacy "settings:edit" role check
+- Locate GET /companies/sites (companies.py) and remove any legacy role-based settings permission check.
+- Replace with canonical guard(s):
+  - Choose the correct module_key for this endpoint (assets_management or reporting or settings-as-module-key).
+  - Enforce via require_module_permission (NOT legacy roles).
+- Ensure the endpoint’s result set is filtered to only companies/sites the user can access (portfolio/company/project grants).
+
+2) Constrain require_module_permission_any_context()
+- Add clear documentation in code docstring:
+  - This helper may ONLY be used for endpoints that return data filtered to user-accessible entities.
+- Add a runtime safety check pattern:
+  - If endpoint takes a company_id/project_id parameter, do NOT use any_context; require explicit require_module_permission with that context.
+- Audit each endpoint using any_context and confirm:
+  a) It filters results by accessible scope
+  b) It does not allow arbitrary scope expansion
+- Update endpoints accordingly.
+
+3) Add at least 2 endpoint-level tests (FastAPI test client)
+- Test that GET /companies/sites returns ONLY accessible sites (create two companies/sites; grant access to one; ensure the other is not returned).
+- Test that a user with module permission on one company cannot use list endpoints to see another company's data.
+
+Deliverables:
+- Updated companies/sites endpoint using canonical guards only
+- any_context helper constrained + endpoints audited/updated
+- Endpoint-level tests passing
+
+Proceed now. Do not start diligence module migration yet.

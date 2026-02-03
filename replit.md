@@ -74,7 +74,11 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
             - **List Endpoint Pattern**: Uses `require_module_permission_any_context()` to check if user has permission on at least one accessible company OR project (supports project-only users)
             - **BUG FIX**: PUT /{site_id}/details now correctly requires `edit` permission (was incorrectly `view`)
             - **Exception**: GET /companies/sites uses direct role permission check (settings:edit) as it's a Settings-related endpoint, not assets_management
-        - **Testing Gap (Documented)**: Current tests are unit-style with mocks; TestClient-based HTTP integration tests recommended for QA phase
+        - **Phase C.1.1 Hardening (Complete)**:
+            - Legacy `settings:edit` role check removed from GET /companies/sites
+            - `require_module_permission_any_context()` now has safety constraints documented in docstring
+            - All endpoints using `any_context` audited - all filter results by accessible scope
+            - FastAPI TestClient endpoint-level tests added for scope filtering validation
         - **Future Work**: Migrate remaining modules (diligence, o&m, reporting) from legacy `AuthorizedUser` to new guards.
 - **Role Profiles System**: Granular stakeholder role definitions (e.g., executive, asset_manager) augmenting base roles, stored in `role_profiles` table with `applicable_company_types` and `default_module_permissions`. Integrates with `UserCompanyAccess` for custom permissions and dashboard keys.
 - **Portfolio Hub Boundary Model**: Introduces `portfolio_hub_id` to link companies within a hub, ensuring portfolio users only see companies within their assigned hub(s). Supports shared resources and provides helper functions for access checks.

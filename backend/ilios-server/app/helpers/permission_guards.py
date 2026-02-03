@@ -59,9 +59,31 @@ def require_module_permission_any_context(
 ) -> bool:
     """Check if user has module permission via company-level OR project-level grants.
     
-    This is used for list endpoints that don't have a specific entity context.
-    The user must have the module permission via at least one of their access grants
-    (either company-level or project-level).
+    SAFETY CONSTRAINTS (Phase C.1.1):
+    =========================================
+    This helper may ONLY be used for endpoints that:
+    1. Return data FILTERED to user-accessible entities (company_ids/site_ids)
+    2. Do NOT take company_id/project_id as a path/query parameter
+    
+    If endpoint takes a specific company_id or project_id parameter:
+    - DO NOT use this helper
+    - Use require_module_permission() with that explicit context instead
+    
+    Example CORRECT usage (list endpoint with filtered results):
+        accessible_companies = current_user.get_limited_companies_ids()
+        accessible_sites = current_user.get_limited_sites_ids()
+        require_module_permission_any_context(
+            user_id=current_user.id,
+            company_ids=accessible_companies,
+            site_ids=accessible_sites,
+            ...
+        )
+        # Results MUST be filtered by accessible_companies/accessible_sites
+        results = crud.get_filtered(company_ids=accessible_companies, site_ids=accessible_sites)
+    
+    Example INCORRECT usage (entity endpoint with specific context):
+        # WRONG - use require_module_permission() instead
+        require_module_permission_any_context(..., company_ids=[company_id], ...)
     
     Args:
         user_id: The user requesting access

@@ -208,3 +208,72 @@ class CompanyCRUD(BaseCRUD):
         total = query.count()
 
         return total, query.offset(skip).limit(limit).all()
+
+    def get_filtered_with_sites(
+        self,
+        company_ids: List[int] | None = None,
+        site_ids: List[int] | None = None,
+        skip_pagination: bool = False,
+    ):
+        """Get companies with nested sites, filtered by accessible company/site IDs.
+        
+        This method is used for the user creation screen and ensures results are
+        scoped to the user's accessible entities. BOTH companies AND nested sites
+        are filtered to prevent data leakage.
+        
+        Args:
+            company_ids: List of accessible company IDs (None = no company-level access)
+            site_ids: List of accessible site IDs (None = no site-level access)
+            skip_pagination: If True, return all results without pagination
+            
+        Returns:
+            List of company dicts with their sites, filtered to accessible entities
+        """
+        if company_ids is None and site_ids is None:
+            return []
+        
+        if company_ids is None:
+            company_ids = []
+        if site_ids is None:
+            site_ids = []
+        
+        accessible_company_ids = set(company_ids)
+        
+        if site_ids:
+            site_company_ids = self.db_session.query(Site.company_id).filter(
+                Site.id.in_(site_ids)
+            ).distinct().all()
+            for (cid,) in site_company_ids:
+                accessible_company_ids.add(cid)
+        
+        if not accessible_company_ids:
+            return []
+        
+        companies = self.db_session.query(self.model).filter(
+            self.model.id.in_(accessible_company_ids)
+        ).order_by(self.model.name).all()
+        
+        result = []
+        for company in companies:
+            company_dict = {
+                "id": company.id,
+                "name": company.name,
+                "company_type": company.company_type.value if company.company_type else None,
+                "sites": []
+            }
+            
+            if company.id in company_ids:
+                company_dict["sites"] = [
+                    {"id": s.id, "name": s.name, "company_id": s.company_id}
+                    for s in company.sites
+                ]
+            else:
+                company_dict["sites"] = [
+                    {"id": s.id, "name": s.name, "company_id": s.company_id}
+                    for s in company.sites if s.id in site_ids
+                ]
+            
+            if company.id in company_ids or company_dict["sites"]:
+                result.append(company_dict)
+        
+        return result

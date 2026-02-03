@@ -76,8 +76,8 @@ async def get(
     "/sites",
     response_model=CompanyListSiteSchema,
     description="Returns companies with nested sites (without pagination). Utilized on the user creation screen. "
-    "Note: This is a Settings-related endpoint - uses user's role permissions directly (not company-scoped). "
-    "Future work: Move to settings router or use role-based permission check.",
+    "Authorization: Requires settings:edit or workspace:edit permission on at least one accessible company/project. "
+    "Results are filtered to only include companies/sites the user can access.",
     responses={**HTTP_403_RESPONSE},
 )
 async def get_company_sites(
@@ -85,15 +85,22 @@ async def get_company_sites(
     db_session: Session = Depends(get_session),
 ):
     if not current_user.is_system_user:
-        settings_perms = current_user.role.permissions.get(PermissionsModules.settings.value, {}) if current_user.role else {}
-        if not settings_perms.get("edit"):
-            from fastapi import HTTPException, status
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied: requires settings:edit permission"
-            )
+        require_module_permission_any_context(
+            user_id=current_user.id,
+            company_ids=current_user.get_limited_companies_ids(),
+            site_ids=current_user.get_limited_sites_ids(),
+            db_session=db_session,
+            module_key=PermissionsModules.settings.value,
+            action="edit",
+        )
     company_crud = CompanyCRUD(db_session)
-    companies = company_crud.get(skip_pagination=True)
+    accessible_company_ids = current_user.get_limited_companies_ids()
+    accessible_site_ids = current_user.get_limited_sites_ids()
+    companies = company_crud.get_filtered_with_sites(
+        company_ids=accessible_company_ids if accessible_company_ids else None,
+        site_ids=accessible_site_ids if accessible_site_ids else None,
+        skip_pagination=True,
+    )
     return {"data": companies}
 
 
