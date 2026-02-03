@@ -80,14 +80,14 @@ class GetUserSchema(MyUserSchema):
 
 class CreateUserSchema(BaseUserSchema):
 
-    sites_ids: list[int] = Field(examples=[[4, 5, 15]], min_length=1)
+    sites_ids: list[int] = Field(default=[], examples=[[4, 5, 15]])
 
 
 class EditUserSchema(UserEmailSchema):
     phone: str = Field(pattern=r"^[0-9]+$", examples=["0123456789"], min_length=10, max_length=10)
     role_id: int = Field(examples=[1])
     parent_company_id: int = Field(examples=[1])
-    sites_ids: list[int] = Field(min_length=1, examples=[[1, 2, 3]])
+    sites_ids: list[int] = Field(default=[], examples=[[1, 2, 3]])
 
 
 class UserCreationSuccess(BaseModel):
