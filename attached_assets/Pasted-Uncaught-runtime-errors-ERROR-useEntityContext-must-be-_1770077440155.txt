@@ -1,0 +1,98 @@
+Uncaught runtime errors:
+×
+ERROR
+useEntityContext must be used within an EntityContextProvider
+    at useEntityContext (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:28598:11)
+    at EntityContextNav (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:25393:80)
+    at renderWithHooks (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:458572:22)
+    at mountIndeterminateComponent (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:461856:17)
+    at beginWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:463152:20)
+    at HTMLUnknownElement.callCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448168:18)
+    at Object.invokeGuardedCallbackDev (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448212:20)
+    at invokeGuardedCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448269:35)
+    at beginWork$1 (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:468133:11)
+    at performUnitOfWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:467381:16)
+ERROR
+useEntityContext must be used within an EntityContextProvider
+    at useEntityContext (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:28598:11)
+    at NavMenu (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:26627:80)
+    at renderWithHooks (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:458572:22)
+    at mountIndeterminateComponent (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:461856:17)
+    at beginWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:463152:20)
+    at HTMLUnknownElement.callCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448168:18)
+    at Object.invokeGuardedCallbackDev (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448212:20)
+    at invokeGuardedCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448269:35)
+    at beginWork$1 (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:468133:11)
+    at performUnitOfWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:467381:16)
+ERROR
+useEntityContext must be used within an EntityContextProvider
+    at useEntityContext (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:28598:11)
+    at EntityContextNav (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:25393:80)
+    at renderWithHooks (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:458572:22)
+    at mountIndeterminateComponent (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:461856:17)
+    at beginWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:463152:20)
+    at HTMLUnknownElement.callCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448168:18)
+    at Object.invokeGuardedCallbackDev (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448212:20)
+    at invokeGuardedCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448269:35)
+    at beginWork$1 (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:468133:11)
+    at performUnitOfWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:467381:16)
+ERROR
+useEntityContext must be used within an EntityContextProvider
+    at useEntityContext (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:28598:11)
+    at NavMenu (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:26627:80)
+    at renderWithHooks (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:458572:22)
+    at mountIndeterminateComponent (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:461856:17)
+    at beginWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:463152:20)
+    at HTMLUnknownElement.callCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448168:18)
+    at Object.invokeGuardedCallbackDev (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448212:20)
+    at invokeGuardedCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448269:35)
+    at beginWork$1 (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:468133:11)
+    at performUnitOfWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:467381:16)
+ERROR
+useEntityContext must be used within an EntityContextProvider
+    at useEntityContext (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:28598:11)
+    at EntityContextNav (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:25393:80)
+    at renderWithHooks (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:458572:22)
+    at mountIndeterminateComponent (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:461856:17)
+    at beginWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:463152:20)
+    at HTMLUnknownElement.callCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448168:18)
+    at Object.invokeGuardedCallbackDev (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448212:20)
+    at invokeGuardedCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448269:35)
+    at beginWork$1 (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:468133:11)
+    at performUnitOfWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:467381:16)
+ERROR
+useEntityContext must be used within an EntityContextProvider
+    at useEntityContext (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:28598:11)
+    at NavMenu (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:26627:80)
+    at renderWithHooks (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:458572:22)
+    at mountIndeterminateComponent (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:461856:17)
+    at beginWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:463152:20)
+    at HTMLUnknownElement.callCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448168:18)
+    at Object.invokeGuardedCallbackDev (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448212:20)
+    at invokeGuardedCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448269:35)
+    at beginWork$1 (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:468133:11)
+    at performUnitOfWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:467381:16)
+ERROR
+useEntityContext must be used within an EntityContextProvider
+    at useEntityContext (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:28598:11)
+    at EntityContextNav (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:25393:80)
+    at renderWithHooks (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:458572:22)
+    at mountIndeterminateComponent (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:461856:17)
+    at beginWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:463152:20)
+    at HTMLUnknownElement.callCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448168:18)
+    at Object.invokeGuardedCallbackDev (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448212:20)
+    at invokeGuardedCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448269:35)
+    at beginWork$1 (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:468133:11)
+    at performUnitOfWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:467381:16)
+ERROR
+useEntityContext must be used within an EntityContextProvider
+    at useEntityContext (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:28598:11)
+    at NavMenu (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:26627:80)
+    at renderWithHooks (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:458572:22)
+    at mountIndeterminateComponent (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:461856:17)
+    at beginWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:463152:20)
+    at HTMLUnknownElement.callCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448168:18)
+    at Object.invokeGuardedCallbackDev (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448212:20)
+    at invokeGuardedCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:448269:35)
+    at beginWork$1 (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:468133:11)
+    at performUnitOfWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:467381:16)

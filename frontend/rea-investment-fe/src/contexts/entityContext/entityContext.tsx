@@ -380,10 +380,33 @@ export const EntityContextProvider: React.FC<{ children: React.ReactNode }> = ({
   return <EntityContext.Provider value={value}>{children}</EntityContext.Provider>;
 };
 
+const noopNavigate = () => {};
+const noopReturn = () => '';
+
+const defaultContextValue: EntityContextType = {
+  currentLevel: 'portfolio',
+  currentScope: 'portfolio',
+  currentCompany: null,
+  currentProject: null,
+  currentModule: null,
+  setCurrentCompany: noopNavigate,
+  setCurrentProject: noopNavigate,
+  setCurrentModule: noopNavigate,
+  setCurrentScope: noopNavigate,
+  navigateToLevel: noopNavigate,
+  navigateToScope: noopNavigate,
+  navigateToCompany: noopNavigate,
+  navigateToProject: noopNavigate,
+  getModuleBasePath: noopReturn,
+  getCanonicalPath: noopReturn,
+  getModuleScopedPath: noopReturn
+};
+
 export const useEntityContext = (): EntityContextType => {
   const context = useContext(EntityContext);
+  // Return safe defaults if context is not available (e.g., during auth transitions)
   if (context === undefined) {
-    throw new Error('useEntityContext must be used within an EntityContextProvider');
+    return defaultContextValue;
   }
   return context;
 };
