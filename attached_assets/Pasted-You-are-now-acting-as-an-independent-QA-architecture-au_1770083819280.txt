@@ -1,0 +1,111 @@
+You are now acting as an independent QA + architecture auditor. Do NOT implement changes yet.
+
+Context:
+We just executed several navigation prompts:
+- ProjectPicker + useProjectNavigation
+- Project Hub 6-tab structure
+- Module-first routing to Project Hub tabs (O&M, Finance, Data Room)
+- Reporting nav should land on global /reports (project reporting only inside Project Hub)
+- Task/Alert deep-link routing to Project Hub tabs (intended)
+- 3-click rule validation (intended)
+
+Your job:
+Audit the current codebase outputs for correctness, consistency, and UX-contract compliance. Produce a crisp gap report + fix plan.
+
+HARD UX CONTRACT (must verify)
+1) Project Hub is the ONLY project-level work surface.
+   - Modules may have cross-project queues only.
+   - No module-specific /companies/:companyId/sites/:siteId project detail routes should remain for O&M, Finance, or Due Diligence/Data Room.
+
+2) Project Hub owns exactly 6 tabs for single-project view:
+   Overview, Data Room, O&M, Finance, Tasks, Reporting.
+   - Tabs must be reachable by direct URL and by navigation.
+   - Tabs must not depend on “arriving via the right path”.
+
+3) Module Entry Rule:
+   Clicking a module (O&M, Finance, Data Room) must:
+   - Either open ProjectPicker if no currentProject is set,
+   - Or deep-link directly to Project Hub at the correct tab using currentProject.
+   Must NOT route through Company overview/list as a required step.
+
+4) Reporting Rule:
+   - Left-nav “Reporting” must ALWAYS route to global /reports (no project scoping, no ProjectPicker).
+   - Project-specific reporting must be only inside Project Hub Reporting tab.
+
+5) Task/Alert Deep-Link Rule:
+   Clicking any task/alert must route to:
+   /project-hub/projects/:siteId/<tab>?focusType=...&focusId=...
+   where tab is derived from entity type:
+   - document -> data-room
+   - alert/device -> om
+   - finance approval/obligation -> finance (if present)
+   - otherwise -> tasks
+   If siteId cannot be resolved or access denied: open ProjectPicker and land in Project Hub → Tasks tab.
+
+6) 3-Click Rule:
+   These workflows must be <=3 clicks from nav or Home:
+   - Upload diligence doc
+   - Review/accept extracted field
+   - Check telemetry status
+   - Resolve alert
+   - View finance snapshot
+   - Approve finance item
+   - Open assigned task to correct context
+
+AUDIT OUTPUT REQUIREMENTS (NO CODE CHANGES)
+Return a structured report with these sections:
+
+A) CHANGE INVENTORY (evidence-based)
+1) List files changed in the last prompts (from git diff or equivalent).
+2) List new components/hooks introduced (ProjectPicker, useProjectNavigation, resolvers).
+3) List new/updated routes (App.tsx, router config) including canonical Project Hub route pattern.
+
+B) ROUTE MAP (current source of truth)
+Provide a table of all relevant routes:
+- /project-hub, /project-hub/projects/:siteId/* and tab routes
+- /acquisitions routes
+- /operations-and-maintenance routes
+- /finance routes
+- /reports routes
+- any leftover /due-diligence or /asset-management or /companies/:id/sites/:id patterns
+For each leftover legacy pattern, mark: REMOVE / REDIRECT / KEEP (with justification).
+
+C) UX CONTRACT COMPLIANCE CHECKLIST (pass/fail)
+For each contract rule above, mark PASS/FAIL and cite the exact file + route/component that proves it.
+If FAIL, explain the violation in one sentence.
+
+D) CLICK-PATH VALIDATION TABLE (before/after not needed; current only)
+For each workflow, provide:
+- Click path (exact UI clicks and resulting routes)
+- Click count
+- PASS/FAIL vs <=3 clicks
+Workflows:
+1) Upload diligence doc
+2) Review/accept extracted field
+3) Check telemetry status
+4) Resolve operational alert
+5) View financial snapshot
+6) Approve budget/financial item
+7) Open assigned task to correct context
+
+E) TASK/ALERT DEEP-LINK VERIFICATION
+1) Identify current resolver logic and where it is used.
+2) Confirm each focus type routes to correct Project Hub tab.
+3) Confirm focus parameters are consumed in destination tabs (even minimal highlight/scroll).
+4) Confirm fallback behavior when missing siteId or no access.
+
+F) REPORTING NAV VERIFICATION
+- Confirm left-nav Reporting goes to /reports unconditionally.
+- Confirm Project Hub Reporting tab remains project scoped and is not impacted by global reporting routing.
+
+G) GAP LIST + FIX PLAN (NO IMPLEMENTATION)
+Provide a prioritized list:
+- P0: breaks contract or causes wrong landing
+- P1: exceeds 3 clicks for core workflows
+- P2: inconsistent UI affordances (missing currentProject indicator, confusing states)
+Each item must include:
+- What to change
+- Where (file/component/route)
+- How to test (1-2 bullets)
+
+Do not implement changes. Do not suggest large redesigns. This is a verification + gap report only. Proceed now.
