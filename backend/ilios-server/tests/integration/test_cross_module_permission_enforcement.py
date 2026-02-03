@@ -32,7 +32,10 @@ from app.crud.role_profile import RoleProfileCRUD
 from app.crud.document_section import DocumentSectionCRUD
 from app.crud.document import DocumentCRUD
 from app.helpers.authentication import get_current_user
+from app.helpers.access_resolver import BASE_ROLE_DEFAULT_PERMISSIONS
+from app.models.user import UserPortfolioAccess, MembershipStatus, CompanyRole
 from app.schema.user import CurrentUserSchema
+from app.static.permissions import PermissionsModules
 from app.static.default_site_documents_enum import SiteDocumentsEnum, DocumentSections
 from tests.conftest import test_app, get_test_session
 
@@ -798,5 +801,174 @@ class TestDebugEndpointSecurity:
             detail = data.get("detail", {})
             assert detail.get("error") == "access_denied"
             assert detail.get("reason_code") == "admin_required_for_target_company"
+        finally:
+            test_app.dependency_overrides.pop(get_current_user, None)
+
+
+class TestMultiGrantIntersection:
+    """Test G: True multi-grant intersection using portfolio+company grants.
+    
+    This test proves restrict-only semantics across TWO applicable grants:
+    - UserPortfolioAccess grant with role that has base permissions
+    - UserCompanyAccess grant with role_profile that LACKS finance permissions
+    
+    Expected behavior: Finance endpoint returns 403 because intersection of
+    permissions results in NO finance access (portfolio has default contributor
+    permissions which include finance:view, but company grant's role_profile
+    explicitly omits finance).
+    
+    Grant structure:
+    - Portfolio Hub Company (hub_company)
+    - Member Company (company_a) with portfolio_hub_id = hub_company.id
+    - User has:
+      1. UserPortfolioAccess to hub_company with role=contributor
+         -> default base role permissions include finance:view
+      2. UserCompanyAccess to company_a with role_profile "test_finance_denied"
+         -> default_permissions: {"Asset Management": {"view": true, "edit": true}}
+         (no Finance entry means finance is denied by this grant)
+    
+    Result: Intersection of [finance:view from portfolio] ∩ [no finance from company] 
+            = [no finance] => 403
+    """
+
+    @pytest.fixture(scope="function")
+    def fixtures(self, db_session):
+        """Create portfolio hub + member company + user with both grants."""
+        company_crud = CompanyCRUD(db_session)
+        site_crud = SiteCRUD(db_session)
+        user_crud = UserCRUD(db_session)
+        user_company_access_crud = UserCompanyAccessCRUD(db_session)
+        role_profile_crud = RoleProfileCRUD(db_session)
+
+        hub_company = company_crud.create_item({
+            "name": "Multi-Grant Test Portfolio Hub",
+            "company_type": "portfolio_hub",
+        })
+        
+        member_company = company_crud.create_item({
+            "name": "Multi-Grant Test Member Company",
+            "company_type": "asset_owner",
+            "portfolio_hub_id": hub_company.id,
+        })
+        
+        site = site_crud.create_item({
+            "name": "Multi-Grant Test Site",
+            "company_id": member_company.id,
+            "location": "Test Location",
+        })
+        
+        finance_denied_profile = role_profile_crud.create_item({
+            "key": "test_multigrant_no_finance",
+            "label": "No Finance Profile (Multi-Grant Test)",
+            "default_module_permissions": {
+                "Asset Management": {"view": True, "edit": True},
+                "Diligence": {"view": True, "edit": True},
+            },
+            "is_active": True,
+        })
+        
+        user = user_crud.create_item({
+            "first_name": "MultiGrant",
+            "last_name": "TestUser",
+            "email": "multigrant_intersection@test.com",
+            "is_registered": True,
+            "phone": "1234567890",
+        })
+        
+        portfolio_access = UserPortfolioAccess(
+            user_id=user.id,
+            portfolio_hub_company_id=hub_company.id,
+            role=CompanyRole.contributor,
+            status=MembershipStatus.active,
+        )
+        db_session.add(portfolio_access)
+        
+        company_access = user_company_access_crud.create_item({
+            "user_id": user.id,
+            "company_id": member_company.id,
+            "role": "contributor",
+            "status": "active",
+            "role_profile_key": "test_multigrant_no_finance",
+        })
+        
+        db_session.commit()
+
+        yield {
+            "hub_company": hub_company,
+            "member_company": member_company,
+            "site": site,
+            "user": user,
+            "portfolio_access": portfolio_access,
+            "company_access": company_access,
+            "finance_denied_profile": finance_denied_profile,
+        }
+
+        db_session.delete(portfolio_access)
+        db_session.delete(company_access)
+        db_session.delete(user)
+        db_session.delete(site)
+        db_session.delete(member_company)
+        db_session.delete(hub_company)
+        role_profile_crud.delete_by_key("test_multigrant_no_finance")
+        db_session.commit()
+
+    def test_portfolio_company_intersection_denies_finance(self, client, fixtures):
+        """Test G: Portfolio+Company grants intersection denies finance.
+        
+        User has:
+        - Portfolio access with contributor role (default: finance:view)
+        - Company access with role_profile lacking finance permissions
+        
+        Intersection result: no finance permissions => 403 on finance endpoint.
+        """
+        f = fixtures
+
+        contributor_perms = BASE_ROLE_DEFAULT_PERMISSIONS.get(CompanyRole.contributor, {})
+        finance_key = PermissionsModules.finance.value
+        assert finance_key in contributor_perms, \
+            f"Precondition: contributor base role must have {finance_key} permissions"
+        assert "view" in contributor_perms[finance_key], \
+            f"Precondition: contributor must have {finance_key}:view permission"
+
+        mock_user = create_mock_user_from_db(
+            f["user"],
+            company_ids=[f["member_company"].id],
+            site_ids=[f["site"].id],
+        )
+
+        def override_get_current_user():
+            return mock_user
+
+        test_app.dependency_overrides[get_current_user] = override_get_current_user
+
+        try:
+            response = client.get(f"/api/companies/{f['member_company'].id}/finance/actuals")
+
+            assert response.status_code == 403, f"Expected 403 but got {response.status_code}: {response.json()}"
+            data = response.json()
+            detail = data.get("detail", {})
+            assert detail.get("error") == "access_denied"
+            assert detail.get("reason_code") == "missing_module_permission"
+            assert detail.get("module_key") == "Finance"
+            assert "grant_sources_summary" in detail
+            
+            grant_sources = detail.get("grant_sources_summary", [])
+            grant_levels = [g.get("level") for g in grant_sources]
+            assert "portfolio" in grant_levels, "Portfolio grant should be in sources"
+            assert "company" in grant_levels, "Company grant should be in sources"
+            
+            portfolio_grant_source = next(
+                (g for g in grant_sources if g.get("level") == "portfolio"), None
+            )
+            company_grant_source = next(
+                (g for g in grant_sources if g.get("level") == "company"), None
+            )
+            
+            assert portfolio_grant_source is not None, "Portfolio grant must be present"
+            assert company_grant_source is not None, "Company grant must be present"
+            assert portfolio_grant_source.get("access_id") == f["portfolio_access"].id, \
+                f"Portfolio access_id should match created grant: {portfolio_grant_source.get('access_id')} != {f['portfolio_access'].id}"
+            assert company_grant_source.get("access_id") == f["company_access"].id, \
+                f"Company access_id should match created grant: {company_grant_source.get('access_id')} != {f['company_access'].id}"
         finally:
             test_app.dependency_overrides.pop(get_current_user, None)
