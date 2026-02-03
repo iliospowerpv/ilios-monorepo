@@ -31,7 +31,7 @@ from app.helpers.authentication import get_current_user
 from app.helpers.authorization.project_access import get_authorized_site
 from app.helpers.bq_data_sync_helper import SiteCharacteristicsHandler
 from app.helpers.pagination import pagination_details
-from app.helpers.permission_guards import require_module_permission
+from app.helpers.permission_guards import require_module_permission, require_module_permission_any_context
 from app.helpers.query_params_validator import validate_query_params
 from app.models.site import Site
 from app.schema.site import (
@@ -64,6 +64,15 @@ async def get(
     site_filter: SiteFilter = FilterDepends(SiteFilter),
     db_session: Session = Depends(get_session),
 ) -> dict:
+    if not current_user.is_system_user:
+        require_module_permission_any_context(
+            user_id=current_user.id,
+            company_ids=current_user.get_limited_companies_ids(),
+            site_ids=current_user.get_limited_sites_ids(),
+            db_session=db_session,
+            module_key=PermissionsModules.assets_management.value,
+            action="view",
+        )
     site_crud = SiteCRUD(db_session)
     skip, limit, order_by, order_direction = query_params
     total, sites = site_crud.filter(

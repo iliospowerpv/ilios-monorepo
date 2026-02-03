@@ -65,7 +65,17 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
               action="view",  # or "edit" for mutations
           )
           ```
-        - **Future Work**: Migrate remaining modules (assets_management, diligence, o&m, reporting) from legacy `AuthorizedUser` to new guards.
+        - **Assets Management Module Migration (Phase C.1 Complete)**: All 4 assets_management routers migrated to canonical guards:
+            - `sites.py`: 5 endpoints (GET /, GET /{site_id}, GET /{site_id}/details, PUT /{site_id}/details, GET /{site_id}/affected-devices)
+            - `devices.py`: 8 endpoints (POST /, GET /, GET /{device_id}, PUT general-info/service-details/technical-details/telemetry-details)
+            - `companies.py`: 3 endpoints (GET /, GET /sites, GET /{company_id})
+            - `device_documents.py`: 5 endpoints (upload-url, download-url, delete, track-uploaded-document, file-preview-url)
+            - **Pattern**: Entity check first (get_authorized_site/device), then module permission check (require_module_permission)
+            - **List Endpoint Pattern**: Uses `require_module_permission_any_context()` to check if user has permission on at least one accessible company OR project (supports project-only users)
+            - **BUG FIX**: PUT /{site_id}/details now correctly requires `edit` permission (was incorrectly `view`)
+            - **Exception**: GET /companies/sites uses direct role permission check (settings:edit) as it's a Settings-related endpoint, not assets_management
+        - **Testing Gap (Documented)**: Current tests are unit-style with mocks; TestClient-based HTTP integration tests recommended for QA phase
+        - **Future Work**: Migrate remaining modules (diligence, o&m, reporting) from legacy `AuthorizedUser` to new guards.
 - **Role Profiles System**: Granular stakeholder role definitions (e.g., executive, asset_manager) augmenting base roles, stored in `role_profiles` table with `applicable_company_types` and `default_module_permissions`. Integrates with `UserCompanyAccess` for custom permissions and dashboard keys.
 - **Portfolio Hub Boundary Model**: Introduces `portfolio_hub_id` to link companies within a hub, ensuring portfolio users only see companies within their assigned hub(s). Supports shared resources and provides helper functions for access checks.
 - **Architectural Guardrails (Asset Management Overview)**: Designed as a static record, intentionally avoiding operational data leakage, telemetry, or live performance data, and linking to operational modules for live metrics.

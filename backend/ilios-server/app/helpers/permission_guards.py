@@ -49,6 +49,126 @@ logger = logging.getLogger(__name__)
 ActionType = Literal["view", "edit"]
 
 
+def require_module_permission_any_context(
+    user_id: int,
+    company_ids: list[int],
+    site_ids: list[int],
+    db_session: Session,
+    module_key: str,
+    action: ActionType,
+) -> bool:
+    """Check if user has module permission via company-level OR project-level grants.
+    
+    This is used for list endpoints that don't have a specific entity context.
+    The user must have the module permission via at least one of their access grants
+    (either company-level or project-level).
+    
+    Args:
+        user_id: The user requesting access
+        company_ids: List of company IDs to check against (for company-level grants)
+        site_ids: List of site/project IDs to check against (for project-level grants)
+        db_session: Database session
+        module_key: Module key (e.g., "Asset Management")
+        action: Action ("view" or "edit")
+    
+    Returns:
+        True if user has permission on at least one company or project
+    
+    Raises:
+        HTTPException 403 if user lacks permission on all contexts
+    """
+    if not company_ids and not site_ids:
+        logger.warning(
+            f"MODULE_PERMISSION_DENIED: user_id={user_id} module={module_key} "
+            f"action={action} reason=no_accessible_context"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Access denied: no accessible context for {module_key}"
+        )
+    
+    for company_id in company_ids:
+        try:
+            access_result = resolve_effective_access(
+                user_id=user_id,
+                company_id=company_id,
+                db_session=db_session,
+            )
+            
+            if access_result.decision == AccessDecision.ALLOW:
+                module_perms = access_result.effective_module_permissions.get(module_key, set())
+                if action in module_perms:
+                    logger.debug(
+                        f"MODULE_PERMISSION_GRANTED_ANY: user_id={user_id} module={module_key} "
+                        f"action={action} company_id={company_id} via=company_grant"
+                    )
+                    return True
+        except Exception:
+            continue
+    
+    from app.crud.site import SiteCRUD
+    site_crud = SiteCRUD(db_session)
+    
+    for site_id in site_ids:
+        try:
+            site = site_crud.get_by_id(site_id)
+            if not site:
+                continue
+                
+            access_result = resolve_effective_access(
+                user_id=user_id,
+                company_id=site.company_id,
+                project_id=site_id,
+                db_session=db_session,
+            )
+            
+            if access_result.decision == AccessDecision.ALLOW:
+                module_perms = access_result.effective_module_permissions.get(module_key, set())
+                if action in module_perms:
+                    logger.debug(
+                        f"MODULE_PERMISSION_GRANTED_ANY: user_id={user_id} module={module_key} "
+                        f"action={action} project_id={site_id} via=project_grant"
+                    )
+                    return True
+        except Exception:
+            continue
+    
+    logger.warning(
+        f"MODULE_PERMISSION_DENIED: user_id={user_id} module={module_key} "
+        f"action={action} reason=no_context_has_permission "
+        f"checked_companies={company_ids[:5]} checked_projects={site_ids[:5]}"
+    )
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail=f"Access denied: missing_module_permission:{module_key}.{action}"
+    )
+
+
+def require_module_permission_any_company(
+    user_id: int,
+    company_ids: list[int],
+    db_session: Session,
+    module_key: str,
+    action: ActionType,
+) -> bool:
+    """Check if user has module permission on at least one of the given companies.
+    
+    DEPRECATED: Use require_module_permission_any_context for list endpoints to
+    also support project-only users.
+    
+    This is used for list endpoints that don't have a specific entity context.
+    The user must have the module permission on at least one of their accessible companies.
+    """
+    return require_module_permission_any_context(
+        user_id=user_id,
+        company_ids=company_ids,
+        site_ids=[],
+        db_session=db_session,
+        module_key=module_key,
+        action=action,
+    )
+
+
 class ModulePermissionDeniedReason:
     """Reason codes for module permission denials."""
     ENTITY_ACCESS_DENIED = "entity_access_denied"

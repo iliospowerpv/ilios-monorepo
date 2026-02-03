@@ -1,5 +1,13 @@
+"""Devices router for Asset Management.
+
+Authorization Pattern (Phase C.1):
+- Entity access: get_authorized_site/get_authorized_device (canonical resolver, fail-closed)
+- Module permission: require_module_permission (assets_management:view/edit)
+- Order: Entity check first, then module permission check
+"""
 import logging
 from copy import deepcopy
+from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi_filter import FilterDepends
@@ -10,8 +18,7 @@ from app.crud.device_document import DeviceDocumentCRUD
 from app.db.object_utils import as_dict
 from app.db.session import get_session
 from app.filters.device_filters import SearchDeviceByName
-from app.helpers.authentication import api_key_check
-from app.helpers.authorization import AssetPermissions, AuthorizedUser
+from app.helpers.authentication import api_key_check, get_current_user
 from app.helpers.authorization.project_access import get_authorized_device, get_authorized_site
 from app.helpers.bq_data_sync_helper import DeviceCharacteristicsHandler
 from app.helpers.device_helper import (
@@ -19,6 +26,7 @@ from app.helpers.device_helper import (
     set_device_default_fields,
     validate_device_type_manufacturer,
 )
+from app.helpers.permission_guards import require_module_permission
 from app.helpers.query_params_validator import validate_query_params
 from app.helpers.telemetry.secrets_manager import GCPSecretsManager
 from app.helpers.telemetry.telemetry_cloud_function_client import TelemetryFuncHTTPClient
@@ -37,7 +45,9 @@ from app.schema.device import (
     UpdateServiceDetailDeviceSchema,
 )
 from app.schema.om_device import TelemetryStaticDeviceData
-from app.static import HTTP_403_RESPONSE, HTTP_404_RESPONSE, DeviceMessages, PermissionsActions
+from app.schema.user import CurrentUserSchema
+from app.static import HTTP_403_RESPONSE, HTTP_404_RESPONSE, DeviceMessages
+from app.static.permissions import PermissionsModules
 
 logger = logging.getLogger(__name__)
 devices_router = APIRouter()
@@ -47,13 +57,22 @@ devices_router = APIRouter()
     "/",
     status_code=status.HTTP_201_CREATED,
     response_model=DeviceCreationResponse,
-    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.edit)))],
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
 )
 async def create(
     device: CreateDeviceSchema,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
     site: Site = Depends(get_authorized_site),
 ) -> dict:
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=site.company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.assets_management.value,
+        action="edit",
+        project_id=site.id,
+    )
     device_payload = device.model_dump()
     telemetry_mapping = {
         "telemetry_device_id": device_payload.pop("telemetry_device_id"),
@@ -76,16 +95,24 @@ async def create(
 @devices_router.get(
     "/",
     response_model=SiteDevicesSchema,
-    responses={**HTTP_404_RESPONSE},
-    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.view)))],
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
 )
 async def get_site_devices(
     query_params: tuple = Depends(validate_query_params(order_by=DeviceOrderByFieldEnum)),
     *,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     site: Site = Depends(get_authorized_site),
     device_filter: SearchDeviceByName = FilterDepends(SearchDeviceByName),
     db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=site.company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.assets_management.value,
+        action="view",
+        project_id=site.id,
+    )
     skip, limit, order_by, order_direction = query_params
     total, devices = DeviceCRUD(db_session).get_site_devices(
         site.id, device_filter, skip, limit, order_by, order_direction
@@ -97,10 +124,21 @@ async def get_site_devices(
 @devices_router.get(
     "/{device_id}",
     response_model=DeviceDetailsSchema,
-    responses={**HTTP_404_RESPONSE},
-    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.view)))],
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
 )
-async def get_by_id(device: Device = Depends(get_authorized_device), db_session: Session = Depends(get_session)):
+async def get_by_id(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    device: Device = Depends(get_authorized_device),
+    db_session: Session = Depends(get_session),
+):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=device.site.company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.assets_management.value,
+        action="view",
+        project_id=device.site_id,
+    )
     documents_list = []
     document_crud = DeviceDocumentCRUD(db_session)
     device_documents = document_crud.get_device_documents(device.id)
@@ -140,13 +178,22 @@ async def delete(device_id: int, db_session: Session = Depends(get_session)):
     status_code=status.HTTP_202_ACCEPTED,
     response_model=DeviceUpdateSuccess,
     summary="Update device 'General information' section",
-    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.edit)))],
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
 )
 async def update_general_info(
     device_payload: UpdateDeviceGeneralInfoSchema,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     device: Device = Depends(get_authorized_device),
     db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=device.site.company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.assets_management.value,
+        action="edit",
+        project_id=device.site_id,
+    )
     if device.status in [DeviceStatuses.decommissioned, DeviceStatuses.deleted_on_das]:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=DeviceMessages.archived_device_update_error)
     device_payload = device_payload.model_dump()
@@ -169,13 +216,22 @@ async def update_general_info(
     status_code=status.HTTP_202_ACCEPTED,
     response_model=DeviceUpdateSuccess,
     summary="Update device 'Service detail' section",
-    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.edit)))],
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
 )
 async def update_service_detail(
     device_payload: UpdateServiceDetailDeviceSchema,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     device: Device = Depends(get_authorized_device),
     db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=device.site.company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.assets_management.value,
+        action="edit",
+        project_id=device.site_id,
+    )
     DeviceCRUD(db_session).update_by_id(device.id, device_payload.model_dump())
     return {"code": status.HTTP_202_ACCEPTED, "message": DeviceMessages.device_update_success}
 
@@ -186,14 +242,23 @@ async def update_service_detail(
     response_model=DeviceUpdateSuccess,
     summary="Update device 'Technical details' section",
     description="Be aware: each device category has specific data structure",
-    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.edit)))],
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
 )
 async def update_technical_details(
     device_payload: DeviceTechnicalDetailsUpdateSchema,
     background_tasks: BackgroundTasks,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     device: Device = Depends(get_authorized_device),
     db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=device.site.company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.assets_management.value,
+        action="edit",
+        project_id=device.site_id,
+    )
     # make a snapshot for difference comparison, cause changes after update will be reflected in the object
     technical_details_before_update = deepcopy(device.technical_details)
 
@@ -225,12 +290,21 @@ async def update_technical_details(
     status_code=status.HTTP_202_ACCEPTED,
     response_model=DeviceUpdateSuccess,
     description="Update device fields with information received from telemetry provider",
-    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.edit)))],
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
 )
 async def update_device_with_telemetry_info(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     device: Device = Depends(get_authorized_device),
     db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=device.site.company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.assets_management.value,
+        action="edit",
+        project_id=device.site_id,
+    )
     if any(
         [
             not device.site.das_connection,

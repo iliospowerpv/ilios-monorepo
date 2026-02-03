@@ -1,3 +1,10 @@
+"""Device documents router for Asset Management.
+
+Authorization Pattern (Phase C.1):
+- Entity access: get_authorized_device/get_authorized_device_document (canonical resolver, fail-closed)
+- Module permission: require_module_permission (assets_management:view/edit)
+- Order: Entity check first, then module permission check
+"""
 import logging
 from typing import Annotated
 
@@ -7,9 +14,10 @@ from sqlalchemy.orm import Session
 from app.crud.device_document import DeviceDocumentCRUD
 from app.db.session import get_session
 from app.helpers.authentication import get_current_user
-from app.helpers.authorization import AssetPermissions, AuthorizedUser
 from app.helpers.authorization.project_access import get_authorized_device, get_authorized_device_document
 from app.helpers.files.file_handler import DeviceDocumentFileHandler
+from app.helpers.permission_guards import require_module_permission
+from app.models.device import Device
 from app.models.device_document import DeviceDocument
 from app.schema.device_document import CreateDocumentSchema
 from app.schema.file import (
@@ -21,7 +29,8 @@ from app.schema.file import (
     FileUploadURLSchema,
 )
 from app.schema.user import CurrentUserSchema
-from app.static import HTTP_403_RESPONSE, HTTP_404_RESPONSE, PermissionsActions
+from app.static import HTTP_403_RESPONSE, HTTP_404_RESPONSE
+from app.static.permissions import PermissionsModules
 
 logger = logging.getLogger(__name__)
 device_documents_router = APIRouter()
@@ -31,13 +40,23 @@ device_documents_router = APIRouter()
     "/upload-url",
     response_model=FileUploadURLSchema,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
-    dependencies=[Depends(get_authorized_device), Depends(AuthorizedUser(AssetPermissions(PermissionsActions.edit)))],
 )
 async def get_document_upload_signed_url(
     site_id: int,
     device_id: int,
     file_data: FileNameSchema,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    device: Device = Depends(get_authorized_device),
+    db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=device.site.company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.assets_management.value,
+        action="edit",
+        project_id=device.site_id,
+    )
     file_extension = file_data.filename.split(".")[-1]
     file_handler = DeviceDocumentFileHandler()
     filepath = file_handler.generate_device_document_gcs_filepath(site_id, device_id, file_data.filename)
@@ -48,11 +67,20 @@ async def get_document_upload_signed_url(
     "/{document_id}/download-url",
     response_model=FileDownloadURLSchema,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
-    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.view)))],
 )
 async def get_download_url(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     device_document: DeviceDocument = Depends(get_authorized_device_document),
+    db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=device_document.device.site.company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.assets_management.value,
+        action="view",
+        project_id=device_document.device.site_id,
+    )
     return {
         "download_url": DeviceDocumentFileHandler().generate_download_signed_url(
             device_document.filepath, device_document.filename
@@ -65,18 +93,24 @@ async def get_download_url(
     response_model=FileRemovalSuccess,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
     description="Delete device document completely from DB and GCS",
-    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.edit)))],
 )
 async def remove_device_document(
     document_id: int,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
     device_document: DeviceDocument = Depends(get_authorized_device_document),
 ):
-    # first, remove device_document file from GCS
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=device_document.device.site.company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.assets_management.value,
+        action="edit",
+        project_id=device_document.device.site_id,
+    )
     error = DeviceDocumentFileHandler().delete_file(device_document.filepath)
     if error:
         raise HTTPException(error["code"], error["message"])
-    # then remove record from DB
     DeviceDocumentCRUD(db_session).delete_by_id(document_id)
     return {"code": status.HTTP_200_OK, "message": "File has been successfully deleted"}
 
@@ -85,14 +119,22 @@ async def remove_device_document(
     "/track-uploaded-document",
     response_model=FileUploadSuccess,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
-    dependencies=[Depends(get_authorized_device), Depends(AuthorizedUser(AssetPermissions(PermissionsActions.edit)))],
 )
 async def track_uploaded_document(
     device_id: int,
     document_data: CreateDocumentSchema,
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    device: Device = Depends(get_authorized_device),
     db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=device.site.company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.assets_management.value,
+        action="edit",
+        project_id=device.site_id,
+    )
     file_payload = document_data.model_dump()
     file_payload["device_id"] = device_id
     file_payload["user_id"] = current_user.id
@@ -105,11 +147,20 @@ async def track_uploaded_document(
     response_model=FilePreviewURLSchema,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
     description="Get file preview url for pdf, jpeg, png files",
-    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.view)))],
 )
 async def document_view_url(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     device_document: DeviceDocument = Depends(get_authorized_device_document),
+    db_session: Session = Depends(get_session),
 ):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=device_document.device.site.company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.assets_management.value,
+        action="view",
+        project_id=device_document.device.site_id,
+    )
     return {
         "preview_url": DeviceDocumentFileHandler().generate_file_view_signed_url(
             device_document.filepath, device_document.filename
