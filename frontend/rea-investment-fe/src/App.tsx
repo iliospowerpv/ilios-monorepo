@@ -658,13 +658,7 @@ const router = createBrowserRouter(
           />
           <Route
             path="users"
-            element={
-              <ProtectedSettingsRoute
-                element={<SettingsPage.Component tabId="users" />}
-                permission={[AdminType.system]}
-              />
-            }
-            handle={SettingsPage.createHandle()}
+            element={<Navigate to="/portfolio-admin" replace />}
           />
           <Route
             path="companies"

@@ -16,6 +16,7 @@ import Logout from '@mui/icons-material/Logout';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
 import { Link, useNavigate } from 'react-router-dom';
 import Tooltip from '@mui/material/Tooltip';
 
@@ -135,6 +136,18 @@ export const PageHeader: React.FC = () => {
                   <HelpOutlineIcon fontSize="small" />
                 </ListItemIcon>
                 Help & Resources
+              </MenuItem>
+              <Divider />
+              <MenuItem
+                onClick={() => {
+                  handleClose();
+                  navigate('/portfolio-admin');
+                }}
+              >
+                <ListItemIcon>
+                  <PeopleOutlineIcon fontSize="small" />
+                </ListItemIcon>
+                User Management
               </MenuItem>
               <Divider />
               <MenuItem onClick={onLogout}>

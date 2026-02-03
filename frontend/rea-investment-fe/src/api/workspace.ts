@@ -29,6 +29,9 @@ export interface CompanyMember {
   role: 'company_admin' | 'contributor' | 'read_only';
   status: 'active' | 'invited' | 'disabled';
   access_source: string;
+  role_profile_key?: string | null;
+  module_permissions?: Record<string, Record<string, boolean>> | null;
+  dashboard_key?: string | null;
 }
 
 export interface PortfolioMember {

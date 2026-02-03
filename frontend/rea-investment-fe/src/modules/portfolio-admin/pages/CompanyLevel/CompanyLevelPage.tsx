@@ -18,6 +18,7 @@ import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Link from '@mui/material/Link';
+import Tooltip from '@mui/material/Tooltip';
 import AddIcon from '@mui/icons-material/Add';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import BusinessIcon from '@mui/icons-material/Business';
@@ -26,15 +27,45 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 import { ApiClient } from '../../../../api';
-import { AddProjectDialog, AddUserDialog } from '../../components/dialogs';
+import type { CompanyMember } from '../../../../api';
+import { AddProjectDialog, AddUserDialog, EditUserDialog, RemoveUserDialog } from '../../components/dialogs';
+
+const getRoleLabel = (role: string): string => {
+  switch (role) {
+    case 'company_admin':
+      return 'Admin';
+    case 'contributor':
+      return 'Contributor';
+    case 'read_only':
+      return 'Read Only';
+    default:
+      return role;
+  }
+};
+
+const getRoleColor = (role: string): 'primary' | 'secondary' | 'default' => {
+  switch (role) {
+    case 'company_admin':
+      return 'primary';
+    case 'contributor':
+      return 'secondary';
+    default:
+      return 'default';
+  }
+};
 
 export const CompanyLevelPage: React.FC = () => {
   const navigate = useNavigate();
   const { companyId } = useParams<{ companyId: string }>();
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [isEditUserOpen, setIsEditUserOpen] = useState(false);
+  const [isRemoveUserOpen, setIsRemoveUserOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<CompanyMember | null>(null);
 
   const companyIdNum = parseInt(companyId || '0', 10);
 
@@ -61,7 +92,18 @@ export const CompanyLevelPage: React.FC = () => {
 
   const companyName = company?.name || 'Company';
   const projectList = sites?.items || [];
-  const memberCount = members?.length || 0;
+  const memberList = members || [];
+  const memberCount = memberList.length;
+
+  const handleEditUser = (member: CompanyMember) => {
+    setSelectedMember(member);
+    setIsEditUserOpen(true);
+  };
+
+  const handleRemoveUser = (member: CompanyMember) => {
+    setSelectedMember(member);
+    setIsRemoveUserOpen(true);
+  };
 
   return (
     <Box sx={{ p: 3 }}>
@@ -164,7 +206,85 @@ export const CompanyLevelPage: React.FC = () => {
       </Grid>
 
       <Grid container spacing={3}>
-        <Grid item xs={12}>
+        <Grid item xs={12} lg={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Users
+              </Typography>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Name</TableCell>
+                      <TableCell>Email</TableCell>
+                      <TableCell>Role</TableCell>
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {isLoadingMembers ? (
+                      [1, 2, 3].map(i => (
+                        <TableRow key={i}>
+                          <TableCell>
+                            <Skeleton />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton width={80} />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton width={60} />
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : memberList.length > 0 ? (
+                      memberList.map((member: CompanyMember) => (
+                        <TableRow key={member.membership_id} hover>
+                          <TableCell>
+                            {member.first_name} {member.last_name}
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" color="text.secondary">
+                              {member.email}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip size="small" label={getRoleLabel(member.role)} color={getRoleColor(member.role)} />
+                          </TableCell>
+                          <TableCell align="right">
+                            <Tooltip title="Edit user">
+                              <IconButton size="small" onClick={() => handleEditUser(member)}>
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Remove user">
+                              <IconButton size="small" color="error" onClick={() => handleRemoveUser(member)}>
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} align="center">
+                          <Typography color="text.secondary" sx={{ py: 3 }}>
+                            No users found. Add users to grant them access to this company.
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} lg={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -253,6 +373,30 @@ export const CompanyLevelPage: React.FC = () => {
         level="company"
         entityId={companyIdNum}
         entityName={companyName}
+      />
+
+      <EditUserDialog
+        open={isEditUserOpen}
+        onClose={() => {
+          setIsEditUserOpen(false);
+          setSelectedMember(null);
+        }}
+        level="company"
+        entityId={companyIdNum}
+        entityName={companyName}
+        member={selectedMember}
+      />
+
+      <RemoveUserDialog
+        open={isRemoveUserOpen}
+        onClose={() => {
+          setIsRemoveUserOpen(false);
+          setSelectedMember(null);
+        }}
+        level="company"
+        entityId={companyIdNum}
+        entityName={companyName}
+        member={selectedMember}
       />
     </Box>
   );

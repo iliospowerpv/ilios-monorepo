@@ -4,7 +4,6 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
-import Users from './tabs/Users/Users';
 import Companies from './tabs/Companies/Companies';
 import Sites from './tabs/Sites/Sites';
 import AuditLogs from './tabs/AuditLogs/AuditLogs';
@@ -22,7 +21,6 @@ interface SettingsProps {
 }
 
 const tabData: TabInfo[] = [
-  { id: 'users', link: '/settings/users', label: 'Users', disabled: false, content: <Users /> },
   { id: 'companies', link: '/settings/companies', label: 'Companies', disabled: false, content: <Companies /> },
   { id: 'sites', link: '/settings/sites', label: 'Projects', disabled: false, content: <Sites /> },
   { id: 'audit-logs', link: '/settings/audit-logs', label: 'Audit Logs', disabled: false, content: <AuditLogs /> },
@@ -31,7 +29,7 @@ const tabData: TabInfo[] = [
 ];
 
 const Settings: React.FC<SettingsProps> = ({ tabId }) => {
-  const activeTab = tabId || 'users';
+  const activeTab = tabId || 'companies';
 
   const content = React.useMemo(() => {
     const tab = tabData.find(({ id }) => id === activeTab);
