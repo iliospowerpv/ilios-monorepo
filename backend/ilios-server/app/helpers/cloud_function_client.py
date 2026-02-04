@@ -63,8 +63,16 @@ class FileParseFuncHTTPClient(BaseCloudFuncHTTPClient):
 
     @staticmethod
     def prepare_trigger_payload(file: File, ai_record_id: int, agreement_type: str):  # noqa VNE002
-        # create GSutil-like file URL
-        file_url = f"gs://{settings.due_diligence_gcs_bucket}/{file.filepath}"
+        # Determine file URL based on storage type
+        if file.storage_key:
+            # Replit Object Storage file
+            file_url = f"replit://{file.storage_key}"
+        elif file.filepath:
+            # Legacy GCS file
+            file_url = f"gs://{settings.due_diligence_gcs_bucket}/{file.filepath}"
+        else:
+            raise ValueError(f"File {file.id} has no storage_key or filepath")
+
         return {
             "id": ai_record_id,
             "detect_poison_pills": True,
