@@ -56,6 +56,16 @@ class EvidenceSchema(BaseModel):
         from_attributes = True
 
 
+class ExtractedFieldSchema(BaseModel):
+    field_name: str
+    value: Optional[str] = None
+    confidence: Optional[float] = None
+    evidence: Optional[EvidenceSchema] = None
+
+    class Config:
+        from_attributes = True
+
+
 class ParseRunSchema(BaseModel):
     id: int
     file_id: int
@@ -71,6 +81,7 @@ class ParseRunSchema(BaseModel):
     start_time: Optional[str] = None
     end_time: Optional[str] = None
     created_at: Optional[str] = None
+    extracted_fields: Optional[list[ExtractedFieldSchema]] = None
 
     class Config:
         from_attributes = True
@@ -158,6 +169,34 @@ async def get_parse_run_detail(
     if not run or run.file_id != file.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Parse run not found")
 
+    extracted_fields = None
+    if run.parsed_result and isinstance(run.parsed_result, dict):
+        fields = []
+        for key, val in run.parsed_result.items():
+            if key.startswith("_"):
+                continue
+            if isinstance(val, dict):
+                evidence = None
+                if "evidence" in val:
+                    ev = val["evidence"]
+                    evidence = EvidenceSchema(
+                        page=ev.get("page"),
+                        snippet=ev.get("snippet"),
+                        anchor_text=ev.get("anchor_text"),
+                    )
+                fields.append(ExtractedFieldSchema(
+                    field_name=key,
+                    value=val.get("value") if isinstance(val.get("value"), str) else str(val.get("value")) if val.get("value") else None,
+                    confidence=val.get("confidence"),
+                    evidence=evidence,
+                ))
+            else:
+                fields.append(ExtractedFieldSchema(
+                    field_name=key,
+                    value=str(val) if val is not None else None,
+                ))
+        extracted_fields = fields if fields else None
+
     return ParseRunSchema(
         id=run.id,
         file_id=run.file_id,
@@ -173,6 +212,7 @@ async def get_parse_run_detail(
         start_time=run.start_time.isoformat() if run.start_time else None,
         end_time=run.end_time.isoformat() if run.end_time else None,
         created_at=run.created_at.isoformat() if hasattr(run, 'created_at') and run.created_at else None,
+        extracted_fields=extracted_fields,
     )
 
 

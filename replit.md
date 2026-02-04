@@ -56,6 +56,12 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
     - **Admin API**: 15+ endpoints at `/api/admin/extraction/` for managing canonical fields, document types, schema versions, and prompt templates. All endpoints admin-gated.
     - **Seed Script**: `dev_scripts/seed_extraction_registry.py` migrates ai_parsing_config.json to registry (17 doc types, 17 schema v1s, 17 prompt v1s, 442 field links).
     - **Tests**: `tests/test_extraction_registry.py` covers seed idempotency, activation uniqueness, pipeline service functionality, and config fallback disabled.
+    - **Parse Run History API**: `GET /api/due-diligence/{site_id}/documents/{document_id}/files/{file_id}/runs/` returns parse run history with status, bindings, retries, and error tracking. `GET .../runs/{run_id}/` returns run detail with evidence-backed extracted fields (page, snippet, anchor_text).
+    - **Evidence-Backed Extraction**: ExtractedFieldSchema includes optional EvidenceSchema (page, snippet, anchor_text) for audit trail and validation.
+- **Storage Service Abstraction**: Prepared for future storage migration with StorageService abstraction layer.
+    - **Interface**: Abstract StorageService with upload/download/delete/exists methods.
+    - **Implementations**: GCSStorageService (current), ReplitStorageService (future), HybridStorageService (migration support).
+    - **Key Format**: `companies/{company_id}/sites/{site_id}/documents/{document_id}/{timestamp}_{filename}`.
 
 ## External Dependencies
 - **PostgreSQL**: Primary relational database.
