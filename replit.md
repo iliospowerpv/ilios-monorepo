@@ -60,10 +60,14 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
     - **Evidence-Backed Extraction**: ExtractedFieldSchema includes optional EvidenceSchema (page, snippet, anchor_text) for audit trail and validation.
     - **Admin UI**: Settings → Extraction Registry tab provides admin management for document types, canonical fields, schema versions, and prompt templates. Features include: document type listing with category chips, schema version activation with visual indicators, prompt template activation, and tabbed navigation for configuration management. Frontend API endpoints in `src/api/admin.ts` with types exported from `src/api/index.ts`.
     - **Full Traceability**: `ProjectFact.source_run_id` links facts back to specific parse runs, enabling complete lineage tracking from document upload through extraction to promoted assumptions.
-- **Storage Service Abstraction**: Prepared for future storage migration with StorageService abstraction layer.
+- **Storage Service Abstraction**: Replit-native storage architecture with GCS optional fallback.
     - **Interface**: Abstract StorageService with upload/download/delete/exists methods.
-    - **Implementations**: GCSStorageService (current), ReplitStorageService (future), HybridStorageService (migration support).
-    - **Key Format**: `companies/{company_id}/sites/{site_id}/documents/{document_id}/{timestamp}_{filename}`.
+    - **Implementations**: ReplitStorageService (default, uses Replit Object Storage SDK), GCSStorageService (optional, requires credentials), HybridStorageService (migration support).
+    - **Configuration**: `STORAGE_PROVIDER` setting ("replit" default, "gcs" optional). GCS settings are optional and lazy-imported to prevent boot failures.
+    - **Key Format**: `companies/{company_id}/sites/{site_id}/documents/{document_id}/{timestamp}_{filename}`. Replit storage uses "ilios/" prefix.
+    - **New Endpoints**: `POST /upload` (multipart direct upload), `GET /{file_id}/download` (bytes download), `GET /{file_id}/preview` (bytes preview). Legacy signed URL endpoints require `STORAGE_PROVIDER="gcs"`.
+    - **Frontend Integration**: Uses direct upload via `uploadFileDirect`, preview/download via new blob endpoints. Replaces 3-step GCS flow.
+    - **ChatBot Sync**: Uses "replit://" scheme for Replit storage files vs "gs://" for GCS.
 
 ## External Dependencies
 - **PostgreSQL**: Primary relational database.
