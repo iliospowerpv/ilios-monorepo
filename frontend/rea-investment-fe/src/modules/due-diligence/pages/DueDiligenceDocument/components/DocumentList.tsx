@@ -17,7 +17,7 @@ import { useSearchParams } from 'react-router-dom';
 
 import DocumentModal from './DocumentModal';
 import UniversalDocumentModal from '../../../../../components/common/DocumentModal/DocumentModal';
-import { ApiClient, FileItem, FileDataResponse, UrlUpload } from '../../../../../api';
+import { ApiClient, FileItem, FileDataResponse } from '../../../../../api';
 import { useNotify } from '../../../../../contexts/notifications/notifications';
 import { ConfirmationModal } from '../../../../../components/modals/ConfirmationModal/ConfirmationModal';
 import UploadButton from '../../../../../components/common/UploadButton/UploadButton';
@@ -55,8 +55,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({ siteId, documentId, 
     queryFn:
       selectedFile && openModal
         ? ['png', 'jpeg', 'jpg', 'pdf'].includes(selectedFile.extension)
-          ? () => ApiClient.dueDiligence.previewFile(siteId, documentId, selectedFile.id).then(res => res.preview_url)
-          : () => ApiClient.dueDiligence.downloadFile(siteId, documentId, selectedFile.id).then(res => res.download_url)
+          ? () => ApiClient.dueDiligence.previewFileDirect(siteId, documentId, selectedFile.id)
+          : () => ApiClient.dueDiligence.previewFileDirect(siteId, documentId, selectedFile.id)
         : () => null,
     enabled: openModal && !!selectedFile,
     queryKey: ['file-preview-url', { siteId, documentId, fileId: selectedFile?.id ?? null }],
@@ -120,9 +120,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({ siteId, documentId, 
 
     if (selectedFile) {
       ApiClient.dueDiligence
-        .downloadFile(siteId, documentId, selectedFile.id)
-        .then(response => {
-          downloadFile(response.download_url, selectedFile.filename);
+        .downloadFileDirect(siteId, documentId, selectedFile.id, selectedFile.filename)
+        .then(() => {
           notify('Download started');
         })
         .catch(e => {
@@ -178,23 +177,14 @@ export const DocumentList: React.FC<DocumentListProps> = ({ siteId, documentId, 
 
   const executeRequests = async (file: File) => {
     try {
-      const uploadUrlResponse: UrlUpload = await ApiClient.dueDiligence.uploadUrl(file.name, siteId, documentId);
-
-      await ApiClient.dueDiligence.uploadFile(file, uploadUrlResponse.upload_url);
-
-      const uploadConfirmResponse: any = await ApiClient.dueDiligence.uploadConfirm(
-        uploadUrlResponse.filepath,
-        file.name,
-        siteId,
-        documentId
-      );
+      const response = await ApiClient.dueDiligence.uploadFileDirect(file, siteId, documentId);
 
       queryClient.invalidateQueries({ queryKey: ['files'] });
-      notify(uploadConfirmResponse.message || 'File has been successfully uploaded');
+      notify(response.message || 'File has been successfully uploaded');
     } catch (e: any) {
       notify(
         e instanceof AxiosError
-          ? e.response?.data?.message || e.message
+          ? e.response?.data?.message || e.response?.data?.detail || e.message
           : e.message || 'File upload failed. Please try again'
       );
     } finally {

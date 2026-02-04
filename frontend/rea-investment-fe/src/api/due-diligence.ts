@@ -413,6 +413,53 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     return response?.data;
   };
 
+  const uploadFileDirect = async (
+    fileData: File,
+    siteId: number,
+    documentId: number
+  ): Promise<FileDataResponse> => {
+    const formData = new FormData();
+    formData.append('file', fileData);
+    const response = await httpClient.post<FileDataResponse>(
+      `/api/due-diligence/${siteId}/documents/${documentId}/files/upload`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    );
+    return response.data;
+  };
+
+  const downloadFileDirect = async (
+    siteId: number,
+    documentId: number,
+    fileId: number,
+    filename: string
+  ): Promise<void> => {
+    const response = await httpClient.get(
+      `/api/due-diligence/${siteId}/documents/${documentId}/files/${fileId}/download`,
+      { responseType: 'blob' }
+    );
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const previewFileDirect = async (siteId: number, documentId: number, fileId: number): Promise<string> => {
+    const response = await httpClient.get(
+      `/api/due-diligence/${siteId}/documents/${documentId}/files/${fileId}/preview`,
+      { responseType: 'blob' }
+    );
+    return window.URL.createObjectURL(new Blob([response.data]));
+  };
+
   const setDocumentKeyValue = async (args: SetDocumentKeyValueArgs): Promise<SetDocumentKeyValueResponse> => {
     const { siteId, documentId, params } = args;
     const response = await httpClient.put<SetDocumentKeyValueResponse>(
@@ -590,6 +637,9 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     uploadUrl,
     uploadFile,
     uploadConfirm,
+    uploadFileDirect,
+    downloadFileDirect,
+    previewFileDirect,
     setDocumentKeyValue,
     documentStartParsing,
     documentParsingStatus,

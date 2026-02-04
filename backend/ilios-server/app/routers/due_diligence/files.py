@@ -91,12 +91,18 @@ async def remove_file(
     "/{file_id}",
     response_model=FileDownloadURLSchema,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
+    description="[LEGACY/GCS ONLY] Get download signed URL. Use /{file_id}/download for Replit storage.",
 )
 async def get_download_url(
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     file: FileModel = Depends(get_authorized_file),
     db_session: Session = Depends(get_session),
 ):
+    """Legacy endpoint for GCS download URLs.
+
+    DEPRECATED: Use GET /{file_id}/download for Replit Object Storage.
+    This endpoint only works when STORAGE_PROVIDER="gcs".
+    """
     require_module_permission(
         user_id=current_user.id,
         company_id=file.document.site.company_id,
@@ -105,13 +111,27 @@ async def get_download_url(
         module_key="Diligence",
         action="view",
     )
-    return {"download_url": DueDiligenceFileHandler().generate_download_signed_url(file.filepath, file.filename)}
+
+    # Check if GCS is available
+    if settings.storage_provider.lower() != "gcs":
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            detail="Signed URLs require GCS storage. Use /{file_id}/download endpoint instead.",
+        )
+
+    try:
+        from app.helpers.files.file_handler import DueDiligenceFileHandler
+
+        return {"download_url": DueDiligenceFileHandler().generate_download_signed_url(file.filepath, file.filename)}
+    except RuntimeError as e:
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @files_router.post(
     "/upload-url/",
     response_model=FileUploadURLSchema,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
+    description="[LEGACY/GCS ONLY] Get presigned upload URL. Use /upload for Replit storage.",
 )
 async def get_upload_url(
     site_id: int,
@@ -121,6 +141,11 @@ async def get_upload_url(
     document: Document = Depends(get_authorized_document),
     db_session: Session = Depends(get_session),
 ):
+    """Legacy endpoint for GCS presigned uploads.
+
+    DEPRECATED: Use POST /upload for Replit Object Storage.
+    This endpoint only works when STORAGE_PROVIDER="gcs".
+    """
     require_module_permission(
         user_id=current_user.id,
         company_id=document.site.company_id,
@@ -129,12 +154,26 @@ async def get_upload_url(
         module_key="Diligence",
         action="edit",
     )
-    file_extension = file_data.filename.split(".")[-1]
-    file_handler = DueDiligenceFileHandler()
-    filepath = file_handler.generate_due_diligence_gcs_filepath(
-        document.site.company_id, site_id, document_id, file_data.filename
-    )
-    return {"filepath": filepath, "upload_url": file_handler.generate_signed_url_for_upload(filepath, file_extension)}
+
+    # Check if GCS is available
+    if settings.storage_provider.lower() != "gcs":
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            detail="Presigned URLs require GCS storage. Use POST /upload for Replit storage.",
+        )
+
+    # Lazy import to avoid requiring GCS at boot
+    try:
+        from app.helpers.files.file_handler import DueDiligenceFileHandler
+
+        file_extension = file_data.filename.split(".")[-1]
+        file_handler = DueDiligenceFileHandler()
+        filepath = file_handler.generate_due_diligence_gcs_filepath(
+            document.site.company_id, site_id, document_id, file_data.filename
+        )
+        return {"filepath": filepath, "upload_url": file_handler.generate_signed_url_for_upload(filepath, file_extension)}
+    except RuntimeError as e:
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @files_router.post(
@@ -195,13 +234,18 @@ async def create_uploaded_file(
     "/{file_id}/file-preview-url/",
     response_model=FilePreviewURLSchema,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
-    description="Get file preview url for pdf, jpeg, png files",
+    description="[LEGACY/GCS ONLY] Get file preview signed URL. Use /{file_id}/preview for Replit storage.",
 )
 async def file_view_url(
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     file: FileModel = Depends(get_authorized_file),
     db_session: Session = Depends(get_session),
 ):
+    """Legacy endpoint for GCS preview URLs.
+
+    DEPRECATED: Use GET /{file_id}/preview for Replit Object Storage.
+    This endpoint only works when STORAGE_PROVIDER="gcs".
+    """
     require_module_permission(
         user_id=current_user.id,
         company_id=file.document.site.company_id,
@@ -210,7 +254,20 @@ async def file_view_url(
         module_key="Diligence",
         action="view",
     )
-    return {"preview_url": DueDiligenceFileHandler().generate_file_view_signed_url(file.filepath, file.filename)}
+
+    # Check if GCS is available
+    if settings.storage_provider.lower() != "gcs":
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            detail="Signed URLs require GCS storage. Use /{file_id}/preview endpoint instead.",
+        )
+
+    try:
+        from app.helpers.files.file_handler import DueDiligenceFileHandler
+
+        return {"preview_url": DueDiligenceFileHandler().generate_file_view_signed_url(file.filepath, file.filename)}
+    except RuntimeError as e:
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @files_router.put(
