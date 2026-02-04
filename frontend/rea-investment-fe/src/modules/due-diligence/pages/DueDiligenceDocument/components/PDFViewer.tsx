@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { Viewer, Worker } from '@react-pdf-viewer/core';
 import { pageNavigationPlugin } from '@react-pdf-viewer/page-navigation';
 import { searchPlugin, Match } from '@react-pdf-viewer/search';
@@ -18,6 +18,13 @@ export interface PDFViewerRef {
   jumpToPage: (page: number) => void;
   searchAndHighlight: (text: string) => void;
 }
+
+const WorkerWrapper = Worker as React.ComponentType<{ workerUrl: string; children: React.ReactNode }>;
+const ViewerWrapper = Viewer as React.ComponentType<{
+  fileUrl: string;
+  plugins: unknown[];
+  onDocumentLoad?: () => void;
+}>;
 
 const PDFViewerComponent = React.forwardRef<PDFViewerRef, PDFViewerProps>((props, ref) => {
   const { fileUrl, onReady } = props;
@@ -65,13 +72,13 @@ const PDFViewerComponent = React.forwardRef<PDFViewerRef, PDFViewerProps>((props
 
   return (
     <Box sx={{ height: '100%', width: '100%', overflow: 'hidden' }}>
-      <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-        <Viewer
+      <WorkerWrapper workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+        <ViewerWrapper
           fileUrl={fileUrl}
           plugins={[pageNavigationPluginInstance, searchPluginInstance, highlightPluginInstance]}
           onDocumentLoad={() => onReady?.()}
         />
-      </Worker>
+      </WorkerWrapper>
     </Box>
   );
 });

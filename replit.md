@@ -91,6 +91,18 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
     - **Debug Section**: Expandable accordion showing `run_id` and `correlation_id` for troubleshooting.
     - **Reprocess Action**: Button to force re-parse with `force_reprocess=true`; disabled during processing.
     - **Polling**: Auto-refresh status every 5 seconds while processing is active.
+- **Data Room PDF Viewer & Evidence Navigation (Phase B2)**:
+    - **Hybrid Viewer Architecture**: Uses `@react-pdf-viewer` for PDFs (with jump-to-page and search highlight), `react-doc-viewer` for DOCX and other formats.
+    - **PDFViewer Component** (`frontend/.../components/PDFViewer.tsx`): Custom wrapper around `@react-pdf-viewer/core` with plugins:
+        - `pageNavigationPlugin`: Enables `jumpToPage(pageNumber)` for programmatic page navigation.
+        - `searchPlugin`: Enables `highlight({ keyword })` for text search and highlight.
+        - Exposes `PDFViewerRef` with `jumpToPage(page)` and `searchAndHighlight(text)` methods.
+    - **Evidence Navigation Flow**:
+        1. Backend returns `evidence: { page, snippet, anchor_text }` per extracted field.
+        2. Frontend displays "Page X" button with tooltip showing snippet.
+        3. On click: calls `pdfViewerRef.jumpToPage(page)`, then `searchAndHighlight(anchor_text || snippet)`.
+        4. Non-PDF files show "Jump-to-page is available for PDFs only" message.
+    - **Worker Configuration**: Uses PDF.js worker from CDN: `https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`.
 
 ## External Dependencies
 - **PostgreSQL**: Primary relational database.

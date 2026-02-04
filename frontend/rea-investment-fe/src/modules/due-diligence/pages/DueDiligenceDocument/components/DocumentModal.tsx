@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import DocViewer, { DocViewerRenderers } from '@cyntler/react-doc-viewer';
@@ -43,6 +43,7 @@ import {
   TruncationWarning,
   ParsingMetadata
 } from '../../../../../components/common/ParsingStatus';
+import PDFViewer, { PDFViewerRef } from './PDFViewer';
 
 dayjs.extend(utc);
 
@@ -88,7 +89,7 @@ interface CollapsibleDocumentTermRenderer {
   fileId: number;
   taskId: number;
   evidence?: FileParsingEvidence | null;
-  onViewInDocument?: (page: number) => void;
+  onViewInDocument?: (page: number, snippet?: string | null, anchorText?: string | null) => void;
 }
 
 const CollapsibleDocumentTermRenderer: React.FC<CollapsibleDocumentTermRenderer> = props => {
@@ -140,7 +141,7 @@ const CollapsibleDocumentTermRenderer: React.FC<CollapsibleDocumentTermRenderer>
                 onClick={e => {
                   e.stopPropagation();
                   if (onViewInDocument && evidence.page) {
-                    onViewInDocument(evidence.page);
+                    onViewInDocument(evidence.page, evidence.snippet, evidence.anchor_text);
                   }
                 }}
                 sx={{
@@ -311,6 +312,8 @@ const DocumentModal: React.FC<DocumentModal> = props => {
     }
   }, [notify, fileTermKeysDataLoadingError]);
 
+  const pdfViewerRef = useRef<PDFViewerRef>(null);
+
   const getFileType = (filename: string): string | undefined => {
     const ext = filename.split('.').pop()?.toLowerCase();
     if (ext === 'pdf') return 'pdf';
@@ -321,24 +324,50 @@ const DocumentModal: React.FC<DocumentModal> = props => {
     return undefined;
   };
 
-  const FileRenderer = React.useMemo(
-    () =>
-      file && fileUrl ? (
-        <DocViewer
-          pluginRenderers={DocViewerRenderers}
-          documents={[{ uri: fileUrl, fileType: getFileType(file.filename) }]}
-          style={{ width: '100%', height: '100%' }}
-          config={{
-            header: {
-              disableHeader: true,
-              disableFileName: true
-            },
-            pdfVerticalScrollByDefault: true
-          }}
-        />
-      ) : null,
-    [file, fileUrl]
+  const isPDF = file && getFileType(file.filename) === 'pdf';
+
+  const handleViewInDocument = useCallback(
+    (page: number, snippet?: string | null, anchorText?: string | null) => {
+      if (!isPDF) {
+        notify('Jump-to-page is available for PDFs only');
+        return;
+      }
+      if (pdfViewerRef.current) {
+        pdfViewerRef.current.jumpToPage(page);
+        const searchText = anchorText || snippet;
+        if (searchText) {
+          setTimeout(() => {
+            pdfViewerRef.current?.searchAndHighlight(searchText);
+          }, 300);
+        }
+        notify(`Jumped to page ${page}`);
+      }
+    },
+    [isPDF, notify]
   );
+
+  const FileRenderer = React.useMemo(() => {
+    if (!file || !fileUrl) return null;
+
+    if (isPDF) {
+      return <PDFViewer ref={pdfViewerRef} fileUrl={fileUrl} />;
+    }
+
+    return (
+      <DocViewer
+        pluginRenderers={DocViewerRenderers}
+        documents={[{ uri: fileUrl, fileType: getFileType(file.filename) }]}
+        style={{ width: '100%', height: '100%' }}
+        config={{
+          header: {
+            disableHeader: true,
+            disableFileName: true
+          },
+          pdfVerticalScrollByDefault: true
+        }}
+      />
+    );
+  }, [file, fileUrl, isPDF]);
 
   if (!file || !fileUrl) return null;
 
@@ -482,9 +511,7 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                                 fileId={fileId}
                                 taskId={taskId}
                                 evidence={evidence}
-                                onViewInDocument={page => {
-                                  notify(`Navigate to page ${page} in the document viewer`);
-                                }}
+                                onViewInDocument={handleViewInDocument}
                               />
                             )
                           )}
