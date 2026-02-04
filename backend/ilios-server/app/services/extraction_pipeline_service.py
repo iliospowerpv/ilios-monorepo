@@ -138,10 +138,14 @@ class ExtractionPipelineService:
         field_names = [f["display_name"] for f in config["fields"]]
         fields_list = "\n".join(f"- {name}" for name in field_names)
 
-        user_prompt = config["prompt_template"]["extraction_prompt"].format(
-            document_type=config["document_type"]["display_name"],
-            fields_list=fields_list,
-            document_text=document_text,
+        # Use str.replace() instead of .format() to avoid conflicts with JSON braces
+        # The prompt template uses {{PLACEHOLDER}} syntax
+        extraction_prompt = config["prompt_template"]["extraction_prompt"]
+        user_prompt = (
+            extraction_prompt
+            .replace("{{FIELD_LIST}}", fields_list)
+            .replace("{{DOC_TYPE}}", config["document_type"]["display_name"])
+            .replace("{{DOCUMENT_TEXT}}", document_text)
         )
 
         return {
