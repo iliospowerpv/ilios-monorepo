@@ -1,0 +1,50 @@
+DATA ROOM PIPELINE – Phase 3: Quality Guardrails + Resource Limits (PDF/DOCX)
+
+Context:
+- In-app parsing is working and runs asynchronously with claim/idempotency.
+- Text extraction supports PDF (pypdf) and DOCX (python-docx).
+- We want to prevent low-quality or oversized inputs from causing cost/latency spikes or garbage extraction.
+- Failures must be deterministic: processing_failed with clear reason codes and messages.
+
+Objective:
+Add parsing guardrails:
+- Minimum extracted text threshold
+- Max file size/pages/chars protections
+- Clear reason codes stored and returned for debugging
+
+Tasks:
+A) Add extraction quality checks
+1) After extracting text, compute:
+   - char_count
+   - (optional) word_count
+   - (optional) page_count for PDFs
+2) If extracted text is below a threshold (e.g., < 500 chars), fail with:
+   - status = processing_failed
+   - error_code = insufficient_text_extracted (or embed in error_message if no column)
+   - message suggests: “This looks like a scanned document; OCR may be required.”
+
+B) Add resource limits (configurable)
+Implement configurable limits (env or settings with safe defaults):
+- max_file_size_mb (e.g., 15–25MB)
+- max_pdf_pages (e.g., 200)
+- max_chars_to_llm (e.g., 200k chars)
+Behavior:
+- If file too large / too many pages: fail early with reason_code (file_too_large / too_many_pages).
+- If text too long: truncate deterministically with a log + store truncated_char_count (or note in raw response metadata).
+
+C) Persist and expose reason codes
+- Ensure AIParsingResult failure includes a machine-readable reason_code.
+  - If AIParsingResult has no reason_code column, store it in error_message in a consistent prefix format, and include it in API response payloads where appropriate.
+- Ensure standardized logging includes reason_code + correlation_id.
+
+D) Tests
+Add integration tests:
+1) PDF with minimal text => processing_failed with insufficient_text_extracted
+2) Oversized file (simulate via config or fixture) => processing_failed with file_too_large
+3) Truncation path => succeeds but logs truncation and indicates truncation occurred (assert via stored metadata or log capture if available)
+
+Deliverables:
+- Guardrails implemented
+- Settings documented in replit.md (limits + thresholds)
+- Tests passing
+Proceed now.

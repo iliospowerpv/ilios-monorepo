@@ -5,10 +5,13 @@ Uses Replit AI Integrations (OpenAI) for text extraction and field parsing.
 
 Flow:
 1. Download file bytes from Replit Object Storage
-2. Extract text from PDF/DOCX using pypdf/python-docx
-3. Build prompt using ExtractionPipelineService registry
-4. Call OpenAI API for extraction
-5. Parse and store results in AIParsingResult
+2. Validate file size and page count (guardrails)
+3. Extract text from PDF/DOCX using pypdf/python-docx
+4. Validate extracted text quality (min chars threshold)
+5. Truncate text if exceeds max chars limit
+6. Build prompt using ExtractionPipelineService registry
+7. Call OpenAI API for extraction
+8. Parse and store results in AIParsingResult
 
 Uses gpt-5.2 model via Replit AI Integrations (no API key required, billed to credits).
 """
@@ -17,9 +20,11 @@ import json
 import logging
 import os
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timezone
+from enum import Enum
 from io import BytesIO
-from typing import Optional
+from typing import Optional, Tuple
 
 from sqlalchemy.orm import Session
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception
@@ -28,8 +33,45 @@ from app.crud.ai_parsing_result import AIParsingResultCRUD
 from app.helpers.files.storage_service import get_storage_service
 from app.models.file import File as FileModel, FileParsingStatuses
 from app.services.extraction_pipeline_service import ExtractionPipelineService
+from app.settings import settings
 
 logger = logging.getLogger(__name__)
+
+
+class ParsingReasonCode(str, Enum):
+    """Machine-readable reason codes for parsing failures."""
+    FILE_TOO_LARGE = "file_too_large"
+    TOO_MANY_PAGES = "too_many_pages"
+    INSUFFICIENT_TEXT_EXTRACTED = "insufficient_text_extracted"
+    UNSUPPORTED_FILE_TYPE = "unsupported_file_type"
+    TEXT_EXTRACTION_FAILED = "text_extraction_failed"
+    LLM_CALL_FAILED = "llm_call_failed"
+    NO_EXTRACTION_CONFIG = "no_extraction_config"
+    STORAGE_ERROR = "storage_error"
+
+
+@dataclass
+class ExtractionResult:
+    """Result of text extraction with metadata."""
+    text: str
+    char_count: int
+    word_count: int
+    page_count: Optional[int]
+    was_truncated: bool
+    truncated_char_count: Optional[int] = None
+
+
+class ParsingGuardrailError(Exception):
+    """Exception raised when a parsing guardrail is violated."""
+    def __init__(self, reason_code: ParsingReasonCode, message: str, details: Optional[dict] = None):
+        self.reason_code = reason_code
+        self.message = message
+        self.details = details or {}
+        super().__init__(f"[{reason_code.value}] {message}")
+    
+    def formatted_error(self) -> str:
+        """Return error message with reason code prefix."""
+        return f"[{self.reason_code.value}] {self.message}"
 
 
 def is_rate_limit_error(exception: BaseException) -> bool:
@@ -44,20 +86,59 @@ def is_rate_limit_error(exception: BaseException) -> bool:
     )
 
 
-def extract_text_from_pdf(file_bytes: bytes) -> str:
-    """Extract text from PDF bytes using pypdf."""
+def validate_file_size(file_bytes: bytes, max_size_mb: int) -> None:
+    """Validate file size against maximum limit."""
+    file_size_mb = len(file_bytes) / (1024 * 1024)
+    if file_size_mb > max_size_mb:
+        raise ParsingGuardrailError(
+            reason_code=ParsingReasonCode.FILE_TOO_LARGE,
+            message=f"File size ({file_size_mb:.1f} MB) exceeds maximum allowed ({max_size_mb} MB)",
+            details={"file_size_mb": round(file_size_mb, 2), "max_size_mb": max_size_mb}
+        )
+
+
+def validate_pdf_page_count(pdf_reader, max_pages: int) -> int:
+    """Validate PDF page count and return the count."""
+    page_count = len(pdf_reader.pages)
+    if page_count > max_pages:
+        raise ParsingGuardrailError(
+            reason_code=ParsingReasonCode.TOO_MANY_PAGES,
+            message=f"PDF has {page_count} pages, exceeds maximum allowed ({max_pages} pages)",
+            details={"page_count": page_count, "max_pages": max_pages}
+        )
+    return page_count
+
+
+def extract_text_from_pdf(file_bytes: bytes, max_pages: Optional[int] = None) -> Tuple[str, int]:
+    """Extract text from PDF bytes using pypdf.
+    
+    Returns:
+        Tuple of (extracted_text, page_count)
+    """
     try:
         from pypdf import PdfReader
         pdf_reader = PdfReader(BytesIO(file_bytes))
+        
+        if max_pages is not None:
+            page_count = validate_pdf_page_count(pdf_reader, max_pages)
+        else:
+            page_count = len(pdf_reader.pages)
+        
         text_parts = []
         for page_num, page in enumerate(pdf_reader.pages):
             page_text = page.extract_text()
             if page_text:
                 text_parts.append(f"--- Page {page_num + 1} ---\n{page_text}")
-        return "\n\n".join(text_parts)
+        return ("\n\n".join(text_parts), page_count)
+    except ParsingGuardrailError:
+        raise
     except Exception as e:
         logger.error(f"Failed to extract text from PDF: {e}")
-        raise ValueError(f"PDF text extraction failed: {e}")
+        raise ParsingGuardrailError(
+            reason_code=ParsingReasonCode.TEXT_EXTRACTION_FAILED,
+            message=f"PDF text extraction failed: {e}",
+            details={"error": str(e)}
+        )
 
 
 def extract_text_from_docx(file_bytes: bytes) -> str:
@@ -77,14 +158,116 @@ def extract_text_from_docx(file_bytes: bytes) -> str:
         return "\n\n".join(text_parts)
     except Exception as e:
         logger.error(f"Failed to extract text from DOCX: {e}")
-        raise ValueError(f"DOCX text extraction failed: {e}")
+        raise ParsingGuardrailError(
+            reason_code=ParsingReasonCode.TEXT_EXTRACTION_FAILED,
+            message=f"DOCX text extraction failed: {e}",
+            details={"error": str(e)}
+        )
+
+
+def validate_extracted_text(text: str, min_chars: int) -> None:
+    """Validate that extracted text meets minimum quality threshold."""
+    if len(text) < min_chars:
+        raise ParsingGuardrailError(
+            reason_code=ParsingReasonCode.INSUFFICIENT_TEXT_EXTRACTED,
+            message=f"Extracted text ({len(text)} chars) below minimum threshold ({min_chars} chars). "
+                    "This may be a scanned document requiring OCR.",
+            details={"char_count": len(text), "min_chars": min_chars}
+        )
+
+
+def truncate_text_if_needed(text: str, max_chars: int) -> Tuple[str, bool, Optional[int]]:
+    """Truncate text to maximum chars if needed.
+    
+    Returns:
+        Tuple of (text, was_truncated, truncated_char_count)
+    """
+    if len(text) <= max_chars:
+        return (text, False, None)
+    
+    truncated_count = len(text) - max_chars
+    truncated_text = text[:max_chars]
+    
+    newline_pos = truncated_text.rfind("\n", max_chars - 500, max_chars)
+    if newline_pos > 0:
+        truncated_text = truncated_text[:newline_pos]
+    
+    logger.warning(
+        f"Text truncated from {len(text)} to {len(truncated_text)} chars "
+        f"(removed {truncated_count} chars)"
+    )
+    
+    return (truncated_text, True, truncated_count)
+
+
+def extract_text_with_guardrails(
+    file_bytes: bytes,
+    filename: str,
+    max_file_size_mb: Optional[int] = None,
+    max_pdf_pages: Optional[int] = None,
+    min_text_chars: Optional[int] = None,
+    max_chars_to_llm: Optional[int] = None,
+) -> ExtractionResult:
+    """Extract text from file with full guardrail validation.
+    
+    Args:
+        file_bytes: Raw file bytes
+        filename: Original filename (for extension detection)
+        max_file_size_mb: Max file size in MB (None = use settings default)
+        max_pdf_pages: Max PDF pages (None = use settings default)
+        min_text_chars: Min extracted chars (None = use settings default)
+        max_chars_to_llm: Max chars to send to LLM (None = use settings default)
+    
+    Returns:
+        ExtractionResult with text and metadata
+    
+    Raises:
+        ParsingGuardrailError: If any guardrail is violated
+    """
+    max_file_size_mb = max_file_size_mb or settings.parsing_max_file_size_mb
+    max_pdf_pages = max_pdf_pages or settings.parsing_max_pdf_pages
+    min_text_chars = min_text_chars or settings.parsing_min_text_chars
+    max_chars_to_llm = max_chars_to_llm or settings.parsing_max_chars_to_llm
+    
+    validate_file_size(file_bytes, max_file_size_mb)
+    
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    page_count = None
+    
+    if ext == "pdf":
+        text, page_count = extract_text_from_pdf(file_bytes, max_pdf_pages)
+    elif ext in ("docx", "doc"):
+        text = extract_text_from_docx(file_bytes)
+    else:
+        raise ParsingGuardrailError(
+            reason_code=ParsingReasonCode.UNSUPPORTED_FILE_TYPE,
+            message=f"Unsupported file type: {ext}",
+            details={"extension": ext, "supported": ["pdf", "docx", "doc"]}
+        )
+    
+    validate_extracted_text(text, min_text_chars)
+    
+    text, was_truncated, truncated_char_count = truncate_text_if_needed(text, max_chars_to_llm)
+    
+    return ExtractionResult(
+        text=text,
+        char_count=len(text),
+        word_count=len(text.split()),
+        page_count=page_count,
+        was_truncated=was_truncated,
+        truncated_char_count=truncated_char_count,
+    )
 
 
 def extract_text(file_bytes: bytes, filename: str) -> str:
-    """Extract text from file bytes based on file extension."""
+    """Extract text from file bytes based on file extension.
+    
+    DEPRECATED: Use extract_text_with_guardrails for full validation.
+    """
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     if ext == "pdf":
-        return extract_text_from_pdf(file_bytes)
+        text, _ = extract_text_from_pdf(file_bytes)
+        return text
     elif ext in ("docx", "doc"):
         return extract_text_from_docx(file_bytes)
     else:
@@ -206,31 +389,76 @@ class InAppParsingService:
         logger.info(f"{log_prefix} Starting in-app parsing for document type: {document_type_name}")
         start_time = datetime.now(timezone.utc)
         retries = 0
+        extraction_metadata = {}
 
         try:
-            file_bytes = self.download_file_bytes(file)
+            try:
+                file_bytes = self.download_file_bytes(file)
+            except Exception as e:
+                raise ParsingGuardrailError(
+                    reason_code=ParsingReasonCode.STORAGE_ERROR,
+                    message=f"Failed to download file: {e}",
+                    details={"file_id": file.id}
+                )
+            
             logger.info(f"{log_prefix} Downloaded {len(file_bytes)} bytes")
-            document_text = extract_text(file_bytes, file.filename)
-            logger.info(f"{log_prefix} Extracted {len(document_text)} characters of text")
-            if len(document_text) < 50:
-                raise ValueError(f"Extracted text too short ({len(document_text)} chars) - possibly empty document")
-            prompt_data = self.pipeline_service.build_extraction_prompt(document_type_name, document_text)
+            
+            extraction_result = extract_text_with_guardrails(
+                file_bytes=file_bytes,
+                filename=file.filename,
+            )
+            
+            extraction_metadata = {
+                "char_count": extraction_result.char_count,
+                "word_count": extraction_result.word_count,
+                "page_count": extraction_result.page_count,
+                "was_truncated": extraction_result.was_truncated,
+                "truncated_char_count": extraction_result.truncated_char_count,
+            }
+            
+            logger.info(
+                f"{log_prefix} Extracted {extraction_result.char_count} chars, "
+                f"{extraction_result.word_count} words, "
+                f"pages={extraction_result.page_count}, "
+                f"truncated={extraction_result.was_truncated}"
+            )
+            
+            prompt_data = self.pipeline_service.build_extraction_prompt(
+                document_type_name, extraction_result.text
+            )
             if not prompt_data:
-                raise ValueError(f"No extraction config found for document type: {document_type_name}")
+                raise ParsingGuardrailError(
+                    reason_code=ParsingReasonCode.NO_EXTRACTION_CONFIG,
+                    message=f"No extraction config found for document type: {document_type_name}",
+                    details={"document_type": document_type_name}
+                )
+            
             logger.info(
                 f"{log_prefix} Built extraction prompt with "
                 f"doc_type_id={prompt_data['metadata']['document_type_id']}, "
                 f"schema_v={prompt_data['metadata']['schema_version_id']}, "
                 f"prompt_v={prompt_data['metadata']['prompt_template_id']}"
             )
-            parsed_result = self.call_llm(
-                system_prompt=prompt_data["system_prompt"],
-                user_prompt=prompt_data["user_prompt"],
-                model_name=prompt_data["model_config"]["model_name"],
-                max_tokens=prompt_data["model_config"]["max_tokens"] or 8192,
-            )
+            
+            try:
+                parsed_result = self.call_llm(
+                    system_prompt=prompt_data["system_prompt"],
+                    user_prompt=prompt_data["user_prompt"],
+                    model_name=prompt_data["model_config"]["model_name"],
+                    max_tokens=prompt_data["model_config"]["max_tokens"] or 8192,
+                )
+            except Exception as llm_error:
+                raise ParsingGuardrailError(
+                    reason_code=ParsingReasonCode.LLM_CALL_FAILED,
+                    message=f"LLM extraction failed: {llm_error}",
+                    details={"error": str(llm_error)}
+                )
+            
             logger.info(f"{log_prefix} LLM extraction completed, {len(parsed_result)} fields extracted")
             end_time = datetime.now(timezone.utc)
+            
+            full_metadata = {**prompt_data["metadata"], **extraction_metadata}
+            
             self.ai_results_crud.update_by_id(ai_result_id, {
                 "status": FileParsingStatuses.completed,
                 "parsed_result": parsed_result,
@@ -241,14 +469,27 @@ class InAppParsingService:
                 "retries": retries,
                 "error_message": None,
             })
+            
             logger.info(f"{log_prefix} Parsing completed successfully in {(end_time - start_time).total_seconds():.2f}s")
+            
             return {
                 "status": "completed",
                 "parsed_result": parsed_result,
-                "metadata": prompt_data["metadata"],
+                "metadata": full_metadata,
                 "duration_seconds": (end_time - start_time).total_seconds(),
             }
 
+        except ParsingGuardrailError as e:
+            end_time = datetime.now(timezone.utc)
+            error_msg = e.formatted_error()
+            logger.error(f"{log_prefix} Guardrail violation: {error_msg}")
+            self.ai_results_crud.update_by_id(ai_result_id, {
+                "status": FileParsingStatuses.processing_failed,
+                "end_time": end_time,
+                "error_message": error_msg,
+                "retries": retries,
+            })
+            raise
         except Exception as e:
             end_time = datetime.now(timezone.utc)
             error_msg = str(e)[:500]

@@ -109,6 +109,12 @@ class Settings(BaseSettings):
     agreement_names_mapping_config_path: Optional[str] = "configs/agreement_names_mapping_config.json"
     co_terminus_config_path: Optional[str] = "configs/co_terminus_config.json"
 
+    # Parsing guardrails and resource limits
+    parsing_min_text_chars: int = 500  # Min extracted chars; below this suggests scanned/image PDF
+    parsing_max_file_size_mb: int = 25  # Max file size in MB before rejection
+    parsing_max_pdf_pages: int = 200  # Max PDF pages before rejection
+    parsing_max_chars_to_llm: int = 200000  # Max chars sent to LLM; truncates beyond this
+
     # Rombus settings
     rombus_api_key: str
 

@@ -1061,3 +1061,229 @@ class TestLLMStubSafety:
             else:
                 os.environ.pop("LLM_STUB_ENABLED", None)
             disable_llm_stub()
+
+
+class TestParsingGuardrails:
+    """Phase 3: Tests for parsing guardrails and resource limits."""
+    
+    def test_insufficient_text_fails_with_reason_code(
+        self,
+        db_session,
+        test_file_with_storage,
+        llm_stub,
+        mocker,
+    ):
+        """Verify PDF with minimal text fails with insufficient_text_extracted reason code."""
+        from app.services.in_app_parsing_service import (
+            InAppParsingService,
+            ParsingGuardrailError,
+            ParsingReasonCode,
+        )
+        
+        minimal_pdf = b"""%PDF-1.4
+1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
+2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj
+3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents 4 0 R>>endobj
+4 0 obj<</Length 20>>stream
+BT /F1 12 Tf (Hi) Tj ET
+endstream
+endobj
+xref
+0 5
+trailer<</Size 5/Root 1 0 R>>
+startxref
+200
+%%EOF"""
+        
+        mock_storage = MagicMock()
+        mock_storage.download_bytes.return_value = minimal_pdf
+        mocker.patch("app.services.in_app_parsing_service.get_storage_service", return_value=mock_storage)
+        mocker.patch("app.services.extraction_pipeline_service.ExtractionPipelineService.get_extraction_config", return_value={
+            "document_type": {"id": 1, "name": "Site Lease"},
+            "schema_version": {"id": 1, "version": "1.0.0"},
+            "prompt_template": {"id": 1, "version": "1.0.0"},
+        })
+        
+        ai_crud = AIParsingResultCRUD(db_session)
+        run, _ = ai_crud.create_or_get_active(
+            file_id=test_file_with_storage.id,
+            payload={"file_id": test_file_with_storage.id, "status": FileParsingStatuses.queued}
+        )
+        
+        service = InAppParsingService(db_session)
+        
+        with pytest.raises(ParsingGuardrailError) as exc_info:
+            service.parse_file(
+                file=test_file_with_storage,
+                ai_result_id=run.id,
+                document_type_name="Site Lease",
+                correlation_id="test-min-text",
+            )
+        
+        assert exc_info.value.reason_code == ParsingReasonCode.INSUFFICIENT_TEXT_EXTRACTED
+        assert "insufficient_text_extracted" in str(exc_info.value).lower()
+        
+        db_session.refresh(run)
+        assert run.status == FileParsingStatuses.processing_failed
+        assert "[insufficient_text_extracted]" in run.error_message
+    
+    def test_file_too_large_fails_with_reason_code(
+        self,
+        db_session,
+        test_file_with_storage,
+        llm_stub,
+        mocker,
+    ):
+        """Verify oversized file fails with file_too_large reason code."""
+        from app.services.in_app_parsing_service import (
+            InAppParsingService,
+            ParsingGuardrailError,
+            ParsingReasonCode,
+        )
+        
+        mocker.patch("app.settings.settings.parsing_max_file_size_mb", 1)
+        
+        large_bytes = b"X" * (2 * 1024 * 1024)  # 2MB
+        
+        mock_storage = MagicMock()
+        mock_storage.download_bytes.return_value = large_bytes
+        mocker.patch("app.services.in_app_parsing_service.get_storage_service", return_value=mock_storage)
+        
+        ai_crud = AIParsingResultCRUD(db_session)
+        run, _ = ai_crud.create_or_get_active(
+            file_id=test_file_with_storage.id,
+            payload={"file_id": test_file_with_storage.id, "status": FileParsingStatuses.queued}
+        )
+        
+        service = InAppParsingService(db_session)
+        
+        with pytest.raises(ParsingGuardrailError) as exc_info:
+            service.parse_file(
+                file=test_file_with_storage,
+                ai_result_id=run.id,
+                document_type_name="Site Lease",
+                correlation_id="test-large-file",
+            )
+        
+        assert exc_info.value.reason_code == ParsingReasonCode.FILE_TOO_LARGE
+        assert "file_too_large" in str(exc_info.value).lower()
+        
+        db_session.refresh(run)
+        assert run.status == FileParsingStatuses.processing_failed
+        assert "[file_too_large]" in run.error_message
+    
+    def test_truncation_path_succeeds_with_metadata(
+        self,
+        db_session,
+        test_file_with_storage,
+        llm_stub,
+        mocker,
+    ):
+        """Verify text truncation succeeds and includes truncation metadata."""
+        from app.services.in_app_parsing_service import InAppParsingService
+        
+        mocker.patch("app.settings.settings.parsing_max_chars_to_llm", 1000)
+        mocker.patch("app.settings.settings.parsing_min_text_chars", 100)
+        
+        long_text = "This is a test document. " * 200
+        
+        mock_pdf_bytes = b"""%PDF-1.4
+1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
+2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj
+3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents 4 0 R>>endobj
+4 0 obj<</Length """ + str(len(long_text) + 30).encode() + b""">>stream
+BT /F1 12 Tf (""" + long_text.encode() + b""") Tj ET
+endstream
+endobj
+xref
+0 5
+trailer<</Size 5/Root 1 0 R>>
+startxref
+200
+%%EOF"""
+        
+        mock_storage = MagicMock()
+        mock_storage.download_bytes.return_value = mock_pdf_bytes
+        mocker.patch("app.services.in_app_parsing_service.get_storage_service", return_value=mock_storage)
+        
+        def mock_extract_with_truncation(file_bytes, filename, **kwargs):
+            from app.services.in_app_parsing_service import ExtractionResult
+            return ExtractionResult(
+                text=long_text[:1000],
+                char_count=1000,
+                word_count=200,
+                page_count=1,
+                was_truncated=True,
+                truncated_char_count=len(long_text) - 1000,
+            )
+        
+        mocker.patch("app.services.in_app_parsing_service.extract_text_with_guardrails", mock_extract_with_truncation)
+        
+        prompt_data = {
+            "system_prompt": "Extract fields.",
+            "user_prompt": "Document: {text}",
+            "metadata": {
+                "document_type_id": 1,
+                "schema_version_id": 1,
+                "prompt_template_id": 1,
+            },
+            "model_config": {"model_name": "gpt-5.2", "max_tokens": 8192},
+        }
+        mocker.patch("app.services.extraction_pipeline_service.ExtractionPipelineService.build_extraction_prompt", return_value=prompt_data)
+        
+        ai_crud = AIParsingResultCRUD(db_session)
+        run, _ = ai_crud.create_or_get_active(
+            file_id=test_file_with_storage.id,
+            payload={"file_id": test_file_with_storage.id, "status": FileParsingStatuses.queued}
+        )
+        
+        service = InAppParsingService(db_session)
+        
+        result = service.parse_file(
+            file=test_file_with_storage,
+            ai_result_id=run.id,
+            document_type_name="Site Lease",
+            correlation_id="test-truncation",
+        )
+        
+        assert result["status"] == "completed"
+        assert result["metadata"]["was_truncated"] is True
+        assert result["metadata"]["truncated_char_count"] is not None
+        assert result["metadata"]["truncated_char_count"] > 0
+        
+        db_session.refresh(run)
+        assert run.status == FileParsingStatuses.completed
+    
+    def test_too_many_pages_fails_with_reason_code(
+        self,
+        db_session,
+        test_file_with_storage,
+        llm_stub,
+        mocker,
+    ):
+        """Verify PDF with too many pages fails with too_many_pages reason code."""
+        from app.services.in_app_parsing_service import (
+            extract_text_with_guardrails,
+            ParsingGuardrailError,
+            ParsingReasonCode,
+        )
+        
+        mocker.patch("app.settings.settings.parsing_max_pdf_pages", 5)
+        
+        mock_pdf_reader = MagicMock()
+        mock_pdf_reader.pages = [MagicMock() for _ in range(10)]
+        
+        mocker.patch("pypdf.PdfReader", return_value=mock_pdf_reader)
+        
+        mock_bytes = b"fake pdf content"
+        
+        with pytest.raises(ParsingGuardrailError) as exc_info:
+            extract_text_with_guardrails(
+                file_bytes=mock_bytes,
+                filename="test.pdf",
+                max_pdf_pages=5,
+            )
+        
+        assert exc_info.value.reason_code == ParsingReasonCode.TOO_MANY_PAGES
+        assert "10 pages" in exc_info.value.message
+        assert "5" in exc_info.value.message
