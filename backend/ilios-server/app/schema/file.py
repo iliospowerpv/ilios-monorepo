@@ -89,6 +89,9 @@ class FileUpdateSuccess(SuccessUpdateSchema):
 
 class FileParseTriggerSuccess(SuccessUpdateSchema):
     message: str = Field(description="Success message", examples=[FileMessages.file_parse_trigger_success])
+    run_id: int = Field(description="The parsing run ID (AIParsingResult.id)", examples=[42])
+    correlation_id: str = Field(description="Unique correlation ID for tracing", examples=["abc12345"])
+    status: str = Field(description="Current status of the parsing job", examples=["queued"])
 
 
 class FileParsingStatus(BaseModel):

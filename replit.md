@@ -39,6 +39,20 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
         - Happy path: Trigger → claim → process → completed with parsed_result and binding snapshots.
         - Idempotency: Double-trigger returns existing run; force reprocess bypasses.
         - Failure path: LLM/storage exceptions → `processing_failed` with error_message and end_time.
+    - **Phase 2B.1 Trigger Response Identifiers & Safe Stub Gating**:
+        - **Trigger Response Fields**: `FileParseTriggerSuccess` now includes:
+            - `run_id` (int): AIParsingResult.id for the created/existing job
+            - `correlation_id` (str): UUID for request tracing
+            - `status` (str): Current job status ("queued", "processing", etc.)
+            - `code` (int): HTTP status code (202)
+            - `message` (str): Success message
+        - **Idempotency Behavior**: Duplicate triggers return the EXISTING run_id, correlation_id, and current status.
+        - **LLM Stub Safety Gating**:
+            - Stub can ONLY be enabled in safe environments: test, testing, dev, development, local, debug.
+            - Blocked environments: production, prod, staging (stub always disabled).
+            - `enable_llm_stub()` raises `RuntimeError` if called in production.
+            - `is_llm_stub_enabled()` returns False in production regardless of env var.
+            - Pytest detection: `PYTEST_CURRENT_TEST` env var auto-allows stub.
 - **Storage Service Abstraction**: Replit-native storage architecture with an abstract `StorageService` interface, `ReplitStorageService` (default), optional `GCSStorageService`, and `HybridStorageService` for migration support. Utilizes new direct upload and download endpoints.
 
 ## External Dependencies

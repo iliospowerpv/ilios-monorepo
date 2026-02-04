@@ -347,7 +347,13 @@ async def trigger_file_parsing(
     
     if not is_new:
         logger.info(f"Returning existing active run {run.id} for file {file.id} (idempotency)")
-        return {"code": status.HTTP_202_ACCEPTED, "message": FileMessages.file_parse_trigger_success}
+        return {
+            "code": status.HTTP_202_ACCEPTED,
+            "message": FileMessages.file_parse_trigger_success,
+            "run_id": run.id,
+            "correlation_id": run.correlation_id or correlation_id,
+            "status": run.status.value if hasattr(run.status, 'value') else str(run.status),
+        }
     
     logger.info(
         f"[{correlation_id}] Created queued parsing job {run.id} for file {file.id}: "
@@ -362,7 +368,13 @@ async def trigger_file_parsing(
         correlation_id,
     )
 
-    return {"code": status.HTTP_202_ACCEPTED, "message": FileMessages.file_parse_trigger_success}
+    return {
+        "code": status.HTTP_202_ACCEPTED,
+        "message": FileMessages.file_parse_trigger_success,
+        "run_id": run.id,
+        "correlation_id": correlation_id,
+        "status": FileParsingStatuses.queued.value,
+    }
 
 
 @files_parsing_router.get(

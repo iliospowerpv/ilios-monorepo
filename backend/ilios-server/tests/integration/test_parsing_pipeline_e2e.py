@@ -152,12 +152,14 @@ class TestParsingPipelineHappyPath:
         company_member_user_auth_header,
         mocker,
     ):
-        """Verify actual trigger endpoint returns 202 and creates queued job.
+        """Verify trigger endpoint returns 202 with run_id, correlation_id, and status.
         
-        Note: The current API schema (FileParseTriggerSuccess) returns only 
-        {code, message} without run_id/correlation_id in response body.
-        The correlation_id is stored in DB and logged for tracing.
-        We verify DB state to confirm job creation.
+        The API response includes:
+        - run_id: AIParsingResult.id for the created/existing job
+        - correlation_id: UUID for request tracing
+        - status: Current job status (queued/processing)
+        - code: HTTP status code (202)
+        - message: Success message
         """
         mocker.patch("app.services.in_app_parsing_service.InAppParsingService.check_openai_available", return_value=True)
         mocker.patch("app.services.extraction_pipeline_service.ExtractionPipelineService.get_extraction_config", return_value={
@@ -178,24 +180,38 @@ class TestParsingPipelineHappyPath:
         
         assert response.status_code == 202
         result = response.json()
+        
         assert result["code"] == 202
         assert result["message"] == "Parsing has been started"
+        assert "run_id" in result
+        assert "correlation_id" in result
+        assert "status" in result
+        
+        run_id = result["run_id"]
+        correlation_id = result["correlation_id"]
+        status = result["status"]
+        
+        assert isinstance(run_id, int)
+        assert run_id > 0
+        assert isinstance(correlation_id, str)
+        assert len(correlation_id) > 0
+        assert status in ["queued", "processing"]
         
         final_run_count = db_session.query(AIParsingResult).filter(
             AIParsingResult.file_id == test_file_with_storage.id
         ).count()
         assert final_run_count >= initial_run_count + 1
         
-        latest_run = db_session.query(AIParsingResult).filter(
-            AIParsingResult.file_id == test_file_with_storage.id
-        ).order_by(AIParsingResult.id.desc()).first()
+        db_run = db_session.query(AIParsingResult).filter(
+            AIParsingResult.id == run_id
+        ).first()
         
-        assert latest_run is not None
-        assert latest_run.status in [FileParsingStatuses.queued, FileParsingStatuses.processing]
-        assert latest_run.correlation_id is not None
-        assert latest_run.document_type_id == 1
-        assert latest_run.schema_version_id == 1
-        assert latest_run.prompt_template_id == 1
+        assert db_run is not None
+        assert db_run.correlation_id == correlation_id
+        assert db_run.status.value == status
+        assert db_run.document_type_id == 1
+        assert db_run.schema_version_id == 1
+        assert db_run.prompt_template_id == 1
     
     def test_trigger_creates_queued_job_with_correlation_id(
         self,
@@ -873,3 +889,175 @@ class TestAcceptPromoteWorkflow:
         
         assert test_file_with_storage.id is not None
         assert run.file_id == test_file_with_storage.id
+
+
+class TestLLMStubSafety:
+    """Test C: LLM stub safety gating - only allowed in test/dev environments."""
+    
+    def test_stub_cannot_be_enabled_in_production(self, mocker):
+        """Verify LLM stub raises RuntimeError when enabled in production environment."""
+        import os
+        from app.services.llm_stub import (
+            enable_llm_stub,
+            disable_llm_stub,
+            is_llm_stub_enabled,
+            _is_safe_environment,
+        )
+        
+        original_env = os.environ.get("environment_name")
+        original_stub_enabled = os.environ.get("LLM_STUB_ENABLED")
+        
+        try:
+            os.environ["environment_name"] = "production"
+            os.environ.pop("PYTEST_CURRENT_TEST", None)
+            os.environ.pop("LLM_STUB_FORCE_ALLOW", None)
+            
+            assert _is_safe_environment() is False
+            
+            with pytest.raises(RuntimeError) as exc_info:
+                enable_llm_stub()
+            
+            assert "production" in str(exc_info.value).lower()
+            assert "only allowed" in str(exc_info.value).lower()
+            
+            os.environ["LLM_STUB_ENABLED"] = "true"
+            assert is_llm_stub_enabled() is False
+            
+        finally:
+            if original_env:
+                os.environ["environment_name"] = original_env
+            else:
+                os.environ.pop("environment_name", None)
+            if original_stub_enabled:
+                os.environ["LLM_STUB_ENABLED"] = original_stub_enabled
+            else:
+                os.environ.pop("LLM_STUB_ENABLED", None)
+            disable_llm_stub()
+    
+    def test_stub_cannot_be_enabled_in_staging(self, mocker):
+        """Verify LLM stub raises RuntimeError when enabled in staging environment."""
+        import os
+        from app.services.llm_stub import (
+            enable_llm_stub,
+            disable_llm_stub,
+            is_llm_stub_enabled,
+        )
+        
+        original_env = os.environ.get("environment_name")
+        original_stub_enabled = os.environ.get("LLM_STUB_ENABLED")
+        
+        try:
+            os.environ["environment_name"] = "staging"
+            os.environ.pop("PYTEST_CURRENT_TEST", None)
+            os.environ.pop("LLM_STUB_FORCE_ALLOW", None)
+            
+            with pytest.raises(RuntimeError) as exc_info:
+                enable_llm_stub()
+            
+            assert "staging" in str(exc_info.value).lower()
+            
+        finally:
+            if original_env:
+                os.environ["environment_name"] = original_env
+            else:
+                os.environ.pop("environment_name", None)
+            if original_stub_enabled:
+                os.environ["LLM_STUB_ENABLED"] = original_stub_enabled
+            else:
+                os.environ.pop("LLM_STUB_ENABLED", None)
+            disable_llm_stub()
+    
+    def test_stub_can_be_enabled_in_test_environment(self, mocker):
+        """Verify LLM stub can be enabled in test environment."""
+        import os
+        from app.services.llm_stub import (
+            enable_llm_stub,
+            disable_llm_stub,
+            is_llm_stub_enabled,
+            _is_safe_environment,
+        )
+        
+        original_env = os.environ.get("environment_name")
+        
+        try:
+            os.environ["environment_name"] = "test"
+            
+            assert _is_safe_environment() is True
+            
+            stub = enable_llm_stub()
+            assert stub is not None
+            assert is_llm_stub_enabled() is True
+            
+        finally:
+            if original_env:
+                os.environ["environment_name"] = original_env
+            else:
+                os.environ.pop("environment_name", None)
+            disable_llm_stub()
+    
+    def test_stub_can_be_enabled_in_dev_environment(self, mocker):
+        """Verify LLM stub can be enabled in development environment."""
+        import os
+        from app.services.llm_stub import (
+            enable_llm_stub,
+            disable_llm_stub,
+            is_llm_stub_enabled,
+        )
+        
+        original_env = os.environ.get("environment_name")
+        
+        try:
+            os.environ["environment_name"] = "development"
+            
+            stub = enable_llm_stub()
+            assert stub is not None
+            assert is_llm_stub_enabled() is True
+            
+        finally:
+            if original_env:
+                os.environ["environment_name"] = original_env
+            else:
+                os.environ.pop("environment_name", None)
+            disable_llm_stub()
+    
+    def test_stub_blocked_in_unknown_environment(self, mocker):
+        """Verify LLM stub is blocked in unknown environments (e.g., qa, uat).
+        
+        Unknown environments should be blocked by default for safety.
+        """
+        import os
+        from app.services.llm_stub import (
+            enable_llm_stub,
+            disable_llm_stub,
+            is_llm_stub_enabled,
+            _is_safe_environment,
+        )
+        
+        original_env = os.environ.get("environment_name")
+        original_stub_enabled = os.environ.get("LLM_STUB_ENABLED")
+        
+        try:
+            os.environ["environment_name"] = "qa"
+            os.environ.pop("PYTEST_CURRENT_TEST", None)
+            os.environ.pop("LLM_STUB_FORCE_ALLOW", None)
+            
+            assert _is_safe_environment() is False
+            
+            with pytest.raises(RuntimeError) as exc_info:
+                enable_llm_stub()
+            
+            assert "qa" in str(exc_info.value).lower()
+            
+            os.environ["LLM_STUB_ENABLED"] = "true"
+            assert is_llm_stub_enabled() is False
+            
+        finally:
+            if original_env:
+                os.environ["environment_name"] = original_env
+            else:
+                os.environ.pop("environment_name", None)
+            if original_stub_enabled:
+                os.environ["LLM_STUB_ENABLED"] = original_stub_enabled
+            else:
+                os.environ.pop("LLM_STUB_ENABLED", None)
+            disable_llm_stub()
