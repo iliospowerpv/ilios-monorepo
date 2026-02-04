@@ -21,7 +21,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningRoundedIcon from '@mui/icons-material/WarningRounded';
 import HelpIcon from '@mui/icons-material/Help';
 
-import { ApiClient, AgreementType } from '../../../../../../../../api';
+import { ApiClient } from '../../../../../../../../api';
 import { useNotify } from '../../../../../../../../contexts/notifications/notifications';
 import { useAuth } from '../../../../../../../../contexts/auth/auth';
 
@@ -29,6 +29,14 @@ interface AgreementTerm {
   name: string;
   value: string | null;
   updated_at: string | null;
+}
+
+interface DiligenceDocument {
+  id: number;
+  name: string;
+  files_count: number;
+  display_name?: string | null;
+  custom_name?: string | null;
 }
 
 interface ProjectSummaryPanelProps {
@@ -70,7 +78,7 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
   });
 
   const [isCoTerminusCheckRunning, setIsCoTerminusCheckRunning] = useState(false);
-  const [selectedAgreement, setSelectedAgreement] = useState<AgreementType | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<DiligenceDocument | null>(null);
 
   useEffect(() => {
     try {
@@ -101,31 +109,36 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
   });
 
   const {
-    data: agreementTypesData,
-    isLoading: isLoadingAgreementTypes,
-    isFetching: isFetchingAgreementTypes
+    data: documentsData,
+    isLoading: isLoadingDocuments,
+    isFetching: isFetchingDocuments
   } = useQuery({
-    queryFn: () => ApiClient.dueDiligence.getAgreementTypes(siteId),
-    queryKey: ['agreement-type', { siteId }],
+    queryFn: () => ApiClient.dueDiligence.getDocuments(siteId),
+    queryKey: ['site', 'diligence', { siteId }],
     enabled: hasDiligenceView
   });
 
+  const documentsWithFiles = useMemo(() => {
+    if (!documentsData?.items) return [];
+    return documentsData.items.flatMap(section => section.documents.filter(doc => doc.files_count > 0));
+  }, [documentsData?.items]);
+
   const { data: termData, isLoading: isLoadingTermData } = useQuery({
     queryFn: async () => {
-      if (selectedAgreement?.id) {
-        return ApiClient.dueDiligence.getAgreementTerms(siteId, selectedAgreement.id);
+      if (selectedDocument?.id) {
+        return ApiClient.dueDiligence.getAgreementTerms(siteId, selectedDocument.id);
       }
       return { items: [] };
     },
-    queryKey: ['agreement-term', { siteId, agreementId: selectedAgreement?.id }],
-    enabled: !!selectedAgreement && hasDiligenceView
+    queryKey: ['agreement-term', { siteId, documentId: selectedDocument?.id }],
+    enabled: !!selectedDocument?.id && hasDiligenceView
   });
 
   useEffect(() => {
-    if (agreementTypesData?.items?.[0] && !selectedAgreement) {
-      setSelectedAgreement(agreementTypesData.items[0]);
+    if (documentsWithFiles.length > 0 && !selectedDocument) {
+      setSelectedDocument(documentsWithFiles[0]);
     }
-  }, [agreementTypesData, selectedAgreement]);
+  }, [documentsWithFiles, selectedDocument]);
 
   useEffect(() => {
     const { status } = executionStatusData ?? { status: null };
@@ -249,22 +262,22 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
                 Terms & Values
               </Typography>
 
-              {isLoadingAgreementTypes ? (
+              {isLoadingDocuments ? (
                 <Box display="flex" alignItems="center" py={2}>
                   <CircularProgress size={20} sx={{ mr: 1 }} />
                   <Typography variant="body2" color="text.secondary">
                     Loading documents...
                   </Typography>
                 </Box>
-              ) : agreementTypesData?.items?.length ? (
+              ) : documentsWithFiles.length > 0 ? (
                 <>
                   <Box sx={{ mb: 2 }}>
                     <Autocomplete
-                      value={selectedAgreement}
-                      options={agreementTypesData.items}
+                      value={selectedDocument}
+                      options={documentsWithFiles}
                       size="small"
-                      getOptionLabel={option => option.name}
-                      loading={isFetchingAgreementTypes}
+                      getOptionLabel={option => option.display_name || option.custom_name || option.name}
+                      loading={isFetchingDocuments}
                       getOptionKey={option => option.id}
                       sx={{ maxWidth: 300 }}
                       renderInput={params => (
@@ -276,24 +289,24 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
                             ...params.InputProps,
                             endAdornment: (
                               <>
-                                {isFetchingAgreementTypes ? <CircularProgress size={16} /> : null}
+                                {isFetchingDocuments ? <CircularProgress size={16} /> : null}
                                 {params.InputProps.endAdornment}
                               </>
                             )
                           }}
                         />
                       )}
-                      onChange={(_, newValue) => setSelectedAgreement(newValue)}
+                      onChange={(_, newValue) => setSelectedDocument(newValue)}
                     />
                   </Box>
 
-                  {selectedAgreement && (
+                  {selectedDocument && (
                     <Box
                       sx={{ border: '1px solid #0000001F', borderRadius: 1, p: 2, maxHeight: 200, overflowY: 'auto' }}
                     >
                       <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                         <Typography variant="body2" fontWeight={600}>
-                          {selectedAgreement.name}
+                          {selectedDocument.display_name || selectedDocument.custom_name || selectedDocument.name}
                         </Typography>
                         <Link
                           component="button"
@@ -301,7 +314,7 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
                           underline="hover"
                           onClick={() =>
                             window.open(
-                              `/due-diligence/companies/${companyId}/sites/${siteId}/due-diligence/${selectedAgreement.id}`,
+                              `/due-diligence/companies/${companyId}/sites/${siteId}/due-diligence/${selectedDocument.id}`,
                               '_blank'
                             )
                           }
@@ -339,7 +352,7 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
                 </>
               ) : (
                 <Typography variant="body2" color="text.secondary">
-                  No AI-parsable documents available.
+                  No documents with uploaded files.
                 </Typography>
               )}
             </Grid>
