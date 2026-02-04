@@ -82,7 +82,13 @@ class ParseRunSchema(BaseModel):
     start_time: Optional[str] = None
     end_time: Optional[str] = None
     created_at: Optional[str] = None
+    correlation_id: Optional[str] = None
+    was_truncated: Optional[bool] = None
+    char_count: Optional[int] = None
+    word_count: Optional[int] = None
+    page_count: Optional[int] = None
     extracted_fields: Optional[list[ExtractedFieldSchema]] = None
+    is_latest: Optional[bool] = None
 
     class Config:
         from_attributes = True
@@ -116,9 +122,12 @@ async def get_parse_run_history(
 
     ai_results_crud = AIParsingResultCRUD(db_session)
     runs = ai_results_crud.get_runs_for_file(file.id)
+    latest_run = ai_results_crud.get_latest_run_for_file(file.id)
+    latest_run_id = latest_run.id if latest_run else None
 
     run_schemas = []
     for run in runs:
+        metadata = run.parsed_result.get("_metadata", {}) if run.parsed_result and isinstance(run.parsed_result, dict) else {}
         run_schemas.append(ParseRunSchema(
             id=run.id,
             file_id=run.file_id,
@@ -134,6 +143,12 @@ async def get_parse_run_history(
             start_time=run.start_time.isoformat() if run.start_time else None,
             end_time=run.end_time.isoformat() if run.end_time else None,
             created_at=run.created_at.isoformat() if hasattr(run, 'created_at') and run.created_at else None,
+            correlation_id=run.correlation_id,
+            was_truncated=metadata.get("was_truncated"),
+            char_count=metadata.get("char_count"),
+            word_count=metadata.get("word_count"),
+            page_count=metadata.get("page_count"),
+            is_latest=(run.id == latest_run_id),
         ))
 
     return ParseRunHistoryResponse(
@@ -578,4 +593,173 @@ async def reprocess_file(
         is_reprocess=True,
         schema_version_id=schema_version_id,
         prompt_template_id=prompt_template_id,
+    )
+
+
+class BulkAcceptFieldSchema(BaseModel):
+    field_name: str
+    value: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class BulkAcceptRequest(BaseModel):
+    run_id: int
+    fields: list[BulkAcceptFieldSchema]
+    allow_accept_non_latest: bool = False
+
+    class Config:
+        from_attributes = True
+
+
+class BulkAcceptResponse(BaseModel):
+    code: int
+    message: str
+    accepted_count: int
+    skipped_count: int
+    errors: list[str] = []
+
+
+@files_parsing_router.post(
+    "/bulk-accept/",
+    response_model=BulkAcceptResponse,
+    responses={
+        **HTTP_403_RESPONSE,
+        **HTTP_404_RESPONSE,
+        **HTTP_409_RESPONSE(message="Acceptance validation failed"),
+    },
+    description="Bulk accept AI-extracted values with safety validation. Validates run belongs to file, run is succeeded, and run is latest (unless allow_accept_non_latest=true).",
+)
+async def bulk_accept_ai_values(
+    request: BulkAcceptRequest,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    file: FileModel = Depends(get_authorized_file),
+    db_session: Session = Depends(get_session),
+):
+    from datetime import datetime, timezone
+    from app.crud.document_key import DocumentKeyCRUD
+    from app.services.project_facts_service import ProjectFactsService
+
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=file.document.site.company_id,
+        project_id=file.document.site_id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="edit",
+    )
+
+    ai_results_crud = AIParsingResultCRUD(db_session)
+    run = ai_results_crud.get_run_by_id(request.run_id)
+
+    if not run:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            detail=f"Parse run {request.run_id} not found"
+        )
+
+    if run.file_id != file.id:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            detail=f"Run {request.run_id} does not belong to file {file.id}"
+        )
+
+    if run.status != FileParsingStatuses.completed:
+        status_name = run.status.value if run.status else "unknown"
+        if run.status in [FileParsingStatuses.queued, FileParsingStatuses.processing]:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                detail=f"Cannot accept values from run {request.run_id}: run is still {status_name}"
+            )
+        else:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot accept values from run {request.run_id}: run status is {status_name}"
+            )
+
+    latest_run = ai_results_crud.get_latest_run_for_file(file.id)
+    if latest_run and latest_run.id != run.id and not request.allow_accept_non_latest:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail=f"Run {request.run_id} is not the latest run. Latest is {latest_run.id}. Set allow_accept_non_latest=true to override."
+        )
+
+    if not request.fields:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            detail="No fields provided for acceptance"
+        )
+
+    if not run.parsed_result:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            detail=f"Run {request.run_id} has no parsed results to accept"
+        )
+
+    document = file.document
+    document_key_crud = DocumentKeyCRUD(db_session)
+    allowed_keys = AIParsingHandler(db_session).get_keys_by_document_type(document.name.value)
+
+    accepted_count = 0
+    skipped_count = 0
+    errors = []
+
+    for field in request.fields:
+        if field.field_name not in allowed_keys:
+            errors.append(f"Key '{field.field_name}' not allowed for document type '{document.name.value}'")
+            skipped_count += 1
+            continue
+
+        try:
+            payload = {
+                "value": field.value,
+                "editor_id": current_user.id,
+                "file_id": file.id,
+                "status": "accepted",
+                "accepted_by_id": current_user.id,
+                "accepted_at": datetime.now(timezone.utc),
+            }
+
+            existing_key = document_key_crud.get_document_key(
+                name=field.field_name, document_id=document.id, file_id=file.id
+            )
+
+            if not existing_key:
+                payload |= {"name": field.field_name, "document_id": document.id}
+                document_key = document_key_crud.create_item(payload)
+            else:
+                document_key_crud.update_by_id(existing_key.id, payload)
+                db_session.refresh(existing_key)
+                document_key = existing_key
+
+            if document_key and document_key.status == "accepted":
+                try:
+                    facts_service = ProjectFactsService(db_session)
+                    facts_service.create_candidate_from_document_key(document_key, document.site_id)
+                except Exception as e:
+                    logger.warning(f"Failed to create candidate fact for key '{field.field_name}': {str(e)}")
+
+            accepted_count += 1
+
+        except Exception as e:
+            errors.append(f"Failed to accept '{field.field_name}': {str(e)}")
+            skipped_count += 1
+
+    if accepted_count == 0 and skipped_count > 0:
+        response_code = status.HTTP_400_BAD_REQUEST
+        response_message = f"Bulk accept failed: all {skipped_count} fields skipped"
+    elif skipped_count > 0:
+        response_code = 207
+        response_message = f"Bulk accept partial: {accepted_count} accepted, {skipped_count} skipped"
+    else:
+        response_code = status.HTTP_200_OK
+        response_message = f"Bulk accept completed: {accepted_count} accepted"
+
+    return BulkAcceptResponse(
+        code=response_code,
+        message=response_message,
+        accepted_count=accepted_count,
+        skipped_count=skipped_count,
+        errors=errors,
     )

@@ -1,0 +1,52 @@
+DATA ROOM – Phase B4: Acceptance Safety + Parse Run History (Final Hardening)
+
+Context:
+- Parsing runs produce AIParsingResult with run_id, status, correlation_id, metadata, and evidence.
+- UI supports Verify All and Accept All (batch).
+- Reprocess exists.
+We need to harden acceptance so it cannot promote stale/incorrect runs and give users a clear run history.
+
+Objective:
+1) Show parse run history for each document/file.
+2) Enforce acceptance safety rules on the backend and UI.
+
+Tasks:
+A) Parse Run History UI
+- Add a “Parse History” panel showing last N runs for the selected file/document:
+  - run_id
+  - status
+  - created_at / finished_at
+  - correlation_id (collapsible)
+  - reason_code (from error_message prefix) when failed
+  - was_truncated flag
+- Allow selecting a run to view its extracted fields (read-only unless it is the active run).
+
+B) Acceptance safety rules (backend)
+- For Accept/Promote endpoints (single + batch):
+  - Validate the run_id belongs to the given file/document
+  - Validate run status is succeeded
+  - Validate the run is the “active” run OR require an explicit parameter allow_accept_non_latest=true (default false)
+  - Validate user has appropriate permissions for the company/site/document
+- Return clear 409/400 errors for:
+  - accepting non-latest run
+  - accepting processing/failed run
+  - run/file mismatch
+
+C) UI alignment
+- Accept All should only be enabled for the currently selected succeeded run.
+- If user selects an older run in history, Accept should be disabled with explanation (unless policy allows).
+- After reprocess, make the new run the default selected run when it succeeds.
+
+D) Tests
+- Add integration tests:
+  1) Batch accept rejects run/file mismatch
+  2) Batch accept rejects non-latest run (if policy default false)
+  3) Batch accept rejects processing/failed run
+  4) Batch accept succeeds for latest succeeded run
+
+Deliverables:
+- Parse history panel
+- Backend acceptance validation
+- Tests passing
+- replit.md updated with acceptance rules
+Proceed now.

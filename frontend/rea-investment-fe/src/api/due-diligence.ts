@@ -170,14 +170,70 @@ interface SetDocumentKeyValueResponse {
 interface BulkAcceptAIValuesArgs {
   documentId: number;
   siteId: number;
-  keys: Array<{ name: string; value: string }>;
+  fileId: number;
+  runId: number;
+  fields: Array<{ field_name: string; value: string | null }>;
+  allowAcceptNonLatest?: boolean;
 }
 
 interface BulkAcceptAIValuesResponse {
   message: string;
   code: number;
   accepted_count: number;
-  failed_count: number;
+  skipped_count: number;
+  errors: string[];
+}
+
+interface ParseRunSchema {
+  id: number;
+  file_id: number;
+  status: string;
+  extraction_run_number: number | null;
+  document_type_id: number | null;
+  schema_version_id: number | null;
+  prompt_template_id: number | null;
+  is_reprocess: boolean;
+  force_reprocess: boolean;
+  retries: number;
+  error_message: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  created_at: string | null;
+  correlation_id: string | null;
+  was_truncated: boolean | null;
+  char_count: number | null;
+  word_count: number | null;
+  page_count: number | null;
+  is_latest: boolean;
+  extracted_fields?: Array<{
+    field_name: string;
+    value: string | null;
+    confidence: number | null;
+    evidence: {
+      page: number | null;
+      snippet: string | null;
+      anchor_text: string | null;
+    } | null;
+  }>;
+}
+
+interface ParseRunHistoryResponse {
+  file_id: number;
+  runs: ParseRunSchema[];
+  total: number;
+}
+
+interface GetParseRunHistoryArgs {
+  siteId: number;
+  documentId: number;
+  fileId: number;
+}
+
+interface GetParseRunDetailArgs {
+  siteId: number;
+  documentId: number;
+  fileId: number;
+  runId: number;
 }
 
 interface GetFileParsingResultQueryArgs {
@@ -502,28 +558,32 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
   };
 
   const bulkAcceptAIValues = async (args: BulkAcceptAIValuesArgs): Promise<BulkAcceptAIValuesResponse> => {
-    const { siteId, documentId, keys } = args;
-    let accepted_count = 0;
-    let failed_count = 0;
-
-    for (const key of keys) {
-      try {
-        await httpClient.put<SetDocumentKeyValueResponse>(
-          `/api/due-diligence/${siteId}/documents/${documentId}/keys`,
-          key
-        );
-        accepted_count++;
-      } catch {
-        failed_count++;
+    const { siteId, documentId, fileId, runId, fields, allowAcceptNonLatest } = args;
+    const response = await httpClient.post<BulkAcceptAIValuesResponse>(
+      `/api/due-diligence/${siteId}/documents/${documentId}/files/${fileId}/bulk-accept/`,
+      {
+        run_id: runId,
+        fields: fields,
+        allow_accept_non_latest: allowAcceptNonLatest || false,
       }
-    }
+    );
+    return response.data;
+  };
 
-    return {
-      message: `Accepted ${accepted_count} values${failed_count > 0 ? `, ${failed_count} failed` : ''}`,
-      code: failed_count > 0 ? 207 : 200,
-      accepted_count,
-      failed_count
-    };
+  const getParseRunHistory = async (args: GetParseRunHistoryArgs): Promise<ParseRunHistoryResponse> => {
+    const { siteId, documentId, fileId } = args;
+    const response = await httpClient.get<ParseRunHistoryResponse>(
+      `/api/due-diligence/${siteId}/documents/${documentId}/files/${fileId}/runs/`
+    );
+    return response.data;
+  };
+
+  const getParseRunDetail = async (args: GetParseRunDetailArgs): Promise<ParseRunSchema> => {
+    const { siteId, documentId, fileId, runId } = args;
+    const response = await httpClient.get<ParseRunSchema>(
+      `/api/due-diligence/${siteId}/documents/${documentId}/files/${fileId}/runs/${runId}/`
+    );
+    return response.data;
   };
 
   const documentStartParsing = async (
@@ -700,6 +760,8 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     previewFileDirect,
     setDocumentKeyValue,
     bulkAcceptAIValues,
+    getParseRunHistory,
+    getParseRunDetail,
     documentStartParsing,
     documentParsingStatus,
     getFileParsingResult,

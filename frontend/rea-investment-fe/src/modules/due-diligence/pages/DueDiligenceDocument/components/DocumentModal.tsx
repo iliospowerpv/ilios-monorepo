@@ -302,16 +302,52 @@ const DocumentModal: React.FC<DocumentModal> = props => {
     }
   }, [fileId, handleStartParsing]);
 
+  const { data: parseRunHistory, refetch: refetchParseHistory } = useQuery({
+    queryKey: ['parse-run-history', siteId, documentId, fileId],
+    queryFn: () => ApiClient.dueDiligence.getParseRunHistory({ siteId, documentId, fileId }),
+    enabled: fileId !== -1,
+    staleTime: 30000
+  });
+
+  const [selectedRunId, setSelectedRunId] = useState<number | undefined>();
+  const [showParseHistory, setShowParseHistory] = useState(false);
+
+  useEffect(() => {
+    if (currentRunId) {
+      setSelectedRunId(currentRunId);
+    } else if (parseRunHistory?.runs?.length) {
+      const latestRun = parseRunHistory.runs.find(r => r.is_latest);
+      if (latestRun) setSelectedRunId(latestRun.id);
+    }
+  }, [currentRunId, parseRunHistory]);
+
+  const selectedRun = useMemo(() => {
+    if (!selectedRunId || !parseRunHistory?.runs) return null;
+    return parseRunHistory.runs.find(r => r.id === selectedRunId) || null;
+  }, [selectedRunId, parseRunHistory]);
+
+  const isSelectedRunLatest = selectedRun?.is_latest ?? true;
+  const isSelectedRunSucceeded = selectedRun?.status === 'completed' || selectedRun?.status === 'succeeded';
+  const canAcceptFromSelectedRun = isSelectedRunSucceeded && isSelectedRunLatest;
+
   const { mutateAsync: bulkAccept, isPending: isBulkAccepting } = useMutation({
-    mutationFn: (keys: Array<{ name: string; value: string }>) =>
-      ApiClient.dueDiligence.bulkAcceptAIValues({ siteId, documentId, keys }),
+    mutationFn: (fields: Array<{ field_name: string; value: string | null }>) =>
+      ApiClient.dueDiligence.bulkAcceptAIValues({
+        siteId,
+        documentId,
+        fileId,
+        runId: selectedRunId!,
+        fields,
+        allowAcceptNonLatest: false
+      }),
     onSuccess: response => {
       notify(response.message);
       queryClient.invalidateQueries({ queryKey: ['document-terms'] });
       setShowAcceptDialog(false);
     },
-    onError: () => {
-      notify('Something went wrong while accepting values.');
+    onError: (error: AxiosError<{ detail?: string }>) => {
+      const detail = error.response?.data?.detail || 'Something went wrong while accepting values.';
+      notify(detail);
     }
   });
 
@@ -319,7 +355,7 @@ const DocumentModal: React.FC<DocumentModal> = props => {
     if (!fileTermKeysData?.keys) return [];
     return fileTermKeysData.keys
       .filter((field): field is typeof field & { ai_value: string } => !!field.ai_value && !field.value)
-      .map(field => ({ name: field.name, value: field.ai_value }));
+      .map(field => ({ field_name: field.name, value: field.ai_value }));
   }, [fileTermKeysData]);
 
   const fieldsWithoutEvidence = useMemo(() => {
@@ -627,19 +663,31 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                             {documentStatus && <ParsingStatusBadge status={parsingStatus} />}
                           </Box>
                           {hasCompleted && fieldsToAccept.length > 0 && (
-                            <Button
-                              variant="contained"
-                              size="small"
-                              color="success"
-                              onClick={handleAcceptAll}
-                              disabled={isBulkAccepting}
-                              startIcon={
-                                isBulkAccepting ? <CircularProgress size={16} color="inherit" /> : <DoneAllIcon />
+                            <BootstrapTooltip
+                              title={
+                                !canAcceptFromSelectedRun
+                                  ? !isSelectedRunSucceeded
+                                    ? 'Cannot accept from a non-succeeded run'
+                                    : 'Cannot accept from a non-latest run'
+                                  : ''
                               }
-                              sx={{ fontSize: '12px' }}
                             >
-                              Accept All ({fieldsToAccept.length})
-                            </Button>
+                              <span>
+                                <Button
+                                  variant="contained"
+                                  size="small"
+                                  color="success"
+                                  onClick={handleAcceptAll}
+                                  disabled={isBulkAccepting || !canAcceptFromSelectedRun || !selectedRunId}
+                                  startIcon={
+                                    isBulkAccepting ? <CircularProgress size={16} color="inherit" /> : <DoneAllIcon />
+                                  }
+                                  sx={{ fontSize: '12px' }}
+                                >
+                                  Accept All ({fieldsToAccept.length})
+                                </Button>
+                              </span>
+                            </BootstrapTooltip>
                           )}
                         </DialogTitle>
                         <Box
@@ -670,6 +718,105 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                               runId={currentRunId}
                               showDebugInfo={true}
                             />
+                          )}
+                          {parseRunHistory && parseRunHistory.runs.length > 0 && (
+                            <AccordionStyled
+                              expanded={showParseHistory}
+                              onChange={() => setShowParseHistory(!showParseHistory)}
+                              sx={{ mb: 2 }}
+                            >
+                              <AccordionSummaryStyled expandIcon={<ExpandMoreIcon />}>
+                                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                  Parse History ({parseRunHistory.runs.length} runs)
+                                </Typography>
+                              </AccordionSummaryStyled>
+                              <AccordionDetails sx={{ p: 0 }}>
+                                <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
+                                  {parseRunHistory.runs.map(run => (
+                                    <Box
+                                      key={run.id}
+                                      onClick={() => setSelectedRunId(run.id)}
+                                      sx={{
+                                        p: 1.5,
+                                        cursor: 'pointer',
+                                        borderBottom: '1px solid #eee',
+                                        bgcolor: selectedRunId === run.id ? 'action.selected' : 'transparent',
+                                        '&:hover': { bgcolor: 'action.hover' }
+                                      }}
+                                    >
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                          Run #{run.extraction_run_number || run.id}
+                                        </Typography>
+                                        {run.is_latest && (
+                                          <Chip
+                                            label="Latest"
+                                            size="small"
+                                            color="primary"
+                                            sx={{ height: 20, fontSize: '10px' }}
+                                          />
+                                        )}
+                                        <Chip
+                                          label={run.status}
+                                          size="small"
+                                          color={
+                                            run.status === 'completed' || run.status === 'succeeded'
+                                              ? 'success'
+                                              : run.status === 'processing' || run.status === 'queued'
+                                                ? 'warning'
+                                                : 'error'
+                                          }
+                                          sx={{ height: 20, fontSize: '10px' }}
+                                        />
+                                        {run.was_truncated && (
+                                          <Chip
+                                            label="Truncated"
+                                            size="small"
+                                            color="warning"
+                                            sx={{ height: 20, fontSize: '10px' }}
+                                          />
+                                        )}
+                                      </Box>
+                                      <Typography variant="caption" color="text.secondary">
+                                        {run.created_at
+                                          ? dayjs(run.created_at).format('MMM D, YYYY h:mm A')
+                                          : 'Unknown date'}
+                                        {run.error_message && (
+                                          <span style={{ color: 'red', marginLeft: 8 }}>
+                                            {run.error_message.match(/\[(\w+)\]/)?.[1] || 'Error'}
+                                          </span>
+                                        )}
+                                      </Typography>
+                                      {selectedRunId === run.id && run.correlation_id && (
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                          sx={{ display: 'block', mt: 0.5 }}
+                                        >
+                                          Correlation: {run.correlation_id}
+                                        </Typography>
+                                      )}
+                                    </Box>
+                                  ))}
+                                </Box>
+                              </AccordionDetails>
+                            </AccordionStyled>
+                          )}
+                          {selectedRun && !isSelectedRunLatest && (
+                            <Box
+                              sx={{
+                                p: 1.5,
+                                mb: 2,
+                                bgcolor: 'warning.light',
+                                borderRadius: 1,
+                                color: 'warning.contrastText'
+                              }}
+                            >
+                              <Typography variant="body2">
+                                Viewing older run #{selectedRun.extraction_run_number || selectedRun.id}. Accept is
+                                disabled for non-latest runs.
+                              </Typography>
+                            </Box>
                           )}
                           {fileTermKeysData &&
                             fileTermKeysData.keys.map(

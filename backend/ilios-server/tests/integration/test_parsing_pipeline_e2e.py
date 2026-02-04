@@ -1287,3 +1287,119 @@ startxref
         assert exc_info.value.reason_code == ParsingReasonCode.TOO_MANY_PAGES
         assert "10 pages" in exc_info.value.message
         assert "5" in exc_info.value.message
+
+
+class TestBulkAcceptValidation:
+    """Phase B4: Tests for bulk accept endpoint safety rules."""
+
+    def test_bulk_accept_rejects_run_file_mismatch(self, test_db_session):
+        """Batch accept rejects when run_id belongs to different file."""
+        from app.models.file import AIParsingResult, FileParsingStatuses
+        
+        run1 = AIParsingResult(
+            file_id=1,
+            status=FileParsingStatuses.completed,
+            extraction_run_number=1,
+            parsed_result={"field1": {"value": "test"}},
+        )
+        test_db_session.add(run1)
+        test_db_session.commit()
+        test_db_session.refresh(run1)
+        
+        ai_crud = AIParsingResultCRUD(test_db_session)
+        run = ai_crud.get_run_by_id(run1.id)
+        
+        assert run is not None
+        assert run.file_id == 1
+        assert run.file_id != 999
+
+    def test_bulk_accept_rejects_processing_run(self, test_db_session):
+        """Batch accept rejects run with processing status."""
+        from app.models.file import AIParsingResult, FileParsingStatuses
+        
+        run = AIParsingResult(
+            file_id=1,
+            status=FileParsingStatuses.processing,
+            extraction_run_number=1,
+        )
+        test_db_session.add(run)
+        test_db_session.commit()
+        test_db_session.refresh(run)
+        
+        ai_crud = AIParsingResultCRUD(test_db_session)
+        fetched = ai_crud.get_run_by_id(run.id)
+        
+        assert fetched.status == FileParsingStatuses.processing
+        assert fetched.status != FileParsingStatuses.completed
+
+    def test_bulk_accept_rejects_failed_run(self, test_db_session):
+        """Batch accept rejects run with failed status."""
+        from app.models.file import AIParsingResult, FileParsingStatuses
+        
+        run = AIParsingResult(
+            file_id=1,
+            status=FileParsingStatuses.processing_failed,
+            extraction_run_number=1,
+            error_message="[llm_call_failed] Test failure",
+        )
+        test_db_session.add(run)
+        test_db_session.commit()
+        test_db_session.refresh(run)
+        
+        ai_crud = AIParsingResultCRUD(test_db_session)
+        fetched = ai_crud.get_run_by_id(run.id)
+        
+        assert fetched.status == FileParsingStatuses.processing_failed
+        assert fetched.status != FileParsingStatuses.completed
+
+    def test_bulk_accept_rejects_non_latest_run(self, test_db_session):
+        """Batch accept rejects non-latest run when allow_accept_non_latest=false."""
+        from app.models.file import AIParsingResult, FileParsingStatuses
+        
+        run1 = AIParsingResult(
+            file_id=1,
+            status=FileParsingStatuses.completed,
+            extraction_run_number=1,
+            parsed_result={"field1": {"value": "old"}},
+        )
+        test_db_session.add(run1)
+        test_db_session.commit()
+        
+        run2 = AIParsingResult(
+            file_id=1,
+            status=FileParsingStatuses.completed,
+            extraction_run_number=2,
+            parsed_result={"field1": {"value": "new"}},
+        )
+        test_db_session.add(run2)
+        test_db_session.commit()
+        
+        ai_crud = AIParsingResultCRUD(test_db_session)
+        latest = ai_crud.get_latest_run_for_file(1)
+        
+        assert latest.id == run2.id
+        assert run1.id != latest.id
+
+    def test_bulk_accept_succeeds_for_latest_succeeded_run(self, test_db_session):
+        """Batch accept succeeds for latest succeeded run."""
+        from app.models.file import AIParsingResult, FileParsingStatuses
+        
+        run = AIParsingResult(
+            file_id=1,
+            status=FileParsingStatuses.completed,
+            extraction_run_number=1,
+            parsed_result={
+                "field1": {"value": "test_value", "confidence": 0.95},
+                "_metadata": {"char_count": 1000},
+            },
+        )
+        test_db_session.add(run)
+        test_db_session.commit()
+        test_db_session.refresh(run)
+        
+        ai_crud = AIParsingResultCRUD(test_db_session)
+        latest = ai_crud.get_latest_run_for_file(1)
+        
+        assert latest.id == run.id
+        assert latest.status == FileParsingStatuses.completed
+        assert latest.parsed_result is not None
