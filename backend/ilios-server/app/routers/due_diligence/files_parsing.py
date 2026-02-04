@@ -231,16 +231,25 @@ def _run_parsing_background(
     3. On any failure, mark run as failed with end_time
     """
     import sys
-    print(f"[{correlation_id}] BACKGROUND TASK STARTED for file {file_id}, run {ai_result_id}", file=sys.stderr, flush=True)
-    logger.info(f"[{correlation_id}] Background task starting for file {file_id}, run {ai_result_id}")
-    
-    from app.db.session import SessionLocal
-    from app.crud.ai_parsing_result import AIParsingResultCRUD
     import os
     import traceback
     
+    print(f"[{correlation_id}] BACKGROUND TASK STARTED for file {file_id}, run {ai_result_id}", file=sys.stderr, flush=True)
+    logger.info(f"[{correlation_id}] Background task starting for file {file_id}, run {ai_result_id}")
+    
+    try:
+        print(f"[{correlation_id}] Importing SessionFactory...", file=sys.stderr, flush=True)
+        from app.db.session import SessionFactory
+        print(f"[{correlation_id}] Importing AIParsingResultCRUD...", file=sys.stderr, flush=True)
+        from app.crud.ai_parsing_result import AIParsingResultCRUD
+        print(f"[{correlation_id}] Imports successful", file=sys.stderr, flush=True)
+    except Exception as import_err:
+        print(f"[{correlation_id}] IMPORT ERROR: {type(import_err).__name__}: {import_err}", file=sys.stderr, flush=True)
+        print(f"[{correlation_id}] Import traceback: {traceback.format_exc()}", file=sys.stderr, flush=True)
+        return
+    
     print(f"[{correlation_id}] Creating DB session...", file=sys.stderr, flush=True)
-    db = SessionLocal()
+    db = SessionFactory()
     print(f"[{correlation_id}] DB session created, starting try block...", file=sys.stderr, flush=True)
     try:
         ai_crud = AIParsingResultCRUD(db)
