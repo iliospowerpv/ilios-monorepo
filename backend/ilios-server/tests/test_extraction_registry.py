@@ -1,11 +1,10 @@
 """Tests for Extraction Registry
 
 Tests cover:
-- Seed idempotency
-- Activation uniqueness
-- Job binding persistence
-- Reprocess does not mutate acceptance
-- Admin permission gates
+- Seed idempotency (document types, schema versions, prompt templates)
+- Activation uniqueness (one active schema/prompt per doc type)
+- Pipeline service functionality
+- Config fallback disabled by default
 """
 
 import pytest
