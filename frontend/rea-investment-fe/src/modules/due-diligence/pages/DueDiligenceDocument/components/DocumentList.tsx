@@ -54,9 +54,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({ siteId, documentId, 
   const { data: fileUrl, error: errorRetrievingFileUrl } = useQuery({
     queryFn:
       selectedFile && openModal
-        ? ['png', 'jpeg', 'jpg', 'pdf'].includes(selectedFile.extension)
-          ? () => ApiClient.dueDiligence.previewFileDirect(siteId, documentId, selectedFile.id)
-          : () => ApiClient.dueDiligence.previewFileDirect(siteId, documentId, selectedFile.id)
+        ? () => ApiClient.dueDiligence.previewFileDirect(siteId, documentId, selectedFile.id)
         : () => null,
     enabled: openModal && !!selectedFile,
     queryKey: ['file-preview-url', { siteId, documentId, fileId: selectedFile?.id ?? null }],
@@ -90,15 +88,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({ siteId, documentId, 
 
   const findActualFiles = () => {
     return fileData ? fileData?.items.filter((file: FileItem) => file.is_actual) : null;
-  };
-
-  const downloadFile = (url: string, filename: string) => {
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
   };
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>, file: FileItem) => {

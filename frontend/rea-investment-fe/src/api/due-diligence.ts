@@ -413,11 +413,7 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     return response?.data;
   };
 
-  const uploadFileDirect = async (
-    fileData: File,
-    siteId: number,
-    documentId: number
-  ): Promise<FileDataResponse> => {
+  const uploadFileDirect = async (fileData: File, siteId: number, documentId: number): Promise<FileDataResponse> => {
     const formData = new FormData();
     formData.append('file', fileData);
     const response = await httpClient.post<FileDataResponse>(
