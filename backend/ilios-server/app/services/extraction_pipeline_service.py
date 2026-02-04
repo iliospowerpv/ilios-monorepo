@@ -135,8 +135,11 @@ class ExtractionPipelineService:
         if not config:
             return None
 
-        field_names = [f["display_name"] for f in config["fields"]]
-        fields_list = "\n".join(f"- {name}" for name in field_names)
+        # Build field list with exact field_key for LLM to use
+        # Format: "- field_key: Display Name" so LLM knows exact key to return
+        fields_list = "\n".join(
+            f"- {f['name']}: {f['display_name']}" for f in config["fields"]
+        )
 
         # Use str.replace() instead of .format() to avoid conflicts with JSON braces
         # The prompt template uses {{PLACEHOLDER}} syntax
