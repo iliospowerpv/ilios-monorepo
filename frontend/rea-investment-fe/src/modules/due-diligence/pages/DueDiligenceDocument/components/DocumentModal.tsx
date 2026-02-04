@@ -16,7 +16,6 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import Backdrop from '@mui/material/Backdrop';
 import CircularProgress from '@mui/material/CircularProgress';
 import Fade from '@mui/material/Fade';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import { ApiClient, FileItem } from '../../../../../api';
 import {
   SubHeader,
@@ -193,7 +192,7 @@ const DocumentModal: React.FC<DocumentModal> = props => {
     }
   });
 
-  const { data: documentStatus, refetch: refetchStatus } = useQuery({
+  const { data: documentStatus } = useQuery({
     queryFn: async () => {
       return ApiClient.dueDiligence.documentParsingStatus(fileId, siteId, documentId);
     },
@@ -332,7 +331,7 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                               background: 'rgba(0, 0, 0, 0.12)'
                             }
                           }}
-                          onClick={() => handleStartParsing(file.id, false)}
+                          onClick={() => handleStartParsing(file.id, hasCompleted || hasFailed)}
                           disabled={isProcessing || isStartingParse}
                           startIcon={isProcessing || isStartingParse ? <CircularProgress color="inherit" size={20} /> : null}
                         >
@@ -367,7 +366,6 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                             wasTruncated={documentStatus.was_truncated}
                             truncatedCharCount={documentStatus.truncated_char_count}
                             charCount={documentStatus.char_count}
-                            pageCount={documentStatus.page_count}
                           />
                         )}
                         {hasCompleted && (

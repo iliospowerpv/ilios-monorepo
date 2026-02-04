@@ -1,21 +1,18 @@
 import React from 'react';
 import Alert from '@mui/material/Alert';
 import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
 import { formatCharCount } from '../../../utils/parsing';
 
 interface TruncationWarningProps {
   wasTruncated: boolean;
   truncatedCharCount?: number;
   charCount?: number;
-  pageCount?: number;
 }
 
 const TruncationWarning: React.FC<TruncationWarningProps> = ({
   wasTruncated,
   truncatedCharCount,
   charCount,
-  pageCount,
 }) => {
   if (!wasTruncated) return null;
 

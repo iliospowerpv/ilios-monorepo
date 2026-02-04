@@ -71,6 +71,20 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
         - **Extraction Metadata**: Successful parses include `char_count`, `word_count`, `page_count`, `was_truncated`, `truncated_char_count` in response metadata.
         - **Truncation Behavior**: Text exceeding `parsing_max_chars_to_llm` is truncated at nearest newline boundary with warning logged.
 - **Storage Service Abstraction**: Replit-native storage architecture with an abstract `StorageService` interface, `ReplitStorageService` (default), optional `GCSStorageService`, and `HybridStorageService` for migration support. Utilizes new direct upload and download endpoints.
+- **Data Room Parsing UX (Phase B1)**: User-friendly parsing status display in the Document Modal:
+    - **Status Badge**: Visual indicator showing Queued, Processing (with spinner), Completed, or Failed states.
+    - **Reason Code Mapping**: Backend error codes (`[reason_code]` prefix) mapped to user-friendly messages:
+        - `insufficient_text_extracted` → "This document appears to be scanned. OCR is required."
+        - `file_too_large` → "This file exceeds the maximum supported size."
+        - `too_many_pages` → "This PDF exceeds the maximum supported page count."
+        - `unsupported_file_type` → "This file type is not supported."
+        - `llm_call_failed` → "AI parsing failed. Please try again."
+        - `storage_error` → "Unable to read file from storage."
+    - **Truncation Warning**: Alert banner shown when `was_truncated=true` with character counts.
+    - **Metadata Display**: Page count, character count, word count chips for completed parses.
+    - **Debug Section**: Expandable accordion showing `run_id` and `correlation_id` for troubleshooting.
+    - **Reprocess Action**: Button to force re-parse with `force_reprocess=true`; disabled during processing.
+    - **Polling**: Auto-refresh status every 5 seconds while processing is active.
 
 ## External Dependencies
 - **PostgreSQL**: Primary relational database.

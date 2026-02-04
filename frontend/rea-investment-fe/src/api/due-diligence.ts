@@ -126,9 +126,6 @@ interface ParsingStatusResponse {
   truncated_char_count?: number;
 }
 
-interface DocumentDataResponse {
-  status: string;
-}
 
 interface FileItem {
   id: number;
@@ -489,7 +486,7 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     fileId: number,
     siteId: number,
     documentId: number,
-    forceReprocess: boolean = false
+    forceReprocess = false
   ): Promise<ParseTriggerResponse> => {
     const response = await httpClient.post<ParseTriggerResponse>(
       `/api/due-diligence/${siteId}/documents/${documentId}/files/${fileId}/parsing/`,
