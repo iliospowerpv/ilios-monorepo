@@ -120,7 +120,17 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
 
   const documentsWithFiles = useMemo(() => {
     if (!documentsData?.items) return [];
-    return documentsData.items.flatMap(section => section.documents.filter(doc => doc.files_count > 0));
+    const extractDocs = (sections: typeof documentsData.items): DiligenceDocument[] => {
+      const docs: DiligenceDocument[] = [];
+      for (const section of sections) {
+        docs.push(...section.documents.filter(doc => doc.files_count > 0));
+        if (section.related_sections?.length) {
+          docs.push(...extractDocs(section.related_sections));
+        }
+      }
+      return docs;
+    };
+    return extractDocs(documentsData.items);
   }, [documentsData?.items]);
 
   const { data: termData, isLoading: isLoadingTermData } = useQuery({
@@ -138,7 +148,8 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
     if (documentsWithFiles.length > 0 && !selectedDocument) {
       setSelectedDocument(documentsWithFiles[0]);
     }
-  }, [documentsWithFiles, selectedDocument]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documentsWithFiles.length]);
 
   useEffect(() => {
     const { status } = executionStatusData ?? { status: null };
