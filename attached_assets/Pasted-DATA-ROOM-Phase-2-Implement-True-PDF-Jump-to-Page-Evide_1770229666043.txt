@@ -1,0 +1,62 @@
+DATA ROOM – Phase 2: Implement True PDF Jump-to-Page + Evidence Highlight
+
+Context:
+- Current preview uses react-doc-viewer in the left pane.
+- Evidence is now shown for extracted fields (page + snippet + anchor_text).
+- Clicking “Page X” currently only shows a notification because react-doc-viewer lacks programmatic navigation.
+- Requirement: user must be able to click a field and jump to the location in the document.
+
+Goal:
+For PDFs, replace react-doc-viewer with @react-pdf-viewer to support:
+1) Jump-to-page on click (Page X)
+2) Highlight or at least auto-search the snippet/anchor text on that page
+Keep react-doc-viewer for DOCX and other formats.
+
+Implementation Plan:
+
+A) Install and wire @react-pdf-viewer
+- Add dependencies:
+  - @react-pdf-viewer/core
+  - @react-pdf-viewer/default-layout (optional)
+  - @react-pdf-viewer/page-navigation
+  - @react-pdf-viewer/search (for snippet highlight)
+- Ensure PDF.js worker is configured correctly per @react-pdf-viewer docs.
+
+B) Hybrid preview component (DocumentModal / left pane)
+- Detect file type based on extension or MIME.
+- If PDF:
+  - Render <Viewer> from @react-pdf-viewer with plugins:
+    - pageNavigationPlugin()
+    - searchPlugin()
+- Else:
+  - Use existing react-doc-viewer behavior (with fileType hint fix retained).
+
+C) Implement “View in document” behavior (field -> source)
+- For each extracted field with evidence:
+  - On click:
+    1) Jump to evidence.page (1-indexed in UI; convert if viewer uses 0-index)
+    2) Run search highlight using evidence.anchor_text or snippet (prefer anchor_text if present)
+- If snippet/anchor search fails, still jump to the page (don’t fail silently).
+- Remove the “notification only” behavior for PDFs.
+
+D) UX details
+- Keep the “Page X” pill/button.
+- Tooltip shows snippet.
+- After navigation, briefly indicate “Jumped to page X” (small non-blocking toast is fine).
+- If file is not PDF, clicking Page X should show a message: “Jump-to-page is available for PDFs only.”
+
+E) QA Checklist
+- Upload PDF → preview loads in left pane.
+- Parse PDF → extracted fields show Page button.
+- Click Page button → preview jumps to correct page.
+- Snippet text is highlighted (or at minimum searched and scrolled into view) on that page.
+- DOCX preview still loads via react-doc-viewer; Page button messaging is graceful.
+
+Deliverables:
+- Updated DocumentModal / preview component
+- Updated evidence click handler to call jumpToPage + searchPlugin highlight
+- List files changed
+- Short note in replit.md: PDF viewer architecture and how evidence navigation works
+
+Do NOT change backend parsing in this phase (evidence already exists).
+Proceed now.
