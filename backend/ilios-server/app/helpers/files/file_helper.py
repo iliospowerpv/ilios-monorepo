@@ -18,12 +18,27 @@ def combine_user_ai_parsing_results(
 
     E.g.: All files from site_lease section will have their AI parsing result values + site_lease key document values.
     """
+    # Get extraction config with both name and display_name for proper matching
+    from app.services.extraction_pipeline_service import ExtractionPipelineService
+    
+    handler = AIParsingHandler(db_session)
+    config = handler.get_extraction_config(document.name.value)
+    
+    # Build mapping from canonical name to display_name, and prepare available keys
+    name_to_display = {}
+    if config and config.get("fields"):
+        for f in config["fields"]:
+            name_to_display[f["name"]] = f["display_name"]
+    
     document_available_keys = [
-        FileKeySchema(name=key).model_dump()
-        for key in AIParsingHandler(db_session).get_keys_by_document_type(document.name.value)
+        FileKeySchema(name=display_name).model_dump()
+        for display_name in handler.get_keys_by_document_type(document.name.value)
     ]
     if not document_available_keys:
         return document_available_keys
+    
+    # Build reverse mapping: display_name -> canonical name
+    display_to_name = {v: k for k, v in name_to_display.items()}
 
     # Get data stored in DB from user and AI
     existing_user_keys = {
@@ -71,11 +86,16 @@ def combine_user_ai_parsing_results(
     }
 
     for available_key in document_available_keys:
-        # Update with data stored in DB
-        if existing_user_keys.get(available_key["name"]):
-            available_key.update(existing_user_keys.get(available_key["name"]))
+        display_name = available_key["name"]
+        # Get the canonical field name for matching with AI results
+        canonical_name = display_to_name.get(display_name, "")
+        
+        # Update with data stored in DB (user keys use display_name)
+        if existing_user_keys.get(display_name):
+            available_key.update(existing_user_keys.get(display_name))
 
-        if existing_ai_keys.get(available_key["name"]):
-            available_key.update(existing_ai_keys.get(available_key["name"]))
+        # Update with AI results (AI keys use canonical name)
+        if canonical_name and existing_ai_keys.get(canonical_name):
+            available_key.update(existing_ai_keys.get(canonical_name))
 
     return document_available_keys
