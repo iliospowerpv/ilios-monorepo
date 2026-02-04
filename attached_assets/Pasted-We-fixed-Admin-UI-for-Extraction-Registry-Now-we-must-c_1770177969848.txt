@@ -1,0 +1,45 @@
+We fixed Admin UI for Extraction Registry. Now we must close the remaining strict-contract items for the Replit-native extraction rebuild.
+
+1) STRICT STORAGE COMPLIANCE (non-negotiable)
+Goal: Replit Object Storage is the ONLY write target for all new uploads. GCS must not be required to run the app.
+Provide evidence with exact files + functions + key lines:
+
+A. Upload flow:
+- Show the upload endpoint(s) and the exact StorageService implementation used.
+- Prove new uploads write to Replit storage (not GCS).
+- Show where storage_key is set and what key format is used.
+
+B. Preview/download flow:
+- Show how the PDF is served for preview.
+- Confirm it reads from Replit storage_key.
+
+C. Config:
+- Show the env var/setting that selects the storage provider.
+- Set default to Replit in all non-test environments.
+- If HybridStorageService exists, it must be READ-ONLY for legacy GCS, and never used for writes.
+
+D. Remove GCS dependency:
+- List any remaining required google-cloud imports/secrets.
+- Remove them from required runtime path.
+- App must boot and upload/preview documents with zero GCS configuration.
+
+2) LENDER-QUALITY TRACEABILITY
+Provide evidence (files + lines):
+- Where parse runs are stored (table/model).
+- That every reprocess creates a NEW run row and does not overwrite prior runs.
+- How DocumentKey acceptance stores traceability:
+  - source_run_id (or equivalent)
+  - file_id/version linkage (direct or joinable)
+- Show the query path to reconstruct:
+  “current assumption value” → “accepted key row” → “source run” → “file version” → “evidence”.
+
+3) EVIDENCE UX (View-in-document)
+Provide evidence (frontend file paths):
+- Where snippet is rendered in the extraction preview UI.
+- Where “View in document” is implemented.
+- How it opens the PDF at evidence.page and highlights/locates anchor_text (best effort is ok; must at least navigate to page).
+- If not implemented, implement it now.
+
+OUTPUT FORMAT
+- A compliance table: Storage / Traceability / Evidence UX → PASS/FAIL with citations to files/lines
+- Then a short implementation diff plan for any FAIL items.
