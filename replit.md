@@ -39,6 +39,14 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
 - **Portfolio Hub Boundary Model**: Introduces `portfolio_hub_id` to link companies within a hub, ensuring portfolio users only see companies within their assigned hub(s).
 - **Architectural Guardrails (Asset Management Overview)**: Designed as a static record, intentionally avoiding operational data leakage, telemetry, or live performance data, linking to operational modules for live metrics.
 - **Telemetry Module**: Project-scoped telemetry hookup for connecting Data Acquisition Systems (DAS) via a 4-step wizard, featuring health monitoring, readiness strip, support for various DAS providers (KMC, Also Energy), and device mapping CRUD with Firestore sync. Supports dual-ownership DAS connections constrained by `portfolio_hub_id` boundaries.
+- **Document Versioning & Promotion System**: Lender-quality Data Room document versioning with "Promote to Current Assumptions" workflow.
+    - **Database Schema**: `canonical_fields` (field definitions), `project_facts` (versioned project assumptions), `assumptions_promotions` (audit trail). File model extended with `version_number`, `version_label`, `is_actual` columns.
+    - **ProjectFact States**: `candidate` (pending promotion), `active` (current assumptions), `retired` (superseded by newer version).
+    - **Promotion Workflow**: Atomic transaction promoting candidate facts from a file version to active, retiring previous active facts, updating `file.is_actual` flag, and recording full diff snapshot.
+    - **Diff Computation**: Computes added/changed/removed facts by comparing candidate facts against active facts, scoped to same document to avoid cross-document interference.
+    - **API Endpoints**: `/api/projects/{site_id}/assumptions/facts` (get active facts), `/api/projects/{site_id}/assumptions/promotion/diff` (preview changes), `/api/projects/{site_id}/assumptions/promote` (execute promotion), `/api/projects/{site_id}/assumptions/promotions` (audit trail).
+    - **Integration**: Updated `set_key` endpoint in documents router creates candidate `ProjectFact` records when document keys are accepted with file_id.
+    - **Seed Script**: `dev_scripts/seed_canonical_fields.py` migrates 224 field definitions from `ai_parsing_config.json` to `canonical_fields` table.
 
 ## External Dependencies
 - **PostgreSQL**: Primary relational database.
