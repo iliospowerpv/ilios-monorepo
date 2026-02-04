@@ -336,9 +336,9 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
                         <Typography variant="body2" color="text.secondary">
                           Loading...
                         </Typography>
-                      ) : (
+                      ) : termData?.items?.length ? (
                         <Stack spacing={1}>
-                          {termData?.items?.slice(0, 5).map((term: AgreementTerm) => (
+                          {termData.items.slice(0, 5).map((term: AgreementTerm) => (
                             <Box key={term.name}>
                               <Typography variant="caption" fontWeight={600} color="text.secondary">
                                 {term.name}
@@ -346,12 +346,16 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
                               <Typography variant="body2">{term.value || 'N/A'}</Typography>
                             </Box>
                           ))}
-                          {(termData?.items?.length ?? 0) > 5 && (
+                          {termData.items.length > 5 && (
                             <Typography variant="caption" color="text.secondary">
-                              +{(termData?.items?.length ?? 0) - 5} more fields
+                              +{termData.items.length - 5} more fields
                             </Typography>
                           )}
                         </Stack>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          No extracted terms available. Parse the document to extract terms.
+                        </Typography>
                       )}
                     </Box>
                   )}
