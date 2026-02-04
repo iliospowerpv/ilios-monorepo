@@ -35,6 +35,7 @@ class Document(HasComments, Base):
     approver = relationship("User", back_populates="approving_documents")
     section = relationship("DocumentSection", back_populates="documents", lazy="joined")
     task = relationship("Task", back_populates="document", uselist=False, lazy="joined")
+    assumption_promotions = relationship("AssumptionPromotion", back_populates="document")
 
     created_at = Column(DateTime, server_default=utcnow())
     updated_at = Column(DateTime, server_default=utcnow())
@@ -80,6 +81,7 @@ class DocumentKey(HasComments, Base):
 
     id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
     document_id = Column(Integer, ForeignKey("documents.id", ondelete="CASCADE"))
+    file_id = Column(Integer, ForeignKey("files.id", ondelete="SET NULL"), nullable=True)
     editor_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
 
     name = Column(String, nullable=False)
@@ -95,16 +97,18 @@ class DocumentKey(HasComments, Base):
     canonical_field = Column(String(100), nullable=True)
 
     document = relationship("Document", back_populates="keys")
+    file = relationship("File", back_populates="document_keys")
     editor = relationship("User", back_populates="edited_document_keys", foreign_keys=[editor_id])
     accepted_by = relationship("User", foreign_keys=[accepted_by_id])
     overridden_by = relationship("User", foreign_keys=[overridden_by_id])
+    project_facts = relationship("ProjectFact", back_populates="source_document_key")
 
     created_at = Column(DateTime, server_default=utcnow())
     updated_at = Column(DateTime, server_default=utcnow())
 
     __table_args__ = (
-        UniqueConstraint("document_id", "name", name="_document_key_uc"),
-        Index("ix_document_key_name", "document_id", "name", unique=True),
+        UniqueConstraint("document_id", "file_id", "name", name="_document_key_version_uc"),
+        Index("ix_document_key_version_name", "document_id", "file_id", "name", unique=True),
         Index("idx_document_keys_status", "status"),
         Index("idx_document_keys_canonical_field", "canonical_field"),
     )
@@ -120,3 +124,8 @@ class DocumentKey(HasComments, Base):
     def is_pending(self):
         """Check if this key is pending acceptance."""
         return self.status == "proposed"
+
+    @property
+    def is_accepted(self):
+        """Check if this key has been accepted or overridden."""
+        return self.status in ("accepted", "overridden")

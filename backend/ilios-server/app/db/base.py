@@ -31,3 +31,4 @@ from app.models.finance import (
     FinanceVendor,
 )
 from app.models.sales import SalesStateTransition
+from app.models.project_facts import CanonicalField, ProjectFact, AssumptionPromotion

@@ -132,11 +132,10 @@ class Site(RelatedBoards, Base):
     documents = relationship("Document", back_populates="site", foreign_keys="Document.site_id")
     co_terminus_check = relationship("CoTerminusCheck", back_populates="site", uselist=False)
     telemetry_mapping = relationship("TelemetrySiteMapping", back_populates="site", uselist=False)
-    # temporary table to store the user-input fields for the Asset Management view,
-    # might be substituted with DD values once all agreements added
     additional_fields = relationship("SiteAdditionalFieldList", back_populates="site", uselist=False)
-    # order by updated_at to have the latest available weather for a site
     weather = relationship("SiteWeather", back_populates="site", order_by=desc(SiteWeather.updated_at))
+    project_facts = relationship("ProjectFact", back_populates="site")
+    assumption_promotions = relationship("AssumptionPromotion", back_populates="site")
 
     # setting up the server_default value, that will be filled on the database side
     created_at = Column(DateTime, server_default=utcnow())

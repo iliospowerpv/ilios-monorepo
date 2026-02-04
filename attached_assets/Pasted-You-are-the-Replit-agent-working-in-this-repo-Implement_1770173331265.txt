@@ -1,0 +1,225 @@
+You are the Replit agent working in this repo. Implement lender-quality Data Room document versioning + acceptance + “Promote to Current Assumptions” with full auditability.
+
+NON-NEGOTIABLE UX/DOMAIN CONTRACT
+1) Data Room is the system of record for documents. Documents have multiple versions. Users must be able to:
+   - upload a new version of an existing document series (e.g., PVsyst, Site Lease)
+   - review extraction + evidence for that version
+   - accept/override/reject extracted fields for THAT version
+   - explicitly “Promote Version to Current Assumptions” after review
+   - see a deterministic diff vs current assumptions before promotion
+2) “Promote to Current Assumptions” is the lender-quality gate:
+   - only Company Admin or System User can promote (role-gated)
+   - promotion is audited (who/when/notes + diff snapshot)
+   - after promotion, that version becomes current, and downstream modules use the promoted facts
+3) No “every new doc is dev work”:
+   - extraction field definitions must come from the schema registry tables (already planned) or seeded config, not hardcoded checks
+4) Evidence navigation for digital PDFs:
+   - for each extracted field, show snippet + page number
+   - “View in document” navigates PDF viewer to that page and highlights anchor_text via text-layer search (bounding boxes optional later)
+
+SCOPE OF THIS BUILD
+- Implement versioning UX + model changes + facts staging + promotion workflow + audit trail.
+- Downstream modules (Finance/O&M/Reporting) should read ACTIVE facts only (not proposed).
+- Keep existing preview/acceptance surfaces working; augment them with version-awareness + promotion.
+- This is a fresh deployment: no legacy migration complexity required, but keep DB constraints correct.
+
+CURRENT BASE ASSUMPTIONS (from repo)
+- Site == Project (sites table)
+- Document == documents table (currently acts like “series”)
+- File versions exist via files table and is_actual flag
+- DocumentKey has status/acceptance workflow (proposed/accepted/overridden/rejected) and effective_value
+- AIParsingResult stores JSON result for preview
+
+TARGET DATA MODEL CHANGES
+A) Document versioning
+- Treat documents as Document Series.
+- Treat files as Document Versions (already true). Ensure multiple files per document_id.
+- Enforce exactly one “current” file per document series using is_actual flag.
+
+Add/modify:
+1) files table:
+   - ensure files.document_id exists and is used as “version belongs to series”
+   - add optional:
+     - version_number INT (nullable)
+     - version_label VARCHAR (nullable)
+     - change_notes TEXT (nullable)
+   - ensure is_actual correctly marks current version per document_id
+2) document_keys table:
+   - ADD file_id FK → files.id (nullable=false for new rows; allow null only if needed for transitional internal writes)
+   - This is critical: accepted keys must be scoped to a specific version
+3) project facts (lender-quality assumptions)
+Create new table project_facts (single-table status approach):
+- id SERIAL PK
+- site_id INT FK sites.id (cascade)
+- canonical_field_id INT FK canonical_fields.id (cascade)  [or if canonical_fields not yet present, create minimal canonical_fields now]
+- value TEXT or JSONB (recommend JSONB to support numeric/date typed storage later; ok to start with TEXT)
+- status ENUM: candidate|active|retired  (string column ok)
+- source_file_id INT FK files.id (cascade)
+- source_document_key_id INT FK document_keys.id (set null on delete or restrict)
+- promoted_by_id INT FK users.id (nullable)
+- promoted_at TIMESTAMP (nullable)
+- promotion_notes TEXT (nullable)
+- supersedes_fact_id INT FK project_facts.id (nullable)
+Constraints:
+- enforce one active fact per (site_id, canonical_field_id):
+  - unique partial index where status='active' (Postgres)
+4) promotion audit
+Create table assumptions_promotions:
+- id SERIAL PK
+- site_id INT FK sites.id
+- document_id INT FK documents.id
+- file_id INT FK files.id
+- promoted_by_id INT FK users.id
+- promoted_at TIMESTAMP default now
+- notes TEXT
+- diff_json JSONB (snapshot of changes)
+This is the lender audit log.
+
+B) Minimal canonical fields mapping
+If canonical_fields/extraction registry already exists in repo, use it.
+If not, create minimal canonical_fields table now:
+- id SERIAL
+- name VARCHAR UNIQUE (internal key)
+- display_name VARCHAR
+- field_type VARCHAR default 'text'
+We will populate canonical_fields from existing ai_parsing_config or current extraction keys.
+
+LOGIC / SERVICE LAYER CHANGES
+1) Version-scoped key acceptance
+Update the key acceptance endpoint (where DocumentKey is created/updated) to require file_id.
+- When accepting/overriding a key, store it in document_keys with file_id=the version being reviewed.
+- DocumentKey uniqueness should be per (document_id, file_id, name) to avoid conflicts.
+
+2) Candidate facts generation
+When a DocumentKey becomes accepted/overridden for a version, create/update a candidate ProjectFact row for that site/version:
+- Determine canonical_field_id for the key (mapping rule below)
+- Write/Upsert project_facts where:
+  - site_id = document.site_id
+  - canonical_field_id = mapped id
+  - source_file_id = file_id
+  - source_document_key_id = document_key.id
+  - status = 'candidate'
+Important: do NOT change active facts here. Candidate only.
+
+3) Promotion endpoint (atomic)
+Add endpoint:
+POST /api/projects/{site_id}/assumptions/promote
+Body:
+{
+  "document_id": int,
+  "file_id": int,
+  "notes": string | null
+}
+Rules:
+- Only Company Admin or System User can promote (reuse existing RBAC patterns)
+- Validate file belongs to document and document belongs to site
+- Compute diff between:
+  - current active facts (status='active') for impacted canonical fields
+  - candidate facts from this file (status='candidate' and source_file_id=file_id)
+- Atomic transaction does:
+  a) set previous current file is_actual=false for this document_id
+  b) set this file is_actual=true
+  c) retire old active facts for affected canonical fields (status='retired', superseded links optional)
+  d) set candidate facts from this file to status='active', set promoted_by_id/promoted_at/notes
+  e) write assumptions_promotions row with diff_json snapshot
+Return: { promoted: true, diff: ... }
+
+4) Mapping from extraction keys to canonical fields
+Implement a registry mapping so new document types/fields aren’t dev work:
+- Preferred: use canonical_fields + schema registry mapping tables (if present)
+- Minimal interim: use canonical_fields seeded from ai_parsing_config.json and map by normalized key:
+  normalize("Effective Date") -> "effective_date"
+Store canonical_fields.name as normalized keys.
+If extraction key doesn’t map:
+- still store DocumentKey, but do NOT create ProjectFact (mark unmapped in UI)
+- Provide Admin TODO list later; for now show warning.
+
+FRONTEND / UX CHANGES (Project Hub > Data Room tab)
+A) Document series page
+In Data Room tab, documents are grouped by series (documents table entries).
+For each series show:
+- document type + custom name
+- current version badge
+- “Upload New Version” button
+- versions table (list files):
+  columns: version label/#, uploaded by, uploaded at, parse status, review status, current badge
+  row actions: View Version, Compare to Current, Promote (if ready), Download
+
+B) Version detail view
+When viewing a specific file version:
+- show PDF viewer
+- show extraction field list for that version (AIParsingResult.result + accepted keys for this file_id)
+- each field row includes:
+  - proposed value
+  - accept / override / reject actions (existing)
+  - evidence snippet + page number + “View in document” link (jumps to page + highlights anchor_text via PDF viewer search)
+- show status banner:
+  - X accepted, Y overridden, Z pending required
+  - “Ready to Promote” when all required fields accepted OR explicitly waived (waiver optional future)
+- Show “Promote to Current Assumptions” button only if user is allowed and version is ready
+
+C) Promotion modal (required)
+Before promoting:
+- show diff list:
+  For each canonical field impacted:
+    - Current active value (and its source document/version)
+    - New candidate value (this version)
+    - change type: added/changed/removed
+- confirm notes input
+- confirm action triggers promote endpoint
+After promote:
+- show success toast + update UI (version becomes Current Assumptions)
+
+D) Deep linking / routing
+Add routes under canonical:
+- /project-hub/projects/:siteId/data-room  (series list)
+- /project-hub/projects/:siteId/data-room/documents/:documentId  (series detail)
+- /project-hub/projects/:siteId/data-room/documents/:documentId/versions/:fileId  (version detail)
+
+BACKEND PARSING JOB INTEGRATION
+- Parsing results must be stored per file version.
+- Ensure AIParsingResult links to file_id (if not already).
+- When a new version is uploaded, parse job produces AIParsingResult for that file_id.
+- The preview UI must show keys for that specific file_id.
+
+TESTS / ACCEPTANCE CRITERIA
+Implement end-to-end correctness with at least:
+1) Upload new version creates new file row, does not replace previous file.
+2) Version detail shows extraction results for that file only.
+3) Accepting a key writes DocumentKey with correct file_id and creates candidate ProjectFact.
+4) Promotion:
+   - role gated (non-admin fails)
+   - sets is_actual for file, unsets previous
+   - flips candidate→active, retires prior actives for impacted fields
+   - writes assumptions_promotions with diff_json
+   - downstream “project facts” query returns active only
+5) Diff correctness: promotion modal shows accurate before/after.
+6) Evidence navigation: clicking “View in document” navigates to the correct page (use PDF viewer API/search).
+
+IMPLEMENTATION GUIDANCE
+- Use Alembic migrations for all schema changes.
+- Keep the code modular: add a ProjectFactsService and PromotionService.
+- Keep existing DocumentKey acceptance workflow but make it version-aware by requiring file_id.
+- Reuse existing RBAC patterns for Company Admin / System User gating.
+- Do not keep or add GCS dependencies. Use Replit Object Storage for new uploads (consistent with revised architecture).
+- If any legacy GCS references exist, stub them out or replace with StorageService layer.
+
+DELIVERABLES
+1) Migrations + models for:
+   - file version metadata (optional)
+   - document_keys.file_id
+   - project_facts table (+ unique partial index for active)
+   - assumptions_promotions table
+2) Backend endpoints:
+   - version-aware key acceptance
+   - promote assumptions endpoint
+   - facts query endpoint (active facts)
+3) Frontend Data Room UX:
+   - series list + versions list
+   - version detail + accept/override + evidence display
+   - promotion modal diff + action
+4) Minimal automated tests and/or clear manual test checklist.
+When complete, output:
+- list of files changed
+- routes added
+- how to run the acceptance test flow locally

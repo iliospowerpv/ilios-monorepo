@@ -1,0 +1,49 @@
+STRICT REVISION REQUIRED — DOCUMENT PIPELINE REBUILD (REPLIT-NATIVE)
+
+Your plan is close, but we must be strict: we are eliminating Google Cloud dependencies entirely (GCS, Cloud Functions, key.json). The current GCS setup is broken (multiple projects, mismatched secrets) and is not part of the future architecture.
+
+NON-NEGOTIABLE REQUIREMENTS
+1) Storage: Use Replit Object Storage / App Storage ONLY.
+   - No GCS buckets, no service accounts, no key.json, no gs:// paths.
+   - All file uploads and downloads must work end-to-end using Replit storage.
+
+2) Extraction engine: Must run inside this repo.
+   - No external Cloud Functions.
+   - LLM calls must use Replit AI Integrations (Anthropic/OpenAI) so no user-managed keys required.
+
+3) UX: Preserve existing Data Room UX semantics:
+   upload → parsing → preview → accept/override → canonical values flow to other modules.
+
+4) Evidence + navigation: For each extracted field proposal, store enough evidence so a user can:
+   - see an excerpt/snippet,
+   - click "View in Document",
+   - jump to the page/section where the term appears.
+   Minimum viable evidence fields:
+     evidence.page (int), evidence.snippet (string), evidence.anchor_text (string)
+   Bounding boxes are optional for later.
+
+5) No “every new doc = dev exercise”:
+   - Implement Option A now: admin-managed schema registry (fields, doc types, prompt templates, schema versions).
+   - Admin UI can come later, but CRUD endpoints and DB-backed registry must exist early.
+   - ai_parsing_config.json may only be used as seed/bootstrap data, not the long-term control plane.
+
+DELIVERABLES YOU MUST PRODUCE IN YOUR RESPONSE
+A) Corrected target architecture diagram
+B) Exact DB schema changes (tables + key columns)
+C) Storage migration plan:
+   - new StorageService abstraction
+   - changes to FileHandler / upload/download endpoints
+   - how existing File.filepath should be interpreted (object key)
+D) Parsing pipeline design:
+   - document_parse_jobs table contract (status, retries, idempotency)
+   - job processor / worker strategy that works in Replit deployments
+E) Result contract:
+   - exact JSON shape stored in AIParsingResult.result (including evidence fields)
+   - how preview UI reads it
+   - how accept/override writes DocumentKey and canonical project fields
+F) Execution plan:
+   - “first runnable baseline” MUST already use Replit Object Storage (not GCS)
+   - include acceptance criteria tests that prove: upload → parse → preview → accept → downstream read
+
+DO NOT WRITE CODE YET.
+Return: architecture + DB schema + file list + acceptance criteria + step-by-step implementation phases.

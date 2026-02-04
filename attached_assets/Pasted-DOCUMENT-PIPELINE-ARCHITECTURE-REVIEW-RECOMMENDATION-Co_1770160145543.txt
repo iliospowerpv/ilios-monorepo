@@ -1,0 +1,151 @@
+DOCUMENT PIPELINE ARCHITECTURE REVIEW & RECOMMENDATION
+
+Context:
+This is a fresh install and new deployment of the Ilios platform. There are no legacy users or production data. We are willing to refactor significantly, but we must preserve existing, working functionality where it already aligns with the intended architecture.
+
+The current system includes:
+- A Data Room used for document upload and management
+- AI-based document parsing and extraction
+- Extraction previews shown to users
+- Extracted fields stored as DocumentKeys
+- An acceptance/override workflow where approved fields become canonical project data and flow into other modules (Finance, O&M, Reporting)
+
+We are experiencing instability and confusion due to:
+- Multiple cloud projects
+- Mismatched secrets
+- Unclear boundaries between storage, parsing, and AI extraction
+- Difficulty reasoning about which services are authoritative
+
+We want to rebuild this *properly* going forward, not just patch it.
+
+IMPORTANT CONSTRAINTS
+- This runs in Replit and should work well with Replit’s embedded services and deployment model.
+- We are NOT constrained by migration or backward compatibility.
+- We DO care deeply about:
+  - Reliability
+  - Extensibility to new document types
+  - Clear data lineage from document → extracted field → accepted canonical value
+- We do NOT want to break:
+  - Data Room UX
+  - Document upload flows
+  - Extraction preview + acceptance workflow
+  - Downstream usage of accepted fields in other modules
+
+---
+
+PART 1 — FACTUAL INVENTORY (NO DESIGN YET)
+
+Please produce a concrete inventory of the current implementation, including:
+
+1) Document Upload
+- Where files are uploaded to (storage provider, bucket, service)
+- How credentials/secrets are provided
+- Whether uploads use direct upload, signed URLs, or proxy through backend
+
+2) Document Storage
+- What service stores the files
+- How versions are handled (if at all)
+- How documents are linked to projects/sites in the database
+
+3) Parsing & AI Extraction
+- What services are called (OCR, LLMs, document AI, etc.)
+- Where parsing is triggered (sync vs async)
+- How retries/errors are handled
+- Whether document classification exists today
+
+4) Extraction Output
+- How extracted values are generated
+- How they are stored (DocumentKey, other tables)
+- What metadata exists (confidence, source, page reference, etc.)
+- How the extraction preview is constructed
+
+5) Acceptance Workflow
+- How proposed values become accepted or overridden
+- What code paths update canonical project data
+- Where this data is consumed by other modules
+
+6) Secrets & Cloud Projects
+- List all cloud projects/services currently referenced
+- List all secrets used and where they are loaded
+- Identify mismatches or redundancies
+
+This section should be descriptive and evidence-based. Do not propose changes yet.
+
+---
+
+PART 2 — ARCHITECTURAL RISKS & FAILURE MODES
+
+Based on the inventory above, identify:
+- Single points of failure
+- Areas where secrets/project mismatch can break functionality
+- Tight coupling between upload, parsing, and acceptance
+- Any parts that are fragile or difficult to extend to new document types
+
+Be explicit and concrete.
+
+---
+
+PART 3 — RECOMMENDED TARGET ARCHITECTURE (WITHIN THIS APP)
+
+Now propose a **clean, future-proof architecture** for the document pipeline that:
+
+- Preserves the current UX and workflow semantics
+- Fits naturally into the existing Project Hub / Data Room / DocumentKey model
+- Works well with Replit deployment and secrets management
+- Supports both existing and new document types without schema churn
+
+Your recommendation must explicitly address:
+
+1) Storage
+- Where files should live
+- How uploads should work
+- How secrets should be managed
+
+2) Parsing & Extraction
+- How parsing should be triggered (jobs, events, workers)
+- How document types should be detected or classified
+- How extraction schemas should be defined and evolved
+
+3) Extraction Preview
+- How to generate a consistent, explainable preview
+- How evidence should be attached to extracted fields
+
+4) Canonicalization
+- How accepted values should flow into project-level data
+- How to prevent unaccepted AI output from contaminating downstream modules
+
+5) Operational Model
+- How errors, retries, and re-parsing should work
+- How the system supports reprocessing old documents when schemas improve
+
+---
+
+PART 4 — REPLIT-SPECIFIC RECOMMENDATIONS
+
+Given your knowledge of Replit and this codebase:
+- Which Replit-native services or patterns would you recommend using?
+- How should secrets be stored and scoped?
+- Are there Replit deployment patterns that simplify this architecture?
+- What should explicitly NOT be done in Replit (anti-patterns)?
+
+---
+
+PART 5 — MIGRATION / EXECUTION PLAN
+
+Even though this is a fresh deployment, provide:
+- A step-by-step plan to move from current state → recommended state
+- What can be reused vs rewritten
+- What should be validated first to avoid regressions
+
+---
+
+DELIVERABLE FORMAT
+Please return:
+1) Inventory
+2) Risks
+3) Target architecture (diagram in text is fine)
+4) Replit-specific guidance
+5) Execution plan
+
+Do not write code yet.
+Focus on correctness, clarity, and alignment with the existing system.

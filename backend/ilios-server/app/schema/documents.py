@@ -104,6 +104,9 @@ class DocumentCreationSchema(BaseModel):
 class DocumentKeyUpdateSchema(BaseModel):
     name: str = Field(examples=["Lessor (Landlord) Entity Name"])
     value: str = Field(examples=["GreenLife Solar, LLC Shine Development Partners"], min_length=1, max_length=2000)
+    file_id: Optional[int] = Field(default=None, examples=[123], description="File version ID for version-scoped keys")
+    status: Optional[str] = Field(default="accepted", examples=["accepted", "overridden", "proposed"])
+    override_value: Optional[str] = Field(default=None, max_length=2000)
 
 
 class DocumentKeyUpdateSuccess(Success):

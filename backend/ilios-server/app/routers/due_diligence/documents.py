@@ -349,7 +349,7 @@ async def create_custom_document(
     status_code=status.HTTP_202_ACCEPTED,
     response_model=DocumentKeyUpdateSuccess,
     responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
-    description="Save value of document key depending on the document kind",
+    description="Save value of document key depending on the document kind. For version-aware acceptance, provide file_id.",
 )
 async def set_key(
     key: DocumentKeyUpdateSchema,
@@ -357,6 +357,9 @@ async def set_key(
     document: Document = Depends(get_authorized_document),
     db_session: Session = Depends(get_session),
 ):
+    from datetime import datetime, timezone
+    from app.services.project_facts_service import ProjectFactsService
+
     require_module_permission(
         user_id=current_user.id,
         company_id=document.site.company_id,
@@ -370,23 +373,42 @@ async def set_key(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
             f"Key '{key.name}' is not allowed for the '{document.name.value}' document",
         )
-    payload = {"value": key.value, "editor_id": current_user.id}
+
+    payload = {
+        "value": key.value,
+        "editor_id": current_user.id,
+        "file_id": key.file_id,
+        "status": key.status or "accepted",
+    }
+    if key.status == "accepted":
+        payload["accepted_by_id"] = current_user.id
+        payload["accepted_at"] = datetime.now(timezone.utc)
+    if key.status == "overridden" and key.override_value:
+        payload["override_value"] = key.override_value
+        payload["overridden_by_id"] = current_user.id
+        payload["overridden_at"] = datetime.now(timezone.utc)
+
     document_key_crud = DocumentKeyCRUD(db_session)
-    existing_key = document_key_crud.get_document_key(name=key.name, document_id=document.id)
+    existing_key = document_key_crud.get_document_key(
+        name=key.name, document_id=document.id, file_id=key.file_id
+    )
     key_id = existing_key.id if existing_key else None
     key_change_detected = False
+    document_key = None
+
     if not existing_key:
         payload |= {"name": key.name, "document_id": document.id}
-        created_key = document_key_crud.create_item(payload)
-        key_id = created_key.id
-        logger.info(f"Key <{key.name}> has been created for the document '{document.id}'")
-        # set detected to True automatically since it appears
+        document_key = document_key_crud.create_item(payload)
+        key_id = document_key.id
+        logger.info(f"Key <{key.name}> has been created for document '{document.id}' file '{key.file_id}'")
         key_change_detected = True
     else:
         if existing_key.value != payload["value"]:
             key_change_detected = True
         document_key_crud.update_by_id(existing_key.id, payload)
-        logger.info(f"Key <{key.name}> has been updated for the document '{document.id}'")
+        db_session.refresh(existing_key)
+        document_key = existing_key
+        logger.info(f"Key <{key.name}> has been updated for document '{document.id}' file '{key.file_id}'")
     # track changes of the co-terminus check actuality
     if document.site.co_terminus_check and key_change_detected:
         # based on the co-term config, build dict of agreements and keys used for it
@@ -415,7 +437,14 @@ async def set_key(
         and key_change_detected
     ):
         sync_payload = prepare_keys_sync_payload(document_key_crud, document, key)
-        # cheat a bit - we already know key value changed, thus send empty 'old record' for comparison
         SiteDDCharacteristicsHandler(document.site).sync_to_bq(old_record={}, new_record=sync_payload)
+
+    if document_key and document_key.file_id and document_key.status in ("accepted", "overridden"):
+        try:
+            facts_service = ProjectFactsService(db_session)
+            facts_service.create_candidate_from_document_key(document_key, document.site_id)
+            logger.info(f"Created candidate fact for key '{key.name}' file '{key.file_id}'")
+        except Exception as e:
+            logger.warning(f"Failed to create candidate fact for key '{key.name}': {str(e)}")
 
     return {"code": status.HTTP_202_ACCEPTED, "message": DocumentMessages.document_key_update_success, "id": key_id}

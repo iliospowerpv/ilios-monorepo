@@ -57,6 +57,7 @@ from .routers import (
     access_health_router,
     role_profiles_router,
 )
+from .routers.project_assumptions import assumptions_router
 from .routers.debug import router as debug_router
 from .routers.internal.base import internal_telemetry_router
 from .routers.investor_dashboard import investor_sites_router
@@ -153,6 +154,7 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
         tags=[tags.FILES_PARSING_TAG],
     )
     app.include_router(chatbot_router, prefix="/api/due-diligence/chatbot/{site_id}", tags=[tags.CHATBOT_TAG])
+    app.include_router(assumptions_router, prefix="/api/projects/{site_id}/assumptions", tags=["Project Assumptions"])
     # task tracker related APIs
     app.include_router(board_router, prefix="/api/task-tracker/boards", tags=[tags.BOARD_TAG])
     app.include_router(
