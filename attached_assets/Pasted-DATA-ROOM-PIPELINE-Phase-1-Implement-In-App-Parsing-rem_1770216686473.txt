@@ -1,0 +1,65 @@
+DATA ROOM PIPELINE – Phase 1: Implement In-App Parsing (remove external cloud function)
+
+Context:
+- Storage provider is Replit object storage; files store storage_key like ilios/companies/... in DB.
+- Current parsing trigger path (files_parsing.py trigger_file_parsing) creates AIParsingResult and calls an external service via file_parse_function_url using a replit:// URL.
+- Placeholder URL guard exists to prevent accidental calls.
+- Registry-first behavior is enforced (allow_config_fallback=False).
+- Binding snapshots (document_type_id, schema_version_id, prompt_template_id, extraction_run_number) must be populated for every parse run.
+
+Objective:
+Remove dependency on external parsing function and implement parsing entirely in-app so “Upload → Parse → Preview → Accept” works end-to-end.
+
+Implementation Requirements:
+
+A) Replace external call with in-app parsing
+1) In trigger_file_parsing (files_parsing.py):
+   - Fetch file bytes from Replit object storage using the file.storage_key (do NOT rely on replit:// URLs).
+   - Invoke our registry-first extraction pipeline service (ExtractionPipelineService / AIParsingHandler) with:
+     - file bytes
+     - agreement/document type (agreement_type or document_type_id)
+     - any metadata currently used in the pipeline
+   - Persist results into AIParsingResult:
+     - raw_llm_response (verbatim model output or provider response payload)
+     - parsed_result (structured extraction)
+     - error_message on failure
+     - retries count
+     - extraction_run_number increment logic preserved
+     - binding snapshot fields preserved and always set
+
+B) Runtime constraints
+- Add a max-runtime guard for synchronous requests (e.g., 20–30 seconds).
+- If max runtime exceeded or parsing is long-running, return “queued” and execute parsing using an available background mechanism:
+  - If the codebase has a background task mechanism, use it.
+  - If not, keep synchronous but enforce timeouts and return a clear 504/503-style failure with guidance.
+(Prefer the simplest working approach consistent with existing infrastructure.)
+
+C) Observability
+- Generate a correlation_id (uuid) per parse attempt.
+- Log structured start/end lines including:
+  correlation_id, user_id, file_id, storage_key, document_id, document_type_id, schema_version_id, prompt_template_id, extraction_run_number
+- On exceptions, log stack trace plus correlation_id.
+- Include correlation_id in the API response (safe).
+
+D) Config changes
+- Remove or repurpose the placeholder guard:
+  - Since external URL is no longer used, the guard must NOT block parsing.
+  - Instead, validate that the required in-app extraction config is present (e.g., model provider/api key configured); if missing, return 503 “AI parsing not configured”.
+
+E) Tests (minimum)
+Create or update tests to cover:
+1) Success path: triggering parse stores AIParsingResult with parsed_result + binding snapshot fields.
+2) Failure path: missing model config returns 503 with clear message and no partial “success” state.
+3) Error path: pipeline exception persists error_message and logs correlation_id (assert presence in response).
+
+Deliverables:
+- Code changes implementing in-app parsing
+- Any necessary helper functions for fetching file bytes from Replit storage
+- Updated logs
+- Tests passing
+- Short note in replit.md: “In-app parsing flow” and how to configure parsing provider
+
+Constraints:
+- Do NOT add new DB schema unless absolutely necessary (correlation_id can be returned/logged without DB change).
+- Do NOT start moving parsing into external services in this phase.
+Proceed now.
