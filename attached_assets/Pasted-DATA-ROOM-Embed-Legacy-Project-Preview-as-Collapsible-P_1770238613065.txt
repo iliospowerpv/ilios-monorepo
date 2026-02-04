@@ -1,0 +1,67 @@
+DATA ROOM – Embed Legacy “Project Preview” as Collapsible Project Summary Panel (Phase 1)
+
+Context:
+We previously had a Due Diligence Overview tab that provided:
+- Terms roll-up (TermsAndValuesList)
+- Co-terminus checks UI (CoTerminusChecksPanel)
+Currently lives under /due-diligence/.../overview as a separate tab.
+We want to embed this at the TOP of the Project Hub → Data Room page to avoid confusing navigation.
+
+Goal:
+Add a collapsible “Project Summary” panel at the top of Project Hub Data Room page (DataRoom.tsx).
+This panel shows a compact roll-up of accepted terms + co-terminus check status/results.
+No new route; no separate page.
+
+Existing components/APIs to reuse:
+- OverviewTab (optional; can cherry-pick child components)
+- TermsAndValuesList
+- CoTerminusChecksPanel (may need a compact mode)
+Backend endpoints:
+- /agreements/, /agreements/{id}/terms
+- /co-terminus/check, /co-terminus/status, /co-terminus/stop
+
+Permissions:
+- diligence:view to see roll-up/check results
+- diligence:edit to run/rerun checks
+
+Tasks:
+1) Add Project Summary panel to DataRoom.tsx
+- Place at top of page above document list UI.
+- Implement collapsible behavior:
+  - default expanded on first view
+  - remember expand/collapse per user+project via localStorage key (include siteId/projectId).
+- Use compact styling consistent with Project Overview/Finance status widgets.
+
+2) Content (Phase 1: stacked, no internal tabs yet)
+- Section: “Terms & Values”
+  - Reuse TermsAndValuesList with agreement selector.
+- Section: “Co-terminus Checks”
+  - Reuse CoTerminusChecksPanel OR extract a “compact mode”:
+    - show summary chips (Equal / Not Equal / N/A)
+    - show latest run status (processing/completed/stuck)
+    - button: Run/Rerun (only if diligence:edit)
+    - avoid heavy vertical space; collapse details behind “View details” if needed
+
+3) Permission gating
+- If user lacks diligence:view:
+  - hide the entire Project Summary panel (or show a minimal “No access” stub—prefer hide).
+- If user lacks diligence:edit:
+  - disable/hide run/rerun controls but still show results.
+
+4) Ensure no duplicate fetching
+- Avoid doubling API calls if DataRoom already fetches related data.
+- Keep requests scoped to the current site/project.
+
+5) QA checklist + docs
+- Verify: panel renders, collapses, persists state
+- Verify: terms load and selector works
+- Verify: co-terminus status loads; run works for edit users; view-only users see results but cannot run
+- Update replit.md with where the panel is and how permissions affect it
+
+Deliverables:
+- Working Project Summary panel embedded in Data Room
+- List of files changed
+- Short before/after summary
+
+Do NOT build a widget library in this phase; keep components composable for later extraction.
+Proceed now.

@@ -1,0 +1,49 @@
+DATA ROOM – Restore “Project Preview/Project Review” as an Embedded Project Summary Panel
+
+Context:
+We previously had a Due Diligence page called “Project Preview” (or “Project Review”) that:
+- rolled up primary fields across Data Room documents
+- ran co-terminus cross checks
+It was a separate page and users found it confusing.
+
+Goal:
+Bring this capability back WITHOUT adding a separate top-level page:
+- Embed it at the TOP of the Project Data Room page as a COLLAPSIBLE “Project Summary” panel.
+- It should display roll-up fields + co-terminus cross-check results + exceptions.
+
+Tasks:
+1) Locate legacy implementation
+- Find old route(s), component(s), and API calls related to:
+  “Project Preview”, “Project Review”, “coterminus”, “cross check”.
+- Identify:
+  - UI component(s)
+  - data aggregation logic (which fields, from where)
+  - co-terminus check invocation (endpoint/service)
+  - any permissions assumptions
+
+2) Inventory outputs and dependencies
+- List the roll-up fields it displayed.
+- List which tables/endpoints supply those fields now (prefer promoted/accepted facts).
+- List what inputs the coterminus checks require and where they come from.
+
+3) Propose embed plan
+- Show the exact target location in current UI:
+  Project Data Room page top section.
+- Design:
+  - Collapsible panel
+  - Default state (collapsed after first view)
+  - Optional internal tabs (Overview/Cross-checks/Exceptions)
+
+4) Implement minimal embed (Phase 1)
+- Add Project Summary panel to Project Data Room page.
+- Wire existing roll-up and coterminus checks into this panel.
+- Ensure it uses promoted/accepted facts where possible.
+- Ensure permissions: only users with diligence:view (and/or relevant modules) can see it.
+
+Deliverables:
+- A short “Legacy Feature Audit” (routes/components/endpoints found)
+- A concrete implementation plan
+- Implement the embedded collapsible panel (minimal but functional)
+- List files changed
+Do NOT create a new route/page unless absolutely required.
+Proceed now.
