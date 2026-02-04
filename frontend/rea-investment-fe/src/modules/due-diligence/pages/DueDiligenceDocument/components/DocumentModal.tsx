@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import DocViewer, { DocViewerRenderers } from '@cyntler/react-doc-viewer';
@@ -16,6 +16,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import Backdrop from '@mui/material/Backdrop';
 import CircularProgress from '@mui/material/CircularProgress';
 import Fade from '@mui/material/Fade';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { ApiClient, FileItem } from '../../../../../api';
 import {
   SubHeader,
@@ -37,6 +38,12 @@ import { BootstrapTooltip } from '../../../../../components/common/BootstrapTool
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNotify } from '../../../../../contexts/notifications/notifications';
 import DocumentModalComments from './DocumentModalComments';
+import {
+  ParsingStatusBadge,
+  ParseErrorMessage,
+  TruncationWarning,
+  ParsingMetadata
+} from '../../../../../components/common/ParsingStatus';
 
 dayjs.extend(utc);
 
@@ -156,6 +163,8 @@ const DocumentModal: React.FC<DocumentModal> = props => {
   const { open, file, fileUrl, onClose, documentId, siteId, boardId, taskId } = props;
   const fileId = file?.id ?? -1;
   const [isProcessing, setIsProcessing] = useState(false);
+  const [currentRunId, setCurrentRunId] = useState<number | undefined>();
+  const [currentCorrelationId, setCurrentCorrelationId] = useState<string | undefined>();
   const queryClient = useQueryClient();
   const notify = useNotify();
 
@@ -170,10 +179,13 @@ const DocumentModal: React.FC<DocumentModal> = props => {
     retry: 1
   });
 
-  const { mutateAsync: startParsing } = useMutation({
-    mutationFn: (id: number) => ApiClient.dueDiligence.documentStartParsing(id, siteId, documentId),
-    onSuccess: () => {
-      notify(`This will take 10-15 minutes. Feel free to tackle another task and check back shortly!`);
+  const { mutateAsync: startParsing, isPending: isStartingParse } = useMutation({
+    mutationFn: ({ id, forceReprocess }: { id: number; forceReprocess: boolean }) =>
+      ApiClient.dueDiligence.documentStartParsing(id, siteId, documentId, forceReprocess),
+    onSuccess: (response) => {
+      setCurrentRunId(response.run_id);
+      setCurrentCorrelationId(response.correlation_id);
+      notify(`Parsing started. This may take a few minutes.`);
       setIsProcessing(true);
     },
     onError: () => {
@@ -181,41 +193,59 @@ const DocumentModal: React.FC<DocumentModal> = props => {
     }
   });
 
-  const { data: documentStatus } = useQuery({
+  const { data: documentStatus, refetch: refetchStatus } = useQuery({
     queryFn: async () => {
       return ApiClient.dueDiligence.documentParsingStatus(fileId, siteId, documentId);
     },
-    queryKey: ['document-status', { siteId, documentId }],
+    queryKey: ['document-status', { siteId, documentId, fileId }],
     enabled: open && fileId !== -1,
-    refetchInterval: !isProcessing ? isProcessing : 60000 // 1 min refetch interval
+    refetchInterval: isProcessing ? 5000 : false
   });
 
-  const handleStartParsing = async (fileId: number) => {
+  const handleStartParsing = useCallback(async (fileIdToProcess: number, forceReprocess: boolean = false) => {
     try {
-      await startParsing(fileId);
+      await startParsing({ id: fileIdToProcess, forceReprocess });
     } catch (e) {
       console.log(e);
     }
-  };
+  }, [startParsing]);
+
+  const handleReprocess = useCallback(() => {
+    if (fileId !== -1) {
+      handleStartParsing(fileId, true);
+    }
+  }, [fileId, handleStartParsing]);
 
   useEffect(() => {
-    setIsProcessing(false);
+    if (!documentStatus) return;
 
-    if (documentStatus?.status === 'Processing Failed') {
-      notify('Processing failed');
-      setIsProcessing(false);
-    } else if (documentStatus?.status === 'Completed') {
-      notify('Processing completed');
-      setIsProcessing(false);
-      queryClient.invalidateQueries({ queryKey: ['document-terms'] });
-    } else if (documentStatus?.status === 'Processing') {
-      setIsProcessing(true);
-    } else if (documentStatus?.status === 'Not Started') {
-      setIsProcessing(false);
+    const status = documentStatus.status?.toLowerCase().replace(/\s+/g, '_');
+    
+    if (documentStatus.run_id) {
+      setCurrentRunId(documentStatus.run_id);
+    }
+    if (documentStatus.correlation_id) {
+      setCurrentCorrelationId(documentStatus.correlation_id);
     }
 
-    return () => setIsProcessing(false);
-  }, [documentStatus, file, notify]);
+    if (status === 'processing_failed' || status === 'failed') {
+      setIsProcessing(false);
+    } else if (status === 'completed' || status === 'succeeded') {
+      if (isProcessing) {
+        notify('Processing completed');
+        queryClient.invalidateQueries({ queryKey: ['document-terms'] });
+      }
+      setIsProcessing(false);
+    } else if (status === 'processing' || status === 'queued') {
+      setIsProcessing(true);
+    } else {
+      setIsProcessing(false);
+    }
+  }, [documentStatus, isProcessing, notify, queryClient]);
+
+  const parsingStatus = documentStatus?.status?.toLowerCase().replace(/\s+/g, '_') || 'not_started';
+  const hasFailed = parsingStatus === 'processing_failed' || parsingStatus === 'failed';
+  const hasCompleted = parsingStatus === 'completed' || parsingStatus === 'succeeded';
 
   React.useEffect(() => {
     if (fileTermKeysDataLoadingError) {
@@ -290,13 +320,10 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                   <Grid container spacing={2} height="100%">
                     <Grid item sm={6} md={7} height="100%">
                       <DocumentPreviewContainer>
+                        <Box sx={{ position: 'absolute', right: '16px', top: '8px', zIndex: 10, display: 'flex', gap: 1 }}>
                         <Button
                           variant="contained"
                           sx={{
-                            position: 'absolute',
-                            right: '16px',
-                            top: '8px',
-                            zIndex: 10,
                             color: 'white',
                             background: 'linear-gradient(245.75deg, #456CF3 7.17%, #8D4BE9 89.9%)',
                             ['&:hover']: { background: 'linear-gradient(245.75deg, #456CF3 7.17%, #8D4BE9 89.9%)' },
@@ -305,18 +332,20 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                               background: 'rgba(0, 0, 0, 0.12)'
                             }
                           }}
-                          onClick={() => handleStartParsing(file.id)}
-                          disabled={isProcessing}
-                          startIcon={isProcessing ? <CircularProgress color="inherit" size={20} /> : null}
+                          onClick={() => handleStartParsing(file.id, false)}
+                          disabled={isProcessing || isStartingParse}
+                          startIcon={isProcessing || isStartingParse ? <CircularProgress color="inherit" size={20} /> : null}
                         >
-                          Parse with AI
+                          {hasCompleted || hasFailed ? 'Reprocess' : 'Parse with AI'}
                         </Button>
+                      </Box>
                         {FileRenderer}
                       </DocumentPreviewContainer>
                     </Grid>
                     <Grid item sm={6} md={5} height="100%">
-                      <DialogTitle sx={{ bgcolor: 'primary.main', color: 'secondary.main' }} id="document-dialog-title">
-                        Document Details
+                      <DialogTitle sx={{ bgcolor: 'primary.main', color: 'secondary.main', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} id="document-dialog-title">
+                        <span>Document Details</span>
+                        {documentStatus && <ParsingStatusBadge status={parsingStatus} />}
                       </DialogTitle>
                       <Box
                         sx={{
@@ -327,6 +356,30 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                           position: 'relative'
                         }}
                       >
+                        {hasFailed && (
+                          <ParseErrorMessage
+                            errorMessage={documentStatus?.error_message}
+                            onRetry={handleReprocess}
+                          />
+                        )}
+                        {hasCompleted && documentStatus?.was_truncated && (
+                          <TruncationWarning
+                            wasTruncated={documentStatus.was_truncated}
+                            truncatedCharCount={documentStatus.truncated_char_count}
+                            charCount={documentStatus.char_count}
+                            pageCount={documentStatus.page_count}
+                          />
+                        )}
+                        {hasCompleted && (
+                          <ParsingMetadata
+                            charCount={documentStatus?.char_count}
+                            wordCount={documentStatus?.word_count}
+                            pageCount={documentStatus?.page_count}
+                            correlationId={currentCorrelationId}
+                            runId={currentRunId}
+                            showDebugInfo={true}
+                          />
+                        )}
                         {fileTermKeysData &&
                           fileTermKeysData.keys.map(
                             ({

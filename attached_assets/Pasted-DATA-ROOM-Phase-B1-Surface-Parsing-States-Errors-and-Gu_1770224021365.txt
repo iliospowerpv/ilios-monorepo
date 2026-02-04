@@ -1,0 +1,63 @@
+DATA ROOM – Phase B1: Surface Parsing States, Errors, and Guidance in UI
+
+Context:
+- In-app parsing is production-ready with guardrails.
+- AIParsingResult contains:
+  - status (queued, processing, succeeded, processing_failed)
+  - error_message with [reason_code] prefix
+  - metadata: char_count, word_count, page_count, was_truncated, truncated_char_count
+  - run_id and correlation_id returned from trigger endpoint
+- Users interact with parsing via the Data Room / Due Diligence UI.
+
+Objective:
+Make parsing behavior transparent and user-friendly in the UI so users understand:
+- what’s happening
+- why something failed
+- what to do next
+
+Tasks:
+
+A) Parsing state UI
+- In the document detail / data room view, show parsing state:
+  - Queued
+  - Processing (spinner + message)
+  - Succeeded
+  - Failed
+- Poll or refresh status using run_id.
+
+B) Error messaging from reason codes
+Map backend reason codes to clear UI messages:
+- insufficient_text_extracted → “This document appears to be scanned. OCR is required.”
+- file_too_large → “This file exceeds the maximum supported size (X MB).”
+- too_many_pages → “This PDF exceeds the maximum supported page count.”
+- unsupported_file_type → “This file type is not supported.”
+- llm_call_failed → “AI parsing failed. Please try again.”
+- storage_error → “Unable to read file from storage.”
+
+Do NOT show raw error_message; use reason_code mapping with friendly copy.
+
+C) Metadata & warnings
+- If was_truncated=true, show a warning banner:
+  “This document is long. Analysis was performed on the first N characters.”
+- Optionally show:
+  - page_count
+  - char_count
+
+D) Actions
+- Allow “Reprocess” (force_reprocess=true)
+- Disable reprocess while status is processing
+- Show correlation_id in an expandable “Details / Debug” section (admin-only if desired)
+
+E) Minimal QA
+- Verify:
+  - Failed parses show actionable messages
+  - Successful parses show metadata
+  - Reprocess triggers new run_id
+
+Deliverables:
+- UI changes committed
+- Mapping table of reason_code → user-facing copy
+- Short note in replit.md describing Data Room parsing UX states
+
+Do NOT implement OCR yet in this phase.
+Proceed now.

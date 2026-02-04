@@ -106,6 +106,26 @@ interface FileDataResponse {
   code: number;
 }
 
+interface ParseTriggerResponse {
+  run_id: number;
+  correlation_id: string;
+  status: string;
+  code: number;
+  message: string;
+}
+
+interface ParsingStatusResponse {
+  status: string;
+  run_id?: number;
+  correlation_id?: string;
+  error_message?: string;
+  char_count?: number;
+  word_count?: number;
+  page_count?: number;
+  was_truncated?: boolean;
+  truncated_char_count?: number;
+}
+
 interface DocumentDataResponse {
   status: string;
 }
@@ -468,11 +488,12 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
   const documentStartParsing = async (
     fileId: number,
     siteId: number,
-    documentId: number
-  ): Promise<FileDataResponse> => {
-    const response = await httpClient.post<FileDataResponse>(
+    documentId: number,
+    forceReprocess: boolean = false
+  ): Promise<ParseTriggerResponse> => {
+    const response = await httpClient.post<ParseTriggerResponse>(
       `/api/due-diligence/${siteId}/documents/${documentId}/files/${fileId}/parsing/`,
-      {}
+      { force_reprocess: forceReprocess }
     );
     return response?.data;
   };
@@ -481,8 +502,8 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     fileId: number,
     siteId: number,
     documentId: number
-  ): Promise<DocumentDataResponse> => {
-    const response = await httpClient.get<DocumentDataResponse>(
+  ): Promise<ParsingStatusResponse> => {
+    const response = await httpClient.get<ParsingStatusResponse>(
       `/api/due-diligence/${siteId}/documents/${documentId}/files/${fileId}/parsing-status/`,
       {}
     );
@@ -659,6 +680,8 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
 export type {
   FileItem,
   FileDataResponse,
+  ParseTriggerResponse,
+  ParsingStatusResponse,
   UrlUpload,
   AgreementType,
   AgreementTypes,
