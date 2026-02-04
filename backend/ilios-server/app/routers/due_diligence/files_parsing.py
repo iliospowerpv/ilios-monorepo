@@ -47,6 +47,135 @@ class ReprocessResponse(BaseModel):
     prompt_template_id: Optional[int] = None
 
 
+class EvidenceSchema(BaseModel):
+    page: Optional[int] = None
+    snippet: Optional[str] = None
+    anchor_text: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ParseRunSchema(BaseModel):
+    id: int
+    file_id: int
+    status: str
+    extraction_run_number: Optional[int] = None
+    document_type_id: Optional[int] = None
+    schema_version_id: Optional[int] = None
+    prompt_template_id: Optional[int] = None
+    is_reprocess: Optional[bool] = False
+    force_reprocess: Optional[bool] = False
+    retries: Optional[int] = 0
+    error_message: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    created_at: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ParseRunHistoryResponse(BaseModel):
+    file_id: int
+    runs: list[ParseRunSchema]
+    total: int
+
+
+@files_parsing_router.get(
+    "/runs/",
+    response_model=ParseRunHistoryResponse,
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
+    description="Get parse run history for a file, including status, bindings, and retries.",
+)
+async def get_parse_run_history(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    file: FileModel = Depends(get_authorized_file),
+    db_session: Session = Depends(get_session),
+):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=file.document.site.company_id,
+        project_id=file.document.site_id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="view",
+    )
+
+    ai_results_crud = AIParsingResultCRUD(db_session)
+    runs = ai_results_crud.get_runs_for_file(file.id)
+
+    run_schemas = []
+    for run in runs:
+        run_schemas.append(ParseRunSchema(
+            id=run.id,
+            file_id=run.file_id,
+            status=run.status.value if run.status else "unknown",
+            extraction_run_number=run.extraction_run_number,
+            document_type_id=run.document_type_id,
+            schema_version_id=run.schema_version_id,
+            prompt_template_id=run.prompt_template_id,
+            is_reprocess=run.is_reprocess,
+            force_reprocess=run.force_reprocess,
+            retries=run.retries,
+            error_message=run.error_message,
+            start_time=run.start_time.isoformat() if run.start_time else None,
+            end_time=run.end_time.isoformat() if run.end_time else None,
+            created_at=run.created_at.isoformat() if hasattr(run, 'created_at') and run.created_at else None,
+        ))
+
+    return ParseRunHistoryResponse(
+        file_id=file.id,
+        runs=run_schemas,
+        total=len(run_schemas),
+    )
+
+
+@files_parsing_router.get(
+    "/runs/{run_id}/",
+    response_model=ParseRunSchema,
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
+    description="Get details of a specific parse run.",
+)
+async def get_parse_run_detail(
+    run_id: int,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    file: FileModel = Depends(get_authorized_file),
+    db_session: Session = Depends(get_session),
+):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=file.document.site.company_id,
+        project_id=file.document.site_id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="view",
+    )
+
+    ai_results_crud = AIParsingResultCRUD(db_session)
+    run = ai_results_crud.get_run_by_id(run_id)
+
+    if not run or run.file_id != file.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Parse run not found")
+
+    return ParseRunSchema(
+        id=run.id,
+        file_id=run.file_id,
+        status=run.status.value if run.status else "unknown",
+        extraction_run_number=run.extraction_run_number,
+        document_type_id=run.document_type_id,
+        schema_version_id=run.schema_version_id,
+        prompt_template_id=run.prompt_template_id,
+        is_reprocess=run.is_reprocess,
+        force_reprocess=run.force_reprocess,
+        retries=run.retries,
+        error_message=run.error_message,
+        start_time=run.start_time.isoformat() if run.start_time else None,
+        end_time=run.end_time.isoformat() if run.end_time else None,
+        created_at=run.created_at.isoformat() if hasattr(run, 'created_at') and run.created_at else None,
+    )
+
+
 @files_parsing_router.post(
     "/parsing/",
     status_code=status.HTTP_202_ACCEPTED,

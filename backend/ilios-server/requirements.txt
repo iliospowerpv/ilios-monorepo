@@ -29,6 +29,7 @@ gunicorn==23.0.0
 # Files management
 python-multipart==0.0.18
 google-cloud-storage==2.16.0
+replit-object-storage==1.0.2
 
 # GCP secret manager
 google-cloud-secret-manager==2.20.2

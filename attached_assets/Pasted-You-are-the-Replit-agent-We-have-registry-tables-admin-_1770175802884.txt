@@ -1,0 +1,74 @@
+You are the Replit agent. We have registry tables + admin API + strict fallback gating + a reprocess endpoint, but we are NOT lender-quality yet. Implement the remaining Prompt #2 contract items STRICTLY, with Replit-native storage and auditable document versioning.
+
+NON-NEGOTIABLE RULES
+- No GCS. No key.json. No external cloud functions. Use Replit Object Storage for all new uploads.
+- Registry is authoritative. Config fallback is disabled by default and MUST remain off in prod.
+- All work must preserve the existing Data Room UX flows (preview + accept/override) while adding versioning + evidence.
+
+PART 1 — STORAGE MIGRATION (REPLIT OBJECT STORAGE)
+1) Implement StorageService abstraction and ReplitStorageService.
+2) Add files.storage_key column (if not already).
+3) Update upload/download/preview endpoints to use Replit Object Storage for new files.
+4) Ensure “view document” in the UI loads PDFs from signed URLs from Replit storage.
+Acceptance: upload + preview works end-to-end without any GCS libs/settings.
+
+PART 2 — DOCUMENT VERSIONING (LENDER QUALITY)
+We need multiple versions of the same document type (e.g., Site Lease v1/v2, PVsyst v1/v2).
+Implement:
+1) UI: Data Room shows document types -> each has a “Versions” panel/list:
+   - version label, uploaded_at, uploaded_by, status (Current/Archived), parse status, last run.
+2) Uploading a new version:
+   - creates a new File record linked to the same Document type/category
+   - does NOT overwrite prior versions
+3) Promotion workflow:
+   - user selects a version and clicks “Promote to Current Assumptions”
+   - system audits who promoted/when and marks that file as current (is_actual or equivalent)
+   - accepted/overridden DocumentKeys for the promoted version become the “current assumptions” surface
+   - previous version assumptions remain historically viewable
+4) Add “Compare to previous version” view:
+   - show field-by-field diffs between promoted version and previous current version
+   - include acceptance status and evidence links
+
+PART 3 — JOB/RUN MODEL (DO NOT FAKE THIS)
+Implement an explicit parse-run model that can support retries and history.
+Either:
+A) Add document_parse_jobs table per original spec, OR
+B) Extend AIParsingResult to fully behave like a run/job record with:
+   - status state machine, retries/backoff timestamps, error details, raw_llm_response, parsed_result JSONB
+   - binding snapshot columns: document_type_id, schema_version_id, prompt_template_id, schema_version_number, prompt_version_number
+But you MUST provide:
+- ability to see history of runs per file version
+- ability to re-run with selected schema/prompt and record a new run
+- operationally safe retries with max_retries
+Acceptance: UI shows run history per file version and allows reprocess to create a new run.
+
+PART 4 — EVIDENCE END-TO-END (SNIPPET + NAVIGATION)
+1) Extraction result MUST include evidence per field:
+   - page (1-indexed), snippet, anchor_text
+   - (bbox optional; ok if not feasible now)
+2) Persist evidence in parsed_result JSONB per run.
+3) UI shows:
+   - snippet inline under the proposed field
+   - “View in document” button that opens the PDF at the page and highlights anchor_text (or scrolls to the page and visually indicates the anchor).
+Acceptance: A user can click “View in document” and land on the correct page context for that field.
+
+PART 5 — ADMIN UI (REQUIRED)
+Build minimal frontend pages under Settings/Admin for:
+- Document Types list + detail
+- Schema versions list/clone/activate + manage required fields
+- Prompt templates list/edit/activate (with model config)
+No code changes should be required to add a new document type + fields + prompt and run extraction.
+
+PART 6 — TESTS
+Add tests covering:
+- upload creates versioned file records
+- promote-to-current sets correct file current flag and writes audit record
+- reprocess creates a new run record (never overwrites prior run)
+- evidence persisted and returned in API responses
+
+OUTPUT REQUIREMENTS
+At end provide:
+- list of migrations
+- list of new/modified endpoints
+- list of new UI routes/components
+- manual QA script: “upload v1, parse, accept; upload v2, parse, compare, promote; verify current assumptions changed.”
