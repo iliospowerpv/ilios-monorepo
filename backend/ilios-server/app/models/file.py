@@ -10,6 +10,7 @@ from app.models.helpers import utcnow
 
 class FileParsingStatuses(enum.Enum):
     not_started = "Not Started"
+    queued = "Queued"
     processing_timeout = "Processing Timeout"
     processing_start_failed = "Processing Start Failed"
     processing = "Processing"
@@ -87,6 +88,10 @@ class AIParsingResult(Base):
     error_message = Column(Text, nullable=True)
     is_reprocess = Column(Boolean, nullable=True, default=False)
     force_reprocess = Column(Boolean, nullable=True, default=False)
+
+    worker_id = Column(String(100), nullable=True)
+    correlation_id = Column(String(50), nullable=True)
+    claimed_at = Column(DateTime, nullable=True)
 
     file = relationship("File", back_populates="ai_parsing_results")  # noqa: VNE002
     document_type = relationship("ExtractionDocumentType")

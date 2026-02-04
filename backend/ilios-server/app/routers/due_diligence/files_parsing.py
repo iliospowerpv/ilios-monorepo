@@ -225,34 +225,46 @@ def _run_parsing_background(
 ):
     """Background task to run in-app parsing. Uses its own DB session.
     
-    Ensures AIParsingResult status is always updated even on unexpected failures.
+    Implements atomic claim pattern:
+    1. Attempt to claim the run (status must be 'queued')
+    2. If claim fails, exit gracefully (another worker got it)
+    3. On any failure, mark run as failed with end_time
     """
     from app.db.session import SessionLocal
     from app.crud.ai_parsing_result import AIParsingResultCRUD
+    import os
+    
     db = SessionLocal()
     try:
+        ai_crud = AIParsingResultCRUD(db)
+        worker_id = f"worker-{os.getpid()}"
+        
+        claimed, run = ai_crud.atomic_claim(ai_result_id, correlation_id, worker_id)
+        
+        if not claimed:
+            if run and run.status == FileParsingStatuses.processing:
+                logger.info(f"[{correlation_id}] Run {ai_result_id} already claimed by {run.worker_id}, exiting")
+            else:
+                logger.warning(f"[{correlation_id}] Failed to claim run {ai_result_id}, status={run.status if run else 'not found'}")
+            return
+        
+        logger.info(f"[{correlation_id}] Claimed run {ai_result_id} for file {file_id}")
+        
         from app.models.file import File
         file = db.query(File).filter(File.id == file_id).first()
         if not file:
             logger.error(f"[{correlation_id}] File {file_id} not found for background parsing")
-            ai_crud = AIParsingResultCRUD(db)
-            ai_crud.update_by_id(ai_result_id, {
-                "status": FileParsingStatuses.processing_failed,
-                "error_message": f"File {file_id} not found",
-                "end_time": datetime.now(timezone.utc),
-            })
+            ai_crud.mark_failed(ai_result_id, f"File {file_id} not found")
             return
+        
         parsing_service = InAppParsingService(db)
         parsing_service.parse_file(file, ai_result_id, document_type_name, correlation_id)
+        
     except Exception as e:
         logger.error(f"[{correlation_id}] Background parsing failed: {e}")
         try:
             ai_crud = AIParsingResultCRUD(db)
-            ai_crud.update_by_id(ai_result_id, {
-                "status": FileParsingStatuses.processing_failed,
-                "error_message": str(e)[:500],
-                "end_time": datetime.now(timezone.utc),
-            })
+            ai_crud.mark_failed(ai_result_id, str(e)[:500])
         except Exception as update_err:
             logger.error(f"[{correlation_id}] Failed to update AIParsingResult status: {update_err}")
     finally:
@@ -303,10 +315,7 @@ async def trigger_file_parsing(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=message)
 
     ai_results_crud = AIParsingResultCRUD(db_session)
-    if file.latest_ai_result and file.latest_ai_result.status == FileParsingStatuses.processing:
-        logger.warning(f"There is already parse processing started for file {file.id}")
-        raise HTTPException(status.HTTP_409_CONFLICT, detail=FileMessages.file_parse_conflict)
-
+    
     parsing_service = InAppParsingService(db_session)
     if not parsing_service.check_openai_available():
         raise HTTPException(
@@ -316,32 +325,39 @@ async def trigger_file_parsing(
 
     pipeline_service = ExtractionPipelineService(db_session)
     extraction_config = pipeline_service.get_extraction_config(file.document.name.value)
+    
+    doc_type_id = extraction_config["document_type"]["id"] if extraction_config else None
+    schema_version_id = extraction_config["schema_version"]["id"] if extraction_config else None
+    prompt_template_id = extraction_config["prompt_template"]["id"] if extraction_config else None
 
     run_count = db_session.query(AIParsingResult).filter(AIParsingResult.file_id == file.id).count()
-
+    correlation_id = str(uuid.uuid4())[:8]
+    
     ai_record_payload = {
         "file_id": file.id,
-        "status": FileParsingStatuses.not_started,
-        "start_time": datetime.now(timezone.utc),
+        "status": FileParsingStatuses.queued,
         "extraction_run_number": run_count + 1,
+        "correlation_id": correlation_id,
+        "document_type_id": doc_type_id,
+        "schema_version_id": schema_version_id,
+        "prompt_template_id": prompt_template_id,
     }
-    if extraction_config:
-        ai_record_payload["document_type_id"] = extraction_config["document_type"]["id"]
-        ai_record_payload["schema_version_id"] = extraction_config["schema_version"]["id"]
-        ai_record_payload["prompt_template_id"] = extraction_config["prompt_template"]["id"]
 
-    new_ai_record = ai_results_crud.create_item(ai_record_payload)
-    correlation_id = str(uuid.uuid4())[:8]
+    run, is_new = ai_results_crud.create_or_get_active(file.id, ai_record_payload)
+    
+    if not is_new:
+        logger.info(f"Returning existing active run {run.id} for file {file.id} (idempotency)")
+        return {"code": status.HTTP_202_ACCEPTED, "message": FileMessages.file_parse_trigger_success}
+    
     logger.info(
-        f"[{correlation_id}] Starting in-app AI parsing for file {file.id}: "
+        f"[{correlation_id}] Created queued parsing job {run.id} for file {file.id}: "
         f"storage_key={file.storage_key}, document_type={pipeline_document_name}"
     )
 
-    ai_results_crud.update_by_id(new_ai_record.id, {"status": FileParsingStatuses.processing})
     background_tasks.add_task(
         _run_parsing_background,
         file.id,
-        new_ai_record.id,
+        run.id,
         pipeline_document_name,
         correlation_id,
     )
@@ -454,51 +470,64 @@ async def reprocess_file(
     schema_version_id = request.schema_version_id or extraction_config["schema_version"]["id"]
     prompt_template_id = request.prompt_template_id or extraction_config["prompt_template"]["id"]
 
-    existing_runs = db_session.query(AIParsingResult).filter(
-        AIParsingResult.file_id == file.id,
-        AIParsingResult.schema_version_id == schema_version_id,
-        AIParsingResult.prompt_template_id == prompt_template_id,
-        AIParsingResult.status == FileParsingStatuses.completed,
-    ).all()
+    if not request.force:
+        existing_completed = db_session.query(AIParsingResult).filter(
+            AIParsingResult.file_id == file.id,
+            AIParsingResult.schema_version_id == schema_version_id,
+            AIParsingResult.prompt_template_id == prompt_template_id,
+            AIParsingResult.status == FileParsingStatuses.completed,
+        ).first()
 
-    if existing_runs and not request.force:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            detail="Reprocess with same bindings already completed. Use force=true to override."
-        )
+        if existing_completed:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                detail="Reprocess with same bindings already completed. Use force=true to override."
+            )
 
     run_count = db_session.query(AIParsingResult).filter(
         AIParsingResult.file_id == file.id
     ).count()
 
-    new_job = ai_results_crud.create_item({
+    correlation_id = str(uuid.uuid4())[:8]
+    payload = {
         "file_id": file.id,
-        "status": FileParsingStatuses.not_started,
-        "start_time": datetime.now(timezone.utc),
+        "status": FileParsingStatuses.queued,
         "document_type_id": doc_type_id,
         "schema_version_id": schema_version_id,
         "prompt_template_id": prompt_template_id,
         "extraction_run_number": run_count + 1,
         "is_reprocess": True,
         "force_reprocess": request.force,
-    })
+        "correlation_id": correlation_id,
+    }
+    
+    if request.force:
+        new_job = ai_results_crud.create_item(payload)
+        is_new = True
+    else:
+        new_job, is_new = ai_results_crud.create_or_get_active(file.id, payload)
+
+    if not is_new:
+        logger.info(f"Returning existing active run {new_job.id} for reprocess (idempotency)")
+        return ReprocessResponse(
+            job_id=new_job.id,
+            status=new_job.status.value if new_job.status else "queued",
+            message="Existing run in progress",
+            is_reprocess=new_job.is_reprocess or False,
+            schema_version_id=schema_version_id,
+            prompt_template_id=prompt_template_id,
+        )
 
     pipeline_document_name = AgreementNamesMappingHandler(db_session).get_pipeline_agreement_name(file.document.name)
     if not pipeline_document_name:
-        ai_results_crud.update_by_id(new_job.id, {
-            "status": FileParsingStatuses.processing_start_failed,
-            "error_message": f"Pipeline config not found for {doc_type_name}",
-            "end_time": datetime.now(timezone.utc),
-        })
+        ai_results_crud.mark_failed(new_job.id, f"Pipeline config not found for {doc_type_name}")
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=f"Pipeline config not found for {doc_type_name}")
 
-    correlation_id = str(uuid.uuid4())[:8]
     logger.info(
-        f"[{correlation_id}] Starting reprocess for file {file.id}: "
+        f"[{correlation_id}] Created queued reprocess job {new_job.id} for file {file.id}: "
         f"schema_v={schema_version_id}, prompt_v={prompt_template_id}, force={request.force}"
     )
 
-    ai_results_crud.update_by_id(new_job.id, {"status": FileParsingStatuses.processing})
     background_tasks.add_task(
         _run_parsing_background,
         file.id,
@@ -509,7 +538,7 @@ async def reprocess_file(
 
     return ReprocessResponse(
         job_id=new_job.id,
-        status="processing",
+        status="queued",
         message="Reprocess job created successfully",
         is_reprocess=True,
         schema_version_id=schema_version_id,
