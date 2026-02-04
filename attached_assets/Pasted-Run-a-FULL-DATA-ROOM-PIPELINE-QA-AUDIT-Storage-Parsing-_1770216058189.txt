@@ -1,0 +1,51 @@
+Run a FULL DATA ROOM PIPELINE QA AUDIT (Storage + Parsing + Versioning) and produce an evidence-based report.
+
+Context: We migrated uploads/previews/downloads to Replit Object Storage, but observed:
+- Replit bucket wasn’t created initially (now fixed)
+- AI parser appears to read from the old storage path/provider
+- Parser may still be calling placeholder external parsing service URL instead of the in-app Replit AI integration pipeline
+
+A) STORAGE PROVIDER AUDIT (Replit-native)
+1) Confirm STORAGE_PROVIDER default and runtime value.
+- Print the resolved provider at runtime (log on startup and per upload).
+- Prove new uploads write to Replit storage (show storage_key examples).
+- Confirm no codepath requires GCS credentials to boot.
+
+2) Confirm file record fields:
+- For a newly uploaded file: show DB row values for storage_key, filepath, version_number, is_actual, document_id.
+- Identify whether any downstream code still uses filepath (legacy) instead of storage_key.
+
+B) PARSING PIPELINE AUDIT (MOST IMPORTANT)
+3) Trace the parsing trigger end-to-end for a newly uploaded file:
+- User action → backend endpoint → service invoked → bytes/text retrieved → LLM called → AIParsingResult saved → preview endpoint reads it.
+Provide a step-by-step trace with exact file paths and line numbers.
+
+4) Verify the parser reads from Replit storage:
+- Locate the code where the parsing pipeline retrieves file bytes.
+- Confirm it calls the ReplitStorageService (or StorageService abstraction) using storage_key.
+- If it still calls a legacy file handler or references GCS paths, fix it.
+
+5) Verify the parser does NOT call placeholder external services:
+- Search for settings.file_parse_function_url and any Cloud Function clients still used.
+- Identify any remaining placeholder URLs being invoked at runtime.
+- If any external parse trigger remains, replace it with the in-app ExtractionPipelineService + Replit AI integration call.
+- Add a guard: if file_parse_function_url contains “placeholder” or ALLOW_CONFIG_FALLBACK is false, raise a startup error in production mode.
+
+6) Confirm registry-first behavior:
+- Prove the parsing pipeline selects document_type/schema_version/prompt_template from the Extraction Registry.
+- Confirm ALLOW_CONFIG_FALLBACK defaults to false and is enforced (no silent fallback).
+- If fallback exists, require explicit env var TRUE to enable.
+
+C) VERSIONING + RUN TRACEABILITY AUDIT
+7) Confirm parsing is version-aware:
+- When uploading a new version of the same document, confirm parse run ties to the correct file_id/version_number.
+- Confirm preview shows the correct run for the selected file version, not “latest for document”.
+
+8) Confirm run binding snapshots:
+- Verify AIParsingResult stores document_type_id/schema_version_id/prompt_template_id/raw_llm_response (or equivalent).
+- If missing, list what’s missing and fix.
+
+Deliverables:
+- A PASS/FAIL table by section (Storage / Parsing / Registry / Versioning / Traceability).
+- The exact files/lines you changed if you applied fixes.
+- A “How to test” checklist (upload → parse → preview → accept) with expected log lines proving Replit storage + in-app LLM path.

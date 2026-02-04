@@ -263,14 +263,39 @@ async def trigger_file_parsing(
         logger.warning(f"There is already parse processing started for file {file.id}")
         raise HTTPException(status.HTTP_409_CONFLICT, detail=FileMessages.file_parse_conflict)
 
-    new_ai_record = ai_results_crud.create_item(
-        {"file_id": file.id, "status": FileParsingStatuses.not_started, "start_time": datetime.now(timezone.utc)}
-    )
+    if "placeholder" in settings.file_parse_function_url.lower():
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI parsing service not configured. Contact administrator to set up file_parse_function_url.",
+        )
+
+    pipeline_service = ExtractionPipelineService(db_session)
+    extraction_config = pipeline_service.get_extraction_config(file.document.name.value)
+
+    run_count = db_session.query(AIParsingResult).filter(AIParsingResult.file_id == file.id).count()
+
+    ai_record_payload = {
+        "file_id": file.id,
+        "status": FileParsingStatuses.not_started,
+        "start_time": datetime.now(timezone.utc),
+        "extraction_run_number": run_count + 1,
+    }
+    if extraction_config:
+        ai_record_payload["document_type_id"] = extraction_config["document_type"]["id"]
+        ai_record_payload["schema_version_id"] = extraction_config["schema_version"]["id"]
+        ai_record_payload["prompt_template_id"] = extraction_config["prompt_template"]["id"]
+
+    new_ai_record = ai_results_crud.create_item(ai_record_payload)
     # wrap into try-except block to ensure ai_result_record item has proper status even if CF invocation failed
     try:
         file_parse_func_client = FileParseFuncHTTPClient()
         payload_for_trigger = file_parse_func_client.prepare_trigger_payload(
             file, new_ai_record.id, pipeline_document_name
+        )
+        logger.info(
+            f"Triggering AI parsing for file {file.id}: "
+            f"storage_key={file.storage_key}, filepath={file.filepath}, "
+            f"file_url={payload_for_trigger.get('file_url')}"
         )
 
         response = file_parse_func_client.post(payload_for_trigger)
@@ -373,6 +398,12 @@ async def reprocess_file(
         module_key="Diligence",
         action="edit",
     )
+
+    if "placeholder" in settings.file_parse_function_url.lower():
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI parsing service not configured. Contact administrator to set up file_parse_function_url.",
+        )
 
     pipeline_service = ExtractionPipelineService(db_session)
     ai_results_crud = AIParsingResultCRUD(db_session)

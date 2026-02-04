@@ -75,8 +75,33 @@ logging.basicConfig(
 )
 
 
+logger = logging.getLogger(__name__)
+
+
+def _validate_configuration():
+    """Validate critical configuration at startup."""
+    logger.info(f"Storage provider: {settings.storage_provider}")
+    logger.info(f"Registry fallback: {settings.allow_config_fallback}")
+
+    if settings.storage_provider.lower() == "replit":
+        import os
+        bucket_id = os.environ.get("DEFAULT_OBJECT_STORAGE_BUCKET_ID")
+        if bucket_id:
+            logger.info(f"Replit Object Storage bucket: {bucket_id[:20]}...")
+        else:
+            logger.warning("Replit storage enabled but DEFAULT_OBJECT_STORAGE_BUCKET_ID not set")
+
+    if "placeholder" in settings.file_parse_function_url.lower():
+        logger.warning(
+            "AI parsing cloud function URL contains 'placeholder'. "
+            "Document parsing will fail until a real endpoint is configured. "
+            "Set file_parse_function_url to enable AI parsing."
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # noqa: U100
+    _validate_configuration()
     db = next(get_session())
     AppInitHelper(db).set_predefined_data()
     yield
