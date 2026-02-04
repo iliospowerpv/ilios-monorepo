@@ -167,6 +167,19 @@ interface SetDocumentKeyValueResponse {
   id: number;
 }
 
+interface BulkAcceptAIValuesArgs {
+  documentId: number;
+  siteId: number;
+  keys: Array<{ name: string; value: string }>;
+}
+
+interface BulkAcceptAIValuesResponse {
+  message: string;
+  code: number;
+  accepted_count: number;
+  failed_count: number;
+}
+
 interface GetFileParsingResultQueryArgs {
   siteId: number;
   documentId: number;
@@ -488,6 +501,31 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     return response.data;
   };
 
+  const bulkAcceptAIValues = async (args: BulkAcceptAIValuesArgs): Promise<BulkAcceptAIValuesResponse> => {
+    const { siteId, documentId, keys } = args;
+    let accepted_count = 0;
+    let failed_count = 0;
+
+    for (const key of keys) {
+      try {
+        await httpClient.put<SetDocumentKeyValueResponse>(
+          `/api/due-diligence/${siteId}/documents/${documentId}/keys`,
+          key
+        );
+        accepted_count++;
+      } catch {
+        failed_count++;
+      }
+    }
+
+    return {
+      message: `Accepted ${accepted_count} values${failed_count > 0 ? `, ${failed_count} failed` : ''}`,
+      code: failed_count > 0 ? 207 : 200,
+      accepted_count,
+      failed_count
+    };
+  };
+
   const documentStartParsing = async (
     fileId: number,
     siteId: number,
@@ -661,6 +699,7 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     downloadFileDirect,
     previewFileDirect,
     setDocumentKeyValue,
+    bulkAcceptAIValues,
     documentStartParsing,
     documentParsingStatus,
     getFileParsingResult,

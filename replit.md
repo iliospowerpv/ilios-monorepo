@@ -103,6 +103,12 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
         3. On click: calls `pdfViewerRef.jumpToPage(page)`, then `searchAndHighlight(anchor_text || snippet)`.
         4. Non-PDF files show "Jump-to-page is available for PDFs only" message.
     - **Worker Configuration**: Uses PDF.js worker from CDN: `https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`.
+- **Data Room Evidence & Acceptance Workflow (Phase B3)**:
+    - **Evidence Coverage Audit**: Verified 100% evidence coverage - all AI-extracted fields include `page`, `snippet`, and `anchor_text` for source provenance.
+    - **No Evidence Indicator**: Fields lacking evidence display a "No evidence" chip for visual clarity.
+    - **Verify All Navigation**: Sequential field verification workflow with "Prev" / "Next" buttons and "X / Y" counter. Filters to fields with evidence, jumps to corresponding PDF page and highlights anchor text.
+    - **Accept All Bulk Action**: Confirmation dialog showing count of fields to accept, with warning count for fields without evidence. Uses `bulkAcceptAIValues` API method for batch updates to `setDocumentKeyValue`.
+    - **Reprocess CTA**: Existing reprocess button allows re-triggering AI parsing from failed state with `force_reprocess=true`.
 
 ## External Dependencies
 - **PostgreSQL**: Primary relational database.

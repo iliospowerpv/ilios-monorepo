@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import DocViewer, { DocViewerRenderers } from '@cyntler/react-doc-viewer';
@@ -9,13 +9,24 @@ import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
+import ButtonGroup from '@mui/material/ButtonGroup';
 import Grid from '@mui/material/Grid';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ContentCopyIcon from '@mui/icons-material/ContentCopyOutlined';
+import LinkOffIcon from '@mui/icons-material/LinkOff';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
 import Backdrop from '@mui/material/Backdrop';
 import CircularProgress from '@mui/material/CircularProgress';
+import Chip from '@mui/material/Chip';
 import Fade from '@mui/material/Fade';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { ApiClient, FileItem } from '../../../../../api';
 import {
   SubHeader,
@@ -126,7 +137,7 @@ const CollapsibleDocumentTermRenderer: React.FC<CollapsibleDocumentTermRenderer>
       <AccordionSummaryStyled expandIcon={<ExpandMoreIcon />}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
           <TermName sx={{ flex: 1 }}>{termName}</TermName>
-          {hasEvidence && (
+          {hasEvidence ? (
             <BootstrapTooltip
               title={
                 evidence.snippet
@@ -154,6 +165,23 @@ const CollapsibleDocumentTermRenderer: React.FC<CollapsibleDocumentTermRenderer>
               >
                 Page {evidence.page}
               </Button>
+            </BootstrapTooltip>
+          ) : (
+            <BootstrapTooltip title="No source evidence available for this field" placement="top">
+              <Chip
+                icon={<LinkOffIcon sx={{ fontSize: '14px !important' }} />}
+                label="No evidence"
+                size="small"
+                variant="outlined"
+                sx={{
+                  fontSize: '10px',
+                  height: '22px',
+                  color: 'text.secondary',
+                  borderColor: 'divider',
+                  '& .MuiChip-icon': { color: 'text.disabled' }
+                }}
+                onClick={e => e.stopPropagation()}
+              />
             </BootstrapTooltip>
           )}
         </Box>
@@ -217,6 +245,9 @@ const DocumentModal: React.FC<DocumentModal> = props => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentRunId, setCurrentRunId] = useState<number | undefined>();
   const [currentCorrelationId, setCurrentCorrelationId] = useState<string | undefined>();
+  const [verifyIndex, setVerifyIndex] = useState<number>(-1);
+  const [isVerifyMode, setIsVerifyMode] = useState(false);
+  const [showAcceptDialog, setShowAcceptDialog] = useState(false);
   const queryClient = useQueryClient();
   const notify = useNotify();
 
@@ -270,6 +301,43 @@ const DocumentModal: React.FC<DocumentModal> = props => {
       handleStartParsing(fileId, true);
     }
   }, [fileId, handleStartParsing]);
+
+  const { mutateAsync: bulkAccept, isPending: isBulkAccepting } = useMutation({
+    mutationFn: (keys: Array<{ name: string; value: string }>) =>
+      ApiClient.dueDiligence.bulkAcceptAIValues({ siteId, documentId, keys }),
+    onSuccess: response => {
+      notify(response.message);
+      queryClient.invalidateQueries({ queryKey: ['document-terms'] });
+      setShowAcceptDialog(false);
+    },
+    onError: () => {
+      notify('Something went wrong while accepting values.');
+    }
+  });
+
+  const fieldsToAccept = useMemo(() => {
+    if (!fileTermKeysData?.keys) return [];
+    return fileTermKeysData.keys
+      .filter((field): field is typeof field & { ai_value: string } => !!field.ai_value && !field.value)
+      .map(field => ({ name: field.name, value: field.ai_value }));
+  }, [fileTermKeysData]);
+
+  const fieldsWithoutEvidence = useMemo(() => {
+    if (!fieldsToAccept.length || !fileTermKeysData?.keys) return 0;
+    return fileTermKeysData.keys.filter(field => field.ai_value && !field.value && !field.evidence?.page).length;
+  }, [fieldsToAccept, fileTermKeysData]);
+
+  const handleAcceptAll = useCallback(() => {
+    if (fieldsToAccept.length === 0) {
+      notify('No AI values to accept');
+      return;
+    }
+    setShowAcceptDialog(true);
+  }, [fieldsToAccept, notify]);
+
+  const handleConfirmAccept = useCallback(() => {
+    bulkAccept(fieldsToAccept);
+  }, [bulkAccept, fieldsToAccept]);
 
   useEffect(() => {
     if (!documentStatus) return;
@@ -346,6 +414,63 @@ const DocumentModal: React.FC<DocumentModal> = props => {
     [isPDF, notify]
   );
 
+  const fieldsWithEvidence = useMemo(() => {
+    if (!fileTermKeysData?.keys) return [];
+    return fileTermKeysData.keys
+      .map((field, index) => ({ ...field, originalIndex: index }))
+      .filter(field => field.evidence?.page != null);
+  }, [fileTermKeysData]);
+
+  const handleStartVerify = useCallback(() => {
+    if (fieldsWithEvidence.length === 0) {
+      notify('No fields with evidence to verify');
+      return;
+    }
+    if (!isPDF) {
+      notify('Verify all is available for PDFs only');
+      return;
+    }
+    setIsVerifyMode(true);
+    setVerifyIndex(0);
+    const firstField = fieldsWithEvidence[0];
+    if (firstField.evidence?.page) {
+      handleViewInDocument(firstField.evidence.page, firstField.evidence.snippet, firstField.evidence.anchor_text);
+      notify(`Verifying field 1 of ${fieldsWithEvidence.length}: ${firstField.name}`);
+    }
+  }, [fieldsWithEvidence, isPDF, handleViewInDocument, notify]);
+
+  const handleVerifyNext = useCallback(() => {
+    if (verifyIndex >= fieldsWithEvidence.length - 1) {
+      notify('All fields verified!');
+      setIsVerifyMode(false);
+      setVerifyIndex(-1);
+      return;
+    }
+    const nextIndex = verifyIndex + 1;
+    setVerifyIndex(nextIndex);
+    const nextField = fieldsWithEvidence[nextIndex];
+    if (nextField.evidence?.page) {
+      handleViewInDocument(nextField.evidence.page, nextField.evidence.snippet, nextField.evidence.anchor_text);
+      notify(`Verifying field ${nextIndex + 1} of ${fieldsWithEvidence.length}: ${nextField.name}`);
+    }
+  }, [verifyIndex, fieldsWithEvidence, handleViewInDocument, notify]);
+
+  const handleVerifyPrev = useCallback(() => {
+    if (verifyIndex <= 0) return;
+    const prevIndex = verifyIndex - 1;
+    setVerifyIndex(prevIndex);
+    const prevField = fieldsWithEvidence[prevIndex];
+    if (prevField.evidence?.page) {
+      handleViewInDocument(prevField.evidence.page, prevField.evidence.snippet, prevField.evidence.anchor_text);
+      notify(`Verifying field ${prevIndex + 1} of ${fieldsWithEvidence.length}: ${prevField.name}`);
+    }
+  }, [verifyIndex, fieldsWithEvidence, handleViewInDocument, notify]);
+
+  const handleStopVerify = useCallback(() => {
+    setIsVerifyMode(false);
+    setVerifyIndex(-1);
+  }, []);
+
   const FileRenderer = React.useMemo(() => {
     if (!file || !fileUrl) return null;
 
@@ -372,165 +497,263 @@ const DocumentModal: React.FC<DocumentModal> = props => {
   if (!file || !fileUrl) return null;
 
   return (
-    <DocunentPreviewModal
-      className="DocumentPreviewModal-root"
-      onClose={onClose}
-      aria-labelledby="customized-dialog-title"
-      open={open}
-      disableEnforceFocus
-      disableAutoFocus
-      disableRestoreFocus
-    >
-      <Fade in={open}>
-        <DocunentPreviewModalViewbox className="DocumentPreviewModal-viewbox">
-          <DocunentPreviewModalContent className="DocumentPreviewModal-content">
-            <DialogTitleStyled id="customized-dialog-title">
-              <BootstrapTooltip title={file.filename}>
-                <Typography sx={{ marginRight: '20px' }} variant="h6" noWrap>
-                  {file.filename}
+    <>
+      <DocunentPreviewModal
+        className="DocumentPreviewModal-root"
+        onClose={onClose}
+        aria-labelledby="customized-dialog-title"
+        open={open}
+        disableEnforceFocus
+        disableAutoFocus
+        disableRestoreFocus
+      >
+        <Fade in={open}>
+          <DocunentPreviewModalViewbox className="DocumentPreviewModal-viewbox">
+            <DocunentPreviewModalContent className="DocumentPreviewModal-content">
+              <DialogTitleStyled id="customized-dialog-title">
+                <BootstrapTooltip title={file.filename}>
+                  <Typography sx={{ marginRight: '20px' }} variant="h6" noWrap>
+                    {file.filename}
+                  </Typography>
+                </BootstrapTooltip>
+                <Typography variant="body2" sx={{ marginTop: '5px' }}>
+                  Uploaded by {file.author}, {dayjs.utc(file.created_at).local().format('lll')}
                 </Typography>
-              </BootstrapTooltip>
-              <Typography variant="body2" sx={{ marginTop: '5px' }}>
-                Uploaded by {file.author}, {dayjs.utc(file.created_at).local().format('lll')}
-              </Typography>
-              <IconButton
-                aria-label="close"
-                onClick={onClose}
-                sx={{
-                  position: 'absolute',
-                  right: 8,
-                  top: 8,
-                  color: theme => theme.palette.secondary.main
-                }}
-              >
-                <CloseIcon />
-              </IconButton>
-            </DialogTitleStyled>
-            <DialogContentStyled dividers>
-              {!file.filename.endsWith('.pdf') && <SubHeader />}
-              {document && (
-                <Box height="100%" maxWidth="2000px" marginX="auto" position="relative" padding="70px 16px 0px">
-                  <Grid container spacing={2} height="100%">
-                    <Grid item sm={6} md={7} height="100%">
-                      <DocumentPreviewContainer>
-                        <Box
-                          sx={{ position: 'absolute', right: '16px', top: '8px', zIndex: 10, display: 'flex', gap: 1 }}
-                        >
-                          <Button
-                            variant="contained"
+                <IconButton
+                  aria-label="close"
+                  onClick={onClose}
+                  sx={{
+                    position: 'absolute',
+                    right: 8,
+                    top: 8,
+                    color: theme => theme.palette.secondary.main
+                  }}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </DialogTitleStyled>
+              <DialogContentStyled dividers>
+                {!file.filename.endsWith('.pdf') && <SubHeader />}
+                {document && (
+                  <Box height="100%" maxWidth="2000px" marginX="auto" position="relative" padding="70px 16px 0px">
+                    <Grid container spacing={2} height="100%">
+                      <Grid item sm={6} md={7} height="100%">
+                        <DocumentPreviewContainer>
+                          <Box
                             sx={{
-                              color: 'white',
-                              background: 'linear-gradient(245.75deg, #456CF3 7.17%, #8D4BE9 89.9%)',
-                              ['&:hover']: { background: 'linear-gradient(245.75deg, #456CF3 7.17%, #8D4BE9 89.9%)' },
-                              '&.Mui-disabled': {
-                                color: 'rgba(0, 0, 0, 0.26)',
-                                background: 'rgba(0, 0, 0, 0.12)'
-                              }
+                              position: 'absolute',
+                              right: '16px',
+                              top: '8px',
+                              zIndex: 10,
+                              display: 'flex',
+                              gap: 1
                             }}
-                            onClick={() => handleStartParsing(file.id, hasCompleted || hasFailed)}
-                            disabled={isProcessing || isStartingParse}
-                            startIcon={
-                              isProcessing || isStartingParse ? <CircularProgress color="inherit" size={20} /> : null
-                            }
                           >
-                            {hasCompleted || hasFailed ? 'Reprocess' : 'Parse with AI'}
-                          </Button>
-                        </Box>
-                        {FileRenderer}
-                      </DocumentPreviewContainer>
-                    </Grid>
-                    <Grid item sm={6} md={5} height="100%">
-                      <DialogTitle
-                        sx={{
-                          bgcolor: 'primary.main',
-                          color: 'secondary.main',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between'
-                        }}
-                        id="document-dialog-title"
-                      >
-                        <span>Document Details</span>
-                        {documentStatus && <ParsingStatusBadge status={parsingStatus} />}
-                      </DialogTitle>
-                      <Box
-                        sx={{
-                          bgcolor: 'white',
-                          padding: '16px',
-                          height: 'calc(100% - 64px)',
-                          overflowY: 'auto',
-                          position: 'relative'
-                        }}
-                      >
-                        {hasFailed && (
-                          <ParseErrorMessage errorMessage={documentStatus?.error_message} onRetry={handleReprocess} />
-                        )}
-                        {hasCompleted && documentStatus?.was_truncated && (
-                          <TruncationWarning
-                            wasTruncated={documentStatus.was_truncated}
-                            truncatedCharCount={documentStatus.truncated_char_count}
-                            charCount={documentStatus.char_count}
-                          />
-                        )}
-                        {hasCompleted && (
-                          <ParsingMetadata
-                            charCount={documentStatus?.char_count}
-                            wordCount={documentStatus?.word_count}
-                            pageCount={documentStatus?.page_count}
-                            correlationId={currentCorrelationId}
-                            runId={currentRunId}
-                            showDebugInfo={true}
-                          />
-                        )}
-                        {fileTermKeysData &&
-                          fileTermKeysData.keys.map(
-                            ({
-                              id,
-                              name,
-                              value,
-                              ai_value,
-                              is_poison_pill,
-                              poison_pill_detailed,
-                              legal_term,
-                              comments,
-                              evidence
-                            }) => (
-                              <CollapsibleDocumentTermRenderer
-                                key={name}
-                                id={id}
-                                termName={name}
-                                aiValue={ai_value}
-                                userValue={value}
-                                documentId={documentId}
-                                siteId={siteId}
-                                isPoisonPill={is_poison_pill}
-                                poisonPillDetails={poison_pill_detailed}
-                                legal_term={legal_term}
-                                comments={comments}
-                                boardId={boardId}
-                                fileId={fileId}
-                                taskId={taskId}
-                                evidence={evidence}
-                                onViewInDocument={handleViewInDocument}
-                              />
-                            )
-                          )}
-                        <Backdrop
-                          sx={{ color: '#1D1D1D', position: 'absolute', bgcolor: 'rgba(250, 250, 250, 0.5)' }}
-                          open={isLoadingFileTermKeysData}
+                            {hasCompleted &&
+                              isPDF &&
+                              fieldsWithEvidence.length > 0 &&
+                              (isVerifyMode ? (
+                                <ButtonGroup variant="contained" size="small">
+                                  <Button
+                                    onClick={handleVerifyPrev}
+                                    disabled={verifyIndex <= 0}
+                                    sx={{ minWidth: 'auto', px: 1 }}
+                                  >
+                                    <NavigateBeforeIcon fontSize="small" />
+                                  </Button>
+                                  <Button
+                                    sx={{
+                                      pointerEvents: 'none',
+                                      bgcolor: 'primary.main',
+                                      minWidth: '80px'
+                                    }}
+                                  >
+                                    {verifyIndex + 1} / {fieldsWithEvidence.length}
+                                  </Button>
+                                  <Button onClick={handleVerifyNext} sx={{ minWidth: 'auto', px: 1 }}>
+                                    <NavigateNextIcon fontSize="small" />
+                                  </Button>
+                                  <Button onClick={handleStopVerify} color="error" sx={{ minWidth: 'auto', px: 1 }}>
+                                    <CloseIcon fontSize="small" />
+                                  </Button>
+                                </ButtonGroup>
+                              ) : (
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  onClick={handleStartVerify}
+                                  startIcon={<FactCheckIcon />}
+                                  sx={{ bgcolor: 'white' }}
+                                >
+                                  Verify All ({fieldsWithEvidence.length})
+                                </Button>
+                              ))}
+                            <Button
+                              variant="contained"
+                              sx={{
+                                color: 'white',
+                                background: 'linear-gradient(245.75deg, #456CF3 7.17%, #8D4BE9 89.9%)',
+                                ['&:hover']: { background: 'linear-gradient(245.75deg, #456CF3 7.17%, #8D4BE9 89.9%)' },
+                                '&.Mui-disabled': {
+                                  color: 'rgba(0, 0, 0, 0.26)',
+                                  background: 'rgba(0, 0, 0, 0.12)'
+                                }
+                              }}
+                              onClick={() => handleStartParsing(file.id, hasCompleted || hasFailed)}
+                              disabled={isProcessing || isStartingParse}
+                              startIcon={
+                                isProcessing || isStartingParse ? <CircularProgress color="inherit" size={20} /> : null
+                              }
+                            >
+                              {hasCompleted || hasFailed ? 'Reprocess' : 'Parse with AI'}
+                            </Button>
+                          </Box>
+                          {FileRenderer}
+                        </DocumentPreviewContainer>
+                      </Grid>
+                      <Grid item sm={6} md={5} height="100%">
+                        <DialogTitle
+                          sx={{
+                            bgcolor: 'primary.main',
+                            color: 'secondary.main',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between'
+                          }}
+                          id="document-dialog-title"
                         >
-                          <CircularProgress color="inherit" />
-                        </Backdrop>
-                      </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <span>Document Details</span>
+                            {documentStatus && <ParsingStatusBadge status={parsingStatus} />}
+                          </Box>
+                          {hasCompleted && fieldsToAccept.length > 0 && (
+                            <Button
+                              variant="contained"
+                              size="small"
+                              color="success"
+                              onClick={handleAcceptAll}
+                              disabled={isBulkAccepting}
+                              startIcon={
+                                isBulkAccepting ? <CircularProgress size={16} color="inherit" /> : <DoneAllIcon />
+                              }
+                              sx={{ fontSize: '12px' }}
+                            >
+                              Accept All ({fieldsToAccept.length})
+                            </Button>
+                          )}
+                        </DialogTitle>
+                        <Box
+                          sx={{
+                            bgcolor: 'white',
+                            padding: '16px',
+                            height: 'calc(100% - 64px)',
+                            overflowY: 'auto',
+                            position: 'relative'
+                          }}
+                        >
+                          {hasFailed && (
+                            <ParseErrorMessage errorMessage={documentStatus?.error_message} onRetry={handleReprocess} />
+                          )}
+                          {hasCompleted && documentStatus?.was_truncated && (
+                            <TruncationWarning
+                              wasTruncated={documentStatus.was_truncated}
+                              truncatedCharCount={documentStatus.truncated_char_count}
+                              charCount={documentStatus.char_count}
+                            />
+                          )}
+                          {hasCompleted && (
+                            <ParsingMetadata
+                              charCount={documentStatus?.char_count}
+                              wordCount={documentStatus?.word_count}
+                              pageCount={documentStatus?.page_count}
+                              correlationId={currentCorrelationId}
+                              runId={currentRunId}
+                              showDebugInfo={true}
+                            />
+                          )}
+                          {fileTermKeysData &&
+                            fileTermKeysData.keys.map(
+                              ({
+                                id,
+                                name,
+                                value,
+                                ai_value,
+                                is_poison_pill,
+                                poison_pill_detailed,
+                                legal_term,
+                                comments,
+                                evidence
+                              }) => (
+                                <CollapsibleDocumentTermRenderer
+                                  key={name}
+                                  id={id}
+                                  termName={name}
+                                  aiValue={ai_value}
+                                  userValue={value}
+                                  documentId={documentId}
+                                  siteId={siteId}
+                                  isPoisonPill={is_poison_pill}
+                                  poisonPillDetails={poison_pill_detailed}
+                                  legal_term={legal_term}
+                                  comments={comments}
+                                  boardId={boardId}
+                                  fileId={fileId}
+                                  taskId={taskId}
+                                  evidence={evidence}
+                                  onViewInDocument={handleViewInDocument}
+                                />
+                              )
+                            )}
+                          <Backdrop
+                            sx={{ color: '#1D1D1D', position: 'absolute', bgcolor: 'rgba(250, 250, 250, 0.5)' }}
+                            open={isLoadingFileTermKeysData}
+                          >
+                            <CircularProgress color="inherit" />
+                          </Backdrop>
+                        </Box>
+                      </Grid>
                     </Grid>
-                  </Grid>
-                </Box>
-              )}
-            </DialogContentStyled>
-          </DocunentPreviewModalContent>
-        </DocunentPreviewModalViewbox>
-      </Fade>
-    </DocunentPreviewModal>
+                  </Box>
+                )}
+              </DialogContentStyled>
+            </DocunentPreviewModalContent>
+          </DocunentPreviewModalViewbox>
+        </Fade>
+      </DocunentPreviewModal>
+      <Dialog open={showAcceptDialog} onClose={() => setShowAcceptDialog(false)}>
+        <DialogTitle>Accept All AI Values</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            You are about to accept <strong>{fieldsToAccept.length}</strong> AI-extracted values.
+            {fieldsWithoutEvidence > 0 && (
+              <Box component="span" sx={{ display: 'block', mt: 1, color: 'warning.main' }}>
+                Note: {fieldsWithoutEvidence} field(s) have no source evidence and cannot be verified in the document.
+              </Box>
+            )}
+          </DialogContentText>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="caption" color="text.secondary">
+              This will copy the AI values to the user input fields for all fields that do not already have a user
+              value.
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowAcceptDialog(false)} disabled={isBulkAccepting}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmAccept}
+            variant="contained"
+            color="success"
+            disabled={isBulkAccepting}
+            startIcon={isBulkAccepting ? <CircularProgress size={16} color="inherit" /> : <DoneAllIcon />}
+          >
+            {isBulkAccepting ? 'Accepting...' : 'Confirm Accept'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 
