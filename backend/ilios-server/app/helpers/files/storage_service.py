@@ -65,15 +65,30 @@ class ReplitStorageService(StorageService):
     def __init__(self, storage_prefix: str = "ilios"):
         self._client = None
         self.storage_prefix = storage_prefix
+        self._bucket_id = None
         logger.info(f"ReplitStorageService initialized with prefix: {storage_prefix}")
+
+    @property
+    def bucket_id(self) -> Optional[str]:
+        if self._bucket_id is None:
+            import os
+            self._bucket_id = os.environ.get("DEFAULT_OBJECT_STORAGE_BUCKET_ID")
+            if self._bucket_id:
+                logger.info(f"Using bucket ID from environment: {self._bucket_id}")
+        return self._bucket_id
 
     @property
     def client(self):
         if self._client is None:
             try:
                 from replit.object_storage import Client
-                self._client = Client()
-                logger.info("Replit Object Storage client initialized successfully")
+                bucket_id = self.bucket_id
+                if bucket_id:
+                    self._client = Client(bucket_id=bucket_id)
+                    logger.info(f"Replit Object Storage client initialized with bucket: {bucket_id}")
+                else:
+                    self._client = Client()
+                    logger.info("Replit Object Storage client initialized with default bucket")
             except ImportError as e:
                 raise RuntimeError(
                     "replit-object-storage package not installed. "
