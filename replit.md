@@ -53,6 +53,12 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
             - `enable_llm_stub()` raises `RuntimeError` if called in production.
             - `is_llm_stub_enabled()` returns False in production regardless of env var.
             - Pytest detection: `PYTEST_CURRENT_TEST` env var auto-allows stub.
+    - **Phase 3A Field Key Mapping & UI Integration**: Ensures AI-extracted fields display correctly in the UI:
+        - Prompt template sends exact canonical field keys (e.g., `- lessor_landlord_entity_name: Lessor (Landlord) Entity Name`)
+        - LLM instructed to use exact field_key before the colon
+        - `combine_user_ai_parsing_results()` builds display_name ↔ canonical_name mapping
+        - AI results matched using canonical names, displayed using display names
+        - Fixed `.format()` → `.replace()` to handle JSON braces in prompt templates
     - **Phase 3 Quality Guardrails & Resource Limits**: Prevents low-quality or oversized inputs from causing cost/latency spikes:
         - **Configurable Settings** (in `app/settings.py`):
             - `parsing_min_text_chars`: Minimum extracted chars (default: 500). Below threshold suggests scanned/image PDF.
