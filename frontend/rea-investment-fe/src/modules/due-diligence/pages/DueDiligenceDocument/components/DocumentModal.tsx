@@ -302,7 +302,7 @@ const DocumentModal: React.FC<DocumentModal> = props => {
     }
   }, [fileId, handleStartParsing]);
 
-  const { data: parseRunHistory, refetch: refetchParseHistory } = useQuery({
+  const { data: parseRunHistory } = useQuery({
     queryKey: ['parse-run-history', siteId, documentId, fileId],
     queryFn: () => ApiClient.dueDiligence.getParseRunHistory({ siteId, documentId, fileId }),
     enabled: fileId !== -1,

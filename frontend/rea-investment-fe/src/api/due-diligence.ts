@@ -564,7 +564,7 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
       {
         run_id: runId,
         fields: fields,
-        allow_accept_non_latest: allowAcceptNonLatest || false,
+        allow_accept_non_latest: allowAcceptNonLatest || false
       }
     );
     return response.data;
