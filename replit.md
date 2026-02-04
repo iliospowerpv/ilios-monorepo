@@ -50,9 +50,12 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
 - **Extraction Registry & Prompt Studio**: Scalable system for dynamic document type and field configuration without code changes.
     - **Database Schema**: `extraction_document_types` (parsable doc types with categories), `extraction_schema_versions` (versioned field schemas), `extraction_schema_version_fields` (junction linking schemas to canonical_fields), `extraction_prompt_templates` (versioned LLM prompts per doc type).
     - **Design Pattern**: Each document type has 1:many schema versions and prompt templates, with only one active version per type (enforced by partial unique index). Schema versions link to canonical_fields via junction table with is_required and extraction_priority.
-    - **Pipeline Integration**: `AIParsingHandler` now uses `ExtractionPipelineService` with registry-first, config-file-fallback pattern. Dynamic prompt building from registry templates.
+    - **Pipeline Integration**: `AIParsingHandler` now uses `ExtractionPipelineService` with registry-first, config-file-fallback pattern. Dynamic prompt building from registry templates. Config file fallback gated behind `ALLOW_CONFIG_FALLBACK` setting (default False for production).
+    - **Reprocess Workflow**: `POST /api/due-diligence/{site_id}/documents/{document_id}/files/{file_id}/reprocess/` endpoint allows re-extraction with optional schema/prompt version selection. Creates new AIParsingResult with binding snapshots (document_type_id, schema_version_id, prompt_template_id), extraction_run_number, and force flag support. Duplicate detection prevents redundant runs unless force=true.
+    - **Binding Snapshots**: AIParsingResult model persists registry bindings at extraction time, enabling full audit trail and reproducibility. Additional tracking columns: retries, error_message, is_reprocess, force_reprocess (migration ff05).
     - **Admin API**: 15+ endpoints at `/api/admin/extraction/` for managing canonical fields, document types, schema versions, and prompt templates. All endpoints admin-gated.
     - **Seed Script**: `dev_scripts/seed_extraction_registry.py` migrates ai_parsing_config.json to registry (17 doc types, 17 schema v1s, 17 prompt v1s, 442 field links).
+    - **Tests**: `tests/test_extraction_registry.py` covers seed idempotency, activation uniqueness, pipeline service functionality, and config fallback disabled.
 
 ## External Dependencies
 - **PostgreSQL**: Primary relational database.
