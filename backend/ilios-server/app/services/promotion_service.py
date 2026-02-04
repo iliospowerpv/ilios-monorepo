@@ -45,24 +45,19 @@ class PromotionService:
         file_id: int
     ) -> dict:
         candidate_facts = self.fact_crud.get_candidate_facts_for_file(file_id)
-        
-        if not candidate_facts:
-            return {
-                "has_changes": False,
-                "changes": [],
-                "summary": {"added": 0, "changed": 0, "removed": 0}
-            }
+        active_facts = self.fact_crud.get_active_facts_for_site(site_id)
+
+        candidate_field_ids = {cf.canonical_field_id for cf in candidate_facts}
+        active_facts_by_field = {af.canonical_field_id: af for af in active_facts}
 
         changes = []
+
         for candidate in candidate_facts:
-            active_fact = self.fact_crud.get_active_fact(
-                site_id, candidate.canonical_field_id
-            )
-            
             field_name = candidate.canonical_field.display_name if candidate.canonical_field else "Unknown"
             candidate_value = self._extract_value(candidate.value)
             
-            if active_fact:
+            if candidate.canonical_field_id in active_facts_by_field:
+                active_fact = active_facts_by_field[candidate.canonical_field_id]
                 active_value = self._extract_value(active_fact.value)
                 if active_value != candidate_value:
                     changes.append({
@@ -85,10 +80,34 @@ class PromotionService:
                     "new_source_file_id": file_id,
                 })
 
+        target_file = self.file_crud.get_by_id(file_id)
+        target_document_id = target_file.document_id if target_file else None
+
+        for active_fact in active_facts:
+            if active_fact.canonical_field_id not in candidate_field_ids:
+                is_same_document = False
+                if active_fact.source_file_id and target_document_id:
+                    source_file = self.file_crud.get_by_id(active_fact.source_file_id)
+                    if source_file and source_file.document_id == target_document_id:
+                        is_same_document = True
+                
+                if is_same_document:
+                    field_name = active_fact.canonical_field.display_name if active_fact.canonical_field else "Unknown"
+                    active_value = self._extract_value(active_fact.value)
+                    changes.append({
+                        "type": "removed",
+                        "field_name": field_name,
+                        "field_id": active_fact.canonical_field_id,
+                        "current_value": active_value,
+                        "new_value": None,
+                        "current_source_file_id": active_fact.source_file_id,
+                        "new_source_file_id": None,
+                    })
+
         summary = {
             "added": len([c for c in changes if c["type"] == "added"]),
             "changed": len([c for c in changes if c["type"] == "changed"]),
-            "removed": 0,
+            "removed": len([c for c in changes if c["type"] == "removed"]),
         }
 
         return {
