@@ -128,9 +128,7 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
     enabled: hasDiligenceView
   });
 
-  const documentsWithFiles = documentsData?.items 
-    ? extractDocumentsWithFiles(documentsData.items) 
-    : [];
+  const documentsWithFiles = extractDocumentsWithFiles(documentsData?.items ?? []);
 
   const { data: termData, isLoading: isLoadingTermData } = useQuery({
     queryFn: async () => {
