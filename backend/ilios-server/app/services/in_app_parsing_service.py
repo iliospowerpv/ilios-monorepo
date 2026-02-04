@@ -147,7 +147,17 @@ class InAppParsingService:
         model_name: str = "gpt-5.2",
         max_tokens: int = 8192,
     ) -> dict:
-        """Call OpenAI API with retry logic for rate limits."""
+        """Call OpenAI API with retry logic for rate limits.
+        
+        In test mode (LLM_STUB_ENABLED=true), uses deterministic stub instead of real API.
+        """
+        from app.services.llm_stub import get_llm_stub
+        
+        stub = get_llm_stub()
+        if stub is not None:
+            logger.info("Using LLM stub for testing")
+            return stub.call(system_prompt, user_prompt)
+        
         # the newest OpenAI model is "gpt-5" which was released August 7, 2025.
         # do not change this unless explicitly requested by the user
         model = model_name if model_name else "gpt-5.2"

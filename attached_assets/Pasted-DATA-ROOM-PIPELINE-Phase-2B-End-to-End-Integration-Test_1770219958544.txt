@@ -1,0 +1,47 @@
+DATA ROOM PIPELINE – Phase 2B: End-to-End Integration Tests (Trigger → Process → Preview → Accept)
+
+Context:
+- In-app parsing is implemented and runs via BackgroundTasks.
+- Idempotency + claim pattern is in place (queued → processing → succeeded/failed).
+- Parsing uses PDF/DOCX extraction and LLM invocation.
+- AIParsingResult stores parsed_result and binding snapshot fields.
+- There is an “Accept/Promote” step that carries extracted fields into other modules (assumptions/registry output).
+
+Objective:
+Add integration tests that prove the pipeline works end-to-end without calling real external LLM services.
+
+Requirements:
+1) Provide a test-mode LLM stub
+- In test environment, replace the LLM call with a deterministic stub returning a known raw response + parsed_result.
+- Do NOT mock the entire pipeline; only stub the model call boundary so we still test DB/state transitions and storage fetch.
+
+2) Integration tests (minimum)
+A) Happy path:
+- Upload a small test document (PDF or DOCX fixture) to storage (or mock storage fetch at the storage boundary if needed).
+- Call trigger_file_parsing
+- Verify response returns run_id + correlation_id
+- Execute background task (if BackgroundTasks doesn’t run in test, invoke the worker function directly)
+- Assert AIParsingResult is terminal succeeded with parsed_result populated and binding snapshots set
+- Call “Preview” endpoint (if exists) and assert it returns the parsed_result
+
+B) Accept/Promote path:
+- Call the accept endpoint for that parse run
+- Assert the promoted/extracted fields are written to the expected tables/columns (whatever the system uses for “assumptions” or extracted metadata)
+- Assert idempotency: calling accept twice does not duplicate or corrupt data
+
+C) Failure path:
+- Force the LLM stub to raise an exception
+- Trigger parse and process
+- Assert AIParsingResult ends in processing_failed with error_message and finished_at set
+
+3) Assertions:
+- Validate state transitions (queued→processing→terminal)
+- Validate timestamps (claimed_at, started_at if present, end_time/finished_at)
+- Validate standardized logs are not required; just ensure correlation_id exists in stored record OR response.
+
+Deliverables:
+- New tests (integration) covering A/B/C
+- Document how the LLM stub is injected (dependency override, env flag, etc.)
+- Tests pass reliably (no flaky timing)
+
+Proceed now.

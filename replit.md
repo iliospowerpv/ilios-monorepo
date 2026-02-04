@@ -33,6 +33,12 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
         - `atomic_claim()` uses `SELECT ... FOR UPDATE` row locking for background task safety.
         - Claim columns: `worker_id`, `correlation_id`, `claimed_at`.
         - Terminal state guarantees: `mark_completed()` and `mark_failed()` always set `end_time`.
+    - **Phase 2B E2E Integration Tests**: Comprehensive test coverage for parsing pipeline:
+        - LLM Stub: `app/services/llm_stub.py` provides deterministic stub via `enable_llm_stub()` / `disable_llm_stub()`.
+        - Injection: Set `LLM_STUB_ENABLED=true` env var; `InAppParsingService.call_llm()` auto-detects and uses stub.
+        - Happy path: Trigger → claim → process → completed with parsed_result and binding snapshots.
+        - Idempotency: Double-trigger returns existing run; force reprocess bypasses.
+        - Failure path: LLM/storage exceptions → `processing_failed` with error_message and end_time.
 - **Storage Service Abstraction**: Replit-native storage architecture with an abstract `StorageService` interface, `ReplitStorageService` (default), optional `GCSStorageService`, and `HybridStorageService` for migration support. Utilizes new direct upload and download endpoints.
 
 ## External Dependencies
