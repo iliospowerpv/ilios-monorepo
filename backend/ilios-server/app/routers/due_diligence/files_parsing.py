@@ -230,16 +230,25 @@ def _run_parsing_background(
     2. If claim fails, exit gracefully (another worker got it)
     3. On any failure, mark run as failed with end_time
     """
+    import sys
+    print(f"[{correlation_id}] BACKGROUND TASK STARTED for file {file_id}, run {ai_result_id}", file=sys.stderr, flush=True)
+    logger.info(f"[{correlation_id}] Background task starting for file {file_id}, run {ai_result_id}")
+    
     from app.db.session import SessionLocal
     from app.crud.ai_parsing_result import AIParsingResultCRUD
     import os
+    import traceback
     
+    print(f"[{correlation_id}] Creating DB session...", file=sys.stderr, flush=True)
     db = SessionLocal()
+    print(f"[{correlation_id}] DB session created, starting try block...", file=sys.stderr, flush=True)
     try:
         ai_crud = AIParsingResultCRUD(db)
         worker_id = f"worker-{os.getpid()}"
+        print(f"[{correlation_id}] Attempting atomic_claim for run {ai_result_id}...", file=sys.stderr, flush=True)
         
         claimed, run = ai_crud.atomic_claim(ai_result_id, correlation_id, worker_id)
+        print(f"[{correlation_id}] atomic_claim returned: claimed={claimed}, run={run}", file=sys.stderr, flush=True)
         
         if not claimed:
             if run and run.status == FileParsingStatuses.processing:
@@ -248,6 +257,7 @@ def _run_parsing_background(
                 logger.warning(f"[{correlation_id}] Failed to claim run {ai_result_id}, status={run.status if run else 'not found'}")
             return
         
+        print(f"[{correlation_id}] Successfully claimed run {ai_result_id}", file=sys.stderr, flush=True)
         logger.info(f"[{correlation_id}] Claimed run {ai_result_id} for file {file_id}")
         
         from app.models.file import File
@@ -261,13 +271,17 @@ def _run_parsing_background(
         parsing_service.parse_file(file, ai_result_id, document_type_name, correlation_id)
         
     except Exception as e:
+        print(f"[{correlation_id}] EXCEPTION in background task: {type(e).__name__}: {e}", file=sys.stderr, flush=True)
+        print(f"[{correlation_id}] Traceback: {traceback.format_exc()}", file=sys.stderr, flush=True)
         logger.error(f"[{correlation_id}] Background parsing failed: {e}")
         try:
             ai_crud = AIParsingResultCRUD(db)
             ai_crud.mark_failed(ai_result_id, str(e)[:500])
         except Exception as update_err:
+            print(f"[{correlation_id}] Failed to mark as failed: {update_err}", file=sys.stderr, flush=True)
             logger.error(f"[{correlation_id}] Failed to update AIParsingResult status: {update_err}")
     finally:
+        print(f"[{correlation_id}] Background task cleanup, closing DB session", file=sys.stderr, flush=True)
         db.close()
 
 
