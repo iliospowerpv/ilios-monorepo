@@ -78,4 +78,21 @@ async def get_agreement_overview(
         module_key="Diligence",
         action="view",
     )
-    return {"items": combine_user_ai_parsing_results(document=document, db_session=db_session)}
+    # Find the primary file (is_actual) or the file with the latest completed parsing result
+    primary_file = None
+    for f in document.files:
+        if f.deleted:
+            continue
+        if f.is_actual:
+            primary_file = f
+            break
+    # If no is_actual file, find the one with the latest completed parsing
+    if not primary_file:
+        from app.models.file import FileParsingStatuses
+        for f in document.files:
+            if f.deleted:
+                continue
+            if f.latest_ai_result and f.latest_ai_result.status == FileParsingStatuses.completed:
+                primary_file = f
+                break
+    return {"items": combine_user_ai_parsing_results(document=document, db_session=db_session, due_diligence_file=primary_file)}
