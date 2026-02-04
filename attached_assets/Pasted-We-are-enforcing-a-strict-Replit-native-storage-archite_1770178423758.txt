@@ -1,0 +1,100 @@
+We are enforcing a strict Replit-native storage architecture for all Data Room document uploads and previews.
+
+CONTEXT / CURRENT DEFECTS (from audit)
+- Upload + download are hardcoded to GCS:
+  - due_diligence/files.py uses DueDiligenceFileHandler which points to settings.due_diligence_gcs_bucket
+  - file_handler.py and storage_service.py import google.cloud.storage at module level
+- App cannot boot without GCS creds
+- storage_service defaults to "gcs"
+- There is no env var to select Replit as provider
+This must be fixed FIRST.
+
+NON-NEGOTIABLE TARGET
+1) Replit Object Storage is the ONLY write target for all NEW uploads (Data Room and any doc upload surfaces that use FileHandler).
+2) App must boot and the Data Room upload/preview flows must work with ZERO GCS configuration (no key.json, no bucket, no google libs required at import time).
+3) GCS may exist ONLY as an optional legacy READ fallback path if explicitly configured, but:
+   - Default provider must be REPLIT.
+   - No write path may ever use GCS unless an explicit STORAGE_PROVIDER="gcs" is set.
+4) Files table must store a Replit storage key for each uploaded file (storage_key). The system must use this key to serve downloads/previews.
+
+SCOPE
+Do the storage refactor end-to-end for Due Diligence / Data Room first.
+If there are other uploaders (tasks, device docs, site visits), implement the same storage abstraction pattern or clearly list them as follow-on items.
+
+IMPLEMENTATION REQUIREMENTS
+
+A) SETTINGS + PROVIDER SELECTION
+1) Add settings:
+   - STORAGE_PROVIDER: "replit" | "gcs"  (DEFAULT = "replit")
+   - REPLIT_STORAGE_BUCKET or equivalent config needed by the Replit SDK (if required)
+   - Keep GCS bucket settings but mark them optional; app must not crash if missing.
+2) Update storage service selection:
+   - get_storage_service() must default to REPLIT.
+   - GCS provider may only be constructed when STORAGE_PROVIDER=="gcs".
+3) Remove module-level GCS imports:
+   - google.cloud imports MUST be lazy/conditional inside the GCS provider class so a REPLIT deployment does not import them.
+
+B) STORAGE SERVICE ABSTRACTION (BACKEND)
+1) Create/standardize a StorageService interface:
+   - upload_bytes(key: str, data: bytes, content_type: str) -> None
+   - download_bytes(key: str) -> bytes
+   - get_signed_download_url(key: str, expires_seconds: int) -> str  (optional; if Replit supports signed URLs)
+   - delete(key: str) -> None
+   - exists(key: str) -> bool
+2) Implement ReplitObjectStorageService:
+   - Use Replit’s native object storage APIs / integration (NOT GCS).
+   - No credentials files. All auth via Replit environment.
+3) Update DueDiligenceFileHandler (or replace it):
+   - It must use StorageService and NOT reference GCS buckets directly.
+   - It must compute a canonical storage_key format:
+     companies/{company_id}/sites/{site_id}/documents/{document_id}/{iso_ts}_{sanitized_filename}
+   - It must populate File.storage_key on create.
+
+C) UPLOAD FLOW (BACKEND + FRONTEND)
+We need a working flow that does not require browser-to-GCS presigned uploads.
+
+Implement one of these (choose the simplest that works reliably in Replit):
+Option 1 (Preferred for speed/robustness): Backend-proxied upload
+- Frontend uploads file to backend multipart endpoint
+- Backend streams bytes to Replit Object Storage
+- Backend creates File DB row with storage_key, filename, metadata, versioning fields
+
+Option 2: Presigned Replit upload (only if Replit supports it cleanly)
+- Backend provides a signed URL for upload
+- Frontend PUTs file to that URL
+- Frontend confirms upload, backend records File row
+
+Pick Option 1 unless you can prove Replit signed uploads work well.
+
+Update endpoints used by the Data Room UI accordingly:
+- Identify current due diligence upload endpoints and switch them to Replit storage path.
+- Ensure versioning behavior remains intact (new version increments, is_actual rules unchanged).
+
+D) DOWNLOAD / PREVIEW FLOW
+We must be able to view PDFs in the UI.
+Implement backend endpoints that serve file bytes from Replit storage:
+- GET /api/due-diligence/files/{file_id}/download  (returns file bytes with correct content-type)
+- GET /api/due-diligence/files/{file_id}/preview  (same but may set inline headers)
+Update frontend to use these endpoints (instead of GCS signed URLs) for preview/download.
+
+E) MIGRATION / LEGACY BEHAVIOR
+This is greenfield-ish, but code must not break on existing DB rows.
+- If File.storage_key is null but filepath exists (legacy), you may:
+  - return a clear “legacy storage not configured” error unless STORAGE_PROVIDER=="gcs"
+  - OR implement a read fallback that tries GCS only when explicitly configured
+Do NOT silently fallback to GCS by default.
+
+F) TESTING / VERIFICATION (REQUIRED)
+Add minimal automated tests (or at least a deterministic manual test checklist) proving:
+1) App boots with no GCS env vars and no google libraries installed.
+2) Upload PDF in Data Room -> file record created with storage_key -> preview works.
+3) Download returns bytes and correct filename/content-type.
+4) A second upload of same document creates a new version (version_number increments) and the UI still shows versions correctly.
+
+DELIVERABLES IN YOUR RESPONSE
+1) A short evidence-based diff summary (files changed, new files, key functions).
+2) Explicit proof that there are no module-level google.cloud imports in the REPLIT path.
+3) A “how to test” section with exact click path in UI and the expected outcomes.
+
+DO NOT START TRACEABILITY OR EVIDENCE UX YET
+Stop after Storage is fully compliant and verified. The next prompt will cover source_run_id and evidence rendering.

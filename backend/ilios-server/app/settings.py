@@ -66,17 +66,23 @@ class Settings(BaseSettings):
     PGPORT: Optional[str] = None
     DATABASE_URL: Optional[str] = None
 
-    # Google Cloud Storage settings
-    due_diligence_gcs_bucket: Optional[str] = "due-diligence-files"
-    task_attachments_gcs_bucket: Optional[str] = "dev-task-tracker-attachments"
-    device_documents_gcs_bucket: Optional[str] = "dev-device-documents"
-    sv_uploads_gcs_bucket: Optional[str] = "dev-site-visit-uploads"
+    # Storage settings
+    storage_provider: str = "replit"  # "replit" (default) or "gcs"
+    replit_storage_prefix: str = "ilios"  # Prefix for Replit Object Storage keys
+    
+    # Google Cloud Storage settings (OPTIONAL - only required if storage_provider="gcs")
+    due_diligence_gcs_bucket: Optional[str] = None
+    task_attachments_gcs_bucket: Optional[str] = None
+    device_documents_gcs_bucket: Optional[str] = None
+    sv_uploads_gcs_bucket: Optional[str] = None
+    service_account_key_file_path: Optional[str] = None
+    
+    # File upload settings
     allowed_extensions: Optional[str] = "pdf,docx,jpeg,jpg,png"
     ai_parsing_allowed_extensions: Optional[str] = "pdf,docx"
     sa_uploads_allowed_extensions: Optional[str] = "jpeg,jpg,png"
     allowed_filesize: Optional[int] = 100 * 1024 * 1024  # Max file size in bytes. Default 100 MB.
     file_download_link_expiration_minutes: Optional[int] = 60 * 2  # 2 hours
-    service_account_key_file_path: Optional[str] = "key.json"
 
     # AI integration settings
     file_parse_function_url: str

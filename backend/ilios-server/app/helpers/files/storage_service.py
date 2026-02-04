@@ -1,276 +1,263 @@
 """Storage Service Abstraction
 
 Provides a unified interface for file storage operations.
-Supports both legacy GCS buckets and Replit Object Storage.
+Supports Replit Object Storage (default) and legacy GCS (optional fallback).
+
+IMPORTANT: GCS imports are LAZY - only loaded when storage_provider="gcs".
+This allows the app to boot and run without any Google Cloud dependencies.
 
 Usage:
-    # For new files, use Replit storage:
-    storage = get_storage_service()
-    
-    # For legacy GCS files:
-    storage = get_storage_service(storage_type="gcs", bucket_name="bucket")
+    storage = get_storage_service()  # Returns Replit storage by default
+    storage.upload_bytes("key", data, "application/pdf")
+    data = storage.download_bytes("key")
 """
 
 import logging
-import os
+import re
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta, timezone
-from typing import Optional
-
-from google.cloud import storage
-from google.oauth2 import service_account
+from datetime import datetime, timezone
+from typing import Optional, TYPE_CHECKING
 
 from app.settings import settings
-from app.static.files import FILE_PREVIEW_CONTENT_TYPE_MAPPING, FILE_UPLOAD_CONTENT_TYPE_MAPPING
+
+if TYPE_CHECKING:
+    from google.cloud.storage import Bucket
 
 logger = logging.getLogger(__name__)
 
 
 class StorageService(ABC):
     """Abstract base class for storage operations."""
-    
+
     @abstractmethod
-    def upload_from_bytes(self, key: str, data: bytes, content_type: Optional[str] = None) -> str:
+    def upload_bytes(self, key: str, data: bytes, content_type: Optional[str] = None) -> str:
         """Upload bytes to storage, returns the storage key."""
         pass
-    
+
     @abstractmethod
-    def download_as_bytes(self, key: str) -> bytes:
+    def download_bytes(self, key: str) -> bytes:
         """Download file as bytes."""
         pass
-    
+
     @abstractmethod
     def delete(self, key: str) -> None:
         """Delete a file from storage."""
         pass
-    
+
     @abstractmethod
     def exists(self, key: str) -> bool:
         """Check if a file exists."""
         pass
-    
-    @abstractmethod
-    def generate_upload_url(self, key: str, content_type: str, expiration_minutes: int = 15) -> str:
-        """Generate a presigned URL for uploading."""
-        pass
-    
-    @abstractmethod
-    def generate_download_url(self, key: str, filename: str, expiration_minutes: int = 15) -> str:
-        """Generate a presigned URL for downloading."""
-        pass
-    
-    @abstractmethod
-    def generate_preview_url(self, key: str, filename: str, expiration_minutes: int = 15) -> str:
-        """Generate a presigned URL for previewing (inline display)."""
-        pass
 
-
-class GCSStorageService(StorageService):
-    """Google Cloud Storage implementation using service account credentials."""
-    
-    def __init__(self, bucket_name: str):
-        credentials = service_account.Credentials.from_service_account_file(
-            settings.service_account_key_file_path
-        )
-        storage_client = storage.Client(credentials=credentials)
-        self.bucket = storage_client.bucket(bucket_name)
-        self.bucket_name = bucket_name
-    
-    def upload_from_bytes(self, key: str, data: bytes, content_type: Optional[str] = None) -> str:
-        blob = self.bucket.blob(key)
-        blob.upload_from_string(data, content_type=content_type)
-        return key
-    
-    def download_as_bytes(self, key: str) -> bytes:
-        blob = self.bucket.blob(key)
-        return blob.download_as_bytes()
-    
-    def delete(self, key: str) -> None:
-        try:
-            blob = self.bucket.blob(key)
-            blob.reload()
-            generation_match_precondition = blob.generation
-            blob.delete(if_generation_match=generation_match_precondition)
-        except Exception as exc:
-            logger.warning(f"Error deleting file {key}: {exc}")
-    
-    def exists(self, key: str) -> bool:
-        blob = self.bucket.blob(key)
-        return blob.exists()
-    
-    def generate_upload_url(self, key: str, content_type: str, expiration_minutes: int = 15) -> str:
-        return self.bucket.blob(key).generate_signed_url(
-            version="v4",
-            expiration=timedelta(minutes=expiration_minutes),
-            method="PUT",
-            content_type=content_type,
-        )
-    
-    def generate_download_url(self, key: str, filename: str, expiration_minutes: int = 15) -> str:
-        blob = self.bucket.blob(key)
-        return blob.generate_signed_url(
-            version="v4",
-            expiration=timedelta(minutes=expiration_minutes),
-            method="GET",
-            response_disposition=f"attachment;filename={filename}",
-        )
-    
-    def generate_preview_url(self, key: str, filename: str, expiration_minutes: int = 15) -> str:
-        file_extension = filename.split(".")[-1].lower()
-        if file_extension not in FILE_PREVIEW_CONTENT_TYPE_MAPPING:
-            available_extensions = ", ".join(FILE_PREVIEW_CONTENT_TYPE_MAPPING)
-            raise ValueError(f"Only {available_extensions} files are available to preview.")
-        
-        blob = self.bucket.blob(key)
-        return blob.generate_signed_url(
-            version="v4",
-            expiration=timedelta(minutes=expiration_minutes),
-            method="GET",
-            response_disposition=f"filename={filename}",
-            response_type=FILE_PREVIEW_CONTENT_TYPE_MAPPING.get(file_extension),
-        )
+    @abstractmethod
+    def get_content_type(self, key: str) -> Optional[str]:
+        """Get the content type of a file."""
+        pass
 
 
 class ReplitStorageService(StorageService):
     """Replit Object Storage implementation.
-    
-    Uses the default bucket configured in the Replit environment.
-    Files are stored with keys prefixed by storage_type for organization.
+
+    Uses the Replit Object Storage SDK for all operations.
+    No external credentials required - auth is handled by Replit environment.
     """
-    
+
     def __init__(self, storage_prefix: str = "ilios"):
         self._client = None
         self.storage_prefix = storage_prefix
-    
+        logger.info(f"ReplitStorageService initialized with prefix: {storage_prefix}")
+
     @property
     def client(self):
         if self._client is None:
             try:
                 from replit.object_storage import Client
                 self._client = Client()
-            except ImportError:
+                logger.info("Replit Object Storage client initialized successfully")
+            except ImportError as e:
                 raise RuntimeError(
                     "replit-object-storage package not installed. "
                     "Install with: pip install replit-object-storage"
-                )
+                ) from e
+            except Exception as e:
+                logger.error(f"Failed to initialize Replit Object Storage client: {e}")
+                raise
         return self._client
-    
+
     def _prefixed_key(self, key: str) -> str:
+        """Add storage prefix to key if not already present."""
+        if key.startswith(f"{self.storage_prefix}/"):
+            return key
         return f"{self.storage_prefix}/{key}"
-    
-    def upload_from_bytes(self, key: str, data: bytes, content_type: Optional[str] = None) -> str:
+
+    def upload_bytes(self, key: str, data: bytes, content_type: Optional[str] = None) -> str:
+        """Upload bytes to Replit Object Storage."""
         full_key = self._prefixed_key(key)
-        self.client.upload_from_bytes(full_key, data)
-        return full_key
-    
-    def download_as_bytes(self, key: str) -> bytes:
-        return self.client.download_as_bytes(key)
-    
+        try:
+            self.client.upload_from_bytes(full_key, data)
+            logger.info(f"Uploaded {len(data)} bytes to Replit storage: {full_key}")
+            return full_key
+        except Exception as e:
+            logger.error(f"Failed to upload to Replit storage {full_key}: {e}")
+            raise
+
+    def download_bytes(self, key: str) -> bytes:
+        """Download file bytes from Replit Object Storage."""
+        try:
+            data = self.client.download_as_bytes(key)
+            logger.info(f"Downloaded {len(data)} bytes from Replit storage: {key}")
+            return data
+        except Exception as e:
+            logger.error(f"Failed to download from Replit storage {key}: {e}")
+            raise
+
     def delete(self, key: str) -> None:
+        """Delete a file from Replit Object Storage."""
         try:
             self.client.delete(key)
-        except Exception as exc:
-            logger.warning(f"Error deleting file {key}: {exc}")
-    
+            logger.info(f"Deleted from Replit storage: {key}")
+        except Exception as e:
+            logger.warning(f"Error deleting file {key} from Replit storage: {e}")
+
     def exists(self, key: str) -> bool:
-        return self.client.exists(key)
-    
-    def generate_upload_url(self, key: str, content_type: str, expiration_minutes: int = 15) -> str:
-        raise NotImplementedError(
-            "Replit Object Storage uses direct upload via SDK, not presigned URLs for uploads. "
-            "Use upload_from_bytes() instead or implement a custom upload endpoint."
-        )
-    
-    def generate_download_url(self, key: str, filename: str, expiration_minutes: int = 15) -> str:
-        raise NotImplementedError(
-            "Replit Object Storage uses direct download via SDK. "
-            "Implement a download endpoint that streams the file."
-        )
-    
-    def generate_preview_url(self, key: str, filename: str, expiration_minutes: int = 15) -> str:
-        raise NotImplementedError(
-            "Replit Object Storage uses direct download via SDK. "
-            "Implement a preview endpoint that streams the file."
-        )
+        """Check if a file exists in Replit Object Storage."""
+        try:
+            return self.client.exists(key)
+        except Exception as e:
+            logger.warning(f"Error checking existence of {key}: {e}")
+            return False
+
+    def get_content_type(self, key: str) -> Optional[str]:
+        """Infer content type from key extension."""
+        ext = key.rsplit(".", 1)[-1].lower() if "." in key else ""
+        content_types = {
+            "pdf": "application/pdf",
+            "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "doc": "application/msword",
+            "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "xls": "application/vnd.ms-excel",
+            "png": "image/png",
+            "jpg": "image/jpeg",
+            "jpeg": "image/jpeg",
+            "gif": "image/gif",
+        }
+        return content_types.get(ext, "application/octet-stream")
 
 
-class HybridStorageService(StorageService):
-    """Hybrid storage that uses GCS for presigned URLs but can fall back to Replit storage."""
-    
-    def __init__(self, bucket_name: str, use_replit_for_new: bool = False):
-        self.gcs = GCSStorageService(bucket_name)
-        self.use_replit_for_new = use_replit_for_new
-        self._replit = None
-    
+class GCSStorageService(StorageService):
+    """Google Cloud Storage implementation using service account credentials.
+
+    IMPORTANT: This class lazily imports google.cloud libraries.
+    GCS is only used when explicitly configured via STORAGE_PROVIDER="gcs".
+    """
+
+    def __init__(self, bucket_name: str):
+        self._bucket: Optional["Bucket"] = None
+        self._bucket_name = bucket_name
+        logger.info(f"GCSStorageService initialized for bucket: {bucket_name}")
+
     @property
-    def replit(self) -> ReplitStorageService:
-        if self._replit is None:
-            self._replit = ReplitStorageService()
-        return self._replit
-    
-    def upload_from_bytes(self, key: str, data: bytes, content_type: Optional[str] = None) -> str:
-        if self.use_replit_for_new:
-            return self.replit.upload_from_bytes(key, data, content_type)
-        return self.gcs.upload_from_bytes(key, data, content_type)
-    
-    def download_as_bytes(self, key: str) -> bytes:
-        if key.startswith("ilios/"):
-            return self.replit.download_as_bytes(key)
-        return self.gcs.download_as_bytes(key)
-    
+    def bucket(self) -> "Bucket":
+        """Lazily initialize the GCS bucket connection."""
+        if self._bucket is None:
+            # LAZY IMPORT - only when actually needed
+            try:
+                from google.cloud import storage
+                from google.oauth2 import service_account
+
+                if not settings.service_account_key_file_path:
+                    raise ValueError(
+                        "GCS storage requires service_account_key_file_path setting"
+                    )
+
+                credentials = service_account.Credentials.from_service_account_file(
+                    settings.service_account_key_file_path
+                )
+                storage_client = storage.Client(credentials=credentials)
+                self._bucket = storage_client.bucket(self._bucket_name)
+                logger.info(f"GCS bucket connection established: {self._bucket_name}")
+            except ImportError as e:
+                raise RuntimeError(
+                    "google-cloud-storage package not installed. "
+                    "Install with: pip install google-cloud-storage"
+                ) from e
+        return self._bucket
+
+    def upload_bytes(self, key: str, data: bytes, content_type: Optional[str] = None) -> str:
+        """Upload bytes to GCS."""
+        blob = self.bucket.blob(key)
+        blob.upload_from_string(data, content_type=content_type)
+        logger.info(f"Uploaded {len(data)} bytes to GCS: {key}")
+        return key
+
+    def download_bytes(self, key: str) -> bytes:
+        """Download file bytes from GCS."""
+        blob = self.bucket.blob(key)
+        data = blob.download_as_bytes()
+        logger.info(f"Downloaded {len(data)} bytes from GCS: {key}")
+        return data
+
     def delete(self, key: str) -> None:
-        if key.startswith("ilios/"):
-            self.replit.delete(key)
-        else:
-            self.gcs.delete(key)
-    
+        """Delete a file from GCS."""
+        try:
+            blob = self.bucket.blob(key)
+            blob.reload()
+            generation_match_precondition = blob.generation
+            blob.delete(if_generation_match=generation_match_precondition)
+            logger.info(f"Deleted from GCS: {key}")
+        except Exception as e:
+            logger.warning(f"Error deleting file {key} from GCS: {e}")
+
     def exists(self, key: str) -> bool:
-        if key.startswith("ilios/"):
-            return self.replit.exists(key)
-        return self.gcs.exists(key)
-    
-    def generate_upload_url(self, key: str, content_type: str, expiration_minutes: int = 15) -> str:
-        return self.gcs.generate_upload_url(key, content_type, expiration_minutes)
-    
-    def generate_download_url(self, key: str, filename: str, expiration_minutes: int = 15) -> str:
-        return self.gcs.generate_download_url(key, filename, expiration_minutes)
-    
-    def generate_preview_url(self, key: str, filename: str, expiration_minutes: int = 15) -> str:
-        return self.gcs.generate_preview_url(key, filename, expiration_minutes)
+        """Check if a file exists in GCS."""
+        blob = self.bucket.blob(key)
+        return blob.exists()
+
+    def get_content_type(self, key: str) -> Optional[str]:
+        """Get content type from GCS blob metadata."""
+        try:
+            blob = self.bucket.blob(key)
+            blob.reload()
+            return blob.content_type
+        except Exception:
+            return None
 
 
+# Module-level cache for storage services
 _storage_services: dict = {}
 
 
 def get_storage_service(
-    storage_type: str = "gcs",
+    storage_type: Optional[str] = None,
     bucket_name: Optional[str] = None,
 ) -> StorageService:
     """Factory function to get appropriate storage service.
-    
+
     Args:
-        storage_type: "gcs", "replit", or "hybrid"
-        bucket_name: Required for GCS and hybrid storage types
-    
+        storage_type: "replit" or "gcs". Defaults to settings.storage_provider.
+        bucket_name: Required for GCS storage type.
+
     Returns:
         StorageService instance
     """
-    cache_key = f"{storage_type}:{bucket_name}"
-    
+    # Default to settings if not specified
+    if storage_type is None:
+        storage_type = settings.storage_provider.lower()
+
+    cache_key = f"{storage_type}:{bucket_name or 'default'}"
+
     if cache_key not in _storage_services:
-        if storage_type == "gcs":
+        if storage_type == "replit":
+            _storage_services[cache_key] = ReplitStorageService(
+                storage_prefix=settings.replit_storage_prefix
+            )
+        elif storage_type == "gcs":
             if not bucket_name:
                 raise ValueError("bucket_name is required for GCS storage")
             _storage_services[cache_key] = GCSStorageService(bucket_name)
-        elif storage_type == "replit":
-            _storage_services[cache_key] = ReplitStorageService()
-        elif storage_type == "hybrid":
-            if not bucket_name:
-                raise ValueError("bucket_name is required for hybrid storage")
-            _storage_services[cache_key] = HybridStorageService(bucket_name)
         else:
             raise ValueError(f"Unknown storage type: {storage_type}")
-    
+
     return _storage_services[cache_key]
 
 
@@ -281,8 +268,30 @@ def generate_storage_key(
     filename: str,
 ) -> str:
     """Generate a unique storage key for a file.
-    
-    Format: companies/{company_id}/sites/{site_id}/documents/{document_id}/{timestamp}_{filename}
+
+    Format: companies/{company_id}/sites/{site_id}/documents/{document_id}/{iso_ts}_{sanitized_filename}
     """
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
-    return f"companies/{company_id}/sites/{site_id}/documents/{document_id}/{timestamp}_{filename}"
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
+    # Sanitize filename: remove/replace problematic characters
+    sanitized = re.sub(r'[^\w\-_\.]', '_', filename)
+    return f"companies/{company_id}/sites/{site_id}/documents/{document_id}/{timestamp}_{sanitized}"
+
+
+def get_legacy_gcs_service(bucket_name: str) -> Optional[GCSStorageService]:
+    """Get a GCS service for reading legacy files.
+
+    Only works if STORAGE_PROVIDER="gcs" is configured.
+    Returns None if GCS is not configured (app is Replit-native).
+    """
+    if settings.storage_provider.lower() != "gcs":
+        logger.warning(
+            f"Legacy GCS read requested for bucket {bucket_name}, "
+            "but STORAGE_PROVIDER is not 'gcs'. Returning None."
+        )
+        return None
+
+    if not settings.service_account_key_file_path:
+        logger.warning("GCS legacy read requested but no service account configured")
+        return None
+
+    return get_storage_service(storage_type="gcs", bucket_name=bucket_name)
