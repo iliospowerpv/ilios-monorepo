@@ -1,8 +1,9 @@
 import logging
 from datetime import datetime, timezone
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.crud.ai_parsing_result import AIParsingResultCRUD
@@ -17,14 +18,33 @@ from app.helpers.configs.ai_parsing_helper import AIParsingHandler
 from app.helpers.files.file_helper import combine_user_ai_parsing_results
 from app.models.comment import CommentedEntityTypeEnum
 from app.models.file import File as FileModel
-from app.models.file import FileParsingStatuses
+from app.models.file import FileParsingStatuses, AIParsingResult
 from app.schema.file import FileKeysList, FileParseTriggerSuccess, FileParsingStatus
 from app.schema.user import CurrentUserSchema
+from app.services.extraction_pipeline_service import ExtractionPipelineService
 from app.settings import settings
 from app.static import HTTP_403_RESPONSE, HTTP_404_RESPONSE, HTTP_409_RESPONSE, FileMessages
 
 logger = logging.getLogger(__name__)
 files_parsing_router = APIRouter()
+
+
+class ReprocessRequest(BaseModel):
+    schema_version_id: Optional[int] = None
+    prompt_template_id: Optional[int] = None
+    force: bool = False
+
+    class Config:
+        from_attributes = True
+
+
+class ReprocessResponse(BaseModel):
+    job_id: int
+    status: str
+    message: str
+    is_reprocess: bool
+    schema_version_id: Optional[int] = None
+    prompt_template_id: Optional[int] = None
 
 
 @files_parsing_router.post(
@@ -157,3 +177,115 @@ async def get_file_parsing_results(
         document = [document_response for document_response in response if document_response["id"] == document_id][0]
         document["comments"] = comments
     return {"keys": response}
+
+
+@files_parsing_router.post(
+    "/reprocess/",
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=ReprocessResponse,
+    responses={
+        **HTTP_403_RESPONSE,
+        **HTTP_404_RESPONSE,
+        **HTTP_409_RESPONSE(message="Reprocess with same bindings already completed"),
+    },
+    description="Reprocess a file with optional schema/prompt version selection. Creates new parsing job.",
+)
+async def reprocess_file(
+    request: ReprocessRequest,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    file: FileModel = Depends(get_authorized_file),
+    db_session: Session = Depends(get_session),
+):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=file.document.site.company_id,
+        project_id=file.document.site_id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="edit",
+    )
+
+    pipeline_service = ExtractionPipelineService(db_session)
+    ai_results_crud = AIParsingResultCRUD(db_session)
+
+    doc_type_name = file.document.name.value
+    extraction_config = pipeline_service.get_extraction_config(doc_type_name)
+    if not extraction_config:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            detail=f"Document type '{doc_type_name}' not found in registry"
+        )
+
+    doc_type_id = extraction_config["document_type"]["id"]
+    schema_version_id = request.schema_version_id or extraction_config["schema_version"]["id"]
+    prompt_template_id = request.prompt_template_id or extraction_config["prompt_template"]["id"]
+
+    existing_runs = db_session.query(AIParsingResult).filter(
+        AIParsingResult.file_id == file.id,
+        AIParsingResult.schema_version_id == schema_version_id,
+        AIParsingResult.prompt_template_id == prompt_template_id,
+        AIParsingResult.status == FileParsingStatuses.completed,
+    ).all()
+
+    if existing_runs and not request.force:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail="Reprocess with same bindings already completed. Use force=true to override."
+        )
+
+    run_count = db_session.query(AIParsingResult).filter(
+        AIParsingResult.file_id == file.id
+    ).count()
+
+    new_job = ai_results_crud.create_item({
+        "file_id": file.id,
+        "status": FileParsingStatuses.not_started,
+        "start_time": datetime.now(timezone.utc),
+        "document_type_id": doc_type_id,
+        "schema_version_id": schema_version_id,
+        "prompt_template_id": prompt_template_id,
+        "extraction_run_number": run_count + 1,
+        "is_reprocess": True,
+        "force_reprocess": request.force,
+    })
+
+    pipeline_document_name = AgreementNamesMappingHandler(db_session).get_pipeline_agreement_name(file.document.name)
+    if not pipeline_document_name:
+        ai_results_crud.update_by_id(new_job.id, {
+            "status": FileParsingStatuses.processing_start_failed,
+            "error_message": f"Pipeline config not found for {doc_type_name}",
+            "end_time": datetime.now(timezone.utc),
+        })
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=f"Pipeline config not found for {doc_type_name}")
+
+    try:
+        file_parse_func_client = FileParseFuncHTTPClient()
+        payload = file_parse_func_client.prepare_trigger_payload(file, new_job.id, pipeline_document_name)
+        response = file_parse_func_client.post(payload)
+        if not response.ok:
+            ai_results_crud.update_by_id(new_job.id, {
+                "status": FileParsingStatuses.processing_start_failed,
+                "error_message": f"Cloud Function error: {response.status_code}",
+                "end_time": datetime.now(timezone.utc),
+            })
+            raise HTTPException(response.status_code, detail=response.reason)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        ai_results_crud.update_by_id(new_job.id, {
+            "status": FileParsingStatuses.processing_start_failed,
+            "error_message": str(exc),
+            "end_time": datetime.now(timezone.utc),
+        })
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=f"Reprocess failed: {str(exc)}")
+
+    ai_results_crud.update_by_id(new_job.id, {"status": FileParsingStatuses.processing})
+
+    return ReprocessResponse(
+        job_id=new_job.id,
+        status="processing",
+        message="Reprocess job created successfully",
+        is_reprocess=True,
+        schema_version_id=schema_version_id,
+        prompt_template_id=prompt_template_id,
+    )

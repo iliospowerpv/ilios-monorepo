@@ -99,6 +99,7 @@ class Settings(BaseSettings):
 
     # AI parsing config
     ai_parsing_config_path: Optional[str] = "configs/ai_parsing_config.json"
+    allow_config_fallback: bool = False  # Set True only for migration period; registry is authoritative
     agreement_names_mapping_config_path: Optional[str] = "configs/agreement_names_mapping_config.json"
     co_terminus_config_path: Optional[str] = "configs/co_terminus_config.json"
 

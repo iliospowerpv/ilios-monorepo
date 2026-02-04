@@ -77,7 +77,21 @@ class AIParsingResult(Base):
     ai_model_version = Column(String, nullable=True)
     ai_app_version = Column(String, nullable=True)
 
+    document_type_id = Column(Integer, ForeignKey("extraction_document_types.id", ondelete="SET NULL"), nullable=True)
+    schema_version_id = Column(Integer, ForeignKey("extraction_schema_versions.id", ondelete="SET NULL"), nullable=True)
+    prompt_template_id = Column(Integer, ForeignKey("extraction_prompt_templates.id", ondelete="SET NULL"), nullable=True)
+    raw_llm_response = Column(Text, nullable=True)
+    parsed_result = Column(JSON, nullable=True)
+    extraction_run_number = Column(Integer, nullable=True, default=1)
+    retries = Column(Integer, nullable=True, default=0)
+    error_message = Column(Text, nullable=True)
+    is_reprocess = Column(Boolean, nullable=True, default=False)
+    force_reprocess = Column(Boolean, nullable=True, default=False)
+
     file = relationship("File", back_populates="ai_parsing_results")  # noqa: VNE002
+    document_type = relationship("ExtractionDocumentType")
+    schema_version = relationship("ExtractionSchemaVersion")
+    prompt_template = relationship("ExtractionPromptTemplate")
 
     created_at = Column(DateTime, server_default=utcnow())
     updated_at = Column(DateTime, server_default=utcnow())

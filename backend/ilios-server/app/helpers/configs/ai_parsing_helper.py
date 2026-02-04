@@ -21,7 +21,7 @@ class AIParsingHandler(BaseConfigHandler):
     def get_parsable_documents_list(self):
         """Get name of the agreements/documents, supported by AI to be parsed.
         
-        First tries the registry, falls back to config file.
+        Registry is authoritative. Fallback to config only if ALLOW_CONFIG_FALLBACK=True.
         """
         from app.services.extraction_pipeline_service import ExtractionPipelineService
         try:
@@ -30,15 +30,20 @@ class AIParsingHandler(BaseConfigHandler):
             if registry_types:
                 return registry_types
         except Exception as e:
-            logger.warning(f"Registry lookup failed, falling back to config: {e}")
+            logger.warning(f"Registry lookup failed: {e}")
+            if not settings.allow_config_fallback:
+                return []
 
-        config = self.read()
-        return list(config.keys()) if config else []
+        if settings.allow_config_fallback:
+            logger.info("Config fallback enabled, using ai_parsing_config.json")
+            config = self.read()
+            return list(config.keys()) if config else []
+        return []
 
     def get_keys_by_document_type(self, document_type: str):
         """Return list of keys available for the specific document type.
         
-        First tries the registry, falls back to config file.
+        Registry is authoritative. Fallback to config only if ALLOW_CONFIG_FALLBACK=True.
         """
         from app.services.extraction_pipeline_service import ExtractionPipelineService
         try:
@@ -47,10 +52,15 @@ class AIParsingHandler(BaseConfigHandler):
             if config and config.get("fields"):
                 return [f["display_name"] for f in config["fields"]]
         except Exception as e:
-            logger.warning(f"Registry lookup failed, falling back to config: {e}")
+            logger.warning(f"Registry lookup failed: {e}")
+            if not settings.allow_config_fallback:
+                return []
 
-        config = self.read()
-        return config.get(document_type, []) if config else []
+        if settings.allow_config_fallback:
+            logger.info("Config fallback enabled, using ai_parsing_config.json")
+            config = self.read()
+            return config.get(document_type, []) if config else []
+        return []
 
     def get_extraction_config(self, document_type: str):
         """Get full extraction configuration from registry.

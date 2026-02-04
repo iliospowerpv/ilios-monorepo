@@ -1,0 +1,36 @@
+You are the Replit agent. We just implemented the Extraction Registry (document types, schema versions, prompt templates) and admin API endpoints. Now run a STRICT compliance audit against the Prompt #2 contract and implement all missing pieces.
+
+PART 1 — COMPLIANCE AUDIT (MUST PROVIDE EVIDENCE)
+For each requirement below, output: (a) PASS/FAIL, (b) exact file paths + key functions/components, (c) routes/endpoints, (d) DB tables/columns involved.
+
+Requirements:
+1) canonical_fields exists and schema version fields reference canonical_fields via FK (NOT strings).
+2) ai_parsing_config.json is used ONLY for one-time seed; registry is authoritative in prod.
+   - If any config fallback remains, gate it behind ALLOW_CONFIG_FALLBACK and default OFF.
+3) Admin UI exists (not just API): dashboard list doc types + detail page with Schema/Prompts/Fields tabs.
+4) Reprocess workflow exists:
+   - POST reprocess endpoint that creates a NEW parsing run/job record
+   - user can choose schema_version_id and prompt_template_id (optional)
+   - idempotent if same binding already completed unless force=true
+   - does NOT auto-accept or auto-promote
+5) parse jobs persist binding snapshots (document_type_id, schema_version_id, prompt_template_id), raw_llm_response, parsed_result, status, retries, errors.
+6) Evidence contract implemented end-to-end:
+   - extraction returns page + snippet + anchor_text (bbox optional)
+   - UI shows snippet and supports “View in document” navigation to the page for that evidence
+7) Remove/replace hardcoded doc-type logic (e.g., PVsyst special cases) so field selection is registry-driven.
+8) Tests: seed idempotency, activation uniqueness, job binding persistence, reprocess does not mutate acceptance, admin permission gates.
+
+PART 2 — IMPLEMENTATION (FIX ALL FAILS)
+For any FAIL:
+- implement the missing backend + frontend + migrations
+- keep changes minimal but correct
+- follow existing patterns in this repo (RBAC, React Query, routing, ModuleContainer)
+- keep everything Replit-native (no GCS, no external functions, no key files)
+
+PART 3 — OUTPUT
+At the end provide:
+- list of migrations added/modified
+- list of new endpoints + payloads
+- list of new frontend routes/pages
+- how to: add new doc type + fields + prompt in UI and run extraction immediately
+- how to: reprocess a document version and view the new run + evidence in UI
