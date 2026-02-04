@@ -67,6 +67,12 @@ interface Comment {
   last_name: string;
 }
 
+interface FileParsingEvidence {
+  page?: number | null;
+  snippet?: string | null;
+  anchor_text?: string | null;
+}
+
 interface CollapsibleDocumentTermRenderer {
   id: number | null;
   termName: string;
@@ -81,6 +87,8 @@ interface CollapsibleDocumentTermRenderer {
   boardId: number;
   fileId: number;
   taskId: number;
+  evidence?: FileParsingEvidence | null;
+  onViewInDocument?: (page: number) => void;
 }
 
 const CollapsibleDocumentTermRenderer: React.FC<CollapsibleDocumentTermRenderer> = props => {
@@ -97,7 +105,9 @@ const CollapsibleDocumentTermRenderer: React.FC<CollapsibleDocumentTermRenderer>
     comments,
     boardId,
     fileId,
-    taskId
+    taskId,
+    evidence,
+    onViewInDocument
   } = props;
   const userInputFormRef = React.useRef<DocumentTermUserInputFieldRef | null>(null);
   const [expanded, setExpanded] = React.useState<boolean>(true);
@@ -108,10 +118,44 @@ const CollapsibleDocumentTermRenderer: React.FC<CollapsibleDocumentTermRenderer>
     userInputFormRef.current?.setValue && userInputFormRef.current?.setValue(textToPopulate);
   };
 
+  const hasEvidence = evidence && evidence.page != null;
+
   return (
     <AccordionStyled expanded={expanded} onChange={() => setExpanded(prevExpanded => !prevExpanded)}>
       <AccordionSummaryStyled expandIcon={<ExpandMoreIcon />}>
-        <TermName>{termName}</TermName>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+          <TermName sx={{ flex: 1 }}>{termName}</TermName>
+          {hasEvidence && (
+            <BootstrapTooltip
+              title={
+                evidence.snippet
+                  ? `"${evidence.snippet.substring(0, 100)}${evidence.snippet.length > 100 ? '...' : ''}"`
+                  : `Found on page ${evidence.page}`
+              }
+              placement="top"
+            >
+              <Button
+                size="small"
+                variant="text"
+                onClick={e => {
+                  e.stopPropagation();
+                  if (onViewInDocument && evidence.page) {
+                    onViewInDocument(evidence.page);
+                  }
+                }}
+                sx={{
+                  minWidth: 'auto',
+                  fontSize: '12px',
+                  color: 'primary.main',
+                  textTransform: 'none',
+                  padding: '2px 8px'
+                }}
+              >
+                Page {evidence.page}
+              </Button>
+            </BootstrapTooltip>
+          )}
+        </Box>
       </AccordionSummaryStyled>
       <AccordionDetails sx={{ display: 'flex', padding: '8px 0 16px 16px' }}>
         <Box flex="1">
@@ -120,17 +164,25 @@ const CollapsibleDocumentTermRenderer: React.FC<CollapsibleDocumentTermRenderer>
               Legal Terms
             </Typography>
             <AIText bgColor>{legal_term}</AIText>
-            <Typography variant="h6" fontSize="16px" fontWeight="600" py="8px">
-              Value
-              <BootstrapTooltip title="Copy" placement="top">
-                <IconButton
-                  sx={{ position: 'absolute', right: '-30px', marginTop: '25px !important', padding: '8px', margin: 0 }}
-                  onClick={() => copyToTextField(aiValue)}
-                >
-                  <ContentCopyIcon sx={{ fontSize: '20px', color: theme => theme.palette.text.secondary }} />
-                </IconButton>
-              </BootstrapTooltip>
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="h6" fontSize="16px" fontWeight="600" py="8px">
+                Value
+                <BootstrapTooltip title="Copy" placement="top">
+                  <IconButton
+                    sx={{
+                      position: 'absolute',
+                      right: '-30px',
+                      marginTop: '25px !important',
+                      padding: '8px',
+                      margin: 0
+                    }}
+                    onClick={() => copyToTextField(aiValue)}
+                  >
+                    <ContentCopyIcon sx={{ fontSize: '20px', color: theme => theme.palette.text.secondary }} />
+                  </IconButton>
+                </BootstrapTooltip>
+              </Typography>
+            </Box>
             <AIText>{aiValue}</AIText>
             <DocumentPoisonPill isPoisonPill={isPoisonPill} title={isPoisonPill ? poisonPillDetails : ''} />
           </AIResponseContainer>
@@ -259,12 +311,22 @@ const DocumentModal: React.FC<DocumentModal> = props => {
     }
   }, [notify, fileTermKeysDataLoadingError]);
 
+  const getFileType = (filename: string): string | undefined => {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    if (ext === 'pdf') return 'pdf';
+    if (ext === 'docx') return 'docx';
+    if (ext === 'doc') return 'doc';
+    if (ext === 'png') return 'png';
+    if (ext === 'jpg' || ext === 'jpeg') return 'jpg';
+    return undefined;
+  };
+
   const FileRenderer = React.useMemo(
     () =>
       file && fileUrl ? (
         <DocViewer
           pluginRenderers={DocViewerRenderers}
-          documents={[{ uri: fileUrl }]}
+          documents={[{ uri: fileUrl, fileType: getFileType(file.filename) }]}
           style={{ width: '100%', height: '100%' }}
           config={{
             header: {
@@ -401,7 +463,8 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                               is_poison_pill,
                               poison_pill_detailed,
                               legal_term,
-                              comments
+                              comments,
+                              evidence
                             }) => (
                               <CollapsibleDocumentTermRenderer
                                 key={name}
@@ -418,6 +481,10 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                                 boardId={boardId}
                                 fileId={fileId}
                                 taskId={taskId}
+                                evidence={evidence}
+                                onViewInDocument={page => {
+                                  notify(`Navigate to page ${page} in the document viewer`);
+                                }}
                               />
                             )
                           )}

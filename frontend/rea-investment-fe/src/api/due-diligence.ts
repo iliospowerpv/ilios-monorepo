@@ -183,6 +183,12 @@ interface FileParsingTermComment {
   last_name: string;
 }
 
+interface FileParsingEvidence {
+  page?: number | null;
+  snippet?: string | null;
+  anchor_text?: string | null;
+}
+
 interface FileParsingTermKeyResult {
   id: number | null;
   name: string;
@@ -194,6 +200,7 @@ interface FileParsingTermKeyResult {
   updated_at: string | null;
   legal_term: string | null;
   comments: FileParsingTermComment[] | null;
+  evidence?: FileParsingEvidence | null;
 }
 
 interface GetFileParsingResultQueryResponse {

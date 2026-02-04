@@ -1,0 +1,50 @@
+DATA ROOM – DOCUMENT PREVIEW + FIELD PROVENANCE (Left pane + jump-to-source)
+
+Current state:
+- Parsing works and extracted fields populate the UI.
+- The document itself is NOT showing in the left-side pane preview.
+- There is no way to click a field and navigate to where it appears in the document (page/region).
+
+Goal:
+1) Restore/implement document preview in the left-side pane for uploaded files.
+2) Add provenance: for each extracted field, allow click → jump to the relevant page (and highlight text if possible).
+
+Tasks:
+
+A) Diagnose and fix left-pane preview
+- Identify the UI component responsible for document preview (PDF viewer / doc preview pane).
+- Identify the backend endpoint(s) used (preview URL, download URL, file streaming).
+- Verify file storage access (Replit object storage) and URL generation.
+- Fix any issue preventing preview (CORS, auth headers, signed URL, incorrect mime type, missing endpoint wiring).
+Deliverable: left pane shows PDF (and DOCX via conversion or download fallback).
+
+B) Implement source attribution in parsing output (if missing)
+- Update parsing pipeline output schema to include per-field provenance:
+  - page number (for PDFs)
+  - extracted snippet / quote
+  - (optional) bounding box if available; otherwise text search anchors
+If exact provenance is not possible for DOCX, include paragraph index/snippet.
+
+C) UI: field-to-source navigation
+- In the extracted fields panel, for each field show:
+  - “View in document” action if provenance is available
+- Clicking it should:
+  - navigate the preview pane to the target page
+  - highlight the snippet if possible (PDF text layer highlight or search term highlight)
+
+D) Minimal implementation if highlight is hard
+- Implement jump-to-page + search-within-document for snippet first.
+- Highlight can be Phase 2.
+
+E) QA checklist
+- Upload PDF → preview loads
+- Parse → extracted fields show “View in document”
+- Click field → preview jumps to correct page
+- Works under authenticated access (no public URLs)
+
+Output:
+- Summarize root cause of missing preview
+- List files changed
+- Provide a short demo checklist
+
+Proceed with diagnosis first, then implement.
