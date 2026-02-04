@@ -91,11 +91,15 @@ def _validate_configuration():
         else:
             logger.warning("Replit storage enabled but DEFAULT_OBJECT_STORAGE_BUCKET_ID not set")
 
-    if "placeholder" in settings.file_parse_function_url.lower():
+    import os
+    openai_api_key = os.environ.get("AI_INTEGRATIONS_OPENAI_API_KEY")
+    openai_base_url = os.environ.get("AI_INTEGRATIONS_OPENAI_BASE_URL")
+    if openai_api_key and openai_base_url:
+        logger.info("In-app AI parsing configured via Replit AI Integrations (OpenAI)")
+    else:
         logger.warning(
-            "AI parsing cloud function URL contains 'placeholder'. "
-            "Document parsing will fail until a real endpoint is configured. "
-            "Set file_parse_function_url to enable AI parsing."
+            "AI parsing not configured. Install OpenAI integration via Replit AI Integrations "
+            "to enable document parsing."
         )
 
 

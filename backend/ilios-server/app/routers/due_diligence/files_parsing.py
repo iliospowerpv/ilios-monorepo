@@ -1,8 +1,9 @@
 import logging
+import uuid
 from datetime import datetime, timezone
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -12,7 +13,6 @@ from app.db.session import get_session
 from app.helpers.authentication import get_current_user
 from app.helpers.authorization.project_access import get_authorized_file
 from app.helpers.permission_guards import require_module_permission
-from app.helpers.cloud_function_client import FileParseFuncHTTPClient
 from app.helpers.configs.agreement_names_helper import AgreementNamesMappingHandler
 from app.helpers.configs.ai_parsing_helper import AIParsingHandler
 from app.helpers.files.file_helper import combine_user_ai_parsing_results
@@ -22,6 +22,7 @@ from app.models.file import FileParsingStatuses, AIParsingResult
 from app.schema.file import FileKeysList, FileParseTriggerSuccess, FileParsingStatus
 from app.schema.user import CurrentUserSchema
 from app.services.extraction_pipeline_service import ExtractionPipelineService
+from app.services.in_app_parsing_service import InAppParsingService
 from app.settings import settings
 from app.static import HTTP_403_RESPONSE, HTTP_404_RESPONSE, HTTP_409_RESPONSE, FileMessages
 
@@ -216,6 +217,48 @@ async def get_parse_run_detail(
     )
 
 
+def _run_parsing_background(
+    file_id: int,
+    ai_result_id: int,
+    document_type_name: str,
+    correlation_id: str,
+):
+    """Background task to run in-app parsing. Uses its own DB session.
+    
+    Ensures AIParsingResult status is always updated even on unexpected failures.
+    """
+    from app.db.session import SessionLocal
+    from app.crud.ai_parsing_result import AIParsingResultCRUD
+    db = SessionLocal()
+    try:
+        from app.models.file import File
+        file = db.query(File).filter(File.id == file_id).first()
+        if not file:
+            logger.error(f"[{correlation_id}] File {file_id} not found for background parsing")
+            ai_crud = AIParsingResultCRUD(db)
+            ai_crud.update_by_id(ai_result_id, {
+                "status": FileParsingStatuses.processing_failed,
+                "error_message": f"File {file_id} not found",
+                "end_time": datetime.now(timezone.utc),
+            })
+            return
+        parsing_service = InAppParsingService(db)
+        parsing_service.parse_file(file, ai_result_id, document_type_name, correlation_id)
+    except Exception as e:
+        logger.error(f"[{correlation_id}] Background parsing failed: {e}")
+        try:
+            ai_crud = AIParsingResultCRUD(db)
+            ai_crud.update_by_id(ai_result_id, {
+                "status": FileParsingStatuses.processing_failed,
+                "error_message": str(e)[:500],
+                "end_time": datetime.now(timezone.utc),
+            })
+        except Exception as update_err:
+            logger.error(f"[{correlation_id}] Failed to update AIParsingResult status: {update_err}")
+    finally:
+        db.close()
+
+
 @files_parsing_router.post(
     "/parsing/",
     status_code=status.HTTP_202_ACCEPTED,
@@ -225,9 +268,10 @@ async def get_parse_run_detail(
         **HTTP_404_RESPONSE,
         **HTTP_409_RESPONSE(message=FileMessages.file_parse_conflict),
     },
-    description="Trigger GCP Cloud Function to start AI file parsing asynchronously without waiting success response",
+    description="Trigger in-app AI file parsing asynchronously using Replit AI Integrations (OpenAI).",
 )
 async def trigger_file_parsing(
+    background_tasks: BackgroundTasks,
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     file: FileModel = Depends(get_authorized_file),
     db_session: Session = Depends(get_session),
@@ -263,10 +307,11 @@ async def trigger_file_parsing(
         logger.warning(f"There is already parse processing started for file {file.id}")
         raise HTTPException(status.HTTP_409_CONFLICT, detail=FileMessages.file_parse_conflict)
 
-    if "placeholder" in settings.file_parse_function_url.lower():
+    parsing_service = InAppParsingService(db_session)
+    if not parsing_service.check_openai_available():
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="AI parsing service not configured. Contact administrator to set up file_parse_function_url.",
+            detail="AI parsing service not configured. OpenAI integration not available.",
         )
 
     pipeline_service = ExtractionPipelineService(db_session)
@@ -286,34 +331,21 @@ async def trigger_file_parsing(
         ai_record_payload["prompt_template_id"] = extraction_config["prompt_template"]["id"]
 
     new_ai_record = ai_results_crud.create_item(ai_record_payload)
-    # wrap into try-except block to ensure ai_result_record item has proper status even if CF invocation failed
-    try:
-        file_parse_func_client = FileParseFuncHTTPClient()
-        payload_for_trigger = file_parse_func_client.prepare_trigger_payload(
-            file, new_ai_record.id, pipeline_document_name
-        )
-        logger.info(
-            f"Triggering AI parsing for file {file.id}: "
-            f"storage_key={file.storage_key}, filepath={file.filepath}, "
-            f"file_url={payload_for_trigger.get('file_url')}"
-        )
-
-        response = file_parse_func_client.post(payload_for_trigger)
-        if not response.ok:
-            logger.warning(
-                f"Parsing for file {file.id} was unable to start due to the error response from Cloud Function: "
-                f"{response.status_code}, {response.reason}"
-            )
-            raise HTTPException(response.status_code, detail=response.reason)
-    except Exception as exc:
-        ai_results_crud.update_by_id(
-            new_ai_record.id,
-            {"status": FileParsingStatuses.processing_start_failed, "end_time": datetime.now(timezone.utc)},
-        )
-        logger.warning(f"Parsing for file {file.id} was unable to start due to the error: {str(exc)}")
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"An error occurred during file AI processing: {str(exc)}")
+    correlation_id = str(uuid.uuid4())[:8]
+    logger.info(
+        f"[{correlation_id}] Starting in-app AI parsing for file {file.id}: "
+        f"storage_key={file.storage_key}, document_type={pipeline_document_name}"
+    )
 
     ai_results_crud.update_by_id(new_ai_record.id, {"status": FileParsingStatuses.processing})
+    background_tasks.add_task(
+        _run_parsing_background,
+        file.id,
+        new_ai_record.id,
+        pipeline_document_name,
+        correlation_id,
+    )
+
     return {"code": status.HTTP_202_ACCEPTED, "message": FileMessages.file_parse_trigger_success}
 
 
@@ -382,10 +414,11 @@ async def get_file_parsing_results(
         **HTTP_404_RESPONSE,
         **HTTP_409_RESPONSE(message="Reprocess with same bindings already completed"),
     },
-    description="Reprocess a file with optional schema/prompt version selection. Creates new parsing job.",
+    description="Reprocess a file with optional schema/prompt version selection using in-app AI parsing.",
 )
 async def reprocess_file(
     request: ReprocessRequest,
+    background_tasks: BackgroundTasks,
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     file: FileModel = Depends(get_authorized_file),
     db_session: Session = Depends(get_session),
@@ -399,10 +432,11 @@ async def reprocess_file(
         action="edit",
     )
 
-    if "placeholder" in settings.file_parse_function_url.lower():
+    parsing_service = InAppParsingService(db_session)
+    if not parsing_service.check_openai_available():
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="AI parsing service not configured. Contact administrator to set up file_parse_function_url.",
+            detail="AI parsing service not configured. OpenAI integration not available.",
         )
 
     pipeline_service = ExtractionPipelineService(db_session)
@@ -458,28 +492,20 @@ async def reprocess_file(
         })
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=f"Pipeline config not found for {doc_type_name}")
 
-    try:
-        file_parse_func_client = FileParseFuncHTTPClient()
-        payload = file_parse_func_client.prepare_trigger_payload(file, new_job.id, pipeline_document_name)
-        response = file_parse_func_client.post(payload)
-        if not response.ok:
-            ai_results_crud.update_by_id(new_job.id, {
-                "status": FileParsingStatuses.processing_start_failed,
-                "error_message": f"Cloud Function error: {response.status_code}",
-                "end_time": datetime.now(timezone.utc),
-            })
-            raise HTTPException(response.status_code, detail=response.reason)
-    except HTTPException:
-        raise
-    except Exception as exc:
-        ai_results_crud.update_by_id(new_job.id, {
-            "status": FileParsingStatuses.processing_start_failed,
-            "error_message": str(exc),
-            "end_time": datetime.now(timezone.utc),
-        })
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=f"Reprocess failed: {str(exc)}")
+    correlation_id = str(uuid.uuid4())[:8]
+    logger.info(
+        f"[{correlation_id}] Starting reprocess for file {file.id}: "
+        f"schema_v={schema_version_id}, prompt_v={prompt_template_id}, force={request.force}"
+    )
 
     ai_results_crud.update_by_id(new_job.id, {"status": FileParsingStatuses.processing})
+    background_tasks.add_task(
+        _run_parsing_background,
+        file.id,
+        new_job.id,
+        pipeline_document_name,
+        correlation_id,
+    )
 
     return ReprocessResponse(
         job_id=new_job.id,

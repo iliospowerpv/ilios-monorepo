@@ -60,6 +60,16 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
     - **Evidence-Backed Extraction**: ExtractedFieldSchema includes optional EvidenceSchema (page, snippet, anchor_text) for audit trail and validation.
     - **Admin UI**: Settings → Extraction Registry tab provides admin management for document types, canonical fields, schema versions, and prompt templates. Features include: document type listing with category chips, schema version activation with visual indicators, prompt template activation, and tabbed navigation for configuration management. Frontend API endpoints in `src/api/admin.ts` with types exported from `src/api/index.ts`.
     - **Full Traceability**: `ProjectFact.source_run_id` links facts back to specific parse runs, enabling complete lineage tracking from document upload through extraction to promoted assumptions.
+- **In-App AI Parsing (Replit-Native)**: Fully in-app document parsing using Replit AI Integrations (OpenAI), removing dependency on external cloud functions.
+    - **Service**: `InAppParsingService` in `app/services/in_app_parsing_service.py` handles file download, text extraction, LLM calls, and result storage.
+    - **Text Extraction**: Supports PDF (via pypdf) and DOCX (via python-docx) with automatic format detection.
+    - **LLM Integration**: Uses Replit AI Integrations with OpenAI (gpt-5.2 model, no API key required, billed to Replit credits).
+    - **Background Processing**: Parsing runs as FastAPI BackgroundTasks for async operation.
+    - **Observability**: Correlation IDs for request tracing, structured logging with file IDs and durations.
+    - **Error Handling**: Retry logic with exponential backoff for rate limits (tenacity), graceful failure with error messages stored in AIParsingResult.
+    - **Configuration Check**: Startup validation logs "In-app AI parsing configured via Replit AI Integrations (OpenAI)" when properly set up.
+    - **Endpoints**: `/parsing/` (trigger parse), `/reprocess/` (re-parse with version selection) both use in-app service.
+    - **Tests**: `tests/test_in_app_parsing_service.py` covers text extraction, rate limit detection, LLM calls, and error paths.
 - **Storage Service Abstraction**: Replit-native storage architecture with GCS optional fallback.
     - **Interface**: Abstract StorageService with upload/download/delete/exists methods.
     - **Implementations**: ReplitStorageService (default, uses Replit Object Storage SDK), GCSStorageService (optional, requires credentials), HybridStorageService (migration support).
