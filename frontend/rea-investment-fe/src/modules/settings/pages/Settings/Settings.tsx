@@ -6,6 +6,7 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import AuditLogs from './tabs/AuditLogs/AuditLogs';
 import HealthChecksPage from '../HealthChecks/HealthChecksPage';
+import ExtractionRegistry from './tabs/ExtractionRegistry';
 
 interface TabInfo {
   id: string;
@@ -16,12 +17,25 @@ interface TabInfo {
 }
 
 interface SettingsProps {
-  tabId?: 'health-checks' | 'audit-logs' | 'notification' | 'alerts';
+  tabId?: 'health-checks' | 'audit-logs' | 'notification' | 'alerts' | 'extraction-registry';
 }
 
 const tabData: TabInfo[] = [
-  { id: 'health-checks', link: '/settings/health-checks', label: 'Health Checks', disabled: false, content: <HealthChecksPage /> },
+  {
+    id: 'health-checks',
+    link: '/settings/health-checks',
+    label: 'Health Checks',
+    disabled: false,
+    content: <HealthChecksPage />
+  },
   { id: 'audit-logs', link: '/settings/audit-logs', label: 'Audit Logs', disabled: false, content: <AuditLogs /> },
+  {
+    id: 'extraction-registry',
+    link: '/settings/extraction-registry',
+    label: 'Extraction Registry',
+    disabled: false,
+    content: <ExtractionRegistry />
+  },
   { id: 'notification', link: '/', label: 'Notification', disabled: true, content: <Box>Notification Tab</Box> },
   { id: 'alerts', link: '/', label: 'Alerts', disabled: true, content: <Box>Alerts</Box> }
 ];

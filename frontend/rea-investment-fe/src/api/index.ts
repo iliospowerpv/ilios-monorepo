@@ -141,4 +141,14 @@ export type {
   RoleProfile
 } from './workspace';
 
-export type { AccessHealthResponse, ValidationResult, ValidationIssue, RepairResult } from './admin';
+export type {
+  AccessHealthResponse,
+  ValidationResult,
+  ValidationIssue,
+  RepairResult,
+  CanonicalField,
+  DocumentType,
+  SchemaVersionField,
+  SchemaVersion,
+  PromptTemplate
+} from './admin';

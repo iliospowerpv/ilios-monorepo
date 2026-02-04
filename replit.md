@@ -58,6 +58,8 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
     - **Tests**: `tests/test_extraction_registry.py` covers seed idempotency, activation uniqueness, pipeline service functionality, and config fallback disabled.
     - **Parse Run History API**: `GET /api/due-diligence/{site_id}/documents/{document_id}/files/{file_id}/runs/` returns parse run history with status, bindings, retries, and error tracking. `GET .../runs/{run_id}/` returns run detail with evidence-backed extracted fields (page, snippet, anchor_text).
     - **Evidence-Backed Extraction**: ExtractedFieldSchema includes optional EvidenceSchema (page, snippet, anchor_text) for audit trail and validation.
+    - **Admin UI**: Settings → Extraction Registry tab provides admin management for document types, canonical fields, schema versions, and prompt templates. Features include: document type listing with category chips, schema version activation with visual indicators, prompt template activation, and tabbed navigation for configuration management. Frontend API endpoints in `src/api/admin.ts` with types exported from `src/api/index.ts`.
+    - **Full Traceability**: `ProjectFact.source_run_id` links facts back to specific parse runs, enabling complete lineage tracking from document upload through extraction to promoted assumptions.
 - **Storage Service Abstraction**: Prepared for future storage migration with StorageService abstraction layer.
     - **Interface**: Abstract StorageService with upload/download/delete/exists methods.
     - **Implementations**: GCSStorageService (current), ReplitStorageService (future), HybridStorageService (migration support).

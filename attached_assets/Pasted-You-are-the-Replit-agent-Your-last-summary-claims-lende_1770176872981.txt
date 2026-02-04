@@ -1,0 +1,40 @@
+You are the Replit agent. Your last summary claims lender-quality Data Room + versioning + run history + registry, but we must verify contract compliance and enforce strict Replit-native architecture.
+
+STEP 1 — PROVIDE EVIDENCE (no hand-waving)
+For each item below, cite exact files + functions + key lines:
+A) Storage write-path:
+- Show exactly where uploads are stored.
+- Confirm whether NEW uploads write to Replit Object Storage or GCS.
+- If hybrid exists, prove default write target is Replit, and GCS is read-only fallback.
+B) Versioning + promotion:
+- Show the DB columns on File and how versions are enumerated.
+- Show promotion endpoint/service and where audit trail is recorded.
+- Show how accepted assumptions remain traceable to a specific file version + parse run.
+C) Parse runs:
+- Show the run table/model and fields: status, retries, error details, raw_llm_response, parsed_result, bindings (doc type/schema/prompt).
+- Prove reprocess creates a NEW run and never overwrites prior runs.
+D) Evidence UX:
+- Show where EvidenceSchema is created and persisted.
+- Show frontend components rendering snippet + “View in document”.
+- Show how “View in document” navigates to the correct page and locates anchor_text.
+E) Admin UI:
+- List any frontend pages/routes/components that allow CRUD of doc types/fields/schemas/prompts.
+- If not built, say so explicitly.
+
+STEP 2 — ENFORCE STRICT MODE (implement if missing)
+Non-negotiable changes:
+1) Make Replit Object Storage the ONLY write target for uploads. Remove GCS write path entirely. GCS may remain read-only only if needed for legacy access.
+2) Remove key.json dependencies and all required GCS secrets/settings from runtime.
+3) If Admin UI is missing, implement minimal UI under Settings/Admin:
+   - Document Types
+   - Schema Versions (clone/activate)
+   - Prompt Templates (edit/activate)
+   - Canonical Fields
+4) If Evidence UX is missing, implement it:
+   - Show snippet inline for each proposed field
+   - “View in document” opens PDF at the evidence.page and visually highlights anchor_text (best-effort).
+5) If traceability is missing, add linkage so any accepted assumption can be traced to file version + run id.
+
+OUTPUT FORMAT
+- A compliance table: requirement → PASS/FAIL → evidence link
+- Then a prioritized implementation plan with file list and acceptance tests.

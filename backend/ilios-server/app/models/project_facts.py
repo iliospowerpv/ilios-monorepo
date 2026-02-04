@@ -43,6 +43,7 @@ class ProjectFact(Base):
     value = Column(JSONB, nullable=True)
     status = Column(String(20), nullable=False, default=FactStatus.candidate.value)
     source_file_id = Column(Integer, ForeignKey("files.id", ondelete="CASCADE"), nullable=True)
+    source_run_id = Column(Integer, ForeignKey("ai_parsing_results.id", ondelete="SET NULL"), nullable=True)
     source_document_key_id = Column(Integer, ForeignKey("document_keys.id", ondelete="SET NULL"), nullable=True)
     promoted_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     promoted_at = Column(DateTime, nullable=True)
@@ -55,6 +56,7 @@ class ProjectFact(Base):
     site = relationship("Site", back_populates="project_facts")
     canonical_field = relationship("CanonicalField", back_populates="project_facts")
     source_file = relationship("File", back_populates="project_facts")
+    source_run = relationship("AIParsingResult", foreign_keys=[source_run_id])
     source_document_key = relationship("DocumentKey", back_populates="project_facts")
     promoted_by = relationship("User", foreign_keys=[promoted_by_id])
     supersedes_fact = relationship("ProjectFact", remote_side=[id], foreign_keys=[supersedes_fact_id])
@@ -63,6 +65,7 @@ class ProjectFact(Base):
         Index("ix_project_facts_site_field", "site_id", "canonical_field_id"),
         Index("ix_project_facts_status", "status"),
         Index("ix_project_facts_source_file", "source_file_id"),
+        Index("ix_project_facts_source_run", "source_run_id"),
     )
 
     @property
