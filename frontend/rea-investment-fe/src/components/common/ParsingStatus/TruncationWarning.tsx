@@ -9,11 +9,7 @@ interface TruncationWarningProps {
   charCount?: number;
 }
 
-const TruncationWarning: React.FC<TruncationWarningProps> = ({
-  wasTruncated,
-  truncatedCharCount,
-  charCount,
-}) => {
+const TruncationWarning: React.FC<TruncationWarningProps> = ({ wasTruncated, truncatedCharCount, charCount }) => {
   if (!wasTruncated) return null;
 
   return (

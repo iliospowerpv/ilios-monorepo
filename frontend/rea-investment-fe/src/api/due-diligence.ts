@@ -126,7 +126,6 @@ interface ParsingStatusResponse {
   truncated_char_count?: number;
 }
 
-
 interface FileItem {
   id: number;
   author: string;

@@ -31,19 +31,20 @@ export interface ParseTriggerResponse {
 }
 
 const REASON_CODE_MESSAGES: Record<ParsingReasonCode, string> = {
-  insufficient_text_extracted: 'This document appears to be scanned or contains mostly images. OCR processing may be required.',
+  insufficient_text_extracted:
+    'This document appears to be scanned or contains mostly images. OCR processing may be required.',
   file_too_large: 'This file exceeds the maximum supported size. Please upload a smaller file.',
   too_many_pages: 'This PDF exceeds the maximum supported page count.',
   unsupported_file_type: 'This file type is not supported for AI parsing.',
   text_extraction_failed: 'Unable to extract text from this document. The file may be corrupted.',
   llm_call_failed: 'AI parsing failed. Please try again.',
   no_extraction_config: 'No parsing configuration found for this document type.',
-  storage_error: 'Unable to read file from storage. Please try re-uploading.',
+  storage_error: 'Unable to read file from storage. Please try re-uploading.'
 };
 
 export function extractReasonCode(errorMessage?: string): ParsingReasonCode | null {
   if (!errorMessage) return null;
-  
+
   const match = errorMessage.match(/\[([a-z_]+)\]/);
   if (match && match[1]) {
     const code = match[1] as ParsingReasonCode;
@@ -67,7 +68,7 @@ export function getStatusDisplayInfo(status: ParsingStatus | string): {
   isLoading: boolean;
 } {
   const normalizedStatus = status.toLowerCase().replace(/\s+/g, '_');
-  
+
   switch (normalizedStatus) {
     case 'queued':
       return { label: 'Queued', color: 'info', isLoading: false };

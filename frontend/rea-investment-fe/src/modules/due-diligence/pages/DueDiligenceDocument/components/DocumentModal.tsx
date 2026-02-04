@@ -181,7 +181,7 @@ const DocumentModal: React.FC<DocumentModal> = props => {
   const { mutateAsync: startParsing, isPending: isStartingParse } = useMutation({
     mutationFn: ({ id, forceReprocess }: { id: number; forceReprocess: boolean }) =>
       ApiClient.dueDiligence.documentStartParsing(id, siteId, documentId, forceReprocess),
-    onSuccess: (response) => {
+    onSuccess: response => {
       setCurrentRunId(response.run_id);
       setCurrentCorrelationId(response.correlation_id);
       notify(`Parsing started. This may take a few minutes.`);
@@ -201,13 +201,16 @@ const DocumentModal: React.FC<DocumentModal> = props => {
     refetchInterval: isProcessing ? 5000 : false
   });
 
-  const handleStartParsing = useCallback(async (fileIdToProcess: number, forceReprocess: boolean = false) => {
-    try {
-      await startParsing({ id: fileIdToProcess, forceReprocess });
-    } catch (e) {
-      console.log(e);
-    }
-  }, [startParsing]);
+  const handleStartParsing = useCallback(
+    async (fileIdToProcess: number, forceReprocess = false) => {
+      try {
+        await startParsing({ id: fileIdToProcess, forceReprocess });
+      } catch (e) {
+        console.log(e);
+      }
+    },
+    [startParsing]
+  );
 
   const handleReprocess = useCallback(() => {
     if (fileId !== -1) {
@@ -219,7 +222,7 @@ const DocumentModal: React.FC<DocumentModal> = props => {
     if (!documentStatus) return;
 
     const status = documentStatus.status?.toLowerCase().replace(/\s+/g, '_');
-    
+
     if (documentStatus.run_id) {
       setCurrentRunId(documentStatus.run_id);
     }
@@ -319,30 +322,43 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                   <Grid container spacing={2} height="100%">
                     <Grid item sm={6} md={7} height="100%">
                       <DocumentPreviewContainer>
-                        <Box sx={{ position: 'absolute', right: '16px', top: '8px', zIndex: 10, display: 'flex', gap: 1 }}>
-                        <Button
-                          variant="contained"
-                          sx={{
-                            color: 'white',
-                            background: 'linear-gradient(245.75deg, #456CF3 7.17%, #8D4BE9 89.9%)',
-                            ['&:hover']: { background: 'linear-gradient(245.75deg, #456CF3 7.17%, #8D4BE9 89.9%)' },
-                            '&.Mui-disabled': {
-                              color: 'rgba(0, 0, 0, 0.26)',
-                              background: 'rgba(0, 0, 0, 0.12)'
-                            }
-                          }}
-                          onClick={() => handleStartParsing(file.id, hasCompleted || hasFailed)}
-                          disabled={isProcessing || isStartingParse}
-                          startIcon={isProcessing || isStartingParse ? <CircularProgress color="inherit" size={20} /> : null}
+                        <Box
+                          sx={{ position: 'absolute', right: '16px', top: '8px', zIndex: 10, display: 'flex', gap: 1 }}
                         >
-                          {hasCompleted || hasFailed ? 'Reprocess' : 'Parse with AI'}
-                        </Button>
-                      </Box>
+                          <Button
+                            variant="contained"
+                            sx={{
+                              color: 'white',
+                              background: 'linear-gradient(245.75deg, #456CF3 7.17%, #8D4BE9 89.9%)',
+                              ['&:hover']: { background: 'linear-gradient(245.75deg, #456CF3 7.17%, #8D4BE9 89.9%)' },
+                              '&.Mui-disabled': {
+                                color: 'rgba(0, 0, 0, 0.26)',
+                                background: 'rgba(0, 0, 0, 0.12)'
+                              }
+                            }}
+                            onClick={() => handleStartParsing(file.id, hasCompleted || hasFailed)}
+                            disabled={isProcessing || isStartingParse}
+                            startIcon={
+                              isProcessing || isStartingParse ? <CircularProgress color="inherit" size={20} /> : null
+                            }
+                          >
+                            {hasCompleted || hasFailed ? 'Reprocess' : 'Parse with AI'}
+                          </Button>
+                        </Box>
                         {FileRenderer}
                       </DocumentPreviewContainer>
                     </Grid>
                     <Grid item sm={6} md={5} height="100%">
-                      <DialogTitle sx={{ bgcolor: 'primary.main', color: 'secondary.main', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} id="document-dialog-title">
+                      <DialogTitle
+                        sx={{
+                          bgcolor: 'primary.main',
+                          color: 'secondary.main',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between'
+                        }}
+                        id="document-dialog-title"
+                      >
                         <span>Document Details</span>
                         {documentStatus && <ParsingStatusBadge status={parsingStatus} />}
                       </DialogTitle>
@@ -356,10 +372,7 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                         }}
                       >
                         {hasFailed && (
-                          <ParseErrorMessage
-                            errorMessage={documentStatus?.error_message}
-                            onRetry={handleReprocess}
-                          />
+                          <ParseErrorMessage errorMessage={documentStatus?.error_message} onRetry={handleReprocess} />
                         )}
                         {hasCompleted && documentStatus?.was_truncated && (
                           <TruncationWarning

@@ -24,7 +24,7 @@ const ParsingStatusBadge: React.FC<ParsingStatusBadgeProps> = ({ status, size = 
       }
       sx={{
         fontWeight: 500,
-        fontSize: size === 'small' ? '12px' : '14px',
+        fontSize: size === 'small' ? '12px' : '14px'
       }}
     />
   );

@@ -26,7 +26,7 @@ const ParsingMetadata: React.FC<ParsingMetadataProps> = ({
   pageCount,
   correlationId,
   runId,
-  showDebugInfo = false,
+  showDebugInfo = false
 }) => {
   const hasMetadata = charCount || wordCount || pageCount;
   const hasDebugInfo = correlationId || runId;
@@ -41,14 +41,7 @@ const ParsingMetadata: React.FC<ParsingMetadataProps> = ({
     <Box sx={{ mb: 2 }}>
       {hasMetadata && (
         <Box display="flex" gap={1} flexWrap="wrap" mb={1}>
-          {pageCount && (
-            <Chip
-              size="small"
-              variant="outlined"
-              label={`${pageCount} pages`}
-              sx={{ fontSize: '12px' }}
-            />
-          )}
+          {pageCount && <Chip size="small" variant="outlined" label={`${pageCount} pages`} sx={{ fontSize: '12px' }} />}
           {charCount && (
             <Chip
               size="small"
@@ -67,7 +60,7 @@ const ParsingMetadata: React.FC<ParsingMetadataProps> = ({
           )}
         </Box>
       )}
-      
+
       {showDebugInfo && hasDebugInfo && (
         <Accordion sx={{ mt: 1, boxShadow: 'none', border: '1px solid #e0e0e0' }}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>

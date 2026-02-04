@@ -14,8 +14,8 @@ const ParseErrorMessage: React.FC<ParseErrorMessageProps> = ({ errorMessage, onR
   const userFriendlyMessage = getErrorMessageForReasonCode(reasonCode);
 
   return (
-    <Alert 
-      severity="error" 
+    <Alert
+      severity="error"
       sx={{ mb: 2 }}
       action={
         onRetry && (
@@ -25,7 +25,7 @@ const ParseErrorMessage: React.FC<ParseErrorMessageProps> = ({ errorMessage, onR
               cursor: 'pointer',
               textDecoration: 'underline',
               fontSize: '14px',
-              '&:hover': { opacity: 0.8 },
+              '&:hover': { opacity: 0.8 }
             }}
             onClick={onRetry}
           >
