@@ -47,6 +47,12 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
     - **API Endpoints**: `/api/projects/{site_id}/assumptions/facts` (get active facts), `/api/projects/{site_id}/assumptions/promotion/diff` (preview changes), `/api/projects/{site_id}/assumptions/promote` (execute promotion), `/api/projects/{site_id}/assumptions/promotions` (audit trail).
     - **Integration**: Updated `set_key` endpoint in documents router creates candidate `ProjectFact` records when document keys are accepted with file_id.
     - **Seed Script**: `dev_scripts/seed_canonical_fields.py` migrates 224 field definitions from `ai_parsing_config.json` to `canonical_fields` table.
+- **Extraction Registry & Prompt Studio**: Scalable system for dynamic document type and field configuration without code changes.
+    - **Database Schema**: `extraction_document_types` (parsable doc types with categories), `extraction_schema_versions` (versioned field schemas), `extraction_schema_version_fields` (junction linking schemas to canonical_fields), `extraction_prompt_templates` (versioned LLM prompts per doc type).
+    - **Design Pattern**: Each document type has 1:many schema versions and prompt templates, with only one active version per type (enforced by partial unique index). Schema versions link to canonical_fields via junction table with is_required and extraction_priority.
+    - **Pipeline Integration**: `AIParsingHandler` now uses `ExtractionPipelineService` with registry-first, config-file-fallback pattern. Dynamic prompt building from registry templates.
+    - **Admin API**: 15+ endpoints at `/api/admin/extraction/` for managing canonical fields, document types, schema versions, and prompt templates. All endpoints admin-gated.
+    - **Seed Script**: `dev_scripts/seed_extraction_registry.py` migrates ai_parsing_config.json to registry (17 doc types, 17 schema v1s, 17 prompt v1s, 442 field links).
 
 ## External Dependencies
 - **PostgreSQL**: Primary relational database.
