@@ -17,8 +17,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.db.session import SessionLocal
-from app.models.project_facts import CanonicalField
+from app.db.session import SessionFactory
+from app.db.base import CanonicalField  # noqa: F401 - Imports all models via base.py
 
 
 def normalize_key_name(display_name: str) -> str:
@@ -56,13 +56,21 @@ def seed_canonical_fields():
         for key in keys:
             all_keys.add(key)
     
-    db = SessionLocal()
+    db = SessionFactory()
     try:
         created_count = 0
         skipped_count = 0
+        processed_names = set()
         
         for display_name in sorted(all_keys):
             name = normalize_key_name(display_name)
+            
+            if name in processed_names:
+                print(f"SKIP: {name} (duplicate in input)")
+                skipped_count += 1
+                continue
+            processed_names.add(name)
+            
             field_type = infer_field_type(display_name)
             
             existing = db.query(CanonicalField).filter(
@@ -70,7 +78,7 @@ def seed_canonical_fields():
             ).first()
             
             if existing:
-                print(f"SKIP: {name} already exists")
+                print(f"SKIP: {name} already exists in DB")
                 skipped_count += 1
                 continue
             
@@ -81,6 +89,7 @@ def seed_canonical_fields():
                 is_active=True,
             )
             db.add(field)
+            db.flush()  # Flush each record to catch conflicts immediately
             print(f"CREATE: {name} ({field_type})")
             created_count += 1
         
