@@ -1,0 +1,218 @@
+You are the Replit agent working in this repo. The Data Room versioning + Promote-to-Assumptions workflow is being implemented (Prompt #1). Now implement Prompt #2: the scalable, non-dev “Extraction Registry + Prompt Studio + Schema Versioning + Reprocess” system that eliminates hardcoding new document types/fields.
+
+GOAL
+Make it so adding a new document type, new fields, or improving prompts does NOT require code changes. The system must support:
+- Document type registry
+- Canonical fields registry (typed)
+- Schema versions per document type (which fields to extract, required flags, ordering)
+- Prompt templates per doc type (versioned, activate/deactivate, model settings)
+- One-click reprocess for a document version using a selected schema/prompt version
+- Evidence-ready extraction result contract (page/snippet/anchor_text at minimum; bbox optional)
+
+HARD REQUIREMENTS (CONTRACT)
+1) Registry is DB-backed from Day 1 (no more static-only ai_parsing_config.json as the authoritative source).
+2) ai_parsing_config.json can be used ONLY as an initial seed import.
+3) Extraction runner must build prompts dynamically from:
+   - active schema version (fields)
+   - active prompt template (system+extraction template)
+   - document text (per-page)
+4) New doc types/fields must be creatable via Admin UI and used immediately by parsing jobs.
+5) Must support iterative improvement:
+   - multiple prompt versions per doc type
+   - activate one as current
+   - reprocess older versions against newer prompts/schemas
+6) Must remain compatible with the existing Data Room UX:
+   - preview shows extracted fields (proposed)
+   - accept/override persists DocumentKeys and candidate ProjectFacts
+   - promote gate remains unchanged
+
+SCOPE OF THIS BUILD
+A) Database schema + models + CRUD
+B) Admin endpoints (backend) + minimal Admin UI pages (frontend) to manage registry
+C) Integrate registry into extraction pipeline (job creation, prompt building, parsing)
+D) Reprocess workflow (backend + UI hook)
+E) Replace any remaining “hardcoded mapping” with registry mapping
+
+A) DATABASE / MODELS (CREATE IF NOT ALREADY DONE BY PROMPT #1)
+If these tables already exist, reconcile naming/columns; do not duplicate.
+1) canonical_fields
+- id
+- name (unique internal key; snake_case)
+- display_name
+- field_type (text/date/currency/number/percent/bool/json)
+- validation_regex (nullable)
+- description (nullable)
+- is_active bool
+- created_at/updated_at
+2) extraction_document_types
+- id
+- name (unique; must map to Document.name enum OR a new “document_type” field on documents)
+- display_name
+- category (legal/technical/financial/other)
+- is_parsable bool
+- is_active bool
+- created_at/updated_at
+3) extraction_schema_versions
+- id
+- document_type_id FK
+- version int
+- is_active bool (only one active per doc type)
+- notes
+- created_by_id
+- created_at
+4) extraction_schema_version_fields (junction)
+- schema_version_id
+- canonical_field_id
+- is_required bool
+- extraction_priority int
+- UNIQUE(schema_version_id, canonical_field_id)
+5) extraction_prompt_templates
+- id
+- document_type_id FK
+- version int
+- is_active bool (only one active per doc type)
+- system_prompt text
+- extraction_prompt text (must include {{FIELD_LIST}} and {{DOCUMENT_TEXT}}; allow {{DOC_TYPE}} and {{INSTRUCTIONS}})
+- model_name string default 'claude-sonnet-4-5'
+- temperature float default 0.0
+- max_tokens int default 8000
+- notes
+- created_by_id
+- created_at
+6) document_parse_jobs updates (if not present)
+- document_type_id, schema_version_id, prompt_template_id (snapshot bindings)
+- raw_llm_response
+- parsed_result JSONB
+- status state machine
+- retries/max_retries
+- error fields
+- text_extraction method metadata
+
+B) SEED IMPORT (ONE-TIME)
+Create a seed script that:
+- Reads configs/ai_parsing_config.json
+- Creates document types (if absent) and canonical_fields (normalized)
+- Creates schema version v1 per doc type
+- Creates prompt template v1 per doc type with a sensible default template
+- Marks v1 active
+Provide a safe idempotent seed (re-runnable without duplicates).
+Place in dev_scripts/seed_extraction_registry.py and document how to run it.
+
+C) ADMIN BACKEND ENDPOINTS (ROLE-GATED)
+Create router: /api/admin/extraction/*
+Role gate: System User OR Company Admin Full (same gating used for lifecycle transitions/promotion).
+Endpoints:
+1) canonical_fields
+- GET list (filter active)
+- POST create
+- PATCH update
+- POST /:id/deactivate (or PATCH is_active=false)
+2) document_types
+- GET list
+- POST create
+- PATCH update
+- POST /:id/activate and /:id/deactivate
+3) schema_versions
+- GET by document_type_id
+- POST create new version
+- POST /:id/activate (deactivate previous active)
+- PATCH notes/metadata
+- POST /:id/fields set fields (bulk upsert of junction with required/priority)
+4) prompt_templates
+- GET by document_type_id
+- POST create new version
+- POST /:id/activate
+- PATCH template + model settings
+Return stable DTOs for frontend.
+
+D) ADMIN UI (MINIMAL BUT USABLE)
+Add a minimal Admin section in the frontend (under Settings or Admin; follow existing patterns).
+Pages:
+1) Extraction Registry Dashboard
+- list doc types
+- click doc type → manage
+2) Doc Type Detail
+Tabs:
+- Schema
+  - shows active schema version + fields list (required + priority)
+  - “Create New Version” (clone from active)
+  - drag/drop reorder or numeric priority edit
+  - toggle required
+  - activate version button
+- Prompts
+  - shows active prompt + versions list
+  - “Create New Version” (clone)
+  - edit system_prompt/extraction_prompt/model settings
+  - activate version button
+- Fields
+  - searchable list of canonical_fields
+  - create field modal (name/display/type/validation)
+  - attach/detach to schema version
+Keep UX simple; correctness > beauty.
+
+E) EXTRACTION PIPELINE INTEGRATION
+Update job creation / parsing to use registry:
+1) Determine document_type_id for a file version:
+- Prefer: Document.name enum maps to extraction_document_types.name
+- If mismatched, add a document.document_type_override_id or a mapping table; but keep minimal.
+2) On parse trigger:
+- load active schema version + active prompt template for the doc type
+- bind job.schema_version_id and job.prompt_template_id
+3) PromptBuilder:
+- FIELD_LIST must be produced from canonical_fields display_name + type + required marker
+Example FIELD_LIST line format:
+- effective_date (date, required): Effective Date
+- lessor_entity_name (text): Lessor (Landlord) Entity Name
+4) ExtractionRunner:
+- pass per-page text if possible; otherwise include page markers "=== Page N ==="
+- enforce strict JSON output format with evidence fields (page/snippet/anchor_text; bbox optional)
+5) ResultMapper:
+- map output items to canonical_field_id (prefer canonical field keys rather than display strings)
+- store result in AIParsingResult.result AND in job.parsed_result (whichever the current code expects)
+- ensure Data Room preview continues to work
+
+F) REPROCESS WORKFLOW
+Add endpoint:
+POST /api/projects/:siteId/data-room/documents/:documentId/versions/:fileId/reprocess
+Body options:
+{
+  "schema_version_id": optional,
+  "prompt_template_id": optional,
+  "force": boolean default false
+}
+Rules:
+- If schema/prompt omitted: use current active for that doc type
+- Create a new document_parse_job row (do not overwrite old job row)
+- Create a new AIParsingResult version record linked to fileId (or update with history; choose one and be consistent)
+- The Data Room version detail view must allow selecting which extraction run to view if multiple exist (simple dropdown “Latest run” is fine)
+- Reprocess does NOT auto-accept keys and does NOT auto-promote assumptions
+- If force=false and a completed job exists for same bindings, return existing job id (idempotent)
+
+G) DE-HARDCODE MAPPINGS
+Remove any hardcoded logic that ties extraction keys to special document types (e.g. PVsyst-specific code paths).
+All “which fields exist” and “which are required” must come from the registry.
+If downstream expects certain keys (production estimates), those keys must be represented as canonical_fields and surfaced via project_facts once promoted.
+
+H) QUALITY / TESTS
+Add at least:
+1) Seed script test: running twice doesn’t duplicate rows.
+2) Registry activation test: only one active schema/prompt per doc type.
+3) Parse job binding test: job stores schema_version_id + prompt_template_id.
+4) Reprocess test: creates new job; does not mutate existing acceptance/promotions.
+5) Admin permission test: non-admin cannot create/activate registry items.
+
+OUTPUT / REPORTING
+When done, output:
+- Schema changes (migrations list)
+- New tables and their purpose
+- New backend endpoints
+- New frontend routes/pages
+- How to seed registry
+- How to add a new doc type + fields without code
+- How to reprocess a doc version and verify preview updates
+
+IMPORTANT IMPLEMENTATION NOTES
+- Keep compatibility with existing Data Room “proposed → accept/override → candidate facts → promote” chain.
+- Evidence: page + snippet + anchor_text is minimum viable. Bounding boxes can be deferred, but do not block evidence navigation.
+- Keep everything Replit-native: no GCS, no external Cloud Functions, no local key files.
+- Use existing patterns: RBAC decorators, React Query, ModuleContainer layouts, routing conventions already in this repo.

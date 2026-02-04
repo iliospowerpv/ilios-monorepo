@@ -33,3 +33,9 @@ from app.models.finance import (
 )
 from app.models.sales import SalesStateTransition
 from app.models.project_facts import CanonicalField, ProjectFact, AssumptionPromotion
+from app.models.extraction_registry import (
+    ExtractionDocumentType,
+    ExtractionSchemaVersion,
+    ExtractionSchemaVersionField,
+    ExtractionPromptTemplate,
+)
