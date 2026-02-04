@@ -29,6 +29,7 @@ import SearchAndActions from '../../../../../../components/common/tables/compone
 import { useNotify } from '../../../../../../contexts/notifications/notifications';
 import RecursiveAccordion from '../../../../../../modules/due-diligence/pages/Site/tabs/Diligence/components/RecursiveAccordion/RecursiveAccordion';
 import DocumentList from '../../../../../../modules/due-diligence/pages/DueDiligenceDocument/components/DocumentList';
+import ProjectSummaryPanel from './components/ProjectSummaryPanel';
 
 const siteDiligenceQuery = (siteId: number, enabled = true) => ({
   queryKey: ['site', 'diligence', { siteId }],
@@ -243,6 +244,8 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
           {focusState.notFoundMessage}
         </Alert>
       )}
+
+      <ProjectSummaryPanel siteId={numericSiteId} companyId={siteDetails.company.id} />
 
       <Box display="flex" alignItems="center" gap={1} mb={3}>
         <FolderOpenIcon color="primary" />

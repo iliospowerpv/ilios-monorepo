@@ -29,6 +29,16 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
     - **Quality Guardrails & Resource Limits**: Enforces configurable settings for minimum text characters, maximum file size, maximum PDF pages, and maximum characters sent to the LLM. It includes `ParsingReasonCode` enum for machine-readable failure identifiers and provides extraction metadata.
 - **Storage Service Abstraction**: Replit-native storage architecture with an abstract `StorageService` interface, supporting `ReplitStorageService`, optional `GCSStorageService`, and `HybridStorageService` for migration.
 - **Data Room Acceptance Safety & Parse Run History**: Implements a parse run history panel for files and enforces acceptance safety rules, validating `run_id` and run status before allowing bulk acceptance of extracted data.
+- **Project Summary Panel (Embedded in Data Room)**:
+    - **Location**: Top of Project Hub → Data Room page (`AssetManagementSiteDetails/tabs/DataRoom/DataRoom.tsx`)
+    - **Component**: `ProjectSummaryPanel` - Collapsible panel providing cross-document analysis
+    - **Features**:
+        - **Terms & Values Section**: Roll-up of extracted agreement terms with document type selector (reuses agreement types API)
+        - **Cross-Document Checks Section**: Co-terminus check status with summary chips (Equal/Not Equal/N/A counts), Run/Rerun button
+        - **Collapsible State**: Persists expand/collapse per user+project via localStorage (`project-summary-expanded-{siteId}`)
+        - **Permission Gating**: Hidden entirely if user lacks `diligence:view`; Run/Rerun button requires `diligence:edit`
+    - **APIs Used**: `/agreements/`, `/agreements/{id}/terms`, `/co-terminus/check`, `/co-terminus/status`
+    - **No New Routes**: Panel is embedded, not a separate page
 
 ## External Dependencies
 - **PostgreSQL**: Primary relational database.
