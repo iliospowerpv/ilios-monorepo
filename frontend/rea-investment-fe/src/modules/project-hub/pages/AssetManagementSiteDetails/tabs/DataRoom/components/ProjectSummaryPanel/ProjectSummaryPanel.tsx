@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import Box from '@mui/material/Box';
@@ -128,7 +128,10 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
     enabled: hasDiligenceView
   });
 
-  const documentsWithFiles = extractDocumentsWithFiles(documentsData?.items ?? []);
+  const documentsWithFiles = useMemo(
+    () => extractDocumentsWithFiles(documentsData?.items ?? []),
+    [documentsData?.items, extractDocumentsWithFiles]
+  );
 
   const { data: termData, isLoading: isLoadingTermData } = useQuery({
     queryFn: async () => {
