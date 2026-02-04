@@ -30,22 +30,42 @@ def combine_user_ai_parsing_results(
         key.name: {"value": key.value, "updated_at": key.updated_at, "id": key.id} for key in document.keys
     }
     # ensure parsing record exists, parsing status is 'completed' and result is not empty
-    ai_parsing_result = (
-        due_diligence_file.latest_ai_result.result
-        if due_diligence_file
+    ai_parsing_result = []
+    if (
+        due_diligence_file
         and due_diligence_file.latest_ai_result
         and due_diligence_file.latest_ai_result.status == FileParsingStatuses.completed
-        and due_diligence_file.latest_ai_result.result
-        else []
-    )
+    ):
+        latest = due_diligence_file.latest_ai_result
+        # Check for new format (parsed_result with fields array) first
+        if latest.parsed_result and isinstance(latest.parsed_result, dict):
+            fields = latest.parsed_result.get("fields", [])
+            # Convert new format to old format for compatibility
+            ai_parsing_result = [
+                {
+                    "key_item": f.get("field_key", ""),
+                    "value": f.get("value"),
+                    "poison_pill": None,
+                    "poison_pill_detailed": None,
+                    "is_poison_pill": False,
+                    "legal_term": None,
+                    "evidence": f.get("evidence"),  # preserve evidence for display
+                }
+                for f in fields
+            ]
+        # Fallback to old format (result column)
+        elif latest.result:
+            ai_parsing_result = latest.result
+    
     existing_ai_keys = {
         key["key_item"]: {
             "ai_value": key["value"],
-            "poison_pill": key["poison_pill"],
-            "poison_pill_detailed": key["poison_pill_detailed"],
+            "poison_pill": key.get("poison_pill"),
+            "poison_pill_detailed": key.get("poison_pill_detailed"),
             # cast to bool since AI respond with 0/1
             "is_poison_pill": bool(key.get("is_poison_pill", False)),
-            "legal_term": key["legal_term"],
+            "legal_term": key.get("legal_term"),
+            "evidence": key.get("evidence"),  # include evidence if available
         }
         for key in ai_parsing_result
     }
