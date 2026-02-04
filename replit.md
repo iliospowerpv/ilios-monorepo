@@ -53,6 +53,23 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
             - `enable_llm_stub()` raises `RuntimeError` if called in production.
             - `is_llm_stub_enabled()` returns False in production regardless of env var.
             - Pytest detection: `PYTEST_CURRENT_TEST` env var auto-allows stub.
+    - **Phase 3 Quality Guardrails & Resource Limits**: Prevents low-quality or oversized inputs from causing cost/latency spikes:
+        - **Configurable Settings** (in `app/settings.py`):
+            - `parsing_min_text_chars`: Minimum extracted chars (default: 500). Below threshold suggests scanned/image PDF.
+            - `parsing_max_file_size_mb`: Maximum file size in MB (default: 25).
+            - `parsing_max_pdf_pages`: Maximum PDF pages (default: 200).
+            - `parsing_max_chars_to_llm`: Maximum chars sent to LLM (default: 200,000). Text truncated beyond this.
+        - **Reason Codes** (`ParsingReasonCode` enum): Machine-readable failure identifiers stored in `error_message` with `[reason_code]` prefix:
+            - `file_too_large`: File exceeds max size limit.
+            - `too_many_pages`: PDF exceeds max page limit.
+            - `insufficient_text_extracted`: Extracted text below minimum threshold (suggests OCR needed).
+            - `unsupported_file_type`: File extension not supported.
+            - `text_extraction_failed`: PDF/DOCX parsing error.
+            - `llm_call_failed`: OpenAI API call failed.
+            - `no_extraction_config`: No extraction config found for document type.
+            - `storage_error`: File download from storage failed.
+        - **Extraction Metadata**: Successful parses include `char_count`, `word_count`, `page_count`, `was_truncated`, `truncated_char_count` in response metadata.
+        - **Truncation Behavior**: Text exceeding `parsing_max_chars_to_llm` is truncated at nearest newline boundary with warning logged.
 - **Storage Service Abstraction**: Replit-native storage architecture with an abstract `StorageService` interface, `ReplitStorageService` (default), optional `GCSStorageService`, and `HybridStorageService` for migration support. Utilizes new direct upload and download endpoints.
 
 ## External Dependencies
