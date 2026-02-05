@@ -1,0 +1,75 @@
+USER ROLES – CLOSURE SPRINT (Finalization Only, No New Features)
+
+Context:
+We have implemented the canonical effective-access resolver (fail-closed), role profiles, module permission guards, and removed legacy Settings mutation endpoints. Before moving forward with Finance integration, we must close the User Roles sprint by eliminating remaining ambiguity, legacy assumptions, and any UI/backend inconsistencies.
+
+Hard Constraints (Non-Negotiable):
+- Do NOT introduce new roles, new permission models, or redesign the auth system.
+- Do NOT change the Portfolio → Company → Project hierarchy.
+- Do NOT modify Data Room parsing/promotion, PDF viewer, Contacts/Organizations work, or other active sprints except where required to remove role-related inconsistencies.
+- Any UI gating must be backed by backend enforcement; backend remains authoritative.
+- Maintain fail-closed semantics everywhere (missing context/permissions must DENY).
+
+Goal:
+Deliver a “Roles Are Closed” state: roles + permissions are a stable contract that Finance and future work can rely on.
+
+Deliverables:
+1) A single canonical Role & Scope Contract documented in replit.md
+2) Code audit cleanup: remove legacy/duplicate role checks and any authorization fallbacks outside canonical guards/resolver
+3) Test coverage that proves cross-scope denial and role profile enforcement
+4) A short final report: what changed, files touched, and why
+
+Tasks:
+
+A) Role & Scope Contract (Documentation)
+1) In replit.md, create a section: “Roles & Scope Contract (Closed)”
+Include:
+- Base roles: company_admin, contributor, read_only
+- Role profiles: augment base roles; module permissions are intersected (restrict-only)
+- Scope semantics table (Portfolio vs Company vs Project) for:
+  - View entity
+  - Edit metadata
+  - Manage membership
+  - Configure integrations
+  - Operational module mutations (Diligence/Assets/Finance)
+- Explicit non-goals:
+  - roles do NOT imply responsibility/ownership/workflow status
+  - contacts/organizations do NOT grant access
+
+B) Backend Authorization Audit (Code)
+2) Search and remove/replace any authorization logic that bypasses canonical systems, including patterns like:
+- if user.role == ...
+- settings:* role checks
+- is_admin shortcuts not backed by guards
+- legacy fallback checks for entity access
+Replace with:
+- get_authorized_* entity checks (resolver authoritative)
+- require_module_permission / require_module_permission_any_context (as appropriate)
+3) Confirm all mutation endpoints across migrated modules are guarded with module:edit + entity authorization where applicable.
+4) Confirm missing context never allows access (no undetermined fallback remains).
+
+C) Frontend Consistency Audit (UI vs Backend)
+5) Audit Portfolio Admin, Diligence/Data Room, Assets, Finance (if present) for UI-only gating:
+- Buttons may be hidden, but backend must still enforce.
+- Remove misleading UI cues that suggest access exists when backend will deny.
+(Do not redesign UI; only fix misleading gating or miswired permissions.)
+
+D) Tests (Must Add / Confirm Passing)
+6) Add/confirm integration tests for cross-scope denial:
+- Portfolio-level access does NOT allow company/project mutation unless explicitly granted
+- Company-level contributor cannot manage members or configure integrations
+- Project-only user cannot access sibling sites or company-wide lists unless allowed by any_context patterns
+- Read-only user denied all mutations
+7) Add/confirm tests for role profile restrict-only semantics:
+- base role grants view, but role_profile removes Finance => denied (missing_module_permission)
+- multi-grant intersection (portfolio+company) denies when any applicable grant denies
+8) Add tests asserting standardized 403 payload shape for at least 3 representative endpoints across different modules.
+
+E) Final Verification Checklist (Must Report)
+9) Provide a final verification summary:
+- List endpoints audited (at least top-risk ones: members endpoints, finance/assets/diligence mutations)
+- Confirm no remaining legacy role checks exist (grep results or explanation)
+- Confirm all tests pass
+- List of files changed
+
+Proceed now. Do not start Finance work until this closure sprint is complete and reported.
