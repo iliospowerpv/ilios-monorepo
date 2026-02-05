@@ -1,0 +1,28 @@
+Uncaught runtime errors:
+×
+ERROR
+Cannot read properties of undefined (reading 'length')
+TypeError: Cannot read properties of undefined (reading 'length')
+    at areHookInputsEqual (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:470618:42)
+    at updateEffectImpl (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:471323:15)
+    at updateImperativeHandle (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:471408:14)
+    at Object.useImperativeHandle (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:472014:18)
+    at Object.useImperativeHandle (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:502752:25)
+    at https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:40195:48
+    at renderWithHooks (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:470667:22)
+    at updateForwardRef (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:473236:24)
+    at beginWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:475283:20)
+    at HTMLUnknownElement.callCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:460263:18)
+ERROR
+Cannot read properties of undefined (reading 'length')
+TypeError: Cannot read properties of undefined (reading 'length')
+    at areHookInputsEqual (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:470618:42)
+    at updateEffectImpl (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:471323:15)
+    at updateImperativeHandle (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:471408:14)
+    at Object.useImperativeHandle (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:472014:18)
+    at Object.useImperativeHandle (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:502752:25)
+    at https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:40195:48
+    at renderWithHooks (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:470667:22)
+    at updateForwardRef (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:473236:24)
+    at beginWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:475283:20)
+    at HTMLUnknownElement.callCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:460263:18)
