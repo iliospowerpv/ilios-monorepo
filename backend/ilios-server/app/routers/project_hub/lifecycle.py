@@ -239,10 +239,19 @@ def mark_agreement_uploaded(
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db: Session = Depends(get_session),
 ):
-    """Mark signed agreement as uploaded by linking to document."""
+    """Mark signed agreement as uploaded by linking to document.
+    
+    Requires Company Admin or Superuser role.
+    """
     site = db.query(Site).filter(Site.id == project_id).first()
     if not site:
         raise HTTPException(status_code=404, detail="Project not found")
+    
+    if not _is_admin_or_superuser(db, current_user, site.company_id, project_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Only Company Admin or Superuser can mark signed agreement as uploaded"
+        )
     
     site.signed_agreement_status = "uploaded"
     site.signed_agreement_document_id = document_id
