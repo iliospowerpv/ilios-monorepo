@@ -51,6 +51,72 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
     - **APIs Used**: `/agreements/`, `/agreements/{id}/terms`, `/co-terminus/check`, `/co-terminus/status`, `/due-diligence/sites/{site_id}/summary-stats`
     - **No New Routes**: Panel is embedded, not a separate page
 
+## Roles & Scope Contract (Closed)
+This section defines the stable authorization contract that all modules (Finance, Diligence, Assets, etc.) rely on. No new roles or permission models will be introduced without explicit approval.
+
+### Base Roles
+The system uses exactly three base roles, ordered by restrictiveness:
+| Role | Level | Description |
+|------|-------|-------------|
+| `read_only` | Least privileged | Can view permitted modules; cannot make changes |
+| `contributor` | Mid-tier | Can view and edit permitted modules |
+| `company_admin` | Most privileged | Full access to permitted modules; can manage memberships |
+
+### Role Profiles
+Role profiles augment base roles by providing **restrict-only** module permission overrides. They are used for deeper stakeholder definitions (e.g., "Investor" profile that restricts access to only Reporting and Finance modules).
+
+**Key Rules**:
+- Role profiles can only **narrow** permissions, never expand them
+- Permissions are computed via **intersection** across all applicable grants
+- If a role profile restricts a module, access is denied even if the base role would allow it
+- Role profile is optional; if not set, base role defaults apply
+
+### Access Grant Hierarchy
+Access grants follow the Portfolio → Company → Project hierarchy:
+
+| Grant Level | Stored In | Covers |
+|-------------|-----------|--------|
+| Portfolio | `user_portfolio_access` | All companies and projects within the portfolio |
+| Company | `user_company_access` | Single company and all its projects |
+| Project | `user_project` | Single project only |
+
+**Resolution Rules**:
+1. Collect all applicable grants for the target resource
+2. `effective_base_role` = **MOST RESTRICTIVE** role among applicable grants
+3. `effective_module_permissions` = **INTERSECTION** of permissions across grants
+4. If any grant denies a module, access is denied (restrict-only semantics)
+
+### Scope Semantics Table
+| Action | Portfolio Level | Company Level | Project Level |
+|--------|-----------------|---------------|---------------|
+| View entity | Via portfolio grant | Via company or portfolio grant | Via project, company, or portfolio grant |
+| Edit metadata | company_admin role + module:edit | company_admin role + module:edit | company_admin role + module:edit |
+| Manage membership | company_admin role | company_admin role | company_admin role |
+| Configure integrations | company_admin role + settings permission | company_admin role + settings permission | N/A (project-level inherits company) |
+| Module mutations (Diligence/Assets/Finance) | Requires module:edit + entity access | Requires module:edit + entity access | Requires module:edit + entity access |
+
+### Module Permission Keys
+| Module Key | Description |
+|------------|-------------|
+| `Asset Management` | Project hub, site management, asset overview |
+| `Finance` | Budgets, vendors, actuals, obligations |
+| `Diligence` | Data room, document parsing, agreements |
+| `Reporting` | Reports, analytics, dashboards |
+| `O&M` | Operations and maintenance, alerts |
+
+### Canonical Authorization Components
+- **Resolver**: `app/helpers/access_resolver.py` - `resolve_effective_access()` is the single source of truth
+- **Guards**: `app/helpers/permission_guards.py` - `require_module_permission()` and `require_module_permission_any_context()`
+- **Error Format**: All 403 responses include `reason_code`, `module_key`, `action`, and `grant_sources`
+
+### Explicit Non-Goals
+- **Roles do NOT imply responsibility/ownership/workflow status**: A "contributor" role does not mean the user is assigned to a task; use task assignments separately
+- **Contacts/Organizations do NOT grant access**: The Contacts system is an address book; contact records have no bearing on authorization
+- **No cascading permissions**: Access is explicit per grant; portfolio access covers child entities, but child grants do not affect parent access
+
+### System User Bypass
+Users with `is_system_user=True` bypass all permission checks. This is reserved for internal service accounts and admin operations.
+
 ## External Dependencies
 - **PostgreSQL**: Primary relational database.
 - **Redis**: Used for caching and session management.
