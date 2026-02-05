@@ -54,7 +54,7 @@ import {
   TruncationWarning,
   ParsingMetadata
 } from '../../../../../components/common/ParsingStatus';
-import PDFViewer, { PDFViewerRef } from './PDFViewer';
+import PDFViewer from './PDFViewer';
 
 dayjs.extend(utc);
 
@@ -417,7 +417,7 @@ const DocumentModal: React.FC<DocumentModal> = props => {
     }
   }, [notify, fileTermKeysDataLoadingError]);
 
-  const pdfViewerRef = useRef<PDFViewerRef>(null);
+  const pdfViewerRef = useRef<PDFViewer>(null);
 
   const getFileType = (filename: string): string | undefined => {
     const ext = filename.split('.').pop()?.toLowerCase();

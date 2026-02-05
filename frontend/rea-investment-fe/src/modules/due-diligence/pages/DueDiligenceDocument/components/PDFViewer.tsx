@@ -1,8 +1,8 @@
-import React, { useCallback, useMemo, useRef } from 'react';
+import React from 'react';
 import { Viewer, Worker } from '@react-pdf-viewer/core';
-import { pageNavigationPlugin } from '@react-pdf-viewer/page-navigation';
-import { searchPlugin, Match } from '@react-pdf-viewer/search';
-import { highlightPlugin } from '@react-pdf-viewer/highlight';
+import { pageNavigationPlugin, PageNavigationPlugin } from '@react-pdf-viewer/page-navigation';
+import { searchPlugin, SearchPlugin, Match } from '@react-pdf-viewer/search';
+import { highlightPlugin, HighlightPlugin } from '@react-pdf-viewer/highlight';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/page-navigation/lib/styles/index.css';
 import '@react-pdf-viewer/search/lib/styles/index.css';
@@ -26,67 +26,57 @@ const ViewerWrapper = Viewer as React.ComponentType<{
   onDocumentLoad?: () => void;
 }>;
 
-const PDFViewerComponent = React.forwardRef<PDFViewerRef, PDFViewerProps>((props, ref) => {
-  const { fileUrl, onReady } = props;
+class PDFViewerComponent extends React.Component<PDFViewerProps> implements PDFViewerRef {
+  private pageNavigationPluginInstance: PageNavigationPlugin;
+  private searchPluginInstance: SearchPlugin;
+  private highlightPluginInstance: HighlightPlugin;
 
-  const pageNavigationPluginInstance = useMemo(() => pageNavigationPlugin(), []);
-  const { jumpToPage: navigateToPage } = pageNavigationPluginInstance;
+  constructor(props: PDFViewerProps) {
+    super(props);
+    this.pageNavigationPluginInstance = pageNavigationPlugin();
+    this.searchPluginInstance = searchPlugin();
+    this.highlightPluginInstance = highlightPlugin();
+  }
 
-  const searchPluginInstance = useMemo(() => searchPlugin(), []);
-  const { highlight, clearHighlights, jumpToMatch } = searchPluginInstance;
+  jumpToPage = (page: number): void => {
+    const { jumpToPage: navigateToPage } = this.pageNavigationPluginInstance;
+    navigateToPage(page - 1);
+  };
 
-  const highlightPluginInstance = useMemo(() => highlightPlugin(), []);
-
-  const navigateToPageRef = useRef(navigateToPage);
-  navigateToPageRef.current = navigateToPage;
-
-  const highlightRef = useRef(highlight);
-  highlightRef.current = highlight;
-
-  const clearHighlightsRef = useRef(clearHighlights);
-  clearHighlightsRef.current = clearHighlights;
-
-  const jumpToMatchRef = useRef(jumpToMatch);
-  jumpToMatchRef.current = jumpToMatch;
-
-  const jumpToPage = useCallback((page: number) => {
-    navigateToPageRef.current(page - 1);
-  }, []);
-
-  const searchAndHighlight = useCallback((text: string) => {
+  searchAndHighlight = (text: string): void => {
     if (!text || text.trim().length === 0) return;
-    clearHighlightsRef.current();
+    const { highlight, clearHighlights, jumpToMatch } = this.searchPluginInstance;
+    clearHighlights();
     const searchText = text.length > 50 ? text.substring(0, 50) : text;
-    highlightRef
-      .current({
-        keyword: searchText,
-        matchCase: false
-      })
-      .then((matches: Match[]) => {
-        if (matches.length > 0) {
-          jumpToMatchRef.current(0);
-        }
-      });
-  }, []);
+    highlight({
+      keyword: searchText,
+      matchCase: false
+    }).then((matches: Match[]) => {
+      if (matches.length > 0) {
+        jumpToMatch(0);
+      }
+    });
+  };
 
-  React.useImperativeHandle(ref, () => ({
-    jumpToPage,
-    searchAndHighlight
-  }));
+  handleDocumentLoad = (): void => {
+    this.props.onReady?.();
+  };
 
-  return (
-    <Box sx={{ height: '100%', width: '100%', overflow: 'hidden' }}>
-      <WorkerWrapper workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-        <ViewerWrapper
-          fileUrl={fileUrl}
-          plugins={[pageNavigationPluginInstance, searchPluginInstance, highlightPluginInstance]}
-          onDocumentLoad={() => onReady?.()}
-        />
-      </WorkerWrapper>
-    </Box>
-  );
-});
+  render(): React.ReactNode {
+    const { fileUrl } = this.props;
 
-PDFViewerComponent.displayName = 'PDFViewer';
+    return (
+      <Box sx={{ height: '100%', width: '100%', overflow: 'hidden' }}>
+        <WorkerWrapper workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+          <ViewerWrapper
+            fileUrl={fileUrl}
+            plugins={[this.pageNavigationPluginInstance, this.searchPluginInstance, this.highlightPluginInstance]}
+            onDocumentLoad={this.handleDocumentLoad}
+          />
+        </WorkerWrapper>
+      </Box>
+    );
+  }
+}
 
 export default PDFViewerComponent;
