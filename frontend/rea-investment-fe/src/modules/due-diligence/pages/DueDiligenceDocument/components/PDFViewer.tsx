@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Viewer, Worker } from '@react-pdf-viewer/core';
-import { pageNavigationPlugin, PageNavigationPlugin } from '@react-pdf-viewer/page-navigation';
-import { searchPlugin, SearchPlugin, Match } from '@react-pdf-viewer/search';
-import { highlightPlugin, HighlightPlugin } from '@react-pdf-viewer/highlight';
+import { pageNavigationPlugin } from '@react-pdf-viewer/page-navigation';
+import { searchPlugin, Match } from '@react-pdf-viewer/search';
+import { highlightPlugin } from '@react-pdf-viewer/highlight';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/page-navigation/lib/styles/index.css';
 import '@react-pdf-viewer/search/lib/styles/index.css';
@@ -11,6 +11,9 @@ import Box from '@mui/material/Box';
 
 interface PDFViewerProps {
   fileUrl: string;
+  targetPage?: number;
+  targetSearchText?: string;
+  navigationTrigger?: number;
   onReady?: () => void;
 }
 
@@ -19,64 +22,83 @@ export interface PDFViewerRef {
   searchAndHighlight: (text: string) => void;
 }
 
-const WorkerWrapper = Worker as React.ComponentType<{ workerUrl: string; children: React.ReactNode }>;
+const WorkerWrapper = Worker as React.ComponentType<{
+  workerUrl: string;
+  children: React.ReactNode;
+}>;
 const ViewerWrapper = Viewer as React.ComponentType<{
   fileUrl: string;
   plugins: unknown[];
+  initialPage?: number;
   onDocumentLoad?: () => void;
 }>;
 
-class PDFViewerComponent extends React.Component<PDFViewerProps> implements PDFViewerRef {
-  private pageNavigationPluginInstance: PageNavigationPlugin;
-  private searchPluginInstance: SearchPlugin;
-  private highlightPluginInstance: HighlightPlugin;
+const PDFViewerComponent: React.FC<PDFViewerProps> = ({
+  fileUrl,
+  targetPage,
+  targetSearchText,
+  navigationTrigger,
+  onReady
+}) => {
+  const [isDocumentReady, setIsDocumentReady] = useState(false);
 
-  constructor(props: PDFViewerProps) {
-    super(props);
-    this.pageNavigationPluginInstance = pageNavigationPlugin();
-    this.searchPluginInstance = searchPlugin();
-    this.highlightPluginInstance = highlightPlugin();
-  }
+  // Memoize plugin instances to ensure they are created once per component mount
+  const pageNavigationPluginInstance = useMemo(() => pageNavigationPlugin(), []);
+  const searchPluginInstance = useMemo(() => searchPlugin(), []);
+  const highlightPluginInstance = useMemo(() => highlightPlugin(), []);
 
-  jumpToPage = (page: number): void => {
-    const { jumpToPage: navigateToPage } = this.pageNavigationPluginInstance;
-    navigateToPage(page - 1);
-  };
+  // Extract methods from memoized plugin instances
+  const { jumpToPage: navigateToPage } = pageNavigationPluginInstance;
+  const { highlight, clearHighlights, jumpToMatch } = searchPluginInstance;
 
-  searchAndHighlight = (text: string): void => {
-    if (!text || text.trim().length === 0) return;
-    const { highlight, clearHighlights, jumpToMatch } = this.searchPluginInstance;
-    clearHighlights();
-    const searchText = text.length > 50 ? text.substring(0, 50) : text;
-    highlight({
-      keyword: searchText,
-      matchCase: false
-    }).then((matches: Match[]) => {
-      if (matches.length > 0) {
-        jumpToMatch(0);
-      }
-    });
-  };
+  const handleDocumentLoad = useCallback(() => {
+    setIsDocumentReady(true);
+    onReady?.();
+  }, [onReady]);
 
-  handleDocumentLoad = (): void => {
-    this.props.onReady?.();
-  };
+  // Handle page navigation when targetPage changes
+  useEffect(() => {
+    if (isDocumentReady && targetPage && targetPage > 0) {
+      const timer = setTimeout(() => {
+        navigateToPage(targetPage - 1); // 0-indexed
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isDocumentReady, targetPage, navigationTrigger, navigateToPage]);
 
-  render(): React.ReactNode {
-    const { fileUrl } = this.props;
+  // Handle search when targetSearchText changes
+  useEffect(() => {
+    if (isDocumentReady && targetSearchText && targetSearchText.trim().length > 0) {
+      const timer = setTimeout(() => {
+        clearHighlights();
+        const searchText = targetSearchText.length > 50 ? targetSearchText.substring(0, 50) : targetSearchText;
+        highlight({
+          keyword: searchText,
+          matchCase: false
+        }).then((matches: Match[]) => {
+          if (matches.length > 0) {
+            jumpToMatch(0);
+          }
+        });
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isDocumentReady, targetSearchText, navigationTrigger, highlight, clearHighlights, jumpToMatch]);
 
-    return (
-      <Box sx={{ height: '100%', width: '100%', overflow: 'hidden' }}>
-        <WorkerWrapper workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-          <ViewerWrapper
-            fileUrl={fileUrl}
-            plugins={[this.pageNavigationPluginInstance, this.searchPluginInstance, this.highlightPluginInstance]}
-            onDocumentLoad={this.handleDocumentLoad}
-          />
-        </WorkerWrapper>
-      </Box>
-    );
-  }
-}
+  const plugins = useMemo(
+    () => [pageNavigationPluginInstance, searchPluginInstance, highlightPluginInstance],
+    [pageNavigationPluginInstance, searchPluginInstance, highlightPluginInstance]
+  );
+
+  return (
+    <Box sx={{ height: '100%', width: '100%', overflow: 'hidden' }}>
+      <WorkerWrapper workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+        <ViewerWrapper fileUrl={fileUrl} plugins={plugins} onDocumentLoad={handleDocumentLoad} />
+      </WorkerWrapper>
+    </Box>
+  );
+};
+
+PDFViewerComponent.displayName = 'PDFViewer';
 
 export default PDFViewerComponent;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import DocViewer, { DocViewerRenderers } from '@cyntler/react-doc-viewer';
@@ -417,7 +417,9 @@ const DocumentModal: React.FC<DocumentModal> = props => {
     }
   }, [notify, fileTermKeysDataLoadingError]);
 
-  const pdfViewerRef = useRef<PDFViewer>(null);
+  const [pdfTargetPage, setPdfTargetPage] = useState<number | undefined>(undefined);
+  const [pdfTargetSearchText, setPdfTargetSearchText] = useState<string | undefined>(undefined);
+  const [pdfNavigationTrigger, setPdfNavigationTrigger] = useState<number>(0);
 
   const getFileType = (filename: string): string | undefined => {
     const ext = filename.split('.').pop()?.toLowerCase();
@@ -437,16 +439,11 @@ const DocumentModal: React.FC<DocumentModal> = props => {
         notify('Jump-to-page is available for PDFs only');
         return;
       }
-      if (pdfViewerRef.current) {
-        pdfViewerRef.current.jumpToPage(page);
-        const searchText = anchorText || snippet;
-        if (searchText) {
-          setTimeout(() => {
-            pdfViewerRef.current?.searchAndHighlight(searchText);
-          }, 300);
-        }
-        notify(`Jumped to page ${page}`);
-      }
+      const searchText = anchorText || snippet;
+      setPdfTargetPage(page);
+      setPdfTargetSearchText(searchText || undefined);
+      setPdfNavigationTrigger(prev => prev + 1);
+      notify(`Jumped to page ${page}`);
     },
     [isPDF, notify]
   );
@@ -512,7 +509,14 @@ const DocumentModal: React.FC<DocumentModal> = props => {
     if (!file || !fileUrl) return null;
 
     if (isPDF) {
-      return <PDFViewer ref={pdfViewerRef} fileUrl={fileUrl} />;
+      return (
+        <PDFViewer
+          fileUrl={fileUrl}
+          targetPage={pdfTargetPage}
+          targetSearchText={pdfTargetSearchText}
+          navigationTrigger={pdfNavigationTrigger}
+        />
+      );
     }
 
     return (
