@@ -34,16 +34,16 @@ from app.services.finance import get_provider_registry, FinanceProviderError
 router = APIRouter(prefix="/finance/integrations", tags=["finance-integrations"])
 
 
-def _require_company_admin_with_settings_permission(
+def _require_company_admin_with_finance_permission(
     db: Session,
     current_user: CurrentUserSchema,
     company_id: int,
 ) -> None:
-    """Verify the user is a company admin with Settings module permission.
+    """Verify the user is a company admin with Finance module permission.
     
-    Per the roles contract, configuring integrations requires:
+    Per the roles contract, configuring finance integrations requires:
     1. company_admin role
-    2. Settings module edit permission
+    2. Finance module edit permission
     
     Uses require_module_permission for standardized 403 error payloads.
     
@@ -53,7 +53,7 @@ def _require_company_admin_with_settings_permission(
         company_id: The company ID to check access for.
         
     Raises:
-        HTTPException: 403 if user is not a company admin or lacks Settings permission.
+        HTTPException: 403 if user is not a company admin or lacks Finance permission.
     """
     if current_user.is_system_user:
         return
@@ -62,7 +62,7 @@ def _require_company_admin_with_settings_permission(
         user_id=current_user.id,
         company_id=company_id,
         db_session=db,
-        module_key=PermissionsModules.settings.value,
+        module_key=PermissionsModules.finance.value,
         action="edit",
     )
     
@@ -72,7 +72,7 @@ def _require_company_admin_with_settings_permission(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=create_authorization_error(
                 reason_code="insufficient_role",
-                module_key=PermissionsModules.settings.value,
+                module_key=PermissionsModules.finance.value,
                 action="edit",
                 grant_sources=access.grant_sources,
                 company_id=company_id,
@@ -122,7 +122,7 @@ def get_company_integrations(
     db: Session = Depends(get_session),
 ) -> FinanceIntegrationsListResponse:
     """Get all finance integrations and available providers for a company."""
-    _require_company_admin_with_settings_permission(db, current_user, company_id)
+    _require_company_admin_with_finance_permission(db, current_user, company_id)
     
     company = CompanyCRUD(db).get_by_id(company_id)
     if not company:
@@ -164,7 +164,7 @@ def create_integration(
     db: Session = Depends(get_session),
 ) -> FinanceIntegrationResponse:
     """Create a new finance integration for a company."""
-    _require_company_admin_with_settings_permission(db, current_user, company_id)
+    _require_company_admin_with_finance_permission(db, current_user, company_id)
     
     company = CompanyCRUD(db).get_by_id(company_id)
     if not company:
@@ -232,7 +232,7 @@ def update_integration(
     db: Session = Depends(get_session),
 ) -> FinanceIntegrationResponse:
     """Update an existing finance integration."""
-    _require_company_admin_with_settings_permission(db, current_user, company_id)
+    _require_company_admin_with_finance_permission(db, current_user, company_id)
     
     crud = FinanceIntegrationCRUD(db)
     integration = crud.get_by_company_and_provider(company_id, provider_key)
@@ -279,7 +279,7 @@ def test_integration(
     db: Session = Depends(get_session),
 ) -> FinanceIntegrationTestResponse:
     """Test the connection for a finance integration."""
-    _require_company_admin_with_settings_permission(db, current_user, company_id)
+    _require_company_admin_with_finance_permission(db, current_user, company_id)
     
     crud = FinanceIntegrationCRUD(db)
     integration = crud.get_by_company_and_provider(company_id, provider_key)
@@ -351,7 +351,7 @@ def delete_integration(
     db: Session = Depends(get_session),
 ):
     """Delete a finance integration."""
-    _require_company_admin_with_settings_permission(db, current_user, company_id)
+    _require_company_admin_with_finance_permission(db, current_user, company_id)
     
     crud = FinanceIntegrationCRUD(db)
     integration = crud.get_by_company_and_provider(company_id, provider_key)

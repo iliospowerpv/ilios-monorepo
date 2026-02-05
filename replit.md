@@ -28,7 +28,7 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
 - **Storage Service Abstraction**: Replit-native storage architecture with an abstract `StorageService` interface, supporting `ReplitStorageService`, optional `GCSStorageService`, and `HybridStorageService`.
 - **Data Room Acceptance Safety**: Implements a parse run history panel for files and enforces acceptance safety rules, validating `run_id` and run status before allowing bulk acceptance of extracted data.
 - **Contacts System**: A CRM-style contact management system for tracking external people related to portfolio, company, and project entities. Contacts are address book entries, not platform users, stored at three levels (portfolio, company, project) with exact-scope filtering and case-insensitive email uniqueness.
-- **Finance Integration v1**: Company-level, read-only integration supporting multiple external providers with a pluggable architecture. Credentials are encrypted, and access is restricted to `company_admin` roles.
+- **Finance Integration v1**: Company-level, read-only integration supporting multiple external providers with a pluggable architecture. Credentials are encrypted, and access is restricted to `company_admin` role with Finance module edit permission.
 
 ## External Dependencies
 - **PostgreSQL**: Primary relational database.
