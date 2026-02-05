@@ -1,0 +1,48 @@
+URGENT BUGFIX: PDFViewerComponent hook dependency crash (Cannot read properties of undefined 'length')
+
+Symptoms:
+- Opening a document in Data Room causes runtime crash:
+  TypeError: Cannot read properties of undefined (reading 'length')
+  at areHookInputsEqual → useEffect → PDFViewerComponent
+- Navigation click was previously fixed; now launching the document itself crashes.
+Constraint: Do NOT change any of the recent fixes (permission gating, localStorage logic, query invalidation changes, evidence serialization fixes, accept/promote workflow, Project Summary UI work). Only touch code required to eliminate this crash.
+
+Goal:
+Document modal opens reliably, PDF renders, and evidence navigation (Page X jump + highlight) continues to work.
+
+Tasks:
+
+1) Identify root cause precisely
+A) Inspect PDFViewerComponent for hooks that pass a non-array dependency argument:
+- useEffect(..., something)
+- useMemo(..., something)
+- useCallback(..., something)
+If any dependency argument can become undefined/false/object, fix it so the dependency arg is ALWAYS an array or null.
+
+B) Check for duplicate React / version mismatch:
+- Run: npm ls react react-dom
+- Confirm react and react-dom versions match exactly.
+- Confirm only one copy of react exists in dependency tree.
+If duplicates exist, dedupe / align versions (do not upgrade major versions unless required). Ensure @react-pdf-viewer dependencies are compatible with the chosen React version.
+
+2) Fix hook dependencies in PDFViewerComponent (if A is true)
+- Replace any conditional dependency array patterns like:
+  useEffect(fn, condition && [a,b])
+  useEffect(fn, depsVar) where depsVar may be undefined
+With:
+  useEffect(fn, [a, b, condition])
+and inside fn:
+  if (!condition) return;
+- Ensure all hooks are called unconditionally (no hooks after early returns; no hooks inside if blocks).
+
+3) Verify runtime behavior (must report)
+- Open Data Room → open a PDF document → viewer renders (no crash).
+- If evidence exists: Page X buttons appear and clicking jumps to the correct page and highlights text.
+- Confirm no new console errors.
+- Confirm no regressions to previous fixes (do not touch those files unless absolutely required).
+
+Deliverables:
+- Exact root cause (A: deps array undefined OR B: react mismatch OR both) with code references
+- List of changed files + what changed
+- Proof checklist results (open document works; Page X navigation works)
+Proceed now.

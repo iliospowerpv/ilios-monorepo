@@ -1,13 +1,16 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { Viewer, Worker } from '@react-pdf-viewer/core';
-import { pageNavigationPlugin } from '@react-pdf-viewer/page-navigation';
-import { searchPlugin, Match } from '@react-pdf-viewer/search';
-import { highlightPlugin } from '@react-pdf-viewer/highlight';
-import '@react-pdf-viewer/core/lib/styles/index.css';
-import '@react-pdf-viewer/page-navigation/lib/styles/index.css';
-import '@react-pdf-viewer/search/lib/styles/index.css';
-import '@react-pdf-viewer/highlight/lib/styles/index.css';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
 import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import TextField from '@mui/material/TextField';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
 interface PDFViewerProps {
   fileUrl: string;
@@ -22,17 +25,6 @@ export interface PDFViewerRef {
   searchAndHighlight: (text: string) => void;
 }
 
-const WorkerWrapper = Worker as React.ComponentType<{
-  workerUrl: string;
-  children: React.ReactNode;
-}>;
-const ViewerWrapper = Viewer as React.ComponentType<{
-  fileUrl: string;
-  plugins: unknown[];
-  initialPage?: number;
-  onDocumentLoad?: () => void;
-}>;
-
 const PDFViewerComponent: React.FC<PDFViewerProps> = ({
   fileUrl,
   targetPage,
@@ -40,61 +32,128 @@ const PDFViewerComponent: React.FC<PDFViewerProps> = ({
   navigationTrigger,
   onReady
 }) => {
-  const [isDocumentReady, setIsDocumentReady] = useState(false);
+  const [numPages, setNumPages] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const lastTriggerRef = useRef<number>(0);
 
-  // Memoize plugin instances to ensure they are created once per component mount
-  const pageNavigationPluginInstance = useMemo(() => pageNavigationPlugin(), []);
-  const searchPluginInstance = useMemo(() => searchPlugin(), []);
-  const highlightPluginInstance = useMemo(() => highlightPlugin(), []);
-
-  // Extract methods from memoized plugin instances
-  const { jumpToPage: navigateToPage } = pageNavigationPluginInstance;
-  const { highlight, clearHighlights, jumpToMatch } = searchPluginInstance;
-
-  const handleDocumentLoad = useCallback(() => {
-    setIsDocumentReady(true);
-    onReady?.();
-  }, [onReady]);
-
-  // Handle page navigation when targetPage changes
-  useEffect(() => {
-    if (isDocumentReady && targetPage && targetPage > 0) {
-      const timer = setTimeout(() => {
-        navigateToPage(targetPage - 1); // 0-indexed
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [isDocumentReady, targetPage, navigationTrigger, navigateToPage]);
-
-  // Handle search when targetSearchText changes
-  useEffect(() => {
-    if (isDocumentReady && targetSearchText && targetSearchText.trim().length > 0) {
-      const timer = setTimeout(() => {
-        clearHighlights();
-        const searchText = targetSearchText.length > 50 ? targetSearchText.substring(0, 50) : targetSearchText;
-        highlight({
-          keyword: searchText,
-          matchCase: false
-        }).then((matches: Match[]) => {
-          if (matches.length > 0) {
-            jumpToMatch(0);
-          }
-        });
-      }, 200);
-      return () => clearTimeout(timer);
-    }
-  }, [isDocumentReady, targetSearchText, navigationTrigger, highlight, clearHighlights, jumpToMatch]);
-
-  const plugins = useMemo(
-    () => [pageNavigationPluginInstance, searchPluginInstance, highlightPluginInstance],
-    [pageNavigationPluginInstance, searchPluginInstance, highlightPluginInstance]
+  const onDocumentLoadSuccess = useCallback(
+    ({ numPages: pages }: { numPages: number }) => {
+      setNumPages(pages);
+      setIsLoading(false);
+      setError(null);
+      onReady?.();
+    },
+    [onReady]
   );
 
+  const onDocumentLoadError = useCallback((err: Error) => {
+    setIsLoading(false);
+    setError(err.message || 'Failed to load PDF');
+  }, []);
+
+  useEffect(() => {
+    if (targetPage && targetPage > 0 && numPages > 0 && navigationTrigger !== lastTriggerRef.current) {
+      lastTriggerRef.current = navigationTrigger || 0;
+      const page = Math.min(targetPage, numPages);
+      setCurrentPage(page);
+      setTimeout(() => {
+        containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
+    }
+  }, [targetPage, navigationTrigger, numPages]);
+
+  useEffect(() => {
+    if (targetSearchText && targetSearchText.trim().length > 0 && navigationTrigger !== lastTriggerRef.current) {
+      lastTriggerRef.current = navigationTrigger || 0;
+    }
+  }, [targetSearchText, navigationTrigger]);
+
+  const goToPreviousPage = useCallback(() => {
+    setCurrentPage(prev => Math.max(1, prev - 1));
+  }, []);
+
+  const goToNextPage = useCallback(() => {
+    setCurrentPage(prev => Math.min(numPages, prev + 1));
+  }, [numPages]);
+
+  const handlePageInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = parseInt(e.target.value, 10);
+      if (!isNaN(value) && value >= 1 && value <= numPages) {
+        setCurrentPage(value);
+      }
+    },
+    [numPages]
+  );
+
+  if (error) {
+    return (
+      <Box
+        sx={{
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          gap: 2
+        }}
+      >
+        <Typography color="error">Error loading PDF: {error}</Typography>
+      </Box>
+    );
+  }
+
   return (
-    <Box sx={{ height: '100%', width: '100%', overflow: 'hidden' }}>
-      <WorkerWrapper workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-        <ViewerWrapper fileUrl={fileUrl} plugins={plugins} onDocumentLoad={handleDocumentLoad} />
-      </WorkerWrapper>
+    <Box sx={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 1,
+          py: 1,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          bgcolor: 'background.paper'
+        }}
+      >
+        <IconButton onClick={goToPreviousPage} disabled={currentPage <= 1} size="small">
+          <NavigateBeforeIcon />
+        </IconButton>
+        <TextField
+          size="small"
+          value={currentPage}
+          onChange={handlePageInput}
+          sx={{ width: 60 }}
+          inputProps={{ style: { textAlign: 'center' } }}
+        />
+        <Typography variant="body2">/ {numPages}</Typography>
+        <IconButton onClick={goToNextPage} disabled={currentPage >= numPages} size="small">
+          <NavigateNextIcon />
+        </IconButton>
+      </Box>
+      <Box
+        ref={containerRef}
+        sx={{
+          flex: 1,
+          overflow: 'auto',
+          display: 'flex',
+          justifyContent: 'center',
+          bgcolor: 'grey.100'
+        }}
+      >
+        {isLoading && (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4 }}>
+            <CircularProgress />
+          </Box>
+        )}
+        <Document file={fileUrl} onLoadSuccess={onDocumentLoadSuccess} onLoadError={onDocumentLoadError} loading={null}>
+          <Page pageNumber={currentPage} renderTextLayer={true} renderAnnotationLayer={true} loading={null} />
+        </Document>
+      </Box>
     </Box>
   );
 };
