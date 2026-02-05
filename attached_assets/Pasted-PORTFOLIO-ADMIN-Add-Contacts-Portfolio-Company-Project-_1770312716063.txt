@@ -1,0 +1,109 @@
+PORTFOLIO ADMIN – Add Contacts (Portfolio, Company, Project) – Additive Only, No Impact to Users/Auth
+
+Context:
+We want to add a “Contacts” section in Portfolio Admin at each level:
+- Portfolio level
+- Company level
+- Project level
+
+Contacts are NOT users by default. A contact may optionally correspond to an existing user account. The UI must indicate whether a contact is a user, but this feature must not modify or interfere with any existing user creation, role profiles, access control, or membership workflows.
+
+Hard Constraints (Non-Negotiable):
+- Do NOT modify existing user setup flows, user creation endpoints, role profiles, access resolver logic, permission guards, membership tables, or Portfolio Admin user management UI.
+- Do NOT change existing routes/behavior beyond adding a new Contacts tab/section.
+- Additive changes only: new DB table(s), new endpoints, new UI components.
+- Must not introduce UX confusion between “Users” and “Contacts.” Contacts are an address book / CRM-style list only.
+
+Primary Goal:
+Implement contacts CRUD-lite and search/organization in Portfolio Admin:
+- Add a contact
+- View/search contacts
+- Edit a contact
+- Soft-delete/archive a contact (optional but preferred)
+- Show “Is User” indicator if contact email matches an existing user
+
+Data Model:
+Create a new table: contacts
+Required fields:
+- id (pk)
+- scope_type enum: "portfolio" | "company" | "project"
+- portfolio_id (nullable; required if scope_type=portfolio)
+- company_id (nullable; required if scope_type=company)
+- project_id (nullable; required if scope_type=project)
+- first_name, last_name
+- email (nullable)
+- phone (nullable)
+- title/role (nullable)  // contact’s job title, NOT system role
+- organization (nullable)
+- notes (nullable)
+- tags (json/text nullable) // lightweight organization
+- created_by_user_id
+- created_at, updated_at
+- is_archived (bool default false)
+
+Uniqueness:
+- Prevent duplicates within a scope: ideally unique(scope_type, portfolio_id/company_id/project_id, email) when email present
+- If email absent, allow multiple contacts (no uniqueness constraint)
+
+User Indicator:
+- A contact is considered “Is User = true” if email matches an existing user.email (case-insensitive)
+- This is a computed indicator in API responses; do NOT link records or grant access.
+- Also return matched_user_id if found, but do not use it for permissions or navigation.
+
+Backend API (new endpoints only):
+- GET /api/contacts?scope_type=...&portfolio_id=...&company_id=...&project_id=...&q=...
+  - returns contacts in that scope (non-archived by default)
+  - supports text search across name/email/organization/title
+  - includes computed is_user + matched_user_id
+- POST /api/contacts
+  - creates contact; validates scope fields based on scope_type
+- PUT /api/contacts/{id}
+  - updates contact fields (no scope changes unless explicitly allowed—prefer disallow to keep simple)
+- DELETE /api/contacts/{id}
+  - soft delete (set is_archived=true)
+
+Permissions:
+- Follow existing Portfolio Admin access patterns:
+  - If user can view the Portfolio/Company/Project in Portfolio Admin, they can view contacts at that scope.
+  - Create/edit/delete requires the same permission level you use for other admin mutations at that scope (use existing guard patterns; do not invent a new permission system).
+- Contacts must not be visible outside accessible scopes.
+
+Frontend (Portfolio Admin UI):
+Add a “Contacts” tab/section at each level:
+1) Portfolio level (/portfolio-admin):
+   - Add “Contacts” tab beside existing sections
+   - List + search + “Add Contact” button
+2) Company level (/portfolio-admin/company/:companyId):
+   - Add “Contacts” tab near Users/Projects tabs
+3) Project level (/portfolio-admin/company/:companyId/project/:projectId):
+   - Add “Contacts” tab/section consistent with the page layout
+
+UI Requirements:
+- Keep Users and Contacts clearly distinct:
+  - Contacts tab must not include role assignment, invites, or access controls.
+  - Contact form fields: name, email, phone, title, organization, notes, tags.
+- In contact list, show an “User” chip/badge if is_user=true (computed).
+- Add Contact uses a modal form consistent with existing UI patterns.
+- Search input at top of list. Optional tag filter if trivial.
+
+Migration/Seeds:
+- No migration of users into contacts.
+- No default seeding required.
+
+Testing:
+- Backend tests:
+  - scope validation (portfolio/company/project)
+  - computed is_user indicator works (email match)
+  - permission scoping (cannot fetch contacts for company/project you can’t access)
+- Frontend smoke test checklist:
+  - Contacts tab visible at all three levels
+  - Add contact works and appears in list
+  - “User” chip shows when email matches an existing user
+  - No changes to Users tab or user flows
+
+Deliverables:
+- New contacts table + migration
+- New contacts router + endpoints
+- Portfolio Admin UI tabs + modal form + list/search
+- Documentation in replit.md: Contacts are not users; indicator is email-match only
+Proceed now.
