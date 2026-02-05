@@ -58,3 +58,37 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
 - **Mailgun**: Configured for email services.
 - **Rombus**: Integrated for camera/security functionalities.
 - **AG Grid**: Enterprise license for advanced table functionalities.
+
+## Contacts System (CRM-style Address Book)
+A CRM-style contact management system for tracking external people related to portfolio, company, and project entities. Contacts are **not** platform users—they are address book entries for external stakeholders like brokers, vendors, investors, or other third parties.
+
+### Key Design Decisions
+- **Contacts are NOT Users**: Contacts are address book entries completely separate from authentication and access control. A contact may optionally match a platform user by email (indicated by `is_user` flag), but this grants no permissions.
+- **Scope-Based Storage**: Contacts are stored at three levels (portfolio, company, project) with exact-scope filtering (no inheritance/cascading).
+- **Case-Insensitive Email Uniqueness**: Email addresses are unique per scope using partial unique indexes on `email_normalized`.
+- **Soft Delete via Archive**: Contacts can be archived instead of deleted, preserving history.
+
+### Backend Implementation
+- **Migration**: `ff08_add_contacts_table.py` - Creates `contacts` table with `contact_scope_type` enum, scope foreign keys, and partial unique indexes for email uniqueness.
+- **Model**: `app/models/contact.py` - SQLAlchemy model with scope-based FK validation constraint.
+- **Schema**: `app/schema/contact.py` - Pydantic schemas for CRUD operations with computed `is_user` field.
+- **Router**: `app/routers/contacts.py` - Full CRUD API with search, permission checks, and is_user computation via email matching.
+
+### Frontend Implementation
+- **API Client**: `src/api/contacts.ts` - TypeScript API client for contacts CRUD.
+- **Components**: 
+  - `ContactFormModal` - Create/edit contact dialog with tags support
+  - `ContactsList` - Searchable table with archive/delete actions and is_user indicator
+- **Integration**: Contacts section added to CompanyLevelPage and ProjectLevelPage in Portfolio Admin.
+
+### API Endpoints
+- `GET /api/contacts` - List contacts with scope filtering and search
+- `POST /api/contacts` - Create contact
+- `GET /api/contacts/{id}` - Get single contact
+- `PATCH /api/contacts/{id}` - Update contact
+- `DELETE /api/contacts/{id}` - Permanently delete contact
+
+### Permission Model
+- Contacts follow the same permission model as other Portfolio Admin features
+- Access is controlled via company/project membership
+- System users have full access to all contacts
