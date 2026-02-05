@@ -18,6 +18,7 @@ import { buildReportsApi } from './reports';
 import { buildAccessibleEntitiesApi } from './accessible-entities';
 import { buildWorkspaceApi } from './workspace';
 import { buildAdminApi } from './admin';
+import { createContactsApi } from './contacts';
 
 export const ApiClient = Object.freeze({
   _tokenManager: tokenManager,
@@ -39,7 +40,8 @@ export const ApiClient = Object.freeze({
   reports: buildReportsApi(httpClient),
   accessibleEntities: buildAccessibleEntitiesApi(httpClient),
   workspace: buildWorkspaceApi(httpClient),
-  admin: buildAdminApi(httpClient)
+  admin: buildAdminApi(httpClient),
+  contacts: createContactsApi(httpClient)
 });
 
 export type {
@@ -152,3 +154,12 @@ export type {
   SchemaVersion,
   PromptTemplate
 } from './admin';
+
+export type {
+  Contact,
+  ContactCreate,
+  ContactUpdate,
+  ContactListResponse,
+  ContactsQueryParams,
+  ContactScopeType
+} from './contacts';

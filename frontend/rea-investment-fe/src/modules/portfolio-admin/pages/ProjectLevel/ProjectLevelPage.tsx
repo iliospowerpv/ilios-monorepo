@@ -37,8 +37,10 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PeopleIcon from '@mui/icons-material/People';
 import InfoIcon from '@mui/icons-material/Info';
 import EditIcon from '@mui/icons-material/Edit';
+import ContactsIcon from '@mui/icons-material/Contacts';
 
 import { ApiClient } from '../../../../api';
+import { ContactsList } from '../../components/contacts';
 import type { ProjectMember } from '../../../../api';
 import { AddUserDialog, EditProjectDialog } from '../../components/dialogs';
 import { useNotify } from '../../../../contexts/notifications/notifications';
@@ -569,6 +571,16 @@ export const ProjectLevelPage: React.FC = () => {
               </TableBody>
             </Table>
           </TableContainer>
+        </CardContent>
+      </Card>
+
+      <Card sx={{ mt: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <ContactsIcon color="primary" />
+            <Typography variant="h6">Contacts</Typography>
+          </Box>
+          <ContactsList scopeType="project" scopeId={projectIdNum} />
         </CardContent>
       </Card>
 

@@ -29,8 +29,10 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ContactsIcon from '@mui/icons-material/Contacts';
 
 import { ApiClient } from '../../../../api';
+import { ContactsList } from '../../components/contacts';
 import type { CompanyMember } from '../../../../api';
 import {
   AddProjectDialog,
@@ -371,6 +373,16 @@ export const CompanyLevelPage: React.FC = () => {
           </Card>
         </Grid>
       </Grid>
+
+      <Card sx={{ mt: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <ContactsIcon color="primary" />
+            <Typography variant="h6">Contacts</Typography>
+          </Box>
+          <ContactsList scopeType="company" scopeId={companyIdNum} />
+        </CardContent>
+      </Card>
 
       <AddProjectDialog
         open={isAddProjectOpen}
