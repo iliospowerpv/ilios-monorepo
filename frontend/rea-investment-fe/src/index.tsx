@@ -9,29 +9,21 @@ if (typeof process.env.REACT_APP_AG_GRID_LICENSE_KEY === 'string') {
   LicenseManager.setLicenseKey(process.env.REACT_APP_AG_GRID_LICENSE_KEY);
 }
 
-// Suppress ResizeObserver loop errors - these are benign browser notifications
-// that occur when layout changes happen faster than the observer can process.
-// This requires multiple handlers to catch it before React's error overlay.
-const resizeObserverErrMsg = 'ResizeObserver loop completed with undelivered notifications.';
-
-// Handler for ErrorEvent
-const resizeObserverErr = (e: ErrorEvent) => {
-  if (e.message === resizeObserverErrMsg) {
-    e.stopImmediatePropagation();
-    e.preventDefault();
-    return false;
+// Patch ResizeObserver to suppress benign "loop completed" errors.
+// This error occurs when layout changes happen faster than the observer can process,
+// which is normal behavior with AG Grid and other complex components.
+// We patch at the source to prevent the error from reaching React's error overlay.
+const OriginalResizeObserver = window.ResizeObserver;
+window.ResizeObserver = class ResizeObserver extends OriginalResizeObserver {
+  constructor(callback: ResizeObserverCallback) {
+    super((entries, observer) => {
+      // Use requestAnimationFrame to batch updates and prevent the loop error
+      window.requestAnimationFrame(() => {
+        callback(entries, observer);
+      });
+    });
   }
 };
-
-// Handler for unhandled errors (catches before React overlay)
-window.onerror = function (message) {
-  if (message === resizeObserverErrMsg) {
-    return true; // Prevents the error from propagating
-  }
-  return false;
-};
-
-window.addEventListener('error', resizeObserverErr, true); // Use capture phase
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 root.render(<App />);
