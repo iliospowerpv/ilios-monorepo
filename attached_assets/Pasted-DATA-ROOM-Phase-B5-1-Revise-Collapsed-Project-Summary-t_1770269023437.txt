@@ -1,0 +1,84 @@
+DATA ROOM – Phase B5.1: Revise Collapsed Project Summary to Project-Level Due Diligence Health (Scope-Safe)
+
+Context:
+- The collapsed Project Summary currently shows Terms + Co-terminus status, but it is effectively document-specific (tied to the selected document/category) and feels too limited/inconsistent compared to the Project Hub health summary pattern.
+- We need the collapsed state to represent PROJECT-LEVEL due diligence health, not a single document.
+- We will refine health derivation rules later based on user feedback. For now, implement a simple, deterministic aggregation using existing data already available in the Data Room / Project Summary page.
+Constraint: Do NOT change any of the recent fixes (permission fixes, localStorage keying/SSR guards, query invalidation fixes, evidence serialization fixes, PDF navigation implementation, accept/promote implementation). This is a UI composition and aggregation change only.
+
+Design Constraint:
+Strictly reuse existing visual patterns, spacing, typography, and chip/status semantics already present in Project Hub health widgets, Finance panels, and Co-Terminus summary components.
+Do NOT introduce new visual styles, icons, layouts, or interaction paradigms. No new buttons or new routes.
+
+Goal:
+When the Project Summary panel is COLLAPSED, show a compact “Due Diligence Health” summary that is project-level and actionable, consistent with Project Hub health widgets:
+- Primary leading health status (color-coded)
+- Secondary compact counts (documents/terms/checks)
+This must NOT depend on the currently selected document dropdown.
+
+In Scope:
+- Compute an aggregated project-level summary using existing in-memory data (or data already fetched for the Data Room page).
+- Display a leading health chip/label and 2–3 compact secondary indicators.
+- Adjust wording and chip coloring to match existing semantics.
+
+Out of Scope:
+- Any new backend endpoints or API calls
+- New widgets framework
+- New interactions beyond expand/collapse
+- Changing how Terms & Values / Co-Terminus work in expanded view
+- Changing accept/promote or evidence behavior
+
+Implementation Tasks:
+
+1) Data aggregation (project-level)
+- Derive a project-level “Due Diligence Health” state using existing data already present on the page:
+  A) Terms readiness:
+     - Count promoted/non-N/A terms across the project (not just selected doc).
+     - If project-level aggregation is not directly available, use the existing agreements list + existing term data already fetched for the page to aggregate without triggering new calls.
+  B) Document readiness:
+     - Derive a simple count of documents reviewed/promoted vs total required/available documents using the agreements/documents already loaded for the Data Room.
+     - If “required” is not modeled, use “available documents” as total and “has promoted terms > 0” as reviewed.
+  C) Co-terminus readiness:
+     - Use existing co-terminus status/results already fetched for the project/site.
+
+- The aggregation must be deterministic and minimal. If any piece of data is unavailable without new calls, show “—” for that part rather than triggering new fetches.
+
+2) Health derivation rule (simple v1)
+Implement a basic tri-state health (we will refine later):
+- RED (Attention Needed):
+  - Co-terminus completed with mismatches > 0
+  - OR any explicit error/stuck status from co-terminus
+- YELLOW (In Progress):
+  - No mismatches, but documents/terms are incomplete (e.g., reviewed < total)
+  - OR co-terminus not run yet while terms exist
+- GREEN (Healthy):
+  - Terms present/promoted and co-terminus OK (0 mismatches)
+If co-terminus is not applicable or not configured, treat it as neutral (do not block green) only if terms/doc readiness indicates complete; otherwise yellow.
+
+3) Collapsed UI layout (compact + consistent)
+When collapsed, show in the accordion header area:
+- Leading chip/label: “Due Diligence: Healthy / In Progress / Attention Needed” with green/yellow/red using existing chip styles.
+- Secondary inline indicators (compact text or chips, consistent with existing patterns):
+  - Documents: X / Y reviewed (or “Documents: —” if unknown)
+  - Terms: X promoted (or “Terms: Not promoted”)
+  - Co-terminus: OK / Not run / Running / X mismatches
+
+Rules:
+- The collapsed summary is informational only (no new clicks). Header click still expands/collapses.
+- Must not materially increase header height or cause layout shift.
+
+4) Expanded behavior unchanged
+- When expanded, keep the existing Project Summary content exactly as-is (Terms & Values + Co-terminus sections).
+- The dropdown continues to affect only the expanded Terms view, not the collapsed health summary.
+
+5) QA checklist (must report)
+- Collapsed state shows project-level summary that does NOT change when switching the document dropdown.
+- Chip colors match rules: mismatches -> red, incomplete -> yellow, OK -> green, not run -> reflected in secondary indicator.
+- No new network calls were added (verify in network tab / logs).
+- No regressions to permission gating, persistence, or co-terminus queries.
+
+Deliverables:
+- Updated collapsed Project Summary health/status indicator (project-level)
+- List of files changed
+- Brief before/after description (collapsed vs expanded)
+Proceed now.
