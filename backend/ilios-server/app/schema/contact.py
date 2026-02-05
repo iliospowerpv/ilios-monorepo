@@ -57,6 +57,7 @@ class ContactUpdate(BaseModel):
     organization: Optional[str] = Field(None, max_length=200)
     notes: Optional[str] = None
     tags: Optional[List[str]] = None
+    is_archived: Optional[bool] = None
     
     @field_validator('email')
     @classmethod
