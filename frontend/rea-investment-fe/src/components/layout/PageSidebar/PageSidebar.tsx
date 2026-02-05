@@ -28,7 +28,7 @@ export const PageSidebar: React.FC = () => {
         <SidebarDivider />
       </SidebarDrawer>
       <SidebarToggleButtonContainer>
-        <IconButton color="inherit" onClick={toggleSidebar}>
+        <IconButton sx={{ color: '#7C3AED' }} onClick={toggleSidebar}>
           {isOpen ? <ChevronLeftIcon /> : <ChevronRightIcon />}
         </IconButton>
       </SidebarToggleButtonContainer>
