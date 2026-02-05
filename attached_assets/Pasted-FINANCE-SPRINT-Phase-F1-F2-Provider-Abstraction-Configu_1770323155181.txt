@@ -1,0 +1,66 @@
+FINANCE SPRINT – Phase F1–F2: Provider Abstraction + Configuration (Read-Only)
+
+Context:
+User Roles sprint is CLOSED. Authorization is stable and fail-closed. We are starting Finance integration with a read-only, configuration-first approach.
+
+Hard Constraints:
+- Do NOT modify roles, permissions, or access resolver logic.
+- Do NOT introduce write-back to external finance systems.
+- Do NOT change Due Diligence, Data Room, Contacts, or Organizations.
+- Additive-only changes.
+- Company_admin is the only role allowed to configure finance integrations.
+
+Goals:
+1) Create a finance provider abstraction that supports multiple systems (Gravity first, QuickBooks second).
+2) Implement company-level finance configuration UI and backend.
+3) Enforce correct permissions at all layers.
+
+Phase F1 – Provider Abstraction:
+- Define a FinanceProvider interface with:
+  - test_connection()
+  - fetch_accounts()
+  - fetch_transactions()
+  - fetch_budgets() (optional if provider supports)
+- Implement GravityFinanceProvider (stub real calls if credentials not yet available).
+- Register providers via a simple registry/factory.
+
+Phase F2 – Configuration & Credentials:
+Backend:
+- Create finance_integrations table with:
+  - company_id
+  - provider_key (e.g. "gravity", "quickbooks")
+  - encrypted_credentials
+  - config_json (mappings, options)
+  - status (configured, error, disabled)
+  - last_tested_at, last_error
+- Add endpoints:
+  - GET /api/finance/integrations/{company_id}
+  - POST /api/finance/integrations/{company_id}
+  - POST /api/finance/integrations/{company_id}/test
+- Enforce:
+  - Requires company_admin
+  - Fail closed on permission denial
+
+Frontend:
+- Add Finance section in Portfolio Admin → Company view
+- Configuration form:
+  - Select provider
+  - Enter credentials
+  - Test connection
+  - Save config
+- Clear status indicators (Connected / Error / Not configured)
+
+Documentation:
+- Update replit.md with:
+  - Finance v1 scope
+  - Read-only guarantee
+  - Role enforcement rules
+  - Provider abstraction notes
+
+Deliverables:
+- Provider abstraction + Gravity provider stub
+- Company-level configuration UI + backend
+- Permission-enforced endpoints
+- Verification checklist and file list
+
+Do not proceed to data ingestion or health indicators until Phase F1–F2 are complete and reviewed.

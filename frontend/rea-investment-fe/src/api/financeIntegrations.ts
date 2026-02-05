@@ -1,0 +1,93 @@
+import { httpClient } from './http-client';
+
+export interface FinanceProviderInfo {
+  key: string;
+  display_name: string;
+  supports_budgets: boolean;
+}
+
+export interface FinanceIntegration {
+  id: number;
+  company_id: number;
+  provider_key: string;
+  provider_display_name?: string;
+  config?: Record<string, unknown>;
+  status: 'pending' | 'configured' | 'error' | 'disabled';
+  last_tested_at?: string;
+  last_test_success?: boolean;
+  last_error?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FinanceIntegrationsListResponse {
+  integrations: FinanceIntegration[];
+  available_providers: FinanceProviderInfo[];
+}
+
+export interface FinanceIntegrationCredentials {
+  api_key?: string;
+  api_secret?: string;
+  base_url?: string;
+  additional?: Record<string, unknown>;
+}
+
+export interface FinanceIntegrationCreatePayload {
+  provider_key: string;
+  credentials: FinanceIntegrationCredentials;
+  config?: Record<string, unknown>;
+}
+
+export interface FinanceIntegrationUpdatePayload {
+  credentials?: FinanceIntegrationCredentials;
+  config?: Record<string, unknown>;
+  status?: 'pending' | 'configured' | 'error' | 'disabled';
+}
+
+export interface FinanceIntegrationTestResponse {
+  success: boolean;
+  status: string;
+  message: string;
+  tested_at: string;
+  details?: Record<string, unknown>;
+}
+
+export const financeIntegrations = {
+  getCompanyIntegrations: async (companyId: number): Promise<FinanceIntegrationsListResponse> => {
+    const response = await httpClient.get<FinanceIntegrationsListResponse>(`/finance/integrations/${companyId}`);
+    return response.data;
+  },
+
+  createIntegration: async (
+    companyId: number,
+    payload: FinanceIntegrationCreatePayload
+  ): Promise<FinanceIntegration> => {
+    const response = await httpClient.post<FinanceIntegration>(`/finance/integrations/${companyId}`, payload);
+    return response.data;
+  },
+
+  updateIntegration: async (
+    companyId: number,
+    providerKey: string,
+    payload: FinanceIntegrationUpdatePayload
+  ): Promise<FinanceIntegration> => {
+    const response = await httpClient.patch<FinanceIntegration>(
+      `/finance/integrations/${companyId}/${providerKey}`,
+      payload
+    );
+    return response.data;
+  },
+
+  testIntegration: async (companyId: number, providerKey: string): Promise<FinanceIntegrationTestResponse> => {
+    const response = await httpClient.post<FinanceIntegrationTestResponse>(
+      `/finance/integrations/${companyId}/${providerKey}/test`
+    );
+    return response.data;
+  },
+
+  deleteIntegration: async (companyId: number, providerKey: string): Promise<void> => {
+    await httpClient.delete(`/finance/integrations/${companyId}/${providerKey}`);
+  }
+};
+
+export type FinanceIntegrationsApi = typeof financeIntegrations;

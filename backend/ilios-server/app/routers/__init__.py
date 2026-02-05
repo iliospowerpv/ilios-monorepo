@@ -16,6 +16,7 @@ from .due_diligence import (
 from .finance import (
     finance_actuals_router,
     finance_budgets_router,
+    finance_integrations_router,
     finance_obligations_router,
     finance_portfolio_router,
     finance_vendors_router,

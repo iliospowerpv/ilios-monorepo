@@ -5,6 +5,7 @@ integrations = ["javascript_object_storage:2.0.0", "python_openai_ai_integration
 
 [nix]
 channel = "stable-25_05"
+packages = ["cargo", "libiconv", "libxcrypt", "openssl", "pkg-config", "rustc"]
 
 [workflows]
 runButton = "Project"
