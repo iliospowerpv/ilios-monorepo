@@ -1,0 +1,48 @@
+SCOPE-CONSTRAINED FIX: Evidence serialization + Verify Accept/Promote & PDF navigation UI
+
+Context:
+- Evidence navigation and Verify All depend on evidence={page,snippet,anchor_text}.
+- Testing shows Page buttons/navigation are missing.
+- Likely root cause: Pydantic schema strips evidence because it’s not defined on the response schema.
+- Also need to verify Accept/Promote button is visible when parsing completes.
+Constraint: Do NOT change any of the recent fixes (permission fixes, localStorage fixes, query invalidation fixes). Additive changes only.
+
+Goals (ONLY these):
+1) Evidence is present in API responses used by the parsed-fields UI and Project Summary, so “Page X” buttons render.
+2) Accept/Promote (Accept All at minimum) button is visible when parsing is completed and fields exist, with correct permission gating.
+3) Clicking Page X jumps/highlights in the PDF viewer (existing implementation must be exercised, not replaced).
+
+Tasks:
+A) Identify the exact API endpoint the frontend uses to render extracted fields in the document modal and/or project summary.
+- Confirm the response payload currently lacks evidence.
+- Add evidence field to the correct Pydantic schema(s) so the response includes evidence end-to-end.
+- Ensure evidence is typed as an object with page:int, snippet:str, anchor_text:str (nullable if needed).
+
+B) Verify UI renders Page X buttons
+- Confirm frontend receives evidence.
+- Ensure “Page X” buttons render for fields that have evidence.
+- Ensure Verify All navigation detects evidence-bearing fields and works.
+
+C) Verify Accept/Promote button visibility
+- Ensure button shows when:
+  - parsing status is completed/succeeded (use the actual enum/string in responses)
+  - extracted fields array length > 0
+  - user has required permission (diligence:edit or is_system_user as currently intended)
+- If it still doesn’t appear, add minimal UI element(s) or fix conditional checks ONLY (no new UX).
+- Keep existing layout and styles.
+
+D) Verification checklist (must complete and report)
+1) Open parsed document → left PDF preview visible
+2) Parsed fields visible
+3) Page X buttons visible where evidence exists; tooltip shows snippet
+4) Click Page X → viewer jumps to correct page and highlights anchor_text/snippet
+5) Accept All button visible for authorized user and completed parse
+6) Clicking Accept All promotes facts and Project Summary no longer shows N/A
+
+Deliverables:
+- List of files changed (backend schema + any frontend condition fixes)
+- Before/after payload example showing evidence present
+- Confirmation of each checklist item above
+
+Do not implement any additional UI/feature changes beyond these goals.
+Proceed now.

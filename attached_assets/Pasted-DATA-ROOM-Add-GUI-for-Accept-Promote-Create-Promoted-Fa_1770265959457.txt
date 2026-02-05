@@ -1,0 +1,50 @@
+DATA ROOM – Add GUI for Accept/Promote (Create Promoted Facts for Project Summary)
+
+Context:
+- Parsing runs and extracted fields are visible in the document view (PDF preview + parsed fields).
+- Project Summary shows N/A because it reads promoted/accepted facts (document_keys / agreement terms) and there is currently no GUI to approve/promote.
+- Evidence navigation (jump-to-page + highlight) is implemented for PDFs.
+- Constraint: Do NOT change unrelated recent UI/error fixes; implement this as an additive workflow.
+
+Goal:
+Add an in-GUI approval/promotion flow so users can promote extracted values into the canonical fact store used by Project Summary and Co-Terminus checks.
+
+Tasks:
+1) Locate existing backend promote/accept capability
+- Identify the endpoint(s) and handler(s) that promote parsed extraction results into document_keys / facts.
+- If already exists, use it. If not, implement minimal endpoints:
+  - POST /parsing-runs/{run_id}/promote (or existing equivalent)
+  - Accept payload: list of approved fields OR “approve_all=true”
+  - Must validate: run belongs to file/document/site; run status succeeded; user permissions.
+
+2) UI: Add Accept/Promote controls to document parsing view
+- In the document modal where parsed fields are shown:
+  - Add “Accept All” and “Accept Selected” (optional) actions.
+  - Include confirmation modal:
+    - counts to be promoted
+    - warning count for fields without evidence (do not block, but warn)
+- After promote succeeds:
+  - Show success toast
+  - Refresh Project Summary / agreements terms data so N/A becomes populated
+
+3) Idempotency + audit
+- Promoting should be idempotent on facts (no duplicates).
+- Keep audit trail entries if required.
+- Do not allow promoting processing/failed runs.
+
+4) Permissions
+- Only users with diligence:edit (or is_system_user if that is required for mutation) can promote.
+- View-only users can see extracted fields but cannot promote.
+
+5) Tests
+- Add backend integration test:
+  - promote succeeds for latest succeeded run and creates facts
+  - promote fails for run/file mismatch
+  - promote fails for processing/failed run
+- Add minimal UI QA checklist in replit.md.
+
+Deliverables:
+- Working GUI path to Accept/Promote
+- Project Summary populates after promote
+- List of files changed
+Proceed now.
