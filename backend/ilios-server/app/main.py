@@ -34,6 +34,7 @@ from .routers import (
     files_router,
     finance_actuals_router,
     finance_budgets_router,
+    finance_data_router,
     finance_integrations_router,
     finance_obligations_router,
     finance_portfolio_router,
@@ -255,6 +256,12 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
         finance_integrations_router,
         prefix="/api",
         tags=["Finance Integrations"],
+    )
+    # finance data read-only endpoints (accounts, transactions, sync-runs)
+    app.include_router(
+        finance_data_router,
+        prefix="/api/finance",
+        tags=["Finance Data"],
     )
     # internal APIs
     app.include_router(internal_router, prefix="/api/internal", tags=[tags.INTERNAL_TAG])

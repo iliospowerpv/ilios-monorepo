@@ -29,6 +29,8 @@ from app.schema.finance_integration import (
     FinanceProviderInfo,
 )
 from app.services.finance import get_provider_registry, FinanceProviderError
+from app.schema.finance_data import FinanceSyncTriggerResponse
+from app.services.finance.sync_service import FinanceSyncService
 
 
 router = APIRouter(prefix="/finance/integrations", tags=["finance-integrations"])
@@ -363,3 +365,55 @@ def delete_integration(
         )
     
     crud.delete_integration(integration.id)
+
+
+@router.post(
+    "/{company_id}/{provider_key}/sync",
+    response_model=FinanceSyncTriggerResponse,
+    summary="Trigger a finance data sync",
+    description="Requires company_admin + finance:edit. Ingests accounts and transactions from the provider.",
+)
+def trigger_sync(
+    company_id: int,
+    provider_key: str,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db: Session = Depends(get_session),
+) -> FinanceSyncTriggerResponse:
+    """Trigger a data sync for a finance integration."""
+    _require_company_admin_with_finance_permission(db, current_user, company_id)
+
+    company = CompanyCRUD(db).get_by_id(company_id)
+    if not company:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Company not found",
+        )
+
+    crud = FinanceIntegrationCRUD(db)
+    integration = crud.get_by_company_and_provider(company_id, provider_key)
+    if not integration:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No integration configured for provider '{provider_key}'",
+        )
+
+    service = FinanceSyncService(db)
+    run = service.execute_sync(
+        company_id=company_id,
+        provider_key=provider_key,
+        triggered_by_user_id=current_user.id,
+    )
+
+    run_status = run.status.value if hasattr(run.status, "value") else str(run.status)
+    message = (
+        "Sync completed successfully"
+        if run_status == "succeeded"
+        else f"Sync failed: {run.last_error}"
+    )
+
+    return FinanceSyncTriggerResponse(
+        sync_run_id=run.id,
+        correlation_id=run.correlation_id,
+        status=run_status,
+        message=message,
+    )

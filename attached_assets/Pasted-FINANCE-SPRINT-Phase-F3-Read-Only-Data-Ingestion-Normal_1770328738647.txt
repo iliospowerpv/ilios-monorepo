@@ -1,0 +1,104 @@
+FINANCE SPRINT – Phase F3: Read-Only Data Ingestion + Normalization (Gravity-first)
+
+Context:
+Finance Phases F1–F2 are complete (provider abstraction + company-level integration config). Authorization has been corrected to require company_admin + finance:edit for integration management. Now implement read-only ingestion into normalized tables with strong scoping and observability.
+
+Hard Constraints:
+- Do NOT modify roles/resolver/permission framework.
+- Do NOT add write-back to external systems.
+- Do NOT touch Due Diligence, Data Room, Contacts, Organizations, or PDF viewer code.
+- Keep provider abstraction intact; Gravity is first.
+- Do NOT introduce portfolio-level financial rollups in v1.
+
+Goals:
+1) Define normalized finance storage tables.
+2) Implement ingestion for accounts + transactions (minimum viable).
+3) Add sync-run tracking and safe reruns (upsert, no duplicates).
+4) Expose read-only API endpoints scoped to company (and optionally project filtering if project IDs exist).
+5) Add tests that prove permissions + idempotency.
+
+Data Model (minimum):
+A) finance_accounts
+- id (pk)
+- company_id (fk)
+- provider_key (string)
+- external_id (string)
+- name (string)
+- account_type (string nullable)
+- parent_external_id (string nullable)
+- is_active (bool default true)
+- raw_json (json)
+- created_at, updated_at
+Unique: (company_id, provider_key, external_id)
+
+B) finance_transactions
+- id (pk)
+- company_id (fk)
+- provider_key (string)
+- external_id (string)
+- account_external_id (string)
+- amount (numeric)
+- currency (string nullable, default "USD" if missing)
+- txn_date (date/datetime)
+- description (string nullable)
+- counterparty (string nullable)
+- project_external_id (string nullable)  # for future mapping
+- raw_json (json)
+- created_at, updated_at
+Unique: (company_id, provider_key, external_id)
+
+C) finance_sync_runs
+- id (pk)
+- company_id
+- provider_key
+- status: queued|running|succeeded|failed
+- started_at, ended_at
+- correlation_id (uuid)
+- triggered_by_user_id
+- last_error (text nullable)
+- stats_json (json: accounts_upserted, txns_upserted, txns_skipped)
+- last_successful_sync_at (nullable)
+Indexes for company/provider and time ordering.
+
+Provider Behavior:
+- Implement GravityFinanceProvider fetch_accounts() and fetch_transactions():
+  - If real Gravity API details are unavailable, implement a deterministic stub behind a config flag for dev/test ONLY (similar gating rules as LLM stub: blocked in prod/staging unless explicitly force-allowed).
+  - Production path should fail gracefully with a clear error: provider_not_implemented or missing_credentials.
+
+Sync Endpoint:
+- POST /api/finance/integrations/{company_id}/{provider_key}/sync
+  - Requires: company_admin + finance:edit + company access
+  - Creates finance_sync_run queued→running→terminal
+  - Executes ingestion (BackgroundTasks ok)
+  - Uses upsert semantics (no duplicates on rerun)
+  - Stores stats_json and timestamps
+
+Read Endpoints:
+- GET /api/finance/accounts?company_id=...
+  - Requires: finance:view + company access
+- GET /api/finance/transactions?company_id=...&date_from=...&date_to=...
+  - Requires: finance:view + company access
+- GET /api/finance/sync-runs?company_id=...&provider_key=...
+  - Requires: finance:view + company access
+
+Observability:
+- Correlation ID per sync run
+- Structured logs: company_id, provider_key, run_id, durations, counts
+- Failures must set status=failed and ended_at with last_error populated
+
+Tests (must add):
+1) Idempotency: run sync twice → no duplicate accounts/transactions
+2) Permissions:
+   - contributor/read_only cannot POST sync
+   - user without company access cannot read
+3) Response correctness: list endpoints return normalized data
+
+Docs:
+- Update replit.md with F3 scope and “read-only ingestion” guarantee.
+- Note provider stub gating rules clearly.
+
+Deliverables:
+- Migrations + models + endpoints + sync runner
+- Tests passing
+- Short summary + files changed
+Proceed now.
