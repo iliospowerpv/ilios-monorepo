@@ -1,10 +1,10 @@
 """Tests for project-level due diligence summary stats endpoint"""
 
 import pytest
-from unittest.mock import patch
 
-from app.models.project_facts import ProjectFact, FactStatus
-from app.models.file import File, FileParsingStatuses
+from app.models.project_facts import ProjectFact, FactStatus, CanonicalField
+from app.models.file import FileParsingStatuses
+from app.models.document import Document
 from app.routers.due_diligence.summary_stats import is_meaningful_value, map_parsing_status_to_coterminus_status
 
 
@@ -100,6 +100,26 @@ class TestSummaryStatsEndpoint:
         assert "mismatches" in data["coterminus"]
         assert "last_run_at" in data["coterminus"]
 
+    def test_documents_total_matches_site_documents_count(
+        self, client, site, db_session, system_user_auth_header
+    ):
+        """Test that documents_total equals the count of non-archived documents for this site"""
+        from sqlalchemy import func
+        
+        expected_count = db_session.query(func.count(Document.id)).filter(
+            Document.site_id == site.id,
+            Document.is_archived == False
+        ).scalar() or 0
+        
+        response = client.get(
+            f"/api/due-diligence/sites/{site.id}/summary-stats",
+            headers=system_user_auth_header
+        )
+        assert response.status_code == 200
+        data = response.json()
+        
+        assert data["documents_total"] == expected_count
+
     def test_site_with_no_promoted_facts_returns_zeros(self, client, site_id, system_user_auth_header):
         """Test that a site without promoted facts returns zero counts"""
         response = client.get(
@@ -117,8 +137,6 @@ class TestSummaryStatsEndpoint:
         self, client, site, db_session, system_user_auth_header, document, file
     ):
         """Test that promoted facts with meaningful values are counted correctly"""
-        from app.models.project_facts import ProjectFact, FactStatus, CanonicalField
-        
         canonical_field = db_session.query(CanonicalField).first()
         if not canonical_field:
             canonical_field = CanonicalField(
@@ -174,8 +192,6 @@ class TestSummaryStatsEndpoint:
         self, client, site, db_session, system_user_auth_header, document, file
     ):
         """Test that candidate (not promoted) facts are not counted"""
-        from app.models.project_facts import ProjectFact, FactStatus, CanonicalField
-        
         canonical_field = db_session.query(CanonicalField).first()
         if not canonical_field:
             canonical_field = CanonicalField(
@@ -218,3 +234,51 @@ class TestSummaryStatsEndpoint:
             headers=system_user_auth_header
         )
         assert response.status_code == 404
+
+    def test_documents_with_promoted_terms_counts_distinct_documents(
+        self, client, site, db_session, system_user_auth_header, document, file
+    ):
+        """Test that documents_with_promoted_terms counts distinct document_id"""
+        canonical_field = db_session.query(CanonicalField).first()
+        if not canonical_field:
+            canonical_field = CanonicalField(
+                name="test_field_distinct",
+                display_name="Test Field Distinct",
+                field_type="text",
+                is_active=True
+            )
+            db_session.add(canonical_field)
+            db_session.flush()
+        
+        fact1 = ProjectFact(
+            site_id=site.id,
+            canonical_field_id=canonical_field.id,
+            value={"v": "Value 1"},
+            status=FactStatus.active.value,
+            source_file_id=file.id
+        )
+        fact2 = ProjectFact(
+            site_id=site.id,
+            canonical_field_id=canonical_field.id,
+            value={"v": "Value 2"},
+            status=FactStatus.active.value,
+            source_file_id=file.id
+        )
+        db_session.add_all([fact1, fact2])
+        db_session.commit()
+        
+        try:
+            response = client.get(
+                f"/api/due-diligence/sites/{site.id}/summary-stats",
+                headers=system_user_auth_header
+            )
+            assert response.status_code == 200
+            data = response.json()
+            
+            assert data["promoted_terms_total"] == 2
+            assert data["documents_with_promoted_terms"] == 1
+        finally:
+            db_session.query(ProjectFact).filter(
+                ProjectFact.id.in_([fact1.id, fact2.id])
+            ).delete(synchronize_session=False)
+            db_session.commit()

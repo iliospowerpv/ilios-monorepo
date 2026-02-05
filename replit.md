@@ -38,12 +38,17 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
         - **Collapsible State**: Persists expand/collapse per user+project via localStorage (`project-summary-expanded-{siteId}`)
         - **Permission Gating**: Hidden entirely if user lacks `diligence:view`; Run/Rerun button requires `diligence:edit`
         - **Collapsed Health Summary (Phase B5.1)**: Project-level due diligence health indicator with:
-            - Leading health chip: "Due Diligence: In Progress/Attention Needed" (GREEN currently unreachable - see constraint below)
-            - Documents: "X/Y reviewed" (from co-terminus sources) or "—" when unavailable
-            - Terms: "—" (project-level promoted terms unavailable without new API calls)
+            - Leading health chip: "Due Diligence: Healthy/In Progress/Attention Needed"
+            - Documents: "X/Y reviewed" (documents_with_promoted_terms / documents_total from summary-stats endpoint)
+            - Terms: "Z promoted" (promoted_terms_total from summary-stats endpoint)
             - Co-terminus: "OK/Not run/Running/X mismatches" chip
-        - **Architectural Constraint**: Project-level promoted term counts are NOT available without making individual API calls per document. The term data endpoint (`/agreements/{id}/overview`) is per-document only. GREEN health status requires promoted terms data, so it cannot currently be reached. Future enhancement: Add a project-level aggregate endpoint for promoted term counts.
-    - **APIs Used**: `/agreements/`, `/agreements/{id}/terms`, `/co-terminus/check`, `/co-terminus/status`
+        - **Summary Stats Endpoint (Phase B5.1.1)**: `/api/due-diligence/sites/{site_id}/summary-stats` provides project-level aggregate metrics:
+            - `documents_total`: Count of all non-archived documents for the site (role-agnostic for consistent project health)
+            - `documents_with_promoted_terms`: Distinct documents with active promoted facts (via File or DocumentKey paths)
+            - `promoted_terms_total`: Count of active, unsuperseded facts with meaningful values
+            - `coterminus`: Status, mismatches, and last_run_at from CoTerminusCheck
+        - **Design Decision**: Summary stats are intentionally role-agnostic to provide consistent project health metrics regardless of viewer role. Different users seeing different totals would make health indicators meaningless.
+    - **APIs Used**: `/agreements/`, `/agreements/{id}/terms`, `/co-terminus/check`, `/co-terminus/status`, `/due-diligence/sites/{site_id}/summary-stats`
     - **No New Routes**: Panel is embedded, not a separate page
 
 ## External Dependencies
