@@ -1,0 +1,69 @@
+FINANCE SPRINT – Phase F4: Finance Health Indicators (Project Hub-aligned)
+
+Context:
+F3 ingestion and read endpoints are complete. Now we need consistent, compact finance health signals that match the DD / Project Hub health patterns and are suitable for future dashboard widgets.
+
+Hard Constraints:
+- Do NOT modify roles/resolver/permission system.
+- Do NOT change ingestion logic.
+- Do NOT build portfolio rollups in v1.
+- Do NOT change Data Room/DD/Contacts/Organizations/PDF viewer.
+- No new complex UI layouts: reuse existing health widget visual patterns (chip + secondary indicators).
+
+Goals:
+1) Define finance health signals at company + project display level.
+2) Add one backend summary endpoint returning small health metrics.
+3) Add UI display in Project Hub and Company Finance configuration section.
+
+Backend:
+A) Add endpoint:
+GET /api/finance/summary?company_id=...
+
+Returns:
+{
+  "sync_status": "not_configured"|"never_synced"|"running"|"healthy"|"error",
+  "last_sync_at": datetime|null,
+  "last_sync_error": string|null,
+  "accounts_count": int,
+  "transactions_count_30d": int,
+  "unmapped_projects_count": int|null,   // optional placeholder if mapping not implemented
+  "needs_attention_reasons": string[]    // machine-readable list
+}
+
+Computation rules (v1):
+- not_configured: no finance_integration exists for provider
+- never_synced: configured but no successful sync run exists
+- running: latest sync run status running/queued
+- error: latest sync run failed OR integration test failing
+- healthy: last successful sync within threshold (e.g., 24h or configurable) AND no last_error
+
+Permissions:
+- Requires finance:view + company access.
+
+Frontend:
+B) Company-level (Portfolio Admin → Company → Finance section):
+- Show compact “Finance Health” chip:
+  - Healthy / In Progress / Attention Needed
+- Secondary indicators:
+  - Last sync time
+  - # accounts
+  - # txns (30d)
+- If error: show last_error snippet + CTA to “Test connection” and “Run sync” (CTAs only visible to company_admin + finance:edit).
+
+C) Project Hub (project overview / finance widget area):
+- Display a minimal finance health indicator for the project derived from company-level health for now:
+  - If company sync is error → project shows Attention Needed
+  - If healthy → show Healthy
+  - If never synced → In Progress
+(No project mapping required in v1.)
+
+Tests:
+- Backend unit/integration tests for each sync_status state
+- Permission test for summary endpoint
+- UI smoke checklist in replit.md
+
+Deliverables:
+- /api/finance/summary endpoint
+- Finance health indicator UI in Company Finance section and Project Hub
+- Docs + tests
+Proceed now.

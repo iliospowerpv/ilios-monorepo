@@ -19,7 +19,7 @@ import { buildAccessibleEntitiesApi } from './accessible-entities';
 import { buildWorkspaceApi } from './workspace';
 import { buildAdminApi } from './admin';
 import { createContactsApi } from './contacts';
-import { financeIntegrations } from './financeIntegrations';
+import { financeIntegrations, financeData } from './financeIntegrations';
 
 export const ApiClient = Object.freeze({
   _tokenManager: tokenManager,
@@ -43,7 +43,8 @@ export const ApiClient = Object.freeze({
   workspace: buildWorkspaceApi(httpClient),
   admin: buildAdminApi(httpClient),
   contacts: createContactsApi(httpClient),
-  financeIntegrations
+  financeIntegrations,
+  financeData
 });
 
 export type {

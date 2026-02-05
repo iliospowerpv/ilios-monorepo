@@ -81,3 +81,22 @@ class FinanceSyncTriggerResponse(BaseModel):
     correlation_id: str
     status: str
     message: str
+
+
+class FinanceHealthSummaryResponse(BaseModel):
+    sync_status: str = Field(
+        ...,
+        description="One of: not_configured, never_synced, running, healthy, error",
+    )
+    last_sync_at: Optional[datetime] = None
+    last_sync_error: Optional[str] = None
+    accounts_count: int = 0
+    transactions_count_30d: int = 0
+    unmapped_projects_count: Optional[int] = Field(
+        default=None,
+        description="Placeholder for future project-mapping feature",
+    )
+    needs_attention_reasons: List[str] = Field(
+        default_factory=list,
+        description="Machine-readable list of attention reasons",
+    )

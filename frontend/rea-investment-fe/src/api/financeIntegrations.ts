@@ -90,4 +90,35 @@ export const financeIntegrations = {
   }
 };
 
+export interface FinanceHealthSummary {
+  sync_status: 'not_configured' | 'never_synced' | 'running' | 'healthy' | 'error';
+  last_sync_at: string | null;
+  last_sync_error: string | null;
+  accounts_count: number;
+  transactions_count_30d: number;
+  unmapped_projects_count: number | null;
+  needs_attention_reasons: string[];
+}
+
+export interface FinanceSyncTriggerResult {
+  sync_run_id: number;
+  correlation_id: string;
+  status: string;
+  message: string;
+}
+
+export const financeData = {
+  getSummary: async (companyId: number): Promise<FinanceHealthSummary> => {
+    const response = await httpClient.get<FinanceHealthSummary>(`/finance/summary?company_id=${companyId}`);
+    return response.data;
+  },
+
+  triggerSync: async (companyId: number, providerKey: string): Promise<FinanceSyncTriggerResult> => {
+    const response = await httpClient.post<FinanceSyncTriggerResult>(
+      `/finance/integrations/${companyId}/${providerKey}/sync`
+    );
+    return response.data;
+  }
+};
+
 export type FinanceIntegrationsApi = typeof financeIntegrations;

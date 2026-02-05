@@ -26,7 +26,9 @@ from app.schema.finance_data import (
     FinanceTransactionsListResponse,
     FinanceSyncRunResponse,
     FinanceSyncRunsListResponse,
+    FinanceHealthSummaryResponse,
 )
+from app.services.finance.health_service import FinanceHealthService
 
 
 router = APIRouter(tags=["finance-data"])
@@ -155,4 +157,32 @@ def list_sync_runs(
             for r in runs
         ],
         total=len(runs),
+    )
+
+
+@router.get(
+    "/summary",
+    response_model=FinanceHealthSummaryResponse,
+    summary="Finance health summary for a company",
+    description="Returns compact health signals suitable for dashboard widgets. Requires finance:view.",
+)
+def get_finance_summary(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db: Session = Depends(get_session),
+    company_id: int = Query(..., description="Company ID to compute summary for"),
+) -> FinanceHealthSummaryResponse:
+    _require_finance_view(db, current_user, company_id)
+    _ensure_company_exists(db, company_id)
+
+    svc = FinanceHealthService(db)
+    summary = svc.compute_summary(company_id)
+
+    return FinanceHealthSummaryResponse(
+        sync_status=summary.sync_status,
+        last_sync_at=summary.last_sync_at,
+        last_sync_error=summary.last_sync_error,
+        accounts_count=summary.accounts_count,
+        transactions_count_30d=summary.transactions_count_30d,
+        unmapped_projects_count=summary.unmapped_projects_count,
+        needs_attention_reasons=summary.needs_attention_reasons,
     )

@@ -17,8 +17,11 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Alert from '@mui/material/Alert';
+import Skeleton from '@mui/material/Skeleton';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
+import ErrorIcon from '@mui/icons-material/Error';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import ApprovalIcon from '@mui/icons-material/Approval';
@@ -28,6 +31,23 @@ import type { AssetManagementSiteDetailsTabProps } from '../types';
 import { useFocusHighlight } from '../../../../../../hooks/useFocusHighlight';
 import { financeApi } from '../../../../../finance/api/finance';
 import type { FinanceBudget, FinanceObligation, FinanceSiteSummary } from '../../../../../finance/types';
+import { ApiClient } from '../../../../../../api';
+
+const getHealthChipProps = (
+  status: string
+): { label: string; color: 'success' | 'error' | 'warning' | 'default'; icon: React.ReactElement } => {
+  switch (status) {
+    case 'healthy':
+      return { label: 'Healthy', color: 'success', icon: <CheckCircleIcon fontSize="small" /> };
+    case 'error':
+      return { label: 'Attention Needed', color: 'error', icon: <ErrorIcon fontSize="small" /> };
+    case 'running':
+    case 'never_synced':
+      return { label: 'In Progress', color: 'warning', icon: <HourglassEmptyIcon fontSize="small" /> };
+    default:
+      return { label: 'Not Configured', color: 'default', icon: <WarningIcon fontSize="small" /> };
+  }
+};
 
 const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('en-US', {
@@ -276,6 +296,14 @@ export const Finance: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDeta
     enabled: !!companyId && !!siteId
   });
 
+  const { data: healthSummary, isLoading: healthLoading } = useQuery({
+    queryKey: ['financeHealthSummary', companyId],
+    queryFn: () => ApiClient.financeData.getSummary(companyId),
+    enabled: !!companyId,
+    staleTime: 60 * 1000,
+    retry: 1
+  });
+
   const handleOpenFinance = () => {
     navigate(`/finance/scope/project/${siteId}`);
   };
@@ -319,6 +347,23 @@ export const Finance: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDeta
             Finance Snapshot
           </Typography>
           <Chip label="Read-Only" size="small" variant="outlined" sx={{ ml: 1, color: theme.palette.text.secondary }} />
+          {healthLoading ? (
+            <Skeleton variant="rounded" width={100} height={24} sx={{ ml: 1 }} />
+          ) : healthSummary && healthSummary.sync_status !== 'not_configured' ? (
+            (() => {
+              const chipProps = getHealthChipProps(healthSummary.sync_status);
+              return (
+                <Chip
+                  icon={chipProps.icon}
+                  label={chipProps.label}
+                  color={chipProps.color}
+                  size="small"
+                  variant="filled"
+                  sx={{ ml: 1 }}
+                />
+              );
+            })()
+          ) : null}
         </Box>
         <Stack direction="row" spacing={2}>
           <Button variant="outlined" startIcon={<ApprovalIcon />} onClick={handleOpenApprovals}>
