@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { Viewer, Worker } from '@react-pdf-viewer/core';
 import { pageNavigationPlugin } from '@react-pdf-viewer/page-navigation';
 import { searchPlugin, Match } from '@react-pdf-viewer/search';
@@ -37,38 +37,42 @@ const PDFViewerComponent = React.forwardRef<PDFViewerRef, PDFViewerProps>((props
 
   const highlightPluginInstance = useMemo(() => highlightPlugin(), []);
 
-  const jumpToPage = useCallback(
-    (page: number) => {
-      navigateToPage(page - 1);
-    },
-    [navigateToPage]
-  );
+  const navigateToPageRef = useRef(navigateToPage);
+  navigateToPageRef.current = navigateToPage;
 
-  const searchAndHighlight = useCallback(
-    (text: string) => {
-      if (!text || text.trim().length === 0) return;
-      clearHighlights();
-      const searchText = text.length > 50 ? text.substring(0, 50) : text;
-      highlight({
+  const highlightRef = useRef(highlight);
+  highlightRef.current = highlight;
+
+  const clearHighlightsRef = useRef(clearHighlights);
+  clearHighlightsRef.current = clearHighlights;
+
+  const jumpToMatchRef = useRef(jumpToMatch);
+  jumpToMatchRef.current = jumpToMatch;
+
+  const jumpToPage = useCallback((page: number) => {
+    navigateToPageRef.current(page - 1);
+  }, []);
+
+  const searchAndHighlight = useCallback((text: string) => {
+    if (!text || text.trim().length === 0) return;
+    clearHighlightsRef.current();
+    const searchText = text.length > 50 ? text.substring(0, 50) : text;
+    highlightRef
+      .current({
         keyword: searchText,
         matchCase: false
-      }).then((matches: Match[]) => {
+      })
+      .then((matches: Match[]) => {
         if (matches.length > 0) {
-          jumpToMatch(0);
+          jumpToMatchRef.current(0);
         }
       });
-    },
-    [highlight, clearHighlights, jumpToMatch]
-  );
+  }, []);
 
-  React.useImperativeHandle(
-    ref,
-    () => ({
-      jumpToPage,
-      searchAndHighlight
-    }),
-    [jumpToPage, searchAndHighlight]
-  );
+  React.useImperativeHandle(ref, () => ({
+    jumpToPage,
+    searchAndHighlight
+  }));
 
   return (
     <Box sx={{ height: '100%', width: '100%', overflow: 'hidden' }}>
