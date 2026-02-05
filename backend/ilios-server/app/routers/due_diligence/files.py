@@ -372,10 +372,10 @@ async def upload_file(
         logger.error(f"Failed to upload file to storage: {e}")
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to upload file")
 
-    # Determine version number
+    # Determine version number (get_document_files already filters deleted=False)
     file_crud = FileCRUD(db_session)
     existing_files = file_crud.get_document_files(document_id)
-    version_number = len([f for f in existing_files if not f.deleted]) + 1
+    version_number = len(existing_files) + 1
 
     # Create file record
     file_payload = {

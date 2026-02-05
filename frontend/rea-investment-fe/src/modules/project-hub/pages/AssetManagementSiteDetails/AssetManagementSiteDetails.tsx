@@ -110,7 +110,8 @@ export const AssetManagementSiteDetails: React.FC<AssetManagementSiteDetailsProp
       setCurrentCompany({ id: siteDetails.company.id, name: siteDetails.company.name });
       setCurrentProject({ id: siteDetails.id, name: siteDetails.name });
     }
-  }, [siteDetails, setCurrentCompany, setCurrentProject]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [siteDetails?.id, siteDetails?.company?.id]);
 
   const DisplayContent = React.useMemo(() => {
     const tab = tabsData.find(({ id }) => id === activeTab);
