@@ -327,7 +327,8 @@ const DocumentModal: React.FC<DocumentModal> = props => {
   }, [selectedRunId, parseRunHistory]);
 
   const isSelectedRunLatest = selectedRun?.is_latest ?? true;
-  const isSelectedRunSucceeded = selectedRun?.status === 'completed' || selectedRun?.status === 'succeeded';
+  const runStatusLower = selectedRun?.status?.toLowerCase().replace(/\s+/g, '_');
+  const isSelectedRunSucceeded = runStatusLower === 'completed' || runStatusLower === 'succeeded';
   const canAcceptFromSelectedRun = isSelectedRunSucceeded && isSelectedRunLatest;
 
   const { mutateAsync: bulkAccept, isPending: isBulkAccepting } = useMutation({
@@ -759,13 +760,12 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                                         <Chip
                                           label={run.status}
                                           size="small"
-                                          color={
-                                            run.status === 'completed' || run.status === 'succeeded'
-                                              ? 'success'
-                                              : run.status === 'processing' || run.status === 'queued'
-                                                ? 'warning'
-                                                : 'error'
-                                          }
+                                          color={(() => {
+                                            const s = run.status?.toLowerCase().replace(/\s+/g, '_');
+                                            if (s === 'completed' || s === 'succeeded') return 'success';
+                                            if (s === 'processing' || s === 'queued') return 'warning';
+                                            return 'error';
+                                          })()}
                                           sx={{ height: 20, fontSize: '10px' }}
                                         />
                                         {run.was_truncated && (

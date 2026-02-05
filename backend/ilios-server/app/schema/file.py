@@ -100,6 +100,12 @@ class FileParsingStatus(BaseModel):
     end_time: datetime | None = Field(default=None, examples=["2024-04-15T11:58:22.183013"])
 
 
+class FileParsingEvidence(BaseModel):
+    page: Optional[int] = Field(None, examples=[1], description="Page number in the PDF where evidence was found")
+    snippet: Optional[str] = Field(None, examples=["The lease agreement dated..."], description="Text snippet from the document")
+    anchor_text: Optional[str] = Field(None, examples=["lease agreement"], description="Specific anchor text to highlight")
+
+
 class FileKeySchema(BaseModel):
     id: Optional[int] = Field(None, examples=[1], description="Might be empty if key doesn't exist in the DB")
     name: str = Field(examples=["Lessor (Landlord) Entity Name"])
@@ -111,6 +117,7 @@ class FileKeySchema(BaseModel):
     updated_at: Optional[datetime] = Field(None)
     legal_term: Optional[str] = Field(None, examples=["Commercial Operation Date"])
     comments: Optional[list[CommentsPageSchema]] = Field(None)
+    evidence: Optional[FileParsingEvidence] = Field(None, description="Source evidence from the parsed document")
 
 
 class FileKeysList(BaseModel):
