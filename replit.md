@@ -37,6 +37,12 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
         - **Cross-Document Checks Section**: Co-terminus check status with summary chips (Equal/Not Equal/N/A counts), Run/Rerun button
         - **Collapsible State**: Persists expand/collapse per user+project via localStorage (`project-summary-expanded-{siteId}`)
         - **Permission Gating**: Hidden entirely if user lacks `diligence:view`; Run/Rerun button requires `diligence:edit`
+        - **Collapsed Health Summary (Phase B5.1)**: Project-level due diligence health indicator with:
+            - Leading health chip: "Due Diligence: In Progress/Attention Needed" (GREEN currently unreachable - see constraint below)
+            - Documents: "X/Y reviewed" (from co-terminus sources) or "—" when unavailable
+            - Terms: "—" (project-level promoted terms unavailable without new API calls)
+            - Co-terminus: "OK/Not run/Running/X mismatches" chip
+        - **Architectural Constraint**: Project-level promoted term counts are NOT available without making individual API calls per document. The term data endpoint (`/agreements/{id}/overview`) is per-document only. GREEN health status requires promoted terms data, so it cannot currently be reached. Future enhancement: Add a project-level aggregate endpoint for promoted term counts.
     - **APIs Used**: `/agreements/`, `/agreements/{id}/terms`, `/co-terminus/check`, `/co-terminus/status`
     - **No New Routes**: Panel is embedded, not a separate page
 

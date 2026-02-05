@@ -212,34 +212,90 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
     : 'Rerun Check';
 
   // Project-level aggregation (collapsed summary - does NOT depend on selectedDocument)
+  // Uses existing in-memory data only; shows "—" if data unavailable
   const projectLevelStats = useMemo(() => {
     const totalDocuments = documentsWithFiles.length;
+
+    // Co-terminus summary stats
     const notEqualCount = summary.find(s => s.status === 'Not Equal')?.count ?? 0;
     const ambiguousCount = summary.find(s => s.status === 'Ambiguous')?.count ?? 0;
     const equalCount = summary.find(s => s.status === 'Equal')?.count ?? 0;
-    const naCount = summary.find(s => s.status === 'N/A')?.count ?? 0;
     const mismatchCount = notEqualCount + ambiguousCount;
-    const totalTermsChecked = equalCount + notEqualCount + ambiguousCount + naCount;
-    const termsPromoted = hasResults ? totalTermsChecked : 0;
-    return { totalDocuments, termsPromoted, mismatchCount, equalCount, hasCoTerminusResults: hasResults };
-  }, [documentsWithFiles.length, summary, hasResults]);
 
-  // Tri-state health derivation
+    // Aggregate from co-terminus check items (if available)
+    // Each item has 'sources' mapping document types to values
+    const items = (checkResultsData?.items ?? []) as Array<{
+      status: string;
+      sources?: Record<string, string | null>;
+    }>;
+
+    // Documents reviewed: count unique document types with at least one non-N/A term value
+    // A document is "reviewed" if it contributed values to any checked terms
+    const documentsWithValues = new Set<string>();
+    for (const item of items) {
+      if (item.sources) {
+        for (const [docType, value] of Object.entries(item.sources)) {
+          if (value && value !== 'N/A') {
+            documentsWithValues.add(docType);
+          }
+        }
+      }
+    }
+
+    // reviewedDocuments: null if no results, otherwise count of unique docs with values
+    const reviewedDocuments = hasResults ? documentsWithValues.size : null;
+    // NOTE: Actual "promoted terms" (accepted via workflow) not available without new API calls
+    // Per spec: show "—" when data unavailable. We show "—" since we can't distinguish
+    // extracted values from promoted/accepted values in this view.
+    const promotedTerms: number | null = null;
+
+    return {
+      totalDocuments,
+      reviewedDocuments,
+      promotedTerms,
+      mismatchCount,
+      equalCount,
+      hasCoTerminusResults: hasResults
+    };
+  }, [documentsWithFiles.length, summary, hasResults, checkResultsData?.items]);
+
+  // Tri-state health derivation (simple v1 per spec)
+  // Note: Actual promoted terms data not available without new API calls
+  // Per spec: GREEN requires promoted terms + documents reviewed; without promoted terms, can't reach GREEN
   const projectHealth = useMemo(() => {
-    const { mismatchCount, termsPromoted, hasCoTerminusResults } = projectLevelStats;
+    const { mismatchCount, promotedTerms, hasCoTerminusResults } = projectLevelStats;
+
+    // RED: Co-terminus completed with mismatches > 0 OR explicit error status
     if (hasError || (hasCoTerminusResults && mismatchCount > 0)) {
       return { label: 'Attention Needed', color: 'error' as const };
     }
-    if (hasCoTerminusResults && mismatchCount === 0 && termsPromoted > 0) {
+
+    // GREEN: Would require promoted terms data (unavailable) + co-terminus OK
+    // Since promotedTerms is null (unavailable), we cannot reach GREEN per spec
+    // This aligns with: "GREEN should be driven by promoted terms completeness + document review"
+    if (promotedTerms !== null && promotedTerms > 0 && hasCoTerminusResults && mismatchCount === 0) {
       return { label: 'Healthy', color: 'success' as const };
     }
+
+    // YELLOW: In progress - incomplete, not run, or promoted terms data unavailable
     return { label: 'In Progress', color: 'warning' as const };
   }, [projectLevelStats, hasError]);
 
   // Collapsed indicator labels (project-level)
-  const documentsLabel = projectLevelStats.totalDocuments > 0 ? `${projectLevelStats.totalDocuments}` : '—';
-  const termsCollapsedLabel =
-    projectLevelStats.termsPromoted > 0 ? `${projectLevelStats.termsPromoted} promoted` : 'Not promoted';
+  // Per spec: show "—" when data unavailable, not alternative labels
+  const documentsLabel = (() => {
+    const { reviewedDocuments, totalDocuments } = projectLevelStats;
+    if (totalDocuments === 0) return '—';
+    if (reviewedDocuments !== null) return `${reviewedDocuments}/${totalDocuments} reviewed`;
+    return '—'; // Data unavailable without co-terminus results
+  })();
+
+  const termsCollapsedLabel = (() => {
+    const { promotedTerms } = projectLevelStats;
+    if (promotedTerms === null) return '—'; // Data unavailable without co-terminus results
+    if (promotedTerms === 0) return 'Not promoted';
+    return `${promotedTerms} promoted`;
+  })();
 
   const coTerminusCollapsedLabel = (() => {
     if (isProcessing) return 'Running';
