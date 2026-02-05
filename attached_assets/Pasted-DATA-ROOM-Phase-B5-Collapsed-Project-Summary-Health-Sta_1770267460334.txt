@@ -1,0 +1,75 @@
+DATA ROOM – Phase B5: Collapsed Project Summary Health & Status Indicator (Updated)
+
+Context:
+- Project Summary panel is embedded at the top of the Project Hub → Data Room page.
+- It consolidates:
+  - Terms & Values roll-up (from promoted/accepted facts)
+  - Co-terminus checks (computed from accepted facts + check run status)
+- The panel is collapsible and persists state per user and project.
+- When collapsed, it should still provide a compact “health/status” readout.
+
+Design Constraint:
+This implementation must strictly reuse existing visual patterns, spacing, typography, and interaction behaviors already present in Project Overview, Finance panels, and existing Co-Terminus summary components.
+Do NOT introduce new visual styles, layouts, icons, colors, or interaction paradigms.
+This is a composition-only change using existing UI primitives and already-fetched data.
+
+Goal:
+When the Project Summary panel is COLLAPSED, show a compact, single-line health/status indicator that reflects:
+1) Data readiness (promoted facts available or not)
+2) Co-terminus check state (not run / processing / complete with mismatch count)
+
+Tasks:
+
+1) Collapsed-state summary row (informational only)
+- When the accordion is collapsed, render a single-line summary in the header area (or immediately adjacent) using existing compact chip/text styles.
+- Include these elements, derived from existing in-memory data (no new API calls):
+
+A) Terms readiness indicator (promoted facts)
+- Compute:
+  - total_terms_displayed (count of non-empty/non-N/A fields in the Terms & Values roll-up)
+  - total_terms_possible (if available; otherwise omit)
+- Display one concise status:
+  - If no promoted terms exist: “Terms: Not promoted” (or “Not reviewed”)
+  - If some promoted terms exist: “Terms: X available”
+  - If full set exists (if you can infer): “Terms: Complete”
+(Do not imply raw parsed data is reflected unless it is promoted.)
+
+B) Co-terminus status indicator
+- Using existing co-terminus state already loaded for the expanded view:
+  - If no check has ever been run: “Co-terminus: Not run”
+  - If running: “Co-terminus: Running”
+  - If complete:
+    - If mismatches > 0: “Co-terminus: X mismatches”
+    - Else: “Co-terminus: OK”
+- Reuse existing summary chips if they already exist; otherwise render compact text consistent with the app.
+
+2) Interaction rules
+- The collapsed summary is NOT independently clickable and does not introduce new buttons.
+- Clicking the accordion header expands/collapses as before.
+
+3) Layout constraints
+- Must not increase header height materially.
+- Must not cause overflow or layout shift in the Data Room page.
+- Must remain visually subordinate to the expanded content.
+
+4) Permissions
+- Existing behavior remains:
+  - If user lacks diligence:view, the Project Summary panel is hidden entirely.
+- No new permission logic.
+
+5) QA checklist
+- Collapse panel → health/status summary visible and correct for:
+  a) no promoted facts
+  b) promoted facts present
+  c) co-terminus not run
+  d) co-terminus running
+  e) co-terminus completed OK / mismatches
+- Expand panel → summary hidden, full content shown.
+- Persistence still works per user+project.
+- No new network requests introduced.
+
+Deliverables:
+- Collapsed health/status indicator implemented
+- List of files changed
+- Short description of collapsed vs expanded state
+Proceed now.
