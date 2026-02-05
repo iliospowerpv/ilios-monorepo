@@ -58,6 +58,7 @@ from .routers import (
     role_profiles_router,
     extraction_registry_router,
     summary_stats_router,
+    contacts_router,
 )
 from .routers.project_assumptions import assumptions_router
 from .routers.debug import router as debug_router
@@ -171,6 +172,8 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
     app.include_router(workspace_router, prefix="/api/workspace", tags=[tags.WORKSPACE_TAG])
     # role profiles API
     app.include_router(role_profiles_router, prefix="/api/role-profiles", tags=[tags.ROLES_TAG])
+    # contacts API (CRM-style address book at portfolio/company/project levels)
+    app.include_router(contacts_router, prefix="/api/contacts", tags=["Contacts"])
     # due diligence related APIs
     app.include_router(documents_router, prefix="/api/due-diligence/{site_id}/documents", tags=[tags.DOCUMENTS_TAG])
     app.include_router(agreements_router, prefix="/api/due-diligence/{site_id}/agreements", tags=[tags.DOCUMENTS_TAG])
