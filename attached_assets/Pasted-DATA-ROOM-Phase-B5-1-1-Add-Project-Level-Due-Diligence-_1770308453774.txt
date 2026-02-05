@@ -1,0 +1,96 @@
+DATA ROOM – Phase B5.1.1: Add Project-Level Due Diligence Summary Stats Endpoint (Promoted Facts Aggregation)
+
+Context:
+- Collapsed Project Summary health must be project-level and based on promoted/accepted facts.
+- Current UI cannot compute project-level promoted term counts without N+1 calls to per-document endpoints (/agreements/{document_id}/overview).
+- We will add ONE aggregate endpoint to provide accurate project-level counts and enable consistent health indicators (Green/Yellow/Red).
+
+Hard Constraints:
+- Do NOT modify any recent fixes (permissions, localStorage SSR guards/keying, query invalidation fixes, evidence serialization fixes, accept/promote workflow, parsing pipeline).
+- Do NOT modify PDF viewer components, document modal rendering, or Page X navigation behavior. This task is backend aggregation + small collapsed-summary wiring only.
+- No new routes/pages. No new UI patterns.
+
+Goal:
+Add a single read-only backend endpoint returning project-level promoted stats and coterminus status, then wire the collapsed Project Summary health indicator to use it (no N+1 calls).
+
+BACKEND
+
+1) Add endpoint
+GET /api/due-diligence/sites/{site_id}/summary-stats
+
+Response JSON:
+{
+  "documents_total": int,
+  "documents_with_promoted_terms": int,
+  "promoted_terms_total": int,
+  "coterminus": {
+    "status": "not_run"|"running"|"completed"|"stuck"|"failed"|null,
+    "mismatches": int|null,
+    "last_run_at": datetime|null
+  }
+}
+
+2) Authoritative data rules (critical)
+- promoted_terms_total and documents_with_promoted_terms MUST be computed from promoted facts (document_keys or the exact table written by Accept/Promote).
+- Do NOT use ai_parsing_results.parsed_result.
+- Do NOT use co-terminus sources values.
+- Define “promoted term” as a fact row for this site/project with a meaningful value:
+  - value is not NULL
+  - value is not empty/whitespace
+  - value is not "N/A" (case-insensitive) if present in your data
+  - if there is an accepted/is_active/is_promoted/is_actual flag, filter to the active/accepted rows only.
+
+3) Counting rules
+- promoted_terms_total:
+  - COUNT of promoted fact rows meeting the criteria above for the site_id
+  - ensure you do not double-count versions (filter to active/current where applicable)
+- documents_with_promoted_terms:
+  - COUNT DISTINCT document_id among those promoted fact rows
+- documents_total:
+  - use the same set of due diligence document slots the Data Room uses for the site (documents configured/available)
+  - if required/optional is not modeled, total = number of available document slots for that site
+  - do NOT define total as “uploaded files only”
+
+4) Coterminus stats
+- Return the co-terminus status and mismatch count based on existing coterminus data:
+  - status from existing status model/table
+  - mismatches from the latest completed run summary
+- If no runs exist: status="not_run", mismatches=null, last_run_at=null
+
+5) Permissions
+- Require Diligence:view permission for the site (fail closed).
+- Endpoint is read-only.
+
+6) Tests
+Add backend test(s) to validate:
+- promoted_terms_total counts only meaningful values and only active/current rows
+- documents_with_promoted_terms counts distinct documents correctly
+- site with no promoted facts returns 0s
+- permissions enforced (403 without diligence:view)
+
+FRONTEND
+
+7) Wire into collapsed Project Summary only
+- Add a single react-query call for /summary-stats (one call per Data Room load; cached).
+- Collapsed summary uses:
+  - Documents: X / Y reviewed (documents_with_promoted_terms / documents_total)
+  - Terms: Z promoted (promoted_terms_total)
+  - Co-terminus: show existing status chip text/colors (OK/Not run/Running/X mismatches)
+
+8) Health derivation (simple v1, deterministic)
+- RED: coterminus mismatches > 0 OR coterminus status in {stuck, failed}
+- YELLOW: documents_with_promoted_terms < documents_total OR coterminus status in {not_run, running}
+- GREEN: documents_with_promoted_terms == documents_total AND (coterminus mismatches == 0 OR coterminus status == not_run treated as neutral ONLY when docs complete)
+(We will refine later; keep conservative.)
+
+Verification checklist (must report)
+- Endpoint returns correct counts for a site with promoted facts
+- Collapsed Project Summary shows non-null Documents and Terms values
+- Health can reach GREEN when docs complete and no mismatches
+- No regressions: document modal opens; Page X navigation still works
+
+Deliverables:
+- New endpoint + minimal wiring
+- List of files changed
+- Example endpoint response
+Proceed now.

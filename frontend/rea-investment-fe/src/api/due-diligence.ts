@@ -381,6 +381,19 @@ interface ChatBotSessionQueryResponse {
   session_id: string;
 }
 
+interface CoTerminusStats {
+  status: string | null;
+  mismatches: number | null;
+  last_run_at: string | null;
+}
+
+interface ProjectSummaryStatsResponse {
+  documents_total: number;
+  documents_with_promoted_terms: number;
+  promoted_terms_total: number;
+  coterminus: CoTerminusStats;
+}
+
 export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
   const docInfo = async (siteId: number, documentId: number): Promise<DocumentDetails> => {
     const response = await httpClient.get<DocumentDetails>(`/api/due-diligence/${siteId}/documents/${documentId}`);
@@ -742,6 +755,13 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     return response.data;
   };
 
+  const getSummaryStats = async (siteId: number): Promise<ProjectSummaryStatsResponse> => {
+    const response = await httpClient.get<ProjectSummaryStatsResponse>(
+      `/api/due-diligence/sites/${siteId}/summary-stats`
+    );
+    return response.data;
+  };
+
   return Object.freeze({
     docInfo,
     updateDocDescription,
@@ -777,7 +797,8 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     archiveDocument,
     reorderDocument,
     deleteDocument,
-    createCustomDocument
+    createCustomDocument,
+    getSummaryStats
   });
 };
 

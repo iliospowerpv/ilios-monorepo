@@ -57,6 +57,7 @@ from .routers import (
     access_health_router,
     role_profiles_router,
     extraction_registry_router,
+    summary_stats_router,
 )
 from .routers.project_assumptions import assumptions_router
 from .routers.debug import router as debug_router
@@ -174,6 +175,7 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
     app.include_router(documents_router, prefix="/api/due-diligence/{site_id}/documents", tags=[tags.DOCUMENTS_TAG])
     app.include_router(agreements_router, prefix="/api/due-diligence/{site_id}/agreements", tags=[tags.DOCUMENTS_TAG])
     app.include_router(co_terminus_router, prefix="/api/due-diligence/{site_id}/co-terminus", tags=[tags.DOCUMENTS_TAG])
+    app.include_router(summary_stats_router, prefix="/api/due-diligence/sites/{site_id}", tags=[tags.DOCUMENTS_TAG])
     app.include_router(
         files_router, prefix="/api/due-diligence/{site_id}/documents/{document_id}/files", tags=[tags.FILES_TAG]
     )

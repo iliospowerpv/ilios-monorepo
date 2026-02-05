@@ -11,6 +11,7 @@ from .due_diligence import (
     documents_router,
     files_parsing_router,
     files_router,
+    summary_stats_router,
 )
 from .finance import (
     finance_actuals_router,

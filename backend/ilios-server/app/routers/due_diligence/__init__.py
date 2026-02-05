@@ -4,3 +4,4 @@ from .co_terminus import *
 from .documents import *
 from .files import *
 from .files_parsing import files_parsing_router
+from .summary_stats import summary_stats_router

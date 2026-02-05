@@ -119,6 +119,13 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
     enabled: hasDiligenceView
   });
 
+  const { data: summaryStatsData } = useQuery({
+    queryFn: () => ApiClient.dueDiligence.getSummaryStats(siteId),
+    queryKey: ['summary-stats', { siteId }],
+    enabled: hasDiligenceView,
+    staleTime: 60000
+  });
+
   const documentsWithFiles = useMemo(() => {
     if (!documentsData?.items) return [];
     const extractDocs = (sections: typeof documentsData.items): DiligenceDocument[] => {
@@ -211,105 +218,98 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
     ? 'Run Check'
     : 'Rerun Check';
 
-  // Project-level aggregation (collapsed summary - does NOT depend on selectedDocument)
-  // Uses existing in-memory data only; shows "—" if data unavailable
+  // Project-level aggregation (collapsed summary) - uses summary-stats endpoint
   const projectLevelStats = useMemo(() => {
-    const totalDocuments = documentsWithFiles.length;
-
-    // Co-terminus summary stats
-    const notEqualCount = summary.find(s => s.status === 'Not Equal')?.count ?? 0;
-    const ambiguousCount = summary.find(s => s.status === 'Ambiguous')?.count ?? 0;
-    const equalCount = summary.find(s => s.status === 'Equal')?.count ?? 0;
-    const mismatchCount = notEqualCount + ambiguousCount;
-
-    // Aggregate from co-terminus check items (if available)
-    // Each item has 'sources' mapping document types to values
-    const items = (checkResultsData?.items ?? []) as Array<{
-      status: string;
-      sources?: Record<string, string | null>;
-    }>;
-
-    // Documents reviewed: count unique document types with at least one non-N/A term value
-    // A document is "reviewed" if it contributed values to any checked terms
-    const documentsWithValues = new Set<string>();
-    for (const item of items) {
-      if (item.sources) {
-        for (const [docType, value] of Object.entries(item.sources)) {
-          if (value && value !== 'N/A') {
-            documentsWithValues.add(docType);
-          }
-        }
-      }
+    // Use summary-stats endpoint data if available
+    if (summaryStatsData) {
+      const { documents_total, documents_with_promoted_terms, promoted_terms_total, coterminus } = summaryStatsData;
+      return {
+        totalDocuments: documents_total,
+        documentsWithPromotedTerms: documents_with_promoted_terms,
+        promotedTerms: promoted_terms_total,
+        mismatchCount: coterminus.mismatches ?? 0,
+        coterminusStatus: coterminus.status,
+        hasCoTerminusResults: coterminus.status === 'completed'
+      };
     }
 
-    // reviewedDocuments: null if no results, otherwise count of unique docs with values
-    const reviewedDocuments = hasResults ? documentsWithValues.size : null;
-    // NOTE: Actual "promoted terms" (accepted via workflow) not available without new API calls
-    // Per spec: show "—" when data unavailable. We show "—" since we can't distinguish
-    // extracted values from promoted/accepted values in this view.
-    const promotedTerms: number | null = null;
+    // Fallback to existing in-memory logic
+    const totalDocuments = documentsWithFiles.length;
+    const notEqualCount = summary.find(s => s.status === 'Not Equal')?.count ?? 0;
+    const ambiguousCount = summary.find(s => s.status === 'Ambiguous')?.count ?? 0;
+    const mismatchCount = notEqualCount + ambiguousCount;
 
     return {
       totalDocuments,
-      reviewedDocuments,
-      promotedTerms,
+      documentsWithPromotedTerms: null as number | null,
+      promotedTerms: null as number | null,
       mismatchCount,
-      equalCount,
+      coterminusStatus: null as string | null,
       hasCoTerminusResults: hasResults
     };
-  }, [documentsWithFiles.length, summary, hasResults, checkResultsData?.items]);
+  }, [summaryStatsData, documentsWithFiles.length, summary, hasResults]);
 
-  // Tri-state health derivation (simple v1 per spec)
-  // Note: Actual promoted terms data not available without new API calls
-  // Per spec: GREEN requires promoted terms + documents reviewed; without promoted terms, can't reach GREEN
+  // Tri-state health derivation (per spec Phase B5.1.1)
+  // RED: coterminus mismatches > 0 OR coterminus status in {stuck, failed}
+  // YELLOW: documents_with_promoted_terms < documents_total OR coterminus status in {not_run, running}
+  // GREEN: documents_with_promoted_terms == documents_total AND (coterminus mismatches == 0 OR coterminus status == not_run treated as neutral when docs complete)
   const projectHealth = useMemo(() => {
-    const { mismatchCount, promotedTerms, hasCoTerminusResults } = projectLevelStats;
+    const { mismatchCount, coterminusStatus, documentsWithPromotedTerms, totalDocuments } = projectLevelStats;
 
-    // RED: Co-terminus completed with mismatches > 0 OR explicit error status
-    if (hasError || (hasCoTerminusResults && mismatchCount > 0)) {
+    // RED: Co-terminus mismatches > 0 OR status is stuck/failed
+    if (mismatchCount > 0 || coterminusStatus === 'stuck' || coterminusStatus === 'failed' || hasError) {
       return { label: 'Attention Needed', color: 'error' as const };
     }
 
-    // GREEN: Would require promoted terms data (unavailable) + co-terminus OK
-    // Since promotedTerms is null (unavailable), we cannot reach GREEN per spec
-    // This aligns with: "GREEN should be driven by promoted terms completeness + document review"
-    if (promotedTerms !== null && promotedTerms > 0 && hasCoTerminusResults && mismatchCount === 0) {
+    // GREEN: All documents have promoted terms AND (no mismatches OR co-terminus not run)
+    const allDocsComplete =
+      documentsWithPromotedTerms !== null && totalDocuments > 0 && documentsWithPromotedTerms === totalDocuments;
+    const coterminusOK = mismatchCount === 0 && (coterminusStatus === 'completed' || coterminusStatus === 'not_run');
+
+    if (allDocsComplete && coterminusOK) {
       return { label: 'Healthy', color: 'success' as const };
     }
 
-    // YELLOW: In progress - incomplete, not run, or promoted terms data unavailable
+    // YELLOW: In progress - incomplete docs or co-terminus not run/running
     return { label: 'In Progress', color: 'warning' as const };
   }, [projectLevelStats, hasError]);
 
-  // Collapsed indicator labels (project-level)
-  // Per spec: show "—" when data unavailable, not alternative labels
+  // Collapsed indicator labels (project-level) - per spec Phase B5.1.1
+  // Documents: X / Y reviewed (documents_with_promoted_terms / documents_total)
   const documentsLabel = (() => {
-    const { reviewedDocuments, totalDocuments } = projectLevelStats;
+    const { documentsWithPromotedTerms, totalDocuments } = projectLevelStats;
     if (totalDocuments === 0) return '—';
-    if (reviewedDocuments !== null) return `${reviewedDocuments}/${totalDocuments} reviewed`;
-    return '—'; // Data unavailable without co-terminus results
+    if (documentsWithPromotedTerms !== null) return `${documentsWithPromotedTerms}/${totalDocuments} reviewed`;
+    return '—';
   })();
 
+  // Terms: Z promoted (promoted_terms_total)
   const termsCollapsedLabel = (() => {
     const { promotedTerms } = projectLevelStats;
-    if (promotedTerms === null) return '—'; // Data unavailable without co-terminus results
-    if (promotedTerms === 0) return 'Not promoted';
+    if (promotedTerms === null) return '—';
+    if (promotedTerms === 0) return 'None promoted';
     return `${promotedTerms} promoted`;
   })();
 
+  // Co-terminus: show existing status chip text/colors (OK/Not run/Running/X mismatches)
   const coTerminusCollapsedLabel = (() => {
-    if (isProcessing) return 'Running';
-    if (!hasResults) return 'Not run';
-    if (projectLevelStats.mismatchCount > 0) {
-      return `${projectLevelStats.mismatchCount} mismatch${projectLevelStats.mismatchCount > 1 ? 'es' : ''}`;
+    const { coterminusStatus, mismatchCount } = projectLevelStats;
+    if (coterminusStatus === 'running' || isProcessing) return 'Running';
+    if (coterminusStatus === 'not_run' || !coterminusStatus) return 'Not run';
+    if (coterminusStatus === 'stuck') return 'Stuck';
+    if (coterminusStatus === 'failed') return 'Failed';
+    if (mismatchCount > 0) {
+      return `${mismatchCount} mismatch${mismatchCount > 1 ? 'es' : ''}`;
     }
     return 'OK';
   })();
 
   const coTerminusCollapsedColor = (() => {
-    if (isProcessing) return 'warning';
-    if (!hasResults) return 'default';
-    if (projectLevelStats.mismatchCount > 0) return 'error';
+    const { coterminusStatus, mismatchCount } = projectLevelStats;
+    if (coterminusStatus === 'running' || isProcessing) return 'warning';
+    if (coterminusStatus === 'not_run' || !coterminusStatus) return 'default';
+    if (coterminusStatus === 'stuck' || coterminusStatus === 'failed') return 'error';
+    if (mismatchCount > 0) return 'error';
     return 'success';
   })();
 
