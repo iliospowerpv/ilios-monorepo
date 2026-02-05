@@ -8,6 +8,7 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
+import Chip from '@mui/material/Chip';
 import Collapse from '@mui/material/Collapse';
 import Paper from '@mui/material/Paper';
 import Grid from '@mui/material/Grid';
@@ -213,6 +214,32 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
     ? 'Run Check'
     : 'Rerun Check';
 
+  const termsReadinessLabel = (() => {
+    if (!termData?.items) return 'Not promoted';
+    const promotedCount = termData.items.filter((term: AgreementTerm) => term.value && term.value !== 'N/A').length;
+    if (promotedCount === 0) return 'Not promoted';
+    return `${promotedCount} available`;
+  })();
+
+  const coTerminusCollapsedLabel = (() => {
+    if (isProcessing) return 'Running';
+    if (!hasResults) return 'Not run';
+    const notEqualCount = summary.find(s => s.status === 'Not Equal')?.count ?? 0;
+    const ambiguousCount = summary.find(s => s.status === 'Ambiguous')?.count ?? 0;
+    const mismatchCount = notEqualCount + ambiguousCount;
+    if (mismatchCount > 0) return `${mismatchCount} mismatch${mismatchCount > 1 ? 'es' : ''}`;
+    return 'OK';
+  })();
+
+  const coTerminusCollapsedColor = (() => {
+    if (isProcessing) return 'warning';
+    if (!hasResults) return 'default';
+    const notEqualCount = summary.find(s => s.status === 'Not Equal')?.count ?? 0;
+    const ambiguousCount = summary.find(s => s.status === 'Ambiguous')?.count ?? 0;
+    if (notEqualCount + ambiguousCount > 0) return 'error';
+    return 'success';
+  })();
+
   return (
     <Paper
       elevation={0}
@@ -241,16 +268,28 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
           <Typography variant="subtitle1" fontWeight={600}>
             Project Summary
           </Typography>
-          {!isExpanded && hasResults && (
-            <Stack direction="row" spacing={1} sx={{ ml: 2 }}>
-              {summary.map(item => (
-                <Stack key={item.status} direction="row" alignItems="center" spacing={0.5}>
-                  {statusIconMapping[item.status]}
-                  <Typography variant="caption" color="text.secondary">
-                    {item.count}
-                  </Typography>
-                </Stack>
-              ))}
+          {!isExpanded && (
+            <Stack direction="row" spacing={1.5} sx={{ ml: 2 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+              >
+                Terms: {termsReadinessLabel}
+              </Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+              >
+                Co-terminus:{' '}
+                <Chip
+                  label={coTerminusCollapsedLabel}
+                  size="small"
+                  color={coTerminusCollapsedColor as 'default' | 'success' | 'warning' | 'error'}
+                  sx={{ height: 18, fontSize: '10px', '& .MuiChip-label': { px: 0.75 } }}
+                />
+              </Typography>
             </Stack>
           )}
         </Stack>
