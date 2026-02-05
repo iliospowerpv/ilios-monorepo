@@ -1,0 +1,28 @@
+Uncaught runtime errors:
+×
+ERROR
+Cannot read properties of null (reading 'useMemo')
+TypeError: Cannot read properties of null (reading 'useMemo')
+    at exports.useMemo (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:530618:31)
+    at pageNavigationPlugin (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:510444:52)
+    at https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:40147:127
+    at renderWithHooks (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:462071:22)
+    at updateForwardRef (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:464640:24)
+    at beginWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:466687:20)
+    at HTMLUnknownElement.callCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:451667:18)
+    at Object.invokeGuardedCallbackDev (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:451711:20)
+    at invokeGuardedCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:451768:35)
+    at beginWork$1 (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:471632:11)
+ERROR
+Cannot read properties of null (reading 'useMemo')
+TypeError: Cannot read properties of null (reading 'useMemo')
+    at exports.useMemo (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:530618:31)
+    at pageNavigationPlugin (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:510444:52)
+    at https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:40147:127
+    at renderWithHooks (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:462071:22)
+    at updateForwardRef (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:464640:24)
+    at beginWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:466687:20)
+    at HTMLUnknownElement.callCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:451667:18)
+    at Object.invokeGuardedCallbackDev (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:451711:20)
+    at invokeGuardedCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:451768:35)
+    at beginWork$1 (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:471632:11)

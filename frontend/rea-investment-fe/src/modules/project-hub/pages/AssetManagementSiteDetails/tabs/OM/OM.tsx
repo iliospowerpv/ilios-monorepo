@@ -8,7 +8,6 @@ import Telemetry from '../Telemetry/Telemetry';
 import type { AssetManagementSiteDetailsTabProps } from '../types';
 import { useFocusHighlight } from '../../../../../../hooks/useFocusHighlight';
 
-
 export const OM: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDetails }) => {
   const { focusState } = useFocusHighlight();
 

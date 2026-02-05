@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Viewer, Worker } from '@react-pdf-viewer/core';
 import { pageNavigationPlugin } from '@react-pdf-viewer/page-navigation';
 import { searchPlugin, Match } from '@react-pdf-viewer/search';
@@ -29,13 +29,13 @@ const ViewerWrapper = Viewer as React.ComponentType<{
 const PDFViewerComponent = React.forwardRef<PDFViewerRef, PDFViewerProps>((props, ref) => {
   const { fileUrl, onReady } = props;
 
-  const pageNavigationPluginInstance = pageNavigationPlugin();
+  const pageNavigationPluginInstance = useMemo(() => pageNavigationPlugin(), []);
   const { jumpToPage: navigateToPage } = pageNavigationPluginInstance;
 
-  const searchPluginInstance = searchPlugin();
+  const searchPluginInstance = useMemo(() => searchPlugin(), []);
   const { highlight, clearHighlights, jumpToMatch } = searchPluginInstance;
 
-  const highlightPluginInstance = highlightPlugin();
+  const highlightPluginInstance = useMemo(() => highlightPlugin(), []);
 
   const jumpToPage = useCallback(
     (page: number) => {

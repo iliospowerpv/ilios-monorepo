@@ -90,9 +90,7 @@ export const CompanyList: React.FC<CompanyListProps> = ({ companies, isLoading }
           </Typography>
           <Box sx={{ textAlign: 'center', py: 4 }}>
             <BusinessIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
-            <Typography color="text.secondary">
-              You don&apos;t have access to any companies yet.
-            </Typography>
+            <Typography color="text.secondary">You don&apos;t have access to any companies yet.</Typography>
           </Box>
         </CardContent>
       </Card>

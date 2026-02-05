@@ -12,7 +12,6 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import HomeIcon from '@mui/icons-material/Home';
-import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import FolderIcon from '@mui/icons-material/Folder';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';

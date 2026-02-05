@@ -30,7 +30,14 @@ const formatCurrency = (value: number): string => {
   }).format(value);
 };
 
-export const ApprovalDialog: React.FC<ApprovalDialogProps> = ({ open, onClose, onSubmit, obligation, budget, action }) => {
+export const ApprovalDialog: React.FC<ApprovalDialogProps> = ({
+  open,
+  onClose,
+  onSubmit,
+  obligation,
+  budget,
+  action
+}) => {
   const [notes, setNotes] = useState('');
   const [overrideReason, setOverrideReason] = useState('');
   const [useOverride, setUseOverride] = useState(false);
@@ -67,8 +74,7 @@ export const ApprovalDialog: React.FC<ApprovalDialogProps> = ({ open, onClose, o
   if (!obligation && !budget) return null;
 
   const hasPrerequisiteIssues =
-    obligation?.prerequisite_snapshot &&
-    (obligation.prerequisite_snapshot as any).missing_prerequisites?.length > 0;
+    obligation?.prerequisite_snapshot && (obligation.prerequisite_snapshot as any).missing_prerequisites?.length > 0;
 
   const entityType = isBudget ? 'Budget' : 'Obligation';
   const amount = isBudget ? budget.total_planned : obligation?.amount_requested || 0;

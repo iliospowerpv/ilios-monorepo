@@ -3,7 +3,10 @@ import { BREADCRUMB_LABELS, CANONICAL_ROUTES } from '../../../../utils/breadcrum
 
 export const createEditUserHandle = () => {
   return RouteHandle.createHandle({
-    crumbsBuilder: () => [{ title: BREADCRUMB_LABELS.SETTINGS, link: CANONICAL_ROUTES.SETTINGS }, { title: 'Edit User' }]
+    crumbsBuilder: () => [
+      { title: BREADCRUMB_LABELS.SETTINGS, link: CANONICAL_ROUTES.SETTINGS },
+      { title: 'Edit User' }
+    ]
   });
 };
 

@@ -109,7 +109,14 @@ export const VendorFormDialog: React.FC<VendorFormDialogProps> = ({ open, onClos
             onChange={e => setContactPhone(e.target.value)}
             fullWidth
           />
-          <TextField label="Notes" value={notes} onChange={e => setNotes(e.target.value)} multiline rows={2} fullWidth />
+          <TextField
+            label="Notes"
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            multiline
+            rows={2}
+            fullWidth
+          />
           <FormControlLabel
             control={<Switch checked={isActive} onChange={e => setIsActive(e.target.checked)} />}
             label="Active"

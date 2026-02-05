@@ -13,10 +13,7 @@ export const createAssetManagementSiteDetailsHandle = (queryClient: QueryClient)
     const siteDetails = queryClient.getQueryData<LoaderOutput>(['site', 'details', { siteId: data.id }]);
 
     return siteDetails
-      ? [
-          { title: BREADCRUMB_LABELS.PROJECT_HUB, link: CANONICAL_ROUTES.PROJECT_HUB },
-          { title: siteDetails.name }
-        ]
+      ? [{ title: BREADCRUMB_LABELS.PROJECT_HUB, link: CANONICAL_ROUTES.PROJECT_HUB }, { title: siteDetails.name }]
       : [{ title: BREADCRUMB_LABELS.PROJECT_HUB, link: CANONICAL_ROUTES.PROJECT_HUB }, { title: '...' }];
   };
 

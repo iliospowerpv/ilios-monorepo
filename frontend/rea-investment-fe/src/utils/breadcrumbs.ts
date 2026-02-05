@@ -26,4 +26,4 @@ export const CANONICAL_ROUTES = {
   SETTINGS: '/settings'
 } as const;
 
-export type BreadcrumbLabel = typeof BREADCRUMB_LABELS[keyof typeof BREADCRUMB_LABELS];
+export type BreadcrumbLabel = (typeof BREADCRUMB_LABELS)[keyof typeof BREADCRUMB_LABELS];

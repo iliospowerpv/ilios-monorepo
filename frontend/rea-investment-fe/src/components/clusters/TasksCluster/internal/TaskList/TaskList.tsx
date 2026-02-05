@@ -13,7 +13,7 @@ import { TasksViewProps } from '../../types';
 import { resolveTaskDestination } from '../../../../../utils/navigation/taskDestinationResolver';
 import { useProjectNavigation, ProjectPicker } from '../../../../common/ProjectPicker';
 
-export const TaskList: React.FC<TasksViewProps> = ({ boardId, searchTerm, siteId, module, focusTaskId }) => {
+export const TaskList: React.FC<TasksViewProps> = ({ boardId, searchTerm, siteId, module }) => {
   const { isPickerOpen, closePicker, navigateWithFallback, handleProjectSelect } = useProjectNavigation();
   const { efficiencyColors, color } = useTheme();
   const taskPriority: any = {

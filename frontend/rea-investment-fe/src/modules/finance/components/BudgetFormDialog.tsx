@@ -68,13 +68,7 @@ export const BudgetFormDialog: React.FC<BudgetFormDialogProps> = ({ open, onClos
       <DialogTitle>{isEdit ? 'Edit Budget' : 'Create Budget'}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
-          <TextField
-            label="Budget Name"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            required
-            fullWidth
-          />
+          <TextField label="Budget Name" value={name} onChange={e => setName(e.target.value)} required fullWidth />
           <TextField
             label="Description"
             value={description}

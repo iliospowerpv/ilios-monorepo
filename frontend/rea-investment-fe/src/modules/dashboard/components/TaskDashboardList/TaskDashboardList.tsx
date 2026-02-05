@@ -14,13 +14,7 @@ import { useProjectNavigation, ProjectPicker } from '../../../../components/comm
 import { resolveTaskDestination } from '../../../../utils/navigation/taskDestinationResolver';
 
 export const TaskDashboardList: React.FC = () => {
-  const {
-    isPickerOpen,
-    closePicker,
-    navigateWithFallback,
-    handleProjectSelect,
-    pendingTab
-  } = useProjectNavigation();
+  const { isPickerOpen, closePicker, navigateWithFallback, handleProjectSelect, pendingTab } = useProjectNavigation();
   const { efficiencyColors, color } = useTheme();
   const taskPriority: any = {
     High: <FlagIcon sx={{ color: efficiencyColors.low }} />,
@@ -193,11 +187,7 @@ export const TaskDashboardList: React.FC = () => {
           onRowClicked={onRowClicked}
         />
       </Box>
-      <ProjectPicker
-        open={isPickerOpen}
-        onClose={closePicker}
-        onSelect={handleProjectSelect}
-      />
+      <ProjectPicker open={isPickerOpen} onClose={closePicker} onSelect={handleProjectSelect} />
     </>
   );
 };

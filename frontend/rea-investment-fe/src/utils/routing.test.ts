@@ -6,14 +6,18 @@ describe('buildLensRoute', () => {
       expect(buildLensRoute('finance', 'portfolio')).toBe('/finance/scope/portfolio');
       expect(buildLensRoute('asset-management', 'portfolio')).toBe('/asset-management/scope/portfolio');
       expect(buildLensRoute('due-diligence', 'portfolio')).toBe('/due-diligence/scope/portfolio');
-      expect(buildLensRoute('operations-and-maintenance', 'portfolio')).toBe('/operations-and-maintenance/scope/portfolio');
+      expect(buildLensRoute('operations-and-maintenance', 'portfolio')).toBe(
+        '/operations-and-maintenance/scope/portfolio'
+      );
     });
   });
 
   describe('company scope', () => {
     it('should return company lens route when companyId is provided', () => {
       expect(buildLensRoute('finance', 'company', { companyId: 123 })).toBe('/finance/scope/company/123');
-      expect(buildLensRoute('asset-management', 'company', { companyId: 456 })).toBe('/asset-management/scope/company/456');
+      expect(buildLensRoute('asset-management', 'company', { companyId: 456 })).toBe(
+        '/asset-management/scope/company/456'
+      );
     });
 
     it('should return picker route when companyId is missing', () => {

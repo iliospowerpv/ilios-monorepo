@@ -24,14 +24,14 @@ export const useFinanceContext = (siteId: number | string | undefined): FinanceC
       return response.data;
     },
     enabled: !!numericSiteId && !isNaN(numericSiteId),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000
   });
 
   return {
     companyId: data?.company_id ?? null,
     siteId: numericSiteId || 0,
     isLoading,
-    error: error as Error | null,
+    error: error as Error | null
   };
 };
 

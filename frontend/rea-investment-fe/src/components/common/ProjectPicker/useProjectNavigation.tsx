@@ -16,11 +16,7 @@ interface UseProjectNavigationReturn {
   openPicker: () => void;
   closePicker: () => void;
   navigateToProjectHub: (projectId: number, tab?: ProjectHubTab, focus?: FocusParams) => void;
-  navigateWithFallback: (
-    siteId: number | null,
-    tab?: ProjectHubTab,
-    focus?: FocusParams
-  ) => void;
+  navigateWithFallback: (siteId: number | null, tab?: ProjectHubTab, focus?: FocusParams) => void;
   ensureProjectSelected: (tab?: ProjectHubTab) => void;
   handleProjectSelect: (project: ProjectInfo) => void;
   pendingTab: ProjectHubTab | null;

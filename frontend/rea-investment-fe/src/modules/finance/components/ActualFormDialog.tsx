@@ -69,7 +69,11 @@ export const ActualFormDialog: React.FC<ActualFormDialogProps> = ({ open, onClos
         <Stack spacing={2} sx={{ mt: 1 }}>
           <FormControl fullWidth required>
             <InputLabel>Category</InputLabel>
-            <Select value={category} onChange={e => setCategory(e.target.value as FinanceBudgetCategory)} label="Category">
+            <Select
+              value={category}
+              onChange={e => setCategory(e.target.value as FinanceBudgetCategory)}
+              label="Category"
+            >
               <MenuItem value={FinanceBudgetCategory.Development}>Development</MenuItem>
               <MenuItem value={FinanceBudgetCategory.Construction}>Construction</MenuItem>
               <MenuItem value={FinanceBudgetCategory.Interconnection}>Interconnection</MenuItem>
@@ -135,7 +139,11 @@ export const ActualFormDialog: React.FC<ActualFormDialogProps> = ({ open, onClos
           />
           <FormControl fullWidth>
             <InputLabel>Source System</InputLabel>
-            <Select value={sourceSystem} onChange={e => setSourceSystem(e.target.value as FinanceActualSource)} label="Source System">
+            <Select
+              value={sourceSystem}
+              onChange={e => setSourceSystem(e.target.value as FinanceActualSource)}
+              label="Source System"
+            >
               <MenuItem value={FinanceActualSource.Manual}>Manual Entry</MenuItem>
               <MenuItem value={FinanceActualSource.QuickBooks}>QuickBooks</MenuItem>
               <MenuItem value={FinanceActualSource.Gravity}>Gravity</MenuItem>
