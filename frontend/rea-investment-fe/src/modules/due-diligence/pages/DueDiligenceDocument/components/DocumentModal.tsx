@@ -508,7 +508,7 @@ const DocumentModal: React.FC<DocumentModal> = props => {
     setVerifyIndex(-1);
   }, []);
 
-  const FileRenderer = React.useMemo(() => {
+  const renderFileViewer = () => {
     if (!file || !fileUrl) return null;
 
     if (isPDF) {
@@ -529,7 +529,7 @@ const DocumentModal: React.FC<DocumentModal> = props => {
         }}
       />
     );
-  }, [file, fileUrl, isPDF]);
+  };
 
   if (!file || !fileUrl) return null;
 
@@ -645,7 +645,7 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                               {hasCompleted || hasFailed ? 'Reprocess' : 'Parse with AI'}
                             </Button>
                           </Box>
-                          {FileRenderer}
+                          {renderFileViewer()}
                         </DocumentPreviewContainer>
                       </Grid>
                       <Grid item sm={6} md={5} height="100%">

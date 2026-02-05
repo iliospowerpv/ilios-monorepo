@@ -1,0 +1,28 @@
+Uncaught runtime errors:
+×
+ERROR
+Cannot read properties of undefined (reading 'length')
+TypeError: Cannot read properties of undefined (reading 'length')
+    at areHookInputsEqual (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:470626:42)
+    at updateCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:471436:15)
+    at Object.useCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:472007:18)
+    at useCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:502752:25)
+    at https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:40187:72
+    at renderWithHooks (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:470675:22)
+    at updateForwardRef (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:473244:24)
+    at beginWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:475291:20)
+    at HTMLUnknownElement.callCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:460271:18)
+    at Object.invokeGuardedCallbackDev (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:460315:20)
+ERROR
+Cannot read properties of undefined (reading 'length')
+TypeError: Cannot read properties of undefined (reading 'length')
+    at areHookInputsEqual (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:470626:42)
+    at updateCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:471436:15)
+    at Object.useCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:472007:18)
+    at useCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:502752:25)
+    at https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:40187:72
+    at renderWithHooks (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:470675:22)
+    at updateForwardRef (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:473244:24)
+    at beginWork (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:475291:20)
+    at HTMLUnknownElement.callCallback (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:460271:18)
+    at Object.invokeGuardedCallbackDev (https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev/static/js/bundle.js:460315:20)
