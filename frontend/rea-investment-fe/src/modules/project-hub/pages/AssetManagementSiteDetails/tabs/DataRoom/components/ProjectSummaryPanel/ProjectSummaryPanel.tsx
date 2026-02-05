@@ -196,11 +196,8 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
     }
   };
 
-  if (!hasDiligenceView) {
-    return null;
-  }
-
-  const summary: SummaryItem[] = checkResultsData?.summary ?? [];
+  // Derived values (computed from query data, safe before conditional render)
+  const summary: SummaryItem[] = useMemo(() => checkResultsData?.summary ?? [], [checkResultsData?.summary]);
   const hasResults = !!checkResultsData?.items?.length;
   const isProcessing = isCoTerminusCheckRunning || executionStatusData?.status === 'Processing';
   const hasError = [
@@ -214,31 +211,55 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
     ? 'Run Check'
     : 'Rerun Check';
 
-  const termsReadinessLabel = (() => {
-    if (!termData?.items) return 'Not promoted';
-    const promotedCount = termData.items.filter((term: AgreementTerm) => term.value && term.value !== 'N/A').length;
-    if (promotedCount === 0) return 'Not promoted';
-    return `${promotedCount} available`;
-  })();
+  // Project-level aggregation (collapsed summary - does NOT depend on selectedDocument)
+  const projectLevelStats = useMemo(() => {
+    const totalDocuments = documentsWithFiles.length;
+    const notEqualCount = summary.find(s => s.status === 'Not Equal')?.count ?? 0;
+    const ambiguousCount = summary.find(s => s.status === 'Ambiguous')?.count ?? 0;
+    const equalCount = summary.find(s => s.status === 'Equal')?.count ?? 0;
+    const naCount = summary.find(s => s.status === 'N/A')?.count ?? 0;
+    const mismatchCount = notEqualCount + ambiguousCount;
+    const totalTermsChecked = equalCount + notEqualCount + ambiguousCount + naCount;
+    const termsPromoted = hasResults ? totalTermsChecked : 0;
+    return { totalDocuments, termsPromoted, mismatchCount, equalCount, hasCoTerminusResults: hasResults };
+  }, [documentsWithFiles.length, summary, hasResults]);
+
+  // Tri-state health derivation
+  const projectHealth = useMemo(() => {
+    const { mismatchCount, termsPromoted, hasCoTerminusResults } = projectLevelStats;
+    if (hasError || (hasCoTerminusResults && mismatchCount > 0)) {
+      return { label: 'Attention Needed', color: 'error' as const };
+    }
+    if (hasCoTerminusResults && mismatchCount === 0 && termsPromoted > 0) {
+      return { label: 'Healthy', color: 'success' as const };
+    }
+    return { label: 'In Progress', color: 'warning' as const };
+  }, [projectLevelStats, hasError]);
+
+  // Collapsed indicator labels (project-level)
+  const documentsLabel = projectLevelStats.totalDocuments > 0 ? `${projectLevelStats.totalDocuments}` : '—';
+  const termsCollapsedLabel =
+    projectLevelStats.termsPromoted > 0 ? `${projectLevelStats.termsPromoted} promoted` : 'Not promoted';
 
   const coTerminusCollapsedLabel = (() => {
     if (isProcessing) return 'Running';
     if (!hasResults) return 'Not run';
-    const notEqualCount = summary.find(s => s.status === 'Not Equal')?.count ?? 0;
-    const ambiguousCount = summary.find(s => s.status === 'Ambiguous')?.count ?? 0;
-    const mismatchCount = notEqualCount + ambiguousCount;
-    if (mismatchCount > 0) return `${mismatchCount} mismatch${mismatchCount > 1 ? 'es' : ''}`;
+    if (projectLevelStats.mismatchCount > 0) {
+      return `${projectLevelStats.mismatchCount} mismatch${projectLevelStats.mismatchCount > 1 ? 'es' : ''}`;
+    }
     return 'OK';
   })();
 
   const coTerminusCollapsedColor = (() => {
     if (isProcessing) return 'warning';
     if (!hasResults) return 'default';
-    const notEqualCount = summary.find(s => s.status === 'Not Equal')?.count ?? 0;
-    const ambiguousCount = summary.find(s => s.status === 'Ambiguous')?.count ?? 0;
-    if (notEqualCount + ambiguousCount > 0) return 'error';
+    if (projectLevelStats.mismatchCount > 0) return 'error';
     return 'success';
   })();
+
+  if (!hasDiligenceView) {
+    return null;
+  }
 
   return (
     <Paper
@@ -269,13 +290,18 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
             Project Summary
           </Typography>
           {!isExpanded && (
-            <Stack direction="row" spacing={1.5} sx={{ ml: 2 }}>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
-              >
-                Terms: {termsReadinessLabel}
+            <Stack direction="row" spacing={1.5} sx={{ ml: 2 }} alignItems="center">
+              <Chip
+                label={`Due Diligence: ${projectHealth.label}`}
+                size="small"
+                color={projectHealth.color}
+                sx={{ height: 20, fontSize: '11px', fontWeight: 600, '& .MuiChip-label': { px: 1 } }}
+              />
+              <Typography variant="caption" color="text.secondary">
+                Documents: {documentsLabel}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Terms: {termsCollapsedLabel}
               </Typography>
               <Typography
                 variant="caption"
