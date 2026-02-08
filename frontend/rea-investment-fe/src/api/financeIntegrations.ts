@@ -54,7 +54,7 @@ export interface FinanceIntegrationTestResponse {
 
 export const financeIntegrations = {
   getCompanyIntegrations: async (companyId: number): Promise<FinanceIntegrationsListResponse> => {
-    const response = await httpClient.get<FinanceIntegrationsListResponse>(`/finance/integrations/${companyId}`);
+    const response = await httpClient.get<FinanceIntegrationsListResponse>(`/api/finance/integrations/${companyId}`);
     return response.data;
   },
 
@@ -62,7 +62,7 @@ export const financeIntegrations = {
     companyId: number,
     payload: FinanceIntegrationCreatePayload
   ): Promise<FinanceIntegration> => {
-    const response = await httpClient.post<FinanceIntegration>(`/finance/integrations/${companyId}`, payload);
+    const response = await httpClient.post<FinanceIntegration>(`/api/finance/integrations/${companyId}`, payload);
     return response.data;
   },
 
@@ -72,7 +72,7 @@ export const financeIntegrations = {
     payload: FinanceIntegrationUpdatePayload
   ): Promise<FinanceIntegration> => {
     const response = await httpClient.patch<FinanceIntegration>(
-      `/finance/integrations/${companyId}/${providerKey}`,
+      `/api/finance/integrations/${companyId}/${providerKey}`,
       payload
     );
     return response.data;
@@ -80,13 +80,13 @@ export const financeIntegrations = {
 
   testIntegration: async (companyId: number, providerKey: string): Promise<FinanceIntegrationTestResponse> => {
     const response = await httpClient.post<FinanceIntegrationTestResponse>(
-      `/finance/integrations/${companyId}/${providerKey}/test`
+      `/api/finance/integrations/${companyId}/${providerKey}/test`
     );
     return response.data;
   },
 
   deleteIntegration: async (companyId: number, providerKey: string): Promise<void> => {
-    await httpClient.delete(`/finance/integrations/${companyId}/${providerKey}`);
+    await httpClient.delete(`/api/finance/integrations/${companyId}/${providerKey}`);
   }
 };
 
@@ -109,13 +109,13 @@ export interface FinanceSyncTriggerResult {
 
 export const financeData = {
   getSummary: async (companyId: number): Promise<FinanceHealthSummary> => {
-    const response = await httpClient.get<FinanceHealthSummary>(`/finance/summary?company_id=${companyId}`);
+    const response = await httpClient.get<FinanceHealthSummary>(`/api/finance/summary?company_id=${companyId}`);
     return response.data;
   },
 
   triggerSync: async (companyId: number, providerKey: string): Promise<FinanceSyncTriggerResult> => {
     const response = await httpClient.post<FinanceSyncTriggerResult>(
-      `/finance/integrations/${companyId}/${providerKey}/sync`
+      `/api/finance/integrations/${companyId}/${providerKey}/sync`
     );
     return response.data;
   }
