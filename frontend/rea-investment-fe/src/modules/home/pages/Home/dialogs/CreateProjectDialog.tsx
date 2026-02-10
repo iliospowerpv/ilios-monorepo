@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -17,6 +16,7 @@ import MenuItem from '@mui/material/MenuItem';
 
 import { ApiClient } from '../../../../../api';
 import { useEntityContext } from '../../../../../contexts/entityContext/entityContext';
+import { US_STATES } from '../../../../../constants/usStates';
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -25,16 +25,18 @@ interface CreateProjectDialogProps {
 }
 
 export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, onClose, onSuccess }) => {
-  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { currentCompany } = useEntityContext();
   const [companyId, setCompanyId] = useState<number | ''>('');
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
+  const [county, setCounty] = useState('');
   const [zipCode, setZipCode] = useState('');
   const [systemSizeAc, setSystemSizeAc] = useState<number | ''>('');
   const [systemSizeDc, setSystemSizeDc] = useState<number | ''>('');
+  const [lonLatUrl, setLonLatUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const { data: companiesData } = useQuery({
@@ -57,15 +59,15 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, 
         address,
         city,
         state,
+        county: county || undefined,
         zip_code: zipCode,
         system_size_ac: (systemSizeAc as number) || 0,
         system_size_dc: (systemSizeDc as number) || 0,
-        lon_lat_url: ''
+        lon_lat_url: lonLatUrl
       }),
-    onSuccess: response => {
-      if (response.id) {
-        navigate(`/projects/${response.id}`);
-      }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workspace'] });
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
       resetForm();
       onSuccess();
     },
@@ -80,9 +82,11 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, 
     setAddress('');
     setCity('');
     setState('');
+    setCounty('');
     setZipCode('');
     setSystemSizeAc('');
     setSystemSizeDc('');
+    setLonLatUrl('');
     setError(null);
   };
 
@@ -132,14 +136,29 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, 
 
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField label="City" value={city} onChange={e => setCity(e.target.value)} fullWidth />
-              <TextField label="State" value={state} onChange={e => setState(e.target.value)} sx={{ width: 100 }} />
+              <FormControl sx={{ minWidth: 120 }}>
+                <InputLabel>State</InputLabel>
+                <Select value={state} onChange={e => setState(e.target.value as string)} label="State">
+                  {US_STATES.map(st => (
+                    <MenuItem key={st} value={st}>
+                      {st}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
               <TextField
                 label="Zip Code"
                 value={zipCode}
-                onChange={e => setZipCode(e.target.value)}
+                onChange={e => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 5);
+                  setZipCode(val);
+                }}
                 sx={{ width: 120 }}
+                inputProps={{ maxLength: 5 }}
               />
             </Box>
+
+            <TextField label="County (optional)" value={county} onChange={e => setCounty(e.target.value)} fullWidth />
 
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
@@ -148,6 +167,7 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, 
                 value={systemSizeAc}
                 onChange={e => setSystemSizeAc(e.target.value ? Number(e.target.value) : '')}
                 fullWidth
+                inputProps={{ min: 0, step: 0.01 }}
               />
               <TextField
                 label="System Size DC (kW)"
@@ -155,8 +175,17 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, 
                 value={systemSizeDc}
                 onChange={e => setSystemSizeDc(e.target.value ? Number(e.target.value) : '')}
                 fullWidth
+                inputProps={{ min: 0, step: 0.01 }}
               />
             </Box>
+
+            <TextField
+              label="Coordinates (Lat/Lon)"
+              value={lonLatUrl}
+              onChange={e => setLonLatUrl(e.target.value)}
+              fullWidth
+              helperText="e.g. 41° 56' 54.3732&quot;"
+            />
           </Box>
         </DialogContent>
         <DialogActions>

@@ -42,10 +42,11 @@ class CreateCompanySchema(UpsertCompanySchema):
     zip_code: str = Field(pattern=r"^[0-9]+$", examples=["08062"], max_length=5)
 
 
-class CompanySchema(CreateCompanySchema):
-    """Full company schema."""
+class CompanySchema(UpsertCompanySchema):
+    """Full company schema for responses. Address fields are optional since older records may not have them."""
 
     id: int = Field(examples=[1])
+    company_type: CompanyTypes
 
 
 class CompanySchemaSitesInfo(CompanySchema):
