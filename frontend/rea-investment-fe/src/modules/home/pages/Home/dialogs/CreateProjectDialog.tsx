@@ -68,6 +68,7 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workspace'] });
       queryClient.invalidateQueries({ queryKey: ['companies'] });
+      queryClient.invalidateQueries({ queryKey: ['accessible-entities'] });
       resetForm();
       onSuccess();
     },

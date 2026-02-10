@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useParams, Outlet, Navigate } from 'react-router-dom';
 import { useEntityContext, ScopeType } from '../../../contexts/entityContext';
 import { useAccessibleEntities } from '../../../hooks/useAccessibleEntities';
@@ -14,7 +14,16 @@ export const ScopedModuleRoute: React.FC<ScopedModuleRouteProps> = ({ scope, chi
   const params = useParams<{ companyId?: string; projectId?: string }>();
   const { setCurrentScope, setCurrentCompany, setCurrentProject, currentScope, currentCompany, currentProject } =
     useEntityContext();
-  const { getCompanyById, getProjectById, isLoading } = useAccessibleEntities();
+  const { getCompanyById, getProjectById, isLoading, isFetching, refetch } = useAccessibleEntities();
+
+  const attemptedRefetchRef = useRef<string | null>(null);
+
+  const entityId = scope === 'company' ? params.companyId : scope === 'project' ? params.projectId : null;
+  const refetchKey = `${scope}:${entityId ?? ''}`;
+
+  useEffect(() => {
+    attemptedRefetchRef.current = null;
+  }, [refetchKey]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -79,6 +88,22 @@ export const ScopedModuleRoute: React.FC<ScopedModuleRouteProps> = ({ scope, chi
     const companyId = parseInt(params.companyId, 10);
     const company = getCompanyById(companyId);
     if (!company) {
+      if (attemptedRefetchRef.current !== refetchKey) {
+        attemptedRefetchRef.current = refetchKey;
+        refetch();
+        return (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: 200 }}>
+            <CircularProgress size={28} />
+          </Box>
+        );
+      }
+      if (isFetching) {
+        return (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: 200 }}>
+            <CircularProgress size={28} />
+          </Box>
+        );
+      }
       return <Navigate to="/companies" replace />;
     }
   }
@@ -87,6 +112,22 @@ export const ScopedModuleRoute: React.FC<ScopedModuleRouteProps> = ({ scope, chi
     const projectId = parseInt(params.projectId, 10);
     const project = getProjectById(projectId);
     if (!project) {
+      if (attemptedRefetchRef.current !== refetchKey) {
+        attemptedRefetchRef.current = refetchKey;
+        refetch();
+        return (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: 200 }}>
+            <CircularProgress size={28} />
+          </Box>
+        );
+      }
+      if (isFetching) {
+        return (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: 200 }}>
+            <CircularProgress size={28} />
+          </Box>
+        );
+      }
       return <Navigate to="/projects" replace />;
     }
   }

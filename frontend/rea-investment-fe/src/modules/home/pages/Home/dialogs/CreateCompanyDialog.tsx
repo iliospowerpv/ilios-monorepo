@@ -51,6 +51,7 @@ export const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ open, 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workspace'] });
       queryClient.invalidateQueries({ queryKey: ['companies'] });
+      queryClient.invalidateQueries({ queryKey: ['accessible-entities'] });
       resetForm();
       onSuccess();
     },

@@ -41,6 +41,7 @@ export const useAccessibleEntities = () => {
       companies: query.data?.companies ?? [],
       projects: query.data?.projects ?? [],
       isLoading: query.isLoading,
+      isFetching: query.isFetching,
       isError: query.isError,
       error: query.error,
       refetch: query.refetch,
