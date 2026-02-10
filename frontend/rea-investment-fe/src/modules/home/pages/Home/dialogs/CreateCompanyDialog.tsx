@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -16,7 +15,6 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 
 import { ApiClient } from '../../../../../api';
-import { useEntityContext } from '../../../../../contexts/entityContext/entityContext';
 import { US_STATES } from '../../../../../constants/usStates';
 
 interface CreateCompanyDialogProps {
@@ -26,8 +24,7 @@ interface CreateCompanyDialogProps {
 }
 
 export const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ open, onClose, onSuccess }) => {
-  const navigate = useNavigate();
-  const { setCurrentCompany } = useEntityContext();
+  const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -51,12 +48,9 @@ export const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ open, 
         email: email || null,
         phone: phone || null
       }),
-    onSuccess: response => {
-      const newCompanyId = (response as unknown as { id?: number }).id;
-      if (newCompanyId) {
-        setCurrentCompany({ id: newCompanyId, name });
-        navigate(`/companies/${newCompanyId}`);
-      }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workspace'] });
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
       resetForm();
       onSuccess();
     },
