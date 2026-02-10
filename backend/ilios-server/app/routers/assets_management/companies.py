@@ -9,9 +9,10 @@ Authorization Pattern (Phase C.1):
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi_filter import FilterDepends
 from sqlalchemy.orm import Session
+from starlette import status
 
 from app.crud.company import CompanyCRUD
 from app.db.session import get_session
@@ -25,8 +26,10 @@ from app.models.company import Company
 from app.schema.company import (
     CompaniesOrderByFieldEnum,
     CompaniesPaginator,
+    CompanyCreationSuccess,
     CompanyListSiteSchema,
     CompanySchemaSitesInfo,
+    CreateCompanySchema,
 )
 from app.schema.user import CurrentUserSchema
 from app.static import HTTP_403_RESPONSE, HTTP_404_RESPONSE
@@ -34,6 +37,32 @@ from app.static.permissions import PermissionsModules
 
 logger = logging.getLogger(__name__)
 companies_router = APIRouter()
+
+
+@companies_router.post(
+    "/",
+    response_model=CompanyCreationSuccess,
+    status_code=status.HTTP_201_CREATED,
+    responses={**HTTP_403_RESPONSE},
+)
+async def create_company(
+    payload: CreateCompanySchema,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+):
+    if not current_user.is_system_user:
+        raise HTTPException(status_code=403, detail="Only system users can create companies")
+
+    company_crud = CompanyCRUD(db_session)
+    new_company = company_crud.create_item(payload.model_dump())
+    db_session.commit()
+    db_session.refresh(new_company)
+
+    return CompanyCreationSuccess(
+        id=new_company.id,
+        message="Company has been successfully created",
+        code=201,
+    )
 
 
 @companies_router.get(

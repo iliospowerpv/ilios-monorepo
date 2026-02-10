@@ -20,6 +20,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 import { ApiClient } from '../../../../api';
 import { useEntityContext } from '../../../../contexts/entityContext/entityContext';
+import { US_STATES } from '../../../../constants/usStates';
 
 interface ProjectStepProps {
   companyId: number;
@@ -37,7 +38,11 @@ export const ProjectStep: React.FC<ProjectStepProps> = ({ companyId, companyName
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
+  const [county, setCounty] = useState('');
   const [zipCode, setZipCode] = useState('');
+  const [systemSizeAc, setSystemSizeAc] = useState('');
+  const [systemSizeDc, setSystemSizeDc] = useState('');
+  const [lonLatUrl, setLonLatUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const { data: sitesData, isLoading: isLoadingProjects } = useQuery({
@@ -55,10 +60,11 @@ export const ProjectStep: React.FC<ProjectStepProps> = ({ companyId, companyName
         address,
         city,
         state,
+        county: county || undefined,
         zip_code: zipCode,
-        system_size_ac: 0,
-        system_size_dc: 0,
-        lon_lat_url: ''
+        system_size_ac: parseFloat(systemSizeAc) || 0,
+        system_size_dc: parseFloat(systemSizeDc) || 0,
+        lon_lat_url: lonLatUrl
       }),
     onSuccess: response => {
       if (response.id) {
@@ -83,10 +89,41 @@ export const ProjectStep: React.FC<ProjectStepProps> = ({ companyId, companyName
     }
   };
 
+  const isCreateFormValid = () => {
+    return (
+      name.trim() !== '' &&
+      address.trim() !== '' &&
+      city.trim() !== '' &&
+      state !== '' &&
+      /^[0-9]{5}$/.test(zipCode) &&
+      lonLatUrl.trim() !== ''
+    );
+  };
+
   const handleCreateNew = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       setError('Project name is required');
+      return;
+    }
+    if (!address.trim()) {
+      setError('Address is required');
+      return;
+    }
+    if (!city.trim()) {
+      setError('City is required');
+      return;
+    }
+    if (!state) {
+      setError('State is required');
+      return;
+    }
+    if (!/^[0-9]{5}$/.test(zipCode)) {
+      setError('Zip code must be exactly 5 digits');
+      return;
+    }
+    if (!lonLatUrl.trim()) {
+      setError('Coordinates are required');
       return;
     }
     setError(null);
@@ -193,25 +230,72 @@ export const ProjectStep: React.FC<ProjectStepProps> = ({ companyId, companyName
                   autoFocus
                 />
                 <TextField
-                  label="Address (optional)"
+                  label="Address"
                   value={address}
                   onChange={e => setAddress(e.target.value)}
+                  required
                   fullWidth
                 />
                 <Box sx={{ display: 'flex', gap: 2 }}>
-                  <TextField label="City" value={city} onChange={e => setCity(e.target.value)} fullWidth />
-                  <TextField label="State" value={state} onChange={e => setState(e.target.value)} sx={{ width: 100 }} />
+                  <TextField label="City" value={city} onChange={e => setCity(e.target.value)} required fullWidth />
+                  <FormControl required sx={{ minWidth: 120 }}>
+                    <InputLabel>State</InputLabel>
+                    <Select value={state} onChange={e => setState(e.target.value as string)} label="State">
+                      {US_STATES.map(st => (
+                        <MenuItem key={st} value={st}>
+                          {st}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                   <TextField
-                    label="Zip"
+                    label="Zip Code"
                     value={zipCode}
-                    onChange={e => setZipCode(e.target.value)}
-                    sx={{ width: 100 }}
+                    onChange={e => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 5);
+                      setZipCode(val);
+                    }}
+                    required
+                    sx={{ width: 120 }}
+                    inputProps={{ maxLength: 5 }}
                   />
                 </Box>
+                <TextField
+                  label="County (optional)"
+                  value={county}
+                  onChange={e => setCounty(e.target.value)}
+                  fullWidth
+                />
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <TextField
+                    label="System Size AC (kW)"
+                    type="number"
+                    value={systemSizeAc}
+                    onChange={e => setSystemSizeAc(e.target.value)}
+                    fullWidth
+                    inputProps={{ min: 0, step: 0.01 }}
+                  />
+                  <TextField
+                    label="System Size DC (kW)"
+                    type="number"
+                    value={systemSizeDc}
+                    onChange={e => setSystemSizeDc(e.target.value)}
+                    fullWidth
+                    inputProps={{ min: 0, step: 0.01 }}
+                  />
+                </Box>
+                <TextField
+                  label="Coordinates (Lat/Lon)"
+                  value={lonLatUrl}
+                  onChange={e => setLonLatUrl(e.target.value)}
+                  required
+                  fullWidth
+                  helperText="e.g. 41° 56' 54.3732&quot;"
+                />
                 <Button
                   type="submit"
                   variant="contained"
-                  disabled={createMutation.isPending || !name.trim()}
+                  disabled={createMutation.isPending || !isCreateFormValid()}
                   startIcon={createMutation.isPending ? <CircularProgress size={16} /> : <AddIcon />}
                 >
                   Create Project

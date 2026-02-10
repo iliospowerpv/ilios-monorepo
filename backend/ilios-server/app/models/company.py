@@ -6,6 +6,7 @@ from sqlalchemy.orm import relationship
 from app.db.base_class import Base
 from app.models.board import RelatedBoards
 from app.models.helpers import utcnow
+from app.models.site import State
 from app.static.companies import CompanyTypes
 
 
@@ -24,6 +25,10 @@ class Company(RelatedBoards, Base):
     email = Column(VARCHAR, nullable=True)
     phone = Column(VARCHAR, nullable=True)
     address = Column(VARCHAR, nullable=True)
+    city = Column(VARCHAR, nullable=True)
+    state = Column(Enum(State), nullable=True)
+    county = Column(VARCHAR, nullable=True)
+    zip_code = Column(VARCHAR, nullable=True)
     company_type = Column(Enum(CompanyTypes), nullable=False)
     
     portfolio_hub_id = Column(

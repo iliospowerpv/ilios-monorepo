@@ -5,6 +5,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from app.models.site import State
 from app.schema.common import SuccessUpdateSchema, round_to_scale_2
 from app.schema.paginator import BasePaginator
 from app.static.companies import CompanyTypes
@@ -26,10 +27,19 @@ class UpsertCompanySchema(BaseModel):
     email: Optional[EmailStr] = Field(None, max_length=100)
     phone: Optional[str] = Field(None, pattern=r"^[0-9]+$", examples=["0123456789"], min_length=10, max_length=10)
     address: Optional[str] = Field(None, examples=["719 Main Street Solar"], max_length=255)
+    city: Optional[str] = Field(None, max_length=100)
+    state: Optional[State] = Field(None)
+    county: Optional[str] = Field(None, max_length=100)
+    zip_code: Optional[str] = Field(None, pattern=r"^[0-9]+$", max_length=5)
 
 
 class CreateCompanySchema(UpsertCompanySchema):
     company_type: CompanyTypes
+    name: str = Field(examples=["Green Lantern"], min_length=2, max_length=100)
+    address: str = Field(examples=["719 Main Street Solar"], max_length=255)
+    city: str = Field(examples=["Mullica Hill"], max_length=100)
+    state: State
+    zip_code: str = Field(pattern=r"^[0-9]+$", examples=["08062"], max_length=5)
 
 
 class CompanySchema(CreateCompanySchema):
@@ -108,6 +118,7 @@ class CompanyListSiteSchema(BaseModel):
 
 
 class CompanyCreationSuccess(BaseModel):
+    id: int = Field(examples=[1])
     message: str = Field(description="Success message", examples=["Company has been successfully created"])
     code: int = Field(description="Success status code", examples=[201])
 

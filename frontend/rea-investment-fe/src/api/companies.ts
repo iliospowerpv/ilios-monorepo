@@ -18,9 +18,13 @@ interface CompaniesSitesData {
 interface CreateCompanyAttributes {
   company_type: string;
   name: string;
+  address: string;
+  city: string;
+  state: string;
+  county?: string | null;
+  zip_code: string;
   email?: string | null;
   phone?: string | null;
-  address?: string | null;
 }
 
 interface EditCompanyAttributes {
@@ -28,11 +32,16 @@ interface EditCompanyAttributes {
   email?: string | null;
   phone?: string | null;
   address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  county?: string | null;
+  zip_code?: string | null;
 }
 
 type CompanyAttributes = CreateCompanyAttributes | EditCompanyAttributes;
 
 interface CreateCompanyResponse {
+  id: number;
   message: string;
   code: number;
 }
@@ -99,7 +108,7 @@ export const buildCompaniesApi = (httpClient: AxiosInstance) => {
   };
 
   const create = async (attributes: CompanyAttributes): Promise<CreateCompanyResponse> => {
-    const response = await httpClient.post<CreateCompanyResponse>('/api/contractors/', attributes);
+    const response = await httpClient.post<CreateCompanyResponse>('/api/companies/', attributes);
     return response.data;
   };
 

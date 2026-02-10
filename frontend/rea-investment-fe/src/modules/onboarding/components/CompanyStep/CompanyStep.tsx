@@ -20,6 +20,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { ApiClient } from '../../../../api';
 import { useAuth } from '../../../../contexts/auth/auth';
 import { useEntityContext } from '../../../../contexts/entityContext/entityContext';
+import { US_STATES } from '../../../../constants/usStates';
 
 interface CompanyStepProps {
   onComplete: (companyId: number, companyName: string) => void;
@@ -34,6 +35,12 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
   const [newCompanyName, setNewCompanyName] = useState('');
   const [newCompanyEmail, setNewCompanyEmail] = useState('');
+  const [newCompanyPhone, setNewCompanyPhone] = useState('');
+  const [newCompanyAddress, setNewCompanyAddress] = useState('');
+  const [newCompanyCity, setNewCompanyCity] = useState('');
+  const [newCompanyState, setNewCompanyState] = useState('');
+  const [newCompanyCounty, setNewCompanyCounty] = useState('');
+  const [newCompanyZipCode, setNewCompanyZipCode] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const { data: workspaceData, isLoading: isLoadingCompanies } = useQuery({
@@ -48,12 +55,16 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
       ApiClient.companies.create({
         company_type: 'owner',
         name: newCompanyName,
+        address: newCompanyAddress,
+        city: newCompanyCity,
+        state: newCompanyState,
+        county: newCompanyCounty || null,
+        zip_code: newCompanyZipCode,
         email: newCompanyEmail || null,
-        phone: null,
-        address: null
+        phone: newCompanyPhone || null
       }),
     onSuccess: response => {
-      const newCompanyId = (response as unknown as { id?: number }).id;
+      const newCompanyId = response.id;
       if (newCompanyId) {
         setCurrentCompany({ id: newCompanyId, name: newCompanyName });
         onComplete(newCompanyId, newCompanyName);
@@ -84,10 +95,41 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
     }
   };
 
+  const isCreateFormValid = () => {
+    return (
+      newCompanyName.trim().length >= 2 &&
+      newCompanyAddress.trim() !== '' &&
+      newCompanyCity.trim() !== '' &&
+      newCompanyState !== '' &&
+      /^[0-9]{5}$/.test(newCompanyZipCode) &&
+      (!newCompanyPhone || /^[0-9]{10}$/.test(newCompanyPhone))
+    );
+  };
+
   const handleCreateNew = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCompanyName.trim()) {
       setError('Company name is required');
+      return;
+    }
+    if (!newCompanyAddress.trim()) {
+      setError('Address is required');
+      return;
+    }
+    if (!newCompanyCity.trim()) {
+      setError('City is required');
+      return;
+    }
+    if (!newCompanyState) {
+      setError('State is required');
+      return;
+    }
+    if (!/^[0-9]{5}$/.test(newCompanyZipCode)) {
+      setError('Zip code must be exactly 5 digits');
+      return;
+    }
+    if (newCompanyPhone && !/^[0-9]{10}$/.test(newCompanyPhone)) {
+      setError('Phone must be exactly 10 digits');
       return;
     }
     setError(null);
@@ -205,18 +247,82 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
                   required
                   fullWidth
                   autoFocus={mode === 'create'}
+                  inputProps={{ minLength: 2, maxLength: 100 }}
                 />
                 <TextField
-                  label="Email (optional)"
-                  type="email"
-                  value={newCompanyEmail}
-                  onChange={e => setNewCompanyEmail(e.target.value)}
+                  label="Address"
+                  value={newCompanyAddress}
+                  onChange={e => setNewCompanyAddress(e.target.value)}
+                  required
                   fullWidth
+                  inputProps={{ maxLength: 255 }}
                 />
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <TextField
+                    label="City"
+                    value={newCompanyCity}
+                    onChange={e => setNewCompanyCity(e.target.value)}
+                    required
+                    fullWidth
+                    inputProps={{ maxLength: 100 }}
+                  />
+                  <FormControl required sx={{ minWidth: 120 }}>
+                    <InputLabel>State</InputLabel>
+                    <Select
+                      value={newCompanyState}
+                      onChange={e => setNewCompanyState(e.target.value as string)}
+                      label="State"
+                    >
+                      {US_STATES.map(st => (
+                        <MenuItem key={st} value={st}>
+                          {st}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    label="Zip Code"
+                    value={newCompanyZipCode}
+                    onChange={e => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 5);
+                      setNewCompanyZipCode(val);
+                    }}
+                    required
+                    sx={{ width: 120 }}
+                    inputProps={{ maxLength: 5 }}
+                  />
+                </Box>
+                <TextField
+                  label="County (optional)"
+                  value={newCompanyCounty}
+                  onChange={e => setNewCompanyCounty(e.target.value)}
+                  fullWidth
+                  inputProps={{ maxLength: 100 }}
+                />
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <TextField
+                    label="Email (optional)"
+                    type="email"
+                    value={newCompanyEmail}
+                    onChange={e => setNewCompanyEmail(e.target.value)}
+                    fullWidth
+                    inputProps={{ maxLength: 100 }}
+                  />
+                  <TextField
+                    label="Phone (optional, 10 digits)"
+                    value={newCompanyPhone}
+                    onChange={e => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setNewCompanyPhone(val);
+                    }}
+                    fullWidth
+                    inputProps={{ maxLength: 10 }}
+                  />
+                </Box>
                 <Button
                   type="submit"
                   variant="contained"
-                  disabled={createMutation.isPending || !newCompanyName.trim()}
+                  disabled={createMutation.isPending || !isCreateFormValid()}
                   startIcon={createMutation.isPending ? <CircularProgress size={16} /> : <AddIcon />}
                 >
                   Create Company

@@ -19,6 +19,7 @@ import Box from '@mui/material/Box';
 import { ApiClient, CompanyAttributes } from '../../../../api';
 import { COMPANY_TYPES } from '../../../../constants';
 import { useNotify } from '../../../../contexts/notifications/notifications';
+import { US_STATES } from '../../../../constants/usStates';
 
 interface AddCompanyDialogProps {
   open: boolean;
@@ -29,9 +30,13 @@ interface AddCompanyDialogProps {
 interface CompanyFormFields {
   company_type: string;
   name: string;
+  address: string;
+  city: string;
+  state: string;
+  county?: string;
+  zip_code: string;
   email?: string;
   phone?: string;
-  address?: string;
 }
 
 export const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({ open, onClose, onSuccess }) => {
@@ -50,9 +55,13 @@ export const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({ open, onClos
     defaultValues: {
       company_type: '',
       name: '',
+      address: '',
+      city: '',
+      state: '',
+      county: '',
+      zip_code: '',
       email: '',
-      phone: '',
-      address: ''
+      phone: ''
     }
   });
 
@@ -76,9 +85,13 @@ export const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({ open, onClos
     createMutation.mutate({
       company_type: data.company_type,
       name: data.name,
+      address: data.address,
+      city: data.city,
+      state: data.state,
+      county: data.county || null,
+      zip_code: data.zip_code,
       email: data.email || null,
-      phone: data.phone || null,
-      address: data.address || null
+      phone: data.phone || null
     });
   };
 
@@ -133,6 +146,77 @@ export const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({ open, onClos
             />
 
             <TextField
+              label="Address"
+              required
+              fullWidth
+              error={!!errors.address}
+              helperText={errors.address?.message}
+              {...register('address', {
+                required: 'Address is required',
+                maxLength: { value: 255, message: 'Address must be less than 255 characters' }
+              })}
+            />
+
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                label="City"
+                required
+                fullWidth
+                error={!!errors.city}
+                helperText={errors.city?.message}
+                {...register('city', {
+                  required: 'City is required',
+                  maxLength: { value: 100, message: 'City must be less than 100 characters' }
+                })}
+              />
+
+              <Controller
+                name="state"
+                control={control}
+                rules={{ required: 'State is required' }}
+                render={({ field }) => (
+                  <FormControl error={!!errors.state} required sx={{ minWidth: 120 }}>
+                    <InputLabel>State</InputLabel>
+                    <Select {...field} label="State">
+                      {US_STATES.map(st => (
+                        <MenuItem key={st} value={st}>
+                          {st}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {errors.state && <FormHelperText>{errors.state.message}</FormHelperText>}
+                  </FormControl>
+                )}
+              />
+
+              <TextField
+                label="Zip Code"
+                required
+                sx={{ width: 120 }}
+                error={!!errors.zip_code}
+                helperText={errors.zip_code?.message}
+                inputProps={{ maxLength: 5 }}
+                {...register('zip_code', {
+                  required: 'Zip code is required',
+                  pattern: {
+                    value: /^\d{5}$/,
+                    message: 'Must be 5 digits'
+                  }
+                })}
+              />
+            </Box>
+
+            <TextField
+              label="County (optional)"
+              fullWidth
+              error={!!errors.county}
+              helperText={errors.county?.message}
+              {...register('county', {
+                maxLength: { value: 100, message: 'County must be less than 100 characters' }
+              })}
+            />
+
+            <TextField
               label="Email"
               fullWidth
               error={!!errors.email}
@@ -155,18 +239,6 @@ export const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({ open, onClos
                   value: /^\d{10}$/,
                   message: 'Phone must be 10 digits'
                 }
-              })}
-            />
-
-            <TextField
-              label="Address"
-              fullWidth
-              multiline
-              rows={2}
-              error={!!errors.address}
-              helperText={errors.address?.message}
-              {...register('address', {
-                maxLength: { value: 255, message: 'Address must be less than 255 characters' }
               })}
             />
           </Box>
