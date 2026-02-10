@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from app.crud.company import CompanyCRUD
+from app.crud.user_company_access import UserCompanyAccessCRUD
 from app.db.session import get_session
 from app.filters.company_filters import SearchCompanyByName
 from app.helpers.authentication import get_current_user
@@ -23,6 +24,7 @@ from app.helpers.pagination import pagination_details
 from app.helpers.permission_guards import require_module_permission, require_module_permission_any_context
 from app.helpers.query_params_validator import validate_query_params
 from app.models.company import Company
+from app.models.user import CompanyRole, MembershipStatus
 from app.schema.company import (
     CompaniesOrderByFieldEnum,
     CompaniesPaginator,
@@ -55,6 +57,17 @@ async def create_company(
 
     company_crud = CompanyCRUD(db_session)
     new_company = company_crud.create_item(payload.model_dump())
+    db_session.flush()
+
+    access_crud = UserCompanyAccessCRUD(db_session)
+    access_crud.add_membership(
+        user_id=current_user.id,
+        company_id=new_company.id,
+        role=CompanyRole.company_admin,
+        status=MembershipStatus.active,
+        created_by_user_id=current_user.id,
+    )
+
     db_session.commit()
     db_session.refresh(new_company)
 
