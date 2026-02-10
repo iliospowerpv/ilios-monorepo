@@ -41,7 +41,7 @@ export const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ open, 
   const createMutation = useMutation({
     mutationFn: () =>
       ApiClient.companies.create({
-        company_type: 'project_site_owner',
+        company_type: 'Project/Site Owner',
         name,
         address,
         city,
