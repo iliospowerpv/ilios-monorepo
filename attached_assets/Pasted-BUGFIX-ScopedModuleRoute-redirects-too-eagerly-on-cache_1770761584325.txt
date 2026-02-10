@@ -1,0 +1,52 @@
+BUGFIX: ScopedModuleRoute redirects too eagerly on cache miss
+
+File:
+frontend/rea-investment-fe/src/components/layout/ScopedModuleRoute/ScopedModuleRoute.tsx
+Critical section: the redirect block around lines ~78-92.
+
+Constraints:
+- Do NOT change route patterns, buildLensRoute, access control model, or any backend logic.
+- No global query config changes (do not alter staleTime/refetchOnFocus globally).
+- Fix must be isolated to ScopedModuleRoute + optional targeted invalidations after create/membership changes.
+
+Implement the fix (exact requirements):
+
+1) Add refetch capability from useAccessibleEntities
+- Ensure useAccessibleEntities exposes:
+  - isLoading / isFetching (or query status)
+  - refetch() function
+If it currently only exposes getCompanyById/getProjectById, update the hook to return the query object fields (minimal additive change).
+
+2) Replace eager redirect with “refetch once then decide”
+Pseudo-behavior:
+- Parse scope + id (companyId/projectId)
+- Attempt lookup via getCompanyById/getProjectById
+- If found -> proceed as normal
+- If not found:
+   a) if we have NOT attempted refetch yet for this scope+id:
+        - trigger refetch() exactly once
+        - render a small loading state (e.g., <LoadingIndicator/> or minimal "Loading…" div)
+        - do NOT redirect
+   b) else (refetch already attempted and query is no longer fetching):
+        - redirect to picker (existing behavior)
+
+3) Prevent infinite loops
+- Use useRef or local state:
+  attemptedRefetchRef.current = `${scope}:${id}`
+- Only refetch if current key differs from stored key.
+- If navigation changes to a new id, allow one refetch for the new key.
+
+4) Optional but small: invalidate accessible-entities query after entity creation/membership changes
+- Only add invalidation in the specific success handlers for company/project creation and membership mutation.
+- Do not change global settings.
+
+Verification checklist:
+- From Company page quick action -> /due-diligence/scope/company/:id loads and does NOT redirect
+- From Project page quick action -> /due-diligence/scope/project/:id loads and does NOT redirect
+- If user truly lacks access to id -> redirect occurs after refetch completes
+- No repeated refetch loop; verify via logs/React DevTools (1 refetch max per navigation)
+
+Deliverables:
+- Diff summary + files changed
+- Note where refetch gating is implemented
+Proceed now.
