@@ -1,13 +1,10 @@
-"""Sites router - READ and Asset Management endpoints only.
-
-Legacy mutation endpoints (POST/PUT/DELETE) for Settings-based site management
-have been removed. Site management is now done via Portfolio Admin.
-Asset Management detail updates (PUT /{site_id}/details) remain available.
+"""Sites router - READ, CREATE, and Asset Management endpoints.
 
 Authorization Pattern (Phase C.1):
 - Entity access: get_authorized_site (canonical resolver, fail-closed)
 - Module permission: require_module_permission (assets_management:view/edit)
 - Order: Entity check first, then module permission check
+- Creation: require_module_permission at company level (no site_id yet)
 """
 import logging
 from copy import deepcopy
@@ -16,11 +13,14 @@ from typing import Annotated, Any, Dict, Type, Union
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi_filter import FilterDepends
 from pydantic import BaseModel, ValidationError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.crud.device import DeviceCRUD
+from app.crud.document import DocumentCRUD
 from app.crud.site import SiteCRUD
 from app.crud.site_additional_fields_list import SiteAdditionalFieldListCRUD
+from app.crud.user_project import UserProjectCRUD
 from app.db.object_utils import as_dict
 from app.db.session import get_session
 from app.filters.device_filters import SearchDeviceByName
@@ -30,15 +30,23 @@ from app.helpers.assets_management.site_details_schema_helper import get_section
 from app.helpers.authentication import get_current_user
 from app.helpers.authorization.project_access import get_authorized_site
 from app.helpers.bq_data_sync_helper import SiteCharacteristicsHandler
+from app.helpers.due_diligence.due_diligence_helper import (
+    create_default_site_document_sections,
+    generate_default_site_documents,
+)
 from app.helpers.pagination import pagination_details
 from app.helpers.permission_guards import require_module_permission, require_module_permission_any_context
 from app.helpers.query_params_validator import validate_query_params
+from app.helpers.task_tracker.board_defaults_helper import create_default_board, create_default_document_tasks
+from app.models.board import BoardModuleEnum, BoardRelatedEntityTypeEnum, BoardRelatedEntityTypeExtraEnum
 from app.models.site import Site
 from app.schema.site import (
     AllSitesPaginator,
     BaseSiteSchema,
+    CreateSiteSchema,
     ExtendedSiteSchemaWithConnection,
     PotentialAffectedDevicesList,
+    SiteCreationResponse,
     SiteOrderByFieldEnum,
     SiteUpdateSuccess,
 )
@@ -50,6 +58,53 @@ from app.static.sites import SITE_AM_SECTIONS_SCHEMAS, SiteDetailsSections, site
 
 logger = logging.getLogger(__name__)
 sites_router = APIRouter()
+
+
+@sites_router.post(
+    "/",
+    status_code=status.HTTP_201_CREATED,
+    response_model=SiteCreationResponse,
+    responses={**HTTP_403_RESPONSE},
+)
+async def create(
+    site: CreateSiteSchema,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+) -> dict:
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=site.company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.assets_management.value,
+        action="edit",
+    )
+
+    site_data = site.model_dump()
+    try:
+        new_site = SiteCRUD(db_session).create_item(site_data)
+        logger.info(f"Created site with id {new_site.id}")
+    except IntegrityError:
+        logger.exception(message := f"Company with ID: {site.company_id} not found.")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, message)
+
+    create_default_site_document_sections([new_site.id], db_session)
+    DocumentCRUD(db_session).create_items(generate_default_site_documents([new_site.id], db_session))
+
+    create_default_board(new_site.id, BoardRelatedEntityTypeEnum.site, db_session)
+    create_default_board(new_site.id, BoardRelatedEntityTypeEnum.site, db_session, module=BoardModuleEnum.om)
+    create_default_board(
+        new_site.id, BoardRelatedEntityTypeEnum.site, db_session, BoardRelatedEntityTypeExtraEnum.document
+    )
+    create_default_document_tasks(
+        db_session, new_site.documents_board, new_site.documents, current_user.id, freeze_external_id=True
+    )
+
+    if not current_user.is_system_user:
+        UserProjectCRUD(db_session).create_item(
+            {"user_id": current_user.id, "site_id": new_site.id, "company_id": new_site.company_id}
+        )
+
+    return {"code": 201, "message": "Site has been created", "id": new_site.id}
 
 
 @sites_router.get(
