@@ -53,7 +53,7 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
   const createMutation = useMutation({
     mutationFn: () =>
       ApiClient.companies.create({
-        company_type: 'owner',
+        company_type: 'project_site_owner',
         name: newCompanyName,
         address: newCompanyAddress,
         city: newCompanyCity,
