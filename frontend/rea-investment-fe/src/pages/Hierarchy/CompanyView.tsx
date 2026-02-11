@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback, useMemo } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
@@ -13,17 +13,23 @@ import FactCheckIcon from '@mui/icons-material/FactCheck';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAccessibleEntities } from '../../hooks/useAccessibleEntities';
 import { useEntityContext } from '../../contexts/entityContext';
-import { buildLensRoute, ModuleType } from '../../utils/routing';
+import { ProjectPicker, useProjectNavigation, type ProjectHubTab } from '../../components/common/ProjectPicker';
 
 export const CompanyView: React.FC = () => {
   const { companyId } = useParams<{ companyId: string }>();
   const { getProjectsByCompanyId, isLoading, getCompanyById } = useAccessibleEntities();
-  const { setCurrentCompany, setCurrentProject, setCurrentScope, currentCompany } = useEntityContext();
+  const { setCurrentCompany, setCurrentProject, setCurrentScope, currentCompany, currentProject } = useEntityContext();
   const navigate = useNavigate();
+  const { navigateToProjectHub } = useProjectNavigation();
+  const [pickerOpen, setPickerOpen] = React.useState(false);
+  const [pickerTab, setPickerTab] = React.useState<ProjectHubTab | null>(null);
 
   const companyIdNum = companyId ? parseInt(companyId, 10) : null;
   const company = companyIdNum ? getCompanyById(companyIdNum) : null;
-  const companyProjects = companyIdNum ? getProjectsByCompanyId(companyIdNum) : [];
+  const companyProjects = useMemo(
+    () => (companyIdNum ? getProjectsByCompanyId(companyIdNum) : []),
+    [companyIdNum, getProjectsByCompanyId]
+  );
 
   useEffect(() => {
     if (company && (!currentCompany || currentCompany.id !== company.id)) {
@@ -37,6 +43,32 @@ export const CompanyView: React.FC = () => {
     setCurrentScope('project');
     navigate(`/projects/${project.id}`);
   };
+
+  const handleProjectHubAction = useCallback(
+    (tab: ProjectHubTab) => {
+      const lastProjectInCompany =
+        currentProject && companyIdNum && companyProjects.some(p => p.id === currentProject.id) ? currentProject : null;
+
+      if (lastProjectInCompany) {
+        navigateToProjectHub(lastProjectInCompany.id, tab);
+      } else {
+        setPickerTab(tab);
+        setPickerOpen(true);
+      }
+    },
+    [currentProject, companyIdNum, companyProjects, navigateToProjectHub]
+  );
+
+  const handlePickerSelect = useCallback(
+    (project: { id: number; name: string }) => {
+      setCurrentProject({ id: project.id, name: project.name });
+      setCurrentScope('project');
+      navigateToProjectHub(project.id, pickerTab || 'overview');
+      setPickerOpen(false);
+      setPickerTab(null);
+    },
+    [setCurrentProject, setCurrentScope, navigateToProjectHub, pickerTab]
+  );
 
   if (isLoading) {
     return (
@@ -84,18 +116,18 @@ export const CompanyView: React.FC = () => {
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {[
-                { module: 'asset-management' as ModuleType, label: 'Asset Management', icon: <AccountBalanceIcon /> },
-                { module: 'finance' as ModuleType, label: 'Finance', icon: <AccountBalanceWalletIcon /> },
-                { module: 'operations-and-maintenance' as ModuleType, label: 'O&M', icon: <WhatshotIcon /> },
-                { module: 'due-diligence' as ModuleType, label: 'Due Diligence', icon: <FactCheckIcon /> }
-              ].map(({ module, label, icon }) => (
+                { tab: 'overview' as ProjectHubTab, label: 'Asset Management', icon: <AccountBalanceIcon /> },
+                { tab: 'finance' as ProjectHubTab, label: 'Finance', icon: <AccountBalanceWalletIcon /> },
+                { tab: 'om' as ProjectHubTab, label: 'O&M', icon: <WhatshotIcon /> },
+                { tab: 'data-room' as ProjectHubTab, label: 'Data Room', icon: <FactCheckIcon /> }
+              ].map(({ tab, label, icon }) => (
                 <Button
-                  key={module}
+                  key={tab}
                   variant="outlined"
                   startIcon={icon}
                   fullWidth
                   sx={{ justifyContent: 'flex-start' }}
-                  onClick={() => navigate(buildLensRoute(module, 'company', { companyId: company.id }))}
+                  onClick={() => handleProjectHubAction(tab)}
                 >
                   {label}
                 </Button>
@@ -135,6 +167,25 @@ export const CompanyView: React.FC = () => {
           </Grid>
         )}
       </Box>
+
+      <ProjectPicker
+        open={pickerOpen}
+        onClose={() => {
+          setPickerOpen(false);
+          setPickerTab(null);
+        }}
+        onSelect={handlePickerSelect}
+        title={`Select a Project for ${
+          pickerTab === 'data-room'
+            ? 'Data Room'
+            : pickerTab === 'finance'
+              ? 'Finance'
+              : pickerTab === 'om'
+                ? 'O&M'
+                : 'Asset Management'
+        }`}
+        companyId={companyIdNum}
+      />
     </Box>
   );
 };

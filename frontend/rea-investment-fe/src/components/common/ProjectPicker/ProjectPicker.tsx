@@ -32,13 +32,15 @@ interface ProjectPickerProps {
   onClose: () => void;
   onSelect: (project: ProjectInfo) => void;
   title?: string;
+  companyId?: number | null;
 }
 
 export const ProjectPicker: React.FC<ProjectPickerProps> = ({
   open,
   onClose,
   onSelect,
-  title = 'Select a Project'
+  title = 'Select a Project',
+  companyId
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -52,12 +54,16 @@ export const ProjectPicker: React.FC<ProjectPickerProps> = ({
   const projects = useMemo(() => {
     if (!accessibleEntities?.projects) return [];
 
-    const allProjects: ProjectInfo[] = accessibleEntities.projects.map(project => ({
+    let allProjects: ProjectInfo[] = accessibleEntities.projects.map(project => ({
       id: project.id,
       name: project.name,
       companyId: project.company_id,
       companyName: project.company_name
     }));
+
+    if (companyId) {
+      allProjects = allProjects.filter(p => p.companyId === companyId);
+    }
 
     if (!searchQuery.trim()) return allProjects;
 
@@ -65,7 +71,7 @@ export const ProjectPicker: React.FC<ProjectPickerProps> = ({
     return allProjects.filter(
       p => p.name.toLowerCase().includes(query) || p.companyName?.toLowerCase().includes(query)
     );
-  }, [accessibleEntities, searchQuery]);
+  }, [accessibleEntities, searchQuery, companyId]);
 
   const handleSelect = (project: ProjectInfo) => {
     onSelect(project);

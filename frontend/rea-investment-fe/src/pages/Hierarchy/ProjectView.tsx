@@ -15,13 +15,14 @@ import Chip from '@mui/material/Chip';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAccessibleEntities } from '../../hooks/useAccessibleEntities';
 import { useEntityContext } from '../../contexts/entityContext';
-import { buildLensRoute, ModuleType } from '../../utils/routing';
+import { useProjectNavigation, type ProjectHubTab } from '../../components/common/ProjectPicker';
 
 export const ProjectView: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const { getProjectById, getCompanyById, isLoading } = useAccessibleEntities();
   const { setCurrentCompany, setCurrentProject, setCurrentScope, currentProject, currentCompany } = useEntityContext();
   const navigate = useNavigate();
+  const { navigateToProjectHub } = useProjectNavigation();
 
   const projectIdNum = projectId ? parseInt(projectId, 10) : null;
   const project = projectIdNum ? getProjectById(projectIdNum) : null;
@@ -99,18 +100,18 @@ export const ProjectView: React.FC = () => {
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {[
-                { module: 'asset-management' as ModuleType, label: 'Asset Management', icon: <AccountBalanceIcon /> },
-                { module: 'finance' as ModuleType, label: 'Finance', icon: <AccountBalanceWalletIcon /> },
-                { module: 'operations-and-maintenance' as ModuleType, label: 'O&M', icon: <WhatshotIcon /> },
-                { module: 'due-diligence' as ModuleType, label: 'Due Diligence', icon: <FactCheckIcon /> }
-              ].map(({ module, label, icon }) => (
+                { tab: 'overview' as ProjectHubTab, label: 'Asset Management', icon: <AccountBalanceIcon /> },
+                { tab: 'finance' as ProjectHubTab, label: 'Finance', icon: <AccountBalanceWalletIcon /> },
+                { tab: 'om' as ProjectHubTab, label: 'O&M', icon: <WhatshotIcon /> },
+                { tab: 'data-room' as ProjectHubTab, label: 'Data Room', icon: <FactCheckIcon /> }
+              ].map(({ tab, label, icon }) => (
                 <Button
-                  key={module}
+                  key={tab}
                   variant="outlined"
                   startIcon={icon}
                   fullWidth
                   sx={{ justifyContent: 'flex-start' }}
-                  onClick={() => navigate(buildLensRoute(module, 'project', { projectId: project.id }))}
+                  onClick={() => navigateToProjectHub(project.id, tab)}
                 >
                   {label}
                 </Button>
