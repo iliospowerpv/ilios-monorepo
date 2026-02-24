@@ -158,6 +158,7 @@ def _contact_to_response(db_session: Session, contact: Contact) -> ContactRespon
         portfolio_id=contact.portfolio_id,
         company_id=contact.company_id,
         project_id=contact.project_id,
+        entity_id=contact.entity_id,
         first_name=contact.first_name,
         last_name=contact.last_name,
         email=contact.email,
@@ -189,6 +190,7 @@ async def list_contacts(
     portfolio_id: Optional[int] = Query(None),
     company_id: Optional[int] = Query(None),
     project_id: Optional[int] = Query(None),
+    entity_id: Optional[int] = Query(None, description="Filter contacts by entity_id (entity directory)"),
     q: Optional[str] = Query(None, description="Search query for name/email/organization/title"),
     include_archived: bool = Query(False),
     page: int = Query(1, ge=1),
@@ -211,6 +213,9 @@ async def list_contacts(
         query = query.filter(Contact.company_id == company_id)
     elif scope_type == "project":
         query = query.filter(Contact.project_id == project_id)
+    
+    if entity_id is not None:
+        query = query.filter(Contact.entity_id == entity_id)
     
     if not include_archived:
         query = query.filter(Contact.is_archived == False)
@@ -305,6 +310,7 @@ async def create_contact(
         portfolio_id=contact_data.portfolio_id if contact_data.scope_type == "portfolio" else None,
         company_id=contact_data.company_id if contact_data.scope_type == "company" else None,
         project_id=contact_data.project_id if contact_data.scope_type == "project" else None,
+        entity_id=contact_data.entity_id,
         first_name=contact_data.first_name,
         last_name=contact_data.last_name,
         email=contact_data.email,

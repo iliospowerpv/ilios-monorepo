@@ -16,10 +16,11 @@ import {
 } from '../../InformationCardBase/InformationCardBase';
 import { useNotify } from '../../../../../../../../../contexts/notifications/notifications';
 import { ApiClient } from '../../../../../../../../../api';
-import FormattedIntegerNumericInput from '../../../../../../../../../components/common/FormattedIntegerNumericInput/FormattedIntegerNumericInput';
 import formatPhoneNumber from '../../../../../../../../../utils/formatters/formatPhoneNumber';
 import { EntityPicker } from '../../../../../../../../../components/common/EntityPicker/EntityPicker';
 import type { EntityRelationship, ProjectEntity } from '../../../../../../../../../api/entities';
+import { EntityContactPicker } from '../../../../../../../../../components/common/EntityContactPicker/EntityContactPicker';
+import type { Contact } from '../../../../../../../../../api/contacts';
 
 type InterconnectionUtilityProviderCardData = Awaited<
   ReturnType<typeof ApiClient.assetManagement.siteInfo>
@@ -42,6 +43,7 @@ const InterconnectionUtilityProviderForm = React.forwardRef<
   const notify = useNotify();
 
   const [selectedEntityId, setSelectedEntityId] = React.useState<number | null>(null);
+  const [selectedContactId, setSelectedContactId] = React.useState<number | null>(null);
   const [existingRelationship, setExistingRelationship] = React.useState<EntityRelationship | null>(null);
 
   const { data: relationships } = useQuery({
@@ -110,11 +112,25 @@ const InterconnectionUtilityProviderForm = React.forwardRef<
   const handleEntityChange = React.useCallback(
     (_entityId: number | null, entity?: ProjectEntity | null) => {
       setSelectedEntityId(_entityId);
+      setSelectedContactId(null);
+      setValue('iut_contact_name', null, { shouldDirty: true });
+      setValue('iut_contact_email', null, { shouldDirty: true });
+      setValue('iut_contact_phone', null, { shouldDirty: true });
       if (entity) {
         setValue('iut_address', entity.address || null, { shouldDirty: true });
-        setValue('iut_contact_name', entity.name || null, { shouldDirty: true });
-        setValue('iut_contact_email', entity.email || null, { shouldDirty: true });
-        setValue('iut_contact_phone', entity.phone || null, { shouldDirty: true });
+      }
+    },
+    [setValue]
+  );
+
+  const handleContactChange = React.useCallback(
+    (_contactId: number | null, contact: Contact | null) => {
+      setSelectedContactId(_contactId);
+      if (contact) {
+        const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(' ');
+        setValue('iut_contact_name', fullName || null, { shouldDirty: true });
+        setValue('iut_contact_email', contact.email || null, { shouldDirty: true });
+        setValue('iut_contact_phone', contact.phone || null, { shouldDirty: true });
       }
     },
     [setValue]
@@ -166,6 +182,7 @@ const InterconnectionUtilityProviderForm = React.forwardRef<
     () => ({
       resetForm: () => {
         reset();
+        setSelectedContactId(null);
         if (existingRelationship) {
           setSelectedEntityId(existingRelationship.entity_id);
         } else {
@@ -265,166 +282,41 @@ const InterconnectionUtilityProviderForm = React.forwardRef<
           )}
           <TableRow>
             <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
-              <TextBox fieldName>Contact Name:</TextBox>
+              <TextBox fieldName>Contact:</TextBox>
             </FieldCell>
             <FieldCell component="th" scope="row" align={mode === 'view' ? 'right' : 'left'}>
               {mode === 'view' ? (
                 <TextBox>{data.iut_contact_name}</TextBox>
-              ) : (
-                <Controller
-                  name="iut_contact_name"
-                  control={control}
-                  rules={{
-                    maxLength: {
-                      value: 100,
-                      message: 'Contact Name length should not exceed 100 characters.'
-                    }
-                  }}
-                  render={({ field: { ref, value, onChange, ...field } }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      size="small"
-                      placeholder=""
-                      error={!!errors.iut_contact_name}
-                      multiline
-                      required
-                      minRows={1}
-                      maxRows={3}
-                      disabled={isSubmitting}
-                      inputRef={ref}
-                      value={value || ''}
-                      onChange={e => onChange(e.target.value || null)}
-                      variant="outlined"
-                      InputProps={{ sx: inputStyles }}
-                    />
-                  )}
+              ) : portfolioId ? (
+                <EntityContactPicker
+                  entityId={selectedEntityId}
+                  portfolioId={portfolioId}
+                  value={selectedContactId}
+                  onChange={handleContactChange}
+                  label="Contact"
+                  disabled={!selectedEntityId}
+                  size="small"
                 />
-              )}
+              ) : null}
             </FieldCell>
           </TableRow>
-          {errors.iut_contact_name?.message && (
+          {mode === 'view' && (
             <TableRow>
-              <FieldCell component="th" scope="row" width="40%" />
-              <FieldCell component="th" scope="row" align="right">
-                <TextBox>
-                  <FormHelperText sx={{ margin: 0 }} error>
-                    {errors.iut_contact_name?.message}
-                  </FormHelperText>
-                </TextBox>
+              <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
+                <TextBox fieldName>Contact Email:</TextBox>
               </FieldCell>
-            </TableRow>
-          )}
-          <TableRow>
-            <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
-              <TextBox fieldName>Contact Email:</TextBox>
-            </FieldCell>
-            <FieldCell component="th" scope="row" align={mode === 'view' ? 'right' : 'left'}>
-              {mode === 'view' ? (
+              <FieldCell component="th" scope="row" align="right">
                 <TextBox>{data.iut_contact_email}</TextBox>
-              ) : (
-                <Controller
-                  name="iut_contact_email"
-                  control={control}
-                  rules={{
-                    validate: value => {
-                      if (!value) return true;
-                      if (value.length > 100) return 'Contact Email length should not exceed 100 characters.';
-                      return (
-                        /^(?!.*[.]{2})(?!.*\.@)(?!^[^a-zA-Z0-9]+$)(?![.-])[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+(?<![.])@(?=[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*(?:\.[a-zA-Z]{1,})+$)(?:[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*\.)+[a-zA-Z]{1,}$/.test(
-                          value
-                        ) || 'Please provide correct Contact Email.'
-                      );
-                    }
-                  }}
-                  render={({ field: { ref, value, onChange, ...field } }) => (
-                    <TextField
-                      {...field}
-                      required
-                      fullWidth
-                      size="small"
-                      placeholder=""
-                      error={!!errors.iut_contact_email}
-                      multiline
-                      minRows={1}
-                      maxRows={3}
-                      disabled={isSubmitting}
-                      inputRef={ref}
-                      value={value || ''}
-                      onChange={e => onChange(e.target.value || null)}
-                      variant="outlined"
-                      InputProps={{ sx: inputStyles }}
-                    />
-                  )}
-                />
-              )}
-            </FieldCell>
-          </TableRow>
-          {errors.iut_contact_email?.message && (
-            <TableRow>
-              <FieldCell component="th" scope="row" width="40%" />
-              <FieldCell component="th" scope="row" align="right">
-                <TextBox>
-                  <FormHelperText sx={{ margin: 0 }} error>
-                    {errors.iut_contact_email?.message}
-                  </FormHelperText>
-                </TextBox>
               </FieldCell>
             </TableRow>
           )}
-          <TableRow>
-            <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
-              <TextBox fieldName>Contact Phone #:</TextBox>
-            </FieldCell>
-            <FieldCell component="th" scope="row" align={mode === 'view' ? 'right' : 'left'}>
-              {mode === 'view' ? (
-                <TextBox>{formatPhoneNumber(data.iut_contact_phone)}</TextBox>
-              ) : (
-                <Controller
-                  name="iut_contact_phone"
-                  control={control}
-                  rules={{
-                    validate: value => {
-                      if (!value) return true;
-                      if (value.length > 10) return 'Contact Phone # length should not exceed 10 characters.';
-                      return /^\d{10}$/.test(value) || 'Please provide correct Contact Phone.';
-                    }
-                  }}
-                  render={({ field: { ref, value, onChange, ...field } }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      size="small"
-                      placeholder=""
-                      error={!!errors.iut_contact_phone}
-                      multiline
-                      required
-                      minRows={1}
-                      maxRows={3}
-                      disabled={isSubmitting}
-                      inputRef={ref}
-                      value={value || ''}
-                      onInput={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        e.target.value = e.target.value.replace(/[^\d]/g, '').slice(0, 10);
-                      }}
-                      onChange={e => onChange(e.target.value || null)}
-                      variant="outlined"
-                      InputProps={{ inputComponent: FormattedIntegerNumericInput as any, ref: ref, sx: inputStyles }}
-                    />
-                  )}
-                />
-              )}
-            </FieldCell>
-          </TableRow>
-          {errors.iut_contact_phone?.message && (
+          {mode === 'view' && (
             <TableRow>
-              <FieldCell component="th" scope="row" width="40%" />
+              <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
+                <TextBox fieldName>Contact Phone #:</TextBox>
+              </FieldCell>
               <FieldCell component="th" scope="row" align="right">
-                <TextBox>
-                  <FormHelperText sx={{ margin: 0 }} error>
-                    {errors.iut_contact_phone?.message}
-                  </FormHelperText>
-                </TextBox>
+                <TextBox>{formatPhoneNumber(data.iut_contact_phone)}</TextBox>
               </FieldCell>
             </TableRow>
           )}

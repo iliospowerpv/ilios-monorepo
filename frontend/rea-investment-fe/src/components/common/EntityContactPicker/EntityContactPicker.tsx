@@ -68,6 +68,7 @@ export const EntityContactPicker: React.FC<EntityContactPickerProps> = ({
         const result = await ApiClient.contacts.list({
           scope_type: 'portfolio',
           portfolio_id: portfolioId,
+          entity_id: entityId || undefined,
           search: search || undefined,
           limit: 50
         });
@@ -78,7 +79,7 @@ export const EntityContactPicker: React.FC<EntityContactPickerProps> = ({
         setLoading(false);
       }
     },
-    [portfolioId]
+    [portfolioId, entityId]
   );
 
   useEffect(() => {
@@ -131,6 +132,7 @@ export const EntityContactPicker: React.FC<EntityContactPickerProps> = ({
       const newContact = await ApiClient.contacts.create({
         scope_type: 'portfolio',
         portfolio_id: portfolioId,
+        entity_id: entityId || undefined,
         first_name: createForm.first_name,
         last_name: createForm.last_name,
         email: createForm.email || undefined,
@@ -141,7 +143,8 @@ export const EntityContactPicker: React.FC<EntityContactPickerProps> = ({
       onChange(newContact.id, newContact);
       setCreateDialogOpen(false);
       setOptions(prev => [newContact, ...prev]);
-    } catch {
+    } catch (_err) {
+      // contact creation failed; picker stays open
     } finally {
       setCreating(false);
     }

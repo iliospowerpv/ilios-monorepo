@@ -38,6 +38,7 @@ class ContactCreate(ContactBase):
     portfolio_id: Optional[int] = None
     company_id: Optional[int] = None
     project_id: Optional[int] = None
+    entity_id: Optional[int] = None
     
     @field_validator('scope_type')
     @classmethod
@@ -76,6 +77,7 @@ class ContactResponse(ContactBase):
     portfolio_id: Optional[int] = None
     company_id: Optional[int] = None
     project_id: Optional[int] = None
+    entity_id: Optional[int] = None
     is_archived: bool = False
     is_user: bool = False
     matched_user_id: Optional[int] = None

@@ -8,6 +8,7 @@ export interface Contact {
   portfolio_id: number | null;
   company_id: number | null;
   project_id: number | null;
+  entity_id: number | null;
   first_name: string;
   last_name: string;
   email: string | null;
@@ -28,6 +29,7 @@ export interface ContactCreate {
   portfolio_id?: number | null;
   company_id?: number | null;
   project_id?: number | null;
+  entity_id?: number | null;
   first_name: string;
   last_name: string;
   email?: string | null;
@@ -62,6 +64,7 @@ export interface ContactsQueryParams {
   portfolio_id?: number;
   company_id?: number;
   project_id?: number;
+  entity_id?: number | null;
   search?: string;
   include_archived?: boolean;
   skip?: number;
@@ -71,7 +74,6 @@ export interface ContactsQueryParams {
 function buildQueryString(params: ContactsQueryParams): string {
   const queryParams = new URLSearchParams();
   queryParams.append('scope_type', params.scope_type);
-  
   if (params.portfolio_id !== undefined) {
     queryParams.append('portfolio_id', String(params.portfolio_id));
   }
@@ -81,8 +83,11 @@ function buildQueryString(params: ContactsQueryParams): string {
   if (params.project_id !== undefined) {
     queryParams.append('project_id', String(params.project_id));
   }
+  if (params.entity_id !== undefined && params.entity_id !== null) {
+    queryParams.append('entity_id', String(params.entity_id));
+  }
   if (params.search) {
-    queryParams.append('search', params.search);
+    queryParams.append('q', params.search);
   }
   if (params.include_archived !== undefined) {
     queryParams.append('include_archived', String(params.include_archived));
@@ -93,7 +98,6 @@ function buildQueryString(params: ContactsQueryParams): string {
   if (params.limit !== undefined) {
     queryParams.append('limit', String(params.limit));
   }
-  
   return queryParams.toString();
 }
 
@@ -131,7 +135,7 @@ export const createContactsApi = (httpClient: AxiosInstance) => ({
   unarchive: async (id: number): Promise<Contact> => {
     const response = await httpClient.patch<Contact>(`/contacts/${id}`, { is_archived: false });
     return response.data;
-  },
+  }
 });
 
 export type ContactsApi = ReturnType<typeof createContactsApi>;
