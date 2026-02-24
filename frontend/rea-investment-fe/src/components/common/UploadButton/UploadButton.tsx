@@ -37,7 +37,7 @@ const isFileAccepted = (file: File, acceptAttr: string): boolean => {
 };
 
 const formatAcceptLabel = (acceptAttr: string): string => {
-  if (!acceptAttr) return '';
+  if (!acceptAttr || acceptAttr.trim() === '*') return 'All file types';
   return acceptAttr
     .split(',')
     .map(t => t.trim().replace('.', '').toUpperCase())
@@ -51,18 +51,15 @@ const UploadButton: React.FC<UploadButtonProps> = props => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
 
-  const triggerUpload = useCallback(
-    (file: File) => {
-      const input = fileInputRef.current;
-      if (!input) return;
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      input.files = dt.files;
-      const event = new Event('change', { bubbles: true });
-      input.dispatchEvent(event);
-    },
-    []
-  );
+  const triggerUpload = useCallback((file: File) => {
+    const input = fileInputRef.current;
+    if (!input) return;
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    const event = new Event('change', { bubbles: true });
+    input.dispatchEvent(event);
+  }, []);
 
   const handleDragEnter = useCallback(
     (e: React.DragEvent) => {

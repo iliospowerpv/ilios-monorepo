@@ -231,11 +231,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({ siteId, documentId, 
           Documents
         </Typography>
         <Box>
-          <UploadButton
-            isUploading={isUploading}
-            allowedFileTypes=".pdf, .docx, .jpeg, .jpg, .png"
-            handleFileChange={handleFileChange}
-          />
+          <UploadButton isUploading={isUploading} allowedFileTypes="*" handleFileChange={handleFileChange} />
           <Collapse in={!isActualFiles} sx={{ mb: 2 }}>
             <Alert severity="info" sx={{ borderRadius: '4px' }}>
               Please mark actual files to ensure accurate AI assistant responses. If none are marked, response accuracy
