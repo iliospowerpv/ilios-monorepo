@@ -212,12 +212,12 @@ export const createEntitiesApi = (httpClient: AxiosInstance) => ({
   entities: {
     list: async (params: EntityListParams): Promise<ProjectEntityListResponse> => {
       const queryString = buildEntityQueryString(params);
-      const response = await httpClient.get<ProjectEntityListResponse>(`/api/entities?${queryString}`);
+      const response = await httpClient.get<ProjectEntityListResponse>(`/api/entities/?${queryString}`);
       return response.data;
     },
 
     create: async (data: ProjectEntityCreate): Promise<ProjectEntity> => {
-      const response = await httpClient.post<ProjectEntity>('/api/entities', data);
+      const response = await httpClient.post<ProjectEntity>('/api/entities/', data);
       return response.data;
     },
 
@@ -244,13 +244,13 @@ export const createEntitiesApi = (httpClient: AxiosInstance) => ({
   entityRelationships: {
     list: async (siteId: number): Promise<EntityRelationshipListResponse> => {
       const response = await httpClient.get<EntityRelationshipListResponse>(
-        `/api/projects/${siteId}/entity-relationships`
+        `/api/projects/${siteId}/entity-relationships/`
       );
       return response.data;
     },
 
     create: async (siteId: number, data: EntityRelationshipCreate): Promise<EntityRelationship> => {
-      const response = await httpClient.post<EntityRelationship>(`/api/projects/${siteId}/entity-relationships`, data);
+      const response = await httpClient.post<EntityRelationship>(`/api/projects/${siteId}/entity-relationships/`, data);
       return response.data;
     },
 
@@ -270,13 +270,13 @@ export const createEntitiesApi = (httpClient: AxiosInstance) => ({
   dealEntityAssignments: {
     list: async (dealId: number): Promise<DealEntityAssignmentListResponse> => {
       const response = await httpClient.get<DealEntityAssignmentListResponse>(
-        `/api/deals/${dealId}/entity-assignments`
+        `/api/deals/${dealId}/entity-assignments/`
       );
       return response.data;
     },
 
     create: async (dealId: number, data: DealEntityAssignmentCreate): Promise<DealEntityAssignment> => {
-      const response = await httpClient.post<DealEntityAssignment>(`/api/deals/${dealId}/entity-assignments`, data);
+      const response = await httpClient.post<DealEntityAssignment>(`/api/deals/${dealId}/entity-assignments/`, data);
       return response.data;
     },
 
