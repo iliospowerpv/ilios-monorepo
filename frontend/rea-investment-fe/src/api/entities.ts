@@ -212,74 +212,84 @@ export const createEntitiesApi = (httpClient: AxiosInstance) => ({
   entities: {
     list: async (params: EntityListParams): Promise<ProjectEntityListResponse> => {
       const queryString = buildEntityQueryString(params);
-      const response = await httpClient.get<ProjectEntityListResponse>(`/entities?${queryString}`);
+      const response = await httpClient.get<ProjectEntityListResponse>(`/api/entities?${queryString}`);
       return response.data;
     },
 
     create: async (data: ProjectEntityCreate): Promise<ProjectEntity> => {
-      const response = await httpClient.post<ProjectEntity>('/entities', data);
+      const response = await httpClient.post<ProjectEntity>('/api/entities', data);
       return response.data;
     },
 
     get: async (id: number): Promise<ProjectEntity> => {
-      const response = await httpClient.get<ProjectEntity>(`/entities/${id}`);
+      const response = await httpClient.get<ProjectEntity>(`/api/entities/${id}`);
       return response.data;
     },
 
     update: async (id: number, data: ProjectEntityUpdate): Promise<ProjectEntity> => {
-      const response = await httpClient.put<ProjectEntity>(`/entities/${id}`, data);
+      const response = await httpClient.put<ProjectEntity>(`/api/entities/${id}`, data);
       return response.data;
     },
 
     delete: async (id: number): Promise<void> => {
-      await httpClient.delete(`/entities/${id}`);
+      await httpClient.delete(`/api/entities/${id}`);
     },
 
     getAssignments: async (id: number): Promise<EntityAssignmentsSummaryResponse> => {
-      const response = await httpClient.get<EntityAssignmentsSummaryResponse>(`/entities/${id}/assignments`);
+      const response = await httpClient.get<EntityAssignmentsSummaryResponse>(`/api/entities/${id}/assignments`);
       return response.data;
     }
   },
 
   entityRelationships: {
     list: async (siteId: number): Promise<EntityRelationshipListResponse> => {
-      const response = await httpClient.get<EntityRelationshipListResponse>(`/projects/${siteId}/entity-relationships`);
+      const response = await httpClient.get<EntityRelationshipListResponse>(
+        `/api/projects/${siteId}/entity-relationships`
+      );
       return response.data;
     },
 
     create: async (siteId: number, data: EntityRelationshipCreate): Promise<EntityRelationship> => {
-      const response = await httpClient.post<EntityRelationship>(`/projects/${siteId}/entity-relationships`, data);
+      const response = await httpClient.post<EntityRelationship>(`/api/projects/${siteId}/entity-relationships`, data);
       return response.data;
     },
 
     update: async (siteId: number, id: number, data: EntityRelationshipUpdate): Promise<EntityRelationship> => {
-      const response = await httpClient.put<EntityRelationship>(`/projects/${siteId}/entity-relationships/${id}`, data);
+      const response = await httpClient.put<EntityRelationship>(
+        `/api/projects/${siteId}/entity-relationships/${id}`,
+        data
+      );
       return response.data;
     },
 
     delete: async (siteId: number, id: number): Promise<void> => {
-      await httpClient.delete(`/projects/${siteId}/entity-relationships/${id}`);
+      await httpClient.delete(`/api/projects/${siteId}/entity-relationships/${id}`);
     }
   },
 
   dealEntityAssignments: {
     list: async (dealId: number): Promise<DealEntityAssignmentListResponse> => {
-      const response = await httpClient.get<DealEntityAssignmentListResponse>(`/deals/${dealId}/entity-assignments`);
+      const response = await httpClient.get<DealEntityAssignmentListResponse>(
+        `/api/deals/${dealId}/entity-assignments`
+      );
       return response.data;
     },
 
     create: async (dealId: number, data: DealEntityAssignmentCreate): Promise<DealEntityAssignment> => {
-      const response = await httpClient.post<DealEntityAssignment>(`/deals/${dealId}/entity-assignments`, data);
+      const response = await httpClient.post<DealEntityAssignment>(`/api/deals/${dealId}/entity-assignments`, data);
       return response.data;
     },
 
     update: async (dealId: number, id: number, data: DealEntityAssignmentUpdate): Promise<DealEntityAssignment> => {
-      const response = await httpClient.put<DealEntityAssignment>(`/deals/${dealId}/entity-assignments/${id}`, data);
+      const response = await httpClient.put<DealEntityAssignment>(
+        `/api/deals/${dealId}/entity-assignments/${id}`,
+        data
+      );
       return response.data;
     },
 
     delete: async (dealId: number, id: number): Promise<void> => {
-      await httpClient.delete(`/deals/${dealId}/entity-assignments/${id}`);
+      await httpClient.delete(`/api/deals/${dealId}/entity-assignments/${id}`);
     }
   }
 });
