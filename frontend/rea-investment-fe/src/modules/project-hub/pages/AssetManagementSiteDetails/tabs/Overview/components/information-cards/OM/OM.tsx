@@ -1,5 +1,5 @@
 import React from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
@@ -21,6 +21,8 @@ import FormattedIntegerNumericInput from '../../../../../../../../../components/
 import formatPhoneNumber from '../../../../../../../../../utils/formatters/formatPhoneNumber';
 import FormattedNumericInput from '../../../../../../../../../components/common/FormattedNumericInput/FormattedNumericInput';
 import formatFloatValue from '../../../../../../../../../utils/formatters/formatFloatValue';
+import { EntityPicker } from '../../../../../../../../../components/common/EntityPicker/EntityPicker';
+import type { EntityRelationship } from '../../../../../../../../../api/entities';
 
 type OMCardData = Awaited<ReturnType<typeof ApiClient.assetManagement.siteInfo>>['o_and_m'];
 
@@ -31,10 +33,31 @@ type OMFormFields = Pick<
 
 const inputStyles = { fontSize: '0.875rem', lineHeight: 1.43 };
 
+const ENTITY_ROLE = 'om_provider' as const;
+
 const OMForm = React.forwardRef<InformationCardFormRef, InformationCardFormProps<OMCardData>>(
-  ({ mode, setMode, siteId, data, reflectFormState }, ref) => {
+  ({ mode, setMode, siteId, data, reflectFormState, portfolioId }, ref) => {
     const queryClient = useQueryClient();
     const notify = useNotify();
+
+    const [selectedEntityId, setSelectedEntityId] = React.useState<number | null>(null);
+    const [existingRelationship, setExistingRelationship] = React.useState<EntityRelationship | null>(null);
+
+    const { data: relationships } = useQuery({
+      queryKey: ['entity-relationships', siteId],
+      queryFn: () => ApiClient.entityRelationships.list(siteId),
+      enabled: !!siteId
+    });
+
+    React.useEffect(() => {
+      if (relationships?.items) {
+        const rel = relationships.items.find(r => r.role === ENTITY_ROLE);
+        if (rel) {
+          setExistingRelationship(rel);
+          setSelectedEntityId(rel.entity_id);
+        }
+      }
+    }, [relationships]);
 
     const { handleSubmit, formState, control, reset } = useForm<OMFormFields>({
       mode: 'onChange',
@@ -83,10 +106,35 @@ const OMForm = React.forwardRef<InformationCardFormRef, InformationCardFormProps
       });
     }, [data, reset]);
 
+    const handleEntityChange = React.useCallback((_entityId: number | null) => {
+      setSelectedEntityId(_entityId);
+    }, []);
+
+    const saveEntityRelationship = React.useCallback(async () => {
+      if (!selectedEntityId) return;
+      try {
+        if (existingRelationship) {
+          await ApiClient.entityRelationships.update(siteId, existingRelationship.id, {
+            entity_id: selectedEntityId,
+            role: ENTITY_ROLE
+          });
+        } else {
+          await ApiClient.entityRelationships.create(siteId, {
+            entity_id: selectedEntityId,
+            role: ENTITY_ROLE
+          });
+        }
+        queryClient.invalidateQueries({ queryKey: ['entity-relationships', siteId] });
+      } catch {
+        /* entity save non-blocking */
+      }
+    }, [selectedEntityId, existingRelationship, siteId, queryClient]);
+
     const onSubmit: SubmitHandler<OMFormFields> = React.useCallback(
       async data => {
         try {
           const response = await updateOMDetails(data);
+          await saveEntityRelationship();
           notify(response.message || `O&M information was successfully updated.`);
           reset({
             om_address: data.om_address,
@@ -100,7 +148,7 @@ const OMForm = React.forwardRef<InformationCardFormRef, InformationCardFormProps
           notify(e.response?.data?.message || 'Something went wrong when updating the O&M information...');
         }
       },
-      [notify, queryClient, reset, setMode, updateOMDetails]
+      [notify, queryClient, reset, setMode, updateOMDetails, saveEntityRelationship]
     );
 
     const handleFormSubmit = React.useMemo(() => handleSubmit(onSubmit), [handleSubmit, onSubmit]);
@@ -110,18 +158,43 @@ const OMForm = React.forwardRef<InformationCardFormRef, InformationCardFormProps
       () => ({
         resetForm: () => {
           reset();
+          if (existingRelationship) {
+            setSelectedEntityId(existingRelationship.entity_id);
+          } else {
+            setSelectedEntityId(null);
+          }
         },
         submit: () => {
           handleFormSubmit();
         }
       }),
-      [reset, handleFormSubmit]
+      [reset, handleFormSubmit, existingRelationship]
     );
 
     return (
       <Box component="form">
         <Table sx={{ width: '100%', height: 'auto', tableLayout: 'fixed' }} size="small">
           <TableBody>
+            <TableRow>
+              <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
+                <TextBox fieldName>Entity:</TextBox>
+              </FieldCell>
+              <FieldCell component="th" scope="row" align={mode === 'view' ? 'right' : 'left'}>
+                {mode === 'view' ? (
+                  <TextBox>{existingRelationship?.entity_name || ''}</TextBox>
+                ) : portfolioId ? (
+                  <EntityPicker
+                    portfolioId={portfolioId}
+                    entityType="om_provider"
+                    value={selectedEntityId}
+                    onChange={handleEntityChange}
+                    label="O&M Provider Entity"
+                    role={ENTITY_ROLE}
+                    size="small"
+                  />
+                ) : null}
+              </FieldCell>
+            </TableRow>
             <TableRow>
               <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
                 <TextBox fieldName>Provider:</TextBox>
@@ -440,14 +513,16 @@ interface OMCardProps {
   siteId: number;
   data: OMCardData;
   hideHeader?: boolean;
+  portfolioId?: number;
 }
 
-export const OMCard: React.FC<OMCardProps> = ({ siteId, data, hideHeader }) => (
+export const OMCard: React.FC<OMCardProps> = ({ siteId, data, hideHeader, portfolioId }) => (
   <InformationCardBase<OMCardData>
     title="O&M"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={OMForm}
     hideHeader={hideHeader}
+    portfolioId={portfolioId}
   />
 );

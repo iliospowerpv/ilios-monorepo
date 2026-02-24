@@ -61,6 +61,7 @@ from .routers import (
     extraction_registry_router,
     summary_stats_router,
     contacts_router,
+    entities_router,
 )
 from .routers.project_assumptions import assumptions_router
 from .routers.debug import router as debug_router
@@ -272,6 +273,7 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
     app.include_router(breadcrumbs_router, prefix="/api/breadcrumbs", tags=[tags.BREADCRUMBS_TAG])
     # Sales related APIs
     app.include_router(sales_router)
+    app.include_router(entities_router)
     # Admin APIs
     app.include_router(access_health_router, prefix="/api/admin/access-health", tags=[tags.ADMIN_ACCESS_HEALTH_TAG])
     app.include_router(extraction_registry_router, prefix="/api/admin/extraction", tags=["Admin - Extraction Registry"])

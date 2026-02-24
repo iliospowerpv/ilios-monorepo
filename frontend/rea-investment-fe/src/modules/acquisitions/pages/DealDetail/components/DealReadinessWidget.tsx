@@ -8,28 +8,38 @@ import { useTheme } from '@mui/material/styles';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { Deal } from '../../../types';
+import type { DealEntityAssignment } from '../../../../../api/entities';
 
 interface DealReadinessWidgetProps {
   deal: Deal;
+  entityAssignments?: DealEntityAssignment[];
 }
 
-const HANDOFF_REQUIRED_FIELDS: { field: keyof Deal; label: string }[] = [
-  { field: 'address', label: 'Address' },
-  { field: 'state', label: 'State' },
-  { field: 'system_size_ac', label: 'System Size (AC)' },
-  { field: 'system_size_dc', label: 'System Size (DC)' },
-  { field: 'utility_rate', label: 'Utility Rate' },
-  { field: 'ownership_structure', label: 'Ownership Structure' },
-  { field: 'offtaker_name', label: 'Offtaker Name' }
+interface ReadinessField {
+  label: string;
+  check: (deal: Deal, assignments?: DealEntityAssignment[]) => boolean;
+}
+
+const HANDOFF_REQUIRED_FIELDS: ReadinessField[] = [
+  { label: 'Address', check: deal => !!deal.address },
+  { label: 'State', check: deal => !!deal.state },
+  { label: 'System Size (AC)', check: deal => !!deal.system_size_ac },
+  { label: 'System Size (DC)', check: deal => !!deal.system_size_dc },
+  { label: 'Utility Rate', check: deal => !!deal.utility_rate },
+  { label: 'Ownership Structure', check: deal => !!deal.ownership_structure },
+  {
+    label: 'Offtaker',
+    check: (deal, assignments) => {
+      const hasEntityAssignment = assignments?.some(a => a.role === 'offtaker') ?? false;
+      return hasEntityAssignment || !!deal.offtaker_name;
+    }
+  }
 ];
 
-export const DealReadinessWidget: React.FC<DealReadinessWidgetProps> = ({ deal }) => {
+export const DealReadinessWidget: React.FC<DealReadinessWidgetProps> = ({ deal, entityAssignments }) => {
   const theme = useTheme();
 
-  const missingFields = HANDOFF_REQUIRED_FIELDS.filter(({ field }) => {
-    const value = deal[field];
-    return value === null || value === undefined || value === '';
-  });
+  const missingFields = HANDOFF_REQUIRED_FIELDS.filter(({ check }) => !check(deal, entityAssignments));
 
   const isReady = missingFields.length === 0;
   const completedCount = HANDOFF_REQUIRED_FIELDS.length - missingFields.length;

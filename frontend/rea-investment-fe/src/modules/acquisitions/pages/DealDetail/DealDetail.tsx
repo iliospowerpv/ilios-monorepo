@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -29,6 +29,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 
 import { useEntityContext } from '../../../../contexts/entityContext';
+import { ApiClient } from '../../../../api';
 import { dealsApi } from '../../api/sales';
 import {
   Deal,
@@ -40,6 +41,7 @@ import {
   NEXT_ACTION_STATUS_LABELS,
   SalesStateTransition
 } from '../../types';
+import type { DealEntityRole, ProjectEntity } from '../../../../api/entities';
 import {
   DealExecutiveSummary,
   DealReadinessWidget,
@@ -104,12 +106,18 @@ const generateHeaderSummary = (cardId: string, deal: Deal): string => {
   }
 };
 
+interface EntityChangeEntry {
+  role: DealEntityRole;
+  entityId: number | null;
+  entityName: string | null;
+}
+
 export const DealDetail: React.FC = () => {
   const { dealId } = useParams<{ dealId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { setCurrentModule, setCurrentProject } = useEntityContext();
+  const { currentCompany, setCurrentModule, setCurrentProject } = useEntityContext();
   const [isEditing, setIsEditing] = useState(searchParams.get('mode') === 'edit');
   const [editForm, setEditForm] = useState<DealUpdate>({});
   const [stageDialogOpen, setStageDialogOpen] = useState(false);
@@ -117,6 +125,7 @@ export const DealDetail: React.FC = () => {
   const [stageNotes, setStageNotes] = useState('');
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [convertNotes, setConvertNotes] = useState('');
+  const pendingEntityChangesRef = useRef<EntityChangeEntry[]>([]);
 
   useEffect(() => {
     setCurrentModule('sales');
@@ -133,16 +142,57 @@ export const DealDetail: React.FC = () => {
     enabled: !!dealId
   });
 
+  const { data: entityAssignments } = useQuery({
+    queryKey: ['deal-entity-assignments', dealId],
+    queryFn: async () => {
+      const result = await ApiClient.dealEntityAssignments.list(Number(dealId));
+      return result.items;
+    },
+    enabled: !!dealId
+  });
+
   const { data: transitions } = useQuery({
     queryKey: ['deal-transitions', dealId],
     queryFn: () => dealsApi.getTransitions(Number(dealId)),
     enabled: !!dealId
   });
 
+  const portfolioId = deal?.company_id || currentCompany?.id || 0;
+
+  const saveEntityAssignments = useCallback(async () => {
+    const changes = pendingEntityChangesRef.current;
+    if (changes.length === 0) return;
+
+    for (const change of changes) {
+      const existing = entityAssignments?.find(a => a.role === change.role);
+      if (change.entityId) {
+        if (existing) {
+          await ApiClient.dealEntityAssignments.update(Number(dealId), existing.id, {
+            entity_id: change.entityId,
+            role: change.role
+          });
+        } else {
+          await ApiClient.dealEntityAssignments.create(Number(dealId), {
+            entity_id: change.entityId,
+            role: change.role
+          });
+        }
+      } else if (existing) {
+        await ApiClient.dealEntityAssignments.delete(Number(dealId), existing.id);
+      }
+    }
+    pendingEntityChangesRef.current = [];
+  }, [dealId, entityAssignments]);
+
   const updateMutation = useMutation({
-    mutationFn: (data: DealUpdate) => dealsApi.updateDeal(Number(dealId), data),
+    mutationFn: async (data: DealUpdate) => {
+      const result = await dealsApi.updateDeal(Number(dealId), data);
+      await saveEntityAssignments();
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deal', dealId] });
+      queryClient.invalidateQueries({ queryKey: ['deal-entity-assignments', dealId] });
       queryClient.invalidateQueries({ queryKey: ['deals-pipeline'] });
       setIsEditing(false);
       setEditForm({});
@@ -179,6 +229,7 @@ export const DealDetail: React.FC = () => {
   const handleStartEdit = React.useCallback(() => {
     if (deal) {
       setEditForm({});
+      pendingEntityChangesRef.current = [];
       setIsEditing(true);
     }
   }, [deal]);
@@ -186,6 +237,7 @@ export const DealDetail: React.FC = () => {
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditForm({});
+    pendingEntityChangesRef.current = [];
   };
 
   const handleSaveEdit = () => {
@@ -195,6 +247,19 @@ export const DealDetail: React.FC = () => {
   const handleFormChange = (field: keyof DealUpdate, value: any) => {
     setEditForm(prev => ({ ...prev, [field]: value }));
   };
+
+  const handleEntityChange = useCallback(
+    (role: DealEntityRole, entityId: number | null, entity: ProjectEntity | null) => {
+      const existing = pendingEntityChangesRef.current.findIndex(c => c.role === role);
+      const entry: EntityChangeEntry = { role, entityId, entityName: entity?.name ?? null };
+      if (existing >= 0) {
+        pendingEntityChangesRef.current[existing] = entry;
+      } else {
+        pendingEntityChangesRef.current.push(entry);
+      }
+    },
+    []
+  );
 
   const handleStageTransition = () => {
     if (newStage) {
@@ -209,6 +274,15 @@ export const DealDetail: React.FC = () => {
       notes: convertNotes || undefined
     });
   };
+
+  const entityCardProps = useMemo(
+    () => ({
+      entityAssignments: entityAssignments || [],
+      onEntityChange: handleEntityChange,
+      portfolioId
+    }),
+    [entityAssignments, handleEntityChange, portfolioId]
+  );
 
   const cards: DealCardItem[] = useMemo(() => {
     if (!deal) return [];
@@ -266,11 +340,12 @@ export const DealDetail: React.FC = () => {
             onFormChange={handleFormChange}
             onStartEdit={handleStartEdit}
             showEditButton={!isEditing}
+            {...entityCardProps}
           />
         )
       };
     });
-  }, [deal, isEditing, editForm, handleStartEdit]);
+  }, [deal, isEditing, editForm, handleStartEdit, entityCardProps]);
 
   if (isLoading) {
     return (
@@ -398,9 +473,9 @@ export const DealDetail: React.FC = () => {
       </Box>
 
       <Box sx={{ p: 3 }}>
-        <DealExecutiveSummary deal={deal} />
+        <DealExecutiveSummary deal={deal} entityAssignments={entityAssignments} />
 
-        {!deal.is_converted && <DealReadinessWidget deal={deal} />}
+        {!deal.is_converted && <DealReadinessWidget deal={deal} entityAssignments={entityAssignments} />}
 
         <Box sx={{ display: 'flex', gap: 3 }}>
           <Box sx={{ flex: 1 }}>

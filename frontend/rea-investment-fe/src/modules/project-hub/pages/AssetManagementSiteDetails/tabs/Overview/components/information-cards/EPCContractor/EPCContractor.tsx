@@ -1,5 +1,5 @@
 import React from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
@@ -19,6 +19,8 @@ import { useNotify } from '../../../../../../../../../contexts/notifications/not
 import { ApiClient } from '../../../../../../../../../api';
 import formatPhoneNumber from '../../../../../../../../../utils/formatters/formatPhoneNumber';
 import FormattedIntegerNumericInput from '../../../../../../../../../components/common/FormattedIntegerNumericInput/FormattedIntegerNumericInput';
+import { EntityPicker } from '../../../../../../../../../components/common/EntityPicker/EntityPicker';
+import type { EntityRelationship } from '../../../../../../../../../api/entities';
 
 type EPCContractorCardData = Awaited<ReturnType<typeof ApiClient.assetManagement.siteInfo>>['epc_contractor'];
 
@@ -26,10 +28,31 @@ type EPCContractorFormFields = Omit<EPCContractorCardData, 'provider' | 'agreeme
 
 const inputStyles = { fontSize: '0.875rem', lineHeight: 1.43 };
 
+const ENTITY_ROLE = 'epc_contractor' as const;
+
 const EPCContractorForm = React.forwardRef<InformationCardFormRef, InformationCardFormProps<EPCContractorCardData>>(
-  ({ mode, setMode, siteId, data, reflectFormState }, ref) => {
+  ({ mode, setMode, siteId, data, reflectFormState, portfolioId }, ref) => {
     const queryClient = useQueryClient();
     const notify = useNotify();
+
+    const [selectedEntityId, setSelectedEntityId] = React.useState<number | null>(null);
+    const [existingRelationship, setExistingRelationship] = React.useState<EntityRelationship | null>(null);
+
+    const { data: relationships } = useQuery({
+      queryKey: ['entity-relationships', siteId],
+      queryFn: () => ApiClient.entityRelationships.list(siteId),
+      enabled: !!siteId
+    });
+
+    React.useEffect(() => {
+      if (relationships?.items) {
+        const rel = relationships.items.find(r => r.role === ENTITY_ROLE);
+        if (rel) {
+          setExistingRelationship(rel);
+          setSelectedEntityId(rel.entity_id);
+        }
+      }
+    }, [relationships]);
 
     const { handleSubmit, formState, control, reset } = useForm<EPCContractorFormFields>({
       mode: 'onChange',
@@ -75,10 +98,35 @@ const EPCContractorForm = React.forwardRef<InformationCardFormRef, InformationCa
       });
     }, [data, reset]);
 
+    const handleEntityChange = React.useCallback((_entityId: number | null) => {
+      setSelectedEntityId(_entityId);
+    }, []);
+
+    const saveEntityRelationship = React.useCallback(async () => {
+      if (!selectedEntityId) return;
+      try {
+        if (existingRelationship) {
+          await ApiClient.entityRelationships.update(siteId, existingRelationship.id, {
+            entity_id: selectedEntityId,
+            role: ENTITY_ROLE
+          });
+        } else {
+          await ApiClient.entityRelationships.create(siteId, {
+            entity_id: selectedEntityId,
+            role: ENTITY_ROLE
+          });
+        }
+        queryClient.invalidateQueries({ queryKey: ['entity-relationships', siteId] });
+      } catch {
+        /* entity save non-blocking */
+      }
+    }, [selectedEntityId, existingRelationship, siteId, queryClient]);
+
     const onSubmit: SubmitHandler<EPCContractorFormFields> = React.useCallback(
       async data => {
         try {
           const response = await updateEPCContractorDetails(data);
+          await saveEntityRelationship();
           notify(response.message || `EPC Contractor information was successfully updated.`);
           reset({
             epc_address: data.epc_address,
@@ -92,7 +140,7 @@ const EPCContractorForm = React.forwardRef<InformationCardFormRef, InformationCa
           notify(e.response?.data?.message || 'Something went wrong when updating the EPC Contractor information...');
         }
       },
-      [notify, queryClient, reset, setMode, updateEPCContractorDetails]
+      [notify, queryClient, reset, setMode, updateEPCContractorDetails, saveEntityRelationship]
     );
 
     const handleFormSubmit = React.useMemo(() => handleSubmit(onSubmit), [handleSubmit, onSubmit]);
@@ -102,18 +150,43 @@ const EPCContractorForm = React.forwardRef<InformationCardFormRef, InformationCa
       () => ({
         resetForm: () => {
           reset();
+          if (existingRelationship) {
+            setSelectedEntityId(existingRelationship.entity_id);
+          } else {
+            setSelectedEntityId(null);
+          }
         },
         submit: () => {
           handleFormSubmit();
         }
       }),
-      [reset, handleFormSubmit]
+      [reset, handleFormSubmit, existingRelationship]
     );
 
     return (
       <Box component="form">
         <Table sx={{ width: '100%', height: 'auto', tableLayout: 'fixed' }} size="small">
           <TableBody>
+            <TableRow>
+              <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
+                <TextBox fieldName>Entity:</TextBox>
+              </FieldCell>
+              <FieldCell component="th" scope="row" align={mode === 'view' ? 'right' : 'left'}>
+                {mode === 'view' ? (
+                  <TextBox>{existingRelationship?.entity_name || ''}</TextBox>
+                ) : portfolioId ? (
+                  <EntityPicker
+                    portfolioId={portfolioId}
+                    entityType="epc_contractor"
+                    value={selectedEntityId}
+                    onChange={handleEntityChange}
+                    label="EPC Contractor Entity"
+                    role={ENTITY_ROLE}
+                    size="small"
+                  />
+                ) : null}
+              </FieldCell>
+            </TableRow>
             <TableRow>
               <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
                 <TextBox fieldName>Provider:</TextBox>
@@ -360,14 +433,16 @@ interface EPCContractorCardProps {
   siteId: number;
   data: EPCContractorCardData;
   hideHeader?: boolean;
+  portfolioId?: number;
 }
 
-export const EPCContractorCard: React.FC<EPCContractorCardProps> = ({ siteId, data, hideHeader }) => (
+export const EPCContractorCard: React.FC<EPCContractorCardProps> = ({ siteId, data, hideHeader, portfolioId }) => (
   <InformationCardBase<EPCContractorCardData>
     title="EPC Contractor"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={EPCContractorForm}
     hideHeader={hideHeader}
+    portfolioId={portfolioId}
   />
 );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
@@ -18,6 +18,8 @@ import { useNotify } from '../../../../../../../../../contexts/notifications/not
 import { ApiClient } from '../../../../../../../../../api';
 import FormattedIntegerNumericInput from '../../../../../../../../../components/common/FormattedIntegerNumericInput/FormattedIntegerNumericInput';
 import formatPhoneNumber from '../../../../../../../../../utils/formatters/formatPhoneNumber';
+import { EntityPicker } from '../../../../../../../../../components/common/EntityPicker/EntityPicker';
+import type { EntityRelationship } from '../../../../../../../../../api/entities';
 
 type VegetationVendorCardData = Exclude<
   Awaited<ReturnType<typeof ApiClient.assetManagement.siteInfo>>['vegetation_vendor'],
@@ -28,12 +30,57 @@ type VegetationVendorFormFields = VegetationVendorCardData;
 
 const inputStyles = { fontSize: '0.875rem', lineHeight: 1.43 };
 
+const ENTITY_ROLE = 'vegetation_vendor' as const;
+
 const VegetationVendorForm = React.forwardRef<
   InformationCardFormRef,
   InformationCardFormProps<VegetationVendorFormFields>
->(({ mode, setMode, siteId, data, reflectFormState }, ref) => {
+>(({ mode, setMode, siteId, data, reflectFormState, portfolioId }, ref) => {
   const queryClient = useQueryClient();
   const notify = useNotify();
+
+  const [selectedEntityId, setSelectedEntityId] = React.useState<number | null>(null);
+  const [existingRelationship, setExistingRelationship] = React.useState<EntityRelationship | null>(null);
+
+  const { data: relationships } = useQuery({
+    queryKey: ['entity-relationships', siteId],
+    queryFn: () => ApiClient.entityRelationships.list(siteId),
+    enabled: !!siteId
+  });
+
+  React.useEffect(() => {
+    if (relationships?.items) {
+      const rel = relationships.items.find(r => r.role === ENTITY_ROLE);
+      if (rel) {
+        setExistingRelationship(rel);
+        setSelectedEntityId(rel.entity_id);
+      }
+    }
+  }, [relationships]);
+
+  const handleEntityChange = React.useCallback((_entityId: number | null) => {
+    setSelectedEntityId(_entityId);
+  }, []);
+
+  const saveEntityRelationship = React.useCallback(async () => {
+    if (!selectedEntityId) return;
+    try {
+      if (existingRelationship) {
+        await ApiClient.entityRelationships.update(siteId, existingRelationship.id, {
+          entity_id: selectedEntityId,
+          role: ENTITY_ROLE
+        });
+      } else {
+        await ApiClient.entityRelationships.create(siteId, {
+          entity_id: selectedEntityId,
+          role: ENTITY_ROLE
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ['entity-relationships', siteId] });
+    } catch {
+      /* entity save non-blocking */
+    }
+  }, [selectedEntityId, existingRelationship, siteId, queryClient]);
 
   const { handleSubmit, formState, control, reset } = useForm<VegetationVendorFormFields>({
     mode: 'onChange',
@@ -86,6 +133,7 @@ const VegetationVendorForm = React.forwardRef<
     async data => {
       try {
         const response = await updateVegetationVendorDetails(data);
+        await saveEntityRelationship();
         notify(response.message || `Vegetation Vendor information was successfully updated.`);
         reset(data);
         queryClient.invalidateQueries({ queryKey: ['sites'] });
@@ -94,7 +142,7 @@ const VegetationVendorForm = React.forwardRef<
         notify(e.response?.data?.message || 'Something went wrong when updating the Vegetation Vendor information...');
       }
     },
-    [notify, queryClient, reset, setMode, updateVegetationVendorDetails]
+    [notify, queryClient, reset, setMode, updateVegetationVendorDetails, saveEntityRelationship]
   );
 
   const handleFormSubmit = React.useMemo(() => handleSubmit(onSubmit), [handleSubmit, onSubmit]);
@@ -104,18 +152,43 @@ const VegetationVendorForm = React.forwardRef<
     () => ({
       resetForm: () => {
         reset();
+        if (existingRelationship) {
+          setSelectedEntityId(existingRelationship.entity_id);
+        } else {
+          setSelectedEntityId(null);
+        }
       },
       submit: () => {
         handleFormSubmit();
       }
     }),
-    [reset, handleFormSubmit]
+    [reset, handleFormSubmit, existingRelationship]
   );
 
   return (
     <Box component="form">
       <Table sx={{ width: '100%', height: 'auto', tableLayout: 'fixed' }} size="small">
         <TableBody>
+          <TableRow>
+            <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
+              <TextBox fieldName>Entity:</TextBox>
+            </FieldCell>
+            <FieldCell component="th" scope="row" align={mode === 'view' ? 'right' : 'left'}>
+              {mode === 'view' ? (
+                <TextBox>{existingRelationship?.entity_name || ''}</TextBox>
+              ) : portfolioId ? (
+                <EntityPicker
+                  portfolioId={portfolioId}
+                  entityType="vegetation"
+                  value={selectedEntityId}
+                  onChange={handleEntityChange}
+                  label="Vegetation Vendor Entity"
+                  role={ENTITY_ROLE}
+                  size="small"
+                />
+              ) : null}
+            </FieldCell>
+          </TableRow>
           <TableRow>
             <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
               <TextBox fieldName>Provider:</TextBox>
@@ -397,14 +470,21 @@ interface VegetationVendorCardProps {
   siteId: number;
   data: VegetationVendorCardData;
   hideHeader?: boolean;
+  portfolioId?: number;
 }
 
-export const VegetationVendorCard: React.FC<VegetationVendorCardProps> = ({ siteId, data, hideHeader }) => (
+export const VegetationVendorCard: React.FC<VegetationVendorCardProps> = ({
+  siteId,
+  data,
+  hideHeader,
+  portfolioId
+}) => (
   <InformationCardBase<VegetationVendorCardData>
     title="Vegetation Vendor"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={VegetationVendorForm}
     hideHeader={hideHeader}
+    portfolioId={portfolioId}
   />
 );

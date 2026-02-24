@@ -163,6 +163,7 @@ const DEFAULT_CARD_ORDER = [
 
 export const OverviewTab: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDetails }) => {
   const { id: siteId } = siteDetails;
+  const portfolioId = siteDetails.company?.id;
 
   const { data: siteData, isLoading: isLoadingSiteData } = useQuery({
     queryFn: () => ApiClient.assetManagement.siteInfo(siteId),
@@ -176,21 +177,42 @@ export const OverviewTab: React.FC<AssetManagementSiteDetailsTabProps> = ({ site
     const cardContentMap: Record<string, React.ReactNode> = {
       site_level_details: <SiteLevelDetailsCard siteId={siteId} data={siteData.site_level_details} hideHeader />,
       asset_overview: <AssetOverviewCard siteId={siteId} data={siteData.asset_overview} hideHeader />,
-      ownership: <OwnershipCard siteId={siteId} data={siteData.ownership} hideHeader />,
-      tax_equity: <TaxEquityCard siteId={siteId} data={siteData.tax_equity} hideHeader />,
+      ownership: <OwnershipCard siteId={siteId} data={siteData.ownership} hideHeader portfolioId={portfolioId} />,
+      tax_equity: <TaxEquityCard siteId={siteId} data={siteData.tax_equity} hideHeader portfolioId={portfolioId} />,
       key_dates: <KeyDatesCard siteId={siteId} data={siteData.key_dates} hideHeader />,
-      o_and_m: <OMCard siteId={siteId} data={siteData.o_and_m} hideHeader />,
+      o_and_m: <OMCard siteId={siteId} data={siteData.o_and_m} hideHeader portfolioId={portfolioId} />,
       interconnection: (
-        <InterconnectionUtilityProviderCard siteId={siteId} data={siteData.interconnection} hideHeader />
+        <InterconnectionUtilityProviderCard
+          siteId={siteId}
+          data={siteData.interconnection}
+          hideHeader
+          portfolioId={portfolioId}
+        />
       ),
-      epc_contractor: <EPCContractorCard siteId={siteId} data={siteData.epc_contractor} hideHeader />,
+      epc_contractor: (
+        <EPCContractorCard siteId={siteId} data={siteData.epc_contractor} hideHeader portfolioId={portfolioId} />
+      ),
       community_solar_manager: (
-        <CommunitySolarManagerCard siteId={siteId} data={siteData.community_solar_manager} hideHeader />
+        <CommunitySolarManagerCard
+          siteId={siteId}
+          data={siteData.community_solar_manager}
+          hideHeader
+          portfolioId={portfolioId}
+        />
       ),
-      insurance_provider: <InsuranceProviderCard siteId={siteId} data={siteData.insurance_provider} hideHeader />,
-      vegetation_vendor: <VegetationVendorCard siteId={siteId} data={siteData.vegetation_vendor} hideHeader />,
-      offtaker: <OfftakerCard siteId={siteId} data={siteData.offtaker} hideHeader />,
-      compliance: <ComplianceCard siteId={siteId} data={siteData.compliance} hideHeader />,
+      insurance_provider: (
+        <InsuranceProviderCard
+          siteId={siteId}
+          data={siteData.insurance_provider}
+          hideHeader
+          portfolioId={portfolioId}
+        />
+      ),
+      vegetation_vendor: (
+        <VegetationVendorCard siteId={siteId} data={siteData.vegetation_vendor} hideHeader portfolioId={portfolioId} />
+      ),
+      offtaker: <OfftakerCard siteId={siteId} data={siteData.offtaker} hideHeader portfolioId={portfolioId} />,
+      compliance: <ComplianceCard siteId={siteId} data={siteData.compliance} hideHeader portfolioId={portfolioId} />,
       site_lease: <SiteLeaseCard siteId={siteId} data={siteData.site_lease} hideHeader />
     };
 

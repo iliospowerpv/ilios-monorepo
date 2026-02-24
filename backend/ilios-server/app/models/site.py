@@ -136,6 +136,7 @@ class Site(RelatedBoards, Base):
     weather = relationship("SiteWeather", back_populates="site", order_by=desc(SiteWeather.updated_at))
     project_facts = relationship("ProjectFact", back_populates="site")
     assumption_promotions = relationship("AssumptionPromotion", back_populates="site")
+    entity_relationships = relationship("EntityRelationship", back_populates="site")
 
     # setting up the server_default value, that will be filled on the database side
     created_at = Column(DateTime, server_default=utcnow())

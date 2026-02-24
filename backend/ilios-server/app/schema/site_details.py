@@ -283,6 +283,19 @@ class ComplianceSchema(BaseModel):
     )
 
 
+class EntityAssignmentSummary(BaseModel):
+    id: int
+    entity_id: int
+    entity_name: Optional[str] = None
+    entity_type: Optional[str] = None
+    role: str
+    contact_id: Optional[int] = None
+    contact_name: Optional[str] = None
+    effective_date: Optional[date] = None
+    termination_date: Optional[date] = None
+    notes: Optional[str] = None
+
+
 class SiteFullDetailsSchema(BaseModel):
     site_level_details: SiteLevelDetailsViewSchema
     asset_overview: AssetOverviewViewSchema
@@ -298,3 +311,4 @@ class SiteFullDetailsSchema(BaseModel):
     vegetation_vendor: VegetationVendorSchema
     offtaker: OfftakerSchema
     compliance: ComplianceSchema
+    entity_assignments: list[EntityAssignmentSummary] = []

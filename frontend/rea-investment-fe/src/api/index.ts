@@ -19,6 +19,7 @@ import { buildAccessibleEntitiesApi } from './accessible-entities';
 import { buildWorkspaceApi } from './workspace';
 import { buildAdminApi } from './admin';
 import { createContactsApi } from './contacts';
+import { createEntitiesApi } from './entities';
 import { financeIntegrations, financeData } from './financeIntegrations';
 
 export const ApiClient = Object.freeze({
@@ -43,6 +44,7 @@ export const ApiClient = Object.freeze({
   workspace: buildWorkspaceApi(httpClient),
   admin: buildAdminApi(httpClient),
   contacts: createContactsApi(httpClient),
+  ...createEntitiesApi(httpClient),
   financeIntegrations,
   financeData
 });
@@ -166,6 +168,26 @@ export type {
   ContactsQueryParams,
   ContactScopeType
 } from './contacts';
+
+export type {
+  EntityType,
+  EntityRelationshipRole,
+  DealEntityRole,
+  ProjectEntity,
+  ProjectEntityCreate,
+  ProjectEntityUpdate,
+  ProjectEntityListResponse,
+  EntityRelationship,
+  EntityRelationshipCreate,
+  EntityRelationshipUpdate,
+  EntityRelationshipListResponse,
+  DealEntityAssignment,
+  DealEntityAssignmentCreate,
+  DealEntityAssignmentUpdate,
+  DealEntityAssignmentListResponse,
+  EntityListParams,
+  EntitiesApi
+} from './entities';
 
 export type {
   FinanceIntegration,

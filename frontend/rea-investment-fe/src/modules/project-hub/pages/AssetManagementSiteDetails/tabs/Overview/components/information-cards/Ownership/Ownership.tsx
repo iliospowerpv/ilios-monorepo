@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import Box from '@mui/material/Box';
@@ -17,6 +17,8 @@ import {
 import { useNotify } from '../../../../../../../../../contexts/notifications/notifications';
 
 import { ApiClient } from '../../../../../../../../../api';
+import { EntityPicker } from '../../../../../../../../../components/common/EntityPicker/EntityPicker';
+import type { EntityRelationship, EntityRelationshipRole } from '../../../../../../../../../api/entities';
 
 type OwnershipCardData = Exclude<Awaited<ReturnType<typeof ApiClient.assetManagement.siteInfo>>['ownership'], null>;
 
@@ -27,10 +29,93 @@ type OwnershipFormFields = Pick<
 
 const inputStyles = { fontSize: '0.875rem', lineHeight: 1.43 };
 
+const ENTITY_ROLES: {
+  field: keyof Pick<OwnershipFormFields, 'hold_co' | 'project_co' | 'tax_credit_fund'>;
+  role: EntityRelationshipRole;
+  label: string;
+}[] = [
+  { field: 'hold_co', role: 'hold_co', label: 'Hold Co' },
+  { field: 'project_co', role: 'project_co', label: 'Project Co' },
+  { field: 'tax_credit_fund', role: 'tax_equity_provider', label: 'Tax Credit Fund' }
+];
+
 const OwnershipForm = React.forwardRef<InformationCardFormRef, InformationCardFormProps<OwnershipCardData>>(
-  ({ mode, setMode, siteId, data, reflectFormState }, ref) => {
+  ({ mode, setMode, siteId, data, reflectFormState, portfolioId }, ref) => {
     const queryClient = useQueryClient();
     const notify = useNotify();
+
+    const [entityAssignments, setEntityAssignments] = useState<Record<string, EntityRelationship | null>>({
+      hold_co: null,
+      project_co: null,
+      tax_equity_provider: null
+    });
+    const [selectedEntities, setSelectedEntities] = useState<Record<string, number | null>>({
+      hold_co: null,
+      project_co: null,
+      tax_equity_provider: null
+    });
+
+    useEffect(() => {
+      ApiClient.entityRelationships
+        .list(siteId)
+        .then(response => {
+          const assignments: Record<string, EntityRelationship | null> = {
+            hold_co: null,
+            project_co: null,
+            tax_equity_provider: null
+          };
+          const entities: Record<string, number | null> = {
+            hold_co: null,
+            project_co: null,
+            tax_equity_provider: null
+          };
+          for (const rel of response.items) {
+            if (rel.role === 'hold_co' || rel.role === 'project_co' || rel.role === 'tax_equity_provider') {
+              assignments[rel.role] = rel;
+              entities[rel.role] = rel.entity_id;
+            }
+          }
+          setEntityAssignments(assignments);
+          setSelectedEntities(entities);
+        })
+        .catch(() => {});
+    }, [siteId]);
+
+    const handleEntityChange = useCallback((role: EntityRelationshipRole, entityId: number | null) => {
+      setSelectedEntities(prev => ({ ...prev, [role]: entityId }));
+    }, []);
+
+    const saveEntityAssignments = useCallback(async () => {
+      for (const { role } of ENTITY_ROLES) {
+        const currentAssignment = entityAssignments[role];
+        const selectedEntityId = selectedEntities[role];
+
+        if (selectedEntityId && !currentAssignment) {
+          try {
+            await ApiClient.entityRelationships.create(siteId, {
+              entity_id: selectedEntityId,
+              role
+            });
+          } catch {
+            /* entity save non-blocking */
+          }
+        } else if (selectedEntityId && currentAssignment && currentAssignment.entity_id !== selectedEntityId) {
+          try {
+            await ApiClient.entityRelationships.update(siteId, currentAssignment.id, {
+              entity_id: selectedEntityId
+            });
+          } catch {
+            /* entity save non-blocking */
+          }
+        } else if (!selectedEntityId && currentAssignment) {
+          try {
+            await ApiClient.entityRelationships.delete(siteId, currentAssignment.id);
+          } catch {
+            /* entity save non-blocking */
+          }
+        }
+      }
+    }, [siteId, entityAssignments, selectedEntities]);
 
     const { handleSubmit, formState, control, reset } = useForm<OwnershipFormFields>({
       mode: 'onChange',
@@ -77,18 +162,19 @@ const OwnershipForm = React.forwardRef<InformationCardFormRef, InformationCardFo
     }, [data, reset]);
 
     const onSubmit: SubmitHandler<OwnershipFormFields> = React.useCallback(
-      async data => {
+      async formData => {
         try {
-          const response = await updateOwnershipDetails(data);
+          await saveEntityAssignments();
+          const response = await updateOwnershipDetails(formData);
           notify(response.message || `Ownership information was successfully updated.`);
-          reset(data);
+          reset(formData);
           queryClient.invalidateQueries({ queryKey: ['sites'] });
           setMode('view');
         } catch (e: any) {
           notify(e.response?.data?.message || 'Something went wrong when updating the Ownership information...');
         }
       },
-      [notify, queryClient, reset, setMode, updateOwnershipDetails]
+      [notify, queryClient, reset, setMode, updateOwnershipDetails, saveEntityAssignments]
     );
 
     const handleFormSubmit = React.useMemo(() => handleSubmit(onSubmit), [handleSubmit, onSubmit]);
@@ -168,7 +254,17 @@ const OwnershipForm = React.forwardRef<InformationCardFormRef, InformationCardFo
               </FieldCell>
               <FieldCell component="th" scope="row" align={mode === 'view' ? 'right' : 'left'}>
                 {mode === 'view' ? (
-                  <TextBox>{data.hold_co}</TextBox>
+                  <TextBox>{entityAssignments.hold_co?.entity_name || data.hold_co}</TextBox>
+                ) : portfolioId ? (
+                  <EntityPicker
+                    portfolioId={portfolioId}
+                    value={selectedEntities.hold_co}
+                    onChange={id => handleEntityChange('hold_co', id)}
+                    label="Hold Co"
+                    role="hold_co"
+                    disabled={isSubmitting}
+                    size="small"
+                  />
                 ) : (
                   <Controller
                     name="hold_co"
@@ -220,7 +316,17 @@ const OwnershipForm = React.forwardRef<InformationCardFormRef, InformationCardFo
               </FieldCell>
               <FieldCell component="th" scope="row" align={mode === 'view' ? 'right' : 'left'}>
                 {mode === 'view' ? (
-                  <TextBox>{data.project_co}</TextBox>
+                  <TextBox>{entityAssignments.project_co?.entity_name || data.project_co}</TextBox>
+                ) : portfolioId ? (
+                  <EntityPicker
+                    portfolioId={portfolioId}
+                    value={selectedEntities.project_co}
+                    onChange={id => handleEntityChange('project_co', id)}
+                    label="Project Co"
+                    role="project_co"
+                    disabled={isSubmitting}
+                    size="small"
+                  />
                 ) : (
                   <Controller
                     name="project_co"
@@ -280,7 +386,18 @@ const OwnershipForm = React.forwardRef<InformationCardFormRef, InformationCardFo
               </FieldCell>
               <FieldCell component="th" scope="row" align={mode === 'view' ? 'right' : 'left'}>
                 {mode === 'view' ? (
-                  <TextBox>{data.tax_credit_fund}</TextBox>
+                  <TextBox>{entityAssignments.tax_equity_provider?.entity_name || data.tax_credit_fund}</TextBox>
+                ) : portfolioId ? (
+                  <EntityPicker
+                    portfolioId={portfolioId}
+                    entityType="tax_equity"
+                    value={selectedEntities.tax_equity_provider}
+                    onChange={id => handleEntityChange('tax_equity_provider', id)}
+                    label="Tax Credit Fund"
+                    role="tax_equity_provider"
+                    disabled={isSubmitting}
+                    size="small"
+                  />
                 ) : (
                   <Controller
                     name="tax_credit_fund"
@@ -297,7 +414,7 @@ const OwnershipForm = React.forwardRef<InformationCardFormRef, InformationCardFo
                         fullWidth
                         size="small"
                         placeholder=""
-                        error={!!errors.hold_co}
+                        error={!!errors.tax_credit_fund}
                         multiline
                         required
                         minRows={1}
@@ -339,14 +456,16 @@ interface OMCardProps {
   siteId: number;
   data: OwnershipCardData;
   hideHeader?: boolean;
+  portfolioId?: number;
 }
 
-export const OwnershipCard: React.FC<OMCardProps> = ({ siteId, data, hideHeader }) => (
+export const OwnershipCard: React.FC<OMCardProps> = ({ siteId, data, hideHeader, portfolioId }) => (
   <InformationCardBase<OwnershipCardData>
     title="Ownership"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={OwnershipForm}
     hideHeader={hideHeader}
+    portfolioId={portfolioId}
   />
 );

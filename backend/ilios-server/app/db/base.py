@@ -39,3 +39,8 @@ from app.models.extraction_registry import (
     ExtractionSchemaVersionField,
     ExtractionPromptTemplate,
 )
+from app.models.project_entity import (
+    DealEntityAssignment,
+    EntityRelationship,
+    ProjectEntity,
+)

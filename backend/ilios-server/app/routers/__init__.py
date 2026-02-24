@@ -42,3 +42,4 @@ from .workspace import workspace_router
 from .admin import access_health_router, extraction_registry_router
 from .role_profiles import role_profiles_router
 from .contacts import contacts_router
+from .entities import router as entities_router

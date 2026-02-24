@@ -1,5 +1,5 @@
 import React from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import dayjs, { Dayjs } from 'dayjs';
 import CustomParseFormatPlugin from 'dayjs/plugin/customParseFormat';
@@ -21,6 +21,8 @@ import { useNotify } from '../../../../../../../../../contexts/notifications/not
 
 import { ApiClient } from '../../../../../../../../../api';
 import { StyledSelectItem } from '../../../../../../DeviceDetails/tabs/Overview/components/GeneralDeviceInfoCard/GeneralDeviceInfoCard.styles';
+import { EntityPicker } from '../../../../../../../../../components/common/EntityPicker/EntityPicker';
+import type { EntityRelationship } from '../../../../../../../../../api/entities';
 
 dayjs.extend(CustomParseFormatPlugin);
 
@@ -36,10 +38,55 @@ interface OfftakerFormFields {
 
 const inputStyles = { fontSize: '0.875rem', lineHeight: 1.43 };
 
+const ENTITY_ROLE = 'offtaker' as const;
+
 const OfftakerForm = React.forwardRef<InformationCardFormRef, InformationCardFormProps<OfftakerCardData>>(
-  ({ mode, setMode, siteId, data, reflectFormState }, ref) => {
+  ({ mode, setMode, siteId, data, reflectFormState, portfolioId }, ref) => {
     const queryClient = useQueryClient();
     const notify = useNotify();
+
+    const [selectedEntityId, setSelectedEntityId] = React.useState<number | null>(null);
+    const [existingRelationship, setExistingRelationship] = React.useState<EntityRelationship | null>(null);
+
+    const { data: relationships } = useQuery({
+      queryKey: ['entity-relationships', siteId],
+      queryFn: () => ApiClient.entityRelationships.list(siteId),
+      enabled: !!siteId
+    });
+
+    React.useEffect(() => {
+      if (relationships?.items) {
+        const rel = relationships.items.find(r => r.role === ENTITY_ROLE);
+        if (rel) {
+          setExistingRelationship(rel);
+          setSelectedEntityId(rel.entity_id);
+        }
+      }
+    }, [relationships]);
+
+    const handleEntityChange = React.useCallback((_entityId: number | null) => {
+      setSelectedEntityId(_entityId);
+    }, []);
+
+    const saveEntityRelationship = React.useCallback(async () => {
+      if (!selectedEntityId) return;
+      try {
+        if (existingRelationship) {
+          await ApiClient.entityRelationships.update(siteId, existingRelationship.id, {
+            entity_id: selectedEntityId,
+            role: ENTITY_ROLE
+          });
+        } else {
+          await ApiClient.entityRelationships.create(siteId, {
+            entity_id: selectedEntityId,
+            role: ENTITY_ROLE
+          });
+        }
+        queryClient.invalidateQueries({ queryKey: ['entity-relationships', siteId] });
+      } catch {
+        /* entity save non-blocking */
+      }
+    }, [selectedEntityId, existingRelationship, siteId, queryClient]);
 
     const { handleSubmit, formState, control, reset } = useForm<OfftakerFormFields>({
       mode: 'onChange',
@@ -92,6 +139,7 @@ const OfftakerForm = React.forwardRef<InformationCardFormRef, InformationCardFor
       async data => {
         try {
           const response = await updateOfftakerDetails(data);
+          await saveEntityRelationship();
           notify(response.message || `Offtaker information was successfully updated.`);
           reset(data);
           queryClient.invalidateQueries({ queryKey: ['sites'] });
@@ -100,7 +148,7 @@ const OfftakerForm = React.forwardRef<InformationCardFormRef, InformationCardFor
           notify(e.response?.data?.message || 'Something went wrong when updating the Offtaker information...');
         }
       },
-      [notify, queryClient, reset, setMode, updateOfftakerDetails]
+      [notify, queryClient, reset, setMode, updateOfftakerDetails, saveEntityRelationship]
     );
 
     const handleFormSubmit = React.useMemo(() => handleSubmit(onSubmit), [handleSubmit, onSubmit]);
@@ -110,18 +158,43 @@ const OfftakerForm = React.forwardRef<InformationCardFormRef, InformationCardFor
       () => ({
         resetForm: () => {
           reset();
+          if (existingRelationship) {
+            setSelectedEntityId(existingRelationship.entity_id);
+          } else {
+            setSelectedEntityId(null);
+          }
         },
         submit: () => {
           handleFormSubmit();
         }
       }),
-      [reset, handleFormSubmit]
+      [reset, handleFormSubmit, existingRelationship]
     );
 
     return (
       <Box component="form">
         <Table sx={{ width: '100%', height: 'auto', tableLayout: 'fixed' }} size="small">
           <TableBody>
+            <TableRow>
+              <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
+                <TextBox fieldName>Entity:</TextBox>
+              </FieldCell>
+              <FieldCell component="th" scope="row" align={mode === 'view' ? 'right' : 'left'}>
+                {mode === 'view' ? (
+                  <TextBox>{existingRelationship?.entity_name || ''}</TextBox>
+                ) : portfolioId ? (
+                  <EntityPicker
+                    portfolioId={portfolioId}
+                    entityType="offtaker"
+                    value={selectedEntityId}
+                    onChange={handleEntityChange}
+                    label="Offtaker Entity"
+                    role={ENTITY_ROLE}
+                    size="small"
+                  />
+                ) : null}
+              </FieldCell>
+            </TableRow>
             <TableRow>
               <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
                 <TextBox fieldName>Offtaker Name:</TextBox>
@@ -396,14 +469,16 @@ interface OfftakerCardProps {
   siteId: number;
   data: OfftakerCardData;
   hideHeader?: boolean;
+  portfolioId?: number;
 }
 
-export const OfftakerCard: React.FC<OfftakerCardProps> = ({ siteId, data, hideHeader }) => (
+export const OfftakerCard: React.FC<OfftakerCardProps> = ({ siteId, data, hideHeader, portfolioId }) => (
   <InformationCardBase<OfftakerCardData>
     title="Offtaker"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={OfftakerForm}
     hideHeader={hideHeader}
+    portfolioId={portfolioId}
   />
 );

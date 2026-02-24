@@ -1,5 +1,5 @@
 import React from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
@@ -24,6 +24,8 @@ import FormHelperText from '@mui/material/FormHelperText';
 import formatPhoneNumber from '../../../../../../../../../utils/formatters/formatPhoneNumber';
 import FormattedIntegerNumericInput from '../../../../../../../../../components/common/FormattedIntegerNumericInput/FormattedIntegerNumericInput';
 import FormattedNumericInput from '../../../../../../../../../components/common/FormattedNumericInput/FormattedNumericInput';
+import { EntityPicker } from '../../../../../../../../../components/common/EntityPicker/EntityPicker';
+import type { EntityRelationship } from '../../../../../../../../../api/entities';
 
 type CommunitySolarManagerData = Exclude<
   Awaited<ReturnType<typeof ApiClient.assetManagement.siteInfo>>['community_solar_manager'],
@@ -43,12 +45,57 @@ interface CommunitySolarManagerFormFields {
 
 const inputStyles = { fontSize: '0.875rem', lineHeight: 1.43 };
 
+const ENTITY_ROLE = 'community_solar_manager' as const;
+
 const CommunitySolarManagerForm = React.forwardRef<
   InformationCardFormRef,
   InformationCardFormProps<CommunitySolarManagerData>
->(({ mode, setMode, siteId, data, reflectFormState }, ref) => {
+>(({ mode, setMode, siteId, data, reflectFormState, portfolioId }, ref) => {
   const queryClient = useQueryClient();
   const notify = useNotify();
+
+  const [selectedEntityId, setSelectedEntityId] = React.useState<number | null>(null);
+  const [existingRelationship, setExistingRelationship] = React.useState<EntityRelationship | null>(null);
+
+  const { data: relationships } = useQuery({
+    queryKey: ['entity-relationships', siteId],
+    queryFn: () => ApiClient.entityRelationships.list(siteId),
+    enabled: !!siteId
+  });
+
+  React.useEffect(() => {
+    if (relationships?.items) {
+      const rel = relationships.items.find(r => r.role === ENTITY_ROLE);
+      if (rel) {
+        setExistingRelationship(rel);
+        setSelectedEntityId(rel.entity_id);
+      }
+    }
+  }, [relationships]);
+
+  const handleEntityChange = React.useCallback((_entityId: number | null) => {
+    setSelectedEntityId(_entityId);
+  }, []);
+
+  const saveEntityRelationship = React.useCallback(async () => {
+    if (!selectedEntityId) return;
+    try {
+      if (existingRelationship) {
+        await ApiClient.entityRelationships.update(siteId, existingRelationship.id, {
+          entity_id: selectedEntityId,
+          role: ENTITY_ROLE
+        });
+      } else {
+        await ApiClient.entityRelationships.create(siteId, {
+          entity_id: selectedEntityId,
+          role: ENTITY_ROLE
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ['entity-relationships', siteId] });
+    } catch {
+      /* entity save non-blocking */
+    }
+  }, [selectedEntityId, existingRelationship, siteId, queryClient]);
 
   const { handleSubmit, formState, control, reset } = useForm<CommunitySolarManagerFormFields>({
     mode: 'onChange',
@@ -112,6 +159,7 @@ const CommunitySolarManagerForm = React.forwardRef<
     async data => {
       try {
         const response = await updateCommunitySolarManagerDetails(data);
+        await saveEntityRelationship();
         notify(response.message || `Community Solar Manager information was successfully updated.`);
         reset({
           csm_provider: data.csm_provider,
@@ -131,7 +179,7 @@ const CommunitySolarManagerForm = React.forwardRef<
         );
       }
     },
-    [notify, queryClient, reset, setMode, updateCommunitySolarManagerDetails]
+    [notify, queryClient, reset, setMode, updateCommunitySolarManagerDetails, saveEntityRelationship]
   );
 
   const handleFormSubmit = React.useMemo(() => handleSubmit(onSubmit), [handleSubmit, onSubmit]);
@@ -141,18 +189,43 @@ const CommunitySolarManagerForm = React.forwardRef<
     () => ({
       resetForm: () => {
         reset();
+        if (existingRelationship) {
+          setSelectedEntityId(existingRelationship.entity_id);
+        } else {
+          setSelectedEntityId(null);
+        }
       },
       submit: () => {
         handleFormSubmit();
       }
     }),
-    [reset, handleFormSubmit]
+    [reset, handleFormSubmit, existingRelationship]
   );
 
   return (
     <Box component="form">
       <Table sx={{ width: '100%', height: 'auto', tableLayout: 'fixed' }} size="small">
         <TableBody>
+          <TableRow>
+            <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
+              <TextBox fieldName>Entity:</TextBox>
+            </FieldCell>
+            <FieldCell component="th" scope="row" align={mode === 'view' ? 'right' : 'left'}>
+              {mode === 'view' ? (
+                <TextBox>{existingRelationship?.entity_name || ''}</TextBox>
+              ) : portfolioId ? (
+                <EntityPicker
+                  portfolioId={portfolioId}
+                  entityType="community_solar"
+                  value={selectedEntityId}
+                  onChange={handleEntityChange}
+                  label="Community Solar Manager Entity"
+                  role={ENTITY_ROLE}
+                  size="small"
+                />
+              ) : null}
+            </FieldCell>
+          </TableRow>
           <TableRow>
             <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
               <TextBox fieldName>Provider:</TextBox>
@@ -605,14 +678,21 @@ interface CommunitySolarManagerCardProps {
   siteId: number;
   data: CommunitySolarManagerData;
   hideHeader?: boolean;
+  portfolioId?: number;
 }
 
-export const CommunitySolarManagerCard: React.FC<CommunitySolarManagerCardProps> = ({ siteId, data, hideHeader }) => (
+export const CommunitySolarManagerCard: React.FC<CommunitySolarManagerCardProps> = ({
+  siteId,
+  data,
+  hideHeader,
+  portfolioId
+}) => (
   <InformationCardBase<CommunitySolarManagerData>
     title="Community Solar Manager"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={CommunitySolarManagerForm}
     hideHeader={hideHeader}
+    portfolioId={portfolioId}
   />
 );

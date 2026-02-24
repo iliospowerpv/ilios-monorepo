@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import dayjs, { Dayjs } from 'dayjs';
@@ -19,6 +19,8 @@ import {
 } from '../../InformationCardBase/InformationCardBase';
 import { useNotify } from '../../../../../../../../../contexts/notifications/notifications';
 import { ApiClient } from '../../../../../../../../../api';
+import { EntityPicker } from '../../../../../../../../../components/common/EntityPicker/EntityPicker';
+import type { EntityRelationship, EntityRelationshipRole } from '../../../../../../../../../api/entities';
 
 dayjs.extend(CustomParseFormatPlugin);
 
@@ -34,10 +36,84 @@ interface ComplianceFormFields {
 
 const inputStyles = { fontSize: '0.875rem', lineHeight: 1.43 };
 
+const ENTITY_ROLES: { field: 'entity' | 'bank'; role: EntityRelationshipRole; label: string }[] = [
+  { field: 'entity', role: 'compliance_entity', label: 'Compliance Entity' },
+  { field: 'bank', role: 'compliance_bank', label: 'Compliance Bank' }
+];
+
 const ComplianceForm = React.forwardRef<InformationCardFormRef, InformationCardFormProps<ComplianceCardData>>(
-  ({ mode, setMode, siteId, data, reflectFormState }, ref) => {
+  ({ mode, setMode, siteId, data, reflectFormState, portfolioId }, ref) => {
     const queryClient = useQueryClient();
     const notify = useNotify();
+
+    const [entityAssignments, setEntityAssignments] = useState<Record<string, EntityRelationship | null>>({
+      compliance_entity: null,
+      compliance_bank: null
+    });
+    const [selectedEntities, setSelectedEntities] = useState<Record<string, number | null>>({
+      compliance_entity: null,
+      compliance_bank: null
+    });
+
+    useEffect(() => {
+      ApiClient.entityRelationships
+        .list(siteId)
+        .then(response => {
+          const assignments: Record<string, EntityRelationship | null> = {
+            compliance_entity: null,
+            compliance_bank: null
+          };
+          const entities: Record<string, number | null> = {
+            compliance_entity: null,
+            compliance_bank: null
+          };
+          for (const rel of response.items) {
+            if (rel.role === 'compliance_entity' || rel.role === 'compliance_bank') {
+              assignments[rel.role] = rel;
+              entities[rel.role] = rel.entity_id;
+            }
+          }
+          setEntityAssignments(assignments);
+          setSelectedEntities(entities);
+        })
+        .catch(() => {});
+    }, [siteId]);
+
+    const handleEntityChange = useCallback((role: EntityRelationshipRole, entityId: number | null) => {
+      setSelectedEntities(prev => ({ ...prev, [role]: entityId }));
+    }, []);
+
+    const saveEntityAssignments = useCallback(async () => {
+      for (const { role } of ENTITY_ROLES) {
+        const currentAssignment = entityAssignments[role];
+        const selectedEntityId = selectedEntities[role];
+
+        if (selectedEntityId && !currentAssignment) {
+          try {
+            await ApiClient.entityRelationships.create(siteId, {
+              entity_id: selectedEntityId,
+              role
+            });
+          } catch {
+            /* entity save non-blocking */
+          }
+        } else if (selectedEntityId && currentAssignment && currentAssignment.entity_id !== selectedEntityId) {
+          try {
+            await ApiClient.entityRelationships.update(siteId, currentAssignment.id, {
+              entity_id: selectedEntityId
+            });
+          } catch {
+            /* entity save non-blocking */
+          }
+        } else if (!selectedEntityId && currentAssignment) {
+          try {
+            await ApiClient.entityRelationships.delete(siteId, currentAssignment.id);
+          } catch {
+            /* entity save non-blocking */
+          }
+        }
+      }
+    }, [siteId, entityAssignments, selectedEntities]);
 
     const { handleSubmit, formState, control, reset } = useForm<ComplianceFormFields>({
       mode: 'onChange',
@@ -89,18 +165,19 @@ const ComplianceForm = React.forwardRef<InformationCardFormRef, InformationCardF
     }, [data, reset]);
 
     const onSubmit: SubmitHandler<ComplianceFormFields> = React.useCallback(
-      async data => {
+      async formData => {
         try {
-          const response = await updateComplianceDetails(data);
+          await saveEntityAssignments();
+          const response = await updateComplianceDetails(formData);
           notify(response.message || `Compliance information was successfully updated.`);
-          reset(data);
+          reset(formData);
           queryClient.invalidateQueries({ queryKey: ['sites'] });
           setMode('view');
         } catch (e: any) {
           notify(e.response?.data?.message || 'Something went wrong when updating the Compliance information...');
         }
       },
-      [notify, queryClient, reset, setMode, updateComplianceDetails]
+      [notify, queryClient, reset, setMode, updateComplianceDetails, saveEntityAssignments]
     );
 
     const handleFormSubmit = React.useMemo(() => handleSubmit(onSubmit), [handleSubmit, onSubmit]);
@@ -128,7 +205,17 @@ const ComplianceForm = React.forwardRef<InformationCardFormRef, InformationCardF
               </FieldCell>
               <FieldCell component="th" scope="row" align={mode === 'view' ? 'right' : 'left'}>
                 {mode === 'view' ? (
-                  <TextBox>{data.entity}</TextBox>
+                  <TextBox>{entityAssignments.compliance_entity?.entity_name || data.entity}</TextBox>
+                ) : portfolioId ? (
+                  <EntityPicker
+                    portfolioId={portfolioId}
+                    value={selectedEntities.compliance_entity}
+                    onChange={id => handleEntityChange('compliance_entity', id)}
+                    label="Compliance Entity"
+                    role="compliance_entity"
+                    disabled={isSubmitting}
+                    size="small"
+                  />
                 ) : (
                   <Controller
                     name="entity"
@@ -180,7 +267,18 @@ const ComplianceForm = React.forwardRef<InformationCardFormRef, InformationCardF
               </FieldCell>
               <FieldCell component="th" scope="row" align={mode === 'view' ? 'right' : 'left'}>
                 {mode === 'view' ? (
-                  <TextBox>{data.bank}</TextBox>
+                  <TextBox>{entityAssignments.compliance_bank?.entity_name || data.bank}</TextBox>
+                ) : portfolioId ? (
+                  <EntityPicker
+                    portfolioId={portfolioId}
+                    entityType="bank"
+                    value={selectedEntities.compliance_bank}
+                    onChange={id => handleEntityChange('compliance_bank', id)}
+                    label="Compliance Bank"
+                    role="compliance_bank"
+                    disabled={isSubmitting}
+                    size="small"
+                  />
                 ) : (
                   <Controller
                     name="bank"
@@ -406,14 +504,16 @@ interface ComplianceCardProps {
   siteId: number;
   data: ComplianceCardData;
   hideHeader?: boolean;
+  portfolioId?: number;
 }
 
-export const ComplianceCard: React.FC<ComplianceCardProps> = ({ siteId, data, hideHeader }) => (
+export const ComplianceCard: React.FC<ComplianceCardProps> = ({ siteId, data, hideHeader, portfolioId }) => (
   <InformationCardBase<ComplianceCardData>
     title="Compliance"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={ComplianceForm}
     hideHeader={hideHeader}
+    portfolioId={portfolioId}
   />
 );

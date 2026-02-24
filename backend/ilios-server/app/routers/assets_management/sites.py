@@ -221,6 +221,22 @@ async def get_site_details(
 
         response[site_details_card_name.value] = payload
 
+    entity_assignments = []
+    for rel in site.entity_relationships:
+        entity_assignments.append({
+            "id": rel.id,
+            "entity_id": rel.entity_id,
+            "entity_name": rel.entity.name if rel.entity else None,
+            "entity_type": rel.entity.entity_type.value if rel.entity and rel.entity.entity_type else None,
+            "role": rel.role.value if rel.role else None,
+            "contact_id": rel.contact_id,
+            "contact_name": f"{rel.contact.first_name} {rel.contact.last_name}" if rel.contact else None,
+            "effective_date": rel.effective_date,
+            "termination_date": rel.termination_date,
+            "notes": rel.notes,
+        })
+    response["entity_assignments"] = entity_assignments
+
     return response
 
 

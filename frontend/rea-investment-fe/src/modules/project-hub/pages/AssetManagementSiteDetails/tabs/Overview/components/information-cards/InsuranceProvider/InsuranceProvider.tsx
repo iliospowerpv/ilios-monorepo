@@ -1,5 +1,5 @@
 import React from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
@@ -17,6 +17,8 @@ import { useNotify } from '../../../../../../../../../contexts/notifications/not
 
 import { ApiClient } from '../../../../../../../../../api';
 import FormHelperText from '@mui/material/FormHelperText';
+import { EntityPicker } from '../../../../../../../../../components/common/EntityPicker/EntityPicker';
+import type { EntityRelationship } from '../../../../../../../../../api/entities';
 
 type InsuranceProviderCardData = Exclude<
   Awaited<ReturnType<typeof ApiClient.assetManagement.siteInfo>>['insurance_provider'],
@@ -27,12 +29,57 @@ type InsuranceProviderFormFields = Pick<InsuranceProviderCardData, 'insurance_ad
 
 const inputStyles = { fontSize: '0.875rem', lineHeight: 1.43 };
 
+const ENTITY_ROLE = 'insurance_provider' as const;
+
 const InsuranceProviderForm = React.forwardRef<
   InformationCardFormRef,
   InformationCardFormProps<InsuranceProviderCardData>
->(({ mode, setMode, siteId, data, reflectFormState }, ref) => {
+>(({ mode, setMode, siteId, data, reflectFormState, portfolioId }, ref) => {
   const queryClient = useQueryClient();
   const notify = useNotify();
+
+  const [selectedEntityId, setSelectedEntityId] = React.useState<number | null>(null);
+  const [existingRelationship, setExistingRelationship] = React.useState<EntityRelationship | null>(null);
+
+  const { data: relationships } = useQuery({
+    queryKey: ['entity-relationships', siteId],
+    queryFn: () => ApiClient.entityRelationships.list(siteId),
+    enabled: !!siteId
+  });
+
+  React.useEffect(() => {
+    if (relationships?.items) {
+      const rel = relationships.items.find(r => r.role === ENTITY_ROLE);
+      if (rel) {
+        setExistingRelationship(rel);
+        setSelectedEntityId(rel.entity_id);
+      }
+    }
+  }, [relationships]);
+
+  const handleEntityChange = React.useCallback((_entityId: number | null) => {
+    setSelectedEntityId(_entityId);
+  }, []);
+
+  const saveEntityRelationship = React.useCallback(async () => {
+    if (!selectedEntityId) return;
+    try {
+      if (existingRelationship) {
+        await ApiClient.entityRelationships.update(siteId, existingRelationship.id, {
+          entity_id: selectedEntityId,
+          role: ENTITY_ROLE
+        });
+      } else {
+        await ApiClient.entityRelationships.create(siteId, {
+          entity_id: selectedEntityId,
+          role: ENTITY_ROLE
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ['entity-relationships', siteId] });
+    } catch {
+      /* entity save non-blocking */
+    }
+  }, [selectedEntityId, existingRelationship, siteId, queryClient]);
 
   const { handleSubmit, formState, control, reset } = useForm<InsuranceProviderFormFields>({
     mode: 'onChange',
@@ -75,8 +122,8 @@ const InsuranceProviderForm = React.forwardRef<
   const onSubmit: SubmitHandler<InsuranceProviderFormFields> = React.useCallback(
     async data => {
       try {
-        await updateInsuranceProviderDetails(data);
         const response = await updateInsuranceProviderDetails(data);
+        await saveEntityRelationship();
         notify(response.message || `Insurance provider information was successfully updated.`);
         reset(data);
         await queryClient.invalidateQueries({ queryKey: ['sites'] });
@@ -85,7 +132,7 @@ const InsuranceProviderForm = React.forwardRef<
         notify(e.response?.data?.message || 'Something went wrong when updating the Insurance Provider information...');
       }
     },
-    [notify, queryClient, reset, setMode, updateInsuranceProviderDetails]
+    [notify, queryClient, reset, setMode, updateInsuranceProviderDetails, saveEntityRelationship]
   );
 
   const handleFormSubmit = React.useMemo(() => handleSubmit(onSubmit), [handleSubmit, onSubmit]);
@@ -95,18 +142,43 @@ const InsuranceProviderForm = React.forwardRef<
     () => ({
       resetForm: () => {
         reset();
+        if (existingRelationship) {
+          setSelectedEntityId(existingRelationship.entity_id);
+        } else {
+          setSelectedEntityId(null);
+        }
       },
       submit: () => {
         handleFormSubmit();
       }
     }),
-    [reset, handleFormSubmit]
+    [reset, handleFormSubmit, existingRelationship]
   );
 
   return (
     <Box component="form">
       <Table sx={{ width: '100%', height: 'auto', tableLayout: 'fixed' }} size="small">
         <TableBody>
+          <TableRow>
+            <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
+              <TextBox fieldName>Entity:</TextBox>
+            </FieldCell>
+            <FieldCell component="th" scope="row" align={mode === 'view' ? 'right' : 'left'}>
+              {mode === 'view' ? (
+                <TextBox>{existingRelationship?.entity_name || ''}</TextBox>
+              ) : portfolioId ? (
+                <EntityPicker
+                  portfolioId={portfolioId}
+                  entityType="insurance"
+                  value={selectedEntityId}
+                  onChange={handleEntityChange}
+                  label="Insurance Entity"
+                  role={ENTITY_ROLE}
+                  size="small"
+                />
+              ) : null}
+            </FieldCell>
+          </TableRow>
           <TableRow>
             <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
               <TextBox fieldName>Provider:</TextBox>
@@ -223,14 +295,21 @@ interface InsuranceProviderCardProps {
   siteId: number;
   data: InsuranceProviderCardData;
   hideHeader?: boolean;
+  portfolioId?: number;
 }
 
-export const InsuranceProviderCard: React.FC<InsuranceProviderCardProps> = ({ siteId, data, hideHeader }) => (
+export const InsuranceProviderCard: React.FC<InsuranceProviderCardProps> = ({
+  siteId,
+  data,
+  hideHeader,
+  portfolioId
+}) => (
   <InformationCardBase<InsuranceProviderCardData>
     title="Insurance Provider"
     informationCardData={data}
     siteId={siteId}
     InformationCardForm={InsuranceProviderForm}
     hideHeader={hideHeader}
+    portfolioId={portfolioId}
   />
 );

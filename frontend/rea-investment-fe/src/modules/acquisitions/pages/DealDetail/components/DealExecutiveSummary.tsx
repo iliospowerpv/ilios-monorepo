@@ -11,9 +11,11 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import BusinessIcon from '@mui/icons-material/Business';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { Deal, SALES_STAGE_LABELS, SalesStage } from '../../../types';
+import type { DealEntityAssignment } from '../../../../../api/entities';
 
 interface DealExecutiveSummaryProps {
   deal: Deal;
+  entityAssignments?: DealEntityAssignment[];
 }
 
 const formatCurrency = (value?: number): string => {
@@ -38,12 +40,15 @@ const getStageChipColor = (stage: SalesStage): 'success' | 'warning' | 'error' |
   return 'warning';
 };
 
-export const DealExecutiveSummary: React.FC<DealExecutiveSummaryProps> = ({ deal }) => {
+export const DealExecutiveSummary: React.FC<DealExecutiveSummaryProps> = ({ deal, entityAssignments }) => {
   const theme = useTheme();
   const borderColor = theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)';
 
   const location = [deal.city, deal.state].filter(Boolean).join(', ') || deal.address || '—';
   const stageLabel = SALES_STAGE_LABELS[deal.sales_stage] || deal.sales_stage;
+
+  const developerAssignment = entityAssignments?.find(a => a.role === 'developer');
+  const developerName = developerAssignment?.entity_name || deal.developer_name;
 
   return (
     <Box
@@ -70,11 +75,11 @@ export const DealExecutiveSummary: React.FC<DealExecutiveSummaryProps> = ({ deal
             {deal.is_converted && <Chip label="Converted" color="success" size="small" variant="outlined" />}
           </Stack>
 
-          {deal.developer_name && (
+          {developerName && (
             <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 0.5 }}>
               <BusinessIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
               <Typography variant="body2" color="text.secondary">
-                {deal.developer_name}
+                {developerName}
               </Typography>
             </Stack>
           )}

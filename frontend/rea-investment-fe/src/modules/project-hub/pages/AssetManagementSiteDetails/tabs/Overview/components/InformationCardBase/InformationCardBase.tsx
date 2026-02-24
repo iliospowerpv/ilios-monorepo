@@ -25,6 +25,7 @@ export interface InformationCardFormProps<T> {
   data: T;
   reflectFormState: (state: InformationCardFormReflectedState) => void;
   setMode: React.Dispatch<React.SetStateAction<'view' | 'edit'>>;
+  portfolioId?: number;
 }
 
 interface InformationCardBaseProps<T> {
@@ -35,10 +36,11 @@ interface InformationCardBaseProps<T> {
   siteId: number;
   title: string;
   hideHeader?: boolean;
+  portfolioId?: number;
 }
 
 export const InformationCardBase = <T,>(props: InformationCardBaseProps<T>): React.ReactElement => {
-  const { InformationCardForm, informationCardData, siteId, title, hideHeader = false } = props;
+  const { InformationCardForm, informationCardData, siteId, title, hideHeader = false, portfolioId } = props;
   const theme = useTheme();
 
   const [mode, setMode] = React.useState<'view' | 'edit'>('view');
@@ -104,6 +106,7 @@ export const InformationCardBase = <T,>(props: InformationCardBaseProps<T>): Rea
           setMode={setMode}
           data={informationCardData}
           reflectFormState={setFormReflectedState}
+          portfolioId={portfolioId}
         />
         <Stack
           width="100%"

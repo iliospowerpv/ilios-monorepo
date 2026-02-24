@@ -60,6 +60,8 @@ class Contact(Base):
     
     is_archived = Column(Boolean, server_default='false', nullable=False)
     
+    entity_id = Column(Integer, ForeignKey("project_entities.id", ondelete="SET NULL"), nullable=True, index=True)
+
     created_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime, server_default=utcnow())
     updated_at = Column(DateTime, server_default=utcnow(), onupdate=utcnow())
@@ -67,6 +69,7 @@ class Contact(Base):
     portfolio = relationship("Company", foreign_keys=[portfolio_id])
     company = relationship("Company", foreign_keys=[company_id])
     project = relationship("Site", foreign_keys=[project_id])
+    entity = relationship("ProjectEntity", foreign_keys=[entity_id])
     created_by = relationship("User", foreign_keys=[created_by_user_id])
     
     @property

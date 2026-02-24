@@ -51,6 +51,7 @@ import {
 } from '@dnd-kit/core';
 
 import { useEntityContext } from '../../../../contexts/entityContext';
+import { ApiClient } from '../../../../api';
 import { dealsApi } from '../../api/sales';
 import {
   Deal,
@@ -64,6 +65,7 @@ import {
   NextActionStatus,
   NEXT_ACTION_STATUS_LABELS
 } from '../../types';
+import { EntityPicker } from '../../../../components/common/EntityPicker/EntityPicker';
 import { DealsListView } from './DealsListView';
 
 type ViewMode = 'kanban' | 'list';
@@ -331,6 +333,7 @@ export const SalesHome: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [dealForm, setDealForm] = useState<DealCreate>(initialDealForm);
+  const [selectedDeveloperEntityId, setSelectedDeveloperEntityId] = useState<number | null>(null);
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
@@ -357,11 +360,25 @@ export const SalesHome: React.FC = () => {
   });
 
   const createDealMutation = useMutation({
-    mutationFn: (data: DealCreate) => dealsApi.createDeal(data),
+    mutationFn: async (data: DealCreate) => {
+      const deal = await dealsApi.createDeal(data);
+      if (selectedDeveloperEntityId && deal.id) {
+        try {
+          await ApiClient.dealEntityAssignments.create(deal.id, {
+            entity_id: selectedDeveloperEntityId,
+            role: 'developer'
+          });
+        } catch {
+          /* entity assignment non-blocking */
+        }
+      }
+      return deal;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deals-pipeline'] });
       setAddDialogOpen(false);
       setDealForm({ ...initialDealForm, company_id: currentCompany?.id || 0 });
+      setSelectedDeveloperEntityId(null);
     }
   });
 
@@ -432,6 +449,7 @@ export const SalesHome: React.FC = () => {
 
   const handleOpenAddDialog = () => {
     setDealForm({ ...initialDealForm, company_id: currentCompany?.id || 0 });
+    setSelectedDeveloperEntityId(null);
     setAddDialogOpen(true);
   };
 
@@ -597,12 +615,25 @@ export const SalesHome: React.FC = () => {
               />
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
-                label="Developer Name"
-                value={dealForm.developer_name}
-                onChange={e => handleFormChange('developer_name', e.target.value)}
-                fullWidth
-              />
+              {dealForm.company_id ? (
+                <EntityPicker
+                  portfolioId={dealForm.company_id}
+                  entityType="developer"
+                  value={selectedDeveloperEntityId}
+                  onChange={(entityId, entity) => {
+                    setSelectedDeveloperEntityId(entityId);
+                    handleFormChange('developer_name', entity?.name ?? '');
+                  }}
+                  label="Developer"
+                />
+              ) : (
+                <TextField
+                  label="Developer Name"
+                  value={dealForm.developer_name}
+                  onChange={e => handleFormChange('developer_name', e.target.value)}
+                  fullWidth
+                />
+              )}
             </Grid>
             <Grid item xs={12} md={4}>
               <TextField

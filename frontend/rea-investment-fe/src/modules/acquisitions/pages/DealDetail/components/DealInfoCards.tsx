@@ -8,6 +8,8 @@ import InputAdornment from '@mui/material/InputAdornment';
 import Button from '@mui/material/Button';
 import EditIcon from '@mui/icons-material/Edit';
 import { Deal, DealUpdate, NextActionStatus, NEXT_ACTION_STATUS_LABELS } from '../../../types';
+import { EntityPicker } from '../../../../../components/common/EntityPicker/EntityPicker';
+import type { DealEntityAssignment, DealEntityRole, ProjectEntity } from '../../../../../api/entities';
 
 interface InfoRowProps {
   label: string;
@@ -42,6 +44,13 @@ const formatDate = (dateString?: string): string => {
   });
 };
 
+const getAssignmentForRole = (
+  assignments: DealEntityAssignment[] | undefined,
+  role: DealEntityRole
+): DealEntityAssignment | undefined => {
+  return assignments?.find(a => a.role === role);
+};
+
 interface DealCardContentProps {
   deal: Deal;
   isEditing: boolean;
@@ -49,6 +58,9 @@ interface DealCardContentProps {
   onFormChange: (field: keyof DealUpdate, value: any) => void;
   onStartEdit?: () => void;
   showEditButton?: boolean;
+  entityAssignments?: DealEntityAssignment[];
+  onEntityChange?: (role: DealEntityRole, entityId: number | null, entity: ProjectEntity | null) => void;
+  portfolioId?: number;
 }
 
 export const DealOverviewCard: React.FC<DealCardContentProps> = ({
@@ -57,8 +69,15 @@ export const DealOverviewCard: React.FC<DealCardContentProps> = ({
   editForm,
   onFormChange,
   onStartEdit,
-  showEditButton = true
+  showEditButton = true,
+  entityAssignments,
+  onEntityChange,
+  portfolioId
 }) => {
+  const developerAssignment = getAssignmentForRole(entityAssignments, 'developer');
+  const developerEntityId = developerAssignment?.entity_id ?? null;
+  const developerDisplayName = developerAssignment?.entity_name || deal.developer_name;
+
   if (isEditing) {
     return (
       <Grid container spacing={2}>
@@ -72,13 +91,27 @@ export const DealOverviewCard: React.FC<DealCardContentProps> = ({
           />
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField
-            label="Developer Name"
-            value={editForm.developer_name ?? deal.developer_name ?? ''}
-            onChange={e => onFormChange('developer_name', e.target.value)}
-            fullWidth
-            size="small"
-          />
+          {portfolioId && onEntityChange ? (
+            <EntityPicker
+              portfolioId={portfolioId}
+              entityType="developer"
+              value={developerEntityId}
+              onChange={(entityId, entity) => {
+                onEntityChange('developer', entityId, entity);
+                onFormChange('developer_name', entity?.name ?? '');
+              }}
+              label="Developer"
+              size="small"
+            />
+          ) : (
+            <TextField
+              label="Developer Name"
+              value={editForm.developer_name ?? deal.developer_name ?? ''}
+              onChange={e => onFormChange('developer_name', e.target.value)}
+              fullWidth
+              size="small"
+            />
+          )}
         </Grid>
         <Grid item xs={12}>
           <TextField
@@ -102,7 +135,7 @@ export const DealOverviewCard: React.FC<DealCardContentProps> = ({
           <InfoRow label="Deal Name" value={deal.name} />
         </Grid>
         <Grid item xs={6} md={4}>
-          <InfoRow label="Developer" value={deal.developer_name} />
+          <InfoRow label="Developer" value={developerDisplayName} />
         </Grid>
         <Grid item xs={6} md={4}>
           <InfoRow label="Company" value={deal.company_name || `Company ${deal.company_id}`} />
@@ -222,8 +255,15 @@ export const SystemDetailsCard: React.FC<DealCardContentProps> = ({
   editForm,
   onFormChange,
   onStartEdit,
-  showEditButton = true
+  showEditButton = true,
+  entityAssignments,
+  onEntityChange,
+  portfolioId
 }) => {
+  const projectCoAssignment = getAssignmentForRole(entityAssignments, 'project_company');
+  const projectCoEntityId = projectCoAssignment?.entity_id ?? null;
+  const projectCoDisplayName = projectCoAssignment?.entity_name || deal.project_company;
+
   if (isEditing) {
     return (
       <Grid container spacing={2}>
@@ -259,13 +299,26 @@ export const SystemDetailsCard: React.FC<DealCardContentProps> = ({
           />
         </Grid>
         <Grid item xs={6}>
-          <TextField
-            label="Project Company"
-            value={editForm.project_company ?? deal.project_company ?? ''}
-            onChange={e => onFormChange('project_company', e.target.value)}
-            fullWidth
-            size="small"
-          />
+          {portfolioId && onEntityChange ? (
+            <EntityPicker
+              portfolioId={portfolioId}
+              value={projectCoEntityId}
+              onChange={(entityId, entity) => {
+                onEntityChange('project_company', entityId, entity);
+                onFormChange('project_company', entity?.name ?? '');
+              }}
+              label="Project Company"
+              size="small"
+            />
+          ) : (
+            <TextField
+              label="Project Company"
+              value={editForm.project_company ?? deal.project_company ?? ''}
+              onChange={e => onFormChange('project_company', e.target.value)}
+              fullWidth
+              size="small"
+            />
+          )}
         </Grid>
       </Grid>
     );
@@ -284,7 +337,7 @@ export const SystemDetailsCard: React.FC<DealCardContentProps> = ({
           <InfoRow label="Ownership Structure" value={deal.ownership_structure} />
         </Grid>
         <Grid item xs={6} md={3}>
-          <InfoRow label="Project Company" value={deal.project_company} />
+          <InfoRow label="Project Company" value={projectCoDisplayName} />
         </Grid>
       </Grid>
       {showEditButton && !deal.is_converted && onStartEdit && (
@@ -444,19 +497,40 @@ export const OfftakerCard: React.FC<DealCardContentProps> = ({
   editForm,
   onFormChange,
   onStartEdit,
-  showEditButton = true
+  showEditButton = true,
+  entityAssignments,
+  onEntityChange,
+  portfolioId
 }) => {
+  const offtakerAssignment = getAssignmentForRole(entityAssignments, 'offtaker');
+  const offtakerEntityId = offtakerAssignment?.entity_id ?? null;
+  const offtakerDisplayName = offtakerAssignment?.entity_name || deal.offtaker_name;
+
   if (isEditing) {
     return (
       <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
-          <TextField
-            label="Offtaker Name"
-            value={editForm.offtaker_name ?? deal.offtaker_name ?? ''}
-            onChange={e => onFormChange('offtaker_name', e.target.value)}
-            fullWidth
-            size="small"
-          />
+          {portfolioId && onEntityChange ? (
+            <EntityPicker
+              portfolioId={portfolioId}
+              entityType="offtaker"
+              value={offtakerEntityId}
+              onChange={(entityId, entity) => {
+                onEntityChange('offtaker', entityId, entity);
+                onFormChange('offtaker_name', entity?.name ?? '');
+              }}
+              label="Offtaker"
+              size="small"
+            />
+          ) : (
+            <TextField
+              label="Offtaker Name"
+              value={editForm.offtaker_name ?? deal.offtaker_name ?? ''}
+              onChange={e => onFormChange('offtaker_name', e.target.value)}
+              fullWidth
+              size="small"
+            />
+          )}
         </Grid>
         <Grid item xs={12} md={6}>
           <TextField
@@ -484,7 +558,7 @@ export const OfftakerCard: React.FC<DealCardContentProps> = ({
     <Box>
       <Grid container spacing={2}>
         <Grid item xs={6} md={4}>
-          <InfoRow label="Offtaker Name" value={deal.offtaker_name} />
+          <InfoRow label="Offtaker Name" value={offtakerDisplayName} />
         </Grid>
         <Grid item xs={6} md={4}>
           <InfoRow label="Offtaker Legal Name" value={deal.offtaker_legal_name} />
