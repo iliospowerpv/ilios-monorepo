@@ -181,8 +181,14 @@ export const EntityFormDialog: React.FC<EntityFormDialogProps> = ({ open, onClos
       }
       onSaved();
       onClose();
-    } catch {
-      setErrors({ name: 'Failed to save. The name may already exist in this portfolio.' });
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.response?.data?.message || err?.message || '';
+      console.error('Entity save error:', err?.response?.status, detail);
+      if (err?.response?.status === 409 || detail.toLowerCase().includes('already exists')) {
+        setErrors({ name: 'An entity with this name already exists in this portfolio.' });
+      } else {
+        setErrors({ name: `Failed to save: ${detail || 'Unknown error'}` });
+      }
     } finally {
       setSaving(false);
     }
