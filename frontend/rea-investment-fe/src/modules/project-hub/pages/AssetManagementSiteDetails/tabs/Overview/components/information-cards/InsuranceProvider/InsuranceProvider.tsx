@@ -18,7 +18,7 @@ import { useNotify } from '../../../../../../../../../contexts/notifications/not
 import { ApiClient } from '../../../../../../../../../api';
 import FormHelperText from '@mui/material/FormHelperText';
 import { EntityPicker } from '../../../../../../../../../components/common/EntityPicker/EntityPicker';
-import type { EntityRelationship } from '../../../../../../../../../api/entities';
+import type { EntityRelationship, ProjectEntity } from '../../../../../../../../../api/entities';
 
 type InsuranceProviderCardData = Exclude<
   Awaited<ReturnType<typeof ApiClient.assetManagement.siteInfo>>['insurance_provider'],
@@ -57,31 +57,7 @@ const InsuranceProviderForm = React.forwardRef<
     }
   }, [relationships]);
 
-  const handleEntityChange = React.useCallback((_entityId: number | null) => {
-    setSelectedEntityId(_entityId);
-  }, []);
-
-  const saveEntityRelationship = React.useCallback(async () => {
-    if (!selectedEntityId) return;
-    try {
-      if (existingRelationship) {
-        await ApiClient.entityRelationships.update(siteId, existingRelationship.id, {
-          entity_id: selectedEntityId,
-          role: ENTITY_ROLE
-        });
-      } else {
-        await ApiClient.entityRelationships.create(siteId, {
-          entity_id: selectedEntityId,
-          role: ENTITY_ROLE
-        });
-      }
-      queryClient.invalidateQueries({ queryKey: ['entity-relationships', siteId] });
-    } catch {
-      /* entity save non-blocking */
-    }
-  }, [selectedEntityId, existingRelationship, siteId, queryClient]);
-
-  const { handleSubmit, formState, control, reset } = useForm<InsuranceProviderFormFields>({
+  const { handleSubmit, formState, control, reset, setValue } = useForm<InsuranceProviderFormFields>({
     mode: 'onChange',
     criteriaMode: 'all',
     reValidateMode: 'onChange',
@@ -118,6 +94,37 @@ const InsuranceProviderForm = React.forwardRef<
       insurance_provider: data.insurance_provider || null
     });
   }, [data, reset]);
+
+  const handleEntityChange = React.useCallback(
+    (_entityId: number | null, entity?: ProjectEntity | null) => {
+      setSelectedEntityId(_entityId);
+      if (entity) {
+        setValue('insurance_address', entity.address || null, { shouldDirty: true });
+        setValue('insurance_provider', entity.name || null, { shouldDirty: true });
+      }
+    },
+    [setValue]
+  );
+
+  const saveEntityRelationship = React.useCallback(async () => {
+    if (!selectedEntityId) return;
+    try {
+      if (existingRelationship) {
+        await ApiClient.entityRelationships.update(siteId, existingRelationship.id, {
+          entity_id: selectedEntityId,
+          role: ENTITY_ROLE
+        });
+      } else {
+        await ApiClient.entityRelationships.create(siteId, {
+          entity_id: selectedEntityId,
+          role: ENTITY_ROLE
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ['entity-relationships', siteId] });
+    } catch {
+      /* entity save non-blocking */
+    }
+  }, [selectedEntityId, existingRelationship, siteId, queryClient]);
 
   const onSubmit: SubmitHandler<InsuranceProviderFormFields> = React.useCallback(
     async data => {

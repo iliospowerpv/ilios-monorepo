@@ -24,7 +24,7 @@ import formFloatValue from '../../../../../../../../../utils/formatters/formatFl
 import FormHelperText from '@mui/material/FormHelperText';
 import FormattedNumericInput from '../../../../../../../../../components/common/FormattedNumericInput/FormattedNumericInput';
 import { EntityPicker } from '../../../../../../../../../components/common/EntityPicker/EntityPicker';
-import type { EntityRelationship } from '../../../../../../../../../api/entities';
+import type { EntityRelationship, ProjectEntity } from '../../../../../../../../../api/entities';
 
 type TaxEquityData = Exclude<Awaited<ReturnType<typeof ApiClient.assetManagement.siteInfo>>['tax_equity'], null>;
 
@@ -65,10 +65,6 @@ const TaxEquityForm = React.forwardRef<InformationCardFormRef, InformationCardFo
       }
     }, [relationships]);
 
-    const handleEntityChange = React.useCallback((_entityId: number | null) => {
-      setSelectedEntityId(_entityId);
-    }, []);
-
     const saveEntityRelationship = React.useCallback(async () => {
       if (!selectedEntityId) return;
       try {
@@ -89,7 +85,7 @@ const TaxEquityForm = React.forwardRef<InformationCardFormRef, InformationCardFo
       }
     }, [selectedEntityId, existingRelationship, siteId, queryClient]);
 
-    const { handleSubmit, formState, control, reset } = useForm<TaxEquityFormFields>({
+    const { handleSubmit, formState, control, reset, setValue } = useForm<TaxEquityFormFields>({
       mode: 'onChange',
       criteriaMode: 'all',
       reValidateMode: 'onChange',
@@ -104,6 +100,16 @@ const TaxEquityForm = React.forwardRef<InformationCardFormRef, InformationCardFo
         smartsheet_data_tape: data.smartsheet_data_tape
       }
     });
+
+    const handleEntityChange = React.useCallback(
+      (_entityId: number | null, entity?: ProjectEntity | null) => {
+        setSelectedEntityId(_entityId);
+        if (entity) {
+          setValue('tax_equity_provider', entity.name || null, { shouldDirty: true });
+        }
+      },
+      [setValue]
+    );
 
     const { errors, isValid, isSubmitting, isDirty } = formState;
     const { mutateAsync: updateTaxEquityDetails } = useMutation({

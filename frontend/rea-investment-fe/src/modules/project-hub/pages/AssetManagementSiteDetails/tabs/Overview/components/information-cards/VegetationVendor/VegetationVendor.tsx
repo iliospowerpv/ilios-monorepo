@@ -19,7 +19,7 @@ import { ApiClient } from '../../../../../../../../../api';
 import FormattedIntegerNumericInput from '../../../../../../../../../components/common/FormattedIntegerNumericInput/FormattedIntegerNumericInput';
 import formatPhoneNumber from '../../../../../../../../../utils/formatters/formatPhoneNumber';
 import { EntityPicker } from '../../../../../../../../../components/common/EntityPicker/EntityPicker';
-import type { EntityRelationship } from '../../../../../../../../../api/entities';
+import type { EntityRelationship, ProjectEntity } from '../../../../../../../../../api/entities';
 
 type VegetationVendorCardData = Exclude<
   Awaited<ReturnType<typeof ApiClient.assetManagement.siteInfo>>['vegetation_vendor'],
@@ -58,10 +58,6 @@ const VegetationVendorForm = React.forwardRef<
     }
   }, [relationships]);
 
-  const handleEntityChange = React.useCallback((_entityId: number | null) => {
-    setSelectedEntityId(_entityId);
-  }, []);
-
   const saveEntityRelationship = React.useCallback(async () => {
     if (!selectedEntityId) return;
     try {
@@ -82,7 +78,7 @@ const VegetationVendorForm = React.forwardRef<
     }
   }, [selectedEntityId, existingRelationship, siteId, queryClient]);
 
-  const { handleSubmit, formState, control, reset } = useForm<VegetationVendorFormFields>({
+  const { handleSubmit, formState, control, reset, setValue } = useForm<VegetationVendorFormFields>({
     mode: 'onChange',
     criteriaMode: 'all',
     reValidateMode: 'onChange',
@@ -94,6 +90,19 @@ const VegetationVendorForm = React.forwardRef<
       vv_contact_phone: data.vv_contact_phone || null
     }
   });
+
+  const handleEntityChange = React.useCallback(
+    (_entityId: number | null, entity?: ProjectEntity | null) => {
+      setSelectedEntityId(_entityId);
+      if (entity) {
+        setValue('vv_address', entity.address || null, { shouldDirty: true });
+        setValue('vv_contact_name', entity.name || null, { shouldDirty: true });
+        setValue('vv_contact_email', entity.email || null, { shouldDirty: true });
+        setValue('vv_contact_phone', entity.phone || null, { shouldDirty: true });
+      }
+    },
+    [setValue]
+  );
 
   const { errors, isValid, isSubmitting, isDirty } = formState;
   const { mutateAsync: updateVegetationVendorDetails } = useMutation({

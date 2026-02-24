@@ -22,7 +22,7 @@ import { useNotify } from '../../../../../../../../../contexts/notifications/not
 import { ApiClient } from '../../../../../../../../../api';
 import { StyledSelectItem } from '../../../../../../DeviceDetails/tabs/Overview/components/GeneralDeviceInfoCard/GeneralDeviceInfoCard.styles';
 import { EntityPicker } from '../../../../../../../../../components/common/EntityPicker/EntityPicker';
-import type { EntityRelationship } from '../../../../../../../../../api/entities';
+import type { EntityRelationship, ProjectEntity } from '../../../../../../../../../api/entities';
 
 dayjs.extend(CustomParseFormatPlugin);
 
@@ -64,10 +64,6 @@ const OfftakerForm = React.forwardRef<InformationCardFormRef, InformationCardFor
       }
     }, [relationships]);
 
-    const handleEntityChange = React.useCallback((_entityId: number | null) => {
-      setSelectedEntityId(_entityId);
-    }, []);
-
     const saveEntityRelationship = React.useCallback(async () => {
       if (!selectedEntityId) return;
       try {
@@ -88,7 +84,7 @@ const OfftakerForm = React.forwardRef<InformationCardFormRef, InformationCardFor
       }
     }, [selectedEntityId, existingRelationship, siteId, queryClient]);
 
-    const { handleSubmit, formState, control, reset } = useForm<OfftakerFormFields>({
+    const { handleSubmit, formState, control, reset, setValue } = useForm<OfftakerFormFields>({
       mode: 'onChange',
       criteriaMode: 'all',
       reValidateMode: 'onChange',
@@ -100,6 +96,16 @@ const OfftakerForm = React.forwardRef<InformationCardFormRef, InformationCardFor
         date_of_rating: data.date_of_rating ? dayjs(data.date_of_rating, 'YYYY-MM-DD', true) : null
       }
     });
+
+    const handleEntityChange = React.useCallback(
+      (_entityId: number | null, entity?: ProjectEntity | null) => {
+        setSelectedEntityId(_entityId);
+        if (entity) {
+          setValue('name', entity.name || null, { shouldDirty: true });
+        }
+      },
+      [setValue]
+    );
 
     const { errors, isValid, isSubmitting, isDirty } = formState;
     const { mutateAsync: updateOfftakerDetails } = useMutation({

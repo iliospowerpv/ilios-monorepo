@@ -25,7 +25,7 @@ import formatPhoneNumber from '../../../../../../../../../utils/formatters/forma
 import FormattedIntegerNumericInput from '../../../../../../../../../components/common/FormattedIntegerNumericInput/FormattedIntegerNumericInput';
 import FormattedNumericInput from '../../../../../../../../../components/common/FormattedNumericInput/FormattedNumericInput';
 import { EntityPicker } from '../../../../../../../../../components/common/EntityPicker/EntityPicker';
-import type { EntityRelationship } from '../../../../../../../../../api/entities';
+import type { EntityRelationship, ProjectEntity } from '../../../../../../../../../api/entities';
 
 type CommunitySolarManagerData = Exclude<
   Awaited<ReturnType<typeof ApiClient.assetManagement.siteInfo>>['community_solar_manager'],
@@ -73,10 +73,6 @@ const CommunitySolarManagerForm = React.forwardRef<
     }
   }, [relationships]);
 
-  const handleEntityChange = React.useCallback((_entityId: number | null) => {
-    setSelectedEntityId(_entityId);
-  }, []);
-
   const saveEntityRelationship = React.useCallback(async () => {
     if (!selectedEntityId) return;
     try {
@@ -97,7 +93,7 @@ const CommunitySolarManagerForm = React.forwardRef<
     }
   }, [selectedEntityId, existingRelationship, siteId, queryClient]);
 
-  const { handleSubmit, formState, control, reset } = useForm<CommunitySolarManagerFormFields>({
+  const { handleSubmit, formState, control, reset, setValue } = useForm<CommunitySolarManagerFormFields>({
     mode: 'onChange',
     criteriaMode: 'all',
     reValidateMode: 'onChange',
@@ -112,6 +108,19 @@ const CommunitySolarManagerForm = React.forwardRef<
       escalator_effective: data.escalator_effective ? dayjs(data.escalator_effective, 'YYYY-MM-DD', true) : null
     }
   });
+
+  const handleEntityChange = React.useCallback(
+    (_entityId: number | null, entity?: ProjectEntity | null) => {
+      setSelectedEntityId(_entityId);
+      if (entity) {
+        setValue('csm_address', entity.address || null, { shouldDirty: true });
+        setValue('csm_contact_name', entity.name || null, { shouldDirty: true });
+        setValue('csm_contact_email', entity.email || null, { shouldDirty: true });
+        setValue('csm_contact_phone', entity.phone || null, { shouldDirty: true });
+      }
+    },
+    [setValue]
+  );
 
   const { errors, isValid, isSubmitting, isDirty } = formState;
   const { mutateAsync: updateCommunitySolarManagerDetails } = useMutation({

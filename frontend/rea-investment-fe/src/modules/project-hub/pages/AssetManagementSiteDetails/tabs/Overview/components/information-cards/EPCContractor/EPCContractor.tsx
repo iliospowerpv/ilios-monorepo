@@ -20,7 +20,7 @@ import { ApiClient } from '../../../../../../../../../api';
 import formatPhoneNumber from '../../../../../../../../../utils/formatters/formatPhoneNumber';
 import FormattedIntegerNumericInput from '../../../../../../../../../components/common/FormattedIntegerNumericInput/FormattedIntegerNumericInput';
 import { EntityPicker } from '../../../../../../../../../components/common/EntityPicker/EntityPicker';
-import type { EntityRelationship } from '../../../../../../../../../api/entities';
+import type { EntityRelationship, ProjectEntity } from '../../../../../../../../../api/entities';
 
 type EPCContractorCardData = Awaited<ReturnType<typeof ApiClient.assetManagement.siteInfo>>['epc_contractor'];
 
@@ -54,7 +54,7 @@ const EPCContractorForm = React.forwardRef<InformationCardFormRef, InformationCa
       }
     }, [relationships]);
 
-    const { handleSubmit, formState, control, reset } = useForm<EPCContractorFormFields>({
+    const { handleSubmit, formState, control, reset, setValue } = useForm<EPCContractorFormFields>({
       mode: 'onChange',
       criteriaMode: 'all',
       reValidateMode: 'onChange',
@@ -98,9 +98,18 @@ const EPCContractorForm = React.forwardRef<InformationCardFormRef, InformationCa
       });
     }, [data, reset]);
 
-    const handleEntityChange = React.useCallback((_entityId: number | null) => {
-      setSelectedEntityId(_entityId);
-    }, []);
+    const handleEntityChange = React.useCallback(
+      (_entityId: number | null, entity?: ProjectEntity | null) => {
+        setSelectedEntityId(_entityId);
+        if (entity) {
+          setValue('epc_address', entity.address || null, { shouldDirty: true });
+          setValue('epc_contact_name', entity.name || null, { shouldDirty: true });
+          setValue('epc_contact_email', entity.email || null, { shouldDirty: true });
+          setValue('epc_contact_phone', entity.phone || null, { shouldDirty: true });
+        }
+      },
+      [setValue]
+    );
 
     const saveEntityRelationship = React.useCallback(async () => {
       if (!selectedEntityId) return;

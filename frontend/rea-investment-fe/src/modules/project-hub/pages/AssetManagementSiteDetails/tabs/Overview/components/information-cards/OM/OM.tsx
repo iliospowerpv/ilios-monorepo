@@ -22,7 +22,7 @@ import formatPhoneNumber from '../../../../../../../../../utils/formatters/forma
 import FormattedNumericInput from '../../../../../../../../../components/common/FormattedNumericInput/FormattedNumericInput';
 import formatFloatValue from '../../../../../../../../../utils/formatters/formatFloatValue';
 import { EntityPicker } from '../../../../../../../../../components/common/EntityPicker/EntityPicker';
-import type { EntityRelationship } from '../../../../../../../../../api/entities';
+import type { EntityRelationship, ProjectEntity } from '../../../../../../../../../api/entities';
 
 type OMCardData = Awaited<ReturnType<typeof ApiClient.assetManagement.siteInfo>>['o_and_m'];
 
@@ -59,7 +59,7 @@ const OMForm = React.forwardRef<InformationCardFormRef, InformationCardFormProps
       }
     }, [relationships]);
 
-    const { handleSubmit, formState, control, reset } = useForm<OMFormFields>({
+    const { handleSubmit, formState, control, reset, setValue } = useForm<OMFormFields>({
       mode: 'onChange',
       criteriaMode: 'all',
       reValidateMode: 'onChange',
@@ -106,9 +106,18 @@ const OMForm = React.forwardRef<InformationCardFormRef, InformationCardFormProps
       });
     }, [data, reset]);
 
-    const handleEntityChange = React.useCallback((_entityId: number | null) => {
-      setSelectedEntityId(_entityId);
-    }, []);
+    const handleEntityChange = React.useCallback(
+      (_entityId: number | null, entity?: ProjectEntity | null) => {
+        setSelectedEntityId(_entityId);
+        if (entity) {
+          setValue('om_address', entity.address || null, { shouldDirty: true });
+          setValue('om_contact_name', entity.name || null, { shouldDirty: true });
+          setValue('om_contact_email', entity.email || null, { shouldDirty: true });
+          setValue('om_contact_phone', entity.phone || null, { shouldDirty: true });
+        }
+      },
+      [setValue]
+    );
 
     const saveEntityRelationship = React.useCallback(async () => {
       if (!selectedEntityId) return;
