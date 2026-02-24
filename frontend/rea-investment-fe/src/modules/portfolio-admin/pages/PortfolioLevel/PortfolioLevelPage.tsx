@@ -30,9 +30,11 @@ import FolderIcon from '@mui/icons-material/Folder';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PeopleIcon from '@mui/icons-material/People';
+import DomainIcon from '@mui/icons-material/Domain';
 
 import { ApiClient } from '../../../../api';
 import { AddCompanyDialog, AddUserDialog } from '../../components/dialogs';
+import { EntityDirectoryTab } from '../../components/entities';
 import { useNotify } from '../../../../contexts/notifications/notifications';
 import { useAuth } from '../../../../contexts/auth/auth';
 
@@ -154,6 +156,7 @@ export const PortfolioLevelPage: React.FC = () => {
         <CardContent>
           <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)} sx={{ mb: 2 }}>
             <Tab icon={<BusinessIcon />} iconPosition="start" label="Companies" />
+            <Tab icon={<DomainIcon />} iconPosition="start" label="Entity Directory" />
             {isSystemAdmin && <Tab icon={<PeopleIcon />} iconPosition="start" label="Portfolio Members" />}
           </Tabs>
 
@@ -235,7 +238,15 @@ export const PortfolioLevelPage: React.FC = () => {
             </TableContainer>
           )}
 
-          {activeTab === 1 && isSystemAdmin && (
+          {activeTab === 1 && companies.length > 0 && <EntityDirectoryTab portfolioId={companies[0].company_id} />}
+
+          {activeTab === 1 && companies.length === 0 && (
+            <Typography color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>
+              Add a company first to manage the entity directory.
+            </Typography>
+          )}
+
+          {activeTab === 2 && isSystemAdmin && (
             <>
               <Alert severity="info" sx={{ mb: 2 }}>
                 Portfolio members have access to all companies and projects within their assigned portfolio hub(s).

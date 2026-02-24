@@ -103,6 +103,19 @@ def soft_delete_entity(db: Session, entity_id: int) -> Optional[ProjectEntity]:
     return entity
 
 
+def list_entity_assignments_by_entity(
+    db: Session,
+    entity_id: int,
+) -> List[EntityRelationship]:
+    return (
+        db.query(EntityRelationship)
+        .options(joinedload(EntityRelationship.site))
+        .filter(EntityRelationship.entity_id == entity_id)
+        .order_by(EntityRelationship.role, EntityRelationship.id)
+        .all()
+    )
+
+
 def list_entity_relationships(
     db: Session,
     site_id: int,

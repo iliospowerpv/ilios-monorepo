@@ -11,6 +11,7 @@ from app.crud.project_entity import (
     create_entity,
     get_entity,
     list_entities,
+    list_entity_assignments_by_entity,
     soft_delete_entity,
     update_entity,
 )
@@ -19,6 +20,8 @@ from app.helpers.authentication import get_current_user
 from app.models.company import Company
 from app.models.user import UserPortfolioAccess
 from app.schema.project_entity import (
+    EntityAssignmentSummary,
+    EntityAssignmentsSummaryResponse,
     ProjectEntityCreate,
     ProjectEntityListResponse,
     ProjectEntityResponse,
@@ -165,6 +168,36 @@ async def delete_entity_endpoint(
     soft_delete_entity(db_session, entity_id)
 
     return {"message": f"Entity '{entity.name}' deactivated"}
+
+
+@router.get("/{entity_id}/assignments", response_model=EntityAssignmentsSummaryResponse)
+async def get_entity_assignments_endpoint(
+    entity_id: int,
+    current_user: CurrentUserSchema = Depends(get_current_user),
+    db_session: Session = Depends(get_session),
+):
+    entity = get_entity(db_session, entity_id)
+    if not entity:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Entity {entity_id} not found")
+
+    _check_portfolio_access(db_session, current_user, entity.portfolio_id)
+
+    relationships = list_entity_assignments_by_entity(db_session, entity_id)
+    items = []
+    for rel in relationships:
+        site_name = rel.site.name if hasattr(rel, "site") and rel.site else "Unknown"
+        items.append(
+            EntityAssignmentSummary(
+                relationship_id=rel.id,
+                site_id=rel.site_id,
+                site_name=site_name,
+                role=rel.role,
+                effective_date=rel.effective_date,
+                termination_date=rel.termination_date,
+            )
+        )
+
+    return EntityAssignmentsSummaryResponse(items=items, total=len(items))
 
 
 def _entity_to_response(entity) -> ProjectEntityResponse:

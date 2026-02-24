@@ -35,6 +35,7 @@ class ProjectEntityUpdate(BaseModel):
     website: Optional[str] = Field(None, max_length=500)
     notes: Optional[str] = None
     linked_company_id: Optional[int] = None
+    is_active: Optional[bool] = None
 
 
 class ProjectEntityResponse(BaseModel):
@@ -140,4 +141,21 @@ class DealEntityAssignmentResponse(BaseModel):
 
 class DealEntityAssignmentListResponse(BaseModel):
     items: List[DealEntityAssignmentResponse]
+    total: int
+
+
+class EntityAssignmentSummary(BaseModel):
+    relationship_id: int
+    site_id: int
+    site_name: str
+    role: EntityRelationshipRole
+    effective_date: Optional[date] = None
+    termination_date: Optional[date] = None
+
+    class Config:
+        from_attributes = True
+
+
+class EntityAssignmentsSummaryResponse(BaseModel):
+    items: List[EntityAssignmentSummary]
     total: int

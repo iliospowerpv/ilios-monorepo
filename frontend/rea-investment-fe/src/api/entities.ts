@@ -84,6 +84,7 @@ export interface ProjectEntityUpdate {
   website?: string | null;
   notes?: string | null;
   linked_company_id?: number | null;
+  is_active?: boolean;
 }
 
 export interface ProjectEntityListResponse {
@@ -163,10 +164,25 @@ export interface DealEntityAssignmentListResponse {
   total: number;
 }
 
+export interface EntityAssignmentSummary {
+  relationship_id: number;
+  site_id: number;
+  site_name: string;
+  role: EntityRelationshipRole;
+  effective_date: string | null;
+  termination_date: string | null;
+}
+
+export interface EntityAssignmentsSummaryResponse {
+  items: EntityAssignmentSummary[];
+  total: number;
+}
+
 export interface EntityListParams {
   portfolio_id: number;
   search?: string;
   entity_type?: EntityType;
+  include_inactive?: boolean;
   page?: number;
   page_size?: number;
 }
@@ -179,6 +195,9 @@ function buildEntityQueryString(params: EntityListParams): string {
   }
   if (params.entity_type) {
     queryParams.append('entity_type', params.entity_type);
+  }
+  if (params.include_inactive) {
+    queryParams.append('include_inactive', 'true');
   }
   if (params.page !== undefined) {
     queryParams.append('page', String(params.page));
@@ -214,6 +233,11 @@ export const createEntitiesApi = (httpClient: AxiosInstance) => ({
 
     delete: async (id: number): Promise<void> => {
       await httpClient.delete(`/entities/${id}`);
+    },
+
+    getAssignments: async (id: number): Promise<EntityAssignmentsSummaryResponse> => {
+      const response = await httpClient.get<EntityAssignmentsSummaryResponse>(`/entities/${id}/assignments`);
+      return response.data;
     }
   },
 
