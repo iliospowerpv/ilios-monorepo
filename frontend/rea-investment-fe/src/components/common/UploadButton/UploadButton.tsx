@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
-import FileUploadIcon from '@mui/icons-material/FileUpload';
-import { styled } from '@mui/material/styles';
+import Typography from '@mui/material/Typography';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import { styled, alpha } from '@mui/material/styles';
 
 export const VisuallyHiddenInput = styled('input')({
   clip: 'rect(0 0 0 0)',
@@ -23,22 +24,182 @@ interface UploadButtonProps {
   handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
+const isFileAccepted = (file: File, acceptAttr: string): boolean => {
+  if (!acceptAttr || acceptAttr.trim() === '') return true;
+  const tokens = acceptAttr.split(',').map(t => t.trim().toLowerCase());
+  const ext = ('.' + (file.name.split('.').pop() || '')).toLowerCase();
+  const mime = file.type.toLowerCase();
+  return tokens.some(token => {
+    if (token.startsWith('.')) return ext === token;
+    if (token.endsWith('/*')) return mime.startsWith(token.replace('/*', '/'));
+    return mime === token;
+  });
+};
+
+const formatAcceptLabel = (acceptAttr: string): string => {
+  if (!acceptAttr) return '';
+  return acceptAttr
+    .split(',')
+    .map(t => t.trim().replace('.', '').toUpperCase())
+    .filter(Boolean)
+    .join(', ');
+};
+
 const UploadButton: React.FC<UploadButtonProps> = props => {
   const { isUploading, allowedFileTypes, handleFileChange } = props;
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounterRef = useRef(0);
+
+  const triggerUpload = useCallback(
+    (file: File) => {
+      const input = fileInputRef.current;
+      if (!input) return;
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+      const event = new Event('change', { bubbles: true });
+      input.dispatchEvent(event);
+    },
+    []
+  );
+
+  const handleDragEnter = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounterRef.current += 1;
+      if (!isUploading && e.dataTransfer.items.length > 0) {
+        setIsDragOver(true);
+      }
+    },
+    [isUploading]
+  );
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current === 0) {
+      setIsDragOver(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
+      dragCounterRef.current = 0;
+      if (isUploading) return;
+      const files = e.dataTransfer.files;
+      if (files.length === 0) return;
+      const file = files[0];
+      if (!isFileAccepted(file, allowedFileTypes)) return;
+      triggerUpload(file);
+    },
+    [isUploading, allowedFileTypes, triggerUpload]
+  );
+
+  const handleBrowseClick = useCallback(() => {
+    if (!isUploading) {
+      fileInputRef.current?.click();
+    }
+  }, [isUploading]);
+
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      handleFileChange(e);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    },
+    [handleFileChange]
+  );
 
   return (
-    <Box display="flex" flexDirection="row" flexGrow={1} mb={2}>
-      <Button
-        disabled={isUploading}
-        component="label"
-        role={undefined}
-        variant="contained"
-        tabIndex={-1}
-        startIcon={isUploading ? <CircularProgress color="inherit" size={20} /> : <FileUploadIcon />}
+    <Box mb={2}>
+      <Box
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        onClick={handleBrowseClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleBrowseClick();
+          }
+        }}
+        aria-label="Upload file"
+        sx={theme => ({
+          border: `2px dashed ${isDragOver ? theme.palette.primary.main : theme.palette.divider}`,
+          borderRadius: '8px',
+          padding: '24px 16px',
+          textAlign: 'center',
+          cursor: isUploading ? 'default' : 'pointer',
+          backgroundColor: isDragOver
+            ? alpha(theme.palette.primary.main, 0.06)
+            : isUploading
+              ? alpha(theme.palette.action.disabled, 0.04)
+              : 'transparent',
+          transition: 'all 0.2s ease',
+          '&:hover': isUploading
+            ? {}
+            : {
+                borderColor: theme.palette.primary.light,
+                backgroundColor: alpha(theme.palette.primary.main, 0.03)
+              },
+          '&:focus-visible': {
+            outline: `2px solid ${theme.palette.primary.main}`,
+            outlineOffset: '2px'
+          }
+        })}
       >
-        {isUploading ? 'Uploading' : 'Upload File'}
-        <VisuallyHiddenInput type="file" accept={allowedFileTypes} multiple={false} onChange={handleFileChange} />
-      </Button>
+        {isUploading ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+            <CircularProgress size={32} />
+            <Typography variant="body2" color="text.secondary">
+              Uploading file...
+            </Typography>
+          </Box>
+        ) : isDragOver ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+            <InsertDriveFileIcon sx={{ fontSize: 36, color: 'primary.main' }} />
+            <Typography variant="body2" color="primary.main" fontWeight={600}>
+              Drop file here
+            </Typography>
+          </Box>
+        ) : (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+            <CloudUploadIcon sx={{ fontSize: 36, color: 'text.secondary' }} />
+            <Typography variant="body2" color="text.primary">
+              Drag and drop a file here, or{' '}
+              <Typography component="span" variant="body2" color="primary.main" fontWeight={600}>
+                browse
+              </Typography>
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {formatAcceptLabel(allowedFileTypes)} &bull; Max 100 MB
+            </Typography>
+          </Box>
+        )}
+      </Box>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={allowedFileTypes}
+        multiple={false}
+        onChange={handleInputChange}
+        style={{ display: 'none' }}
+      />
     </Box>
   );
 };
