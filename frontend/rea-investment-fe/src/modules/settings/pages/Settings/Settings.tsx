@@ -4,9 +4,12 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
+import { useQueryClient } from '@tanstack/react-query';
 import AuditLogs from './tabs/AuditLogs/AuditLogs';
 import HealthChecksPage from '../HealthChecks/HealthChecksPage';
 import ExtractionRegistry from './tabs/ExtractionRegistry';
+import { ApiClient } from '../../../../api';
+import { auditLogQueryKeys } from '../../../../api/audit-log';
 
 interface TabInfo {
   id: string;
@@ -19,6 +22,8 @@ interface TabInfo {
 interface SettingsProps {
   tabId?: 'health-checks' | 'audit-logs' | 'notification' | 'alerts' | 'extraction-registry';
 }
+
+const DEFAULT_PAGE_SIZE = 10;
 
 const tabData: TabInfo[] = [
   {
@@ -42,6 +47,15 @@ const tabData: TabInfo[] = [
 
 const Settings: React.FC<SettingsProps> = ({ tabId }) => {
   const activeTab = tabId || 'health-checks';
+  const queryClient = useQueryClient();
+
+  React.useEffect(() => {
+    queryClient.prefetchQuery({
+      queryKey: auditLogQueryKeys.page(0, DEFAULT_PAGE_SIZE),
+      queryFn: () => ApiClient.auditLog.getAuditLogs({ skip: 0, limit: DEFAULT_PAGE_SIZE }),
+      staleTime: 30_000
+    });
+  }, [queryClient]);
 
   const content = React.useMemo(() => {
     const tab = tabData.find(({ id }) => id === activeTab);

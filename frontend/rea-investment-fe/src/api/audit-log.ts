@@ -18,6 +18,16 @@ interface AuditLogs {
   items: AuditLog[];
 }
 
+interface AuditLogQueryParams {
+  skip: number;
+  limit: number;
+}
+
+export const auditLogQueryKeys = {
+  all: ['audit-logs'] as const,
+  page: (skip: number, limit: number) => ['audit-logs', 'page', skip, limit] as const
+};
+
 export const buildAuditLogApi = (httpClient: AxiosInstance) => {
   const getAuditLogs = async (params: Params): Promise<AuditLogs> => {
     const response = await httpClient.get<AuditLogs>('/api/settings/audit-logs/', { params });
@@ -29,4 +39,4 @@ export const buildAuditLogApi = (httpClient: AxiosInstance) => {
   });
 };
 
-export type { AuditLog, AuditLogs };
+export type { AuditLog, AuditLogs, AuditLogQueryParams };

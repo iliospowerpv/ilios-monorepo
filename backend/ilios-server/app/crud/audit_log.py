@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from sqlalchemy.sql.functions import coalesce, concat
 
 from app.crud.base_crud import BaseCRUD
@@ -13,6 +14,8 @@ class AuditLogCRUD(BaseCRUD):
         super().__init__(model=AuditLog, db_session=db_session)
 
     def get_logs(self, skip: int = DEFAULT_PAGINATION_SKIP, limit: int = DEFAULT_PAGINATION_LIMIT):
+        total = self.db_session.query(func.count(self.model.id)).scalar()
+
         query = self.db_session.query(
             self.model.id,
             self.model.source,
@@ -26,5 +29,4 @@ class AuditLogCRUD(BaseCRUD):
         query = query.outerjoin(User, self.model.user_id == User.id)
         query = self._add_order_by(query, self.model.created_at, order_direction="desc")
 
-        total = query.count()
         return total, query.offset(skip).limit(limit).all()

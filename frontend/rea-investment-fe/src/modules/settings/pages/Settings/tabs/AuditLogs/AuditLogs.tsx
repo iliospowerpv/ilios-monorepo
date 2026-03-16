@@ -1,13 +1,18 @@
-import React, { useRef } from 'react';
+import React, { useRef, useCallback } from 'react';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import Box from '@mui/material/Box';
 import { GridApi } from 'ag-grid-community';
+import { useQueryClient } from '@tanstack/react-query';
 
 import BaseTable from '../../../../../../components/common/tables/BaseTable/BaseTable';
 import { ApiClient } from '../../../../../../api';
+import { auditLogQueryKeys } from '../../../../../../api/audit-log';
+import type { AuditLogs as AuditLogsResponse } from '../../../../../../api/audit-log';
 
 dayjs.extend(utc);
+
+const STALE_TIME = 30_000;
 
 const columns = [
   {
@@ -78,6 +83,18 @@ const columns = [
 
 const AuditLogs = () => {
   const basicTableRef = useRef<{ getApi: () => GridApi | undefined }>(null);
+  const queryClient = useQueryClient();
+
+  const fetchPage = useCallback(
+    (skip: number, limit: number): Promise<AuditLogsResponse> => {
+      return queryClient.fetchQuery({
+        queryKey: auditLogQueryKeys.page(skip, limit),
+        queryFn: () => ApiClient.auditLog.getAuditLogs({ skip, limit }),
+        staleTime: STALE_TIME
+      });
+    },
+    [queryClient]
+  );
 
   const serverSideDatasource = React.useMemo(
     () => ({
@@ -86,11 +103,7 @@ const AuditLogs = () => {
         const skip = params.request.startRow;
         const limit = params.request.endRow - params.request.startRow;
 
-        ApiClient.auditLog
-          .getAuditLogs({
-            skip,
-            limit
-          })
+        fetchPage(skip, limit)
           .then(data => {
             if (!data.items.length) {
               api?.showNoRowsOverlay();
@@ -108,7 +121,7 @@ const AuditLogs = () => {
           });
       }
     }),
-    []
+    [fetchPage]
   );
 
   return (
