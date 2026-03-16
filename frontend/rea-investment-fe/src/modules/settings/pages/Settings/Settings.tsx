@@ -9,7 +9,7 @@ import AuditLogs from './tabs/AuditLogs/AuditLogs';
 import HealthChecksPage from '../HealthChecks/HealthChecksPage';
 import ExtractionRegistry from './tabs/ExtractionRegistry';
 import { ApiClient } from '../../../../api';
-import { auditLogQueryKeys } from '../../../../api/audit-log';
+import { auditLogQueryKeys, AUDIT_LOG_DEFAULT_PAGE_SIZE } from '../../../../api/audit-log';
 
 interface TabInfo {
   id: string;
@@ -22,8 +22,6 @@ interface TabInfo {
 interface SettingsProps {
   tabId?: 'health-checks' | 'audit-logs' | 'notification' | 'alerts' | 'extraction-registry';
 }
-
-const DEFAULT_PAGE_SIZE = 10;
 
 const tabData: TabInfo[] = [
   {
@@ -51,8 +49,8 @@ const Settings: React.FC<SettingsProps> = ({ tabId }) => {
 
   React.useEffect(() => {
     queryClient.prefetchQuery({
-      queryKey: auditLogQueryKeys.page(0, DEFAULT_PAGE_SIZE),
-      queryFn: () => ApiClient.auditLog.getAuditLogs({ skip: 0, limit: DEFAULT_PAGE_SIZE }),
+      queryKey: auditLogQueryKeys.page(0, AUDIT_LOG_DEFAULT_PAGE_SIZE),
+      queryFn: () => ApiClient.auditLog.getAuditLogs({ skip: 0, limit: AUDIT_LOG_DEFAULT_PAGE_SIZE }),
       staleTime: 30_000
     });
   }, [queryClient]);

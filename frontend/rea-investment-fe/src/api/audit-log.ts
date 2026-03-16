@@ -23,6 +23,8 @@ interface AuditLogQueryParams {
   limit: number;
 }
 
+export const AUDIT_LOG_DEFAULT_PAGE_SIZE = 10;
+
 export const auditLogQueryKeys = {
   all: ['audit-logs'] as const,
   page: (skip: number, limit: number) => ['audit-logs', 'page', skip, limit] as const
