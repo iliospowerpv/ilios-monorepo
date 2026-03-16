@@ -9,6 +9,7 @@ Adds:
 2. ix_audit_logs_user_id — index on user_id FK for the outerjoin
 """
 
+import sqlalchemy as sa
 from alembic import op
 
 revision = "ff13_audit_log_indexes"
@@ -21,7 +22,7 @@ def upgrade() -> None:
     op.create_index(
         "ix_audit_logs_created_at",
         "audit_logs",
-        ["created_at"],
+        [sa.text("created_at DESC")],
         unique=False,
     )
     op.create_index(

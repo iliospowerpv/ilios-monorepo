@@ -85,43 +85,53 @@ const AuditLogs = () => {
   const basicTableRef = useRef<{ getApi: () => GridApi | undefined }>(null);
   const queryClient = useQueryClient();
 
-  const fetchPage = useCallback(
-    (skip: number, limit: number): Promise<AuditLogsResponse> => {
-      return queryClient.fetchQuery({
-        queryKey: auditLogQueryKeys.page(skip, limit),
-        queryFn: () => ApiClient.auditLog.getAuditLogs({ skip, limit }),
-        staleTime: STALE_TIME
-      });
-    },
-    [queryClient]
-  );
+  const deliverData = useCallback((data: AuditLogsResponse, params: any) => {
+    const api = basicTableRef.current?.getApi();
+    if (!data.items.length) {
+      api?.showNoRowsOverlay();
+    } else {
+      api?.hideOverlay();
+    }
+    params.success({
+      rowData: data.items,
+      rowCount: data.total
+    });
+  }, []);
 
   const serverSideDatasource = React.useMemo(
     () => ({
       getRows: (params: any) => {
-        const api = basicTableRef.current?.getApi();
         const skip = params.request.startRow;
         const limit = params.request.endRow - params.request.startRow;
+        const queryKey = auditLogQueryKeys.page(skip, limit);
 
-        fetchPage(skip, limit)
+        const cached = queryClient.getQueryData<AuditLogsResponse>(queryKey);
+        if (cached) {
+          deliverData(cached, params);
+
+          queryClient.prefetchQuery({
+            queryKey,
+            queryFn: () => ApiClient.auditLog.getAuditLogs({ skip, limit }),
+            staleTime: STALE_TIME
+          });
+          return;
+        }
+
+        queryClient
+          .fetchQuery({
+            queryKey,
+            queryFn: () => ApiClient.auditLog.getAuditLogs({ skip, limit }),
+            staleTime: STALE_TIME
+          })
           .then(data => {
-            if (!data.items.length) {
-              api?.showNoRowsOverlay();
-            } else {
-              api?.hideOverlay();
-            }
-
-            params.success({
-              rowData: data.items,
-              rowCount: data.total
-            });
+            deliverData(data, params);
           })
           .catch(() => {
             params?.fail();
           });
       }
     }),
-    [fetchPage]
+    [queryClient, deliverData]
   );
 
   return (
