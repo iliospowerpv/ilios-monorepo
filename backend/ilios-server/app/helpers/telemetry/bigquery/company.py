@@ -14,8 +14,11 @@ class TelemetryCompanyBigQuery(BaseTelemetryBigQuery):
             return
 
         if self._is_demo:
-            from app.helpers.telemetry.demo_data import generate_company_cumulative_today
-            return generate_company_cumulative_today(site_ids, interval_start, interval_end, timezone)
+            from app.helpers.telemetry.demo_data import generate_company_cumulative_today, is_demo_site
+            demo_ids = [sid for sid in site_ids if is_demo_site(sid)]
+            if demo_ids:
+                return generate_company_cumulative_today(demo_ids, interval_start, interval_end, timezone)
+            return []
 
         object_ids = ", ".join(map(str, site_ids))
         query = (

@@ -1,10 +1,45 @@
+import logging
 import math
 import os
 import random
 from datetime import datetime, timedelta
 
+logger = logging.getLogger(__name__)
+
 DEMO_SITE_ID = 1
 SITE_CAPACITY_KW = 500
+
+_demo_device_ids_cache = None
+
+
+def _get_demo_device_ids():
+    global _demo_device_ids_cache
+    if _demo_device_ids_cache is not None:
+        return _demo_device_ids_cache
+    try:
+        from sqlalchemy import text
+        from app.db.session import SessionFactory
+        db = SessionFactory()
+        result = db.execute(text(
+            "SELECT d.id FROM devices d "
+            "JOIN telemetry_devices_mapping tm ON tm.device_id = d.id "
+            "WHERE d.site_id = :sid AND "
+            "(d.asset_id LIKE 'INV-%%' OR d.asset_id LIKE 'WS-%%' OR d.asset_id LIKE 'MOD-%%')"
+        ), {"sid": DEMO_SITE_ID})
+        _demo_device_ids_cache = frozenset(r[0] for r in result.fetchall())
+        db.close()
+    except Exception as e:
+        logger.warning(f"Could not load demo device IDs: {e}")
+        _demo_device_ids_cache = frozenset()
+    return _demo_device_ids_cache
+
+
+def is_demo_site(site_id):
+    return int(site_id) == DEMO_SITE_ID
+
+
+def is_demo_device(device_id):
+    return int(device_id) in _get_demo_device_ids()
 
 
 def is_demo_mode():
@@ -187,10 +222,20 @@ _DEMO_GENERATORS = {
 }
 
 
-def get_demo_bq_data(function_name, object_ids, interval_start, interval_end, timezone):
+def get_demo_bq_data(function_name, object_id_name, object_ids, interval_start, interval_end, timezone):
+    if object_id_name == "site_id":
+        scoped_ids = [oid for oid in object_ids if is_demo_site(oid)]
+    elif object_id_name == "device_id":
+        scoped_ids = [oid for oid in object_ids if is_demo_device(oid)]
+    else:
+        scoped_ids = object_ids
+
+    if not scoped_ids:
+        return []
+
     generator = _DEMO_GENERATORS.get(function_name)
     if generator:
-        return generator(object_ids, interval_start, interval_end, timezone)
+        return generator(scoped_ids, interval_start, interval_end, timezone)
     return []
 
 

@@ -63,7 +63,7 @@ class BaseTelemetryBigQuery:
             return
 
         if self._is_demo:
-            return get_demo_bq_data(function_name, object_ids, interval_start, interval_end, timezone)
+            return get_demo_bq_data(function_name, object_id_name, object_ids, interval_start, interval_end, timezone)
 
         object_ids = ", ".join(map(str, object_ids))
         query = (
