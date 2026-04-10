@@ -10,9 +10,13 @@ class TelemetryCompanyBigQuery(BaseTelemetryBigQuery):
         super().__init__()
 
     def _get_company_cumulative_data(self, site_ids: list, interval_start: str, interval_end: str, timezone: str):
-        # do not make call if no IDs for the filtering provided
         if not site_ids:
             return
+
+        if self._is_demo:
+            from app.helpers.telemetry.demo_data import generate_company_cumulative_today
+            return generate_company_cumulative_today(site_ids, interval_start, interval_end, timezone)
+
         object_ids = ", ".join(map(str, site_ids))
         query = (
             "SELECT SUM(site_energy_actual[OFFSET(0)].value) AS company_energy_actual_today,"

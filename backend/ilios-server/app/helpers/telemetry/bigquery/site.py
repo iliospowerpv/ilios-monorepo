@@ -13,6 +13,10 @@ class TelemetrySiteBigQuery(BaseTelemetryBigQuery):
         super().__init__()
 
     def _get_site_cumulative_data(self, site_ids: list, interval_start: str, interval_end: str, timezone: str):
+        if self._is_demo:
+            from app.helpers.telemetry.demo_data import generate_site_cumulative_data
+            return generate_site_cumulative_data(site_ids, interval_start, interval_end, timezone)
+
         object_ids = ", ".join(map(str, site_ids))
         query = (
             f"SELECT   site_id,"
@@ -35,6 +39,10 @@ class TelemetrySiteBigQuery(BaseTelemetryBigQuery):
         return bq_site_data
 
     def _get_site_cumulative_data_today(self, site_ids: list, interval_start: str, interval_end: str, timezone: str):
+        if self._is_demo:
+            from app.helpers.telemetry.demo_data import generate_company_cumulative_today
+            return generate_company_cumulative_today(site_ids, interval_start, interval_end, timezone)
+
         object_ids = ", ".join(map(str, site_ids))
         query = (
             "SELECT SUM(site_energy_actual[OFFSET(0)].value) AS company_energy_actual_today,"

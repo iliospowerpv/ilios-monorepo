@@ -103,6 +103,7 @@ db_password = "password"
 db_name = "heliumdb"
 REACT_APP_URL = "https://866eea6d-1ee6-48a6-8cf4-5fad9fd453a4-00-25dsz23h560r9.picard.replit.dev:8000"
 pbi_workspace_id = "59754A20-0A6A-4EA8-BD10-B37171F8FF51"
+DEMO_TELEMETRY = "true"
 
 [userenv.production]
 pbi_workspace_id = "EF47351C-2E0B-4891-843C-BC091B232E41"

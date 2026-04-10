@@ -1,18 +1,26 @@
+import logging
 import pickle
 from datetime import datetime, timedelta
 
 import pytz
 
-from app.bigquery.bigquery import BigQueryReadEngine
+from app.helpers.telemetry.demo_data import get_demo_bq_data, is_demo_mode
 from app.redis_cache.cache import get_cache
+
+logger = logging.getLogger(__name__)
 
 
 class BaseTelemetryBigQuery:
     def __init__(self):
+        self._is_demo = is_demo_mode()
         self.cache = get_cache()
-        self.bq_engine = BigQueryReadEngine()
-        # note: time format should not include timezone info for big query, otherwise it returns None values
         self.time_format = "%Y-%m-%dT%H:%M:%S.%f"
+        if not self._is_demo:
+            from app.bigquery.bigquery import BigQueryReadEngine
+            self.bq_engine = BigQueryReadEngine()
+        else:
+            self.bq_engine = None
+            logger.info("Telemetry running in DEMO mode — BigQuery bypassed")
 
     def _get_current_time_period(self, timezone):
         """
@@ -29,7 +37,6 @@ class BaseTelemetryBigQuery:
             if start <= current_minutes < end:
                 interval_start_time = current_time.replace(minute=prev_intervals[i][0], second=0, microsecond=0)
                 if i == 0:
-                    # for the first 15 minutes interval update also hour
                     interval_start_time = interval_start_time - timedelta(hours=1)
                 interval_end_time = interval_start_time + timedelta(minutes=15)
 
@@ -52,9 +59,12 @@ class BaseTelemetryBigQuery:
         interval_end: str,
         timezone: str,
     ):
-        # do not make call if no IDs for the filtering provided
         if not object_ids:
             return
+
+        if self._is_demo:
+            return get_demo_bq_data(function_name, object_ids, interval_start, interval_end, timezone)
+
         object_ids = ", ".join(map(str, object_ids))
         query = (
             f"SELECT * FROM {self.bq_engine.bq_dataset_name}.{function_name}("
