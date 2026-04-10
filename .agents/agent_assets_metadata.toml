@@ -1,0 +1,14 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "ZYhW7OC828Dwm2tGbJZVP"
+uri = "file://screenshots/data-room-marketing-full.png"
+type = "image"
+title = "Data Room - Full View (recommended)"
+
+[[outputs]]
+id = "qav7G-ZINZMyEdKyhmf12"
+uri = "file://screenshots/data-room-marketing-focused.png"
+type = "image"
+title = "Data Room - Focused / Tighter Crop"
