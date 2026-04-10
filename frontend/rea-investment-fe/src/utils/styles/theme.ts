@@ -256,11 +256,16 @@ export const getTheme = (mode: PaletteMode) => {
             }
           },
           outlined: {
-            borderColor: isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.36)',
-            color: isLight ? '#000000' : '#FFFFFF',
+            borderColor: isLight ? '#494BC1' : 'rgba(255, 255, 255, 0.36)',
+            color: isLight ? '#494BC1' : '#FFFFFF',
             '&:hover': {
               borderColor: isLight ? '#494BC1' : '#9C9EF3',
-              backgroundColor: isLight ? 'rgba(73, 75, 193, 0.04)' : 'rgba(156, 158, 243, 0.04)'
+              backgroundColor: isLight ? '#494BC1' : 'rgba(156, 158, 243, 0.15)',
+              color: isLight ? '#FFFFFF' : '#FFFFFF'
+            },
+            '&.Mui-disabled': {
+              borderColor: isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)',
+              color: isLight ? 'rgba(0, 0, 0, 0.26)' : 'rgba(255, 255, 255, 0.26)'
             }
           },
           text: {
