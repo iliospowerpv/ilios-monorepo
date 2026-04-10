@@ -1,3 +1,17 @@
+"""
+Demo telemetry data generator for site_id=1 ("Test Project Digg It 1").
+
+Activated by setting DEMO_TELEMETRY=true env var (auto-disabled in production).
+Generates realistic solar production data using a bell-curve model with seasonal
+and weather variation, bypassing BigQuery entirely.
+
+Cleanup steps to remove demo telemetry:
+  1. Delete env var:  DEMO_TELEMETRY
+  2. Run cleanup script:
+     cd backend/ilios-server && python scripts/seed_demo_telemetry.py --cleanup
+  This removes all demo devices (INV-*, WS-*, MOD-*), DAS connection, site
+  mapping, and device mappings for site_id=1.
+"""
 import logging
 import math
 import os
@@ -23,8 +37,7 @@ def _get_demo_device_ids():
         result = db.execute(text(
             "SELECT d.id FROM devices d "
             "JOIN telemetry_devices_mapping tm ON tm.device_id = d.id "
-            "WHERE d.site_id = :sid AND "
-            "(d.asset_id LIKE 'INV-%%' OR d.asset_id LIKE 'WS-%%' OR d.asset_id LIKE 'MOD-%%')"
+            "WHERE d.site_id = :sid"
         ), {"sid": DEMO_SITE_ID})
         _demo_device_ids_cache = frozenset(r[0] for r in result.fetchall())
         db.close()
@@ -124,13 +137,15 @@ def generate_site_power_actual_vs_expected(site_ids, interval_start, interval_en
 
 
 def generate_site_energy_daily(site_ids, interval_start, interval_end, timezone):
+    start_dt = _parse_dt(interval_start)
     end_dt = _parse_dt(interval_end)
+    num_days = max(1, (end_dt.date() - start_dt.date()).days + 1)
     results = []
     for sid in site_ids:
         actual_arr = []
         expected_arr = []
-        for day_offset in range(31):
-            day = (end_dt - timedelta(days=30 - day_offset)).date()
+        for day_offset in range(num_days):
+            day = (start_dt + timedelta(days=day_offset)).date()
             dt = datetime(day.year, day.month, day.day)
             a, e = _daily_energy(day, seed_offset=sid)
             ts = dt.strftime("%Y-%m-%dT%H:%M:%S")
