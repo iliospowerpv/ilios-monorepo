@@ -15,6 +15,7 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 
 import { ApiClient } from '../../../../../api';
+import { COMPANY_TYPES } from '../../../../../constants';
 import { US_STATES } from '../../../../../constants/usStates';
 
 interface CreateCompanyDialogProps {
@@ -25,6 +26,7 @@ interface CreateCompanyDialogProps {
 
 export const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ open, onClose, onSuccess }) => {
   const queryClient = useQueryClient();
+  const [companyType, setCompanyType] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -38,7 +40,7 @@ export const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ open, 
   const createMutation = useMutation({
     mutationFn: () =>
       ApiClient.companies.create({
-        company_type: 'Project/Site Owner',
+        company_type: companyType,
         name,
         address,
         city,
@@ -46,7 +48,7 @@ export const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ open, 
         county: county || null,
         zip_code: zipCode,
         email: email || null,
-        phone: phone || null
+        phone: phone ? normalizePhone(phone) : null
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workspace'] });
@@ -60,7 +62,10 @@ export const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ open, 
     }
   });
 
+  const normalizePhone = (val: string): string => val.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1');
+
   const resetForm = () => {
+    setCompanyType('');
     setName('');
     setEmail('');
     setPhone('');
@@ -79,6 +84,10 @@ export const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ open, 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!companyType) {
+      setError('Company type is required');
+      return;
+    }
     if (!name.trim()) {
       setError('Company name is required');
       return;
@@ -99,6 +108,10 @@ export const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ open, 
       setError('Zip code must be exactly 5 digits');
       return;
     }
+    if (phone && normalizePhone(phone).length !== 10) {
+      setError('Phone number must contain exactly 10 digits');
+      return;
+    }
     setError(null);
     createMutation.mutate();
   };
@@ -110,6 +123,17 @@ export const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ open, 
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
             {error && <Alert severity="error">{error}</Alert>}
+
+            <FormControl required fullWidth>
+              <InputLabel>Company Type</InputLabel>
+              <Select value={companyType} onChange={e => setCompanyType(e.target.value as string)} label="Company Type">
+                {COMPANY_TYPES.map(type => (
+                  <MenuItem key={type} value={type}>
+                    {type}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
             <TextField
               label="Company Name"
@@ -183,6 +207,7 @@ export const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ open, 
             variant="contained"
             disabled={
               createMutation.isPending ||
+              !companyType ||
               !name.trim() ||
               !address.trim() ||
               !city.trim() ||

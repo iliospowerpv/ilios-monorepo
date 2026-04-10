@@ -91,7 +91,7 @@ export const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({ open, onClos
       county: data.county || null,
       zip_code: data.zip_code,
       email: data.email || null,
-      phone: data.phone || null
+      phone: data.phone ? data.phone.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1') : null
     });
   };
 
@@ -235,9 +235,10 @@ export const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({ open, onClos
               error={!!errors.phone}
               helperText={errors.phone?.message}
               {...register('phone', {
-                pattern: {
-                  value: /^\d{10}$/,
-                  message: 'Phone must be 10 digits'
+                validate: value => {
+                  if (!value) return true;
+                  const digits = value.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1');
+                  return digits.length === 10 || 'Phone number must contain exactly 10 digits';
                 }
               })}
             />

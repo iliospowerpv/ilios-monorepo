@@ -25,7 +25,21 @@ class UpsertCompanySchema(BaseModel):
 
     name: str = Field(examples=["Green Lantern"], min_length=2, max_length=100)
     email: Optional[EmailStr] = Field(None, max_length=100)
-    phone: Optional[str] = Field(None, pattern=r"^[0-9]+$", examples=["0123456789"], min_length=10, max_length=10)
+    phone: Optional[str] = Field(None, examples=["0123456789"], min_length=10, max_length=20)
+
+    @field_validator("phone", mode="before")
+    @classmethod
+    def normalize_phone(cls, v):
+        if v is None:
+            return v
+        import re
+        digits = re.sub(r"\D", "", v)
+        if digits.startswith("1") and len(digits) == 11:
+            digits = digits[1:]
+        if len(digits) != 10:
+            raise ValueError("Phone number must contain exactly 10 digits")
+        return digits
+
     address: Optional[str] = Field(None, examples=["719 Main Street Solar"], max_length=255)
     city: Optional[str] = Field(None, max_length=100)
     state: Optional[State] = Field(None)

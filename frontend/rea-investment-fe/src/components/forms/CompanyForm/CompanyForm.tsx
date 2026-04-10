@@ -121,7 +121,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = props => {
         county: (data as any).county || null,
         zip_code: (data as any).zip_code || null,
         email: data.email || null,
-        phone: data.phone || null
+        phone: data.phone ? data.phone.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1') : null
       });
       queryClient.removeQueries({ queryKey: ['company'] });
       notify(isEdit ? 'Company has been updated successfully' : 'Company has been successfully created');
@@ -321,19 +321,13 @@ export const CompanyForm: React.FC<CompanyFormProps> = props => {
             label="Phone Number"
             value={field.value || ''}
             sx={noBottomLineStyles}
-            helperText={errors.phone?.message}
+            helperText={errors.phone?.message || 'e.g. (555) 123-4567'}
             error={!!errors.phone}
-            onInput={(e: React.ChangeEvent<HTMLInputElement>) => {
-              e.target.value = e.target.value.replace(/[^\d]/g, '').slice(0, 10);
-            }}
             {...register('phone', {
-              pattern: {
-                value: /^\d{10}$/,
-                message: 'Please provide correct Phone Number.'
-              },
-              maxLength: {
-                value: 10,
-                message: 'Phone Number length should be 10 characters.'
+              validate: value => {
+                if (!value) return true;
+                const digits = value.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1');
+                return digits.length === 10 || 'Phone number must contain exactly 10 digits.';
               }
             })}
           />

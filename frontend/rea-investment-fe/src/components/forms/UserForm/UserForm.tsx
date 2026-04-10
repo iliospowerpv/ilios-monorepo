@@ -92,7 +92,7 @@ export const UserForm: React.FC<UserFormProps> = ({ mode, userData, userId, leve
           userId,
           attributes: {
             email: data.email,
-            phone: data.phone,
+            phone: data.phone.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1'),
             role_id: data.role_id,
             parent_company_id: data.parent_company_id,
             sites_ids: data.sites_ids
@@ -115,7 +115,8 @@ export const UserForm: React.FC<UserFormProps> = ({ mode, userData, userId, leve
     }
 
     try {
-      const message = await createUser(data);
+      const normalizedData = { ...data, phone: data.phone.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1') };
+      const message = await createUser(normalizedData);
       notify(message?.message);
       reset();
       queryClient.removeQueries({ queryKey: ['my-company-users'] });
@@ -245,8 +246,8 @@ export const UserForm: React.FC<UserFormProps> = ({ mode, userData, userId, leve
         rules={{
           required: 'First Name is required field.',
           pattern: {
-            value: /^[a-zA-Z\s'-]+$/,
-            message: 'First Name should contain only alphabetic characters, spaces, hyphens, or apostrophes.'
+            value: /^[\p{L}\s'.\-]+$/u,
+            message: 'First Name should contain only letters, spaces, hyphens, apostrophes, or periods.'
           },
           minLength: {
             value: 2,
@@ -278,8 +279,8 @@ export const UserForm: React.FC<UserFormProps> = ({ mode, userData, userId, leve
         rules={{
           required: 'Last Name is required field.',
           pattern: {
-            value: /^[a-zA-Z\s'-]+$/,
-            message: 'Last Name should contain only alphabetic characters, spaces, hyphens, or apostrophes.'
+            value: /^[\p{L}\s'.\-]+$/u,
+            message: 'Last Name should contain only letters, spaces, hyphens, apostrophes, or periods.'
           },
           minLength: {
             value: 2,
@@ -341,13 +342,10 @@ export const UserForm: React.FC<UserFormProps> = ({ mode, userData, userId, leve
         disabled={!formReady}
         rules={{
           required: 'Phone Number is required field.',
-          pattern: {
-            value: /^\d{10}$/,
-            message: 'Please provide correct Phone Number.'
-          },
-          maxLength: {
-            value: 10,
-            message: 'Phone Number length should be 10 characters.'
+          validate: value => {
+            if (!value) return 'Phone Number is required field.';
+            const digits = value.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1');
+            return digits.length === 10 || 'Phone number must contain exactly 10 digits.';
           }
         }}
         render={({ field: { ref, value, ...field } }) => (
@@ -356,14 +354,11 @@ export const UserForm: React.FC<UserFormProps> = ({ mode, userData, userId, leve
             label="Phone Number"
             required
             sx={noBottomLineStyles}
-            helperText={errors.phone?.message}
+            helperText={errors.phone?.message || 'e.g. (555) 123-4567'}
             error={!!errors.phone}
             inputRef={ref}
             value={value || ''}
             {...field}
-            onInput={(e: React.ChangeEvent<HTMLInputElement>) => {
-              e.target.value = e.target.value.replace(/[^\d]/g, '').slice(0, 10);
-            }}
           />
         )}
       />

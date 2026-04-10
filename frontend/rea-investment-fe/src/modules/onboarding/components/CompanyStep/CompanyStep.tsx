@@ -18,6 +18,7 @@ import AddIcon from '@mui/icons-material/Add';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
 import { ApiClient } from '../../../../api';
+import { COMPANY_TYPES } from '../../../../constants';
 import { useAuth } from '../../../../contexts/auth/auth';
 import { useEntityContext } from '../../../../contexts/entityContext/entityContext';
 import { US_STATES } from '../../../../constants/usStates';
@@ -33,6 +34,7 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
 
   const [mode, setMode] = useState<'select' | 'create' | null>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
+  const [newCompanyType, setNewCompanyType] = useState('');
   const [newCompanyName, setNewCompanyName] = useState('');
   const [newCompanyEmail, setNewCompanyEmail] = useState('');
   const [newCompanyPhone, setNewCompanyPhone] = useState('');
@@ -42,6 +44,8 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
   const [newCompanyCounty, setNewCompanyCounty] = useState('');
   const [newCompanyZipCode, setNewCompanyZipCode] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  const normalizePhone = (val: string): string => val.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1');
 
   const { data: workspaceData, isLoading: isLoadingCompanies } = useQuery({
     queryKey: ['onboarding-companies'],
@@ -53,7 +57,7 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
   const createMutation = useMutation({
     mutationFn: () =>
       ApiClient.companies.create({
-        company_type: 'Project/Site Owner',
+        company_type: newCompanyType,
         name: newCompanyName,
         address: newCompanyAddress,
         city: newCompanyCity,
@@ -61,7 +65,7 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
         county: newCompanyCounty || null,
         zip_code: newCompanyZipCode,
         email: newCompanyEmail || null,
-        phone: newCompanyPhone || null
+        phone: newCompanyPhone ? normalizePhone(newCompanyPhone) : null
       }),
     onSuccess: response => {
       const newCompanyId = response.id;
@@ -97,12 +101,13 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
 
   const isCreateFormValid = () => {
     return (
+      newCompanyType !== '' &&
       newCompanyName.trim().length >= 2 &&
       newCompanyAddress.trim() !== '' &&
       newCompanyCity.trim() !== '' &&
       newCompanyState !== '' &&
       /^[0-9]{5}$/.test(newCompanyZipCode) &&
-      (!newCompanyPhone || /^[0-9]{10}$/.test(newCompanyPhone))
+      (!newCompanyPhone || normalizePhone(newCompanyPhone).length === 10)
     );
   };
 
@@ -120,6 +125,10 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
       setError('City is required');
       return;
     }
+    if (!newCompanyType) {
+      setError('Company type is required');
+      return;
+    }
     if (!newCompanyState) {
       setError('State is required');
       return;
@@ -128,8 +137,8 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
       setError('Zip code must be exactly 5 digits');
       return;
     }
-    if (newCompanyPhone && !/^[0-9]{10}$/.test(newCompanyPhone)) {
-      setError('Phone must be exactly 10 digits');
+    if (newCompanyPhone && normalizePhone(newCompanyPhone).length !== 10) {
+      setError('Phone number must contain exactly 10 digits');
       return;
     }
     setError(null);
@@ -240,6 +249,20 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
             </Typography>
             <form onSubmit={handleCreateNew}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <FormControl required fullWidth>
+                  <InputLabel>Company Type</InputLabel>
+                  <Select
+                    value={newCompanyType}
+                    onChange={e => setNewCompanyType(e.target.value as string)}
+                    label="Company Type"
+                  >
+                    {COMPANY_TYPES.map(type => (
+                      <MenuItem key={type} value={type}>
+                        {type}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
                 <TextField
                   label="Company Name"
                   value={newCompanyName}
@@ -309,14 +332,12 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
                     inputProps={{ maxLength: 100 }}
                   />
                   <TextField
-                    label="Phone (optional, 10 digits)"
+                    label="Phone (optional)"
                     value={newCompanyPhone}
-                    onChange={e => {
-                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                      setNewCompanyPhone(val);
-                    }}
+                    onChange={e => setNewCompanyPhone(e.target.value)}
                     fullWidth
-                    inputProps={{ maxLength: 10 }}
+                    inputProps={{ maxLength: 20 }}
+                    helperText="e.g. (555) 123-4567"
                   />
                 </Box>
                 <Button

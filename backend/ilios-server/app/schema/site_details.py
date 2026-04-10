@@ -25,14 +25,16 @@ BLANK_VALUE = ""
 
 
 def phone_field_validator(phone: str):
-    """Validate phone is a number-only string 10 characters long, or None"""
+    """Normalize phone to digits-only and validate it is 10 digits long, or None"""
+    import re
     if not phone:
         return phone
-    if not phone.isnumeric():
-        raise ValueError("Expected numbers-only")
-    if not len(phone) == 10:
-        raise ValueError("Must be 10 digits")
-    return phone
+    digits = re.sub(r"\D", "", phone)
+    if digits.startswith("1") and len(digits) == 11:
+        digits = digits[1:]
+    if len(digits) != 10:
+        raise ValueError("Phone number must contain exactly 10 digits")
+    return digits
 
 
 class SiteLevelDetailsUpdateSchema(BaseModel):

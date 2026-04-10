@@ -48,9 +48,20 @@ class UsersListResponse(BasePaginator):
 class BaseUserSchema(UserEmailSchema):
     parent_company_id: Optional[int] = Field(examples=[1])
     role_id: Optional[int] = Field(examples=[1])
-    phone: str = Field(pattern=r"^[0-9]+$", examples=["0123456789"], min_length=10, max_length=10)
+    phone: str = Field(examples=["0123456789"], min_length=10, max_length=20)
     first_name: str = Field(examples=["Jane"], min_length=2, max_length=100)
     last_name: str = Field(examples=["Doe"], min_length=2, max_length=100)
+
+    @field_validator("phone", mode="before")
+    @classmethod
+    def normalize_phone(cls, v):
+        import re
+        digits = re.sub(r"\D", "", v)
+        if digits.startswith("1") and len(digits) == 11:
+            digits = digits[1:]
+        if len(digits) != 10:
+            raise ValueError("Phone number must contain exactly 10 digits")
+        return digits
 
 
 class MyUserSchema(BaseUserSchema):
@@ -84,7 +95,19 @@ class CreateUserSchema(BaseUserSchema):
 
 
 class EditUserSchema(UserEmailSchema):
-    phone: str = Field(pattern=r"^[0-9]+$", examples=["0123456789"], min_length=10, max_length=10)
+    phone: str = Field(examples=["0123456789"], min_length=10, max_length=20)
+
+    @field_validator("phone", mode="before")
+    @classmethod
+    def normalize_phone(cls, v):
+        import re
+        digits = re.sub(r"\D", "", v)
+        if digits.startswith("1") and len(digits) == 11:
+            digits = digits[1:]
+        if len(digits) != 10:
+            raise ValueError("Phone number must contain exactly 10 digits")
+        return digits
+
     role_id: int = Field(examples=[1])
     parent_company_id: int = Field(examples=[1])
     sites_ids: list[int] = Field(default=[], examples=[[1, 2, 3]])

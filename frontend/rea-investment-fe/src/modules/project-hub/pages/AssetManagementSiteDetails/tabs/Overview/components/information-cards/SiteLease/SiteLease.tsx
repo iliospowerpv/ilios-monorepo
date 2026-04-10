@@ -17,7 +17,6 @@ import {
 } from '../../InformationCardBase/InformationCardBase';
 import { useNotify } from '../../../../../../../../../contexts/notifications/notifications';
 import { ApiClient } from '../../../../../../../../../api';
-import FormattedIntegerNumericInput from '../../../../../../../../../components/common/FormattedIntegerNumericInput/FormattedIntegerNumericInput';
 import formatPhoneNumber from '../../../../../../../../../utils/formatters/formatPhoneNumber';
 import dayjs from 'dayjs';
 import { DatePicker } from '@mui/x-date-pickers';
@@ -101,7 +100,13 @@ const SiteLeaseForm = React.forwardRef<InformationCardFormRef, InformationCardFo
     const onSubmit: SubmitHandler<SiteLeaseFormFields> = React.useCallback(
       async data => {
         try {
-          const response = await updateSiteLeaseDetails(data);
+          const normalizedData = {
+            ...data,
+            landlord_contact_phone: data.landlord_contact_phone
+              ? data.landlord_contact_phone.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1')
+              : data.landlord_contact_phone
+          };
+          const response = await updateSiteLeaseDetails(normalizedData);
           notify(response.message || `Site Lease information was successfully updated.`);
           reset(data);
           queryClient.invalidateQueries({ queryKey: ['sites'] });
@@ -383,8 +388,8 @@ const SiteLeaseForm = React.forwardRef<InformationCardFormRef, InformationCardFo
                     rules={{
                       validate: value => {
                         if (!value) return true;
-                        if (value.length > 10) return 'Contact Phone # length should not exceed 10 characters.';
-                        return /^\d{10}$/.test(value) || 'Please provide correct Contact Phone.';
+                        const digits = value.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1');
+                        return digits.length === 10 || 'Phone number must contain exactly 10 digits.';
                       }
                     }}
                     render={({ field: { ref, value, onChange, ...field } }) => (
@@ -401,12 +406,9 @@ const SiteLeaseForm = React.forwardRef<InformationCardFormRef, InformationCardFo
                         disabled={isSubmitting}
                         inputRef={ref}
                         value={value || ''}
-                        onInput={(e: React.ChangeEvent<HTMLInputElement>) => {
-                          e.target.value = e.target.value.replace(/[^\d]/g, '').slice(0, 10);
-                        }}
                         onChange={e => onChange(e.target.value || null)}
                         variant="outlined"
-                        InputProps={{ inputComponent: FormattedIntegerNumericInput as any, ref: ref, sx: inputStyles }}
+                        InputProps={{ sx: inputStyles }}
                       />
                     )}
                   />
