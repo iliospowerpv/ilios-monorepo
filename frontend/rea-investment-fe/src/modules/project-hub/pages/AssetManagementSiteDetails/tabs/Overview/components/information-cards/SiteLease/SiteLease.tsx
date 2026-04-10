@@ -17,7 +17,7 @@ import {
 } from '../../InformationCardBase/InformationCardBase';
 import { useNotify } from '../../../../../../../../../contexts/notifications/notifications';
 import { ApiClient } from '../../../../../../../../../api';
-import formatPhoneNumber from '../../../../../../../../../utils/formatters/formatPhoneNumber';
+import formatPhoneNumber, { normalizePhone } from '../../../../../../../../../utils/formatters/formatPhoneNumber';
 import dayjs from 'dayjs';
 import { DatePicker } from '@mui/x-date-pickers';
 import CustomParseFormatPlugin from 'dayjs/plugin/customParseFormat';
@@ -103,7 +103,7 @@ const SiteLeaseForm = React.forwardRef<InformationCardFormRef, InformationCardFo
           const normalizedData = {
             ...data,
             landlord_contact_phone: data.landlord_contact_phone
-              ? data.landlord_contact_phone.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1')
+              ? normalizePhone(data.landlord_contact_phone)
               : data.landlord_contact_phone
           };
           const response = await updateSiteLeaseDetails(normalizedData);
@@ -388,8 +388,7 @@ const SiteLeaseForm = React.forwardRef<InformationCardFormRef, InformationCardFo
                     rules={{
                       validate: value => {
                         if (!value) return true;
-                        const digits = value.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1');
-                        return digits.length === 10 || 'Phone number must contain exactly 10 digits.';
+                        return normalizePhone(value).length === 10 || 'Phone number must contain exactly 10 digits.';
                       }
                     }}
                     render={({ field: { ref, value, onChange, ...field } }) => (

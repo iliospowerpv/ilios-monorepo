@@ -17,6 +17,7 @@ import InputLabel from '@mui/material/InputLabel';
 import { ApiClient } from '../../../../../api';
 import { COMPANY_TYPES } from '../../../../../constants';
 import { US_STATES } from '../../../../../constants/usStates';
+import { normalizePhone } from '../../../../../utils/formatters/formatPhoneNumber';
 
 interface CreateCompanyDialogProps {
   open: boolean;
@@ -61,8 +62,6 @@ export const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ open, 
       setError(err.message || 'Failed to create company');
     }
   });
-
-  const normalizePhone = (val: string): string => val.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1');
 
   const resetForm = () => {
     setCompanyType('');

@@ -20,6 +20,7 @@ import { ApiClient, CompanyAttributes } from '../../../../api';
 import { COMPANY_TYPES } from '../../../../constants';
 import { useNotify } from '../../../../contexts/notifications/notifications';
 import { US_STATES } from '../../../../constants/usStates';
+import { normalizePhone } from '../../../../utils/formatters/formatPhoneNumber';
 
 interface AddCompanyDialogProps {
   open: boolean;
@@ -91,7 +92,7 @@ export const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({ open, onClos
       county: data.county || null,
       zip_code: data.zip_code,
       email: data.email || null,
-      phone: data.phone ? data.phone.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1') : null
+      phone: data.phone ? normalizePhone(data.phone) : null
     });
   };
 
@@ -237,8 +238,7 @@ export const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({ open, onClos
               {...register('phone', {
                 validate: value => {
                   if (!value) return true;
-                  const digits = value.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1');
-                  return digits.length === 10 || 'Phone number must contain exactly 10 digits';
+                  return normalizePhone(value).length === 10 || 'Phone number must contain exactly 10 digits';
                 }
               })}
             />

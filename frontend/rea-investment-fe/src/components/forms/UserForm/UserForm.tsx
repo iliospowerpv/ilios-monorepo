@@ -22,6 +22,7 @@ import {
 } from '../../../api';
 import { CompaniesSitesMultiselect } from './components/CompaniesSitesMultiselect';
 import { useNotify } from '../../../contexts/notifications/notifications';
+import { normalizePhone } from '../../../utils/formatters/formatPhoneNumber';
 
 const noBottomLineStyles = {
   '& .MuiInputBase-root:not(.Mui-disabled, .Mui-error)': {
@@ -92,7 +93,7 @@ export const UserForm: React.FC<UserFormProps> = ({ mode, userData, userId, leve
           userId,
           attributes: {
             email: data.email,
-            phone: data.phone.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1'),
+            phone: normalizePhone(data.phone),
             role_id: data.role_id,
             parent_company_id: data.parent_company_id,
             sites_ids: data.sites_ids
@@ -115,7 +116,7 @@ export const UserForm: React.FC<UserFormProps> = ({ mode, userData, userId, leve
     }
 
     try {
-      const normalizedData = { ...data, phone: data.phone.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1') };
+      const normalizedData = { ...data, phone: normalizePhone(data.phone) };
       const message = await createUser(normalizedData);
       notify(message?.message);
       reset();
@@ -246,7 +247,7 @@ export const UserForm: React.FC<UserFormProps> = ({ mode, userData, userId, leve
         rules={{
           required: 'First Name is required field.',
           pattern: {
-            value: /^[\p{L}\s'.\-]+$/u,
+            value: /^[\p{L}\s'\u2019.\-]+$/u,
             message: 'First Name should contain only letters, spaces, hyphens, apostrophes, or periods.'
           },
           minLength: {
@@ -279,7 +280,7 @@ export const UserForm: React.FC<UserFormProps> = ({ mode, userData, userId, leve
         rules={{
           required: 'Last Name is required field.',
           pattern: {
-            value: /^[\p{L}\s'.\-]+$/u,
+            value: /^[\p{L}\s'\u2019.\-]+$/u,
             message: 'Last Name should contain only letters, spaces, hyphens, apostrophes, or periods.'
           },
           minLength: {
@@ -344,8 +345,7 @@ export const UserForm: React.FC<UserFormProps> = ({ mode, userData, userId, leve
           required: 'Phone Number is required field.',
           validate: value => {
             if (!value) return 'Phone Number is required field.';
-            const digits = value.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1');
-            return digits.length === 10 || 'Phone number must contain exactly 10 digits.';
+            return normalizePhone(value).length === 10 || 'Phone number must contain exactly 10 digits.';
           }
         }}
         render={({ field: { ref, value, ...field } }) => (

@@ -22,6 +22,7 @@ import { COMPANY_TYPES } from '../../../../constants';
 import { useAuth } from '../../../../contexts/auth/auth';
 import { useEntityContext } from '../../../../contexts/entityContext/entityContext';
 import { US_STATES } from '../../../../constants/usStates';
+import { normalizePhone } from '../../../../utils/formatters/formatPhoneNumber';
 
 interface CompanyStepProps {
   onComplete: (companyId: number, companyName: string) => void;
@@ -44,8 +45,6 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
   const [newCompanyCounty, setNewCompanyCounty] = useState('');
   const [newCompanyZipCode, setNewCompanyZipCode] = useState('');
   const [error, setError] = useState<string | null>(null);
-
-  const normalizePhone = (val: string): string => val.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1');
 
   const { data: workspaceData, isLoading: isLoadingCompanies } = useQuery({
     queryKey: ['onboarding-companies'],

@@ -18,6 +18,7 @@ import { ApiClient, CompanyAttributes } from '../../../api';
 import { COMPANY_TYPES } from '../../../constants';
 import { useNotify } from '../../../contexts/notifications/notifications';
 import { US_STATES } from '../../../constants/usStates';
+import { normalizePhone } from '../../../utils/formatters/formatPhoneNumber';
 
 const noBottomLineStyles = {
   '& .MuiInputBase-root:not(.Mui-disabled, .Mui-error)': {
@@ -121,7 +122,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = props => {
         county: (data as any).county || null,
         zip_code: (data as any).zip_code || null,
         email: data.email || null,
-        phone: data.phone ? data.phone.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1') : null
+        phone: data.phone ? normalizePhone(data.phone) : null
       });
       queryClient.removeQueries({ queryKey: ['company'] });
       notify(isEdit ? 'Company has been updated successfully' : 'Company has been successfully created');
@@ -326,8 +327,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = props => {
             {...register('phone', {
               validate: value => {
                 if (!value) return true;
-                const digits = value.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1');
-                return digits.length === 10 || 'Phone number must contain exactly 10 digits.';
+                return normalizePhone(value).length === 10 || 'Phone number must contain exactly 10 digits.';
               }
             })}
           />
