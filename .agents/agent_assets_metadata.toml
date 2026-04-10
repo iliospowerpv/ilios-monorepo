@@ -1,5 +1,22 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "beAZtJJ67mjvOtpbM_k9l"
+uri = "file://attached_assets/generated_images/hero_solar.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "aZNNTCYfROE4etDmuDjou"
+uri = "file://attached_assets/generated_images/ai_documents.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "VZ5iPcaS0gEd77CM6_jf4"
+uri = "file://attached_assets/generated_images/real_estate_portfolio.png"
+type = "image"
+title = "generated_image"
 
 [[outputs]]
 id = "ZYhW7OC828Dwm2tGbJZVP"
@@ -12,3 +29,9 @@ id = "qav7G-ZINZMyEdKyhmf12"
 uri = "file://screenshots/data-room-marketing-focused.png"
 type = "image"
 title = "Data Room - Focused / Tighter Crop"
+
+[[outputs]]
+id = "4uzuJQmjflQO3qwrsTsK-"
+uri = "file://screenshots/iliOS_Marketing_Deck_2026.pptx"
+type = "slides"
+title = "iliOS Marketing Deck 2026"
