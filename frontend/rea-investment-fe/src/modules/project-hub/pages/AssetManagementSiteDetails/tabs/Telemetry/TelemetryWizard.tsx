@@ -40,8 +40,8 @@ import type {
 
 const STEPS = ['Connection', 'Site Mapping', 'Device Mapping', 'Confirm'];
 const PROVIDERS = [
-  { value: 'kmc', label: 'KMC' },
-  { value: 'also_energy', label: 'Also Energy' }
+  { value: 'KMC', label: 'KMC' },
+  { value: 'Also Energy', label: 'Also Energy' }
 ];
 
 interface TelemetryWizardProps {
@@ -62,7 +62,7 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
   const [selectedConnectionId, setSelectedConnectionId] = useState<number | null>(readiness?.connection_id || null);
   const [newConnectionForm, setNewConnectionForm] = useState({
     name: '',
-    provider: 'also_energy',
+    provider: 'Also Energy',
     token: '',
     username: '',
     password: ''
@@ -91,7 +91,7 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
       setSelectedConnectionId(readiness?.connection_id || null);
       setNewConnectionForm({
         name: '',
-        provider: 'also_energy',
+        provider: 'Also Energy',
         token: '',
         username: '',
         password: ''
@@ -177,8 +177,8 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
     const provider = newConnectionForm.provider;
     const payload = {
       provider,
-      ...(provider === 'kmc' ? { token: newConnectionForm.token } : {}),
-      ...(provider === 'also_energy'
+      ...(provider === 'KMC' ? { token: newConnectionForm.token } : {}),
+      ...(provider === 'Also Energy'
         ? { username: newConnectionForm.username, password: newConnectionForm.password }
         : {})
     };
@@ -198,8 +198,8 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
           await createConnectionMutation.mutateAsync({
             name: newConnectionForm.name,
             provider: newConnectionForm.provider,
-            ...(newConnectionForm.provider === 'kmc' ? { token: newConnectionForm.token } : {}),
-            ...(newConnectionForm.provider === 'also_energy'
+            ...(newConnectionForm.provider === 'KMC' ? { token: newConnectionForm.token } : {}),
+            ...(newConnectionForm.provider === 'Also Energy'
               ? { username: newConnectionForm.username, password: newConnectionForm.password }
               : {})
           });
@@ -359,7 +359,7 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
                   </Select>
                 </FormControl>
 
-                {newConnectionForm.provider === 'kmc' && (
+                {newConnectionForm.provider === 'KMC' && (
                   <TextField
                     fullWidth
                     label="API Token"
@@ -370,7 +370,7 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
                   />
                 )}
 
-                {newConnectionForm.provider === 'also_energy' && (
+                {newConnectionForm.provider === 'Also Energy' && (
                   <>
                     <TextField
                       fullWidth
