@@ -212,7 +212,7 @@ export const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ open, onCl
 
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
-                label="System Size AC (MW)"
+                label="System Size AC (kW)"
                 fullWidth
                 error={!!errors.system_size_ac}
                 helperText={errors.system_size_ac?.message}
@@ -225,7 +225,7 @@ export const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ open, onCl
               />
 
               <TextField
-                label="System Size DC (MW)"
+                label="System Size DC (kW)"
                 fullWidth
                 error={!!errors.system_size_dc}
                 helperText={errors.system_size_dc?.message}
