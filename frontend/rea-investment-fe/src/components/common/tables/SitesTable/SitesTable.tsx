@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@mui/material';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
 import BaseTable from '../BaseTable/BaseTable';
 import SearchAndActions from '../components/SearchAndActions/SearchAndActions';
 import { ColDef, GridApi, RowClickedEvent } from 'ag-grid-community';
@@ -8,6 +10,7 @@ import { cloneDeep } from 'lodash';
 import FiltersModal from '../components/FiltersModal/FiltersModal';
 import ColumnsModal from '../components/ColumnsModal/ColumnsModal';
 import { useAccess } from '../../../../hooks/access/access';
+import ProjectImportWizard from '../../ProjectImport/ProjectImportWizard';
 
 interface ColumnProp extends ColDef {
   isDefault: boolean;
@@ -17,9 +20,10 @@ interface ColumnProp extends ColDef {
 interface SitesTableProps {
   columns: ColumnProp[];
   companyId?: number;
+  companyName?: string;
 }
 
-const SitesTable: React.FC<SitesTableProps> = ({ columns, companyId }) => {
+const SitesTable: React.FC<SitesTableProps> = ({ columns, companyId, companyName }) => {
   const navigate = useNavigate();
   const { isFullAccess, isUserParentCompany } = useAccess(companyId);
   const basicTableRef = useRef<{ getApi: () => GridApi | undefined }>(null);
@@ -28,7 +32,15 @@ const SitesTable: React.FC<SitesTableProps> = ({ columns, companyId }) => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterOpen, setFilterOpen] = React.useState(false);
   const [columnsOpen, setColumnsOpen] = React.useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const showAddBtn = !!companyId && isFullAccess && isUserParentCompany;
+
+  const refreshGrid = useCallback(() => {
+    const api = basicTableRef.current?.getApi();
+    if (api) {
+      api.refreshServerSide({ purge: true });
+    }
+  }, []);
 
   const serverSideDatasource = useMemo(() => {
     return {
@@ -136,6 +148,20 @@ const SitesTable: React.FC<SitesTableProps> = ({ columns, companyId }) => {
         btnAddLabel="Add a New Project"
         onAdd={handleAddClick}
         showAdd={showAddBtn}
+        customActions={
+          showAddBtn ? (
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<FileUploadIcon />}
+              onClick={() => setImportOpen(true)}
+              size="small"
+              sx={{ mr: 1 }}
+            >
+              Import Projects
+            </Button>
+          ) : undefined
+        }
       />
       <BaseTable
         ref={basicTableRef}
@@ -146,6 +172,15 @@ const SitesTable: React.FC<SitesTableProps> = ({ columns, companyId }) => {
       />
       <FiltersModal open={filterOpen} handleClose={handleFilterClose} />
       <ColumnsModal open={columnsOpen} columns={colModals} onClose={handleColumnsClose} onApply={handleColumnsApply} />
+      {companyId && (
+        <ProjectImportWizard
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          companyId={companyId}
+          companyName={companyName || `Company #${companyId}`}
+          onImportComplete={refreshGrid}
+        />
+      )}
     </>
   );
 };

@@ -29,6 +29,8 @@ from app.schema.project_entity import (
 )
 from app.schema.user import CurrentUserSchema
 from app.static.entities import EntityType
+from app.helpers.permission_guards import require_module_permission
+from app.static.permissions import PermissionsModules
 
 router = APIRouter(prefix="/entities")
 logger = logging.getLogger(__name__)

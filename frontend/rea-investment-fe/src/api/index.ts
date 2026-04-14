@@ -21,6 +21,7 @@ import { buildAdminApi } from './admin';
 import { createContactsApi } from './contacts';
 import { createEntitiesApi } from './entities';
 import { financeIntegrations, financeData } from './financeIntegrations';
+import { buildProjectImportApi } from './project-import';
 
 export const ApiClient = Object.freeze({
   _tokenManager: tokenManager,
@@ -46,7 +47,8 @@ export const ApiClient = Object.freeze({
   contacts: createContactsApi(httpClient),
   ...createEntitiesApi(httpClient),
   financeIntegrations,
-  financeData
+  financeData,
+  projectImport: buildProjectImportApi(httpClient)
 });
 
 export type {

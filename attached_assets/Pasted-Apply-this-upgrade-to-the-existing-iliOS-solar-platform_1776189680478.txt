@@ -1,0 +1,319 @@
+Apply this upgrade to the existing iliOS / solar platform codebase.
+
+FEATURE TO IMPLEMENT:
+Add a project import tool that allows an admin or authorized user to import a spreadsheet of projects under a single selected company.
+
+GOAL:
+A user should be able to:
+1. Open a company record
+2. Click “Import Projects”
+3. Upload a spreadsheet (CSV or Excel)
+4. Map spreadsheet columns to project fields
+5. Review validation errors before import
+6. Import all valid rows as projects under that company
+
+IMPORTANT:
+This is a real implementation task, not a mockup.
+Build the full front-end, back-end, parsing, validation, preview, and database import workflow.
+
+-----------------------------------
+CORE BUSINESS RULE
+-----------------------------------
+
+All imported project rows must be created under ONE selected company.
+
+That means:
+- the user starts from a company detail page or selects a company first
+- every imported project inherits that companyId automatically
+- the spreadsheet does NOT need to provide company linkage unless used only as a validation reference
+
+-----------------------------------
+SUPPORTED FILE TYPES
+-----------------------------------
+
+Support:
+- .csv
+- .xlsx
+
+Use a reliable parser for both formats.
+
+-----------------------------------
+IMPORT ENTRY POINT
+-----------------------------------
+
+Add an “Import Projects” button in the Company view.
+
+Recommended placement:
+- company detail page header
+- project list section within a company
+
+Flow:
+- user opens one company
+- clicks “Import Projects”
+- upload modal/page opens
+- selected company is clearly displayed
+- import applies only to that company
+
+-----------------------------------
+IMPORT UX REQUIREMENTS
+-----------------------------------
+
+Build a clean multi-step import flow:
+
+Step 1: Upload file
+- drag-and-drop or browse file
+- accept CSV and Excel
+
+Step 2: Parse and preview headers
+- show detected columns
+- show first few sample rows
+
+Step 3: Field mapping
+Allow user to map spreadsheet columns to platform fields
+
+Example target fields:
+- Project Name
+- Project Address
+- City
+- State
+- ZIP
+- County
+- Latitude
+- Longitude
+- Coordinates
+- Status
+- Stage
+- Capacity / MW
+- Utility
+- ISO / RTO
+- EPC
+- Developer
+- Notes
+- Any custom fields already supported by the system
+
+Step 4: Validation preview
+- show row count
+- show valid vs invalid rows
+- display row-level errors
+- allow user to fix mapping before import
+
+Step 5: Confirm import
+- user confirms import
+- system imports valid rows
+- optionally reject invalid rows or skip invalid rows with clear reporting
+
+Step 6: Import results
+- show number imported
+- show number skipped
+- downloadable error report if possible
+
+-----------------------------------
+FIELD HANDLING LOGIC
+-----------------------------------
+
+The importer must handle both standard and flexible coordinate input.
+
+Coordinate rules:
+- if spreadsheet has one “Coordinates” column like "34.1234, -84.2345", parse into latitude + longitude
+- if spreadsheet has separate Latitude and Longitude columns, combine into coordinates string for storage
+- store all three consistently if the platform supports:
+  - latitude
+  - longitude
+  - coordinates
+
+Address handling:
+- trim whitespace
+- normalize blanks to null
+- preserve original values where safe
+
+Text handling:
+- trim leading/trailing whitespace
+- preserve user-entered names and notes
+- do not silently overwrite with bad defaults
+
+-----------------------------------
+VALIDATION RULES
+-----------------------------------
+
+Validate each row before import.
+
+Required minimum fields:
+- Project Name
+- Company association (inherited from selected company, not spreadsheet)
+- any other required fields already enforced by current schema
+
+Validate where applicable:
+- latitude between -90 and 90
+- longitude between -180 and 180
+- coordinates format if provided
+- numeric fields are valid numbers
+- dates are valid dates
+- enum/status values match allowed system values, or provide mapping support
+
+Handle:
+- blank rows
+- duplicate headers
+- duplicate project names
+- invalid coordinate strings
+- missing required fields
+- unexpected columns
+
+Do not crash on malformed rows.
+
+-----------------------------------
+DUPLICATE HANDLING
+-----------------------------------
+
+Implement duplicate detection before import.
+
+Recommended duplicate checks:
+- same project name under same company
+- optional match on address
+- optional match on coordinates
+
+If possible, give the user options:
+- skip duplicates
+- import as new anyway
+- update existing project only if explicitly supported
+
+Default safe behavior:
+- flag duplicates for review
+- do not overwrite existing records automatically
+
+-----------------------------------
+BACKEND REQUIREMENTS
+-----------------------------------
+
+Build secure backend import support.
+
+Requirements:
+- parse file server-side or securely client-side with server validation
+- validate user permissions
+- validate selected company exists
+- create all imported projects with selected companyId
+- use transactions where possible
+- return structured import results
+
+Recommended endpoint examples:
+POST /companies/:id/projects/import
+POST /projects/import?companyId=:id
+
+Response should include:
+- total rows processed
+- rows imported
+- rows skipped
+- validation errors by row
+
+-----------------------------------
+AUTHORIZATION
+-----------------------------------
+
+Only authorized users should be able to import projects.
+
+At minimum:
+- admin
+- or users with company/project create permission
+
+Enforce permission checks on backend, not just frontend.
+
+Return 403 for unauthorized users.
+
+-----------------------------------
+DATABASE / MODEL REQUIREMENTS
+-----------------------------------
+
+Use existing project schema wherever possible.
+
+When creating imported projects:
+- assign companyId from selected company
+- populate mapped fields only
+- preserve audit metadata such as createdBy if supported
+- keep import source metadata if useful
+
+Optional but recommended:
+Add metadata fields such as:
+- importedAt
+- importedBy
+- importBatchId
+- importSourceFileName
+
+-----------------------------------
+ERROR HANDLING
+-----------------------------------
+
+If import fails:
+- return clear row-level errors
+- do not partially corrupt data
+- use transaction batching if appropriate
+- show user-friendly messages in UI
+
+Preferred behavior:
+- import valid rows
+- skip invalid rows
+- provide an error summary
+
+Optional:
+- allow “fail entire import if any row is invalid”
+
+-----------------------------------
+AUDITABILITY
+-----------------------------------
+
+Track import actions:
+- company imported into
+- user who performed import
+- timestamp
+- file name
+- row counts
+- success/failure summary
+
+This is important for enterprise traceability.
+
+-----------------------------------
+UI DETAILS
+-----------------------------------
+
+In the company page, after import:
+- refresh project list
+- show success toast
+- highlight imported count
+- allow user to review failed rows if any
+
+Recommended button labels:
+- Import Projects
+- Upload Spreadsheet
+- Review Mapping
+- Start Import
+
+-----------------------------------
+TESTING REQUIREMENTS
+-----------------------------------
+
+Include a test plan or tests for:
+- valid CSV import
+- valid XLSX import
+- missing required column
+- invalid coordinates
+- duplicate rows
+- duplicate existing project
+- unauthorized user
+- company not found
+- row-level validation reporting
+
+-----------------------------------
+DELIVERABLE
+-----------------------------------
+
+Implement the full working feature in the existing iliOS platform and provide:
+1. frontend import flow
+2. backend import endpoint(s)
+3. spreadsheet parsing support
+4. field mapping UI
+5. validation logic
+6. duplicate handling
+7. import summary/results UI
+8. list of files changed
+9. assumptions made
+10. any migrations or package installs required
+
+Do not leave this as a partial scaffold. Build the complete working project import feature.

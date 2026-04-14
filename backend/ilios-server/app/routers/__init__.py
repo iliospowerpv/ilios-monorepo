@@ -1,5 +1,5 @@
 from .account import account_router
-from .assets_management import companies_router, device_documents_router, devices_router, sites_router
+from .assets_management import companies_router, device_documents_router, devices_router, project_import_router, sites_router
 from .auth import auth_router
 from .breadcrumbs import breadcrumbs_router
 from .comments import comments_router

@@ -30,6 +30,13 @@ router = APIRouter(prefix="/deals/{deal_id}/entity-assignments")
 logger = logging.getLogger(__name__)
 
 
+def _get_deal_or_404(db_session: Session, deal_id: int) -> Deal:
+    deal = db_session.query(Deal).filter(Deal.id == deal_id).first()
+    if not deal:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Deal {deal_id} not found")
+    return deal
+
+
 def _assignment_to_response(a) -> DealEntityAssignmentResponse:
     entity_name = a.entity.name if a.entity else None
     entity_type = a.entity.entity_type if a.entity else None
@@ -58,9 +65,7 @@ async def list_assignments_endpoint(
     current_user: CurrentUserSchema = Depends(get_current_user),
     db_session: Session = Depends(get_session),
 ):
-    deal = db_session.query(Deal).filter(Deal.id == deal_id).first()
-    if not deal:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Deal {deal_id} not found")
+    deal = _get_deal_or_404(db_session, deal_id)
 
     items = list_deal_entity_assignments(db_session, deal_id=deal_id, role=role)
     return DealEntityAssignmentListResponse(
@@ -76,9 +81,7 @@ async def create_assignment_endpoint(
     current_user: CurrentUserSchema = Depends(get_current_user),
     db_session: Session = Depends(get_session),
 ):
-    deal = db_session.query(Deal).filter(Deal.id == deal_id).first()
-    if not deal:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Deal {deal_id} not found")
+    deal = _get_deal_or_404(db_session, deal_id)
 
     entity = get_entity(db_session, body.entity_id)
     if not entity:
@@ -111,6 +114,8 @@ async def update_assignment_endpoint(
     current_user: CurrentUserSchema = Depends(get_current_user),
     db_session: Session = Depends(get_session),
 ):
+    deal = _get_deal_or_404(db_session, deal_id)
+
     assignment = get_deal_entity_assignment(db_session, assignment_id)
     if not assignment or assignment.deal_id != deal_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Assignment not found")
@@ -131,6 +136,8 @@ async def delete_assignment_endpoint(
     current_user: CurrentUserSchema = Depends(get_current_user),
     db_session: Session = Depends(get_session),
 ):
+    deal = _get_deal_or_404(db_session, deal_id)
+
     assignment = get_deal_entity_assignment(db_session, assignment_id)
     if not assignment or assignment.deal_id != deal_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Assignment not found")

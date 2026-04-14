@@ -162,7 +162,7 @@ const columns = [
 ];
 
 const SitesTab: React.FC<AssetManagementCompanyDetailsTabProps> = ({ companyDetails }) => (
-  <SitesTable columns={columns} companyId={companyDetails.id} />
+  <SitesTable columns={columns} companyId={companyDetails.id} companyName={companyDetails.name} />
 );
 
 export default SitesTab;

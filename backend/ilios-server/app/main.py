@@ -52,6 +52,7 @@ from .routers import (
     reports_sites_router,
     sales_router,
     site_visits_router,
+    project_import_router,
     sites_router,
     sv_uploads_router,
     tasks_router,
@@ -154,6 +155,7 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
     # assets management related APIs
     app.include_router(companies_router, prefix="/api/companies", tags=[tags.COMPANIES_TAG])
     app.include_router(sites_router, prefix="/api/sites", tags=[tags.SITES_TAG])
+    app.include_router(project_import_router, prefix="/api/projects/import", tags=[tags.SITES_TAG])
     app.include_router(devices_router, prefix="/api/sites/{site_id}/devices", tags=[tags.DEVICES_TAG])
     app.include_router(
         device_documents_router,

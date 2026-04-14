@@ -17,7 +17,7 @@ from app.crud.project_entity import (
 from app.db.session import get_session
 from app.helpers.authentication import get_current_user
 from app.helpers.authorization.project_access import get_authorized_site
-from app.models.site import Site
+from app.helpers.permission_guards import require_module_permission
 from app.schema.project_entity import (
     EntityRelationshipCreate,
     EntityRelationshipListResponse,
@@ -26,6 +26,7 @@ from app.schema.project_entity import (
 )
 from app.schema.user import CurrentUserSchema
 from app.static.entities import EntityRelationshipRole
+from app.static.permissions import PermissionsModules
 
 router = APIRouter(prefix="/projects/{site_id}/entity-relationships")
 logger = logging.getLogger(__name__)
@@ -62,9 +63,15 @@ async def list_relationships_endpoint(
     current_user: CurrentUserSchema = Depends(get_current_user),
     db_session: Session = Depends(get_session),
 ):
-    site = db_session.query(Site).filter(Site.id == site_id).first()
-    if not site:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Project {site_id} not found")
+    site = get_authorized_site(site_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=site.company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.assets_management.value,
+        action="view",
+        project_id=site_id,
+    )
 
     items = list_entity_relationships(db_session, site_id=site_id, role=role)
     return EntityRelationshipListResponse(
@@ -80,9 +87,15 @@ async def create_relationship_endpoint(
     current_user: CurrentUserSchema = Depends(get_current_user),
     db_session: Session = Depends(get_session),
 ):
-    site = db_session.query(Site).filter(Site.id == site_id).first()
-    if not site:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Project {site_id} not found")
+    site = get_authorized_site(site_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=site.company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.assets_management.value,
+        action="edit",
+        project_id=site_id,
+    )
 
     entity = get_entity(db_session, body.entity_id)
     if not entity:
@@ -115,6 +128,16 @@ async def update_relationship_endpoint(
     current_user: CurrentUserSchema = Depends(get_current_user),
     db_session: Session = Depends(get_session),
 ):
+    site = get_authorized_site(site_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=site.company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.assets_management.value,
+        action="edit",
+        project_id=site_id,
+    )
+
     rel = get_entity_relationship(db_session, relationship_id)
     if not rel or rel.site_id != site_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Relationship not found")
@@ -135,6 +158,16 @@ async def delete_relationship_endpoint(
     current_user: CurrentUserSchema = Depends(get_current_user),
     db_session: Session = Depends(get_session),
 ):
+    site = get_authorized_site(site_id, current_user, db_session)
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=site.company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.assets_management.value,
+        action="edit",
+        project_id=site_id,
+    )
+
     rel = get_entity_relationship(db_session, relationship_id)
     if not rel or rel.site_id != site_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Relationship not found")
