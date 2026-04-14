@@ -38,7 +38,7 @@ export const ProjectsPickerView: React.FC = () => {
     }
     setCurrentProject({ id: project.id, name: project.name });
     setCurrentScope('project');
-    navigate(`/projects/${project.id}`);
+    navigate(`/project-hub/projects/${project.id}`);
   };
 
   if (isLoading) {

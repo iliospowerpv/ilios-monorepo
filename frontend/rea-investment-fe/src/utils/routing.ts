@@ -75,7 +75,7 @@ export function getCanonicalRoute(scope: ScopeType, params?: LensRouteParams): s
       return '/companies';
     case 'project':
       if (params?.projectId) {
-        return `/projects/${params.projectId}`;
+        return `/project-hub/projects/${params.projectId}`;
       }
       return '/projects';
     default:

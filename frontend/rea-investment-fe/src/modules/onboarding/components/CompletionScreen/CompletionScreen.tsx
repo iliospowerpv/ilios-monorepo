@@ -81,7 +81,7 @@ export const CompletionScreen: React.FC<CompletionScreenProps> = ({
           variant="contained"
           size="large"
           startIcon={<FolderIcon />}
-          onClick={() => navigate(`/projects/${projectId}`)}
+          onClick={() => navigate(`/project-hub/projects/${projectId}`)}
           fullWidth
         >
           Go to Project Overview

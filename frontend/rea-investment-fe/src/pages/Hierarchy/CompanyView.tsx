@@ -41,7 +41,7 @@ export const CompanyView: React.FC = () => {
   const handleProjectClick = (project: { id: number; name: string }) => {
     setCurrentProject(project);
     setCurrentScope('project');
-    navigate(`/projects/${project.id}`);
+    navigate(`/project-hub/projects/${project.id}`);
   };
 
   const handleProjectHubAction = useCallback(

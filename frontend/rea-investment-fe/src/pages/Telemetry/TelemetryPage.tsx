@@ -82,7 +82,7 @@ export const TelemetryPage: React.FC = () => {
         )}
         <Link
           component={RouterLink}
-          to={`/projects/${project.id}`}
+          to={`/project-hub/projects/${project.id}`}
           underline="hover"
           sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
         >

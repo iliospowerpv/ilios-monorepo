@@ -222,7 +222,7 @@ export const EntityContextProvider: React.FC<{ children: React.ReactNode }> = ({
           return '/companies';
         case 'project':
           if (currentProject) {
-            return `/projects/${currentProject.id}`;
+            return `/project-hub/projects/${currentProject.id}`;
           }
           return '/projects';
       }
@@ -303,7 +303,7 @@ export const EntityContextProvider: React.FC<{ children: React.ReactNode }> = ({
         const basePath = getModuleBasePath(currentModule);
         navigate(`${basePath}/scope/project/${project.id}`);
       } else {
-        navigate(`/projects/${project.id}`);
+        navigate(`/project-hub/projects/${project.id}`);
       }
     },
     [currentModule, currentCompany, navigate, getModuleBasePath]

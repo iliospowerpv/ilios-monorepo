@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, createBrowserRouter, createRoutesFromElements, Navigate } from 'react-router-dom';
+import { Route, createBrowserRouter, createRoutesFromElements, Navigate, useParams } from 'react-router-dom';
 // Providers
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -24,7 +24,7 @@ import Index from './pages/Index/Index';
 import { AccountSettings } from './pages/Account';
 import { SecuritySettings } from './pages/Security';
 import { HelpResources } from './pages/Help';
-import { PortfolioView, CompaniesPickerView, CompanyView, ProjectsPickerView, ProjectView } from './pages/Hierarchy';
+import { PortfolioView, CompaniesPickerView, CompanyView, ProjectsPickerView } from './pages/Hierarchy';
 import { TelemetryPage, createTelemetryHandle, TelemetryRedirect } from './pages/Telemetry';
 import { ScopedModuleRoute } from './components/layout/ScopedModuleRoute';
 import { DeprecatedRouteRedirect } from './components/common/DeprecatedRouteRedirect';
@@ -86,7 +86,11 @@ import {
   createProjectLevelHandle
 } from './modules/portfolio-admin';
 
-// initialization
+const ProjectLandingRedirect: React.FC = () => {
+  const { projectId } = useParams();
+  return <Navigate to={`/project-hub/projects/${projectId}`} replace />;
+};
+
 const queryClient = new QueryClient();
 
 const AdminType = {
@@ -155,7 +159,7 @@ const router = createBrowserRouter(
         <Route path="/companies" element={<CompaniesPickerView />} />
         <Route path="/companies/:companyId" element={<CompanyView />} />
         <Route path="/projects" element={<ProjectsPickerView />} />
-        <Route path="/projects/:projectId" element={<ProjectView />} />
+        <Route path="/projects/:projectId" element={<ProjectLandingRedirect />} />
         <Route path="/projects/:projectId/telemetry" handle={createTelemetryHandle()} element={<TelemetryPage />} />
 
         {/* Dashboard redirects to Home (deprecated) */}
