@@ -1,0 +1,227 @@
+Apply this upgrade directly to the existing iliOS platform codebase.
+
+FEATURE TO IMPLEMENT:
+Add admin-only archive functionality for Companies and Projects/Sites.
+
+IMPORTANT:
+This is a real implementation task. Do not create mockups only. Update the actual frontend, backend, database models, API routes, authorization checks, and queries so this works end-to-end in the live app.
+
+PRIMARY REQUIREMENTS:
+1. Only admins can archive or restore
+2. Use soft delete / archive, not permanent delete
+3. Require confirmation modal before archive
+4. Preserve all related data
+5. Add restore / undo capability
+6. Hide archived records from normal active views
+7. Build this thoroughly and production-ready
+
+-----------------------------------
+IMPLEMENTATION REQUIREMENTS
+-----------------------------------
+
+ARCHIVE MODEL
+For both Companies and Projects/Sites, add archive support with fields such as:
+- isArchived: boolean default false
+- archivedAt: datetime nullable
+- archivedBy: user id nullable
+
+Optional:
+- archiveReason nullable
+
+Do not hard delete records.
+
+-----------------------------------
+BACKEND / API
+-----------------------------------
+
+Create or update secure endpoints:
+
+PATCH /companies/:id/archive
+PATCH /companies/:id/restore
+PATCH /projects/:id/archive
+PATCH /projects/:id/restore
+
+Requirements:
+- validate record exists
+- validate current user is admin
+- return 403 for non-admins
+- handle already archived / already restored states safely
+- return clear JSON responses
+- log archive and restore actions
+
+Archiving behavior:
+- set isArchived = true
+- set archivedAt = current timestamp
+- set archivedBy = current admin user id
+
+Restore behavior:
+- set isArchived = false
+- clear archivedAt
+- clear archivedBy or preserve in audit logs depending on architecture
+
+-----------------------------------
+AUTHORIZATION
+-----------------------------------
+
+Do NOT rely on frontend-only hiding.
+Enforce admin permission on the server for:
+- archive company
+- restore company
+- archive project/site
+- restore project/site
+
+If user is not admin:
+- block action
+- return 403
+- show clean frontend error message
+
+-----------------------------------
+DATA INTEGRITY
+-----------------------------------
+
+For Company archive:
+Preferred behavior:
+- archiving a company also archives all associated projects/sites
+- confirmation modal must warn the admin of this cascade behavior
+
+Required warning text concept:
+“Archiving this company will also archive all associated projects/sites. This can be undone by an admin.”
+
+For Project/Site archive:
+- preserve files
+- preserve comments
+- preserve activity history
+- preserve analytics/history
+- remove from active workflows and active lists only
+
+-----------------------------------
+FRONTEND
+-----------------------------------
+
+Update the existing UI so admins see:
+- Archive Company button on company detail page
+- Archive Project/Site button on project/site detail page
+
+Non-admins should not see archive/restore controls.
+
+On click:
+Show confirmation modal.
+
+Modal requirements:
+Title:
+- Archive Company?
+- Archive Project?
+Body:
+- This record will be removed from active views.
+- Related data will be preserved.
+- This action can be undone by an admin.
+- If company: warn that associated projects/sites will also be archived.
+
+Buttons:
+- Cancel
+- Confirm Archive
+
+After successful archive:
+- show success toast
+- refresh or redirect cleanly
+- archived item should disappear from normal active views
+
+Add restore controls in archived views.
+
+-----------------------------------
+ARCHIVED VIEWS
+-----------------------------------
+
+Build an admin-accessible archived records experience.
+
+At minimum:
+- archived companies list
+- archived projects/sites list
+- restore action for each archived record
+
+Also update existing tables, search, dropdowns, selectors, dashboards, and related pickers so archived items are excluded by default.
+
+Support filters:
+- Active
+- Archived
+- All (admin only if appropriate)
+
+-----------------------------------
+UNDO / RESTORE
+-----------------------------------
+
+Add two restore mechanisms:
+
+1. Immediate undo option
+- after archive, show toast/banner with Undo action if feasible
+
+2. Permanent restore path
+- archived records page or archived filter view
+- admins can restore anytime
+
+Restore should fully return the record to active state.
+
+If restoring a company, restore child projects/sites if they were archived as part of that company archive flow.
+
+-----------------------------------
+AUDIT LOGGING
+-----------------------------------
+
+Track archive and restore actions:
+- record type
+- record id
+- action = archived or restored
+- performed by user id
+- timestamp
+
+This must be stored in audit logs or activity history.
+
+-----------------------------------
+QUERY / APPLICATION LOGIC
+-----------------------------------
+
+Update all relevant queries and loaders so archived records do not appear in:
+- active company lists
+- active project/site lists
+- dashboards
+- global search
+- dropdowns/selectors
+- related references
+
+Only include archived records when explicitly requested by admin filters/views.
+
+-----------------------------------
+EDGE CASES
+-----------------------------------
+
+Handle safely:
+- archiving an already archived record
+- restoring a non-archived record
+- non-admin calling archive endpoints
+- company archive with children
+- redirecting after archiving the page currently being viewed
+- archived records showing up in old queries
+- restore failures due to related data state
+
+-----------------------------------
+UI LANGUAGE
+-----------------------------------
+
+Use “Archive” and “Restore” in the UI, not destructive “Delete,” unless there is a separate hidden permanent delete flow for super admins.
+
+This should feel safe, enterprise-grade, and hard to misuse.
+
+-----------------------------------
+DELIVERABLE
+-----------------------------------
+
+Make the actual code changes now in the existing iliOS project and provide:
+1. updated backend implementation
+2. updated frontend implementation
+3. model/schema changes
+4. any migration required
+5. summary of files changed
+6. note of any assumptions made
+7. test coverage or test plan for archive/restore behavior
+
+Do not leave this as a partial scaffold. Implement the full working feature.
