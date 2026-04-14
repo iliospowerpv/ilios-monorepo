@@ -12,10 +12,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
+import { SearchableSelect } from '../../../../../../components/common/SearchableSelect/SearchableSelect';
 
 import RecursiveAccordion from './components/RecursiveAccordion/RecursiveAccordion';
 import { ApiClient, DiligenceDocument, DiligenceItem } from '../../../../../../api';
@@ -177,20 +174,16 @@ const DiligenceList: React.FC = () => {
               multiline
               rows={2}
             />
-            <FormControl fullWidth required>
-              <InputLabel>Section</InputLabel>
-              <Select
-                value={selectedSectionId}
-                label="Section"
-                onChange={e => setSelectedSectionId(e.target.value as number)}
-              >
-                {sections.map(section => (
-                  <MenuItem key={section.id} value={section.id}>
-                    {section.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <SearchableSelect
+              options={sections.map(section => ({
+                label: section.name,
+                value: section.id
+              }))}
+              value={selectedSectionId || null}
+              onChange={val => setSelectedSectionId(val as number)}
+              label="Section"
+              required
+            />
           </Box>
         </DialogContent>
         <DialogActions>

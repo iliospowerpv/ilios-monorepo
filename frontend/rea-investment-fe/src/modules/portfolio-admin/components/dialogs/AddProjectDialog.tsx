@@ -7,11 +7,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import FormHelperText from '@mui/material/FormHelperText';
-import InputLabel from '@mui/material/InputLabel';
+import { SearchableSelect } from '../../../../components/common/SearchableSelect/SearchableSelect';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
@@ -165,17 +161,20 @@ export const AddProjectDialog: React.FC<AddProjectDialogProps> = ({
                 control={control}
                 rules={{ required: 'State is required' }}
                 render={({ field }) => (
-                  <FormControl error={!!errors.state} fullWidth required>
-                    <InputLabel>State</InputLabel>
-                    <Select {...field} label="State">
-                      {Object.entries(State).map(([code, name]) => (
-                        <MenuItem key={code} value={code}>
-                          {name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {errors.state && <FormHelperText>{errors.state.message}</FormHelperText>}
-                  </FormControl>
+                  <SearchableSelect
+                    options={Object.entries(State).map(([code, name]) => ({
+                      label: name,
+                      value: code
+                    }))}
+                    value={field.value || null}
+                    onChange={val => field.onChange(val)}
+                    onBlur={field.onBlur}
+                    inputRef={field.ref}
+                    label="State"
+                    error={!!errors.state}
+                    helperText={errors.state?.message}
+                    required
+                  />
                 )}
               />
             </Box>

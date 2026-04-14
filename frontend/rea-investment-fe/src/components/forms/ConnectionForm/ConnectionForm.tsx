@@ -6,17 +6,13 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
 
 import { ApiClient, Connection } from '../../../api';
 import { useNotify } from '../../../contexts/notifications/notifications';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import { DAS_CONNECTION } from '../../../utils/asset-managment';
-import MenuItem from '@mui/material/MenuItem';
-import FormHelperText from '@mui/material/FormHelperText';
-import CircularProgress from '@mui/material/CircularProgress';
 import { PasswordInputField } from '../PasswordInputField/PasswordInputField';
+import { DAS_CONNECTION } from '../../../utils/asset-managment';
+import { SearchableSelect, SearchableSelectOption } from '../../common/SearchableSelect/SearchableSelect';
 
 const noBottomLineStyles = {
   '& .MuiInputBase-root:not(.Mui-disabled, .Mui-error)': {
@@ -75,7 +71,12 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = props => {
     return result;
   }, [companyProviders]);
 
-  const providerOptions = connection.isNotSaved ? allowedProviders : DAS_CONNECTION;
+  const providerOptions = React.useMemo(() => {
+    return Object.entries(connection.isNotSaved ? allowedProviders : DAS_CONNECTION).map(([key, value]) => ({
+      label: value as string,
+      value: value as string
+    }));
+  }, [connection.isNotSaved, allowedProviders]);
 
   const {
     register,
@@ -212,29 +213,24 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = props => {
         control={control}
         rules={{ required: 'Data Provider is required field.' }}
         render={({ field }) => (
-          <FormControl error={!!errors.provider} variant="filled" required sx={noBottomLineStyles}>
-            <InputLabel error={!!errors.provider}>Data Provider</InputLabel>
-            <Select
-              ref={field.ref}
-              value={field.value}
-              error={!!errors.provider}
-              disabled={!connection.isNotSaved || isLoadingProviders}
-              label="Data Provider"
-              onBlur={field.onBlur}
-              onChange={event => {
-                field.onChange(event.target.value);
-                invalidToken && setInvalidToken(false);
-                clearErrors('token');
-              }}
-            >
-              {Object.entries(providerOptions).map(([key, value]) => (
-                <MenuItem key={key} value={value}>
-                  {value}
-                </MenuItem>
-              ))}
-            </Select>
-            {errors.provider?.message && <FormHelperText error>{errors.provider.message}</FormHelperText>}
-          </FormControl>
+          <SearchableSelect
+            options={providerOptions}
+            value={field.value ?? null}
+            onChange={val => {
+              field.onChange(val);
+              invalidToken && setInvalidToken(false);
+              clearErrors('token');
+            }}
+            onBlur={field.onBlur}
+            inputRef={field.ref}
+            label="Data Provider"
+            required
+            error={!!errors.provider}
+            helperText={errors.provider?.message}
+            variant="filled"
+            disabled={!connection.isNotSaved || isLoadingProviders}
+            formControlSx={noBottomLineStyles}
+          />
         )}
       />
       <TextField

@@ -5,15 +5,12 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
+import { SearchableSelect } from '../../../../components/common/SearchableSelect/SearchableSelect';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import FormHelperText from '@mui/material/FormHelperText';
+
 
 import { ApiClient } from '../../../../api';
 import type { UpdateMemberRequest, CompanyMember, RoleProfile } from '../../../../api';
@@ -139,39 +136,37 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
         )}
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <FormControl fullWidth>
-            <InputLabel>Role</InputLabel>
-            <Select value={selectedRole} onChange={e => setSelectedRole(e.target.value as RoleType)} label="Role">
-              <MenuItem value="company_admin">Admin</MenuItem>
-              <MenuItem value="contributor">Contributor</MenuItem>
-              <MenuItem value="read_only">Read Only</MenuItem>
-            </Select>
-            <FormHelperText>{ROLE_DESCRIPTIONS[selectedRole]}</FormHelperText>
-          </FormControl>
+          <SearchableSelect
+            options={[
+              { label: 'Admin', value: 'company_admin' },
+              { label: 'Contributor', value: 'contributor' },
+              { label: 'Read Only', value: 'read_only' }
+            ]}
+            value={selectedRole}
+            onChange={val => setSelectedRole(val as RoleType)}
+            label="Role"
+            helperText={ROLE_DESCRIPTIONS[selectedRole]}
+            disableClearable
+            fullWidth
+          />
 
           {level === 'company' && (
-            <FormControl fullWidth>
-              <InputLabel>Role Profile (Optional)</InputLabel>
-              <Select
-                value={selectedRoleProfileKey || ''}
-                onChange={e => setSelectedRoleProfileKey(e.target.value || null)}
-                label="Role Profile (Optional)"
-                disabled={isLoadingProfiles}
-              >
-                <MenuItem value="">
-                  <em>None - Use base role only</em>
-                </MenuItem>
-                {availableProfiles.map(profile => (
-                  <MenuItem key={profile.key} value={profile.key}>
-                    {profile.label}
-                  </MenuItem>
-                ))}
-              </Select>
-              {selectedProfile && <FormHelperText>{selectedProfile.description}</FormHelperText>}
-              {!selectedRoleProfileKey && (
-                <FormHelperText>Optionally assign a role profile for specialized module access</FormHelperText>
-              )}
-            </FormControl>
+            <SearchableSelect
+              options={[
+                { label: 'None - Use base role only', value: '' },
+                ...availableProfiles.map(profile => ({
+                  label: profile.label,
+                  value: profile.key
+                }))
+              ]}
+              value={selectedRoleProfileKey || ''}
+              onChange={val => setSelectedRoleProfileKey((val as string) || null)}
+              label="Role Profile (Optional)"
+              helperText={selectedProfile ? selectedProfile.description : (!selectedRoleProfileKey ? 'Optionally assign a role profile for specialized module access' : undefined)}
+              disabled={isLoadingProfiles}
+              disableClearable
+              fullWidth
+            />
           )}
         </Box>
       </DialogContent>

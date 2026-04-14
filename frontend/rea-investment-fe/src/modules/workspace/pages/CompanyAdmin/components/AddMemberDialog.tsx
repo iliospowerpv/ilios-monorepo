@@ -6,11 +6,8 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
 import Autocomplete from '@mui/material/Autocomplete';
+import { SearchableSelect } from '../../../../../components/common/SearchableSelect/SearchableSelect';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 
@@ -84,14 +81,17 @@ export const AddMemberDialog: React.FC<AddMemberDialogProps> = ({ open, onClose,
               />
             )}
           />
-          <FormControl fullWidth>
-            <InputLabel>Role</InputLabel>
-            <Select value={role} label="Role" onChange={e => setRole(e.target.value)}>
-              <MenuItem value="company_admin">Company Admin</MenuItem>
-              <MenuItem value="contributor">Contributor</MenuItem>
-              <MenuItem value="read_only">Read Only</MenuItem>
-            </Select>
-          </FormControl>
+          <SearchableSelect
+            options={[
+              { label: 'Company Admin', value: 'company_admin' },
+              { label: 'Contributor', value: 'contributor' },
+              { label: 'Read Only', value: 'read_only' }
+            ]}
+            value={role}
+            onChange={val => setRole(val as string)}
+            label="Role"
+            disableClearable
+          />
         </Box>
       </DialogContent>
       <DialogActions>

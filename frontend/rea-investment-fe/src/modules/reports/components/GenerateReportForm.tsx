@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import Stack from '@mui/material/Stack';
+import { useTheme } from '@mui/material/styles';
 import CompanySearchField from './CompanySearchField';
 import SiteSearchField from './SiteSearchField';
 import Button from '@mui/material/Button';
@@ -9,10 +10,7 @@ import Box from '@mui/material/Box';
 import { DesktopDatePicker } from '@mui/x-date-pickers/DesktopDatePicker';
 import dayjs from 'dayjs';
 import CustomParseFormatPlugin from 'dayjs/plugin/customParseFormat';
-import { StyledSelectItem } from '../../project-hub/pages/DeviceDetails/tabs/Overview/components/TechnicalDetailCard/TechnicalDetail.styles';
-import FormControl from '@mui/material/FormControl';
-import Select from '@mui/material/Select';
-import { useTheme } from '@mui/material/styles';
+import { SearchableSelect } from '../../../components/common/SearchableSelect/SearchableSelect';
 import { ApiClient } from '../../../api';
 dayjs.extend(CustomParseFormatPlugin);
 
@@ -64,15 +62,12 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({ onFilterChange }) => {
   });
 
   const onSubmit: SubmitHandler<DeviceFormFields> = async data => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    const selectedReport = reportsResponseData?.items.find(report => report.id === data.type);
     const filters = data;
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    filters.type = selectedReport;
-    filters.start_date = dayjs(data.start_date).format('YYYY-MM-DD');
-    filters.end_date = dayjs(data.end_date).format('YYYY-MM-DD');
+    filters.start_date = dayjs(data.start_date, 'YYYY-MM-DD', true).startOf('month').format('YYYY-MM-DD');
+    const selectedDate = dayjs(data.end_date);
+    const now = dayjs();
+    const isCurrentMonth = selectedDate.isSame(now, 'month');
+    filters.end_date = isCurrentMonth ? now.format('YYYY-MM-DD') : selectedDate.endOf('month').format('YYYY-MM-DD');
     onFilterChange(filters);
     reset(getValues());
   };
@@ -147,29 +142,27 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({ onFilterChange }) => {
             required: 'Report type is required field'
           }}
           render={({ field }) => (
-            <FormControl error={!!errors.type} required sx={{ minWidth: 200 }}>
-              <Select
-                inputRef={field.ref}
-                value={field.value || ''}
-                error={!!errors.type}
-                disabled={field.disabled}
-                onChange={field.onChange}
-                fullWidth
-                variant="outlined"
-                size="small"
-                displayEmpty
-              >
-                <StyledSelectItem value="">
-                  <Box sx={{ color: theme.palette.text.disabled }}>Report Type</Box>
-                </StyledSelectItem>
-                {reportsResponseData &&
-                  reportsResponseData.items.map(status => (
-                    <StyledSelectItem key={status.id} value={status.id}>
-                      {status.name}
-                    </StyledSelectItem>
-                  ))}
-              </Select>
-            </FormControl>
+            <SearchableSelect
+              options={(reportsResponseData?.items || []).map(report => ({
+                label: report.name,
+                value: report.id
+              }))}
+              value={(field.value as Type | undefined)?.id || null}
+              onChange={val => {
+                const report = reportsResponseData?.items.find(r => r.id === val);
+                field.onChange(report ?? undefined);
+              }}
+              onBlur={field.onBlur}
+              inputRef={field.ref}
+              label="Report Type"
+              error={!!errors.type}
+              required
+              disabled={field.disabled}
+              variant="outlined"
+              size="small"
+              placeholder="Report Type"
+              sx={{ minWidth: 200 }}
+            />
           )}
         />
       </Box>

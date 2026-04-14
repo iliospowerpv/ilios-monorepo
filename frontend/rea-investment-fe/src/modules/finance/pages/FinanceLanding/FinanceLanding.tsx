@@ -22,11 +22,8 @@ import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { SearchableSelect } from '../../../../components/common/SearchableSelect/SearchableSelect';
 import WarningIcon from '@mui/icons-material/Warning';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
@@ -326,19 +323,14 @@ const ApprovalsQueue: React.FC<ApprovalsQueueProps> = ({ companyId, onSuccess, o
   return (
     <>
       <Box display="flex" gap={2} mb={2} alignItems="center">
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Type</InputLabel>
-          <Select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} label="Type">
-            <MenuItem value="">
-              <em>All Types</em>
-            </MenuItem>
-            {uniqueTypes.map(type => (
-              <MenuItem key={type} value={type}>
-                {type}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <SearchableSelect
+          options={uniqueTypes.map(type => ({ label: type, value: type }))}
+          value={typeFilter || null}
+          onChange={val => setTypeFilter(val as string)}
+          label="Type"
+          size="small"
+          sx={{ minWidth: 150 }}
+        />
         <Typography variant="body2" color="text.secondary">
           {filteredItems.length} pending approval{filteredItems.length !== 1 ? 's' : ''} ({obligationItems.length}{' '}
           obligations, {budgetItems.length} budgets)
@@ -537,20 +529,14 @@ export const FinanceLanding: React.FC = () => {
       </Typography>
 
       <Box display="flex" alignItems="center" gap={2} mb={3}>
-        <FormControl size="small" sx={{ minWidth: 250 }}>
-          <InputLabel>Company</InputLabel>
-          <Select<number | ''>
-            value={selectedCompanyId ?? ''}
-            onChange={e => setSelectedCompanyId(Number(e.target.value))}
-            label="Company"
-          >
-            {companies.map((c: any) => (
-              <MenuItem key={c.id} value={c.id}>
-                {c.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <SearchableSelect
+          options={companies.map((c: any) => ({ label: c.name, value: c.id }))}
+          value={selectedCompanyId ?? null}
+          onChange={val => setSelectedCompanyId(val ? Number(val) : null)}
+          label="Company"
+          size="small"
+          sx={{ minWidth: 250 }}
+        />
       </Box>
 
       <KPIStrip summary={portfolioSummary?.summary} isLoading={summaryLoading} />

@@ -9,14 +9,10 @@ import TextField from '@mui/material/TextField';
 import Box from '@mui/material/Box';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-
 import { ApiClient } from '../../../../../api';
 import { COMPANY_TYPES } from '../../../../../constants';
 import { US_STATES } from '../../../../../constants/usStates';
+import { SearchableSelect } from '../../../../../components/common/SearchableSelect/SearchableSelect';
 import { normalizePhone } from '../../../../../utils/formatters/formatPhoneNumber';
 
 interface CreateCompanyDialogProps {
@@ -123,16 +119,13 @@ export const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ open, 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
             {error && <Alert severity="error">{error}</Alert>}
 
-            <FormControl required fullWidth>
-              <InputLabel>Company Type</InputLabel>
-              <Select value={companyType} onChange={e => setCompanyType(e.target.value as string)} label="Company Type">
-                {COMPANY_TYPES.map(type => (
-                  <MenuItem key={type} value={type}>
-                    {type}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <SearchableSelect
+              options={COMPANY_TYPES.map(type => ({ label: type, value: type }))}
+              value={companyType || null}
+              onChange={val => setCompanyType(val as string)}
+              label="Company Type"
+              required
+            />
 
             <TextField
               label="Company Name"
@@ -161,16 +154,14 @@ export const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ open, 
                 fullWidth
                 inputProps={{ maxLength: 100 }}
               />
-              <FormControl required sx={{ minWidth: 120 }}>
-                <InputLabel>State</InputLabel>
-                <Select value={state} onChange={e => setState(e.target.value as string)} label="State">
-                  {US_STATES.map(st => (
-                    <MenuItem key={st} value={st}>
-                      {st}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <SearchableSelect
+                options={US_STATES.map(st => ({ label: st, value: st }))}
+                value={state || null}
+                onChange={val => setState(val as string)}
+                label="State"
+                required
+                sx={{ minWidth: 120 }}
+              />
               <TextField
                 label="Zip Code"
                 value={zipCode}

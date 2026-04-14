@@ -4,20 +4,16 @@ import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { AxiosError } from 'axios';
 import Stack from '@mui/material/Stack';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
-import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
-import InputLabel from '@mui/material/InputLabel';
 import TextField from '@mui/material/TextField';
 import Alert from '@mui/material/Alert';
 import Collapse from '@mui/material/Collapse';
 import Typography from '@mui/material/Typography';
-import HourglassBottomRoundedIcon from '@mui/icons-material/HourglassBottomRounded';
 import { ApiClient } from '../../../api';
 import { useNotify } from '../../../contexts/notifications/notifications';
 import { DeviceCategory, DeviceCategoryValue } from './constants';
+import { SearchableSelect, SearchableSelectOption } from '../../common/SearchableSelect/SearchableSelect';
 
 const noBottomLineStyles = {
   '& .MuiInputBase-root:not(.Mui-disabled, .Mui-error)': {
@@ -44,6 +40,11 @@ type DeviceFormProps = {
   siteId: number;
   companyId: number;
 };
+
+const categoryOptions: SearchableSelectOption[] = Object.values(DeviceCategory).map(category => ({
+  label: category,
+  value: category
+}));
 
 export const DeviceForm: React.FC<DeviceFormProps> = ({ siteId, companyId }) => {
   const notify = useNotify();
@@ -124,6 +125,11 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({ siteId, companyId }) => 
 
   const telemetrySiteDevicesOptions: TelemetrySiteDevice[] = [...(telemetrySiteDevicesResponse?.items ?? [])];
 
+  const telemetryDeviceSelectOptions: SearchableSelectOption[] = telemetrySiteDevicesOptions.map(device => ({
+    label: device.name,
+    value: device.id
+  }));
+
   return (
     <Stack component="form" noValidate width="30%" minWidth="320px" spacing={2} onSubmit={handleSubmit(onSubmit)}>
       <Typography variant="h6">General Details</Typography>
@@ -164,25 +170,20 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({ siteId, companyId }) => 
         control={control}
         rules={{ required: 'Device Category is required field.' }}
         render={({ field }) => (
-          <FormControl error={!!errors.category} variant="filled" required sx={noBottomLineStyles}>
-            <InputLabel error={!!errors.category}>Device Category</InputLabel>
-            <Select
-              inputRef={field.ref}
-              value={field.value || ''}
-              error={!!errors.category}
-              disabled={field.disabled}
-              label="Device Category"
-              onBlur={field.onBlur}
-              onChange={field.onChange}
-            >
-              {Object.values(DeviceCategory).map(category => (
-                <MenuItem key={category} value={category}>
-                  {category}
-                </MenuItem>
-              ))}
-            </Select>
-            {errors.category?.message && <FormHelperText error>{errors.category?.message}</FormHelperText>}
-          </FormControl>
+          <SearchableSelect
+            options={categoryOptions}
+            value={field.value || null}
+            onChange={val => field.onChange(val)}
+            onBlur={field.onBlur}
+            inputRef={field.ref}
+            label="Device Category"
+            required
+            error={!!errors.category}
+            helperText={errors.category?.message}
+            variant="filled"
+            disabled={field.disabled}
+            formControlSx={noBottomLineStyles}
+          />
         )}
       />
       <Typography variant="h6" marginTop="24px !important">
@@ -192,51 +193,32 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({ siteId, companyId }) => 
         name="telemetry_device"
         control={control}
         render={({ field }) => (
-          <FormControl
+          <SearchableSelect
+            options={telemetryDeviceSelectOptions}
+            value={field.value?.id || null}
+            onChange={val => {
+              const device = telemetrySiteDevicesOptions.find(d => d.id === val);
+              setValue('telemetry_device', device, { shouldDirty: true, shouldValidate: true, shouldTouch: true });
+            }}
+            onBlur={field.onBlur}
+            inputRef={field.ref}
+            label="Device for Mapping"
             error={!!errorRetrievingTelemetrySiteDevices || !!errors.telemetry_device}
+            helperText={
+              errors.telemetry_device?.message ||
+              (errorRetrievingTelemetrySiteDevices instanceof AxiosError
+                ? errorRetrievingTelemetrySiteDevices.response?.data?.message ||
+                  errorRetrievingTelemetrySiteDevices.message
+                : errorRetrievingTelemetrySiteDevices?.message ??
+                  (errorRetrievingTelemetrySiteDevices
+                    ? 'Something went wrong when retrieving telemetry site devices...'
+                    : undefined))
+            }
             variant="filled"
-            sx={noBottomLineStyles}
-          >
-            <InputLabel error={!!errorRetrievingTelemetrySiteDevices || !!errors.telemetry_device}>
-              Device for Mapping
-            </InputLabel>
-            <Select
-              inputRef={field.ref}
-              value={field.value?.id || ''}
-              error={!!errorRetrievingTelemetrySiteDevices || !!errors.telemetry_device}
-              disabled={isLoadingTelemetrySiteDevices}
-              label="Device for Mapping"
-              onBlur={field.onBlur}
-              onChange={e =>
-                setValue(
-                  'telemetry_device',
-                  telemetrySiteDevicesOptions.find(device => device.id === e.target.value),
-                  { shouldDirty: true, shouldValidate: true, shouldTouch: true }
-                )
-              }
-              IconComponent={isLoadingTelemetrySiteDevices ? HourglassBottomRoundedIcon : undefined}
-            >
-              {telemetrySiteDevicesOptions.map(telemetryDevice => (
-                <MenuItem
-                  key={telemetryDevice.name}
-                  value={telemetryDevice.id}
-                  {...(telemetryDevice.id === 'none' && { sx: { color: '#4F4F4F' } })}
-                >
-                  {telemetryDevice.name}
-                </MenuItem>
-              ))}
-            </Select>
-            {(errors.telemetry_device?.message || errorRetrievingTelemetrySiteDevices?.message) && (
-              <FormHelperText error>
-                {errors.telemetry_device?.message ||
-                  (errorRetrievingTelemetrySiteDevices instanceof AxiosError
-                    ? errorRetrievingTelemetrySiteDevices.response?.data?.message ||
-                      errorRetrievingTelemetrySiteDevices.message
-                    : errorRetrievingTelemetrySiteDevices?.message ??
-                      'Something went wrong when retrieving telemetry site devices...')}
-              </FormHelperText>
-            )}
-          </FormControl>
+            disabled={isLoadingTelemetrySiteDevices}
+            loading={isLoadingTelemetrySiteDevices}
+            formControlSx={noBottomLineStyles}
+          />
         )}
       />
       <Stack direction="row" width="100%" spacing={3} justifyContent="stretch" marginTop="24px !important">

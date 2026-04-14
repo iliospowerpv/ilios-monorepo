@@ -3,8 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import Stack from '@mui/material/Stack';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
 import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
@@ -12,7 +10,6 @@ import InputLabel from '@mui/material/InputLabel';
 import TextField from '@mui/material/TextField';
 import Alert from '@mui/material/Alert';
 import Collapse from '@mui/material/Collapse';
-import HourglassBottomRoundedIcon from '@mui/icons-material/HourglassBottomRounded';
 import {
   ApiClient,
   CreateUserAttributes,
@@ -23,6 +20,7 @@ import {
 import { CompaniesSitesMultiselect } from './components/CompaniesSitesMultiselect';
 import { useNotify } from '../../../contexts/notifications/notifications';
 import { normalizePhone } from '../../../utils/formatters/formatPhoneNumber';
+import { SearchableSelect, SearchableSelectOption } from '../../common/SearchableSelect/SearchableSelect';
 
 const noBottomLineStyles = {
   '& .MuiInputBase-root:not(.Mui-disabled, .Mui-error)': {
@@ -239,6 +237,17 @@ export const UserForm: React.FC<UserFormProps> = ({ mode, userData, userId, leve
       ? rolesWithCompanyType.data.filter(role => role.company_type === selectedCompany.company_type)
       : [...((!!rolesWithCompanyType && rolesWithCompanyType.data) || [])];
 
+  const companyOptions: SearchableSelectOption[] =
+    contractors?.items.map(company => ({
+      label: company.name,
+      value: company.id
+    })) || [];
+
+  const roleSelectOptions: SearchableSelectOption[] = roleOptions.map(({ role }) => ({
+    label: role.name,
+    value: role.id
+  }));
+
   return (
     <Stack component="form" noValidate width="30%" minWidth="320px" spacing={2} onSubmit={handleSubmit(onSubmit)}>
       <Controller
@@ -367,37 +376,21 @@ export const UserForm: React.FC<UserFormProps> = ({ mode, userData, userId, leve
         control={control}
         rules={{ required: 'Company is required field.' }}
         render={({ field }) => (
-          <FormControl
-            error={!!contractorsRetrievingError || !!errors.parent_company_id}
-            variant="filled"
+          <SearchableSelect
+            options={companyOptions}
+            value={field.value || null}
+            onChange={val => field.onChange(val)}
+            onBlur={field.onBlur}
+            inputRef={field.ref}
+            label="Company"
             required
-            sx={noBottomLineStyles}
-          >
-            <InputLabel error={!!contractorsRetrievingError || !!errors.parent_company_id}>Company</InputLabel>
-            <Select
-              inputRef={field.ref}
-              value={field.value || ('' as unknown as number)}
-              error={!!contractorsRetrievingError || !!errors.parent_company_id}
-              disabled={!formReady || level === 'company'}
-              label="Company"
-              onBlur={field.onBlur}
-              onChange={field.onChange}
-              IconComponent={isLoadingContractors ? HourglassBottomRoundedIcon : undefined}
-              MenuProps={{ PaperProps: { sx: { maxHeight: '350px' } } }}
-            >
-              {contractors &&
-                contractors.items.map(company => (
-                  <MenuItem key={company.name} value={company.id}>
-                    {company.name}
-                  </MenuItem>
-                ))}
-            </Select>
-            {(errors.parent_company_id?.message || contractorsRetrievingError?.message) && (
-              <FormHelperText error>
-                {errors.parent_company_id?.message || contractorsRetrievingError?.message}
-              </FormHelperText>
-            )}
-          </FormControl>
+            error={!!contractorsRetrievingError || !!errors.parent_company_id}
+            helperText={errors.parent_company_id?.message || contractorsRetrievingError?.message}
+            variant="filled"
+            disabled={!formReady || level === 'company'}
+            loading={isLoadingContractors}
+            formControlSx={noBottomLineStyles}
+          />
         )}
       />
       <Controller
@@ -406,33 +399,21 @@ export const UserForm: React.FC<UserFormProps> = ({ mode, userData, userId, leve
         rules={{ required: 'Role is required field.' }}
         disabled={!formReady || disableRoleSelection}
         render={({ field }) => (
-          <FormControl
-            error={!!rolesRetrievingError || !!errors.role_id}
-            variant="filled"
+          <SearchableSelect
+            options={roleSelectOptions}
+            value={field.value || null}
+            onChange={val => field.onChange(val)}
+            onBlur={field.onBlur}
+            inputRef={field.ref}
+            label="Role"
             required
-            sx={noBottomLineStyles}
-          >
-            <InputLabel error={!!rolesRetrievingError || !!errors.role_id}>Role</InputLabel>
-            <Select
-              inputRef={field.ref}
-              value={field.value || ('' as unknown as number)}
-              error={!!rolesRetrievingError || !!errors.role_id}
-              disabled={field.disabled}
-              label="Role"
-              onBlur={field.onBlur}
-              onChange={field.onChange}
-              IconComponent={isLoadingRoles ? HourglassBottomRoundedIcon : undefined}
-            >
-              {roleOptions.map(({ role }) => (
-                <MenuItem key={role.name} value={role.id}>
-                  {role.name}
-                </MenuItem>
-              ))}
-            </Select>
-            {(errors.role_id?.message || rolesRetrievingError?.message) && (
-              <FormHelperText error>{errors.role_id?.message || rolesRetrievingError?.message}</FormHelperText>
-            )}
-          </FormControl>
+            error={!!rolesRetrievingError || !!errors.role_id}
+            helperText={errors.role_id?.message || rolesRetrievingError?.message}
+            variant="filled"
+            disabled={field.disabled}
+            loading={isLoadingRoles}
+            formControlSx={noBottomLineStyles}
+          />
         )}
       />
       <Controller

@@ -16,9 +16,7 @@ import TableRow from '@mui/material/TableRow';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import Skeleton from '@mui/material/Skeleton';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
+import { SearchableSelect } from '../../../../components/common/SearchableSelect/SearchableSelect';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DeleteIcon from '@mui/icons-material/Delete';
 import BusinessIcon from '@mui/icons-material/Business';
@@ -200,18 +198,19 @@ export const CompanyAdminPage: React.FC = () => {
                       </TableCell>
                       <TableCell>{member.email}</TableCell>
                       <TableCell>
-                        <FormControl size="small" sx={{ minWidth: 120 }}>
-                          <Select
-                            value={member.role}
-                            onChange={e => handleRoleChange(member.membership_id, e.target.value)}
-                            disabled={updateMemberMutation.isPending}
-                            size="small"
-                          >
-                            <MenuItem value="company_admin">Admin</MenuItem>
-                            <MenuItem value="contributor">Contributor</MenuItem>
-                            <MenuItem value="read_only">Read Only</MenuItem>
-                          </Select>
-                        </FormControl>
+                        <SearchableSelect
+                          options={[
+                            { label: 'Admin', value: 'company_admin' },
+                            { label: 'Contributor', value: 'contributor' },
+                            { label: 'Read Only', value: 'read_only' }
+                          ]}
+                          value={member.role}
+                          onChange={val => handleRoleChange(member.membership_id, val as string)}
+                          disabled={updateMemberMutation.isPending}
+                          size="small"
+                          sx={{ minWidth: 120 }}
+                          disableClearable
+                        />
                       </TableCell>
                       <TableCell>
                         <Chip

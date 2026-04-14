@@ -7,11 +7,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import FormHelperText from '@mui/material/FormHelperText';
-import InputLabel from '@mui/material/InputLabel';
+import { SearchableSelect } from '../../../../components/common/SearchableSelect/SearchableSelect';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
@@ -126,17 +122,21 @@ export const EditCompanyDialog: React.FC<EditCompanyDialogProps> = ({ open, onCl
               control={control}
               rules={{ required: 'Company type is required' }}
               render={({ field }) => (
-                <FormControl error={!!errors.company_type} fullWidth required>
-                  <InputLabel>Type</InputLabel>
-                  <Select {...field} label="Type">
-                    {COMPANY_TYPES?.map(type => (
-                      <MenuItem key={type} value={type}>
-                        {type}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {errors.company_type && <FormHelperText>{errors.company_type.message}</FormHelperText>}
-                </FormControl>
+                <SearchableSelect
+                  options={(COMPANY_TYPES || []).map(type => ({
+                    label: type,
+                    value: type
+                  }))}
+                  value={field.value || null}
+                  onChange={val => field.onChange(val)}
+                  onBlur={field.onBlur}
+                  inputRef={field.ref}
+                  label="Type"
+                  error={!!errors.company_type}
+                  helperText={errors.company_type?.message}
+                  required
+                  fullWidth
+                />
               )}
             />
 

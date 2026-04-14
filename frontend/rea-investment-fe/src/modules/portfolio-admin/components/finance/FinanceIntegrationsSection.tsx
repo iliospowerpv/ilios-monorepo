@@ -18,10 +18,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
+import { SearchableSelect } from '../../../../components/common/SearchableSelect/SearchableSelect';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import Skeleton from '@mui/material/Skeleton';
@@ -275,17 +272,16 @@ export const FinanceIntegrationsSection: React.FC<FinanceIntegrationsSectionProp
       <Dialog open={isAddDialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle>Add Finance Integration</DialogTitle>
         <DialogContent>
-          <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel>Provider</InputLabel>
-            <Select value={selectedProvider} onChange={e => setSelectedProvider(e.target.value)} label="Provider">
-              {unconfiguredProviders.map(provider => (
-                <MenuItem key={provider.key} value={provider.key}>
-                  {provider.display_name}
-                  {provider.supports_budgets && <Chip label="Budgets" size="small" sx={{ ml: 1 }} />}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <SearchableSelect
+            options={unconfiguredProviders.map(provider => ({
+              label: provider.display_name,
+              value: provider.key
+            }))}
+            value={selectedProvider || null}
+            onChange={val => setSelectedProvider(val as string)}
+            label="Provider"
+            sx={{ mt: 2 }}
+          />
 
           <TextField
             fullWidth

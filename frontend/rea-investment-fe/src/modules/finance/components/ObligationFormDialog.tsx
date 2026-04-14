@@ -5,13 +5,19 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import InputAdornment from '@mui/material/InputAdornment';
 import { FinanceObligation, FinanceObligationType, FinanceVendor } from '../types';
+import { SearchableSelect, SearchableSelectOption } from '../../../components/common/SearchableSelect/SearchableSelect';
+
+const obligationTypeOptions: SearchableSelectOption[] = [
+  { label: 'Invoice', value: FinanceObligationType.Invoice },
+  { label: 'Milestone', value: FinanceObligationType.Milestone },
+  { label: 'Retainer', value: FinanceObligationType.Retainer },
+  { label: 'Change Order', value: FinanceObligationType.ChangeOrder },
+  { label: 'Service Call', value: FinanceObligationType.ServiceCall },
+  { label: 'Other', value: FinanceObligationType.Other }
+];
 
 interface ObligationFormDialogProps {
   open: boolean;
@@ -82,40 +88,30 @@ export const ObligationFormDialog: React.FC<ObligationFormDialogProps> = ({
 
   const isEdit = !!obligation;
 
+  const vendorOptions: SearchableSelectOption[] = vendors.map(v => ({
+    label: v.name,
+    value: v.id
+  }));
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>{isEdit ? 'Edit Obligation' : 'Create Obligation'}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
-          <FormControl fullWidth required>
-            <InputLabel>Type</InputLabel>
-            <Select
-              value={obligationType}
-              onChange={e => setObligationType(e.target.value as FinanceObligationType)}
-              label="Type"
-            >
-              <MenuItem value={FinanceObligationType.Invoice}>Invoice</MenuItem>
-              <MenuItem value={FinanceObligationType.Milestone}>Milestone</MenuItem>
-              <MenuItem value={FinanceObligationType.Retainer}>Retainer</MenuItem>
-              <MenuItem value={FinanceObligationType.ChangeOrder}>Change Order</MenuItem>
-              <MenuItem value={FinanceObligationType.ServiceCall}>Service Call</MenuItem>
-              <MenuItem value={FinanceObligationType.Other}>Other</MenuItem>
-            </Select>
-          </FormControl>
+          <SearchableSelect
+            options={obligationTypeOptions}
+            value={obligationType}
+            onChange={val => setObligationType(val as FinanceObligationType)}
+            label="Type"
+            required
+          />
           <Stack direction="row" spacing={1} alignItems="flex-end">
-            <FormControl fullWidth>
-              <InputLabel>Vendor</InputLabel>
-              <Select value={vendorId} onChange={e => setVendorId(e.target.value as number)} label="Vendor">
-                <MenuItem value="">
-                  <em>None</em>
-                </MenuItem>
-                {vendors.map(v => (
-                  <MenuItem key={v.id} value={v.id}>
-                    {v.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <SearchableSelect
+              options={vendorOptions}
+              value={vendorId || null}
+              onChange={val => setVendorId(val ? (val as number) : '')}
+              label="Vendor"
+            />
             {onCreateVendor && (
               <Button variant="outlined" size="small" onClick={onCreateVendor} sx={{ whiteSpace: 'nowrap' }}>
                 + New

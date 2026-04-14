@@ -5,14 +5,22 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import { FinanceVendor, FinanceVendorType } from '../types';
+import { SearchableSelect, SearchableSelectOption } from '../../../components/common/SearchableSelect/SearchableSelect';
+
+const vendorTypeOptions: SearchableSelectOption[] = [
+  { label: 'EPC', value: FinanceVendorType.EPC },
+  { label: 'O&M', value: FinanceVendorType.OM },
+  { label: 'Insurance', value: FinanceVendorType.Insurance },
+  { label: 'Utility', value: FinanceVendorType.Utility },
+  { label: 'Engineering', value: FinanceVendorType.Engineering },
+  { label: 'Legal', value: FinanceVendorType.Legal },
+  { label: 'Accounting', value: FinanceVendorType.Accounting },
+  { label: 'Other', value: FinanceVendorType.Other }
+];
 
 interface VendorFormDialogProps {
   open: boolean;
@@ -77,19 +85,13 @@ export const VendorFormDialog: React.FC<VendorFormDialogProps> = ({ open, onClos
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <TextField label="Vendor Name" value={name} onChange={e => setName(e.target.value)} required fullWidth />
-          <FormControl fullWidth required>
-            <InputLabel>Type</InputLabel>
-            <Select value={vendorType} onChange={e => setVendorType(e.target.value as FinanceVendorType)} label="Type">
-              <MenuItem value={FinanceVendorType.EPC}>EPC</MenuItem>
-              <MenuItem value={FinanceVendorType.OM}>O&M</MenuItem>
-              <MenuItem value={FinanceVendorType.Insurance}>Insurance</MenuItem>
-              <MenuItem value={FinanceVendorType.Utility}>Utility</MenuItem>
-              <MenuItem value={FinanceVendorType.Engineering}>Engineering</MenuItem>
-              <MenuItem value={FinanceVendorType.Legal}>Legal</MenuItem>
-              <MenuItem value={FinanceVendorType.Accounting}>Accounting</MenuItem>
-              <MenuItem value={FinanceVendorType.Other}>Other</MenuItem>
-            </Select>
-          </FormControl>
+          <SearchableSelect
+            options={vendorTypeOptions}
+            value={vendorType}
+            onChange={val => setVendorType(val as FinanceVendorType)}
+            label="Type"
+            required
+          />
           <TextField
             label="Contact Name"
             value={contactName}

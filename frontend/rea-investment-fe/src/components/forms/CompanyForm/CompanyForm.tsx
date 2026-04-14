@@ -4,12 +4,8 @@ import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { isNull } from 'lodash';
 import Stack from '@mui/material/Stack';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
-import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
-import InputLabel from '@mui/material/InputLabel';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
@@ -19,6 +15,7 @@ import { COMPANY_TYPES } from '../../../constants';
 import { useNotify } from '../../../contexts/notifications/notifications';
 import { US_STATES } from '../../../constants/usStates';
 import { normalizePhone } from '../../../utils/formatters/formatPhoneNumber';
+import { SearchableSelect, SearchableSelectOption } from '../../common/SearchableSelect/SearchableSelect';
 
 const noBottomLineStyles = {
   '& .MuiInputBase-root:not(.Mui-disabled, .Mui-error)': {
@@ -58,6 +55,16 @@ interface EditCompanyFormFields {
 }
 
 type CompanyFormFields = CreateCompanyFormFields | EditCompanyFormFields;
+
+const companyTypeOptions: SearchableSelectOption[] = COMPANY_TYPES.map(type => ({
+  label: type,
+  value: type
+}));
+
+const usStateOptions: SearchableSelectOption[] = US_STATES.map(st => ({
+  label: st,
+  value: st
+}));
 
 export const CompanyForm: React.FC<CompanyFormProps> = props => {
   const { mode, companyData, companyId } = props;
@@ -159,25 +166,19 @@ export const CompanyForm: React.FC<CompanyFormProps> = props => {
           control={control}
           rules={{ required: 'Type is required field.' }}
           render={({ field }) => (
-            <FormControl error={!!errors.company_type} variant="filled" required sx={noBottomLineStyles}>
-              <InputLabel error={!!errors.company_type}>Type</InputLabel>
-              <Select
-                ref={field.ref}
-                value={field.value}
-                error={!!errors.company_type}
-                label="Type"
-                onBlur={field.onBlur}
-                onChange={field.onChange}
-              >
-                {COMPANY_TYPES &&
-                  COMPANY_TYPES.map(type => (
-                    <MenuItem key={type} value={type}>
-                      {type}
-                    </MenuItem>
-                  ))}
-              </Select>
-              {errors.company_type?.message && <FormHelperText error>{errors.company_type?.message}</FormHelperText>}
-            </FormControl>
+            <SearchableSelect
+              options={companyTypeOptions}
+              value={field.value ?? null}
+              onChange={val => field.onChange(val)}
+              onBlur={field.onBlur}
+              inputRef={field.ref}
+              label="Type"
+              required
+              error={!!errors.company_type}
+              helperText={errors.company_type?.message}
+              variant="filled"
+              formControlSx={noBottomLineStyles}
+            />
           )}
         />
       )}
@@ -236,31 +237,20 @@ export const CompanyForm: React.FC<CompanyFormProps> = props => {
           control={control}
           rules={!isEdit ? { required: 'State is required field.' } : {}}
           render={({ field }) => (
-            <FormControl
-              error={!!(errors as any).state}
-              variant="filled"
+            <SearchableSelect
+              options={usStateOptions}
+              value={field.value || null}
+              onChange={val => field.onChange(val)}
+              onBlur={field.onBlur}
+              inputRef={field.ref}
+              label="State"
               required={!isEdit}
-              sx={{ ...noBottomLineStyles, minWidth: 120 }}
-            >
-              <InputLabel error={!!(errors as any).state}>State</InputLabel>
-              <Select
-                ref={field.ref}
-                value={field.value || ''}
-                error={!!(errors as any).state}
-                label="State"
-                onBlur={field.onBlur}
-                onChange={field.onChange}
-              >
-                {US_STATES.map(st => (
-                  <MenuItem key={st} value={st}>
-                    {st}
-                  </MenuItem>
-                ))}
-              </Select>
-              {(errors as any).state?.message && (
-                <FormHelperText error>{(errors as any).state?.message}</FormHelperText>
-              )}
-            </FormControl>
+              error={!!(errors as any).state}
+              helperText={(errors as any).state?.message}
+              variant="filled"
+              formControlSx={noBottomLineStyles}
+              sx={{ minWidth: 120 }}
+            />
           )}
         />
         <TextField

@@ -4,9 +4,7 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
+import { SearchableSelect } from '../../../SearchableSelect/SearchableSelect';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -32,28 +30,12 @@ const noBottomLineStyles = {
 };
 
 const FiltersModal = ({ open, handleClose }: FiltersProps) => {
-  const [company, setCompany] = React.useState('');
-  const [stage, setStage] = React.useState('');
-  const [state, setState] = React.useState('');
-  const [ownership, setOwnership] = React.useState('');
+  const [company, setCompany] = React.useState<string | number | ''>('');
+  const [stage, setStage] = React.useState<string | number | ''>('');
+  const [state, setState] = React.useState<string | number | ''>('');
+  const [ownership, setOwnership] = React.useState<string | number | ''>('');
   const [status, setStatus] = React.useState('');
   const [date, setDate] = React.useState<Dayjs | null>(null);
-
-  const handleChangeCompany = (event: SelectChangeEvent) => {
-    setCompany(event.target.value as string);
-  };
-
-  const handleChangeStage = (event: SelectChangeEvent) => {
-    setStage(event.target.value as string);
-  };
-
-  const handleChangeState = (event: SelectChangeEvent) => {
-    setState(event.target.value as string);
-  };
-
-  const handleChangeOwnership = (event: SelectChangeEvent) => {
-    setOwnership(event.target.value as string);
-  };
 
   const handleChangeDate = (value: Dayjs | null) => {
     setDate(value);
@@ -85,14 +67,18 @@ const FiltersModal = ({ open, handleClose }: FiltersProps) => {
             <Typography variant="subtitle2" display="block" fontWeight="bold" my="8px">
               Company name
             </Typography>
-            <FormControl sx={noBottomLineStyles} variant="filled" fullWidth>
-              <Select value={company} onChange={handleChangeCompany} displayEmpty>
-                <MenuItem value="">Select</MenuItem>
-                <MenuItem value={10}>Ten</MenuItem>
-                <MenuItem value={20}>Twenty</MenuItem>
-                <MenuItem value={30}>Thirty</MenuItem>
-              </Select>
-            </FormControl>
+            <SearchableSelect
+              options={[
+                { label: 'Ten', value: 10 },
+                { label: 'Twenty', value: 20 },
+                { label: 'Thirty', value: 30 }
+              ]}
+              value={company || null}
+              onChange={setCompany}
+              placeholder="Select"
+              variant="filled"
+              formControlSx={noBottomLineStyles}
+            />
             <Typography variant="subtitle2" display="block" fontWeight="bold" my="8px">
               Status
             </Typography>
@@ -127,48 +113,51 @@ const FiltersModal = ({ open, handleClose }: FiltersProps) => {
             <Typography variant="subtitle2" display="block" fontWeight="bold" my="8px">
               Stage
             </Typography>
-            <FormControl sx={noBottomLineStyles} variant="filled" fullWidth>
-              <Select value={stage} onChange={handleChangeStage} displayEmpty>
-                <MenuItem value="">Select</MenuItem>
-                {Object.entries(Stage).map(([key, value]) => (
-                  <MenuItem key={key} value={key}>
-                    {value}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <SearchableSelect
+              options={Object.entries(Stage).map(([key, value]) => ({
+                label: value,
+                value: key
+              }))}
+              value={stage || null}
+              onChange={setStage}
+              placeholder="Select"
+              variant="filled"
+              formControlSx={noBottomLineStyles}
+            />
             <Typography variant="subtitle2" display="block" fontWeight="bold" my="8px">
               Ownership structure
             </Typography>
-            <FormControl sx={noBottomLineStyles} variant="filled" fullWidth>
-              <Select value={ownership} onChange={handleChangeOwnership} displayEmpty>
-                <MenuItem value="">Select</MenuItem>
-                {Object.entries(OwnershipStructure).map(([key, value]) => (
-                  <MenuItem key={key} value={key}>
-                    {value}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <SearchableSelect
+              options={Object.entries(OwnershipStructure).map(([key, value]) => ({
+                label: value,
+                value: key
+              }))}
+              value={ownership || null}
+              onChange={setOwnership}
+              placeholder="Select"
+              variant="filled"
+              formControlSx={noBottomLineStyles}
+            />
             <Typography variant="subtitle2" display="block" fontWeight="bold" my="8px">
               State
             </Typography>
-            <FormControl sx={noBottomLineStyles} variant="filled" fullWidth>
-              <Select value={state} onChange={handleChangeState} displayEmpty>
-                <MenuItem value="">Select</MenuItem>
-                {Object.entries(State).map(([key, value]) => (
-                  <MenuItem key={key} value={key}>
-                    {value}
-                  </MenuItem>
-                ))}
-              </Select>
-              <Typography variant="subtitle2" display="block" fontWeight="bold" my="8px">
-                Placed in Service
-              </Typography>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker sx={noBottomLineStyles} value={date} onChange={newValue => handleChangeDate(newValue)} />
-              </LocalizationProvider>
-            </FormControl>
+            <SearchableSelect
+              options={Object.entries(State).map(([key, value]) => ({
+                label: value,
+                value: key
+              }))}
+              value={state || null}
+              onChange={setState}
+              placeholder="Select"
+              variant="filled"
+              formControlSx={noBottomLineStyles}
+            />
+            <Typography variant="subtitle2" display="block" fontWeight="bold" my="8px">
+              Placed in Service
+            </Typography>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker sx={noBottomLineStyles} value={date} onChange={newValue => handleChangeDate(newValue)} />
+            </LocalizationProvider>
           </Box>
         </DialogContent>
         <DialogActions>

@@ -5,10 +5,7 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
+import { SearchableSelect } from '../../../../components/common/SearchableSelect/SearchableSelect';
 import TextField from '@mui/material/TextField';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -203,23 +200,16 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
             <Typography variant="subtitle1" fontWeight={600} gutterBottom>
               Select an Existing Company
             </Typography>
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Company</InputLabel>
-              <Select
-                value={selectedCompanyId !== null ? String(selectedCompanyId) : ''}
-                onChange={e => {
-                  const val = e.target.value as string;
-                  setSelectedCompanyId(val ? Number(val) : null);
-                }}
-                label="Company"
-              >
-                {companies.map(company => (
-                  <MenuItem key={company.company_id} value={String(company.company_id)}>
-                    {company.company_name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <SearchableSelect
+              options={companies.map(company => ({
+                label: company.company_name,
+                value: company.company_id
+              }))}
+              value={selectedCompanyId}
+              onChange={val => setSelectedCompanyId(val ? Number(val) : null)}
+              label="Company"
+              sx={{ mb: 2 }}
+            />
             <Button
               variant="contained"
               onClick={handleSelectExisting}
@@ -248,20 +238,13 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
             </Typography>
             <form onSubmit={handleCreateNew}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <FormControl required fullWidth>
-                  <InputLabel>Company Type</InputLabel>
-                  <Select
-                    value={newCompanyType}
-                    onChange={e => setNewCompanyType(e.target.value as string)}
-                    label="Company Type"
-                  >
-                    {COMPANY_TYPES.map(type => (
-                      <MenuItem key={type} value={type}>
-                        {type}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <SearchableSelect
+                  options={COMPANY_TYPES.map(type => ({ label: type, value: type }))}
+                  value={newCompanyType || null}
+                  onChange={val => setNewCompanyType(val as string)}
+                  label="Company Type"
+                  required
+                />
                 <TextField
                   label="Company Name"
                   value={newCompanyName}
@@ -288,20 +271,14 @@ export const CompanyStep: React.FC<CompanyStepProps> = ({ onComplete }) => {
                     fullWidth
                     inputProps={{ maxLength: 100 }}
                   />
-                  <FormControl required sx={{ minWidth: 120 }}>
-                    <InputLabel>State</InputLabel>
-                    <Select
-                      value={newCompanyState}
-                      onChange={e => setNewCompanyState(e.target.value as string)}
-                      label="State"
-                    >
-                      {US_STATES.map(st => (
-                        <MenuItem key={st} value={st}>
-                          {st}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <SearchableSelect
+                    options={US_STATES.map(st => ({ label: st, value: st }))}
+                    value={newCompanyState || null}
+                    onChange={val => setNewCompanyState(val as string)}
+                    label="State"
+                    required
+                    sx={{ minWidth: 120 }}
+                  />
                   <TextField
                     label="Zip Code"
                     value={newCompanyZipCode}

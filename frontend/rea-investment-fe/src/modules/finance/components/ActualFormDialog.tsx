@@ -5,13 +5,33 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import InputAdornment from '@mui/material/InputAdornment';
 import { FinanceActual, FinanceBudgetCategory, FinanceActualSource, FinanceVendor } from '../types';
+import { SearchableSelect, SearchableSelectOption } from '../../../components/common/SearchableSelect/SearchableSelect';
+
+const categoryOptions: SearchableSelectOption[] = [
+  { label: 'Development', value: FinanceBudgetCategory.Development },
+  { label: 'Construction', value: FinanceBudgetCategory.Construction },
+  { label: 'Interconnection', value: FinanceBudgetCategory.Interconnection },
+  { label: 'Permitting', value: FinanceBudgetCategory.Permitting },
+  { label: 'Equipment', value: FinanceBudgetCategory.Equipment },
+  { label: 'Labor', value: FinanceBudgetCategory.Labor },
+  { label: 'Engineering', value: FinanceBudgetCategory.Engineering },
+  { label: 'Legal', value: FinanceBudgetCategory.Legal },
+  { label: 'Insurance', value: FinanceBudgetCategory.Insurance },
+  { label: 'O&M', value: FinanceBudgetCategory.OM },
+  { label: 'Administrative', value: FinanceBudgetCategory.Administrative },
+  { label: 'Contingency', value: FinanceBudgetCategory.Contingency },
+  { label: 'Other', value: FinanceBudgetCategory.Other }
+];
+
+const sourceSystemOptions: SearchableSelectOption[] = [
+  { label: 'Manual Entry', value: FinanceActualSource.Manual },
+  { label: 'QuickBooks', value: FinanceActualSource.QuickBooks },
+  { label: 'Gravity', value: FinanceActualSource.Gravity },
+  { label: 'Other', value: FinanceActualSource.Other }
+];
 
 interface ActualFormDialogProps {
   open: boolean;
@@ -62,46 +82,29 @@ export const ActualFormDialog: React.FC<ActualFormDialogProps> = ({ open, onClos
     }
   };
 
+  const vendorOptions: SearchableSelectOption[] = vendors.map(v => ({
+    label: v.name,
+    value: v.id
+  }));
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Record Actual</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
-          <FormControl fullWidth required>
-            <InputLabel>Category</InputLabel>
-            <Select
-              value={category}
-              onChange={e => setCategory(e.target.value as FinanceBudgetCategory)}
-              label="Category"
-            >
-              <MenuItem value={FinanceBudgetCategory.Development}>Development</MenuItem>
-              <MenuItem value={FinanceBudgetCategory.Construction}>Construction</MenuItem>
-              <MenuItem value={FinanceBudgetCategory.Interconnection}>Interconnection</MenuItem>
-              <MenuItem value={FinanceBudgetCategory.Permitting}>Permitting</MenuItem>
-              <MenuItem value={FinanceBudgetCategory.Equipment}>Equipment</MenuItem>
-              <MenuItem value={FinanceBudgetCategory.Labor}>Labor</MenuItem>
-              <MenuItem value={FinanceBudgetCategory.Engineering}>Engineering</MenuItem>
-              <MenuItem value={FinanceBudgetCategory.Legal}>Legal</MenuItem>
-              <MenuItem value={FinanceBudgetCategory.Insurance}>Insurance</MenuItem>
-              <MenuItem value={FinanceBudgetCategory.OM}>O&M</MenuItem>
-              <MenuItem value={FinanceBudgetCategory.Administrative}>Administrative</MenuItem>
-              <MenuItem value={FinanceBudgetCategory.Contingency}>Contingency</MenuItem>
-              <MenuItem value={FinanceBudgetCategory.Other}>Other</MenuItem>
-            </Select>
-          </FormControl>
-          <FormControl fullWidth>
-            <InputLabel>Vendor</InputLabel>
-            <Select value={vendorId} onChange={e => setVendorId(e.target.value as number)} label="Vendor">
-              <MenuItem value="">
-                <em>None</em>
-              </MenuItem>
-              {vendors.map(v => (
-                <MenuItem key={v.id} value={v.id}>
-                  {v.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <SearchableSelect
+            options={categoryOptions}
+            value={category}
+            onChange={val => setCategory(val as FinanceBudgetCategory)}
+            label="Category"
+            required
+          />
+          <SearchableSelect
+            options={vendorOptions}
+            value={vendorId || null}
+            onChange={val => setVendorId(val ? (val as number) : '')}
+            label="Vendor"
+          />
           <TextField
             label="Amount"
             type="number"
@@ -137,19 +140,12 @@ export const ActualFormDialog: React.FC<ActualFormDialogProps> = ({ open, onClos
             fullWidth
             placeholder="e.g., QB-12345"
           />
-          <FormControl fullWidth>
-            <InputLabel>Source System</InputLabel>
-            <Select
-              value={sourceSystem}
-              onChange={e => setSourceSystem(e.target.value as FinanceActualSource)}
-              label="Source System"
-            >
-              <MenuItem value={FinanceActualSource.Manual}>Manual Entry</MenuItem>
-              <MenuItem value={FinanceActualSource.QuickBooks}>QuickBooks</MenuItem>
-              <MenuItem value={FinanceActualSource.Gravity}>Gravity</MenuItem>
-              <MenuItem value={FinanceActualSource.Other}>Other</MenuItem>
-            </Select>
-          </FormControl>
+          <SearchableSelect
+            options={sourceSystemOptions}
+            value={sourceSystem}
+            onChange={val => setSourceSystem(val as FinanceActualSource)}
+            label="Source System"
+          />
         </Stack>
       </DialogContent>
       <DialogActions>

@@ -5,17 +5,13 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
+import { SearchableSelect } from '../../../../components/common/SearchableSelect/SearchableSelect';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import InfoIcon from '@mui/icons-material/Info';
-import FormHelperText from '@mui/material/FormHelperText';
 
 import { ApiClient } from '../../../../api';
 import type { AddMemberRequest, AddPortfolioMemberRequest, AddProjectMemberRequest } from '../../../../api';
@@ -258,32 +254,19 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
             )}
 
             {level === 'portfolio' && (
-              <FormControl fullWidth required>
-                <InputLabel>Portfolio Hub</InputLabel>
-                <Select<number | ''>
-                  value={selectedHubId ?? ''}
-                  onChange={e => {
-                    const val = e.target.value;
-                    setSelectedHubId(val === '' ? null : Number(val));
-                  }}
-                  label="Portfolio Hub"
-                  disabled={isLoadingHubs}
-                >
-                  {isLoadingHubs ? (
-                    <MenuItem value="">Loading...</MenuItem>
-                  ) : availableHubs.length > 0 ? (
-                    availableHubs.map(hub => (
-                      <MenuItem key={hub.hub_company_id} value={hub.hub_company_id}>
-                        {hub.hub_company_name} ({hub.companies_count} companies)
-                      </MenuItem>
-                    ))
-                  ) : (
-                    <MenuItem value="" disabled>
-                      No portfolio hubs available
-                    </MenuItem>
-                  )}
-                </Select>
-              </FormControl>
+              <SearchableSelect
+                options={(availableHubs || []).map(hub => ({
+                  label: `${hub.hub_company_name} (${hub.companies_count} companies)`,
+                  value: hub.hub_company_id
+                }))}
+                value={selectedHubId ?? null}
+                onChange={val => setSelectedHubId(val ? Number(val) : null)}
+                label="Portfolio Hub"
+                required
+                disabled={isLoadingHubs}
+                loading={isLoadingHubs}
+                fullWidth
+              />
             )}
 
             <SelectOrCreateUser
@@ -296,39 +279,37 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
               required
             />
 
-            <FormControl fullWidth>
-              <InputLabel>Role</InputLabel>
-              <Select value={selectedRole} onChange={e => setSelectedRole(e.target.value as RoleType)} label="Role">
-                <MenuItem value="company_admin">Admin</MenuItem>
-                <MenuItem value="contributor">Contributor</MenuItem>
-                <MenuItem value="read_only">Read Only</MenuItem>
-              </Select>
-              <FormHelperText>{ROLE_DESCRIPTIONS[selectedRole]}</FormHelperText>
-            </FormControl>
+            <SearchableSelect
+              options={[
+                { label: 'Admin', value: 'company_admin' },
+                { label: 'Contributor', value: 'contributor' },
+                { label: 'Read Only', value: 'read_only' }
+              ]}
+              value={selectedRole}
+              onChange={val => setSelectedRole(val as RoleType)}
+              label="Role"
+              helperText={ROLE_DESCRIPTIONS[selectedRole]}
+              disableClearable
+              fullWidth
+            />
 
             {level !== 'portfolio' && (
-              <FormControl fullWidth>
-                <InputLabel>Role Profile (Optional)</InputLabel>
-                <Select
-                  value={selectedRoleProfileKey || ''}
-                  onChange={e => setSelectedRoleProfileKey(e.target.value || null)}
-                  label="Role Profile (Optional)"
-                  disabled={isLoadingProfiles}
-                >
-                  <MenuItem value="">
-                    <em>None - Use base role only</em>
-                  </MenuItem>
-                  {availableProfiles.map(profile => (
-                    <MenuItem key={profile.key} value={profile.key}>
-                      {profile.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {selectedProfile && <FormHelperText>{selectedProfile.description}</FormHelperText>}
-                {!selectedRoleProfileKey && (
-                  <FormHelperText>Optionally assign a role profile for specialized module access</FormHelperText>
-                )}
-              </FormControl>
+              <SearchableSelect
+                options={[
+                  { label: 'None - Use base role only', value: '' },
+                  ...availableProfiles.map(profile => ({
+                    label: profile.label,
+                    value: profile.key
+                  }))
+                ]}
+                value={selectedRoleProfileKey || ''}
+                onChange={val => setSelectedRoleProfileKey((val as string) || null)}
+                label="Role Profile (Optional)"
+                helperText={selectedProfile ? selectedProfile.description : (!selectedRoleProfileKey ? 'Optionally assign a role profile for specialized module access' : undefined)}
+                disabled={isLoadingProfiles}
+                disableClearable
+                fullWidth
+              />
             )}
 
             {level !== 'project' && (

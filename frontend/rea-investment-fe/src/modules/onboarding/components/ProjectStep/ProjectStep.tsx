@@ -5,10 +5,7 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
+import { SearchableSelect } from '../../../../components/common/SearchableSelect/SearchableSelect';
 import TextField from '@mui/material/TextField';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -184,23 +181,16 @@ export const ProjectStep: React.FC<ProjectStepProps> = ({ companyId, companyName
             <Typography variant="subtitle1" fontWeight={600} gutterBottom>
               Select an Existing Project
             </Typography>
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Project</InputLabel>
-              <Select
-                value={selectedProjectId}
-                onChange={e => setSelectedProjectId(e.target.value as number)}
-                label="Project"
-              >
-                {projects.map((project: { id: number; name: string }) => (
-                  <MenuItem key={project.id} value={project.id}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <FolderIcon fontSize="small" color="action" />
-                      {project.name}
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <SearchableSelect
+              options={projects.map((project: { id: number; name: string }) => ({
+                label: project.name,
+                value: project.id
+              }))}
+              value={selectedProjectId || null}
+              onChange={val => setSelectedProjectId(val as number)}
+              label="Project"
+              sx={{ mb: 2 }}
+            />
             <Button
               variant="contained"
               onClick={handleSelectExisting}
@@ -238,16 +228,14 @@ export const ProjectStep: React.FC<ProjectStepProps> = ({ companyId, companyName
                 />
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <TextField label="City" value={city} onChange={e => setCity(e.target.value)} required fullWidth />
-                  <FormControl required sx={{ minWidth: 120 }}>
-                    <InputLabel>State</InputLabel>
-                    <Select value={state} onChange={e => setState(e.target.value as string)} label="State">
-                      {US_STATES.map(st => (
-                        <MenuItem key={st} value={st}>
-                          {st}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <SearchableSelect
+                    options={US_STATES.map(st => ({ label: st, value: st }))}
+                    value={state || null}
+                    onChange={val => setState(val as string)}
+                    label="State"
+                    required
+                    sx={{ minWidth: 120 }}
+                  />
                   <TextField
                     label="Zip Code"
                     value={zipCode}

@@ -12,19 +12,17 @@ import Stack from '@mui/material/Stack';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
-import FormControl from '@mui/material/FormControl';
-import Select from '@mui/material/Select';
+import { SearchableSelect } from '../../../../../../components/common/SearchableSelect/SearchableSelect';
 import CircularProgress from '@mui/material/CircularProgress';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { DesktopDatePicker } from '@mui/x-date-pickers/DesktopDatePicker';
-import { useTheme } from '@mui/material/styles';
 import dayjs from 'dayjs';
 import CustomParseFormatPlugin from 'dayjs/plugin/customParseFormat';
 
 import type { AssetManagementSiteDetailsTabProps } from '../types';
 import { ApiClient } from '../../../../../../api';
-import { StyledSelectItem } from '../../../DeviceDetails/tabs/Overview/components/TechnicalDetailCard/TechnicalDetail.styles';
+
 
 dayjs.extend(CustomParseFormatPlugin);
 
@@ -120,7 +118,6 @@ const EmptyReportState: React.FC = () => (
 
 export const Reporting: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDetails }) => {
   const navigate = useNavigate();
-  const theme = useTheme();
   const { siteId: routeSiteId } = useParams<{ siteId: string }>();
   const [filters, setFilters] = useState<ProjectHubReportFilters | undefined>();
 
@@ -143,7 +140,7 @@ export const Reporting: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDe
   });
 
   const onSubmit: SubmitHandler<ReportFormFields> = async data => {
-    const selectedReport = reportsResponseData?.items.find(report => report.id === (data.type as unknown as string));
+    const selectedReport = data.type;
     if (!selectedReport) return;
 
     const startDate = dayjs(data.start_date).startOf('month').format('YYYY-MM-DD');
@@ -234,28 +231,27 @@ export const Reporting: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDe
                 control={control}
                 rules={{ required: 'Report type is required' }}
                 render={({ field }) => (
-                  <FormControl error={!!errors.type} required sx={{ minWidth: 200 }}>
-                    <Select
-                      inputRef={field.ref}
-                      value={field.value || ''}
-                      error={!!errors.type}
-                      disabled={field.disabled}
-                      onChange={field.onChange}
-                      fullWidth
-                      variant="outlined"
-                      size="small"
-                      displayEmpty
-                    >
-                      <StyledSelectItem value="">
-                        <Box sx={{ color: theme.palette.text.disabled }}>Select Report</Box>
-                      </StyledSelectItem>
-                      {reportsResponseData?.items.map(report => (
-                        <StyledSelectItem key={report.id} value={report.id}>
-                          {report.name}
-                        </StyledSelectItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <SearchableSelect
+                    options={(reportsResponseData?.items || []).map(report => ({
+                      label: report.name,
+                      value: report.id
+                    }))}
+                    value={(field.value as ReportType | undefined)?.id || null}
+                    onChange={val => {
+                      const report = reportsResponseData?.items.find(r => r.id === val);
+                      field.onChange(report ?? undefined);
+                    }}
+                    onBlur={field.onBlur}
+                    inputRef={field.ref}
+                    label="Select Report"
+                    error={!!errors.type}
+                    required
+                    disabled={field.disabled}
+                    variant="outlined"
+                    size="small"
+                    placeholder="Select Report"
+                    sx={{ minWidth: 200 }}
+                  />
                 )}
               />
             </Box>

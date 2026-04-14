@@ -5,12 +5,15 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import { FinanceBudget, FinanceBudgetStatus } from '../types';
+import { SearchableSelect, SearchableSelectOption } from '../../../components/common/SearchableSelect/SearchableSelect';
+
+const statusOptions: SearchableSelectOption[] = [
+  { label: 'Draft', value: FinanceBudgetStatus.Draft },
+  { label: 'Active', value: FinanceBudgetStatus.Active },
+  { label: 'Closed', value: FinanceBudgetStatus.Closed }
+];
 
 interface BudgetFormDialogProps {
   open: boolean;
@@ -77,14 +80,12 @@ export const BudgetFormDialog: React.FC<BudgetFormDialogProps> = ({ open, onClos
             rows={2}
             fullWidth
           />
-          <FormControl fullWidth>
-            <InputLabel>Status</InputLabel>
-            <Select value={status} onChange={e => setStatus(e.target.value as FinanceBudgetStatus)} label="Status">
-              <MenuItem value={FinanceBudgetStatus.Draft}>Draft</MenuItem>
-              <MenuItem value={FinanceBudgetStatus.Active}>Active</MenuItem>
-              <MenuItem value={FinanceBudgetStatus.Closed}>Closed</MenuItem>
-            </Select>
-          </FormControl>
+          <SearchableSelect
+            options={statusOptions}
+            value={status}
+            onChange={val => setStatus(val as FinanceBudgetStatus)}
+            label="Status"
+          />
           <TextField
             label="Period Start"
             type="date"

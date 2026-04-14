@@ -5,10 +5,9 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
+import Autocomplete from '@mui/material/Autocomplete';
+import TextField from '@mui/material/TextField';
+import { SearchableSelect } from '../../../../components/common/SearchableSelect/SearchableSelect';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import Chip from '@mui/material/Chip';
@@ -114,12 +113,9 @@ export const InviteStep: React.FC<InviteStepProps> = ({
     inviteMutation.mutate();
   };
 
-  const handleRoleChange = (event: SelectChangeEvent) => {
-    setRole(event.target.value as RoleType);
-  };
 
-  const handleProjectChange = (event: SelectChangeEvent<number[]>) => {
-    setSelectedProjects(event.target.value as number[]);
+  const handleProjectChange = (newIds: number[]) => {
+    setSelectedProjects(newIds);
   };
 
   return (
@@ -174,14 +170,17 @@ export const InviteStep: React.FC<InviteStepProps> = ({
                   label="Select User"
                 />
 
-                <FormControl fullWidth>
-                  <InputLabel>Role</InputLabel>
-                  <Select value={role} onChange={handleRoleChange} label="Role">
-                    <MenuItem value="company_admin">Admin</MenuItem>
-                    <MenuItem value="contributor">Contributor</MenuItem>
-                    <MenuItem value="read_only">Read Only</MenuItem>
-                  </Select>
-                </FormControl>
+                <SearchableSelect
+                  options={[
+                    { label: 'Admin', value: 'company_admin' },
+                    { label: 'Contributor', value: 'contributor' },
+                    { label: 'Read Only', value: 'read_only' }
+                  ]}
+                  value={role}
+                  onChange={val => setRole(val as RoleType)}
+                  label="Role"
+                  disableClearable
+                />
 
                 {projects.length > 1 && (
                   <Box>
@@ -197,30 +196,28 @@ export const InviteStep: React.FC<InviteStepProps> = ({
                         <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
                           Optionally assign the user to specific projects
                         </Typography>
-                        <FormControl fullWidth size="small">
-                          <InputLabel>Select Projects</InputLabel>
-                          <Select
-                            multiple
-                            value={selectedProjects}
-                            onChange={handleProjectChange}
-                            label="Select Projects"
-                            renderValue={selected => (
-                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                {(selected as number[]).map(id => {
-                                  const project = projects.find(p => p.id === id);
-                                  return <Chip key={id} label={project?.name} size="small" />;
-                                })}
-                              </Box>
-                            )}
-                          >
-                            {projects.map(project => (
-                              <MenuItem key={project.id} value={project.id}>
-                                <Checkbox checked={selectedProjects.includes(project.id)} />
-                                <ListItemText primary={project.name} />
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
+                        <Autocomplete
+                          multiple
+                          size="small"
+                          options={projects}
+                          getOptionLabel={option => option.name}
+                          value={projects.filter(p => selectedProjects.includes(p.id))}
+                          onChange={(_event, newValue) => handleProjectChange(newValue.map(v => v.id))}
+                          disableCloseOnSelect
+                          renderOption={(props, option, { selected }) => (
+                            <li {...props}>
+                              <Checkbox checked={selected} sx={{ mr: 1 }} />
+                              <ListItemText primary={option.name} />
+                            </li>
+                          )}
+                          renderTags={(value, getTagProps) =>
+                            value.map((option, index) => (
+                              <Chip {...getTagProps({ index })} key={option.id} label={option.name} size="small" />
+                            ))
+                          }
+                          renderInput={params => <TextField {...params} label="Select Projects" />}
+                          fullWidth
+                        />
                       </Box>
                     </Collapse>
                   </Box>

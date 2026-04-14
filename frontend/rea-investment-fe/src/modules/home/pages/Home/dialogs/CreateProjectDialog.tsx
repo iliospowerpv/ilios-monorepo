@@ -9,14 +9,10 @@ import TextField from '@mui/material/TextField';
 import Box from '@mui/material/Box';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-
 import { ApiClient } from '../../../../../api';
 import { useEntityContext } from '../../../../../contexts/entityContext/entityContext';
 import { US_STATES } from '../../../../../constants/usStates';
+import { SearchableSelect } from '../../../../../components/common/SearchableSelect/SearchableSelect';
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -120,16 +116,16 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
             {error && <Alert severity="error">{error}</Alert>}
 
-            <FormControl fullWidth required>
-              <InputLabel>Company</InputLabel>
-              <Select value={companyId} onChange={e => setCompanyId(e.target.value as number)} label="Company">
-                {companies.map(company => (
-                  <MenuItem key={company.company_id} value={company.company_id}>
-                    {company.company_name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <SearchableSelect
+              options={companies.map(company => ({
+                label: company.company_name,
+                value: company.company_id
+              }))}
+              value={companyId || null}
+              onChange={val => setCompanyId(val as number)}
+              label="Company"
+              required
+            />
 
             <TextField label="Project Name" value={name} onChange={e => setName(e.target.value)} required fullWidth />
 
@@ -137,16 +133,13 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, 
 
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField label="City" value={city} onChange={e => setCity(e.target.value)} fullWidth />
-              <FormControl sx={{ minWidth: 120 }}>
-                <InputLabel>State</InputLabel>
-                <Select value={state} onChange={e => setState(e.target.value as string)} label="State">
-                  {US_STATES.map(st => (
-                    <MenuItem key={st} value={st}>
-                      {st}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <SearchableSelect
+                options={US_STATES.map(st => ({ label: st, value: st }))}
+                value={state || null}
+                onChange={val => setState(val as string)}
+                label="State"
+                sx={{ minWidth: 120 }}
+              />
               <TextField
                 label="Zip Code"
                 value={zipCode}

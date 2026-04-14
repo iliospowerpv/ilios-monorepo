@@ -4,21 +4,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import Stack from '@mui/material/Stack';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
-import FormControl from '@mui/material/FormControl';
-import FormHelperText from '@mui/material/FormHelperText';
-import InputLabel from '@mui/material/InputLabel';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
-import FilledInput from '@mui/material/FilledInput';
-import Box from '@mui/material/Box';
-import Chip from '@mui/material/Chip';
-import Checkbox from '@mui/material/Checkbox';
-import ListItemText from '@mui/material/ListItemText';
-import HourglassBottomRoundedIcon from '@mui/icons-material/HourglassBottomRounded';
 
 import formatNumericValue from '../../../utils/formatters/formatFloatValue';
 import { State } from '../../../utils/asset-managment';
@@ -32,6 +21,8 @@ import {
   CreateSiteMappingAttributes,
   SiteMapping
 } from '../../../api';
+import { SearchableSelect, SearchableSelectOption } from '../../common/SearchableSelect/SearchableSelect';
+import { SearchableMultiSelect } from '../../common/SearchableSelect/SearchableMultiSelect';
 
 const noBottomLineStyles = {
   '& .MuiInputBase-root:not(.Mui-disabled, .Mui-error)': {
@@ -61,6 +52,11 @@ type SiteFormFields = {
 type SiteFormProps =
   | { mode: 'add'; siteId?: number; siteData?: SiteDetailedInfo; companyId: number }
   | { mode: 'edit'; siteId: number; siteData: SiteDetailedInfo; companyId: number };
+
+const stateOptions: SearchableSelectOption[] = Object.entries(State).map(([key, value]) => ({
+  label: value,
+  value: key
+}));
 
 export const SiteForm: React.FC<SiteFormProps> = props => {
   const { companyId, siteId, mode, siteData } = props;
@@ -269,24 +265,19 @@ export const SiteForm: React.FC<SiteFormProps> = props => {
         control={control}
         rules={{ required: 'State is required field.' }}
         render={({ field }) => (
-          <FormControl error={!!errors.state} variant="filled" required sx={noBottomLineStyles}>
-            <InputLabel error={!!errors.state}>State</InputLabel>
-            <Select
-              ref={field.ref}
-              value={field.value}
-              error={!!errors.state}
-              label="state"
-              onBlur={field.onBlur}
-              onChange={field.onChange}
-            >
-              {Object.entries(State).map(([key, value]) => (
-                <MenuItem key={key} value={key}>
-                  {value}
-                </MenuItem>
-              ))}
-            </Select>
-            {errors.state?.message && <FormHelperText error>{errors.state.message}</FormHelperText>}
-          </FormControl>
+          <SearchableSelect
+            options={stateOptions}
+            value={field.value ?? null}
+            onChange={val => field.onChange(val)}
+            onBlur={field.onBlur}
+            inputRef={field.ref}
+            label="State"
+            required
+            error={!!errors.state}
+            helperText={errors.state?.message}
+            variant="filled"
+            formControlSx={noBottomLineStyles}
+          />
         )}
       />
       <TextField
@@ -428,45 +419,36 @@ export const SiteForm: React.FC<SiteFormProps> = props => {
         name="das_connection_name"
         control={control}
         render={({ field }) => {
-          const selectedConnection = connectionData?.items?.find(item => item.name === field.value) || null;
+          const matchedConnection = connectionData?.items?.find(item => item.name === field.value) || null;
           const isFieldDisabled = (isEdit && !!siteData?.telemetry_site_name) || isLoadingConnectionData;
 
+          const connectionOptions: SearchableSelectOption[] = isFieldDisabled
+            ? (field.value ? [{ label: field.value, value: field.value }] : [])
+            : (connectionData?.items?.length
+                ? connectionData.items.map(conn => ({ label: conn.name, value: conn.name }))
+                : [{ label: 'No connections to show', value: '__none__', disabled: true }]);
+
           return (
-            <FormControl error={!!errors.das_connection_name} variant="filled" sx={noBottomLineStyles}>
-              <InputLabel error={!!errors.das_connection_name}>Connection</InputLabel>
-              <Select
-                ref={field.ref}
-                value={selectedConnection ? selectedConnection.name : field.value || ''}
-                error={!!connectionError}
-                label="Connection"
-                disabled={isFieldDisabled}
-                onBlur={field.onBlur}
-                IconComponent={isLoadingConnectionData ? HourglassBottomRoundedIcon : undefined}
-                onChange={event => {
-                  field.onChange(event.target.value);
-                  setSelectedConnection(connectionData?.items?.find(item => item.name === event.target.value) || null);
-                  setValue('telemetry_site_name', '');
-                  setSelectedSite(null);
-                }}
-              >
-                {isFieldDisabled ? (
-                  <MenuItem value={field.value}>{field.value}</MenuItem>
-                ) : connectionData?.items?.length ? (
-                  connectionData?.items?.map(connection => (
-                    <MenuItem key={connection.id} value={connection.name}>
-                      {connection.name}
-                    </MenuItem>
-                  ))
-                ) : (
-                  <MenuItem disabled value="" sx={{ opacity: 0.8 }}>
-                    No connections to show
-                  </MenuItem>
-                )}
-              </Select>
-              {errors.das_connection_name?.message && (
-                <FormHelperText error>{errors.das_connection_name.message}</FormHelperText>
-              )}
-            </FormControl>
+            <SearchableSelect
+              options={connectionOptions}
+              value={matchedConnection ? matchedConnection.name : field.value || null}
+              onChange={val => {
+                if (val === '__none__') return;
+                field.onChange(val);
+                setSelectedConnection(connectionData?.items?.find(item => item.name === val) || null);
+                setValue('telemetry_site_name', '');
+                setSelectedSite(null);
+              }}
+              onBlur={field.onBlur}
+              inputRef={field.ref}
+              label="Connection"
+              error={!!connectionError || !!errors.das_connection_name}
+              helperText={errors.das_connection_name?.message}
+              variant="filled"
+              disabled={isFieldDisabled}
+              loading={isLoadingConnectionData}
+              formControlSx={noBottomLineStyles}
+            />
           );
         }}
       />
@@ -476,39 +458,32 @@ export const SiteForm: React.FC<SiteFormProps> = props => {
           control={control}
           rules={{ required: 'Site for Mapping is required field.' }}
           render={({ field }) => {
-            const selectedSite = siteMappingData?.items?.find(item => item.name === field.value) || null;
+            const matchedSite = siteMappingData?.items?.find(item => item.name === field.value) || null;
             const isFieldDisabled = (isEdit && !!siteData?.telemetry_site_name) || isLoadingSitesData;
 
+            const siteOptions: SearchableSelectOption[] = isFieldDisabled
+              ? (field.value ? [{ label: field.value, value: field.value }] : [])
+              : (siteMappingData?.items?.map(site => ({ label: site.name, value: site.name })) || []);
+
             return (
-              <FormControl error={!!errors.telemetry_site_name} variant="filled" required sx={noBottomLineStyles}>
-                <InputLabel error={!!errors.telemetry_site_name}>Site for Mapping</InputLabel>
-                <Select
-                  ref={field.ref}
-                  value={selectedSite ? selectedSite.name : field.value || ''}
-                  error={!!siteError}
-                  label="Site for Mapping"
-                  disabled={isFieldDisabled}
-                  onBlur={field.onBlur}
-                  IconComponent={isLoadingSitesData ? HourglassBottomRoundedIcon : undefined}
-                  onChange={event => {
-                    field.onChange(event.target.value);
-                    setSelectedSite(siteMappingData?.items?.find(item => item.name === event.target.value) || null);
-                  }}
-                >
-                  {isFieldDisabled ? (
-                    <MenuItem value={field.value}>{field.value}</MenuItem>
-                  ) : (
-                    siteMappingData?.items?.map(site => (
-                      <MenuItem key={site.id} value={site.name}>
-                        {site.name}
-                      </MenuItem>
-                    ))
-                  )}
-                </Select>
-                {errors.telemetry_site_name?.message && (
-                  <FormHelperText error>{errors.telemetry_site_name.message}</FormHelperText>
-                )}
-              </FormControl>
+              <SearchableSelect
+                options={siteOptions}
+                value={matchedSite ? matchedSite.name : field.value || null}
+                onChange={val => {
+                  field.onChange(val);
+                  setSelectedSite(siteMappingData?.items?.find(item => item.name === val) || null);
+                }}
+                onBlur={field.onBlur}
+                inputRef={field.ref}
+                label="Site for Mapping"
+                required
+                error={!!siteError || !!errors.telemetry_site_name}
+                helperText={errors.telemetry_site_name?.message}
+                variant="filled"
+                disabled={isFieldDisabled}
+                loading={isLoadingSitesData}
+                formControlSx={noBottomLineStyles}
+              />
             );
           }}
         />
@@ -520,58 +495,22 @@ export const SiteForm: React.FC<SiteFormProps> = props => {
         name="cameras_uuids"
         control={control}
         disabled={isLoadingCameraData}
-        render={({ field }) => {
-          const selectedValues = field.value || [];
-
-          const handleDelete = (uuidToDelete: string) => {
-            const newValues = selectedValues.filter((uuid: string) => uuid !== uuidToDelete);
-            field.onChange(newValues);
-          };
-
-          return (
-            <FormControl variant="filled" error={!!cameraError} sx={noBottomLineStyles}>
-              <InputLabel error={!!cameraError} shrink={selectedValues.length > 0}>
-                Security Cameras
-              </InputLabel>
-              <Select
-                ref={field.ref}
-                value={selectedValues}
-                error={!!cameraError}
-                label="cameras_uuids"
-                multiple
-                disabled={isLoadingCameraData}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                input={<FilledInput />}
-                IconComponent={isLoadingCameraData ? HourglassBottomRoundedIcon : undefined}
-                renderValue={selected => (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {selected.map((uuid: string) => {
-                      const option = cameraData?.items.find(opt => opt.uuid === uuid);
-
-                      return (
-                        <Chip
-                          key={uuid}
-                          label={option?.name}
-                          onDelete={() => handleDelete(uuid)}
-                          onMouseDown={event => event.stopPropagation()}
-                        />
-                      );
-                    })}
-                  </Box>
-                )}
-              >
-                {cameraData?.items.map(option => (
-                  <MenuItem key={option.uuid} value={option.uuid}>
-                    <Checkbox checked={selectedValues.indexOf(option.uuid) > -1} />
-                    <ListItemText primary={option.name} />
-                  </MenuItem>
-                ))}
-              </Select>
-              {cameraError?.message && <FormHelperText error>{cameraError?.message}</FormHelperText>}
-            </FormControl>
-          );
-        }}
+        render={({ field }) => (
+          <SearchableMultiSelect
+            options={cameraData?.items.map(cam => ({ label: cam.name, value: cam.uuid })) || []}
+            value={field.value || []}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            inputRef={field.ref}
+            label="Security Cameras"
+            error={!!cameraError}
+            helperText={cameraError?.message}
+            variant="filled"
+            disabled={isLoadingCameraData}
+            loading={isLoadingCameraData}
+            formControlSx={noBottomLineStyles}
+          />
+        )}
       />
       {errors.root && (
         <Typography px="4px" color="error">

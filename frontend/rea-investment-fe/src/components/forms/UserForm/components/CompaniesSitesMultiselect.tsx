@@ -4,6 +4,8 @@ import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
+import TextField from '@mui/material/TextField';
+import Box from '@mui/material/Box';
 import HourglassBottomRoundedIcon from '@mui/icons-material/HourglassBottomRounded';
 import { MenuItemWithNestedOptions } from './MenuItemWithNestedOptions';
 import { SelectedItemsDisplayRenderer } from './SelectedItemsDisplayRenderer';
@@ -52,6 +54,7 @@ export const CompaniesSitesMultiselect: React.FC<CompaniesSitesMultiselectProps>
   const [dropDownopen, setDropdownOpen] = React.useState<boolean>(false);
   const inputRef = React.useRef<{ focus: () => void }>(null);
   const [selectDisplayFocused, setSelectDisplayFocused] = React.useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = React.useState<string>('');
 
   const hasSelectedItems = selectedSiteIds.length > 0;
   const selectedCompanySites = React.useMemo<CompanySites[]>(() => {
@@ -80,7 +83,21 @@ export const CompaniesSitesMultiselect: React.FC<CompaniesSitesMultiselectProps>
   const handleClose: () => void = () => {
     setDropdownOpen(false);
     setSelectDisplayFocused(false);
+    setSearchQuery('');
   };
+
+  const filteredData = React.useMemo(() => {
+    if (!searchQuery.trim()) return data;
+    const query = searchQuery.toLowerCase();
+    return data
+      .map(company => ({
+        ...company,
+        sites: company.sites.filter(
+          site => site.name.toLowerCase().includes(query) || company.name.toLowerCase().includes(query)
+        )
+      }))
+      .filter(company => company.sites.length > 0 || company.name.toLowerCase().includes(query));
+  }, [data, searchQuery]);
 
   const handleSelectDisplayFocus = () => {
     setSelectDisplayFocused(true);
@@ -183,7 +200,19 @@ export const CompaniesSitesMultiselect: React.FC<CompaniesSitesMultiselectProps>
           )}
         >
           <MenuItem value="stub" sx={{ display: 'none' }} />
-          {data.map(({ id, name, sites }) => {
+          <Box sx={{ px: 1.5, py: 1, position: 'sticky', top: 0, bgcolor: 'background.paper', zIndex: 1 }} onKeyDown={e => e.stopPropagation()}>
+            <TextField
+              size="small"
+              fullWidth
+              placeholder="Search companies or sites..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              autoFocus
+              onClick={e => e.stopPropagation()}
+              onMouseDown={e => e.stopPropagation()}
+            />
+          </Box>
+          {filteredData.map(({ id, name, sites }) => {
             return (
               <MenuItemWithNestedOptions
                 key={id}

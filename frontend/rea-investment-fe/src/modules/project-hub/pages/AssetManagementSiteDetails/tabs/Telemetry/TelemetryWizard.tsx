@@ -11,10 +11,7 @@ import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
+import { SearchableSelect } from '../../../../../../components/common/SearchableSelect/SearchableSelect';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import Checkbox from '@mui/material/Checkbox';
@@ -320,34 +317,31 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
             <Typography variant="body1" gutterBottom>
               Choose an existing connection or create a new one.
             </Typography>
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Connection Mode</InputLabel>
-              <Select
-                value={connectionMode}
-                label="Connection Mode"
-                onChange={e => setConnectionMode(e.target.value as 'existing' | 'new')}
-              >
-                <MenuItem value="existing">Use Existing Connection</MenuItem>
-                <MenuItem value="new">Create New Connection</MenuItem>
-              </Select>
-            </FormControl>
+            <SearchableSelect
+              options={[
+                { label: 'Use Existing Connection', value: 'existing' },
+                { label: 'Create New Connection', value: 'new' }
+              ]}
+              value={connectionMode}
+              onChange={val => setConnectionMode(val as 'existing' | 'new')}
+              label="Connection Mode"
+              disableClearable
+              sx={{ mb: 2 }}
+            />
 
             {connectionMode === 'existing' && (
-              <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>Select Connection</InputLabel>
-                <Select
-                  value={selectedConnectionId?.toString() || ''}
-                  label="Select Connection"
-                  onChange={e => setSelectedConnectionId(Number(e.target.value))}
-                  disabled={isLoadingConnections}
-                >
-                  {connections?.items.map(conn => (
-                    <MenuItem key={conn.id} value={conn.id?.toString()}>
-                      {conn.name} ({conn.provider})
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <SearchableSelect
+                options={(connections?.items || []).filter(conn => conn.id != null).map(conn => ({
+                  label: `${conn.name} (${conn.provider})`,
+                  value: conn.id!
+                }))}
+                value={selectedConnectionId ?? null}
+                onChange={val => setSelectedConnectionId(val ? Number(val) : null)}
+                label="Select Connection"
+                disabled={isLoadingConnections}
+                loading={isLoadingConnections}
+                sx={{ mb: 2 }}
+              />
             )}
 
             {connectionMode === 'new' && isLoadingProviders && (
@@ -378,20 +372,13 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
                   onChange={e => setNewConnectionForm(prev => ({ ...prev, name: e.target.value }))}
                   sx={{ mb: 2 }}
                 />
-                <FormControl fullWidth sx={{ mb: 2 }}>
-                  <InputLabel>Provider</InputLabel>
-                  <Select
-                    value={newConnectionForm.provider}
-                    label="Provider"
-                    onChange={e => setNewConnectionForm(prev => ({ ...prev, provider: e.target.value }))}
-                  >
-                    {providers.map(p => (
-                      <MenuItem key={p.value} value={p.value}>
-                        {p.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <SearchableSelect
+                  options={providers}
+                  value={newConnectionForm.provider || null}
+                  onChange={val => setNewConnectionForm(prev => ({ ...prev, provider: val as string }))}
+                  label="Provider"
+                  sx={{ mb: 2 }}
+                />
 
                 {newConnectionForm.provider === 'KMC' && (
                   <TextField
@@ -452,25 +439,21 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
             {isLoadingDasSites ? (
               <CircularProgress />
             ) : (
-              <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>DAS Site</InputLabel>
-                <Select
-                  value={selectedDasSite?.id || ''}
-                  label="DAS Site"
-                  onChange={e => {
-                    const site = dasSites?.items.find(s => String(s.id) === e.target.value);
-                    if (site) {
-                      setSelectedDasSite({ id: String(site.id), name: site.name });
-                    }
-                  }}
-                >
-                  {dasSites?.items.map(site => (
-                    <MenuItem key={site.id} value={String(site.id)}>
-                      {site.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <SearchableSelect
+                options={(dasSites?.items || []).map(site => ({
+                  label: site.name,
+                  value: String(site.id)
+                }))}
+                value={selectedDasSite?.id || null}
+                onChange={val => {
+                  const site = dasSites?.items.find(s => String(s.id) === val);
+                  if (site) {
+                    setSelectedDasSite({ id: String(site.id), name: site.name });
+                  }
+                }}
+                label="DAS Site"
+                sx={{ mb: 2 }}
+              />
             )}
           </Box>
         );
@@ -539,25 +522,19 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
                           {device.is_mapped ? (
                             <Typography variant="body2">{device.telemetry_device_name}</Typography>
                           ) : (
-                            <FormControl size="small" fullWidth>
-                              <Select
-                                value={deviceMappings[device.id]?.telemetry_device_id || ''}
-                                onChange={e => {
-                                  const dasDevice = dasDevices?.items.find(d => d.id === e.target.value);
-                                  handleDeviceMappingChange(device.id, dasDevice || null);
-                                }}
-                                displayEmpty
-                              >
-                                <MenuItem value="">
-                                  <em>Select DAS Device</em>
-                                </MenuItem>
-                                {dasDevices?.items.map(dasDevice => (
-                                  <MenuItem key={dasDevice.id} value={dasDevice.id}>
-                                    {dasDevice.name}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
+                            <SearchableSelect
+                              options={(dasDevices?.items || []).map(dasDevice => ({
+                                label: dasDevice.name,
+                                value: dasDevice.id
+                              }))}
+                              value={deviceMappings[device.id]?.telemetry_device_id || null}
+                              onChange={val => {
+                                const dasDevice = dasDevices?.items.find(d => d.id === val);
+                                handleDeviceMappingChange(device.id, dasDevice || null);
+                              }}
+                              placeholder="Select DAS Device"
+                              size="small"
+                            />
                           )}
                         </TableCell>
                       </TableRow>
