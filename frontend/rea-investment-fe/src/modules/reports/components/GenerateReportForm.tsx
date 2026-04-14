@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import Stack from '@mui/material/Stack';
@@ -43,6 +43,8 @@ interface DeviceFormProps {
 export const DeviceForm: React.FC<DeviceFormProps> = ({ onFilterChange }) => {
   const inputStyles = { fontSize: '0.875rem', lineHeight: 1.43, height: '40px' };
   const theme = useTheme();
+  const [startOpen, setStartOpen] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
   const { handleSubmit, formState, control, watch, reset, getValues, setValue } = useForm<DeviceFormFields>({
     mode: 'onBlur',
     criteriaMode: 'all',
@@ -51,8 +53,8 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({ onFilterChange }) => {
       company: undefined,
       site: undefined,
       type: undefined,
-      start_date: undefined,
-      end_date: undefined
+      start_date: null as any,
+      end_date: null as any
     }
   });
 
@@ -69,11 +71,8 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({ onFilterChange }) => {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     filters.type = selectedReport;
-    filters.start_date = dayjs(data.start_date, 'YYYY-MM-DD', true).startOf('month').format('YYYY-MM-DD');
-    const selectedDate = dayjs(data.end_date);
-    const now = dayjs();
-    const isCurrentMonth = selectedDate.isSame(now, 'month');
-    filters.end_date = isCurrentMonth ? now.format('YYYY-MM-DD') : selectedDate.endOf('month').format('YYYY-MM-DD');
+    filters.start_date = dayjs(data.start_date).format('YYYY-MM-DD');
+    filters.end_date = dayjs(data.end_date).format('YYYY-MM-DD');
     onFilterChange(filters);
     reset(getValues());
   };
@@ -185,12 +184,15 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({ onFilterChange }) => {
             <DesktopDatePicker
               {...field}
               value={value}
-              views={['year', 'month']}
-              format="MM/YYYY"
+              views={['year', 'month', 'day']}
+              format="MM/DD/YYYY"
               inputRef={ref}
               minDate={dayjs(new Date(2022, 0, 1))}
               maxDate={maxDate || undefined}
               onChange={val => onChange(val)}
+              open={startOpen}
+              onOpen={() => setStartOpen(true)}
+              onClose={() => setStartOpen(false)}
               slotProps={{
                 textField: {
                   placeholder: 'From',
@@ -199,7 +201,8 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({ onFilterChange }) => {
                   size: 'small',
                   fullWidth: true,
                   InputProps: { sx: inputStyles },
-                  variant: 'outlined'
+                  variant: 'outlined',
+                  onClick: () => setStartOpen(true)
                 }
               }}
             />
@@ -217,12 +220,15 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({ onFilterChange }) => {
             <DesktopDatePicker
               {...field}
               value={value}
-              views={['year', 'month']}
-              format="MM/YYYY"
+              views={['year', 'month', 'day']}
+              format="MM/DD/YYYY"
               inputRef={ref}
               minDate={minDate || undefined}
               maxDate={today}
               onChange={val => onChange(val)}
+              open={endOpen}
+              onOpen={() => setEndOpen(true)}
+              onClose={() => setEndOpen(false)}
               slotProps={{
                 textField: {
                   placeholder: 'To',
@@ -231,7 +237,8 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({ onFilterChange }) => {
                   size: 'small',
                   fullWidth: true,
                   InputProps: { sx: inputStyles },
-                  variant: 'outlined'
+                  variant: 'outlined',
+                  onClick: () => setEndOpen(true)
                 }
               }}
             />
