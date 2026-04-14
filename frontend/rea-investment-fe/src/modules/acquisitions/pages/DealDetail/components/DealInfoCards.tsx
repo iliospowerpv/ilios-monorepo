@@ -275,7 +275,7 @@ export const SystemDetailsCard: React.FC<DealCardContentProps> = ({
             onChange={e => onFormChange('system_size_ac', e.target.value ? parseFloat(e.target.value) : undefined)}
             fullWidth
             size="small"
-            InputProps={{ endAdornment: <InputAdornment position="end">MW</InputAdornment> }}
+            InputProps={{ endAdornment: <InputAdornment position="end">kW</InputAdornment> }}
           />
         </Grid>
         <Grid item xs={6}>
@@ -286,7 +286,7 @@ export const SystemDetailsCard: React.FC<DealCardContentProps> = ({
             onChange={e => onFormChange('system_size_dc', e.target.value ? parseFloat(e.target.value) : undefined)}
             fullWidth
             size="small"
-            InputProps={{ endAdornment: <InputAdornment position="end">MW</InputAdornment> }}
+            InputProps={{ endAdornment: <InputAdornment position="end">kW</InputAdornment> }}
           />
         </Grid>
         <Grid item xs={6}>
@@ -328,10 +328,10 @@ export const SystemDetailsCard: React.FC<DealCardContentProps> = ({
     <Box>
       <Grid container spacing={2}>
         <Grid item xs={6} md={3}>
-          <InfoRow label="System Size (AC)" value={deal.system_size_ac ? `${deal.system_size_ac} MW` : undefined} />
+          <InfoRow label="System Size (AC)" value={deal.system_size_ac ? `${deal.system_size_ac} kW` : undefined} />
         </Grid>
         <Grid item xs={6} md={3}>
-          <InfoRow label="System Size (DC)" value={deal.system_size_dc ? `${deal.system_size_dc} MW` : undefined} />
+          <InfoRow label="System Size (DC)" value={deal.system_size_dc ? `${deal.system_size_dc} kW` : undefined} />
         </Grid>
         <Grid item xs={6} md={3}>
           <InfoRow label="Ownership Structure" value={deal.ownership_structure} />

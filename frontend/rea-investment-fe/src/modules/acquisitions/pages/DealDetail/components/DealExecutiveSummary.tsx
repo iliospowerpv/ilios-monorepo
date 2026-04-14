@@ -30,7 +30,7 @@ const formatCurrency = (value?: number): string => {
 
 const formatSize = (value?: number): string => {
   if (value === undefined || value === null) return '—';
-  return `${value.toLocaleString()} MW`;
+  return `${value.toLocaleString()} kW`;
 };
 
 const getStageChipColor = (stage: SalesStage): 'success' | 'warning' | 'error' | 'info' | 'default' => {

@@ -136,7 +136,7 @@ const DealRow: React.FC<DealRowProps> = ({ deal, onView, onEdit }) => {
       </TableCell>
       <TableCell>{deal.developer_name || '-'}</TableCell>
       <TableCell align="right">{formatCurrency(deal.pipeline_value)}</TableCell>
-      <TableCell align="right">{deal.system_size_ac ? `${deal.system_size_ac} MW` : '-'}</TableCell>
+      <TableCell align="right">{deal.system_size_ac ? `${deal.system_size_ac} kW` : '-'}</TableCell>
       <TableCell>
         {deal.next_action_date ? (
           <Chip

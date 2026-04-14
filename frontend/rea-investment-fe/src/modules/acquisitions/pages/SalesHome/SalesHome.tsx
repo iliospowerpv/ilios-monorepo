@@ -186,7 +186,7 @@ const DealCardContent: React.FC<DealCardProps & { dragHandleProps?: any }> = ({
 
         {deal.system_size_ac && (
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-            {deal.system_size_ac} MW AC
+            {deal.system_size_ac} kW AC
           </Typography>
         )}
 
@@ -661,26 +661,26 @@ export const SalesHome: React.FC = () => {
             </Grid>
             <Grid item xs={12} md={4}>
               <TextField
-                label="System Size (AC MW)"
+                label="System Size (AC)"
                 type="number"
                 value={dealForm.system_size_ac || ''}
                 onChange={e =>
                   handleFormChange('system_size_ac', e.target.value ? parseFloat(e.target.value) : undefined)
                 }
                 fullWidth
-                InputProps={{ endAdornment: <InputAdornment position="end">MW</InputAdornment> }}
+                InputProps={{ endAdornment: <InputAdornment position="end">kW</InputAdornment> }}
               />
             </Grid>
             <Grid item xs={12} md={4}>
               <TextField
-                label="System Size (DC MW)"
+                label="System Size (DC)"
                 type="number"
                 value={dealForm.system_size_dc || ''}
                 onChange={e =>
                   handleFormChange('system_size_dc', e.target.value ? parseFloat(e.target.value) : undefined)
                 }
                 fullWidth
-                InputProps={{ endAdornment: <InputAdornment position="end">MW</InputAdornment> }}
+                InputProps={{ endAdornment: <InputAdornment position="end">kW</InputAdornment> }}
               />
             </Grid>
             <Grid item xs={12} md={4}>

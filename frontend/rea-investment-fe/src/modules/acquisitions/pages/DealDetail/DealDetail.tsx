@@ -88,8 +88,8 @@ const generateHeaderSummary = (cardId: string, deal: Deal): string => {
       return [deal.city, deal.state].filter(Boolean).join(', ') || deal.address || '';
     case 'system': {
       const parts = [];
-      if (deal.system_size_ac) parts.push(`${deal.system_size_ac} MW AC`);
-      if (deal.system_size_dc) parts.push(`${deal.system_size_dc} MW DC`);
+      if (deal.system_size_ac) parts.push(`${deal.system_size_ac} kW AC`);
+      if (deal.system_size_dc) parts.push(`${deal.system_size_dc} kW DC`);
       return parts.join(' / ');
     }
     case 'financials':
@@ -619,7 +619,7 @@ export const DealDetail: React.FC = () => {
             <li>City: {deal.city || 'Not set'}</li>
             <li>State: {deal.state || 'Not set'}</li>
             <li>
-              System Size: {deal.system_size_ac || 'Not set'} MW AC / {deal.system_size_dc || 'Not set'} MW DC
+              System Size: {deal.system_size_ac || 'Not set'} kW AC / {deal.system_size_dc || 'Not set'} kW DC
             </li>
           </Box>
           <TextField
