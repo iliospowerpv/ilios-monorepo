@@ -3,7 +3,7 @@
 from typing import List, Optional
 
 from fastapi_filter.contrib.sqlalchemy import Filter
-from sqlalchemy import case, func, or_
+from sqlalchemy import and_, case, func, or_
 
 import app.static as static
 from app.crud.base_crud import BaseCRUD
@@ -43,6 +43,8 @@ class CompanyCRUD(BaseCRUD):
         order_direction: Optional[str] = None,
         search_filter: Filter | None = None,
         site_ids_to_limit: list | None = None,
+        include_archived: bool = False,
+        archived_only: bool = False,
     ):
         """Get all companies with joined cumulative sites info like total_sites count and total_capacity. Also, applies
         skip (offset) and limits, sorts ascending by pk.
@@ -53,6 +55,8 @@ class CompanyCRUD(BaseCRUD):
         :param order_by: field name to order by
         :param order_direction: direction clause to order by (asc or desc)
         :param search_filter: search value
+        :param include_archived: if True, include archived companies
+        :param archived_only: if True, show only archived companies
         :return: tuple of total and items list
         """
         # we need to define default values explicitly, since they came as NULL because of validate_query_params
@@ -65,16 +69,21 @@ class CompanyCRUD(BaseCRUD):
             self._build_system_size_clause(Site.system_size_ac).label("total_capacity"),
             # return company site IDs
             func.array_agg(Site.id).label("sites_ids"),
+            self.model.is_archived.label("is_archived"),
         )
+        if archived_only:
+            query = query.filter(self.model.is_archived == True)
+        elif not include_archived:
+            query = query.filter(self.model.is_archived == False)
         if company_ids is not None:
             query = query.filter(self.model.id.in_(company_ids))
         if search_filter:
             query = search_filter.filter(query)
-        query = query.outerjoin(Site).join(
+        query = query.outerjoin(Site, and_(self.model.id == Site.company_id, Site.is_archived == False)).join(
             SiteAdditionalFieldList, SiteAdditionalFieldList.site_id == Site.id, isouter=True
         )
         if site_ids_to_limit:
-            query = query.filter(Site.id.in_(site_ids_to_limit))
+            query = query.filter(or_(Site.id == None, Site.id.in_(site_ids_to_limit)))
         query = query.group_by(self.model.id)
         query = self._add_order_by(query, order_by, order_direction)
 
@@ -89,6 +98,7 @@ class CompanyCRUD(BaseCRUD):
         limit: int = static.DEFAULT_PAGINATION_LIMIT,
         order_by: Optional[str] = None,
         order_direction: Optional[str] = None,
+        include_archived: bool = False,
     ) -> (int, List[Base]):
         """Get all items with applied filters,  skip (offset) and limits, sorted ascending by pk.
 
@@ -97,9 +107,12 @@ class CompanyCRUD(BaseCRUD):
         :param limit: number of items to get per page
         :param order_by: field name to order by
         :param order_direction: direction clause to order by (asc or desc)
+        :param include_archived: if True, include archived companies
         :return: tuple of total and items list
         """
         query = self.db_session.query(self.model)
+        if not include_archived:
+            query = query.filter(self.model.is_archived == False)
         if search is not None:
             found_types = [company_type for company_type in CompanyTypes if search.lower() in company_type.value.lower()]
             search_company_types = [CompanyTypes(company_type) for company_type in found_types]
@@ -142,11 +155,11 @@ class CompanyCRUD(BaseCRUD):
             # sum only sites in status `Placed in Service`
             self._build_system_size_clause(Site.system_size_ac).label("total_capacity"),
         )
-        query = query.join(Site, self.model.id == Site.company_id, isouter=True).join(
+        query = query.join(Site, and_(self.model.id == Site.company_id, Site.is_archived == False), isouter=True).join(
             SiteAdditionalFieldList, SiteAdditionalFieldList.site_id == Site.id, isouter=True
         )
         if site_ids_to_limit:
-            query = query.filter(Site.id.in_(site_ids_to_limit))
+            query = query.filter(or_(Site.id == None, Site.id.in_(site_ids_to_limit)))
         query = query.group_by(self.model.id)
         query = query.filter(self.model.id == target_id)
         return query.one_or_none()
@@ -164,11 +177,11 @@ class CompanyCRUD(BaseCRUD):
             self._build_system_size_clause(Site.system_size_ac).label("total_system_size_ac"),
             self._build_system_size_clause(Site.system_size_dc).label("total_system_size_dc"),
         )
-        query = query.outerjoin(Site).join(
+        query = query.outerjoin(Site, and_(self.model.id == Site.company_id, Site.is_archived == False)).join(
             SiteAdditionalFieldList, SiteAdditionalFieldList.site_id == Site.id, isouter=True
         )
         if site_ids_to_limit:
-            query = query.filter(Site.id.in_(site_ids_to_limit))
+            query = query.filter(or_(Site.id == None, Site.id.in_(site_ids_to_limit)))
         query = query.filter(self.model.id == target_id)
         query = query.group_by(self.model.id)
         return query.one_or_none()
@@ -199,6 +212,7 @@ class CompanyCRUD(BaseCRUD):
             self.model.id.label("id"),
             self.model.name.label("name"),
         )
+        query = query.filter(self.model.is_archived == False)
         if company_ids is not None:
             query = query.filter(self.model.id.in_(company_ids))
         if search_filter:
@@ -250,7 +264,8 @@ class CompanyCRUD(BaseCRUD):
             return []
         
         companies = self.db_session.query(self.model).filter(
-            self.model.id.in_(accessible_company_ids)
+            self.model.id.in_(accessible_company_ids),
+            self.model.is_archived == False,
         ).order_by(self.model.name).all()
         
         result = []
@@ -265,12 +280,12 @@ class CompanyCRUD(BaseCRUD):
             if company.id in company_ids:
                 company_dict["sites"] = [
                     {"id": s.id, "name": s.name, "company_id": s.company_id}
-                    for s in company.sites
+                    for s in company.sites if not s.is_archived
                 ]
             else:
                 company_dict["sites"] = [
                     {"id": s.id, "name": s.name, "company_id": s.company_id}
-                    for s in company.sites if s.id in site_ids
+                    for s in company.sites if s.id in site_ids and not s.is_archived
                 ]
             
             if company.id in company_ids or company_dict["sites"]:

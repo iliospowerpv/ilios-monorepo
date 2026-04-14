@@ -67,11 +67,11 @@ async def get_workspace(
     companies_data: List[UserCompanySchema] = []
     
     if current_user.is_system_user:
-        all_companies = db_session.query(Company).order_by(Company.name).all()
-        all_projects_count = db_session.query(Site).count()
+        all_companies = db_session.query(Company).filter(Company.is_archived == False).order_by(Company.name).all()
+        all_projects_count = db_session.query(Site).filter(Site.is_archived == False).count()
         
         for c in all_companies:
-            project_count = db_session.query(Site).filter_by(company_id=c.id).count()
+            project_count = db_session.query(Site).filter(Site.company_id == c.id, Site.is_archived == False).count()
             companies_data.append(UserCompanySchema(
                 company_id=c.id,
                 company_name=c.name,
@@ -95,6 +95,7 @@ async def get_workspace(
         user_hub_ids = portfolio_crud.get_user_hub_ids(current_user.id)
         if user_hub_ids:
             portfolio_companies = db_session.query(Company).filter(
+                Company.is_archived == False,
                 (Company.portfolio_hub_id.in_(user_hub_ids)) | (Company.id.in_(user_hub_ids))
             ).order_by(Company.name).all()
             
@@ -107,7 +108,7 @@ async def get_workspace(
                 if c.id not in company_ids_seen:
                     hub_id = resolve_company_hub_id(db_session, c.id)
                     portfolio_access = portfolio_accesses.get(hub_id)
-                    project_count = db_session.query(Site).filter_by(company_id=c.id).count()
+                    project_count = db_session.query(Site).filter(Site.company_id == c.id, Site.is_archived == False).count()
                     companies_data.append(UserCompanySchema(
                         company_id=c.id,
                         company_name=c.name,
@@ -124,8 +125,8 @@ async def get_workspace(
             ).all()
             
             for membership in company_memberships:
-                if membership.company and membership.company_id not in company_ids_seen:
-                    project_count = db_session.query(Site).filter_by(company_id=membership.company_id).count()
+                if membership.company and not membership.company.is_archived and membership.company_id not in company_ids_seen:
+                    project_count = db_session.query(Site).filter(Site.company_id == membership.company_id, Site.is_archived == False).count()
                     companies_data.append(UserCompanySchema(
                         company_id=membership.company.id,
                         company_name=membership.company.name,
@@ -141,10 +142,10 @@ async def get_workspace(
             )
             for pm in project_memberships:
                 site = db_session.query(Site).get(pm.site_id)
-                if site and site.company_id not in company_ids_seen:
+                if site and not site.is_archived and site.company_id not in company_ids_seen:
                     company = db_session.query(Company).get(site.company_id)
-                    if company:
-                        project_count = db_session.query(Site).filter_by(company_id=company.id).count()
+                    if company and not company.is_archived:
+                        project_count = db_session.query(Site).filter(Site.company_id == company.id, Site.is_archived == False).count()
                         companies_data.append(UserCompanySchema(
                             company_id=company.id,
                             company_name=company.name,
@@ -171,7 +172,7 @@ async def get_workspace(
     company_name_map = {c.company_id: c.company_name for c in companies_data}
     
     if current_user.is_system_user:
-        sites = db_session.query(Site).order_by(Site.name).all()
+        sites = db_session.query(Site).filter(Site.is_archived == False).order_by(Site.name).all()
     else:
         full_access_company_ids = {
             cd.company_id for cd in companies_data
@@ -193,7 +194,7 @@ async def get_workspace(
             conditions.append(Site.id.in_(direct_site_ids))
         
         if conditions:
-            sites = db_session.query(Site).filter(or_(*conditions)).order_by(Site.name).all()
+            sites = db_session.query(Site).filter(Site.is_archived == False, or_(*conditions)).order_by(Site.name).all()
         else:
             sites = []
     
@@ -508,12 +509,14 @@ async def get_portfolio_hubs(
         )
     
     hub_companies = db_session.query(Company).filter(
+        Company.is_archived == False,
         (Company.portfolio_hub_id == None) | (Company.portfolio_hub_id == Company.id)
     ).order_by(Company.name).all()
     
     hubs = []
     for hub in hub_companies:
         companies_count = db_session.query(Company).filter(
+            Company.is_archived == False,
             (Company.portfolio_hub_id == hub.id) | (Company.id == hub.id)
         ).count()
         hubs.append(PortfolioHubSchema(

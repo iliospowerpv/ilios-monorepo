@@ -8,14 +8,16 @@ Authorization Pattern (Phase C.1):
 """
 import logging
 from copy import deepcopy
+from datetime import datetime
 from typing import Annotated, Any, Dict, Type, Union
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from fastapi_filter import FilterDepends
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.crud.audit_log import AuditLogCRUD
 from app.crud.device import DeviceCRUD
 from app.crud.document import DocumentCRUD
 from app.crud.site import SiteCRUD
@@ -28,6 +30,7 @@ from app.filters.site_filters import SiteFilter
 from app.helpers.assets_management.assets_management_helper import get_site_cards_with_dd_data
 from app.helpers.assets_management.site_details_schema_helper import get_section_schema
 from app.helpers.authentication import get_current_user
+from app.helpers.authorization.module_based.base import get_current_admin_user
 from app.helpers.authorization.project_access import get_authorized_site
 from app.helpers.bq_data_sync_helper import SiteCharacteristicsHandler
 from app.helpers.due_diligence.due_diligence_helper import (
@@ -39,6 +42,7 @@ from app.helpers.permission_guards import require_module_permission, require_mod
 from app.helpers.query_params_validator import validate_query_params
 from app.helpers.task_tracker.board_defaults_helper import create_default_board, create_default_document_tasks
 from app.models.board import BoardModuleEnum, BoardRelatedEntityTypeEnum, BoardRelatedEntityTypeExtraEnum
+from app.models.company import Company
 from app.models.site import Site
 from app.schema.site import (
     AllSitesPaginator,
@@ -115,11 +119,15 @@ async def create(
 async def get(
     query_params: tuple = Depends(validate_query_params(order_by=SiteOrderByFieldEnum)),
     *,
+    is_archived: bool = Query(False, description="Show only archived projects"),
+    include_all: bool = Query(False, description="Show both active and archived projects"),
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     site_filter: SiteFilter = FilterDepends(SiteFilter),
     db_session: Session = Depends(get_session),
 ) -> dict:
     if not current_user.is_system_user:
+        if is_archived or include_all:
+            raise HTTPException(status_code=403, detail="Only system users can view archived projects")
         require_module_permission_any_context(
             user_id=current_user.id,
             company_ids=current_user.get_limited_companies_ids(),
@@ -131,7 +139,9 @@ async def get(
     site_crud = SiteCRUD(db_session)
     skip, limit, order_by, order_direction = query_params
     total, sites = site_crud.filter(
-        current_user.get_limited_sites_ids(), site_filter, skip, limit, order_by, order_direction
+        current_user.get_limited_sites_ids(), site_filter, skip, limit, order_by, order_direction,
+        include_archived=include_all,
+        archived_only=is_archived,
     )
     response_sites = []
 
@@ -314,3 +324,73 @@ async def get_potential_affected_devices(
     )
     potential_affected_devices = DeviceCRUD(db_session).get_potential_affected_devices(site.id, search_task_filter)
     return {"items": potential_affected_devices}
+
+
+@sites_router.patch(
+    "/{site_id}/archive",
+    status_code=status.HTTP_200_OK,
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
+)
+async def archive_site(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_admin_user)],
+    site: Site = Depends(get_authorized_site),
+    db_session: Session = Depends(get_session),
+):
+    if site.is_archived:
+        return {"message": "Project is already archived", "id": site.id}
+
+    now = datetime.utcnow()
+    site.is_archived = True
+    site.archived_at = now
+    site.archived_by = current_user.id
+    site.cascade_archived_by_company = False
+
+    audit_crud = AuditLogCRUD(db_session)
+    audit_crud.create_item({
+        "source": "sites",
+        "action": f"Archived project '{site.name}' (ID: {site.id})",
+        "is_success": True,
+        "details": f"Project archived by admin.",
+        "user_id": current_user.id,
+    })
+
+    db_session.commit()
+    return {"message": f"Project '{site.name}' archived", "id": site.id}
+
+
+@sites_router.patch(
+    "/{site_id}/restore",
+    status_code=status.HTTP_200_OK,
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
+)
+async def restore_site(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_admin_user)],
+    site: Site = Depends(get_authorized_site),
+    db_session: Session = Depends(get_session),
+):
+    if not site.is_archived:
+        return {"message": "Project is already active", "id": site.id}
+
+    company = db_session.query(Company).get(site.company_id)
+    if company and company.is_archived:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot restore project while its parent company is archived. Restore the company first.",
+        )
+
+    site.is_archived = False
+    site.archived_at = None
+    site.archived_by = None
+    site.cascade_archived_by_company = False
+
+    audit_crud = AuditLogCRUD(db_session)
+    audit_crud.create_item({
+        "source": "sites",
+        "action": f"Restored project '{site.name}' (ID: {site.id})",
+        "is_success": True,
+        "details": f"Project restored by admin.",
+        "user_id": current_user.id,
+    })
+
+    db_session.commit()
+    return {"message": f"Project '{site.name}' restored", "id": site.id}

@@ -1,7 +1,8 @@
 """Company DB models."""
 
-from sqlalchemy import TIMESTAMP, VARCHAR, Column, Enum, ForeignKey, Identity, Index, Integer
+from sqlalchemy import TIMESTAMP, VARCHAR, Boolean, Column, DateTime, Enum, ForeignKey, Identity, Index, Integer
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import expression
 
 from app.db.base_class import Base
 from app.models.board import RelatedBoards
@@ -17,6 +18,7 @@ class Company(RelatedBoards, Base):
     
     __table_args__ = (
         Index('ix_companies_portfolio_hub_id', 'portfolio_hub_id'),
+        Index('ix_companies_is_archived', 'is_archived'),
     )
 
     id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
@@ -38,7 +40,7 @@ class Company(RelatedBoards, Base):
     )
 
     sites = relationship("Site", back_populates="company")
-    users = relationship("User", back_populates="parent_company")
+    users = relationship("User", back_populates="parent_company", foreign_keys="User.parent_company_id")
     das_connections = relationship(
         "DASConnection",
         back_populates="company",
@@ -59,6 +61,10 @@ class Company(RelatedBoards, Base):
     )
     
     member_users = relationship("UserCompanyAccess", back_populates="company")
+
+    is_archived = Column(Boolean, nullable=False, default=False, server_default=expression.false())
+    archived_at = Column(DateTime, nullable=True)
+    archived_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     created_at = Column(TIMESTAMP, server_default=utcnow())
     updated_at = Column(TIMESTAMP, server_default=utcnow())

@@ -269,6 +269,7 @@ def get_sales_projects(
             joinedload(Site.additional_fields).joinedload(SiteAdditionalFieldList.assigned_owner),
             joinedload(Site.company),
         )
+        .filter(Site.is_archived == False)
     )
     
     if company_id:
@@ -306,6 +307,7 @@ def get_sales_pipeline(db: Session, company_id: Optional[int] = None) -> dict:
             joinedload(Site.company),
         )
         .filter(
+            Site.is_archived == False,
             or_(
                 SiteAdditionalFieldList.lifecycle_state == LifecycleState.sales_pre_diligence,
                 SiteAdditionalFieldList.lifecycle_state.is_(None),

@@ -28,6 +28,8 @@ class SiteCRUD(BaseCRUD):
         limit: int = static.DEFAULT_PAGINATION_LIMIT,
         order_by: Optional[str] = SiteOrderByFieldEnum.name.value,
         order_direction: Optional[str] = OrderDirectionEnum.asc.value,
+        include_archived: bool = False,
+        archived_only: bool = False,
     ) -> Tuple[int, List[Base]]:
         """Get all items with applied filters,  skip (offset) and limits, sorted ascending by pk.
 
@@ -37,12 +39,18 @@ class SiteCRUD(BaseCRUD):
         :param limit: number of items to get per page
         :param order_by: field name to order by
         :param order_direction: direction clause to order by (asc or desc)
+        :param include_archived: if True, include archived sites
+        :param archived_only: if True, show only archived sites
         :return: list of items
         """
         # we need to define default values explicitly, since they came as NULL because of validate_query_params
         order_by = order_by or SiteOrderByFieldEnum.name.value
         order_direction = order_direction or OrderDirectionEnum.asc.value
         query = self.db_session.query(self.model)
+        if archived_only:
+            query = query.filter(self.model.is_archived == True)
+        elif not include_archived:
+            query = query.filter(self.model.is_archived == False)
         if sites_ids is not None:
             query = query.filter(self.model.id.in_(sites_ids))
         if order_by == SiteOrderByFieldEnum.company_name:
@@ -66,6 +74,7 @@ class SiteCRUD(BaseCRUD):
         site_ids_to_limit: Optional[list] = None,
     ) -> Tuple[int, List[Base]]:
         query = self.db_session.query(self.model)
+        query = query.filter(self.model.is_archived == False)
         if search_filter:
             query = search_filter.filter(query)
         query = query.filter(self.model.company_id == company_id)
@@ -102,6 +111,7 @@ class SiteCRUD(BaseCRUD):
             self.model.address.label("address"),
             Company.name.label("company_name"),
         )
+        query = query.filter(self.model.is_archived == False)
         query = query.outerjoin(Company)
         if search is not None:
             query = query.filter(or_(self.model.name.ilike(f"%{search}%"), Company.name.ilike(f"%{search}%")))
@@ -110,10 +120,10 @@ class SiteCRUD(BaseCRUD):
         return total, query.offset(skip).limit(limit).all()
 
     def get_all_sites_ids(self):
-        """Retrieve IDs of all sites in the platform as a list"""
+        """Retrieve IDs of all active (non-archived) sites in the platform as a list"""
         queryset = self.db_session.query(
             self.model.id,
-        ).all()
+        ).filter(self.model.is_archived == False).all()
         return [row[0] for row in queryset]
 
     def get_sites_location(self):

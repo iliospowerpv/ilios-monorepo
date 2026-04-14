@@ -1,19 +1,26 @@
-import React, { useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Link, useParams } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
+import Button from '@mui/material/Button';
 import SpaceDashboardIcon from '@mui/icons-material/SpaceDashboard';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
+import ArchiveIcon from '@mui/icons-material/Archive';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 import { companyDetailsQuery } from './loader';
 import Overview from './tabs/Overview/Overview';
 import Sites from './tabs/Sites/Sites';
 import Tasks from './tabs/Tasks/Tasks';
 import type { AssetManagementCompanyDetailsTabProps } from './tabs/types';
 import { useEntityContext } from '../../../../contexts/entityContext';
+import { useAccess } from '../../../../hooks/access/access';
+import { ApiClient } from '../../../../api';
+import ArchiveConfirmationModal from '../../../../components/common/ArchiveConfirmationModal/ArchiveConfirmationModal';
 
 interface TabData {
   id: string;
@@ -62,12 +69,36 @@ export const AssetManagementCompanyDetails: React.FC<AssetManagementCompanyDetai
   const isValidId = !!companyId && Number.isSafeInteger(Number.parseInt(companyId));
   const activeTab = tabId || 'overview';
   const { setCurrentCompany, setCurrentProject } = useEntityContext();
+  const { isSystemUser } = useAccess();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
+  const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
 
   const {
     data: companyDetails,
     isLoading: isLoadingCompanyDetails,
     error: companyDetailsLoadingError
   } = useQuery(companyDetailsQuery(isValidId ? Number.parseInt(companyId) : -1, isValidId));
+
+  const archiveMutation = useMutation({
+    mutationFn: () => ApiClient.assetManagement.archiveCompany(Number.parseInt(companyId as string)),
+    onSuccess: data => {
+      setArchiveModalOpen(false);
+      setToast({ open: true, message: data.message, severity: 'success' });
+      queryClient.invalidateQueries({ queryKey: ['company'] });
+      queryClient.invalidateQueries({ queryKey: ['workspace'] });
+      setTimeout(() => navigate('/project-hub/companies'), 1500);
+    },
+    onError: (error: any) => {
+      const detail = error?.response?.data?.detail || 'Failed to archive company';
+      setToast({ open: true, message: detail, severity: 'error' });
+    }
+  });
 
   useEffect(() => {
     if (companyDetails) {
@@ -91,9 +122,21 @@ export const AssetManagementCompanyDetails: React.FC<AssetManagementCompanyDetai
 
   return (
     <Box>
-      <Typography variant="h4" marginBottom="24px" sx={{ fontWeight: 600 }} fontSize="34px" lineHeight="42px">
-        {companyDetails.name}
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: '24px' }}>
+        <Typography variant="h4" sx={{ fontWeight: 600 }} fontSize="34px" lineHeight="42px">
+          {companyDetails.name}
+        </Typography>
+        {isSystemUser && (
+          <Button
+            variant="outlined"
+            color="warning"
+            startIcon={<ArchiveIcon />}
+            onClick={() => setArchiveModalOpen(true)}
+          >
+            Archive
+          </Button>
+        )}
+      </Box>
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={activeTab}>
           {tabsData.map(tab => (
@@ -114,6 +157,26 @@ export const AssetManagementCompanyDetails: React.FC<AssetManagementCompanyDetai
           <DisplayContent companyDetails={companyDetails} />
         </Box>
       </div>
+
+      <ArchiveConfirmationModal
+        open={archiveModalOpen}
+        onClose={() => setArchiveModalOpen(false)}
+        onConfirm={() => archiveMutation.mutate()}
+        entityType="company"
+        entityName={companyDetails.name}
+        isLoading={archiveMutation.isPending}
+      />
+
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={4000}
+        onClose={() => setToast(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={toast.severity} onClose={() => setToast(prev => ({ ...prev, open: false }))}>
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

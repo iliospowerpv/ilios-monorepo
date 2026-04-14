@@ -86,6 +86,7 @@ class ExtendedSiteSchemaWithConnection(ExtendedSiteSchema):
 class SiteListSchema(ExtendedSiteSchema):
 
     cameras_uuids: ClassVar
+    is_archived: bool = Field(default=False)
 
     # from site.additional_fields
     status: Optional[SiteStatuses] = Field(None, examples=["Placed In Service"])

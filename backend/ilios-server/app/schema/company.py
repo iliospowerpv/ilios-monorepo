@@ -79,6 +79,7 @@ class CompaniesPageSchema(BaseCompanyPageSchema):
 
     total_sites: int = Field(examples=[3])
     total_capacity: float = Field(examples=[15000.0])
+    is_archived: bool = Field(default=False)
 
     _round_capacity_to_scale_2 = field_validator("total_capacity")(round_to_scale_2)
 

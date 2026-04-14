@@ -13,6 +13,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Identity,
+    Index,
     Integer,
     String,
     desc,
@@ -101,6 +102,10 @@ class SiteWeather(Base):
 class Site(RelatedBoards, Base):
     __tablename__ = "sites"
 
+    __table_args__ = (
+        Index('ix_sites_is_archived', 'is_archived'),
+    )
+
     id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
     company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"))
 
@@ -137,6 +142,11 @@ class Site(RelatedBoards, Base):
     project_facts = relationship("ProjectFact", back_populates="site")
     assumption_promotions = relationship("AssumptionPromotion", back_populates="site")
     entity_relationships = relationship("EntityRelationship", back_populates="site")
+
+    is_archived = Column(Boolean, nullable=False, default=False, server_default=expression.false())
+    archived_at = Column(DateTime, nullable=True)
+    archived_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    cascade_archived_by_company = Column(Boolean, nullable=False, default=False, server_default=expression.false())
 
     # setting up the server_default value, that will be filled on the database side
     created_at = Column(DateTime, server_default=utcnow())

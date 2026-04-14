@@ -43,7 +43,7 @@ class User(Base):
     is_system_user = Column(Boolean, default=False)
 
     # relationships
-    parent_company = relationship("Company", back_populates="users")
+    parent_company = relationship("Company", back_populates="users", foreign_keys=[parent_company_id])
     role = relationship("Role", back_populates="users")
     # site is the primary entity access given to
     sites = relationship(

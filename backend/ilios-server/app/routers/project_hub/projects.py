@@ -69,6 +69,7 @@ def list_projects(
         joinedload(Site.company),
         joinedload(Site.additional_fields),
     )
+    query = query.filter(Site.is_archived == False)
     
     if company_id:
         query = query.filter(Site.company_id == company_id)

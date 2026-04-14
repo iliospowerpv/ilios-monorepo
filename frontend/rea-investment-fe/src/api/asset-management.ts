@@ -7,6 +7,7 @@ interface Items {
   name: string;
   sites_number: number;
   total_capacity: number;
+  is_archived?: boolean;
 }
 interface Companies {
   skip: number;
@@ -29,6 +30,7 @@ interface Site {
   mc_year: number;
   itc: number;
   id: number;
+  is_archived?: boolean;
 }
 interface Sites {
   skip: number;
@@ -1124,6 +1126,26 @@ export const buildAssetManagementApi = (httpClient: AxiosInstance) => {
     return response.data;
   };
 
+  const archiveCompany = async (companyId: number): Promise<{ message: string; id: number }> => {
+    const response = await httpClient.patch<{ message: string; id: number }>(`/api/companies/${companyId}/archive`);
+    return response.data;
+  };
+
+  const restoreCompany = async (companyId: number): Promise<{ message: string; id: number }> => {
+    const response = await httpClient.patch<{ message: string; id: number }>(`/api/companies/${companyId}/restore`);
+    return response.data;
+  };
+
+  const archiveSite = async (siteId: number): Promise<{ message: string; id: number }> => {
+    const response = await httpClient.patch<{ message: string; id: number }>(`/api/sites/${siteId}/archive`);
+    return response.data;
+  };
+
+  const restoreSite = async (siteId: number): Promise<{ message: string; id: number }> => {
+    const response = await httpClient.patch<{ message: string; id: number }>(`/api/sites/${siteId}/restore`);
+    return response.data;
+  };
+
   return Object.freeze({
     companies,
     sites,
@@ -1147,7 +1169,11 @@ export const buildAssetManagementApi = (httpClient: AxiosInstance) => {
     uploadConfirm,
     telemetrySiteDevices,
     updateSiteInfo,
-    updateTelemetrySiteDevices
+    updateTelemetrySiteDevices,
+    archiveCompany,
+    restoreCompany,
+    archiveSite,
+    restoreSite
   });
 };
 
