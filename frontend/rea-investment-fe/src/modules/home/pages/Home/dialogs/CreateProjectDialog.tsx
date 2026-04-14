@@ -181,7 +181,7 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, 
             </Box>
 
             <TextField
-              label="Coordinates (Lat/Lon)"
+              label="Coordinates (Lat/Long)"
               value={lonLatUrl}
               onChange={e => setLonLatUrl(e.target.value)}
               fullWidth

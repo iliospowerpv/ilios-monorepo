@@ -285,7 +285,7 @@ export const ProjectStep: React.FC<ProjectStepProps> = ({ companyId, companyName
                   />
                 </Box>
                 <TextField
-                  label="Coordinates (Lat/Lon)"
+                  label="Coordinates (Lat/Long)"
                   value={lonLatUrl}
                   onChange={e => setLonLatUrl(e.target.value)}
                   required
