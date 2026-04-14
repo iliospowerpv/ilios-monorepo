@@ -87,7 +87,6 @@ interface MenuItemConfig {
   disabled: boolean;
   requiresProject: boolean;
   projectHubTab?: ProjectHubTab;
-  activeColor: string;
 }
 
 const menuItems: MenuItemConfig[] = [
@@ -97,8 +96,7 @@ const menuItems: MenuItemConfig[] = [
     title: 'Home',
     route: '/home',
     disabled: false,
-    requiresProject: false,
-    activeColor: '#64B5F6'
+    requiresProject: false
   },
   {
     key: 'acquisitions',
@@ -106,8 +104,7 @@ const menuItems: MenuItemConfig[] = [
     title: 'Acquisitions',
     route: '/acquisitions',
     disabled: false,
-    requiresProject: false,
-    activeColor: '#4CAF50'
+    requiresProject: false
   },
   {
     key: 'project-hub',
@@ -116,8 +113,7 @@ const menuItems: MenuItemConfig[] = [
     route: '/project-hub',
     disabled: false,
     requiresProject: true,
-    projectHubTab: 'overview',
-    activeColor: '#B388FF'
+    projectHubTab: 'overview'
   },
   {
     key: 'data-room',
@@ -126,8 +122,7 @@ const menuItems: MenuItemConfig[] = [
     route: '/project-hub',
     disabled: false,
     requiresProject: true,
-    projectHubTab: 'data-room',
-    activeColor: '#FFB74D'
+    projectHubTab: 'data-room'
   },
   {
     key: 'operations-and-maintenance',
@@ -136,8 +131,7 @@ const menuItems: MenuItemConfig[] = [
     route: '/project-hub',
     disabled: false,
     requiresProject: true,
-    projectHubTab: 'om',
-    activeColor: '#FF7043'
+    projectHubTab: 'om'
   },
   {
     key: 'finance',
@@ -145,8 +139,7 @@ const menuItems: MenuItemConfig[] = [
     title: 'Finance',
     route: '/finance',
     disabled: false,
-    requiresProject: false,
-    activeColor: '#4DD0E1'
+    requiresProject: false
   },
   {
     key: 'tasks',
@@ -155,8 +148,7 @@ const menuItems: MenuItemConfig[] = [
     route: '/project-hub',
     disabled: false,
     requiresProject: true,
-    projectHubTab: 'tasks',
-    activeColor: '#AED581'
+    projectHubTab: 'tasks'
   },
   {
     key: 'reports',
@@ -164,8 +156,7 @@ const menuItems: MenuItemConfig[] = [
     title: 'Reports',
     route: '/reports',
     disabled: false,
-    requiresProject: false,
-    activeColor: '#F06292'
+    requiresProject: false
   },
   {
     key: 'portfolio-admin',
@@ -173,8 +164,7 @@ const menuItems: MenuItemConfig[] = [
     title: 'Portfolio Admin',
     route: '/portfolio-admin',
     disabled: false,
-    requiresProject: false,
-    activeColor: '#90A4AE'
+    requiresProject: false
   }
 ];
 
@@ -183,17 +173,11 @@ interface MenuItemProps {
   title: string;
   disabled?: boolean;
   active?: boolean;
-  activeColor?: string;
   onClick?: () => void;
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ icon, title, active, disabled, activeColor, onClick }) => (
-  <NavMenuButtonContainer
-    className={active ? 'active' : undefined}
-    disabled={disabled}
-    onClick={onClick}
-    style={active && activeColor ? ({ '--nav-active-color': activeColor } as React.CSSProperties) : undefined}
-  >
+const MenuItem: React.FC<MenuItemProps> = ({ icon, title, active, disabled, onClick }) => (
+  <NavMenuButtonContainer className={active ? 'active' : undefined} disabled={disabled} onClick={onClick}>
     <Grid container columns={15} alignItems="center">
       <Grid item xs={4} display="flex" justifyContent="center" alignItems="center">
         {icon}
@@ -325,7 +309,6 @@ export const NavMenu: React.FC<NavMenuProps> = ({ containerRef, isMenuOpen }) =>
                 icon={item.icon}
                 onClick={handleMenuItemClick(item)}
                 active={item.key === currentModuleId}
-                activeColor={item.activeColor}
                 disabled={disableModule(item.disabled, item.title)}
               />
             </AnchorElTooltip>

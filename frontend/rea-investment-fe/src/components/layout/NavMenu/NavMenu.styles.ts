@@ -36,11 +36,11 @@ export const NavMenuButtonContainer = styled(ButtonBase)(({ theme }) => ({
     }
   },
   '&.active': {
-    backgroundColor: 'color-mix(in srgb, var(--nav-active-color, #9C9EF3) 20%, transparent)',
+    backgroundColor: 'rgba(156, 158, 243, 0.2)',
     '& > .MuiGrid-container': {
-      color: 'var(--nav-active-color, #9C9EF3)',
+      color: '#9C9EF3',
       '& > .MuiGrid-root > .MuiTypography-root': {
-        color: 'var(--nav-active-color, #9C9EF3)'
+        color: '#ffffff'
       }
     }
   },
