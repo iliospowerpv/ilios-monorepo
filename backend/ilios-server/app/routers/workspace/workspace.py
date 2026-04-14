@@ -4,6 +4,7 @@ import logging
 from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.crud.company import CompanyCRUD
@@ -172,29 +173,24 @@ async def get_workspace(
     if current_user.is_system_user:
         sites = db_session.query(Site).order_by(Site.name).all()
     else:
-        full_access_company_ids = set()
-        project_only_site_ids = set()
-        for cd in companies_data:
-            if cd.access_source in ("direct_company", "inherited_portfolio", "membership"):
-                full_access_company_ids.add(cd.company_id)
-            elif cd.access_source == "project_context":
-                pass
+        full_access_company_ids = {
+            cd.company_id for cd in companies_data
+            if cd.access_source in ("direct_company", "inherited_portfolio")
+        }
         
-        from app.crud.user_project import UserProjectCRUD as _UPC
-        _project_crud = _UPC(db_session)
-        project_memberships_all = _project_crud.get_memberships_by_user(
-            user_id=current_user.id,
-            status=MembershipStatus.active
-        )
-        for pm in project_memberships_all:
-            project_only_site_ids.add(pm.site_id)
+        project_crud = UserProjectCRUD(db_session)
+        direct_site_ids = {
+            pm.site_id
+            for pm in project_crud.get_memberships_by_user(
+                user_id=current_user.id, status=MembershipStatus.active
+            )
+        }
         
-        from sqlalchemy import or_
         conditions = []
         if full_access_company_ids:
             conditions.append(Site.company_id.in_(full_access_company_ids))
-        if project_only_site_ids:
-            conditions.append(Site.id.in_(project_only_site_ids))
+        if direct_site_ids:
+            conditions.append(Site.id.in_(direct_site_ids))
         
         if conditions:
             sites = db_session.query(Site).filter(or_(*conditions)).order_by(Site.name).all()
