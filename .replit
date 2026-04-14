@@ -107,3 +107,7 @@ DEMO_TELEMETRY = "true"
 
 [userenv.production]
 pbi_workspace_id = "EF47351C-2E0B-4891-843C-BC091B232E41"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 180000
