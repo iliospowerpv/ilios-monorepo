@@ -107,7 +107,21 @@ class WorkspaceSummarySchema(BaseModel):
     needs_attention_count: int = Field(default=0, examples=[2])
 
 
+class WorkspaceProjectSchema(BaseModel):
+    """Schema for a project in the user's project list."""
+    project_id: int = Field(examples=[1])
+    project_name: str = Field(examples=["110 Shawmut"])
+    company_id: int = Field(examples=[1])
+    company_name: str = Field(examples=["REA Investments"])
+    address: Optional[str] = Field(default=None, examples=["123 Main St"])
+    city: Optional[str] = Field(default=None, examples=["Boston"])
+    state: Optional[str] = Field(default=None, examples=["MA"])
+    system_size_ac: Optional[float] = Field(default=None, examples=[500.0])
+    system_size_dc: Optional[float] = Field(default=None, examples=[600.0])
+
+
 class WorkspaceResponseSchema(BaseModel):
     """Full workspace response with summary and entity lists."""
     summary: WorkspaceSummarySchema
     companies: List[UserCompanySchema]
+    projects: List[WorkspaceProjectSchema] = Field(default_factory=list)

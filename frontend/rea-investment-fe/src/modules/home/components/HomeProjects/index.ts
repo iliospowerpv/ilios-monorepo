@@ -1,0 +1,1 @@
+export { HomeProjects } from './HomeProjects';

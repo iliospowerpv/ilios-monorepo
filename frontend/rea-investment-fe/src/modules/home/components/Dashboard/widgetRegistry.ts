@@ -46,10 +46,19 @@ export const WIDGET_DEFINITIONS: Record<string, WidgetDefinition> = {
     defaultHeight: 4,
     minWidth: 6,
     minHeight: 3
+  },
+  projects: {
+    id: 'projects',
+    title: 'Your Projects',
+    description: 'Projects you have access to',
+    defaultWidth: 12,
+    defaultHeight: 4,
+    minWidth: 6,
+    minHeight: 3
   }
 };
 
-export const DEFAULT_VISIBLE_WIDGETS = ['tasks', 'notifications', 'quickActions', 'companies'];
+export const DEFAULT_VISIBLE_WIDGETS = ['tasks', 'notifications', 'quickActions', 'companies', 'projects'];
 
 export const getDefaultLayout = (visibleWidgets: string[]) => {
   const layout: Array<{ i: string; x: number; y: number; w: number; h: number; minW?: number; minH?: number }> = [];
@@ -93,6 +102,16 @@ export const getDefaultLayout = (visibleWidgets: string[]) => {
         i: widgetId,
         x: 0,
         y: 6,
+        w: widget.defaultWidth,
+        h: widget.defaultHeight,
+        minW: widget.minWidth,
+        minH: widget.minHeight
+      });
+    } else if (widgetId === 'projects') {
+      layout.push({
+        i: widgetId,
+        x: 0,
+        y: 10,
         w: widget.defaultWidth,
         h: widget.defaultHeight,
         minW: widget.minWidth,

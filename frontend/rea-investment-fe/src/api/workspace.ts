@@ -15,9 +15,22 @@ export interface WorkspaceCompany {
   project_count: number;
 }
 
+export interface WorkspaceProject {
+  project_id: number;
+  project_name: string;
+  company_id: number;
+  company_name: string;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  system_size_ac: number | null;
+  system_size_dc: number | null;
+}
+
 export interface WorkspaceResponse {
   summary: WorkspaceSummary;
   companies: WorkspaceCompany[];
+  projects: WorkspaceProject[];
 }
 
 export interface CompanyMember {

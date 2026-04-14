@@ -25,6 +25,7 @@ from app.schema.user_company_access import (
     UserCompanyAccessSchema,
     UserCompanyAccessUpdate,
     UserCompanySchema,
+    WorkspaceProjectSchema,
     WorkspaceResponseSchema,
     WorkspaceSummarySchema,
 )
@@ -165,9 +166,62 @@ async def get_workspace(
     
     companies_data.sort(key=lambda c: c.company_name.lower())
     
+    projects_data: List[WorkspaceProjectSchema] = []
+    company_name_map = {c.company_id: c.company_name for c in companies_data}
+    
+    if current_user.is_system_user:
+        sites = db_session.query(Site).order_by(Site.name).all()
+    else:
+        full_access_company_ids = set()
+        project_only_site_ids = set()
+        for cd in companies_data:
+            if cd.access_source in ("direct_company", "inherited_portfolio", "membership"):
+                full_access_company_ids.add(cd.company_id)
+            elif cd.access_source == "project_context":
+                pass
+        
+        from app.crud.user_project import UserProjectCRUD as _UPC
+        _project_crud = _UPC(db_session)
+        project_memberships_all = _project_crud.get_memberships_by_user(
+            user_id=current_user.id,
+            status=MembershipStatus.active
+        )
+        for pm in project_memberships_all:
+            project_only_site_ids.add(pm.site_id)
+        
+        from sqlalchemy import or_
+        conditions = []
+        if full_access_company_ids:
+            conditions.append(Site.company_id.in_(full_access_company_ids))
+        if project_only_site_ids:
+            conditions.append(Site.id.in_(project_only_site_ids))
+        
+        if conditions:
+            sites = db_session.query(Site).filter(or_(*conditions)).order_by(Site.name).all()
+        else:
+            sites = []
+    
+    for site in sites:
+        cname = company_name_map.get(site.company_id, "")
+        if not cname:
+            company = db_session.query(Company).get(site.company_id)
+            cname = company.name if company else ""
+        projects_data.append(WorkspaceProjectSchema(
+            project_id=site.id,
+            project_name=site.name,
+            company_id=site.company_id,
+            company_name=cname,
+            address=site.address if site.address else None,
+            city=site.city if site.city else None,
+            state=site.state.value if site.state else None,
+            system_size_ac=site.system_size_ac,
+            system_size_dc=site.system_size_dc,
+        ))
+    
     return WorkspaceResponseSchema(
         summary=summary,
-        companies=companies_data
+        companies=companies_data,
+        projects=projects_data
     )
 
 

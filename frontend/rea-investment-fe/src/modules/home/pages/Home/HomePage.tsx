@@ -9,6 +9,7 @@ import { HomeSummaryCards } from '../../components/HomeSummaryCards';
 import { HomeTasks } from '../../components/HomeTasks';
 import { HomeNotifications } from '../../components/HomeNotifications';
 import { HomeCompanies } from '../../components/HomeCompanies';
+import { HomeProjects } from '../../components/HomeProjects';
 import { HomeQuickActions } from '../../components/HomeQuickActions';
 import { DashboardGrid } from '../../components/Dashboard/DashboardGrid';
 import { CreateCompanyDialog, CreateProjectDialog, InviteUserDialog } from './dialogs';
@@ -59,9 +60,10 @@ export const HomePage: React.FC = () => {
           onInviteUser={() => setInviteUserOpen(true)}
         />
       ),
-      companies: <HomeCompanies companies={workspace?.companies ?? []} isLoading={isLoadingWorkspace} />
+      companies: <HomeCompanies companies={workspace?.companies ?? []} isLoading={isLoadingWorkspace} />,
+      projects: <HomeProjects projects={workspace?.projects ?? []} isLoading={isLoadingWorkspace} />
     }),
-    [workspace?.companies, isLoadingWorkspace, handleNotificationsLoaded]
+    [workspace?.companies, workspace?.projects, isLoadingWorkspace, handleNotificationsLoaded]
   );
 
   if (workspaceError) {
