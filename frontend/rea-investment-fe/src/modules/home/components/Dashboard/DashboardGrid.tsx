@@ -196,7 +196,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ widgetComponents }
         preventCollision={false}
       >
         {visibleWidgets.map(widgetId => (
-          <div key={widgetId}>
+          <div key={widgetId} data-widget-id={widgetId}>
             <WidgetWrapper widgetId={widgetId} onRemove={handleRemoveWidget}>
               {widgetComponents[widgetId]}
             </WidgetWrapper>

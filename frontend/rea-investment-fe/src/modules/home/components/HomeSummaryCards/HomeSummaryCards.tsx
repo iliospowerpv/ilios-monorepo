@@ -1,5 +1,4 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
@@ -17,6 +16,7 @@ interface HomeSummaryCardsProps {
   pendingTasksCount: number;
   notificationsCount: number;
   isLoading?: boolean;
+  onCardClick?: (widgetId: string) => void;
 }
 
 interface SummaryCardProps {
@@ -73,10 +73,9 @@ export const HomeSummaryCards: React.FC<HomeSummaryCardsProps> = ({
   projectsCount,
   pendingTasksCount,
   notificationsCount,
-  isLoading
+  isLoading,
+  onCardClick
 }) => {
-  const navigate = useNavigate();
-
   if (isLoading) {
     return (
       <Grid container spacing={3}>
@@ -99,26 +98,28 @@ export const HomeSummaryCards: React.FC<HomeSummaryCardsProps> = ({
       value: companiesCount,
       icon: <BusinessIcon />,
       color: '#1976d2',
-      onClick: () => navigate('/settings/companies')
+      onClick: onCardClick ? () => onCardClick('companies') : undefined
     },
     {
       title: 'Projects',
       value: projectsCount,
       icon: <SolarPowerIcon />,
       color: '#2e7d32',
-      onClick: () => navigate('/settings/sites')
+      onClick: onCardClick ? () => onCardClick('projects') : undefined
     },
     {
       title: 'Pending Tasks',
       value: pendingTasksCount,
       icon: <AssignmentIcon />,
-      color: '#ed6c02'
+      color: '#ed6c02',
+      onClick: onCardClick ? () => onCardClick('tasks') : undefined
     },
     {
       title: 'Notifications',
       value: notificationsCount,
       icon: <NotificationsIcon />,
-      color: '#9c27b0'
+      color: '#9c27b0',
+      onClick: onCardClick ? () => onCardClick('notifications') : undefined
     }
   ];
 

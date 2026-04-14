@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -19,6 +19,7 @@ export const HomePage: React.FC = () => {
   const [createCompanyOpen, setCreateCompanyOpen] = useState(false);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [inviteUserOpen, setInviteUserOpen] = useState(false);
+  const dashboardRef = useRef<HTMLDivElement>(null);
 
   const {
     data: workspace,
@@ -47,6 +48,14 @@ export const HomePage: React.FC = () => {
 
   const handleUserInvited = useCallback(() => {
     setInviteUserOpen(false);
+  }, []);
+
+  const handleSummaryCardClick = useCallback((widgetId: string) => {
+    if (!dashboardRef.current) return;
+    const widgetEl = dashboardRef.current.querySelector(`[data-widget-id="${widgetId}"]`);
+    if (widgetEl) {
+      widgetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }, []);
 
   const widgetComponents = useMemo(
@@ -94,10 +103,13 @@ export const HomePage: React.FC = () => {
           pendingTasksCount={summary.pending_tasks_count}
           notificationsCount={notificationsCount}
           isLoading={isLoadingWorkspace}
+          onCardClick={handleSummaryCardClick}
         />
       </Box>
 
-      <DashboardGrid widgetComponents={widgetComponents} />
+      <Box ref={dashboardRef}>
+        <DashboardGrid widgetComponents={widgetComponents} />
+      </Box>
 
       <CreateCompanyDialog
         open={createCompanyOpen}
