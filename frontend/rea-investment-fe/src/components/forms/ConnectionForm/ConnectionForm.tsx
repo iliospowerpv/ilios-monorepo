@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import Alert from '@mui/material/Alert';
 
 import { ApiClient, Connection } from '../../../api';
 import { useNotify } from '../../../contexts/notifications/notifications';
@@ -54,6 +55,27 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = props => {
   const [showToken, setShowToken] = useState(!connection.isEditing || connection.isNotSaved);
   const [invalidToken, setInvalidToken] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const {
+    data: companyProviders,
+    isLoading: isLoadingProviders,
+    isError: isProvidersError
+  } = useQuery({
+    queryKey: ['companyProviders', companyId],
+    queryFn: () => ApiClient.connections.getCompanyProviders(companyId),
+    enabled: connection.isNotSaved
+  });
+
+  const allowedProviders = React.useMemo(() => {
+    if (!companyProviders?.items?.length) return {};
+    const result: Record<string, string> = {};
+    for (const p of companyProviders.items) {
+      result[p.provider] = p.provider_display;
+    }
+    return result;
+  }, [companyProviders]);
+
+  const providerOptions = connection.isNotSaved ? allowedProviders : DAS_CONNECTION;
 
   const {
     register,
@@ -143,6 +165,43 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = props => {
     }
   };
 
+  const hasNoProviders =
+    connection.isNotSaved && !isLoadingProviders && !isProvidersError && Object.keys(providerOptions).length === 0;
+  const hasProviderError = connection.isNotSaved && !isLoadingProviders && isProvidersError;
+
+  if (hasProviderError) {
+    return (
+      <Stack spacing={2}>
+        <Typography variant="h6" gutterBottom>
+          New Connection
+        </Typography>
+        <Alert severity="warning">
+          Unable to load available providers. Please try again or contact an administrator.
+        </Alert>
+        <Button variant="outlined" onClick={onCancel}>
+          Cancel
+        </Button>
+      </Stack>
+    );
+  }
+
+  if (hasNoProviders) {
+    return (
+      <Stack spacing={2}>
+        <Typography variant="h6" gutterBottom>
+          New Connection
+        </Typography>
+        <Alert severity="info">
+          No telemetry providers have been assigned to this company. Please contact an administrator to configure
+          available providers.
+        </Alert>
+        <Button variant="outlined" onClick={onCancel}>
+          Cancel
+        </Button>
+      </Stack>
+    );
+  }
+
   return (
     <Stack component="form" data-testid="connection__form" noValidate spacing={2} onSubmit={handleSubmit(onSubmit)}>
       <Typography variant="h6" gutterBottom>
@@ -159,7 +218,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = props => {
               ref={field.ref}
               value={field.value}
               error={!!errors.provider}
-              disabled={!connection.isNotSaved}
+              disabled={!connection.isNotSaved || isLoadingProviders}
               label="Data Provider"
               onBlur={field.onBlur}
               onChange={event => {
@@ -168,7 +227,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = props => {
                 clearErrors('token');
               }}
             >
-              {Object.entries(DAS_CONNECTION).map(([key, value]) => (
+              {Object.entries(providerOptions).map(([key, value]) => (
                 <MenuItem key={key} value={value}>
                   {value}
                 </MenuItem>

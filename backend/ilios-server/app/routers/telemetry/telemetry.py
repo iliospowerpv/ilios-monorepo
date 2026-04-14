@@ -8,10 +8,12 @@ from app.crud.audit_log import AuditLogCRUD
 from app.db.session import get_session
 from app.helpers.authorization import AssetPermissions, AuthorizedUser, SettingsPermissions
 from app.helpers.authorization.project_access import (
+    get_authorized_company,
     get_authorized_device,
     get_authorized_site,
     get_authorized_site_with_company_admin,
 )
+from app.models.company import Company
 from app.helpers.telemetry.bigquery.device import TelemetryDeviceBigQuery
 from app.helpers.telemetry.secrets_manager import GCPSecretsManager
 from app.helpers.telemetry.telemetry_cloud_function_client import TelemetryFuncHTTPClient
@@ -26,13 +28,18 @@ from app.helpers.telemetry.telemetry_helper import (
 from app.models.device import Device, DeviceCategories
 from app.models.site import Site
 from app.schema.telemetry import (
+    AssignProviderSchema,
+    AssignProviderSuccess,
     AvailableConnectionSchema,
     AvailableConnectionsResponse,
     BulkDeviceMappingResponse,
     BulkDeviceMappingSchema,
+    CompanyProviderSchema,
+    CompanyProvidersListSchema,
     ConnectionTestResponse,
     ConnectionTestSchema,
     DeviceMappingDeleteSuccess,
+    RemoveProviderSuccess,
     SiteMappingCreateSuccess,
     SiteMappingDeleteSuccess,
     SiteMappingUpdateSuccess,
@@ -593,3 +600,102 @@ async def get_eligible_devices(
                 ),
             })
     return {"items": eligible_devices, "total": len(eligible_devices)}
+
+
+@telemetry_router.get(
+    "/companies/{company_id}/providers",
+    response_model=CompanyProvidersListSchema,
+    description="Get telemetry providers assigned to a company",
+    dependencies=[Depends(AuthorizedUser(SettingsPermissions(PermissionsActions.view)))],
+)
+async def get_company_providers(
+    company: Company = Depends(get_authorized_company),
+    db_session: Session = Depends(get_session),
+):
+    from app.crud.company_das_provider import CompanyDASProviderCRUD
+
+    providers = CompanyDASProviderCRUD(db_session).get_providers(company.id)
+    return CompanyProvidersListSchema(
+        items=[
+            CompanyProviderSchema(
+                provider=p.provider.name,
+                provider_display=p.provider.value,
+            )
+            for p in providers
+        ]
+    )
+
+
+@telemetry_router.post(
+    "/companies/{company_id}/providers",
+    response_model=AssignProviderSuccess,
+    status_code=status.HTTP_201_CREATED,
+    description="Assign a telemetry provider to a company",
+    dependencies=[Depends(AuthorizedUser(SettingsPermissions(PermissionsActions.edit)))],
+)
+async def assign_company_provider(
+    request: Request,
+    payload: AssignProviderSchema,
+    company: Company = Depends(get_authorized_company),
+    db_session: Session = Depends(get_session),
+):
+    from app.crud.company_das_provider import CompanyDASProviderCRUD
+    from app.models.telemetry import DASProvidersEnum
+
+    try:
+        provider_enum = DASProvidersEnum[payload.provider]
+    except KeyError:
+        valid = [p.name for p in DASProvidersEnum]
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Invalid provider '{payload.provider}'. Valid providers: {valid}",
+        )
+
+    CompanyDASProviderCRUD(db_session).assign_provider(company.id, provider_enum)
+
+    _create_audit_log(
+        request,
+        db_session,
+        "company_provider_assigned",
+        f"Provider '{provider_enum.value}' assigned to company {company.id}",
+    )
+
+    return AssignProviderSuccess(code=status.HTTP_201_CREATED, message="Provider assigned successfully")
+
+
+@telemetry_router.delete(
+    "/companies/{company_id}/providers/{provider}",
+    response_model=RemoveProviderSuccess,
+    description="Remove a telemetry provider from a company",
+    dependencies=[Depends(AuthorizedUser(SettingsPermissions(PermissionsActions.edit)))],
+)
+async def remove_company_provider(
+    request: Request,
+    provider: str,
+    company: Company = Depends(get_authorized_company),
+    db_session: Session = Depends(get_session),
+):
+    from app.crud.company_das_provider import CompanyDASProviderCRUD
+    from app.models.telemetry import DASProvidersEnum
+
+    try:
+        provider_enum = DASProvidersEnum[provider]
+    except KeyError:
+        valid = [p.name for p in DASProvidersEnum]
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Invalid provider '{provider}'. Valid providers: {valid}",
+        )
+
+    deleted = CompanyDASProviderCRUD(db_session).remove_provider(company.id, provider_enum)
+    if not deleted:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Provider not assigned to this company")
+
+    _create_audit_log(
+        request,
+        db_session,
+        "company_provider_removed",
+        f"Provider '{provider_enum.value}' removed from company {company.id}",
+    )
+
+    return RemoveProviderSuccess(code=status.HTTP_200_OK, message="Provider removed successfully")

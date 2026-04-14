@@ -118,6 +118,15 @@ interface BulkDeviceMappingResponse {
   errors: string[] | null;
 }
 
+interface CompanyProvider {
+  provider: string;
+  provider_display: string;
+}
+
+interface CompanyProvidersResponse {
+  items: CompanyProvider[];
+}
+
 export const buildConnectionsApi = (httpClient: AxiosInstance) => {
   const getConnections = async (companyId: number): Promise<Connections> => {
     const response = await httpClient.get<Connections>(`/api/contractors/${companyId}/connections/`);
@@ -218,6 +227,24 @@ export const buildConnectionsApi = (httpClient: AxiosInstance) => {
     return response.data;
   };
 
+  const getCompanyProviders = async (companyId: number): Promise<CompanyProvidersResponse> => {
+    const response = await httpClient.get<CompanyProvidersResponse>(`/api/telemetry/companies/${companyId}/providers`);
+    return response.data;
+  };
+
+  const assignCompanyProvider = async (companyId: number, provider: string): Promise<ConnectionResponse> => {
+    const response = await httpClient.post<ConnectionResponse>(`/api/telemetry/companies/${companyId}/providers`, {
+      provider
+    });
+    return response.data;
+  };
+
+  const removeCompanyProvider = async (companyId: number, provider: string): Promise<ConnectionResponse> => {
+    const url = `/api/telemetry/companies/${companyId}/providers/${provider}`;
+    const response = await httpClient.delete<ConnectionResponse>(url);
+    return response.data;
+  };
+
   return Object.freeze({
     getConnections,
     createConnection,
@@ -233,7 +260,10 @@ export const buildConnectionsApi = (httpClient: AxiosInstance) => {
     updateSiteMapping,
     deleteSiteMapping,
     bulkMapDevices,
-    deleteDeviceMapping
+    deleteDeviceMapping,
+    getCompanyProviders,
+    assignCompanyProvider,
+    removeCompanyProvider
   });
 };
 
@@ -254,5 +284,7 @@ export type {
   EligibleDevicesResponse,
   DeviceMapping,
   BulkDeviceMappingPayload,
-  BulkDeviceMappingResponse
+  BulkDeviceMappingResponse,
+  CompanyProvider,
+  CompanyProvidersResponse
 };

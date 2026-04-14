@@ -1,11 +1,16 @@
+import logging
 from datetime import datetime
 from typing import Dict, List, Optional
 
+from fastapi import HTTPException, status
 from sqlalchemy.orm import joinedload
 
 from app.crud.base_crud import BaseCRUD
+from app.db.base import Base
 from app.models.company import Company
-from app.models.telemetry import DASConnection
+from app.models.telemetry import DASConnection, DASProvidersEnum
+
+logger = logging.getLogger(__name__)
 
 
 class DASConnectionCRUD(BaseCRUD):
@@ -13,6 +18,24 @@ class DASConnectionCRUD(BaseCRUD):
 
     def __init__(self, db_session):
         super().__init__(model=DASConnection, db_session=db_session)
+
+    def create_item(self, item: dict) -> Base:
+        from app.crud.company_das_provider import CompanyDASProviderCRUD
+
+        company_id = item.get("company_id")
+        provider = item.get("provider")
+        if company_id and provider:
+            provider_enum = provider if isinstance(provider, DASProvidersEnum) else DASProvidersEnum(provider)
+            if not CompanyDASProviderCRUD(self.db_session).has_provider(company_id, provider_enum):
+                logger.warning(
+                    f"Blocked DAS connection creation: provider '{provider}' not assigned to company {company_id}"
+                )
+                raise HTTPException(
+                    status.HTTP_403_FORBIDDEN,
+                    f"Provider '{provider_enum.value}' is not assigned to this company. "
+                    "Contact an administrator to configure available providers.",
+                )
+        return super().create_item(item)
 
     def get_company_connection_by_name(self, company_id: int, connection_name: str):
         query = (

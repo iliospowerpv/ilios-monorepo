@@ -39,10 +39,6 @@ import type {
 } from '../../../../../../api/connections';
 
 const STEPS = ['Connection', 'Site Mapping', 'Device Mapping', 'Confirm'];
-const PROVIDERS = [
-  { value: 'KMC', label: 'KMC' },
-  { value: 'Also Energy', label: 'Also Energy' }
-];
 
 interface TelemetryWizardProps {
   open: boolean;
@@ -62,7 +58,7 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
   const [selectedConnectionId, setSelectedConnectionId] = useState<number | null>(readiness?.connection_id || null);
   const [newConnectionForm, setNewConnectionForm] = useState({
     name: '',
-    provider: 'Also Energy',
+    provider: '',
     token: '',
     username: '',
     password: ''
@@ -91,7 +87,7 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
       setSelectedConnectionId(readiness?.connection_id || null);
       setNewConnectionForm({
         name: '',
-        provider: 'Also Energy',
+        provider: '',
         token: '',
         username: '',
         password: ''
@@ -108,6 +104,25 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  const {
+    data: companyProviders,
+    isLoading: isLoadingProviders,
+    isError: isProvidersError
+  } = useQuery({
+    queryKey: ['companyProviders', companyId],
+    queryFn: () => ApiClient.connections.getCompanyProviders(companyId as number),
+    enabled: !!companyId && open
+  });
+
+  const providers = useMemo(() => {
+    if (companyProviders?.items?.length) {
+      return companyProviders.items.map(p => ({ value: p.provider_display, label: p.provider_display }));
+    }
+    return [];
+  }, [companyProviders]);
+
+  const hasNoProviders = companyProviders !== undefined && providers.length === 0;
 
   const { data: connections, isLoading: isLoadingConnections } = useQuery({
     queryKey: ['connections', companyId],
@@ -335,7 +350,26 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
               </FormControl>
             )}
 
-            {connectionMode === 'new' && (
+            {connectionMode === 'new' && isLoadingProviders && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                <CircularProgress size={24} />
+              </Box>
+            )}
+
+            {connectionMode === 'new' && !isLoadingProviders && isProvidersError && (
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                Unable to load available providers. Please try again or contact an administrator.
+              </Alert>
+            )}
+
+            {connectionMode === 'new' && !isLoadingProviders && !isProvidersError && hasNoProviders && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                No telemetry providers have been assigned to this company. Please contact an administrator to configure
+                available providers.
+              </Alert>
+            )}
+
+            {connectionMode === 'new' && !isLoadingProviders && !isProvidersError && !hasNoProviders && (
               <Box>
                 <TextField
                   fullWidth
@@ -351,7 +385,7 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
                     label="Provider"
                     onChange={e => setNewConnectionForm(prev => ({ ...prev, provider: e.target.value }))}
                   >
-                    {PROVIDERS.map(p => (
+                    {providers.map(p => (
                       <MenuItem key={p.value} value={p.value}>
                         {p.label}
                       </MenuItem>
@@ -588,7 +622,13 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
         <Button onClick={onClose}>Cancel</Button>
         {activeStep > 0 && activeStep < STEPS.length - 1 && <Button onClick={handleBack}>Back</Button>}
         {activeStep < STEPS.length - 1 ? (
-          <Button variant="contained" onClick={handleNext}>
+          <Button
+            variant="contained"
+            onClick={handleNext}
+            disabled={
+              activeStep === 0 && connectionMode === 'new' && (isLoadingProviders || isProvidersError || hasNoProviders)
+            }
+          >
             Next
           </Button>
         ) : (

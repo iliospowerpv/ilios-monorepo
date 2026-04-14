@@ -34,6 +34,7 @@ import ContactsIcon from '@mui/icons-material/Contacts';
 import { ApiClient } from '../../../../api';
 import { ContactsList } from '../../components/contacts';
 import { FinanceIntegrationsSection, FinanceHealthCard } from '../../components/finance';
+import { TelemetryProvidersSection } from '../../components/telemetry';
 import type { CompanyMember } from '../../../../api';
 import {
   AddProjectDialog,
@@ -388,6 +389,8 @@ export const CompanyLevelPage: React.FC = () => {
       <FinanceHealthCard companyId={companyIdNum} />
 
       <FinanceIntegrationsSection companyId={companyIdNum} />
+
+      <TelemetryProvidersSection companyId={companyIdNum} />
 
       <AddProjectDialog
         open={isAddProjectOpen}

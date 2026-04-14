@@ -212,3 +212,24 @@ class BulkDeviceMappingResponse(Success):
 
 class DeviceMappingDeleteSuccess(Success):
     message: str = Field(description="Success message", examples=[TelemetryMessages.device_mapping_delete_success])
+
+
+class CompanyProviderSchema(BaseModel):
+    provider: str = Field(description="Provider enum key", examples=["kmc"])
+    provider_display: str = Field(description="Provider display name", examples=["KMC"])
+
+
+class CompanyProvidersListSchema(BaseModel):
+    items: list[CompanyProviderSchema] = Field(default_factory=list)
+
+
+class AssignProviderSchema(BaseModel):
+    provider: str = Field(description="Provider enum key to assign", examples=["kmc"])
+
+
+class AssignProviderSuccess(Success):
+    message: str = Field(default="Provider assigned successfully")
+
+
+class RemoveProviderSuccess(Success):
+    message: str = Field(default="Provider removed successfully")

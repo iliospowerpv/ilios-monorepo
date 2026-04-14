@@ -45,6 +45,11 @@ class Company(RelatedBoards, Base):
         order_by="DASConnection.name",
         foreign_keys="DASConnection.company_id"
     )
+    das_providers = relationship(
+        "CompanyDASProvider",
+        back_populates="company",
+        cascade="all, delete-orphan"
+    )
     
     portfolio_hub = relationship(
         "Company",

@@ -20,7 +20,7 @@ from app.models.site import Site
 from app.models.site_visit import SiteVisit
 from app.models.sv_uploads import SiteVisitUpload
 from app.models.task import Task
-from app.models.telemetry import DASConnection, TelemetrySiteMapping
+from app.models.telemetry import CompanyDASProvider, DASConnection, TelemetrySiteMapping
 from app.models.user import User, UserCompanyAccess
 from app.models.role_profile import RoleProfile
 from app.models.finance import (

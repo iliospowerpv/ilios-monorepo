@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import CheckConstraint, Column, DateTime, Enum, ForeignKey, Identity, Integer, String
+from sqlalchemy import CheckConstraint, Column, DateTime, Enum, ForeignKey, Identity, Integer, String, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from app.db.base_class import Base
@@ -10,6 +10,21 @@ from app.models.helpers import utcnow
 class DASProvidersEnum(enum.Enum):
     kmc = "KMC"
     also_energy = "Also Energy"
+
+
+class CompanyDASProvider(Base):
+    __tablename__ = "company_das_providers"
+    __table_args__ = (
+        UniqueConstraint("company_id", "provider", name="uq_company_das_provider"),
+    )
+
+    id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
+    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    provider = Column(Enum(DASProvidersEnum), nullable=False)
+
+    created_at = Column(DateTime, server_default=utcnow())
+
+    company = relationship("Company", back_populates="das_providers")
 
 
 class DASConnectionOwnerType(enum.Enum):
