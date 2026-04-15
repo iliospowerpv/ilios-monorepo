@@ -1,0 +1,124 @@
+STRICT DIAGNOSTIC ONLY — DO NOT MODIFY WORKING APP BEHAVIOR
+
+We need to determine whether the DEMO account / DEMO data setup introduced a configuration or data issue in the Data Room, without breaking or refactoring the application.
+
+This is a DIAGNOSTIC task first. Do not “fix” anything yet unless I explicitly approve a minimal targeted patch after your findings.
+
+PRIMARY QUESTION
+We are seeing odd behavior in the demo account:
+1) Existing templated line items (example: Site Lease / Site Control type rows) do not show an upload option where expected.
+2) The top-level “Add Document” button creates a new blank line item.
+3) Newly added blank documents do not trigger AI extraction.
+We need to determine whether this is:
+- demo-account-specific data/configuration,
+- seeded demo-template behavior,
+- permission/role issue,
+- missing linkage between document template and upload flow,
+- missing parsing trigger,
+- or an actual app-wide code regression.
+
+HARD RULES
+- DO NOT refactor.
+- DO NOT rename anything.
+- DO NOT migrate schemas.
+- DO NOT change status logic.
+- DO NOT change routing.
+- DO NOT change storage integration.
+- DO NOT change parsing services.
+- DO NOT update seeds unless I explicitly approve after diagnosis.
+- Prefer read-only inspection first.
+- If you must test behavior, do so in the narrowest possible way and do not alter production-like records.
+- Do not make assumptions. Show evidence with file paths, functions, and conditions.
+
+TASKS
+
+STEP 1 — MAP THE DATA ROOM FLOWS
+Identify the exact code paths for:
+A) Top-level “Add Document” button
+B) Upload action for an existing templated document row
+C) Document detail panel behavior for selected document
+D) AI extraction / parse trigger on file upload or document creation
+
+For each, provide:
+- route/component/file path
+- event handler/function
+- API endpoint/service used
+- conditions that determine whether upload button appears
+- conditions that determine whether parsing runs
+
+STEP 2 — IDENTIFY DEMO-SPECIFIC DIFFERENCES
+Check whether the demo account/project uses:
+- special seed data
+- special template data
+- missing document_template_id / category linkage
+- missing project-document instance generation
+- missing permissions / role flags
+- feature flags
+- environment-specific parsing toggle
+- dummy storage provider path
+- demo-only mock data that bypasses normal upload/extraction flow
+
+Show exactly where demo data is created or seeded, with file paths and relevant conditions.
+
+STEP 3 — COMPARE TWO FLOWS
+Compare:
+1) selecting an existing templated line item like Site Lease / Site Control row
+2) creating a brand-new document with “Add Document”
+
+Explain:
+- why one may lack upload controls
+- why the new blank document can exist without extraction
+- whether that is expected by design or an unintended demo setup issue
+
+STEP 4 — PARSING DIAGNOSTIC
+Trace the AI extraction trigger end-to-end:
+- what action starts it
+- whether it runs on document creation, file upload, or both
+- whether a newly created blank doc should ever parse without a file
+- whether the demo account has parsing disabled, skipped, or disconnected
+
+If parsing only runs on upload, say that clearly.
+If blank docs are expected to have no extraction until a file is attached, say that clearly.
+If templated rows are missing upload affordances because they are incomplete instances, say that clearly.
+
+STEP 5 — RISK ASSESSMENT
+Answer these explicitly:
+1) Is this likely a demo-data/setup issue only?
+2) Is this likely an app-wide regression?
+3) What evidence supports that conclusion?
+4) What is the smallest possible safe fix, if any?
+5) What should we NOT touch yet?
+
+OUTPUT FORMAT
+Return ONLY these sections:
+
+1) Findings Summary
+- 5-10 bullets max
+- state whether this appears demo-specific or systemic
+
+2) Flow Map
+- Add Document flow
+- Existing templated row upload flow
+- AI extraction flow
+
+3) Demo-Specific Differences
+- exact seeds/config/data conditions
+
+4) Root Cause Hypotheses Ranked
+- highest confidence first
+- include confidence level (High / Medium / Low)
+
+5) Minimal Safe Fix Options
+- Option A: no-code/data correction
+- Option B: tiny targeted code fix
+- Option C: seed/template correction
+For each option, state blast radius and regression risk.
+
+6) Stop/Proceed Recommendation
+- tell me whether to pause all other sprint work until this is resolved
+
+IMPORTANT
+This is a diagnosis pass only.
+Do not implement fixes yet.
+Do not change files yet.
+Start by tracing the Add Document button, templated row upload rendering logic, and parse trigger.
