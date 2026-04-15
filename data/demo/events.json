@@ -1,0 +1,83 @@
+[
+  {
+    "id": "EVT-0001",
+    "project": "desert_bloom",
+    "date": "2024-08-14",
+    "end_date": "2024-11-07",
+    "type": "inverter_trip",
+    "title": "Inverter Subgroup INV-07 to INV-09 Underperformance",
+    "description": "Three inverters in Block C showing 12% below expected output. Suspected MPPT tracking fault.",
+    "severity": "high",
+    "root_cause": "Firmware bug in MPPT algorithm causing tracking loss at high irradiance",
+    "resolution": "Firmware update applied; performance restored to baseline within 48 hours",
+    "financial_impact_usd": 145000,
+    "affected_devices": [
+      "DEMO-INV-007",
+      "DEMO-INV-008",
+      "DEMO-INV-009"
+    ]
+  },
+  {
+    "id": "EVT-0002",
+    "project": "desert_bloom",
+    "date": "2024-09-02",
+    "end_date": "2024-09-05",
+    "type": "comms_outage",
+    "title": "Network Gateway Communication Loss",
+    "description": "LTE modem failure caused 72-hour data gap. Failover to satellite incomplete.",
+    "severity": "medium",
+    "root_cause": "Cradlepoint IBR1700 SIM card failure; satellite failover config error",
+    "resolution": "Replaced SIM card, corrected satellite failover configuration",
+    "financial_impact_usd": 8500,
+    "affected_devices": [
+      "DEMO-GW-001"
+    ]
+  },
+  {
+    "id": "EVT-0003",
+    "project": "desert_bloom",
+    "date": "2025-07-19",
+    "end_date": "2025-07-31",
+    "type": "weather_event",
+    "title": "Tropical Storm Hilary Remnants - High Wind Event",
+    "description": "Sustained winds 55+ mph with gusts to 72 mph. Tracker stow activated. 4 trackers stuck in stow.",
+    "severity": "critical",
+    "root_cause": "Extreme wind event exceeding design limits for tracker actuators",
+    "resolution": "Manual tracker reset, 2 actuator motor replacements, full inspection of all rows",
+    "financial_impact_usd": 285000,
+    "affected_devices": [
+      "DEMO-INV-003",
+      "DEMO-INV-004"
+    ]
+  },
+  {
+    "id": "EVT-0004",
+    "project": "riverbend",
+    "date": "2025-03-10",
+    "end_date": "2025-03-10",
+    "type": "maintenance_optimization",
+    "title": "Preventive Maintenance Cost Reduction Initiative",
+    "description": "Implemented predictive maintenance scheduling reducing unplanned downtime by 40%",
+    "severity": "info",
+    "root_cause": "Optimization of preventive maintenance intervals using historical failure data",
+    "resolution": "Revised PM schedule adopted; corrective maintenance budget reduced 22% QoQ",
+    "financial_impact_usd": -35000,
+    "affected_devices": []
+  },
+  {
+    "id": "EVT-0005",
+    "project": "desert_bloom",
+    "date": "2025-11-09",
+    "end_date": "2025-11-16",
+    "type": "warranty_claim",
+    "title": "Inverter INV-05 IGBT Module Failure - Warranty Replacement",
+    "description": "Complete IGBT module failure in Inverter 05. Covered under manufacturer warranty.",
+    "severity": "high",
+    "root_cause": "Manufacturing defect in IGBT gate driver",
+    "resolution": "Sungrow dispatched replacement unit under warranty; installed within 5 business days",
+    "financial_impact_usd": 0,
+    "affected_devices": [
+      "DEMO-INV-005"
+    ]
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "project": "desert_bloom",
+    "period": "2024-05-01 to 2026-04-30",
+    "budget_revenue": 18642947.99,
+    "actual_revenue": 18631332.65,
+    "revenue_variance": -11615.34,
+    "revenue_variance_pct": -0.06,
+    "budget_expense": 1046389.82,
+    "actual_expense": 1050248.48,
+    "expense_variance": 3858.66,
+    "expense_variance_pct": 0.37,
+    "budget_noi": 17596558.17,
+    "actual_noi": 17581084.17,
+    "noi_variance": -15474.0,
+    "top_variance_drivers": [
+      "Storm event impact on production (-18% in Jul 2025)",
+      "Inverter underperformance period (Aug-Oct 2024)",
+      "PM initiative reducing corrective costs (H2 2025)"
+    ]
+  },
+  {
+    "project": "riverbend",
+    "period": "2024-05-01 to 2026-04-30",
+    "budget_revenue": 3427347.24,
+    "actual_revenue": 3397866.92,
+    "revenue_variance": -29480.32,
+    "revenue_variance_pct": -0.86,
+    "budget_expense": 232188.08,
+    "actual_expense": 233519.19,
+    "expense_variance": 1331.11,
+    "expense_variance_pct": 0.57,
+    "budget_noi": 3195159.16,
+    "actual_noi": 3164347.73,
+    "noi_variance": -30811.43,
+    "top_variance_drivers": [
+      "Seasonal overperformance in summer months",
+      "Lower-than-budget snow removal costs",
+      "Community solar credit rate favorability"
+    ]
+  }
+]

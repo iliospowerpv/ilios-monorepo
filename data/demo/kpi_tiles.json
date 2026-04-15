@@ -1,0 +1,29 @@
+{
+  "portfolio_summary": {
+    "total_capacity_mw_ac": 87.0,
+    "total_capacity_mw_dc": 114.1,
+    "project_count": 2,
+    "battery_storage_mwh": 15664
+  },
+  "production": {
+    "total_production_mwh": 343375.0,
+    "avg_performance_ratio": 0.8168,
+    "avg_availability_pct": 98.15,
+    "total_carbon_offset_tons": 132543.0
+  },
+  "financial": {
+    "total_revenue": 22029200.0,
+    "total_expense": 1283768.0,
+    "total_ebitda": 20745432.0,
+    "ebitda_margin_pct": 94.2,
+    "revenue_variance": -41096.0,
+    "expense_variance": 5190.0,
+    "om_cost_per_mw": 14756.0
+  },
+  "operations": {
+    "total_work_orders": 45,
+    "open_work_orders": 3,
+    "overdue_work_orders": 1,
+    "avg_resolution_days": 8.5
+  }
+}

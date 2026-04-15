@@ -1,0 +1,24 @@
+[
+  {
+    "project": "desert_bloom",
+    "period": "2024-05-01 to 2026-04-30",
+    "total_revenue": 18631332.65,
+    "total_expense": 1050248.48,
+    "total_ebitda": 17581084.17,
+    "avg_ebitda_margin_pct": 94.36,
+    "total_om_cost_per_mw": 14003.31,
+    "annualized_revenue": 9315666.33,
+    "annualized_expense": 525124.24
+  },
+  {
+    "project": "riverbend",
+    "period": "2024-05-01 to 2026-04-30",
+    "total_revenue": 3397866.92,
+    "total_expense": 233519.19,
+    "total_ebitda": 3164347.73,
+    "avg_ebitda_margin_pct": 93.13,
+    "total_om_cost_per_mw": 19459.93,
+    "annualized_revenue": 1698933.46,
+    "annualized_expense": 116759.6
+  }
+]

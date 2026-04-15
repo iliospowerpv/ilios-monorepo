@@ -1,0 +1,8 @@
+{
+  "project": "desert_bloom",
+  "system_capacity_mwh": 15664,
+  "system_power_mw": 7648,
+  "total_throughput_mwh": 293870.0,
+  "avg_efficiency_pct": 90.25,
+  "total_dispatch_revenue": 3642599.0
+}

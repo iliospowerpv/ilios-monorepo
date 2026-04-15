@@ -1,0 +1,242 @@
+[
+  {
+    "project": "desert_bloom",
+    "month": "2024-05-01",
+    "ebitda_margin_pct": 94.85
+  },
+  {
+    "project": "riverbend",
+    "month": "2024-05-01",
+    "ebitda_margin_pct": 94.62
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2024-06-01",
+    "ebitda_margin_pct": 95.19
+  },
+  {
+    "project": "riverbend",
+    "month": "2024-06-01",
+    "ebitda_margin_pct": 95.09
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2024-07-01",
+    "ebitda_margin_pct": 95.21
+  },
+  {
+    "project": "riverbend",
+    "month": "2024-07-01",
+    "ebitda_margin_pct": 95.1
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2024-08-01",
+    "ebitda_margin_pct": 95.25
+  },
+  {
+    "project": "riverbend",
+    "month": "2024-08-01",
+    "ebitda_margin_pct": 94.45
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2024-09-01",
+    "ebitda_margin_pct": 93.84
+  },
+  {
+    "project": "riverbend",
+    "month": "2024-09-01",
+    "ebitda_margin_pct": 92.48
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2024-10-01",
+    "ebitda_margin_pct": 93.51
+  },
+  {
+    "project": "riverbend",
+    "month": "2024-10-01",
+    "ebitda_margin_pct": 92.07
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2024-11-01",
+    "ebitda_margin_pct": 93.5
+  },
+  {
+    "project": "riverbend",
+    "month": "2024-11-01",
+    "ebitda_margin_pct": 89.15
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2024-12-01",
+    "ebitda_margin_pct": 92.65
+  },
+  {
+    "project": "riverbend",
+    "month": "2024-12-01",
+    "ebitda_margin_pct": 86.43
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-01-01",
+    "ebitda_margin_pct": 93.64
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-01-01",
+    "ebitda_margin_pct": 87.76
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-02-01",
+    "ebitda_margin_pct": 93.59
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-02-01",
+    "ebitda_margin_pct": 90.13
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-03-01",
+    "ebitda_margin_pct": 94.77
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-03-01",
+    "ebitda_margin_pct": 93.25
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-04-01",
+    "ebitda_margin_pct": 95.0
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-04-01",
+    "ebitda_margin_pct": 94.25
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-05-01",
+    "ebitda_margin_pct": 94.59
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-05-01",
+    "ebitda_margin_pct": 95.14
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-06-01",
+    "ebitda_margin_pct": 94.93
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-06-01",
+    "ebitda_margin_pct": 95.06
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-07-01",
+    "ebitda_margin_pct": 94.49
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-07-01",
+    "ebitda_margin_pct": 94.22
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-08-01",
+    "ebitda_margin_pct": 95.34
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-08-01",
+    "ebitda_margin_pct": 95.36
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-09-01",
+    "ebitda_margin_pct": 94.73
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-09-01",
+    "ebitda_margin_pct": 94.24
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-10-01",
+    "ebitda_margin_pct": 94.59
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-10-01",
+    "ebitda_margin_pct": 92.46
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-11-01",
+    "ebitda_margin_pct": 93.74
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-11-01",
+    "ebitda_margin_pct": 89.25
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-12-01",
+    "ebitda_margin_pct": 92.54
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-12-01",
+    "ebitda_margin_pct": 86.26
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2026-01-01",
+    "ebitda_margin_pct": 93.17
+  },
+  {
+    "project": "riverbend",
+    "month": "2026-01-01",
+    "ebitda_margin_pct": 88.1
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2026-02-01",
+    "ebitda_margin_pct": 93.67
+  },
+  {
+    "project": "riverbend",
+    "month": "2026-02-01",
+    "ebitda_margin_pct": 90.28
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2026-03-01",
+    "ebitda_margin_pct": 94.48
+  },
+  {
+    "project": "riverbend",
+    "month": "2026-03-01",
+    "ebitda_margin_pct": 93.28
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2026-04-01",
+    "ebitda_margin_pct": 94.75
+  },
+  {
+    "project": "riverbend",
+    "month": "2026-04-01",
+    "ebitda_margin_pct": 94.64
+  }
+]

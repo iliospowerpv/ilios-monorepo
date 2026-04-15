@@ -1,0 +1,24 @@
+[
+  {
+    "id": "CTR-001",
+    "project": "desert_bloom",
+    "type": "PPA",
+    "counterparty": "Southern California Edison",
+    "effective_date": "2024-05-01",
+    "term_years": 20,
+    "base_rate": 42.5,
+    "escalator_pct": 1.5,
+    "annual_value_est": 7752000
+  },
+  {
+    "id": "CTR-002",
+    "project": "riverbend",
+    "type": "ESA (Community Solar VDER)",
+    "counterparty": "Albany County Government",
+    "effective_date": "2024-05-01",
+    "term_years": 15,
+    "base_rate": 95.0,
+    "escalator_pct": 2.0,
+    "annual_value_est": 2137500
+  }
+]

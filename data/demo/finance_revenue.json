@@ -1,0 +1,482 @@
+[
+  {
+    "project": "desert_bloom",
+    "month": "2024-05-01",
+    "energy_sales": 638375.5,
+    "rec_revenue": 32245.57,
+    "capacity_payments": 19334.31,
+    "battery_dispatch_value": 176574.34,
+    "demand_charge_savings": 0,
+    "total_revenue": 866529.72
+  },
+  {
+    "project": "riverbend",
+    "month": "2024-05-01",
+    "energy_sales": 165338.0,
+    "rec_revenue": 5039.02,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 13230.39,
+    "total_revenue": 183607.41
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2024-06-01",
+    "energy_sales": 686379.25,
+    "rec_revenue": 61907.68,
+    "capacity_payments": 24223.62,
+    "battery_dispatch_value": 140266.03,
+    "demand_charge_savings": 0,
+    "total_revenue": 912776.58
+  },
+  {
+    "project": "riverbend",
+    "month": "2024-06-01",
+    "energy_sales": 177792.5,
+    "rec_revenue": 8972.79,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 6485.93,
+    "total_revenue": 193251.22
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2024-07-01",
+    "energy_sales": 730235.0,
+    "rec_revenue": 56390.83,
+    "capacity_payments": 22954.24,
+    "battery_dispatch_value": 100462.11,
+    "demand_charge_savings": 0,
+    "total_revenue": 910042.18
+  },
+  {
+    "project": "riverbend",
+    "month": "2024-07-01",
+    "energy_sales": 183359.5,
+    "rec_revenue": 6898.06,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 12505.4,
+    "total_revenue": 202762.96
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2024-08-01",
+    "energy_sales": 646977.5,
+    "rec_revenue": 75529.95,
+    "capacity_payments": 22352.97,
+    "battery_dispatch_value": 178091.96,
+    "demand_charge_savings": 0,
+    "total_revenue": 922952.37
+  },
+  {
+    "project": "riverbend",
+    "month": "2024-08-01",
+    "energy_sales": 161690.0,
+    "rec_revenue": 5019.99,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 9577.08,
+    "total_revenue": 176287.07
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2024-09-01",
+    "energy_sales": 515525.0,
+    "rec_revenue": 43172.09,
+    "capacity_payments": 23686.72,
+    "battery_dispatch_value": 147994.83,
+    "demand_charge_savings": 0,
+    "total_revenue": 730378.64
+  },
+  {
+    "project": "riverbend",
+    "month": "2024-09-01",
+    "energy_sales": 127091.0,
+    "rec_revenue": 2681.94,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 4173.85,
+    "total_revenue": 133946.79
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2024-10-01",
+    "energy_sales": 470708.75,
+    "rec_revenue": 55343.84,
+    "capacity_payments": 21726.37,
+    "battery_dispatch_value": 111009.33,
+    "demand_charge_savings": 0,
+    "total_revenue": 658788.3
+  },
+  {
+    "project": "riverbend",
+    "month": "2024-10-01",
+    "energy_sales": 107777.5,
+    "rec_revenue": 3227.52,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 7885.88,
+    "total_revenue": 118890.9
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2024-11-01",
+    "energy_sales": 441672.75,
+    "rec_revenue": 42166.83,
+    "capacity_payments": 21072.25,
+    "battery_dispatch_value": 158564.2,
+    "demand_charge_savings": 0,
+    "total_revenue": 663476.04
+  },
+  {
+    "project": "riverbend",
+    "month": "2024-11-01",
+    "energy_sales": 82403.0,
+    "rec_revenue": 2614.18,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 5518.72,
+    "total_revenue": 90535.89
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2024-12-01",
+    "energy_sales": 385806.5,
+    "rec_revenue": 35236.4,
+    "capacity_payments": 26028.52,
+    "battery_dispatch_value": 154151.63,
+    "demand_charge_savings": 0,
+    "total_revenue": 601223.06
+  },
+  {
+    "project": "riverbend",
+    "month": "2024-12-01",
+    "energy_sales": 64657.0,
+    "rec_revenue": 3066.32,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 3060.47,
+    "total_revenue": 70783.79
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-01-01",
+    "energy_sales": 419326.25,
+    "rec_revenue": 40023.26,
+    "capacity_payments": 25195.82,
+    "battery_dispatch_value": 186212.4,
+    "demand_charge_savings": 0,
+    "total_revenue": 670757.73
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-01-01",
+    "energy_sales": 72133.5,
+    "rec_revenue": 3759.19,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 4656.45,
+    "total_revenue": 80549.13
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-02-01",
+    "energy_sales": 472302.5,
+    "rec_revenue": 51050.69,
+    "capacity_payments": 24763.86,
+    "battery_dispatch_value": 133470.91,
+    "demand_charge_savings": 0,
+    "total_revenue": 681587.96
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-02-01",
+    "energy_sales": 88777.5,
+    "rec_revenue": 2535.23,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 4915.03,
+    "total_revenue": 96227.76
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-03-01",
+    "energy_sales": 556070.0,
+    "rec_revenue": 56978.62,
+    "capacity_payments": 25000.11,
+    "battery_dispatch_value": 199056.03,
+    "demand_charge_savings": 0,
+    "total_revenue": 837104.76
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-03-01",
+    "energy_sales": 128430.5,
+    "rec_revenue": 3475.24,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 10299.02,
+    "total_revenue": 142204.76
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-04-01",
+    "energy_sales": 609879.25,
+    "rec_revenue": 66231.41,
+    "capacity_payments": 25399.25,
+    "battery_dispatch_value": 176457.46,
+    "demand_charge_savings": 0,
+    "total_revenue": 877967.36
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-04-01",
+    "energy_sales": 156189.5,
+    "rec_revenue": 6808.27,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 9226.24,
+    "total_revenue": 172224.01
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-05-01",
+    "energy_sales": 651220.95,
+    "rec_revenue": 34136.4,
+    "capacity_payments": 22201.88,
+    "battery_dispatch_value": 101461.27,
+    "demand_charge_savings": 0,
+    "total_revenue": 809020.5
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-05-01",
+    "energy_sales": 179032.44,
+    "rec_revenue": 5425.35,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 13784.35,
+    "total_revenue": 198242.13
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-06-01",
+    "energy_sales": 698529.85,
+    "rec_revenue": 53815.29,
+    "capacity_payments": 19058.86,
+    "battery_dispatch_value": 94114.87,
+    "demand_charge_savings": 0,
+    "total_revenue": 865518.87
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-06-01",
+    "energy_sales": 182094.48,
+    "rec_revenue": 4923.0,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 8929.19,
+    "total_revenue": 195946.67
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-07-01",
+    "energy_sales": 598170.46,
+    "rec_revenue": 37917.87,
+    "capacity_payments": 18641.19,
+    "battery_dispatch_value": 133826.0,
+    "demand_charge_savings": 0,
+    "total_revenue": 788555.52
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-07-01",
+    "energy_sales": 157627.23,
+    "rec_revenue": 6549.89,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 5741.66,
+    "total_revenue": 169918.77
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-08-01",
+    "energy_sales": 700104.37,
+    "rec_revenue": 61319.79,
+    "capacity_payments": 25525.57,
+    "battery_dispatch_value": 167759.61,
+    "demand_charge_savings": 0,
+    "total_revenue": 954709.34
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-08-01",
+    "energy_sales": 186997.62,
+    "rec_revenue": 7743.54,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 10937.0,
+    "total_revenue": 205678.15
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-09-01",
+    "energy_sales": 614963.89,
+    "rec_revenue": 63275.57,
+    "capacity_payments": 26277.2,
+    "battery_dispatch_value": 128072.19,
+    "demand_charge_savings": 0,
+    "total_revenue": 832588.84
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-09-01",
+    "energy_sales": 159012.9,
+    "rec_revenue": 4422.63,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 6759.23,
+    "total_revenue": 170194.76
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-10-01",
+    "energy_sales": 540219.54,
+    "rec_revenue": 51330.64,
+    "capacity_payments": 23986.63,
+    "battery_dispatch_value": 184876.09,
+    "demand_charge_savings": 0,
+    "total_revenue": 800412.9
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-10-01",
+    "energy_sales": 116774.19,
+    "rec_revenue": 3680.76,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 6394.51,
+    "total_revenue": 126849.47
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-11-01",
+    "energy_sales": 465578.72,
+    "rec_revenue": 24918.61,
+    "capacity_payments": 25357.98,
+    "battery_dispatch_value": 189104.7,
+    "demand_charge_savings": 0,
+    "total_revenue": 704960.01
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-11-01",
+    "energy_sales": 84051.06,
+    "rec_revenue": 2777.8,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 4395.3,
+    "total_revenue": 91224.16
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2025-12-01",
+    "energy_sales": 390346.92,
+    "rec_revenue": 27347.07,
+    "capacity_payments": 25325.24,
+    "battery_dispatch_value": 148534.91,
+    "demand_charge_savings": 0,
+    "total_revenue": 591554.14
+  },
+  {
+    "project": "riverbend",
+    "month": "2025-12-01",
+    "energy_sales": 65310.6,
+    "rec_revenue": 1825.5,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 4255.0,
+    "total_revenue": 71391.11
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2026-01-01",
+    "energy_sales": 434610.31,
+    "rec_revenue": 38048.13,
+    "capacity_payments": 22166.18,
+    "battery_dispatch_value": 139457.47,
+    "demand_charge_savings": 0,
+    "total_revenue": 634282.09
+  },
+  {
+    "project": "riverbend",
+    "month": "2026-01-01",
+    "energy_sales": 75950.22,
+    "rec_revenue": 1823.3,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 5541.73,
+    "total_revenue": 83315.25
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2026-02-01",
+    "energy_sales": 467813.25,
+    "rec_revenue": 24634.81,
+    "capacity_payments": 25353.3,
+    "battery_dispatch_value": 154771.58,
+    "demand_charge_savings": 0,
+    "total_revenue": 672572.94
+  },
+  {
+    "project": "riverbend",
+    "month": "2026-02-01",
+    "energy_sales": 93808.89,
+    "rec_revenue": 2369.57,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 5475.84,
+    "total_revenue": 101654.3
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2026-03-01",
+    "energy_sales": 564669.88,
+    "rec_revenue": 38612.79,
+    "capacity_payments": 23132.49,
+    "battery_dispatch_value": 183008.38,
+    "demand_charge_savings": 0,
+    "total_revenue": 809423.54
+  },
+  {
+    "project": "riverbend",
+    "month": "2026-03-01",
+    "energy_sales": 132966.18,
+    "rec_revenue": 4161.6,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 4729.2,
+    "total_revenue": 141856.98
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2026-04-01",
+    "energy_sales": 616339.97,
+    "rec_revenue": 41185.35,
+    "capacity_payments": 21323.01,
+    "battery_dispatch_value": 155300.93,
+    "demand_charge_savings": 0,
+    "total_revenue": 834149.26
+  },
+  {
+    "project": "riverbend",
+    "month": "2026-04-01",
+    "energy_sales": 160582.68,
+    "rec_revenue": 7596.18,
+    "capacity_payments": 0,
+    "battery_dispatch_value": 0,
+    "demand_charge_savings": 12144.62,
+    "total_revenue": 180323.48
+  }
+]
