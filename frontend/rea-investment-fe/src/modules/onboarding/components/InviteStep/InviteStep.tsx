@@ -113,7 +113,6 @@ export const InviteStep: React.FC<InviteStepProps> = ({
     inviteMutation.mutate();
   };
 
-
   const handleProjectChange = (newIds: number[]) => {
     setSelectedProjects(newIds);
   };

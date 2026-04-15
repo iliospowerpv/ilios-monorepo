@@ -62,14 +62,14 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
       onChange={(_event, newValue) => {
         onChange(newValue ? newValue.value : '');
       }}
-      getOptionLabel={(option) => option.label}
+      getOptionLabel={option => option.label}
       isOptionEqualToValue={(option, val) => option.value === val.value}
-      getOptionDisabled={(option) => !!option.disabled}
+      getOptionDisabled={option => !!option.disabled}
       disabled={disabled}
       loading={loading}
       fullWidth={fullWidth}
       sx={sx}
-      renderInput={(params) => (
+      renderInput={params => (
         <TextField
           {...params}
           label={label}
@@ -89,7 +89,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 {loading ? <CircularProgress color="inherit" size={20} /> : null}
                 {params.InputProps.endAdornment}
               </>
-            ),
+            )
           }}
         />
       )}

@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import { AxiosError } from 'axios';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
-import FormHelperText from '@mui/material/FormHelperText';
 import TextField from '@mui/material/TextField';
 import Alert from '@mui/material/Alert';
 import Collapse from '@mui/material/Collapse';
@@ -209,10 +208,10 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({ siteId, companyId }) => 
               (errorRetrievingTelemetrySiteDevices instanceof AxiosError
                 ? errorRetrievingTelemetrySiteDevices.response?.data?.message ||
                   errorRetrievingTelemetrySiteDevices.message
-                : errorRetrievingTelemetrySiteDevices?.message ??
+                : (errorRetrievingTelemetrySiteDevices?.message ??
                   (errorRetrievingTelemetrySiteDevices
                     ? 'Something went wrong when retrieving telemetry site devices...'
-                    : undefined))
+                    : undefined)))
             }
             variant="filled"
             disabled={isLoadingTelemetrySiteDevices}

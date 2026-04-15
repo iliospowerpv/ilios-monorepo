@@ -16,7 +16,11 @@ import { AssetManagementCompanyDetailsTabProps } from '../types';
 import formatFloatValue from '../../../../../..//utils/formatters/formatFloatValue';
 import formatPhoneNumber from '../../../../../../utils/formatters/formatPhoneNumber';
 import { useEntityContext } from '../../../../../../contexts/entityContext';
-import { ProjectPicker, useProjectNavigation, type ProjectHubTab } from '../../../../../../components/common/ProjectPicker';
+import {
+  ProjectPicker,
+  useProjectNavigation,
+  type ProjectHubTab
+} from '../../../../../../components/common/ProjectPicker';
 import { useAccessibleEntities } from '../../../../../../hooks/useAccessibleEntities';
 
 interface InfoBoxProps {
@@ -121,13 +125,14 @@ export const OverviewTab: React.FC<AssetManagementCompanyDetailsTabProps> = ({ c
     ]
   };
 
-  const pickerTitle = pickerTab === 'data-room'
-    ? 'Data Room'
-    : pickerTab === 'finance'
-      ? 'Finance'
-      : pickerTab === 'om'
-        ? 'O&M'
-        : 'Asset Management';
+  const pickerTitle =
+    pickerTab === 'data-room'
+      ? 'Data Room'
+      : pickerTab === 'finance'
+        ? 'Finance'
+        : pickerTab === 'om'
+          ? 'O&M'
+          : 'Asset Management';
 
   return (
     <Box paddingTop={1} sx={{ flexGrow: 1 }}>

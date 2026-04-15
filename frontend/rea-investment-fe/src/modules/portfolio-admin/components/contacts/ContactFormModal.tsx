@@ -11,7 +11,6 @@ import Grid from '@mui/material/Grid';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import Chip from '@mui/material/Chip';
-import Autocomplete from '@mui/material/Autocomplete';
 
 import { ApiClient } from '../../../../api';
 import type { Contact, ContactCreate, ContactUpdate, ContactScopeType } from '../../../../api';

@@ -138,7 +138,6 @@ export const InviteUserDialog: React.FC<InviteUserDialogProps> = ({ open, onClos
     setSelectedProjects(newIds);
   };
 
-
   return (
     <>
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>

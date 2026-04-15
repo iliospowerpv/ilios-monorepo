@@ -92,7 +92,7 @@ export const AssetManagementCompanyDetails: React.FC<AssetManagementCompanyDetai
       setToast({ open: true, message: data.message, severity: 'success' });
       queryClient.invalidateQueries({ queryKey: ['company'] });
       queryClient.invalidateQueries({ queryKey: ['workspace'] });
-      setTimeout(() => navigate('/project-hub/companies'), 1500);
+      setTimeout(() => navigate('/project-hub'), 1500);
     },
     onError: (error: any) => {
       const detail = error?.response?.data?.detail || 'Failed to archive company';

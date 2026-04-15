@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import Stack from '@mui/material/Stack';
-import { useTheme } from '@mui/material/styles';
 import CompanySearchField from './CompanySearchField';
 import SiteSearchField from './SiteSearchField';
 import Button from '@mui/material/Button';
@@ -40,7 +39,6 @@ interface DeviceFormProps {
 
 export const DeviceForm: React.FC<DeviceFormProps> = ({ onFilterChange }) => {
   const inputStyles = { fontSize: '0.875rem', lineHeight: 1.43, height: '40px' };
-  const theme = useTheme();
   const [startOpen, setStartOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
   const { handleSubmit, formState, control, watch, reset, getValues, setValue } = useForm<DeviceFormFields>({

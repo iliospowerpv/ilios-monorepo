@@ -23,7 +23,6 @@ import CustomParseFormatPlugin from 'dayjs/plugin/customParseFormat';
 import type { AssetManagementSiteDetailsTabProps } from '../types';
 import { ApiClient } from '../../../../../../api';
 
-
 dayjs.extend(CustomParseFormatPlugin);
 
 interface ReportType {
