@@ -38,8 +38,17 @@ export const OM: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDetails }
         Operations & Maintenance
       </Typography>
 
+      {readiness && !showPerformanceDashboard && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          Performance charts will appear here once telemetry is connected and data is flowing.
+        </Alert>
+      )}
+
       {showPerformanceDashboard && (
         <>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Performance Dashboard
+          </Typography>
           <Box maxWidth="1600px" mx="auto" mb={3} sx={{ flexGrow: 1 }}>
             <Grid container spacing={2} columns={20}>
               <Grid item xs={20} md={10} lg={8}>
