@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import Box from '@mui/material/Box';
@@ -77,7 +77,16 @@ export const InviteStep: React.FC<InviteStepProps> = ({
     enabled: !!companyId
   });
 
-  const existingMemberUserIds = (companyMembers || []).map((m: { user_id: number }) => m.user_id);
+  const existingMemberUserIds = useMemo(
+    () => (companyMembers || []).map((m: { user_id: number }) => m.user_id),
+    [companyMembers]
+  );
+
+  useEffect(() => {
+    if (selectedUserId && existingMemberUserIds.includes(selectedUserId)) {
+      setSelectedUserId(null);
+    }
+  }, [existingMemberUserIds, selectedUserId]);
 
   const projects: Project[] = (projectsData?.items ?? [])
     .filter((site: { company_id?: number }) => site.company_id === companyId)
