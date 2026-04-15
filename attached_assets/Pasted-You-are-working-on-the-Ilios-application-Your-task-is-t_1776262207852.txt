@@ -1,0 +1,464 @@
+You are working on the Ilios application.
+
+Your task is to design, build, populate, and permanently maintain a full in-app Help & Resources / FAQ / Documentation system for Ilios, similar in quality and usefulness to a mature SaaS knowledge base.
+
+This is not a placeholder page. It must become a real product surface with user-facing documentation, FAQs, walkthroughs, module explainers, and technical guidance.
+
+IMPORTANT GOVERNING RULE:
+From this point forward, documentation is a required part of feature completion in Ilios.
+For every new module, page, workflow, command, report, dashboard, data model, integration, or user-visible behavior you create or modify, you must also create or update the corresponding Help / FAQ / explainer content and ensure it appears in the Help & Resources system.
+This is a hard requirement, not optional.
+No feature is considered complete unless its documentation and help coverage are also created or updated.
+
+Treat this as an enforced product rule going forward:
+- Every new feature must have associated help documentation
+- Every changed workflow must have updated documentation
+- Every renamed field, button, page, metric, or navigation item must have updated documentation
+- Every new report/dashboard must have “how to use” and “what it means” guidance
+- Every complex metric or financial/operational term must have an explainer
+- Every admin setting or system behavior must have reference documentation where relevant
+- Every module should be represented in Help & Resources if user-facing
+- When code changes affect product behavior, help content must be updated in the same task / same PR / same command execution if possible
+
+Build this so future development naturally enforces and supports that rule.
+
+==================================================
+PRIMARY OBJECTIVE
+==================================================
+
+Build a complete Help & Resources section inside Ilios that supports:
+- Getting started guides
+- FAQs
+- Step-by-step how-to content
+- Conceptual explainers
+- Technical explainers
+- Module-specific documentation
+- Definitions / glossary
+- Troubleshooting guidance
+- Admin/reference documentation
+- Searchable knowledge base behavior
+- Contextual links from app pages into relevant docs
+
+The documentation should feel like part of the product, not an afterthought.
+
+==================================================
+CURRENT CONTEXT
+==================================================
+
+There is already a Help & Resources page in the app with placeholder sections like:
+- Getting Started
+- Finance & Diligence
+- Operations & Lifecycle
+- FAQs
+
+Use this page as the foundation, but upgrade it into a complete documentation system.
+Keep the current UX direction if reasonable, but improve it significantly.
+
+==================================================
+INFORMATION ARCHITECTURE
+==================================================
+
+Create a documentation structure that covers the Ilios app comprehensively.
+
+Recommended top-level sections:
+1. Getting Started
+2. Portfolio, Companies, and Projects
+3. Acquisitions / Diligence
+4. Project Hub
+5. Data Room
+6. O&M
+7. Finance
+8. Tasks
+9. Reports
+10. Portfolio Admin
+11. FAQs
+12. Glossary
+13. Troubleshooting
+14. Release / What Changed (optional but strongly recommended)
+
+Each section should contain multiple articles, not placeholders.
+
+==================================================
+CONTENT TYPES TO BUILD
+==================================================
+
+Build documentation content for at least these content types:
+
+1. Quick start guides
+- what Ilios is
+- how projects vs deals work
+- portfolio/company/project hierarchy
+- how users navigate the app
+- when modules become available
+- role-based usage overview
+
+2. Module how-to articles
+Examples:
+- how to create a deal
+- how to convert a deal to a project
+- how to navigate project hub
+- how to upload and organize data room files
+- how to review O&M metrics
+- how to read finance readiness outputs
+- how to use tasks
+- how to run and interpret reports
+- how to manage portfolio settings and permissions
+
+3. Conceptual explainers
+Examples:
+- projects vs deals
+- lifecycle stages
+- finance readiness
+- diligence workflows
+- O&M performance concepts
+- portfolio rollups
+- budget vs actual concepts
+- asset hierarchy and device stack
+- report logic and roll-up behavior
+
+4. Technical/reference articles
+Examples:
+- field definitions
+- KPI definitions
+- metric formulas where applicable
+- status definitions
+- lifecycle state definitions
+- data source assumptions
+- user role behavior
+- system-generated vs user-entered data
+- validation rules
+- document naming conventions
+- file/data expectations
+
+5. FAQs
+Examples:
+- why can’t I see a module
+- why is finance empty
+- why did a project not appear in a report
+- what happens when a deal becomes a project
+- who can edit portfolio settings
+- how do reports update
+- why are some metrics unavailable
+- how does task ownership work
+
+6. Troubleshooting
+Examples:
+- missing data
+- permissions/access issues
+- empty dashboards
+- report mismatch questions
+- stale metrics
+- upload issues
+- filter confusion
+- finance or O&M data not showing as expected
+
+7. Glossary
+Examples:
+- project
+- deal
+- portfolio
+- company
+- asset
+- work order
+- availability
+- performance ratio
+- budget
+- actuals
+- variance
+- finance readiness
+- diligence
+- lifecycle stage
+
+==================================================
+INITIAL CONTENT REQUIREMENTS
+==================================================
+
+Create meaningful initial documentation content for every current major navigation item in Ilios:
+- Home
+- Acquisitions
+- Project Hub
+- Data Room
+- O&M
+- Finance
+- Tasks
+- Reports
+- Portfolio Admin
+
+For each module, provide at minimum:
+- overview article
+- what this module is for
+- who uses it
+- common workflows
+- key screens
+- important terms
+- FAQs
+- troubleshooting notes
+
+Also create foundational “Getting Started” articles:
+- Understanding Projects vs Deals
+- Navigating Portfolio, Companies, and Projects
+- Lifecycle stages explained
+- When modules become active
+- How permissions and access affect what you see
+
+==================================================
+UI / UX REQUIREMENTS
+==================================================
+
+Build the Help & Resources experience as a real knowledge center.
+
+Requirements:
+- searchable documentation
+- category browsing
+- article detail pages
+- expandable sections or cards
+- breadcrumbs
+- related articles
+- last updated date
+- article type/tag metadata
+- optional difficulty or audience tag (user/admin/analyst/operator)
+- clean readable typography
+- good empty/loading states
+- mobile/responsive support if app supports it
+
+Add contextual help entry points where possible:
+- “Learn more” links from complex pages
+- help icons/tooltips linking to article detail pages
+- module landing pages should link to relevant docs
+- report pages should link to metric definitions
+- finance and O&M pages should link to KPI explainers
+
+==================================================
+DOCUMENTATION DATA MODEL
+==================================================
+
+Create a maintainable documentation content model.
+
+Suggested entities:
+- help_categories
+- help_articles
+- help_article_sections
+- help_faq_items
+- help_tags
+- help_related_links
+- help_glossary_terms
+- help_feedback
+- help_page_mappings
+
+Suggested fields for articles:
+- id
+- slug
+- title
+- summary
+- category
+- subcategory
+- audience
+- module
+- tags
+- article_type (guide / faq / explainer / reference / troubleshooting)
+- status (draft / published)
+- content (rich text or markdown)
+- table_of_contents
+- related_articles
+- search_keywords
+- last_updated
+- owner
+- version
+
+Suggested mapping/support fields:
+- page_route
+- feature_key
+- module_key
+- linked_component
+- trigger_context
+- visibility_rules
+
+==================================================
+CONTENT AUTHORING SYSTEM
+==================================================
+
+Implement documentation so it is easy to extend and update.
+
+Use one of these patterns:
+- markdown or MDX content files plus metadata
+- structured JSON or database-backed article content
+- CMS-like internal content model if already available
+
+Preferred outcome:
+- articles can be edited without touching fragile UI code
+- new articles are easy to add
+- relationships between app routes and help articles are explicit
+- FAQs and glossary entries can be reused across modules
+
+Suggested folder structure:
+- /content/help/getting-started/
+- /content/help/acquisitions/
+- /content/help/project-hub/
+- /content/help/data-room/
+- /content/help/o-and-m/
+- /content/help/finance/
+- /content/help/tasks/
+- /content/help/reports/
+- /content/help/portfolio-admin/
+- /content/help/faqs/
+- /content/help/glossary/
+- /content/help/troubleshooting/
+
+==================================================
+PERMANENT DOCUMENTATION ENFORCEMENT RULE
+==================================================
+
+This must become a hard-coded development standard inside the project.
+
+Implement safeguards so future changes trigger documentation updates.
+
+Add one or more of the following:
+1. A development rule file such as:
+   - /docs/HELP_SYSTEM_RULES.md
+   - /CONTRIBUTING.md
+   - /docs/DOCUMENTATION_REQUIREMENTS.md
+
+2. A developer checklist that states:
+   - any new feature must include help content
+   - any changed UX must update docs
+   - any new KPI/metric must include an explainer
+   - any new route/module must map to Help & Resources
+
+3. A reusable prompt/instruction file for Replit / agents / future code generation such as:
+   - /docs/REPLIT_AGENT_RULES.md
+   - /docs/AI_DEVELOPMENT_GUARDRAILS.md
+
+4. Optional validation helpers:
+   - route-to-help mapping registry
+   - warnings for pages without help mappings
+   - TODO audit for undocumented routes
+   - script that reports features/pages lacking help docs
+
+Create a lightweight but real enforcement pattern.
+Do not just write a note; wire it into the project structure.
+
+==================================================
+ROUTE-TO-HELP MAPPING
+==================================================
+
+Create a registry that maps app areas to docs.
+
+Examples:
+- /acquisitions -> acquisitions overview, creating a deal, converting a deal to a project, acquisitions FAQs
+- /project-hub -> overview, project navigation, lifecycle stages, project FAQs
+- /data-room -> overview, uploading files, organizing files, permissions, troubleshooting
+- /o-and-m -> overview, KPI definitions, work orders, alerts, maintenance workflows
+- /finance -> overview, finance readiness, budgets vs actuals, invoice/revenue/cost explainers
+- /tasks -> overview, task ownership, statuses, assignments, FAQs
+- /reports -> overview, running reports, understanding filters, metric/reference articles
+- /portfolio-admin -> overview, settings, permissions, companies, governance FAQs
+
+==================================================
+CONTENT QUALITY STANDARD
+==================================================
+
+The writing must be:
+- concise but useful
+- user-facing and clear
+- operationally credible
+- financially literate where needed
+- specific to Ilios terminology and workflows
+- consistent across modules
+
+Avoid generic filler.
+Write docs that look like they were made for a real product demo and for real users onboarding into the system.
+
+Each article should generally include:
+- what this page/feature is
+- why it matters
+- how to use it
+- what users should expect
+- common mistakes or misunderstandings
+- related terms/articles
+
+==================================================
+FAQ REQUIREMENTS
+==================================================
+
+Create a real FAQ section with grouped questions, not placeholder text.
+
+Suggested FAQ groups:
+- General
+- Navigation and access
+- Deals and projects
+- Data visibility
+- O&M
+- Finance
+- Reports
+- Admin / permissions
+- Troubleshooting
+
+Each answer should be practical and product-specific.
+
+==================================================
+SEARCH REQUIREMENTS
+==================================================
+
+Implement search across:
+- article titles
+- summaries
+- tags
+- glossary terms
+- FAQ questions
+- content body if feasible
+
+Search results should:
+- show title
+- short excerpt
+- category
+- tags
+- link to article
+
+==================================================
+DEMO-READY CONTENT
+==================================================
+
+This system must be strong enough for customer demos and internal onboarding.
+
+Add a strong initial article set so the Help section looks populated and credible immediately.
+Do not ship an empty shell.
+
+Create enough content that each category has multiple entries.
+The Finance and O&M sections should be especially strong, with both business-user and operator-friendly explainers.
+
+==================================================
+DELIVERABLES
+==================================================
+
+Produce:
+1. Full Help & Resources UI implementation or upgrade
+2. Initial populated article library
+3. FAQ content
+4. Glossary
+5. Route-to-help mapping system
+6. Documentation governance/enforcement files
+7. Search and browse functionality
+8. Related article linking
+9. Contextual help hooks where reasonable
+10. A clear mechanism so future development must create/update help content
+
+Also create:
+- a docs inventory file listing all current app modules/pages and their linked help coverage
+- a documentation maintenance rules file
+- a short “how to add or update docs” guide for future developers
+
+==================================================
+SUCCESS CRITERIA
+==================================================
+
+This work is complete only if:
+- the Help & Resources page is no longer placeholder content
+- every major Ilios module has documentation coverage
+- FAQs are populated
+- there is a scalable content structure
+- future Replit work is explicitly instructed to create/update docs with every feature change
+- there is a visible enforcement mechanism in the repo
+- the experience feels polished enough for demo use
+
+Do not leave documentation as stub content.
+Build the system and populate it with real Ilios-specific guidance.

@@ -1,0 +1,712 @@
+Build a complete demo environment for an Ilios-style operations, asset performance, and finance platform.
+
+Goal:
+Create a realistic demo company with 2 projects and 24 months of synthetic but believable historical data so the product can be fully demoed tomorrow. The output should support dashboards, reports, trends, filtering, drill-downs, operational storytelling, and financial analysis.
+
+The demo must feel like a real customer environment with enough depth to show:
+- operations dashboards
+- performance reporting
+- O&M analysis
+- asset drill-downs
+- finance module reporting
+- budget vs actuals
+- revenue/cost/margin trends
+- portfolio and project economics
+
+Use realistic synthetic data. It should look operationally and financially credible, not random.
+
+-----------------------------------
+DEMO COMPANY
+-----------------------------------
+Create one company:
+- Name: Solara Industrial Energy
+- Industry: Distributed energy / solar + storage operations
+- Portfolio size: mid-market operator
+- Geography: North America
+- Reporting currency: USD
+- Fiscal year: January–December
+
+Create 2 projects:
+1. Desert Bloom Solar + Storage
+   - Utility-scale solar + battery site
+   - Commercial operation date: 3 years ago
+   - Strong performance overall, but with some inverter clipping, tracker issues, and a few outages
+   - Revenue model: energy sales + capacity/ancillary revenue + REC/environmental value if useful
+
+2. Riverbend C&I Energy Center
+   - Commercial/industrial behind-the-meter solar + storage site
+   - Commercial operation date: 2 years ago
+   - More operational variability, more maintenance events, some communications/device issues
+   - Revenue model: customer savings / avoided cost / demand charge reduction + battery dispatch value
+
+-----------------------------------
+DEVICE STACK / ASSET HIERARCHY
+-----------------------------------
+Model a realistic hierarchy for each project:
+
+Project
+  - Arrays / blocks / feeders
+  - Inverters
+  - Meters
+  - Weather station(s)
+  - Trackers (for solar project where applicable)
+  - Battery system
+    - PCS / inverter
+    - battery racks
+    - BMS
+  - Transformers
+  - Breakers / switchgear
+  - Gateway / communications devices
+  - Sensors
+
+Each asset should have:
+- unique id
+- asset name
+- asset type
+- project id
+- manufacturer
+- model
+- serial number
+- install date
+- commissioning date
+- warranty expiration
+- status
+- health score
+- rated capacity
+- location/zone
+- parent asset id for hierarchy
+
+Generate enough assets so drill-down views feel real:
+- 8–15 inverters per site
+- 1–3 meters per site
+- 1 weather station per site
+- tracker groups for the utility-scale site
+- 1 battery system per site with multiple subcomponents
+- communications devices and transformers
+- total assets per company should feel substantial but manageable for a demo
+
+-----------------------------------
+24 MONTHS OF DATA
+-----------------------------------
+Generate 24 months of data for both projects.
+
+Time granularity:
+- Monthly summary data for all metrics across 24 months
+- Daily data for core production/availability/performance metrics
+- Optional hourly data for a small recent window (last 30–60 days) for charts and drill-downs
+
+Make seasonality realistic:
+- Solar production varies by month
+- Weather impacts irradiance and temperature
+- Some months underperform due to outages or curtailment
+- Battery usage patterns vary by site type
+- Financial results move with operational performance and seasonality
+
+-----------------------------------
+OPERATIONAL METRICS TO GENERATE
+-----------------------------------
+Generate realistic operational and performance metrics including:
+
+Portfolio / Project performance:
+- energy produced
+- expected energy
+- performance ratio
+- availability
+- uptime
+- downtime hours
+- capacity factor
+- curtailment losses
+- soiling losses
+- clipping losses
+- weather losses
+- grid outage losses
+- asset-related losses
+- battery throughput
+- battery round-trip efficiency
+- site revenue estimate
+- avoided cost estimate
+- demand charge savings for C&I site
+- carbon offset estimate
+
+Device / asset performance:
+- asset uptime %
+- fault counts
+- alarms by severity
+- MTBF
+- MTTR
+- work orders linked to asset
+- health score trend
+- communications reliability
+- sensor quality / missing data %
+- inverter efficiency
+- tracker availability
+- battery rack imbalance indicators
+- state of charge trends
+- dispatch event success rate
+
+O&M metrics:
+- preventive maintenance tasks completed
+- corrective maintenance tasks completed
+- open work orders
+- overdue work orders
+- technician visits
+- response time
+- repair time
+- maintenance cost
+- contractor vs internal labor mix
+- parts replaced
+- repeat failures
+- SLA compliance
+- ticket backlog
+- root cause categories
+
+-----------------------------------
+FINANCE MODULE
+-----------------------------------
+Create a realistic finance dataset that ties directly to project operations and O&M.
+
+The finance module should support:
+- executive portfolio financial dashboard
+- project P&L views
+- monthly actuals vs budget
+- cost center reporting
+- O&M cost analysis
+- margin analysis
+- revenue bridge / variance analysis
+- cash flow views
+- asset and project-level financial performance
+
+Generate 24 months of financial data for:
+- company level
+- project level
+- major cost categories
+- selected asset-linked cost events where useful
+
+-----------------------------------
+FINANCIAL ENTITIES TO CREATE
+-----------------------------------
+Create these core finance entities:
+
+1. budgets
+2. actuals
+3. forecast
+4. invoices
+5. payments
+6. revenue_line_items
+7. expense_line_items
+8. contracts
+9. tariffs / pricing assumptions
+10. savings_calculations
+11. cost_centers
+12. GL-like category mapping
+13. monthly_finance_summary
+14. project_finance_summary
+15. variance_analysis
+
+-----------------------------------
+FINANCE DATA MODEL
+-----------------------------------
+Each financial record should support fields like:
+- id
+- company id
+- project id
+- asset id if applicable
+- reporting month
+- fiscal year
+- period start
+- period end
+- category
+- subcategory
+- cost center
+- contract/customer/vendor
+- amount
+- budget amount
+- forecast amount
+- variance to budget
+- variance %
+- accrual or cash basis flag
+- status
+- notes / description
+- source driver
+
+For invoices/payments:
+- invoice id
+- vendor/customer name
+- invoice date
+- due date
+- paid date
+- status
+- amount
+- tax
+- payment terms
+- aging bucket
+
+-----------------------------------
+FINANCIAL METRICS TO GENERATE
+-----------------------------------
+Generate believable metrics including:
+
+Revenue:
+- energy sales revenue
+- capacity revenue
+- ancillary services revenue
+- REC / environmental credit revenue if applicable
+- customer contract revenue
+- shared savings revenue
+- demand charge savings value
+- battery dispatch value
+- total gross revenue
+
+Costs:
+- scheduled maintenance cost
+- unscheduled maintenance cost
+- labor cost
+- contractor cost
+- parts/materials cost
+- truck roll / field visit cost
+- warranty recovery offsets
+- network / communications cost
+- software / monitoring cost
+- insurance
+- land lease / site lease
+- interconnection / utility charges
+- asset replacement reserve
+- battery augmentation reserve if useful
+- corporate overhead allocation
+- depreciation (summary only, if helpful)
+- total operating expense
+
+Profitability:
+- gross margin
+- EBITDA-like operating margin
+- net operating income
+- cost per MWh
+- O&M cost per MW
+- O&M cost per asset
+- maintenance cost trend
+- project contribution margin
+
+Cash / working capital:
+- invoices issued
+- cash collected
+- AR aging
+- AP aging
+- overdue invoices
+- monthly cash inflow
+- monthly cash outflow
+- net cash flow
+
+Budget / forecast:
+- budget vs actual by month
+- forecast vs actual
+- year-to-date budget variance
+- revenue variance drivers
+- cost variance drivers
+- margin variance
+
+Project economics:
+- cumulative project revenue
+- cumulative project O&M cost
+- payback-style summary if useful
+- contracted vs realized value
+- savings delivered vs target
+- lost revenue from downtime
+- avoided loss after maintenance action
+
+-----------------------------------
+FINANCE LOGIC / RELATIONSHIPS
+-----------------------------------
+The finance data must be causally linked to operations.
+
+Examples:
+- lower production should reduce energy revenue
+- outages should increase downtime loss and often increase corrective O&M cost
+- recurring faults should drive higher maintenance expense and lower margin
+- preventive maintenance should reduce corrective spend over time for at least one asset group
+- communications issues should create truck rolls, contractor cost, and delayed performance recovery
+- storm events should create short-term revenue dips and elevated repair expense
+- warranty-covered failures should show gross repair cost and a partial offset / recovery
+- C&I site should emphasize demand charge savings, customer savings, and battery dispatch value
+- utility-scale site should emphasize energy production revenue and performance-linked revenue swings
+
+-----------------------------------
+BUDGET / FORECAST STRUCTURE
+-----------------------------------
+Create monthly budgets and rolling forecasts for 24 months.
+
+Include:
+- original annual budget broken into monthly values
+- reforecast / latest estimate for recent periods
+- actuals for every month
+- variance explanations
+
+Budget categories:
+Revenue:
+- contracted revenue
+- variable performance revenue
+- battery/grid services revenue
+- environmental/REC revenue if used
+
+Expense:
+- preventive maintenance
+- corrective maintenance
+- labor
+- contractor
+- parts
+- communications/network
+- insurance
+- lease
+- software/platform
+- overhead allocation
+
+Make the demo show:
+- some months beat budget
+- some months miss budget due to outages or weather
+- at least one project improves after corrective action
+- forecast accuracy improves in recent periods
+
+-----------------------------------
+CONTRACTS / COMMERCIALS
+-----------------------------------
+Create commercial context for each project.
+
+Desert Bloom Solar + Storage:
+- power sale / offtake style structure
+- revenue linked to delivered energy and possibly capacity value
+- optional REC/environmental credit stream
+- clear monthly pricing assumptions
+
+Riverbend C&I Energy Center:
+- customer service agreement or energy services agreement
+- demand charge savings and avoided cost model
+- battery dispatch value
+- optional guaranteed performance / SLA context
+
+Each contract should include:
+- contract id
+- project id
+- counterparty
+- start date
+- end date
+- pricing type
+- fixed vs variable components
+- escalator if desired
+- minimum commitments if useful
+- SLA / performance terms
+- invoice cadence
+
+-----------------------------------
+INVOICES / PAYMENTS / AGING
+-----------------------------------
+Generate realistic accounts receivable and accounts payable examples.
+
+Accounts receivable:
+- monthly customer invoices
+- a few paid on time
+- a few late
+- one or two aging examples for demo filters
+
+Accounts payable:
+- vendor invoices for contractors, parts, field service, software, and communications
+- payment statuses
+- due dates
+- a few overdue items
+
+Include:
+- invoice totals
+- line items
+- due/paid dates
+- status buckets
+- aging buckets: current, 1–30, 31–60, 60+
+
+-----------------------------------
+LOSS / VARIANCE / STORYTELLING
+-----------------------------------
+Add financial storytelling that aligns with operational events.
+
+Examples:
+1. Desert Bloom had an inverter subgroup underperform for several months, reducing revenue and margin; after diagnosis and repair, production and margin improved.
+2. Riverbend had communications outages and battery dispatch inconsistency, causing extra truck rolls, contractor spend, and missed savings; gateway replacement improved service and financial performance.
+3. Preventive maintenance on one asset family reduced corrective maintenance cost trend over time.
+4. A storm or grid event caused a visible dip in both operational KPIs and monthly revenue, followed by repair spend and recovery.
+5. One warranty-covered issue shows high gross repair cost but a later reimbursement or credit.
+
+-----------------------------------
+OPERATIONAL EVENTS
+-----------------------------------
+Include believable events over the 24 months so reports have stories to tell.
+
+Examples:
+- inverter trips
+- tracker motor failures
+- weather station sensor drift
+- meter communications outage
+- battery rack thermal alert
+- transformer inspection issue
+- network gateway downtime
+- planned maintenance shutdowns
+- storm-related production loss
+- curtailment periods
+- underperforming inverter cluster
+- gradual improvement after O&M intervention
+
+Each event should have:
+- id
+- project id
+- asset id
+- event type
+- severity
+- start/end datetime
+- duration
+- root cause
+- resolution action
+- status
+- impact estimate
+- linked work order id if relevant
+- estimated financial impact
+- lost revenue estimate
+- repair cost estimate
+- warranty recovery estimate if applicable
+
+-----------------------------------
+WORK ORDERS / TICKETS
+-----------------------------------
+Create a work order / ticket system dataset.
+
+Fields:
+- work order id
+- created date
+- site/project
+- asset
+- category
+- priority
+- issue description
+- root cause
+- assigned team
+- status
+- due date
+- completed date
+- labor hours
+- parts cost
+- contractor cost
+- total cost
+- preventive or corrective
+- recurrence flag
+- downtime impact
+- notes / resolution summary
+- linked invoice ids if relevant
+- budget category
+- warranty eligible flag
+
+Generate:
+- preventive maintenance schedule entries
+- corrective tickets from alarms/events
+- a mix of closed, open, and overdue items
+- realistic timelines and closure patterns
+
+-----------------------------------
+REPORTS / DASHBOARDS TO SUPPORT
+-----------------------------------
+Structure the data so the app can easily demonstrate:
+
+Executive dashboard:
+- company portfolio summary
+- total production
+- expected vs actual
+- overall availability
+- O&M KPI summary
+- top issues
+- total revenue
+- total operating cost
+- gross margin
+- budget vs actual snapshot
+- top financial variances
+- cash flow snapshot
+
+Project detail pages:
+- monthly trend charts over 24 months
+- energy and performance trends
+- availability trends
+- event timeline
+- maintenance summary
+- revenue / savings summary
+- project P&L
+- budget vs actual
+- margin trend
+- major cost drivers
+
+Asset detail pages:
+- asset metadata
+- health score
+- alarms and faults
+- maintenance history
+- recent performance trend
+- benchmark against peer assets
+- lifetime maintenance cost
+- recent repair cost
+- downtime cost estimate
+
+O&M reporting:
+- open vs closed work orders
+- MTTR / MTBF
+- cost by category
+- SLA compliance
+- recurring issue analysis
+- technician productivity
+
+Loss and underperformance reporting:
+- loss waterfall
+- root cause breakdown
+- top underperforming assets
+- pre/post maintenance improvement examples
+- financial impact of losses
+
+Battery reporting:
+- throughput
+- cycle count
+- round-trip efficiency
+- dispatch history
+- SOC trends
+- rack-level issues
+- dispatch revenue / value trends
+
+Finance reporting:
+- portfolio P&L by month
+- project P&L by month
+- budget vs actual
+- forecast vs actual
+- revenue bridge
+- cost center reporting
+- invoice aging
+- vendor spend analysis
+- O&M spend trend
+- margin trend
+- downtime cost analysis
+- savings delivered vs target
+- cash flow summary
+
+-----------------------------------
+DATA QUALITY REQUIREMENTS
+-----------------------------------
+The synthetic data must:
+- be internally consistent
+- maintain realistic relationships between metrics
+- show seasonality and trend
+- include some bad periods and some improvements
+- avoid obvious randomness
+- support storytelling in a live demo
+- tie finance outcomes back to operations
+
+Examples:
+- if availability drops, energy should also tend to drop
+- if energy drops, performance-linked revenue should also tend to drop
+- if corrective maintenance resolves an issue, subsequent performance and margin should improve
+- repeated faults should increase maintenance cost and lower health score
+- the C&I site should have different battery/revenue patterns than the utility-scale site
+- invoice amounts should reconcile to monthly summaries within reasonable rounding tolerance
+- project-level actuals should roll up cleanly to company-level summaries
+
+-----------------------------------
+TECHNICAL IMPLEMENTATION
+-----------------------------------
+Please generate:
+1. A seed script to create all demo data
+2. JSON or CSV output files for all entities
+3. A simple relational schema or TypeScript interfaces for:
+   - companies
+   - projects
+   - assets
+   - timeseries_metrics
+   - events
+   - work_orders
+   - budgets
+   - actuals
+   - forecast
+   - revenue_line_items
+   - expense_line_items
+   - invoices
+   - payments
+   - contracts
+   - tariffs
+   - savings_calculations
+   - monthly_finance_summary
+   - project_finance_summary
+   - variance_analysis
+   - reports_summary
+4. Deterministic synthetic generation using a fixed random seed
+5. Clear comments explaining how the data is generated
+6. Optional helper APIs or mock endpoints for dashboard consumption
+
+Use a clean structure like:
+- /data/companies.json
+- /data/projects.json
+- /data/assets.json
+- /data/events.json
+- /data/work_orders.json
+- /data/contracts.json
+- /data/budgets.json
+- /data/actuals.json
+- /data/forecast.json
+- /data/invoices.json
+- /data/payments.json
+- /data/revenue_line_items.csv
+- /data/expense_line_items.csv
+- /data/metrics_daily.csv
+- /data/metrics_monthly.csv
+- /data/monthly_finance_summary.csv
+- /data/project_finance_summary.csv
+- /data/variance_analysis.csv
+- /scripts/seed-demo-data.ts
+
+-----------------------------------
+UI / DEMO-FRIENDLY REQUIREMENTS
+-----------------------------------
+Also prepare derived summary datasets so charts render fast:
+- portfolio monthly summary
+- project monthly summary
+- asset ranking summary
+- O&M KPI summary
+- incident summary
+- battery summary
+- finance monthly summary
+- budget vs actual summary
+- revenue by project summary
+- cost by category summary
+- invoice aging summary
+- cash flow summary
+- margin trend summary
+- variance bridge summary
+
+Make the demo especially strong for:
+- filters by project, date range, asset type, severity, cost category, invoice status
+- trend charts for 24 months
+- issue drill-downs
+- maintenance and reliability storytelling
+- before/after intervention stories
+- executive summary reports
+- financial drill-down from portfolio to project to cost line
+
+-----------------------------------
+STORYLINES TO EMBED
+-----------------------------------
+Embed a few strong demo narratives:
+1. Desert Bloom had an inverter subgroup underperform for several months, was diagnosed, repaired, and performance improved.
+2. Riverbend had recurring communications outages and battery dispatch inconsistencies that increased ticket volume and service cost, then stabilized after gateway replacement and preventive maintenance changes.
+3. Preventive maintenance reduces corrective ticket burden and corrective spend over time for at least one asset group.
+4. One notable storm or grid event created a visible dip in performance, revenue, and margin, followed by recovery.
+5. One major repair had partial warranty recovery, which appears in both operations and finance reporting.
+6. One project misses budget for a quarter, then recovers after interventions and stronger operations.
+
+-----------------------------------
+OUTPUT
+-----------------------------------
+Produce:
+- the schema/interfaces
+- the seed-generation code
+- the generated sample data files
+- derived reporting summary files
+- mock API-ready data structures
+- brief documentation on how to run and reset the demo data
+- a short explanation of the built-in operational and financial storylines available for demoing reports
+
+Prioritize realism, consistency, financial-operational linkage, and demo usefulness over perfect engineering completeness.
