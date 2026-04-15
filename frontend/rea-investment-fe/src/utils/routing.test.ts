@@ -69,7 +69,7 @@ describe('getCanonicalRoute', () => {
   });
 
   it('should return company canonical route with id', () => {
-    expect(getCanonicalRoute('company', { companyId: 123 })).toBe('/companies/123');
+    expect(getCanonicalRoute('company', { companyId: 123 })).toBe('/project-hub/companies/123');
   });
 
   it('should return companies picker when no companyId', () => {
