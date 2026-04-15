@@ -35,3 +35,15 @@ id = "4uzuJQmjflQO3qwrsTsK-"
 uri = "file://screenshots/iliOS_Marketing_Deck_2026.pptx"
 type = "slides"
 title = "iliOS Marketing Deck 2026"
+
+[[outputs]]
+id = "pVyo8BFY4IVOXBsmnPN0e"
+uri = "file://data/demo/sample_documents/Desert_Bloom_Site_Lease_Agreement.pdf"
+type = "pdf"
+title = "Desert Bloom - Site Lease Agreement"
+
+[[outputs]]
+id = "6BzeKUgVhLr-bpl6J5zBi"
+uri = "file://data/demo/sample_documents/Desert_Bloom_PVSyst_As_Built_Report.pdf"
+type = "pdf"
+title = "Desert Bloom - PVSyst As-Built Report"
