@@ -74,7 +74,7 @@ export const InviteStep: React.FC<InviteStepProps> = ({
   const { data: companyMembers } = useQuery({
     queryKey: ['company-members', companyId],
     queryFn: () => ApiClient.workspace.getCompanyMembers(companyId),
-    enabled: !!companyId
+    enabled: !!companyId && canInvite
   });
 
   const existingMemberUserIds = useMemo(
