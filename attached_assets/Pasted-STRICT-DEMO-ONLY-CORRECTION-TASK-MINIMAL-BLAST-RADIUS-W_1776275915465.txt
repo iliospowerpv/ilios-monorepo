@@ -1,0 +1,62 @@
+STRICT DEMO-ONLY CORRECTION TASK — MINIMAL BLAST RADIUS
+
+We have completed a read-only diagnostic. The evidence indicates the odd Data Room behavior is likely caused by DEMO SEED DATA issues, not an app-wide regression.
+
+Confirmed findings:
+1) Seeded documents were inserted directly via SQL and bypassed the normal API flow that calls create_default_document_tasks().
+2) Those seeded documents therefore have no linked default tasks and show TASK_UNDEFINED_STATUS instead of the expected initial task/status.
+3) Site 18 has two diligence boards, and the document-specific board is the one with extra_entity_type='document'.
+4) The seeded documents have no uploaded files, so lack of AI extraction on blank documents is expected unless a file is attached.
+
+GOAL
+Apply the smallest possible, DEMO-ONLY correction so we can verify the app behavior without risking the broader application.
+
+HARD RULES
+- Do NOT refactor.
+- Do NOT change app-wide status logic.
+- Do NOT change routing.
+- Do NOT change template architecture.
+- Do NOT change storage integration.
+- Do NOT change parsing services.
+- Do NOT change production-wide seeds unless explicitly scoped only to demo data.
+- Prefer a one-time corrective script or narrowly scoped seed fix.
+- If code change is needed, make it minimal and isolated.
+
+TASKS
+
+STEP 1 — IDENTIFY DEMO RECORDS
+Locate the exact seeded demo documents (the 14 seeded documents already identified) and confirm:
+- document IDs
+- site/project they belong to
+- whether each lacks default tasks
+- which diligence/document board they should be associated with
+
+STEP 2 — BACKFILL DEFAULT DOCUMENT TASKS
+For ONLY the affected demo seeded documents:
+- call or replicate the same logic used by the normal API flow to create default document tasks
+- ensure tasks are created against the correct documents_board (the board with extra_entity_type='document')
+- do not duplicate tasks for any document that already has them
+
+STEP 3 — VERIFY STATUS RESOLUTION
+After backfill, verify that these demo documents no longer show TASK_UNDEFINED_STATUS and instead resolve to the correct default initial state according to existing logic.
+Do not alter the logic; only make the seeded records conform to it.
+
+STEP 4 — FILE / EXTRACTION VALIDATION CHECK
+Do NOT build a broad file seeding system.
+Instead:
+- identify the minimum safe way to attach 1-2 real demo files to 1-2 demo documents
+- confirm whether upload of a real file triggers AI extraction under current logic
+- clearly state whether blank documents without files are expected to have no extraction
+
+STEP 5 — OUTPUT
+Return:
+1) Exact correction plan
+2) Files/scripts/functions you will touch
+3) Why blast radius is minimal
+4) Verification steps
+5) Any reason to avoid making even this small correction
+
+IMPORTANT
+If a one-time script is sufficient, prefer that over modifying core application logic.
+If a seed fix is sufficient, prefer that over modifying runtime behavior.
+Do not implement until you first show the exact minimal correction plan.
