@@ -300,17 +300,21 @@ _site_inverter_count_cache = None
 
 
 def _get_device_site_map(device_ids):
+    if not device_ids:
+        return {}
     try:
         from sqlalchemy import text
         from app.db.session import SessionFactory
         db = SessionFactory()
-        placeholders = ",".join(str(int(d)) for d in device_ids)
+        safe_ids = [int(d) for d in device_ids]
+        placeholders = ",".join(str(d) for d in safe_ids)
         rows = db.execute(text(
             f"SELECT id, site_id FROM devices WHERE id IN ({placeholders})"
         )).fetchall()
         db.close()
         return {r[0]: r[1] for r in rows}
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Could not load device-site map: {e}")
         return {}
 
 
