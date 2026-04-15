@@ -367,7 +367,8 @@ async def get_site_telemetry_health(
     device_ids = [device.id for device in mapped_devices]
     try:
         bq_client = TelemetryDeviceBigQuery()
-        last_reported_data = bq_client.get_device_last_reported(device_ids, "UTC")
+        site_tz = getattr(site, "timezone", None) or "UTC"
+        last_reported_data = bq_client.get_device_last_reported(device_ids, site_tz)
 
         # Find the most recent data timestamp
         last_data_at = None
@@ -451,7 +452,8 @@ async def get_site_telemetry_readiness(
         try:
             device_ids = [d.id for d in mapped_devices]
             bq_client = TelemetryDeviceBigQuery()
-            last_reported = bq_client.get_device_last_reported(device_ids, "UTC")
+            site_tz = getattr(site, "timezone", None) or "UTC"
+            last_reported = bq_client.get_device_last_reported(device_ids, site_tz)
             if last_reported and any(d.get("last_report_ts") for d in last_reported if d):
                 is_data_flowing = True
         except Exception as e:
