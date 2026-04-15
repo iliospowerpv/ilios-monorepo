@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -53,6 +53,7 @@ export const InviteStep: React.FC<InviteStepProps> = ({
   onComplete,
   onBack
 }) => {
+  const queryClient = useQueryClient();
   const { isSystemUser, isCompanyAdminFull } = useAccess(companyId);
   const canInvite = isSystemUser || isCompanyAdminFull;
 
@@ -68,6 +69,14 @@ export const InviteStep: React.FC<InviteStepProps> = ({
     queryKey: ['onboarding-company-projects', companyId],
     queryFn: () => ApiClient.assetManagement.sites({ skip: 0, limit: 100 })
   });
+
+  const { data: companyMembers } = useQuery({
+    queryKey: ['company-members', companyId],
+    queryFn: () => ApiClient.workspace.getCompanyMembers(companyId),
+    enabled: !!companyId
+  });
+
+  const existingMemberUserIds = (companyMembers || []).map((m: { user_id: number }) => m.user_id);
 
   const projects: Project[] = (projectsData?.items ?? [])
     .filter((site: { company_id?: number }) => site.company_id === companyId)
@@ -96,10 +105,18 @@ export const InviteStep: React.FC<InviteStepProps> = ({
       setSelectedUserId(null);
       setRole('contributor');
       setLastInvitedEmail(null);
+      queryClient.invalidateQueries({ queryKey: ['company-members', companyId] });
       setTimeout(() => setSuccessMessage(null), 3000);
     },
-    onError: (err: Error) => {
-      setError(err.message || 'Failed to add user to company');
+    onError: (err: any) => {
+      const detail = err?.response?.data?.detail;
+      if (typeof detail === 'string') {
+        setError(detail);
+      } else if (detail?.message) {
+        setError(detail.message);
+      } else {
+        setError(err.message || 'Failed to add user to company');
+      }
     }
   });
 
@@ -167,6 +184,7 @@ export const InviteStep: React.FC<InviteStepProps> = ({
                   canCreate={canInvite}
                   defaultCompanyId={companyId}
                   label="Select User"
+                  excludeUserIds={existingMemberUserIds}
                 />
 
                 <SearchableSelect

@@ -28,6 +28,7 @@ interface SelectOrCreateUserProps {
   helperText?: string;
   error?: boolean;
   requireCompanyContext?: boolean;
+  excludeUserIds?: number[];
 }
 
 interface CreateUserFormData {
@@ -81,7 +82,8 @@ export const SelectOrCreateUser: React.FC<SelectOrCreateUserProps> = ({
   disabled = false,
   helperText,
   error = false,
-  requireCompanyContext = true
+  requireCompanyContext = true,
+  excludeUserIds = []
 }) => {
   const queryClient = useQueryClient();
   const notify = useNotify();
@@ -187,7 +189,9 @@ export const SelectOrCreateUser: React.FC<SelectOrCreateUserProps> = ({
     setCreateError(null);
   };
 
-  const options: OptionType[] = [...(usersData?.items || []), ...(canShowCreateOption ? [createNewSentinel] : [])];
+  const excludeSet = new Set(excludeUserIds);
+  const filteredUsers = (usersData?.items || []).filter((u: User) => !excludeSet.has(u.id as number));
+  const options: OptionType[] = [...filteredUsers, ...(canShowCreateOption ? [createNewSentinel] : [])];
 
   if (mode === 'create') {
     return (
