@@ -162,7 +162,7 @@ def _apply_demo_events(dt, actual_kw, expected_kw, site_id):
     return actual_kw, expected_kw
 
 
-def _solar_power(dt, capacity_kw=500, seed_offset=0):
+def _solar_power(dt, capacity_kw=500, seed_offset=0, site_id=None):
     rng = random.Random(dt.year * 10000 + dt.month * 100 + dt.day + seed_offset)
 
     day_of_year = dt.timetuple().tm_yday
@@ -202,7 +202,8 @@ def _solar_power(dt, capacity_kw=500, seed_offset=0):
     degradation = _degradation_factor(dt)
     actual_kw *= degradation
 
-    actual_kw, expected_kw = _apply_demo_events(dt, actual_kw, expected_kw, seed_offset)
+    event_id = site_id if site_id is not None else seed_offset
+    actual_kw, expected_kw = _apply_demo_events(dt, actual_kw, expected_kw, event_id)
 
     return round(actual_kw, 2), round(expected_kw, 2), round(irradiance, 2)
 
@@ -295,17 +296,61 @@ def generate_site_power_and_irradiance(site_ids, interval_start, interval_end, t
     return results
 
 
+_site_inverter_count_cache = None
+
+
+def _get_device_site_map(device_ids):
+    try:
+        from sqlalchemy import text
+        from app.db.session import SessionFactory
+        db = SessionFactory()
+        placeholders = ",".join(str(int(d)) for d in device_ids)
+        rows = db.execute(text(
+            f"SELECT id, site_id FROM devices WHERE id IN ({placeholders})"
+        )).fetchall()
+        db.close()
+        return {r[0]: r[1] for r in rows}
+    except Exception:
+        return {}
+
+
+def _get_site_inverter_count(site_id):
+    global _site_inverter_count_cache
+    if _site_inverter_count_cache is None:
+        _site_inverter_count_cache = {}
+    if site_id in _site_inverter_count_cache:
+        return _site_inverter_count_cache[site_id]
+    try:
+        from sqlalchemy import text
+        from app.db.session import SessionFactory
+        db = SessionFactory()
+        count = db.execute(text(
+            "SELECT COUNT(*) FROM devices d "
+            "JOIN telemetry_devices_mapping tm ON tm.device_id = d.id "
+            "WHERE d.site_id = :sid AND d.category = 'inverter'"
+        ), {"sid": site_id}).scalar()
+        db.close()
+        _site_inverter_count_cache[site_id] = max(count, 1)
+    except Exception:
+        _site_inverter_count_cache[site_id] = 1
+    return _site_inverter_count_cache[site_id]
+
+
 def generate_device_power(device_ids, interval_start, interval_end, timezone):
     dt = _parse_dt(interval_start)
-    num_devices = max(len(device_ids), 1)
-    avg_capacity = 500 / num_devices
+    dev_site_map = _get_device_site_map(device_ids)
+
     results = []
     for did in device_ids:
-        actual, expected, _ = _solar_power(dt, capacity_kw=avg_capacity, seed_offset=did)
+        sid = dev_site_map.get(did, 0)
+        site_cap = _get_site_capacity(sid) if sid else 500.0
+        num_devs = _get_site_inverter_count(sid) if sid else max(len(device_ids), 1)
+        device_cap = site_cap / num_devs
+        actual, expected, _ = _solar_power(dt, capacity_kw=device_cap, seed_offset=did, site_id=sid)
         results.append({
             "device_id": did,
-            "device_power_actual": [{"ts": str(interval_start), "value": actual}],
-            "device_power_expected": [{"ts": str(interval_start), "value": expected}],
+            "device_power_actual": [{"ts": str(interval_start), "value": round(actual, 2)}],
+            "device_power_expected": [{"ts": str(interval_start), "value": round(expected, 2)}],
         })
     return results
 
