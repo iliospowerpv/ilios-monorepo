@@ -158,34 +158,34 @@ export const EntityContextProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [location.pathname]);
 
-  const setCurrentCompany = useCallback(
-    (company: EntityInfo | null) => {
-      setCurrentCompanyState(company);
-      if (!company) {
-        setCurrentProjectState(null);
-        saveContext({ company: null, project: null, scope: currentScope });
-      } else {
-        saveContext({ company, project: currentProject, scope: currentScope });
-      }
-    },
-    [currentProject, currentScope]
-  );
+  const setCurrentCompany = useCallback((company: EntityInfo | null) => {
+    setCurrentCompanyState(prev => {
+      if (prev && company && prev.id === company.id && prev.name === company.name) return prev;
+      return company;
+    });
+    if (!company) {
+      setCurrentProjectState(null);
+    }
+  }, []);
 
-  const setCurrentProject = useCallback(
-    (project: EntityInfo | null) => {
-      setCurrentProjectState(project);
-      saveContext({ company: currentCompany, project, scope: currentScope });
-    },
-    [currentCompany, currentScope]
-  );
+  const setCurrentProject = useCallback((project: EntityInfo | null) => {
+    setCurrentProjectState(prev => {
+      if (prev === null && project === null) return prev;
+      if (prev && project && prev.id === project.id && prev.name === project.name) return prev;
+      return project;
+    });
+  }, []);
 
-  const setCurrentScope = useCallback(
-    (scope: ScopeType) => {
-      setCurrentScopeState(scope);
-      saveContext({ company: currentCompany, project: currentProject, scope });
-    },
-    [currentCompany, currentProject]
-  );
+  const setCurrentScope = useCallback((scope: ScopeType) => {
+    setCurrentScopeState(prev => {
+      if (prev === scope) return prev;
+      return scope;
+    });
+  }, []);
+
+  useEffect(() => {
+    saveContext({ company: currentCompany, project: currentProject, scope: currentScope });
+  }, [currentCompany, currentProject, currentScope]);
 
   const getModuleBasePath = useCallback((module: string): string => {
     switch (module) {

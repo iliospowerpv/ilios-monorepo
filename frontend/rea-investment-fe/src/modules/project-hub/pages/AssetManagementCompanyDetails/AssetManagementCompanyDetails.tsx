@@ -108,7 +108,8 @@ export const AssetManagementCompanyDetails: React.FC<AssetManagementCompanyDetai
       setCurrentCompany({ id: companyDetails.id, name: companyDetails.name });
       setCurrentProject(null);
     }
-  }, [companyDetails, setCurrentCompany, setCurrentProject]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyDetails?.id]);
 
   React.useEffect(() => {
     if (companyDetailsLoadingError) {
