@@ -8,7 +8,6 @@ from starlette import status
 from app.crud.user import UserCRUD
 from app.db.session import get_session
 from app.filters.user_filters import UserSearchFilter
-from app.helpers.authentication import get_current_user
 from app.helpers.authorization.module_based.base import get_current_admin_user
 from app.helpers.pagination import pagination_details
 from app.helpers.query_params_validator import validate_query_params
@@ -28,9 +27,10 @@ users_router = APIRouter()
 @users_router.get(
     "/",
     response_model=UsersListResponse,
+    responses={**HTTP_403_RESPONSE},
 )
 async def list_users(
-    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_admin_user)],
     query_params: tuple = Depends(validate_query_params(order_by=UserOrderByFieldEnum)),
     search_filter: UserSearchFilter = FilterDepends(UserSearchFilter),
     db_session: Session = Depends(get_session),
@@ -50,11 +50,11 @@ async def list_users(
 @users_router.get(
     "/{user_id}",
     response_model=GetUserSchema,
-    responses={**HTTP_404_RESPONSE},
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
 )
 async def get_user(
     user_id: int,
-    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_admin_user)],
     db_session: Session = Depends(get_session),
 ):
     user_crud = UserCRUD(db_session)
