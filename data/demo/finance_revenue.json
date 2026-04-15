@@ -5,9 +5,9 @@
     "energy_sales": 638375.5,
     "rec_revenue": 32245.57,
     "capacity_payments": 19334.31,
-    "battery_dispatch_value": 176574.34,
+    "battery_dispatch_value": 176.02,
     "demand_charge_savings": 0,
-    "total_revenue": 866529.72
+    "total_revenue": 690131.4
   },
   {
     "project": "riverbend",
@@ -25,9 +25,9 @@
     "energy_sales": 686379.25,
     "rec_revenue": 61907.68,
     "capacity_payments": 24223.62,
-    "battery_dispatch_value": 140266.03,
+    "battery_dispatch_value": 139.9,
     "demand_charge_savings": 0,
-    "total_revenue": 912776.58
+    "total_revenue": 772650.45
   },
   {
     "project": "riverbend",
@@ -45,9 +45,9 @@
     "energy_sales": 730235.0,
     "rec_revenue": 56390.83,
     "capacity_payments": 22954.24,
-    "battery_dispatch_value": 100462.11,
+    "battery_dispatch_value": 100.5,
     "demand_charge_savings": 0,
-    "total_revenue": 910042.18
+    "total_revenue": 809680.57
   },
   {
     "project": "riverbend",
@@ -65,9 +65,9 @@
     "energy_sales": 646977.5,
     "rec_revenue": 75529.95,
     "capacity_payments": 22352.97,
-    "battery_dispatch_value": 178091.96,
+    "battery_dispatch_value": 176.92,
     "demand_charge_savings": 0,
-    "total_revenue": 922952.37
+    "total_revenue": 745037.34
   },
   {
     "project": "riverbend",
@@ -85,9 +85,9 @@
     "energy_sales": 515525.0,
     "rec_revenue": 43172.09,
     "capacity_payments": 23686.72,
-    "battery_dispatch_value": 147994.83,
+    "battery_dispatch_value": 147.67,
     "demand_charge_savings": 0,
-    "total_revenue": 730378.64
+    "total_revenue": 582531.49
   },
   {
     "project": "riverbend",
@@ -105,9 +105,9 @@
     "energy_sales": 470708.75,
     "rec_revenue": 55343.84,
     "capacity_payments": 21726.37,
-    "battery_dispatch_value": 111009.33,
+    "battery_dispatch_value": 110.6,
     "demand_charge_savings": 0,
-    "total_revenue": 658788.3
+    "total_revenue": 547889.56
   },
   {
     "project": "riverbend",
@@ -125,9 +125,9 @@
     "energy_sales": 441672.75,
     "rec_revenue": 42166.83,
     "capacity_payments": 21072.25,
-    "battery_dispatch_value": 158564.2,
+    "battery_dispatch_value": 158.16,
     "demand_charge_savings": 0,
-    "total_revenue": 663476.04
+    "total_revenue": 505069.99
   },
   {
     "project": "riverbend",
@@ -145,9 +145,9 @@
     "energy_sales": 385806.5,
     "rec_revenue": 35236.4,
     "capacity_payments": 26028.52,
-    "battery_dispatch_value": 154151.63,
+    "battery_dispatch_value": 154.04,
     "demand_charge_savings": 0,
-    "total_revenue": 601223.06
+    "total_revenue": 447225.47
   },
   {
     "project": "riverbend",
@@ -165,9 +165,9 @@
     "energy_sales": 419326.25,
     "rec_revenue": 40023.26,
     "capacity_payments": 25195.82,
-    "battery_dispatch_value": 186212.4,
+    "battery_dispatch_value": 184.81,
     "demand_charge_savings": 0,
-    "total_revenue": 670757.73
+    "total_revenue": 484730.14
   },
   {
     "project": "riverbend",
@@ -185,9 +185,9 @@
     "energy_sales": 472302.5,
     "rec_revenue": 51050.69,
     "capacity_payments": 24763.86,
-    "battery_dispatch_value": 133470.91,
+    "battery_dispatch_value": 133.25,
     "demand_charge_savings": 0,
-    "total_revenue": 681587.96
+    "total_revenue": 548250.3
   },
   {
     "project": "riverbend",
@@ -205,9 +205,9 @@
     "energy_sales": 556070.0,
     "rec_revenue": 56978.62,
     "capacity_payments": 25000.11,
-    "battery_dispatch_value": 199056.03,
+    "battery_dispatch_value": 198.63,
     "demand_charge_savings": 0,
-    "total_revenue": 837104.76
+    "total_revenue": 638247.36
   },
   {
     "project": "riverbend",
@@ -225,9 +225,9 @@
     "energy_sales": 609879.25,
     "rec_revenue": 66231.41,
     "capacity_payments": 25399.25,
-    "battery_dispatch_value": 176457.46,
+    "battery_dispatch_value": 176.25,
     "demand_charge_savings": 0,
-    "total_revenue": 877967.36
+    "total_revenue": 701686.16
   },
   {
     "project": "riverbend",
@@ -245,9 +245,9 @@
     "energy_sales": 651220.95,
     "rec_revenue": 34136.4,
     "capacity_payments": 22201.88,
-    "battery_dispatch_value": 101461.27,
+    "battery_dispatch_value": 100.71,
     "demand_charge_savings": 0,
-    "total_revenue": 809020.5
+    "total_revenue": 707659.94
   },
   {
     "project": "riverbend",
@@ -265,9 +265,9 @@
     "energy_sales": 698529.85,
     "rec_revenue": 53815.29,
     "capacity_payments": 19058.86,
-    "battery_dispatch_value": 94114.87,
+    "battery_dispatch_value": 94.07,
     "demand_charge_savings": 0,
-    "total_revenue": 865518.87
+    "total_revenue": 771498.07
   },
   {
     "project": "riverbend",
@@ -285,9 +285,9 @@
     "energy_sales": 598170.46,
     "rec_revenue": 37917.87,
     "capacity_payments": 18641.19,
-    "battery_dispatch_value": 133826.0,
+    "battery_dispatch_value": 132.76,
     "demand_charge_savings": 0,
-    "total_revenue": 788555.52
+    "total_revenue": 654862.28
   },
   {
     "project": "riverbend",
@@ -305,9 +305,9 @@
     "energy_sales": 700104.37,
     "rec_revenue": 61319.79,
     "capacity_payments": 25525.57,
-    "battery_dispatch_value": 167759.61,
+    "battery_dispatch_value": 167.64,
     "demand_charge_savings": 0,
-    "total_revenue": 954709.34
+    "total_revenue": 787117.37
   },
   {
     "project": "riverbend",
@@ -325,9 +325,9 @@
     "energy_sales": 614963.89,
     "rec_revenue": 63275.57,
     "capacity_payments": 26277.2,
-    "battery_dispatch_value": 128072.19,
+    "battery_dispatch_value": 127.44,
     "demand_charge_savings": 0,
-    "total_revenue": 832588.84
+    "total_revenue": 704644.1
   },
   {
     "project": "riverbend",
@@ -345,9 +345,9 @@
     "energy_sales": 540219.54,
     "rec_revenue": 51330.64,
     "capacity_payments": 23986.63,
-    "battery_dispatch_value": 184876.09,
+    "battery_dispatch_value": 183.89,
     "demand_charge_savings": 0,
-    "total_revenue": 800412.9
+    "total_revenue": 615720.7
   },
   {
     "project": "riverbend",
@@ -365,9 +365,9 @@
     "energy_sales": 465578.72,
     "rec_revenue": 24918.61,
     "capacity_payments": 25357.98,
-    "battery_dispatch_value": 189104.7,
+    "battery_dispatch_value": 188.72,
     "demand_charge_savings": 0,
-    "total_revenue": 704960.01
+    "total_revenue": 516044.04
   },
   {
     "project": "riverbend",
@@ -385,9 +385,9 @@
     "energy_sales": 390346.92,
     "rec_revenue": 27347.07,
     "capacity_payments": 25325.24,
-    "battery_dispatch_value": 148534.91,
+    "battery_dispatch_value": 148.07,
     "demand_charge_savings": 0,
-    "total_revenue": 591554.14
+    "total_revenue": 443167.3
   },
   {
     "project": "riverbend",
@@ -405,9 +405,9 @@
     "energy_sales": 434610.31,
     "rec_revenue": 38048.13,
     "capacity_payments": 22166.18,
-    "battery_dispatch_value": 139457.47,
+    "battery_dispatch_value": 139.06,
     "demand_charge_savings": 0,
-    "total_revenue": 634282.09
+    "total_revenue": 494963.68
   },
   {
     "project": "riverbend",
@@ -425,9 +425,9 @@
     "energy_sales": 467813.25,
     "rec_revenue": 24634.81,
     "capacity_payments": 25353.3,
-    "battery_dispatch_value": 154771.58,
+    "battery_dispatch_value": 153.48,
     "demand_charge_savings": 0,
-    "total_revenue": 672572.94
+    "total_revenue": 517954.84
   },
   {
     "project": "riverbend",
@@ -445,9 +445,9 @@
     "energy_sales": 564669.88,
     "rec_revenue": 38612.79,
     "capacity_payments": 23132.49,
-    "battery_dispatch_value": 183008.38,
+    "battery_dispatch_value": 182.78,
     "demand_charge_savings": 0,
-    "total_revenue": 809423.54
+    "total_revenue": 626597.94
   },
   {
     "project": "riverbend",
@@ -465,9 +465,9 @@
     "energy_sales": 616339.97,
     "rec_revenue": 41185.35,
     "capacity_payments": 21323.01,
-    "battery_dispatch_value": 155300.93,
+    "battery_dispatch_value": 155.13,
     "demand_charge_savings": 0,
-    "total_revenue": 834149.26
+    "total_revenue": 679003.47
   },
   {
     "project": "riverbend",

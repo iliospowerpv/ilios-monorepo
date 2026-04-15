@@ -3,20 +3,20 @@
     "total_capacity_mw_ac": 87.0,
     "total_capacity_mw_dc": 114.1,
     "project_count": 2,
-    "battery_storage_mwh": 15664
+    "battery_storage_mwh": 15.6
   },
   "production": {
     "total_production_mwh": 343375.0,
     "avg_performance_ratio": 0.8168,
-    "avg_availability_pct": 98.15,
+    "avg_availability_pct": 97.69,
     "total_carbon_offset_tons": 132543.0
   },
   "financial": {
-    "total_revenue": 22029200.0,
+    "total_revenue": 18390231.0,
     "total_expense": 1283768.0,
-    "total_ebitda": 20745432.0,
-    "ebitda_margin_pct": 94.2,
-    "revenue_variance": -41096.0,
+    "total_ebitda": 17106463.0,
+    "ebitda_margin_pct": 93.0,
+    "revenue_variance": -223044.0,
     "expense_variance": 5190.0,
     "om_cost_per_mw": 14756.0
   },

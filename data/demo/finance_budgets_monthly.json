@@ -2,13 +2,13 @@
   {
     "project": "desert_bloom",
     "month": "2024-05-01",
-    "budget_revenue": 851438.79,
+    "budget_revenue": 683860.38,
     "budget_expense": 44410.97,
-    "actual_revenue": 866529.72,
+    "actual_revenue": 690131.4,
     "actual_expense": 44605.06,
-    "variance_revenue": 15090.93,
+    "variance_revenue": 6271.02,
     "variance_expense": 194.09,
-    "variance_revenue_pct": 1.77,
+    "variance_revenue_pct": 0.92,
     "variance_expense_pct": 0.44
   },
   {
@@ -26,13 +26,13 @@
   {
     "project": "desert_bloom",
     "month": "2024-06-01",
-    "budget_revenue": 896472.85,
+    "budget_revenue": 763353.02,
     "budget_expense": 43718.13,
-    "actual_revenue": 912776.58,
+    "actual_revenue": 772650.45,
     "actual_expense": 43883.72,
-    "variance_revenue": 16303.73,
+    "variance_revenue": 9297.43,
     "variance_expense": 165.58,
-    "variance_revenue_pct": 1.82,
+    "variance_revenue_pct": 1.22,
     "variance_expense_pct": 0.38
   },
   {
@@ -50,13 +50,13 @@
   {
     "project": "desert_bloom",
     "month": "2024-07-01",
-    "budget_revenue": 884236.37,
+    "budget_revenue": 788892.84,
     "budget_expense": 43446.19,
-    "actual_revenue": 910042.18,
+    "actual_revenue": 809680.57,
     "actual_expense": 43608.54,
-    "variance_revenue": 25805.82,
+    "variance_revenue": 20787.74,
     "variance_expense": 162.35,
-    "variance_revenue_pct": 2.92,
+    "variance_revenue_pct": 2.64,
     "variance_expense_pct": 0.37
   },
   {
@@ -74,13 +74,13 @@
   {
     "project": "desert_bloom",
     "month": "2024-08-01",
-    "budget_revenue": 963632.63,
+    "budget_revenue": 794613.34,
     "budget_expense": 43677.26,
-    "actual_revenue": 922952.37,
+    "actual_revenue": 745037.34,
     "actual_expense": 43863.06,
-    "variance_revenue": -40680.25,
+    "variance_revenue": -49576.01,
     "variance_expense": 185.81,
-    "variance_revenue_pct": -4.22,
+    "variance_revenue_pct": -6.24,
     "variance_expense_pct": 0.43
   },
   {
@@ -98,13 +98,13 @@
   {
     "project": "desert_bloom",
     "month": "2024-09-01",
-    "budget_revenue": 819969.56,
+    "budget_revenue": 679514.77,
     "budget_expense": 44756.83,
-    "actual_revenue": 730378.64,
+    "actual_revenue": 582531.49,
     "actual_expense": 44975.39,
-    "variance_revenue": -89590.92,
+    "variance_revenue": -96983.28,
     "variance_expense": 218.56,
-    "variance_revenue_pct": -10.93,
+    "variance_revenue_pct": -14.27,
     "variance_expense_pct": 0.49
   },
   {
@@ -122,13 +122,13 @@
   {
     "project": "desert_bloom",
     "month": "2024-10-01",
-    "budget_revenue": 711162.76,
+    "budget_revenue": 605808.96,
     "budget_expense": 42622.43,
-    "actual_revenue": 658788.3,
+    "actual_revenue": 547889.56,
     "actual_expense": 42763.62,
-    "variance_revenue": -52374.46,
+    "variance_revenue": -57919.4,
     "variance_expense": 141.19,
-    "variance_revenue_pct": -7.36,
+    "variance_revenue_pct": -9.56,
     "variance_expense_pct": 0.33
   },
   {
@@ -146,13 +146,13 @@
   {
     "project": "desert_bloom",
     "month": "2024-11-01",
-    "budget_revenue": 652101.47,
+    "budget_revenue": 501615.72,
     "budget_expense": 42975.75,
-    "actual_revenue": 663476.04,
+    "actual_revenue": 505069.99,
     "actual_expense": 43115.8,
-    "variance_revenue": 11374.57,
+    "variance_revenue": 3454.27,
     "variance_expense": 140.04,
-    "variance_revenue_pct": 1.74,
+    "variance_revenue_pct": 0.69,
     "variance_expense_pct": 0.33
   },
   {
@@ -170,13 +170,13 @@
   {
     "project": "desert_bloom",
     "month": "2024-12-01",
-    "budget_revenue": 594007.55,
+    "budget_revenue": 447709.84,
     "budget_expense": 43992.39,
-    "actual_revenue": 601223.06,
+    "actual_revenue": 447225.47,
     "actual_expense": 44176.75,
-    "variance_revenue": 7215.51,
+    "variance_revenue": -484.37,
     "variance_expense": 184.36,
-    "variance_revenue_pct": 1.21,
+    "variance_revenue_pct": -0.11,
     "variance_expense_pct": 0.42
   },
   {
@@ -194,13 +194,13 @@
   {
     "project": "desert_bloom",
     "month": "2025-01-01",
-    "budget_revenue": 660761.07,
+    "budget_revenue": 484034.86,
     "budget_expense": 42516.91,
-    "actual_revenue": 670757.73,
+    "actual_revenue": 484730.14,
     "actual_expense": 42630.93,
-    "variance_revenue": 9996.66,
+    "variance_revenue": 695.28,
     "variance_expense": 114.01,
-    "variance_revenue_pct": 1.51,
+    "variance_revenue_pct": 0.14,
     "variance_expense_pct": 0.27
   },
   {
@@ -218,13 +218,13 @@
   {
     "project": "desert_bloom",
     "month": "2025-02-01",
-    "budget_revenue": 666493.72,
+    "budget_revenue": 539822.95,
     "budget_expense": 43514.33,
-    "actual_revenue": 681587.96,
+    "actual_revenue": 548250.3,
     "actual_expense": 43670.93,
-    "variance_revenue": 15094.24,
+    "variance_revenue": 8427.36,
     "variance_expense": 156.59,
-    "variance_revenue_pct": 2.26,
+    "variance_revenue_pct": 1.56,
     "variance_expense_pct": 0.36
   },
   {
@@ -242,13 +242,13 @@
   {
     "project": "desert_bloom",
     "month": "2025-03-01",
-    "budget_revenue": 818931.96,
+    "budget_revenue": 630017.43,
     "budget_expense": 43587.09,
-    "actual_revenue": 837104.76,
+    "actual_revenue": 638247.36,
     "actual_expense": 43744.01,
-    "variance_revenue": 18172.81,
+    "variance_revenue": 8229.94,
     "variance_expense": 156.91,
-    "variance_revenue_pct": 2.22,
+    "variance_revenue_pct": 1.31,
     "variance_expense_pct": 0.36
   },
   {
@@ -266,13 +266,13 @@
   {
     "project": "desert_bloom",
     "month": "2025-04-01",
-    "budget_revenue": 852315.28,
+    "budget_revenue": 684848.13,
     "budget_expense": 43743.69,
-    "actual_revenue": 877967.36,
+    "actual_revenue": 701686.16,
     "actual_expense": 43896.86,
-    "variance_revenue": 25652.09,
+    "variance_revenue": 16838.02,
     "variance_expense": 153.17,
-    "variance_revenue_pct": 3.01,
+    "variance_revenue_pct": 2.46,
     "variance_expense_pct": 0.35
   },
   {
@@ -290,13 +290,13 @@
   {
     "project": "desert_bloom",
     "month": "2025-05-01",
-    "budget_revenue": 794192.59,
+    "budget_revenue": 697900.06,
     "budget_expense": 43581.01,
-    "actual_revenue": 809020.5,
+    "actual_revenue": 707659.94,
     "actual_expense": 43747.78,
-    "variance_revenue": 14827.91,
+    "variance_revenue": 9759.88,
     "variance_expense": 166.77,
-    "variance_revenue_pct": 1.87,
+    "variance_revenue_pct": 1.4,
     "variance_expense_pct": 0.38
   },
   {
@@ -314,13 +314,13 @@
   {
     "project": "desert_bloom",
     "month": "2025-06-01",
-    "budget_revenue": 849804.83,
+    "budget_revenue": 760485.07,
     "budget_expense": 43742.34,
-    "actual_revenue": 865518.87,
+    "actual_revenue": 771498.07,
     "actual_expense": 43899.95,
-    "variance_revenue": 15714.04,
+    "variance_revenue": 11013.0,
     "variance_expense": 157.61,
-    "variance_revenue_pct": 1.85,
+    "variance_revenue_pct": 1.45,
     "variance_expense_pct": 0.36
   },
   {
@@ -338,13 +338,13 @@
   {
     "project": "desert_bloom",
     "month": "2025-07-01",
-    "budget_revenue": 904020.71,
+    "budget_revenue": 777012.13,
     "budget_expense": 43257.7,
-    "actual_revenue": 788555.52,
+    "actual_revenue": 654862.28,
     "actual_expense": 43429.59,
-    "variance_revenue": -115465.18,
+    "variance_revenue": -122149.85,
     "variance_expense": 171.9,
-    "variance_revenue_pct": -12.77,
+    "variance_revenue_pct": -15.72,
     "variance_expense_pct": 0.4
   },
   {
@@ -362,13 +362,13 @@
   {
     "project": "desert_bloom",
     "month": "2025-08-01",
-    "budget_revenue": 953085.91,
+    "budget_revenue": 793873.54,
     "budget_expense": 44311.82,
-    "actual_revenue": 954709.34,
+    "actual_revenue": 787117.37,
     "actual_expense": 44490.05,
-    "variance_revenue": 1623.43,
+    "variance_revenue": -6756.17,
     "variance_expense": 178.23,
-    "variance_revenue_pct": 0.17,
+    "variance_revenue_pct": -0.85,
     "variance_expense_pct": 0.4
   },
   {
@@ -386,13 +386,13 @@
   {
     "project": "desert_bloom",
     "month": "2025-09-01",
-    "budget_revenue": 832812.99,
+    "budget_revenue": 711265.48,
     "budget_expense": 43740.78,
-    "actual_revenue": 832588.84,
+    "actual_revenue": 704644.1,
     "actual_expense": 43895.15,
-    "variance_revenue": -224.14,
+    "variance_revenue": -6621.38,
     "variance_expense": 154.37,
-    "variance_revenue_pct": -0.03,
+    "variance_revenue_pct": -0.93,
     "variance_expense_pct": 0.35
   },
   {
@@ -410,13 +410,13 @@
   {
     "project": "desert_bloom",
     "month": "2025-10-01",
-    "budget_revenue": 787416.03,
+    "budget_revenue": 611958.43,
     "budget_expense": 43116.1,
-    "actual_revenue": 800412.9,
+    "actual_revenue": 615720.7,
     "actual_expense": 43270.6,
-    "variance_revenue": 12996.88,
+    "variance_revenue": 3762.27,
     "variance_expense": 154.5,
-    "variance_revenue_pct": 1.65,
+    "variance_revenue_pct": 0.61,
     "variance_expense_pct": 0.36
   },
   {
@@ -434,13 +434,13 @@
   {
     "project": "desert_bloom",
     "month": "2025-11-01",
-    "budget_revenue": 674527.35,
+    "budget_revenue": 495057.18,
     "budget_expense": 43942.48,
-    "actual_revenue": 704960.01,
+    "actual_revenue": 516044.04,
     "actual_expense": 44102.81,
-    "variance_revenue": 30432.66,
+    "variance_revenue": 20986.86,
     "variance_expense": 160.32,
-    "variance_revenue_pct": 4.51,
+    "variance_revenue_pct": 4.24,
     "variance_expense_pct": 0.36
   },
   {
@@ -458,13 +458,13 @@
   {
     "project": "desert_bloom",
     "month": "2025-12-01",
-    "budget_revenue": 585928.21,
+    "budget_revenue": 444960.71,
     "budget_expense": 43963.31,
-    "actual_revenue": 591554.14,
+    "actual_revenue": 443167.3,
     "actual_expense": 44124.09,
-    "variance_revenue": 5625.93,
+    "variance_revenue": -1793.41,
     "variance_expense": 160.78,
-    "variance_revenue_pct": 0.96,
+    "variance_revenue_pct": -0.4,
     "variance_expense_pct": 0.37
   },
   {
@@ -482,13 +482,13 @@
   {
     "project": "desert_bloom",
     "month": "2026-01-01",
-    "budget_revenue": 617789.1,
+    "budget_revenue": 485436.61,
     "budget_expense": 43218.35,
-    "actual_revenue": 634282.09,
+    "actual_revenue": 494963.68,
     "actual_expense": 43330.72,
-    "variance_revenue": 16492.99,
+    "variance_revenue": 9527.07,
     "variance_expense": 112.37,
-    "variance_revenue_pct": 2.67,
+    "variance_revenue_pct": 1.96,
     "variance_expense_pct": 0.26
   },
   {
@@ -506,13 +506,13 @@
   {
     "project": "desert_bloom",
     "month": "2026-02-01",
-    "budget_revenue": 667850.25,
+    "budget_revenue": 520963.05,
     "budget_expense": 42462.2,
-    "actual_revenue": 672572.94,
+    "actual_revenue": 517954.84,
     "actual_expense": 42583.48,
-    "variance_revenue": 4722.69,
+    "variance_revenue": -3008.21,
     "variance_expense": 121.28,
-    "variance_revenue_pct": 0.71,
+    "variance_revenue_pct": -0.58,
     "variance_expense_pct": 0.29
   },
   {
@@ -530,13 +530,13 @@
   {
     "project": "desert_bloom",
     "month": "2026-03-01",
-    "budget_revenue": 791783.12,
+    "budget_revenue": 618098.8,
     "budget_expense": 44457.51,
-    "actual_revenue": 809423.54,
+    "actual_revenue": 626597.94,
     "actual_expense": 44662.95,
-    "variance_revenue": 17640.42,
+    "variance_revenue": 8499.14,
     "variance_expense": 205.43,
-    "variance_revenue_pct": 2.23,
+    "variance_revenue_pct": 1.38,
     "variance_expense_pct": 0.46
   },
   {
@@ -554,13 +554,13 @@
   {
     "project": "desert_bloom",
     "month": "2026-04-01",
-    "budget_revenue": 812212.89,
+    "budget_revenue": 664824.39,
     "budget_expense": 43634.25,
-    "actual_revenue": 834149.26,
+    "actual_revenue": 679003.47,
     "actual_expense": 43776.64,
-    "variance_revenue": 21936.37,
+    "variance_revenue": 14179.08,
     "variance_expense": 142.39,
-    "variance_revenue_pct": 2.7,
+    "variance_revenue_pct": 2.13,
     "variance_expense_pct": 0.33
   },
   {

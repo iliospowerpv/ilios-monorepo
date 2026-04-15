@@ -1950,21 +1950,21 @@
     "date": "2025-02-03",
     "energy_produced_mwh": 404.41,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 100.0
+    "availability_pct": 99.54
   },
   {
     "project": "desert_bloom",
     "date": "2025-02-04",
     "energy_produced_mwh": 442.01,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 97.94
+    "availability_pct": 97.44
   },
   {
     "project": "desert_bloom",
     "date": "2025-02-05",
     "energy_produced_mwh": 371.57,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 98.45
+    "availability_pct": 97.95
   },
   {
     "project": "desert_bloom",
@@ -1985,21 +1985,21 @@
     "date": "2025-02-08",
     "energy_produced_mwh": 369.68,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 100.0
+    "availability_pct": 99.79
   },
   {
     "project": "desert_bloom",
     "date": "2025-02-09",
     "energy_produced_mwh": 501.43,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 99.43
+    "availability_pct": 98.93
   },
   {
     "project": "desert_bloom",
     "date": "2025-02-10",
     "energy_produced_mwh": 345.44,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 98.24
+    "availability_pct": 97.74
   },
   {
     "project": "desert_bloom",
@@ -2020,7 +2020,7 @@
     "date": "2025-02-13",
     "energy_produced_mwh": 394.24,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 97.48
+    "availability_pct": 96.98
   },
   {
     "project": "desert_bloom",
@@ -2041,7 +2041,7 @@
     "date": "2025-02-16",
     "energy_produced_mwh": 439.98,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 98.8
+    "availability_pct": 98.3
   },
   {
     "project": "desert_bloom",
@@ -2055,14 +2055,14 @@
     "date": "2025-02-18",
     "energy_produced_mwh": 451.46,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 97.77
+    "availability_pct": 97.28
   },
   {
     "project": "desert_bloom",
     "date": "2025-02-19",
     "energy_produced_mwh": 528.85,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 99.21
+    "availability_pct": 98.71
   },
   {
     "project": "desert_bloom",
@@ -2076,14 +2076,14 @@
     "date": "2025-02-21",
     "energy_produced_mwh": 347.31,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 97.98
+    "availability_pct": 97.48
   },
   {
     "project": "desert_bloom",
     "date": "2025-02-22",
     "energy_produced_mwh": 432.89,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 100.0
+    "availability_pct": 99.62
   },
   {
     "project": "desert_bloom",
@@ -2097,21 +2097,21 @@
     "date": "2025-02-24",
     "energy_produced_mwh": 402.51,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 98.32
+    "availability_pct": 97.83
   },
   {
     "project": "desert_bloom",
     "date": "2025-02-25",
     "energy_produced_mwh": 329.22,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 100.0
+    "availability_pct": 99.84
   },
   {
     "project": "desert_bloom",
     "date": "2025-02-26",
     "energy_produced_mwh": 423.11,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 97.59
+    "availability_pct": 97.1
   },
   {
     "project": "desert_bloom",
@@ -2391,28 +2391,28 @@
     "date": "2025-04-07",
     "energy_produced_mwh": 397.2,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 97.57
+    "availability_pct": 96.94
   },
   {
     "project": "desert_bloom",
     "date": "2025-04-08",
     "energy_produced_mwh": 587.3,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 99.94
+    "availability_pct": 99.3
   },
   {
     "project": "desert_bloom",
     "date": "2025-04-09",
     "energy_produced_mwh": 384.78,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 97.72
+    "availability_pct": 97.08
   },
   {
     "project": "desert_bloom",
     "date": "2025-04-10",
     "energy_produced_mwh": 494.63,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 100.0
+    "availability_pct": 99.42
   },
   {
     "project": "desert_bloom",
@@ -2426,7 +2426,7 @@
     "date": "2025-04-12",
     "energy_produced_mwh": 560.68,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 98.05
+    "availability_pct": 97.41
   },
   {
     "project": "desert_bloom",
@@ -2447,42 +2447,42 @@
     "date": "2025-04-15",
     "energy_produced_mwh": 459.08,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 99.17
+    "availability_pct": 98.54
   },
   {
     "project": "desert_bloom",
     "date": "2025-04-16",
     "energy_produced_mwh": 480.4,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 100.0
+    "availability_pct": 99.48
   },
   {
     "project": "desert_bloom",
     "date": "2025-04-17",
     "energy_produced_mwh": 431.92,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 100.0
+    "availability_pct": 99.82
   },
   {
     "project": "desert_bloom",
     "date": "2025-04-18",
     "energy_produced_mwh": 447.81,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 99.91
+    "availability_pct": 99.27
   },
   {
     "project": "desert_bloom",
     "date": "2025-04-19",
     "energy_produced_mwh": 425.6,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 99.34
+    "availability_pct": 98.71
   },
   {
     "project": "desert_bloom",
     "date": "2025-04-20",
     "energy_produced_mwh": 347.21,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 99.07
+    "availability_pct": 98.43
   },
   {
     "project": "desert_bloom",
@@ -2510,7 +2510,7 @@
     "date": "2025-04-24",
     "energy_produced_mwh": 388.28,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 97.79
+    "availability_pct": 97.15
   },
   {
     "project": "desert_bloom",
@@ -2531,7 +2531,7 @@
     "date": "2025-04-27",
     "energy_produced_mwh": 396.27,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 97.66
+    "availability_pct": 97.03
   },
   {
     "project": "desert_bloom",
@@ -2545,7 +2545,7 @@
     "date": "2025-04-29",
     "energy_produced_mwh": 636.31,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 98.06
+    "availability_pct": 97.43
   },
   {
     "project": "desert_bloom",
@@ -2776,7 +2776,7 @@
     "date": "2025-06-01",
     "energy_produced_mwh": 401.51,
     "energy_expected_mwh": 532.0,
-    "availability_pct": 97.59
+    "availability_pct": 97.36
   },
   {
     "project": "desert_bloom",
@@ -2790,14 +2790,14 @@
     "date": "2025-06-03",
     "energy_produced_mwh": 721.78,
     "energy_expected_mwh": 532.0,
-    "availability_pct": 97.36
+    "availability_pct": 97.13
   },
   {
     "project": "desert_bloom",
     "date": "2025-06-04",
     "energy_produced_mwh": 524.97,
     "energy_expected_mwh": 532.0,
-    "availability_pct": 97.92
+    "availability_pct": 97.69
   },
   {
     "project": "desert_bloom",
@@ -2811,7 +2811,7 @@
     "date": "2025-06-06",
     "energy_produced_mwh": 684.67,
     "energy_expected_mwh": 532.0,
-    "availability_pct": 98.13
+    "availability_pct": 97.89
   },
   {
     "project": "desert_bloom",
@@ -2825,7 +2825,7 @@
     "date": "2025-06-08",
     "energy_produced_mwh": 446.45,
     "energy_expected_mwh": 532.0,
-    "availability_pct": 98.84
+    "availability_pct": 98.61
   },
   {
     "project": "desert_bloom",
@@ -2839,7 +2839,7 @@
     "date": "2025-06-10",
     "energy_produced_mwh": 521.5,
     "energy_expected_mwh": 532.0,
-    "availability_pct": 99.95
+    "availability_pct": 99.71
   },
   {
     "project": "desert_bloom",
@@ -2853,7 +2853,7 @@
     "date": "2025-06-12",
     "energy_produced_mwh": 687.56,
     "energy_expected_mwh": 532.0,
-    "availability_pct": 98.82
+    "availability_pct": 98.59
   },
   {
     "project": "desert_bloom",
@@ -2867,7 +2867,7 @@
     "date": "2025-06-14",
     "energy_produced_mwh": 699.35,
     "energy_expected_mwh": 532.0,
-    "availability_pct": 97.96
+    "availability_pct": 97.73
   },
   {
     "project": "desert_bloom",
@@ -2895,35 +2895,35 @@
     "date": "2025-06-18",
     "energy_produced_mwh": 522.04,
     "energy_expected_mwh": 532.0,
-    "availability_pct": 98.02
+    "availability_pct": 97.78
   },
   {
     "project": "desert_bloom",
     "date": "2025-06-19",
     "energy_produced_mwh": 588.16,
     "energy_expected_mwh": 532.0,
-    "availability_pct": 98.46
+    "availability_pct": 98.23
   },
   {
     "project": "desert_bloom",
     "date": "2025-06-20",
     "energy_produced_mwh": 499.51,
     "energy_expected_mwh": 532.0,
-    "availability_pct": 97.29
+    "availability_pct": 97.06
   },
   {
     "project": "desert_bloom",
     "date": "2025-06-21",
     "energy_produced_mwh": 394.7,
     "energy_expected_mwh": 532.0,
-    "availability_pct": 98.55
+    "availability_pct": 98.31
   },
   {
     "project": "desert_bloom",
     "date": "2025-06-22",
     "energy_produced_mwh": 672.6,
     "energy_expected_mwh": 532.0,
-    "availability_pct": 97.3
+    "availability_pct": 97.07
   },
   {
     "project": "desert_bloom",
@@ -2937,21 +2937,21 @@
     "date": "2025-06-24",
     "energy_produced_mwh": 564.3,
     "energy_expected_mwh": 532.0,
-    "availability_pct": 98.85
+    "availability_pct": 98.62
   },
   {
     "project": "desert_bloom",
     "date": "2025-06-25",
     "energy_produced_mwh": 683.52,
     "energy_expected_mwh": 532.0,
-    "availability_pct": 97.96
+    "availability_pct": 97.73
   },
   {
     "project": "desert_bloom",
     "date": "2025-06-26",
     "energy_produced_mwh": 596.04,
     "energy_expected_mwh": 532.0,
-    "availability_pct": 97.16
+    "availability_pct": 96.93
   },
   {
     "project": "desert_bloom",
@@ -2972,7 +2972,7 @@
     "date": "2025-06-29",
     "energy_produced_mwh": 386.93,
     "energy_expected_mwh": 532.0,
-    "availability_pct": 98.94
+    "availability_pct": 98.71
   },
   {
     "project": "desert_bloom",
@@ -3210,21 +3210,21 @@
     "date": "2025-08-02",
     "energy_produced_mwh": 527.25,
     "energy_expected_mwh": 529.55,
-    "availability_pct": 98.71
+    "availability_pct": 98.4
   },
   {
     "project": "desert_bloom",
     "date": "2025-08-03",
     "energy_produced_mwh": 442.02,
     "energy_expected_mwh": 529.55,
-    "availability_pct": 100.0
+    "availability_pct": 99.89
   },
   {
     "project": "desert_bloom",
     "date": "2025-08-04",
     "energy_produced_mwh": 510.32,
     "energy_expected_mwh": 529.55,
-    "availability_pct": 98.78
+    "availability_pct": 98.47
   },
   {
     "project": "desert_bloom",
@@ -3238,28 +3238,28 @@
     "date": "2025-08-06",
     "energy_produced_mwh": 526.86,
     "energy_expected_mwh": 529.55,
-    "availability_pct": 100.0
+    "availability_pct": 99.85
   },
   {
     "project": "desert_bloom",
     "date": "2025-08-07",
     "energy_produced_mwh": 459.81,
     "energy_expected_mwh": 529.55,
-    "availability_pct": 99.93
+    "availability_pct": 99.61
   },
   {
     "project": "desert_bloom",
     "date": "2025-08-08",
     "energy_produced_mwh": 655.1,
     "energy_expected_mwh": 529.55,
-    "availability_pct": 97.74
+    "availability_pct": 97.43
   },
   {
     "project": "desert_bloom",
     "date": "2025-08-09",
     "energy_produced_mwh": 657.96,
     "energy_expected_mwh": 529.55,
-    "availability_pct": 99.13
+    "availability_pct": 98.82
   },
   {
     "project": "desert_bloom",
@@ -3287,14 +3287,14 @@
     "date": "2025-08-13",
     "energy_produced_mwh": 478.94,
     "energy_expected_mwh": 529.55,
-    "availability_pct": 98.42
+    "availability_pct": 98.11
   },
   {
     "project": "desert_bloom",
     "date": "2025-08-14",
     "energy_produced_mwh": 457.71,
     "energy_expected_mwh": 529.55,
-    "availability_pct": 97.37
+    "availability_pct": 97.06
   },
   {
     "project": "desert_bloom",
@@ -3308,7 +3308,7 @@
     "date": "2025-08-16",
     "energy_produced_mwh": 572.76,
     "energy_expected_mwh": 529.55,
-    "availability_pct": 97.73
+    "availability_pct": 97.42
   },
   {
     "project": "desert_bloom",
@@ -3336,7 +3336,7 @@
     "date": "2025-08-20",
     "energy_produced_mwh": 549.53,
     "energy_expected_mwh": 529.55,
-    "availability_pct": 99.28
+    "availability_pct": 98.97
   },
   {
     "project": "desert_bloom",
@@ -3350,21 +3350,21 @@
     "date": "2025-08-22",
     "energy_produced_mwh": 495.76,
     "energy_expected_mwh": 529.55,
-    "availability_pct": 99.81
+    "availability_pct": 99.5
   },
   {
     "project": "desert_bloom",
     "date": "2025-08-23",
     "energy_produced_mwh": 580.59,
     "energy_expected_mwh": 529.55,
-    "availability_pct": 97.96
+    "availability_pct": 97.64
   },
   {
     "project": "desert_bloom",
     "date": "2025-08-24",
     "energy_produced_mwh": 382.78,
     "energy_expected_mwh": 529.55,
-    "availability_pct": 99.15
+    "availability_pct": 98.84
   },
   {
     "project": "desert_bloom",
@@ -3378,28 +3378,28 @@
     "date": "2025-08-26",
     "energy_produced_mwh": 733.85,
     "energy_expected_mwh": 529.55,
-    "availability_pct": 98.72
+    "availability_pct": 98.4
   },
   {
     "project": "desert_bloom",
     "date": "2025-08-27",
     "energy_produced_mwh": 589.91,
     "energy_expected_mwh": 529.55,
-    "availability_pct": 97.96
+    "availability_pct": 97.65
   },
   {
     "project": "desert_bloom",
     "date": "2025-08-28",
     "energy_produced_mwh": 478.66,
     "energy_expected_mwh": 529.55,
-    "availability_pct": 100.0
+    "availability_pct": 99.92
   },
   {
     "project": "desert_bloom",
     "date": "2025-08-29",
     "energy_produced_mwh": 487.68,
     "energy_expected_mwh": 529.55,
-    "availability_pct": 98.14
+    "availability_pct": 97.83
   },
   {
     "project": "desert_bloom",
@@ -3434,14 +3434,14 @@
     "date": "2025-09-03",
     "energy_produced_mwh": 374.56,
     "energy_expected_mwh": 481.33,
-    "availability_pct": 98.23
+    "availability_pct": 97.26
   },
   {
     "project": "desert_bloom",
     "date": "2025-09-04",
     "energy_produced_mwh": 469.09,
     "energy_expected_mwh": 481.33,
-    "availability_pct": 99.1
+    "availability_pct": 98.12
   },
   {
     "project": "desert_bloom",
@@ -3469,28 +3469,28 @@
     "date": "2025-09-08",
     "energy_produced_mwh": 431.57,
     "energy_expected_mwh": 481.33,
-    "availability_pct": 99.48
+    "availability_pct": 98.5
   },
   {
     "project": "desert_bloom",
     "date": "2025-09-09",
     "energy_produced_mwh": 364.86,
     "energy_expected_mwh": 481.33,
-    "availability_pct": 99.61
+    "availability_pct": 98.64
   },
   {
     "project": "desert_bloom",
     "date": "2025-09-10",
     "energy_produced_mwh": 470.79,
     "energy_expected_mwh": 481.33,
-    "availability_pct": 99.36
+    "availability_pct": 98.39
   },
   {
     "project": "desert_bloom",
     "date": "2025-09-11",
     "energy_produced_mwh": 535.35,
     "energy_expected_mwh": 481.33,
-    "availability_pct": 99.84
+    "availability_pct": 98.86
   },
   {
     "project": "desert_bloom",
@@ -3504,7 +3504,7 @@
     "date": "2025-09-13",
     "energy_produced_mwh": 490.68,
     "energy_expected_mwh": 481.33,
-    "availability_pct": 100.0
+    "availability_pct": 99.89
   },
   {
     "project": "desert_bloom",
@@ -3518,28 +3518,28 @@
     "date": "2025-09-15",
     "energy_produced_mwh": 559.32,
     "energy_expected_mwh": 481.33,
-    "availability_pct": 99.16
+    "availability_pct": 98.19
   },
   {
     "project": "desert_bloom",
     "date": "2025-09-16",
     "energy_produced_mwh": 385.75,
     "energy_expected_mwh": 481.33,
-    "availability_pct": 100.0
+    "availability_pct": 99.87
   },
   {
     "project": "desert_bloom",
     "date": "2025-09-17",
     "energy_produced_mwh": 629.04,
     "energy_expected_mwh": 481.33,
-    "availability_pct": 100.0
+    "availability_pct": 99.72
   },
   {
     "project": "desert_bloom",
     "date": "2025-09-18",
     "energy_produced_mwh": 551.86,
     "energy_expected_mwh": 481.33,
-    "availability_pct": 100.0
+    "availability_pct": 99.49
   },
   {
     "project": "desert_bloom",
@@ -3560,21 +3560,21 @@
     "date": "2025-09-21",
     "energy_produced_mwh": 405.82,
     "energy_expected_mwh": 481.33,
-    "availability_pct": 98.31
+    "availability_pct": 97.34
   },
   {
     "project": "desert_bloom",
     "date": "2025-09-22",
     "energy_produced_mwh": 529.17,
     "energy_expected_mwh": 481.33,
-    "availability_pct": 99.55
+    "availability_pct": 98.58
   },
   {
     "project": "desert_bloom",
     "date": "2025-09-23",
     "energy_produced_mwh": 666.78,
     "energy_expected_mwh": 481.33,
-    "availability_pct": 98.58
+    "availability_pct": 97.61
   },
   {
     "project": "desert_bloom",
@@ -3595,14 +3595,14 @@
     "date": "2025-09-26",
     "energy_produced_mwh": 401.83,
     "energy_expected_mwh": 481.33,
-    "availability_pct": 100.0
+    "availability_pct": 99.9
   },
   {
     "project": "desert_bloom",
     "date": "2025-09-27",
     "energy_produced_mwh": 316.89,
     "energy_expected_mwh": 481.33,
-    "availability_pct": 99.87
+    "availability_pct": 98.9
   },
   {
     "project": "desert_bloom",
@@ -3637,7 +3637,7 @@
     "date": "2025-10-02",
     "energy_produced_mwh": 490.37,
     "energy_expected_mwh": 402.06,
-    "availability_pct": 98.35
+    "availability_pct": 97.06
   },
   {
     "project": "desert_bloom",
@@ -3665,7 +3665,7 @@
     "date": "2025-10-06",
     "energy_produced_mwh": 483.13,
     "energy_expected_mwh": 402.06,
-    "availability_pct": 99.08
+    "availability_pct": 97.79
   },
   {
     "project": "desert_bloom",
@@ -3679,14 +3679,14 @@
     "date": "2025-10-08",
     "energy_produced_mwh": 267.99,
     "energy_expected_mwh": 402.06,
-    "availability_pct": 100.0
+    "availability_pct": 98.78
   },
   {
     "project": "desert_bloom",
     "date": "2025-10-09",
     "energy_produced_mwh": 341.86,
     "energy_expected_mwh": 402.06,
-    "availability_pct": 100.0
+    "availability_pct": 99.36
   },
   {
     "project": "desert_bloom",
@@ -3700,7 +3700,7 @@
     "date": "2025-10-11",
     "energy_produced_mwh": 405.47,
     "energy_expected_mwh": 402.06,
-    "availability_pct": 99.02
+    "availability_pct": 97.73
   },
   {
     "project": "desert_bloom",
@@ -3714,14 +3714,14 @@
     "date": "2025-10-13",
     "energy_produced_mwh": 391.95,
     "energy_expected_mwh": 402.06,
-    "availability_pct": 99.23
+    "availability_pct": 97.94
   },
   {
     "project": "desert_bloom",
     "date": "2025-10-14",
     "energy_produced_mwh": 485.89,
     "energy_expected_mwh": 402.06,
-    "availability_pct": 100.0
+    "availability_pct": 99.03
   },
   {
     "project": "desert_bloom",
@@ -3735,28 +3735,28 @@
     "date": "2025-10-16",
     "energy_produced_mwh": 471.4,
     "energy_expected_mwh": 402.06,
-    "availability_pct": 99.35
+    "availability_pct": 98.05
   },
   {
     "project": "desert_bloom",
     "date": "2025-10-17",
     "energy_produced_mwh": 352.75,
     "energy_expected_mwh": 402.06,
-    "availability_pct": 99.54
+    "availability_pct": 98.25
   },
   {
     "project": "desert_bloom",
     "date": "2025-10-18",
     "energy_produced_mwh": 493.05,
     "energy_expected_mwh": 402.06,
-    "availability_pct": 99.93
+    "availability_pct": 98.63
   },
   {
     "project": "desert_bloom",
     "date": "2025-10-19",
     "energy_produced_mwh": 357.81,
     "energy_expected_mwh": 402.06,
-    "availability_pct": 100.0
+    "availability_pct": 98.8
   },
   {
     "project": "desert_bloom",
@@ -3784,21 +3784,21 @@
     "date": "2025-10-23",
     "energy_produced_mwh": 567.99,
     "energy_expected_mwh": 402.06,
-    "availability_pct": 99.93
+    "availability_pct": 98.64
   },
   {
     "project": "desert_bloom",
     "date": "2025-10-24",
     "energy_produced_mwh": 379.72,
     "energy_expected_mwh": 402.06,
-    "availability_pct": 100.0
+    "availability_pct": 98.98
   },
   {
     "project": "desert_bloom",
     "date": "2025-10-25",
     "energy_produced_mwh": 365.92,
     "energy_expected_mwh": 402.06,
-    "availability_pct": 100.0
+    "availability_pct": 99.77
   },
   {
     "project": "desert_bloom",
@@ -3826,14 +3826,14 @@
     "date": "2025-10-29",
     "energy_produced_mwh": 433.75,
     "energy_expected_mwh": 402.06,
-    "availability_pct": 98.51
+    "availability_pct": 97.21
   },
   {
     "project": "desert_bloom",
     "date": "2025-10-30",
     "energy_produced_mwh": 412.91,
     "energy_expected_mwh": 402.06,
-    "availability_pct": 98.79
+    "availability_pct": 97.5
   },
   {
     "project": "desert_bloom",
@@ -3889,7 +3889,7 @@
     "date": "2025-11-07",
     "energy_produced_mwh": 252.51,
     "energy_expected_mwh": 344.53,
-    "availability_pct": 98.93
+    "availability_pct": 97.54
   },
   {
     "project": "desert_bloom",
@@ -3910,14 +3910,14 @@
     "date": "2025-11-10",
     "energy_produced_mwh": 420.54,
     "energy_expected_mwh": 344.53,
-    "availability_pct": 99.45
+    "availability_pct": 98.06
   },
   {
     "project": "desert_bloom",
     "date": "2025-11-11",
     "energy_produced_mwh": 241.96,
     "energy_expected_mwh": 344.53,
-    "availability_pct": 100.0
+    "availability_pct": 99.65
   },
   {
     "project": "desert_bloom",
@@ -3945,21 +3945,21 @@
     "date": "2025-11-15",
     "energy_produced_mwh": 421.47,
     "energy_expected_mwh": 344.53,
-    "availability_pct": 98.81
+    "availability_pct": 97.42
   },
   {
     "project": "desert_bloom",
     "date": "2025-11-16",
     "energy_produced_mwh": 349.82,
     "energy_expected_mwh": 344.53,
-    "availability_pct": 99.13
+    "availability_pct": 97.74
   },
   {
     "project": "desert_bloom",
     "date": "2025-11-17",
     "energy_produced_mwh": 289.91,
     "energy_expected_mwh": 344.53,
-    "availability_pct": 99.86
+    "availability_pct": 98.46
   },
   {
     "project": "desert_bloom",
@@ -3973,21 +3973,21 @@
     "date": "2025-11-19",
     "energy_produced_mwh": 329.72,
     "energy_expected_mwh": 344.53,
-    "availability_pct": 98.36
+    "availability_pct": 96.97
   },
   {
     "project": "desert_bloom",
     "date": "2025-11-20",
     "energy_produced_mwh": 405.23,
     "energy_expected_mwh": 344.53,
-    "availability_pct": 98.66
+    "availability_pct": 97.27
   },
   {
     "project": "desert_bloom",
     "date": "2025-11-21",
     "energy_produced_mwh": 254.72,
     "energy_expected_mwh": 344.53,
-    "availability_pct": 100.0
+    "availability_pct": 99.33
   },
   {
     "project": "desert_bloom",
@@ -4008,7 +4008,7 @@
     "date": "2025-11-24",
     "energy_produced_mwh": 318.18,
     "energy_expected_mwh": 344.53,
-    "availability_pct": 99.61
+    "availability_pct": 98.21
   },
   {
     "project": "desert_bloom",
@@ -4043,7 +4043,7 @@
     "date": "2025-11-29",
     "energy_produced_mwh": 375.41,
     "energy_expected_mwh": 344.53,
-    "availability_pct": 100.0
+    "availability_pct": 99.58
   },
   {
     "project": "desert_bloom",
@@ -4057,28 +4057,28 @@
     "date": "2025-12-01",
     "energy_produced_mwh": 276.12,
     "energy_expected_mwh": 294.19,
-    "availability_pct": 100.0
+    "availability_pct": 99.96
   },
   {
     "project": "desert_bloom",
     "date": "2025-12-02",
     "energy_produced_mwh": 350.34,
     "energy_expected_mwh": 294.19,
-    "availability_pct": 100.0
+    "availability_pct": 99.98
   },
   {
     "project": "desert_bloom",
     "date": "2025-12-03",
     "energy_produced_mwh": 253.27,
     "energy_expected_mwh": 294.19,
-    "availability_pct": 100.0
+    "availability_pct": 99.67
   },
   {
     "project": "desert_bloom",
     "date": "2025-12-04",
     "energy_produced_mwh": 378.77,
     "energy_expected_mwh": 294.19,
-    "availability_pct": 100.0
+    "availability_pct": 99.28
   },
   {
     "project": "desert_bloom",
@@ -4092,21 +4092,21 @@
     "date": "2025-12-06",
     "energy_produced_mwh": 207.83,
     "energy_expected_mwh": 294.19,
-    "availability_pct": 98.27
+    "availability_pct": 97.28
   },
   {
     "project": "desert_bloom",
     "date": "2025-12-07",
     "energy_produced_mwh": 439.33,
     "energy_expected_mwh": 294.19,
-    "availability_pct": 98.31
+    "availability_pct": 97.31
   },
   {
     "project": "desert_bloom",
     "date": "2025-12-08",
     "energy_produced_mwh": 324.73,
     "energy_expected_mwh": 294.19,
-    "availability_pct": 100.0
+    "availability_pct": 99.35
   },
   {
     "project": "desert_bloom",
@@ -4141,7 +4141,7 @@
     "date": "2025-12-13",
     "energy_produced_mwh": 320.99,
     "energy_expected_mwh": 294.19,
-    "availability_pct": 99.98
+    "availability_pct": 98.99
   },
   {
     "project": "desert_bloom",
@@ -4155,7 +4155,7 @@
     "date": "2025-12-15",
     "energy_produced_mwh": 312.42,
     "energy_expected_mwh": 294.19,
-    "availability_pct": 97.91
+    "availability_pct": 96.92
   },
   {
     "project": "desert_bloom",
@@ -4176,14 +4176,14 @@
     "date": "2025-12-18",
     "energy_produced_mwh": 242.63,
     "energy_expected_mwh": 294.19,
-    "availability_pct": 99.55
+    "availability_pct": 98.55
   },
   {
     "project": "desert_bloom",
     "date": "2025-12-19",
     "energy_produced_mwh": 404.01,
     "energy_expected_mwh": 294.19,
-    "availability_pct": 98.57
+    "availability_pct": 97.58
   },
   {
     "project": "desert_bloom",
@@ -4197,7 +4197,7 @@
     "date": "2025-12-21",
     "energy_produced_mwh": 315.22,
     "energy_expected_mwh": 294.19,
-    "availability_pct": 99.13
+    "availability_pct": 98.14
   },
   {
     "project": "desert_bloom",
@@ -4218,14 +4218,14 @@
     "date": "2025-12-24",
     "energy_produced_mwh": 259.71,
     "energy_expected_mwh": 294.19,
-    "availability_pct": 99.2
+    "availability_pct": 98.2
   },
   {
     "project": "desert_bloom",
     "date": "2025-12-25",
     "energy_produced_mwh": 316.61,
     "energy_expected_mwh": 294.19,
-    "availability_pct": 100.0
+    "availability_pct": 99.92
   },
   {
     "project": "desert_bloom",
@@ -4246,14 +4246,14 @@
     "date": "2025-12-28",
     "energy_produced_mwh": 251.62,
     "energy_expected_mwh": 294.19,
-    "availability_pct": 98.75
+    "availability_pct": 97.76
   },
   {
     "project": "desert_bloom",
     "date": "2025-12-29",
     "energy_produced_mwh": 301.1,
     "energy_expected_mwh": 294.19,
-    "availability_pct": 99.7
+    "availability_pct": 98.7
   },
   {
     "project": "desert_bloom",
@@ -4267,7 +4267,7 @@
     "date": "2025-12-31",
     "energy_produced_mwh": 387.94,
     "energy_expected_mwh": 294.19,
-    "availability_pct": 100.0
+    "availability_pct": 99.46
   },
   {
     "project": "desert_bloom",
@@ -4295,7 +4295,7 @@
     "date": "2026-01-04",
     "energy_produced_mwh": 299.35,
     "energy_expected_mwh": 318.71,
-    "availability_pct": 99.95
+    "availability_pct": 98.36
   },
   {
     "project": "desert_bloom",
@@ -4323,7 +4323,7 @@
     "date": "2026-01-08",
     "energy_produced_mwh": 383.85,
     "energy_expected_mwh": 318.71,
-    "availability_pct": 99.62
+    "availability_pct": 98.03
   },
   {
     "project": "desert_bloom",
@@ -4337,7 +4337,7 @@
     "date": "2026-01-10",
     "energy_produced_mwh": 356.65,
     "energy_expected_mwh": 318.71,
-    "availability_pct": 100.0
+    "availability_pct": 98.9
   },
   {
     "project": "desert_bloom",
@@ -4379,7 +4379,7 @@
     "date": "2026-01-16",
     "energy_produced_mwh": 276.34,
     "energy_expected_mwh": 318.71,
-    "availability_pct": 100.0
+    "availability_pct": 99.98
   },
   {
     "project": "desert_bloom",
@@ -4407,21 +4407,21 @@
     "date": "2026-01-20",
     "energy_produced_mwh": 241.96,
     "energy_expected_mwh": 318.71,
-    "availability_pct": 100.0
+    "availability_pct": 98.46
   },
   {
     "project": "desert_bloom",
     "date": "2026-01-21",
     "energy_produced_mwh": 419.62,
     "energy_expected_mwh": 318.71,
-    "availability_pct": 100.0
+    "availability_pct": 99.41
   },
   {
     "project": "desert_bloom",
     "date": "2026-01-22",
     "energy_produced_mwh": 244.15,
     "energy_expected_mwh": 318.71,
-    "availability_pct": 100.0
+    "availability_pct": 99.18
   },
   {
     "project": "desert_bloom",
@@ -4442,14 +4442,14 @@
     "date": "2026-01-25",
     "energy_produced_mwh": 433.76,
     "energy_expected_mwh": 318.71,
-    "availability_pct": 100.0
+    "availability_pct": 99.84
   },
   {
     "project": "desert_bloom",
     "date": "2026-01-26",
     "energy_produced_mwh": 283.41,
     "energy_expected_mwh": 318.71,
-    "availability_pct": 99.51
+    "availability_pct": 97.92
   },
   {
     "project": "desert_bloom",
@@ -4463,7 +4463,7 @@
     "date": "2026-01-28",
     "energy_produced_mwh": 347.48,
     "energy_expected_mwh": 318.71,
-    "availability_pct": 98.84
+    "availability_pct": 97.25
   },
   {
     "project": "desert_bloom",
@@ -4477,7 +4477,7 @@
     "date": "2026-01-30",
     "energy_produced_mwh": 386.28,
     "energy_expected_mwh": 318.71,
-    "availability_pct": 100.0
+    "availability_pct": 99.37
   },
   {
     "project": "desert_bloom",
@@ -4498,7 +4498,7 @@
     "date": "2026-02-02",
     "energy_produced_mwh": 394.57,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 97.92
+    "availability_pct": 97.0
   },
   {
     "project": "desert_bloom",
@@ -4512,7 +4512,7 @@
     "date": "2026-02-04",
     "energy_produced_mwh": 438.57,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 98.4
+    "availability_pct": 97.48
   },
   {
     "project": "desert_bloom",
@@ -4526,7 +4526,7 @@
     "date": "2026-02-06",
     "energy_produced_mwh": 441.42,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 100.0
+    "availability_pct": 99.28
   },
   {
     "project": "desert_bloom",
@@ -4554,21 +4554,21 @@
     "date": "2026-02-10",
     "energy_produced_mwh": 404.97,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 100.0
+    "availability_pct": 99.18
   },
   {
     "project": "desert_bloom",
     "date": "2026-02-11",
     "energy_produced_mwh": 356.86,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 97.88
+    "availability_pct": 96.96
   },
   {
     "project": "desert_bloom",
     "date": "2026-02-12",
     "energy_produced_mwh": 320.37,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 100.0
+    "availability_pct": 99.5
   },
   {
     "project": "desert_bloom",
@@ -4582,7 +4582,7 @@
     "date": "2026-02-14",
     "energy_produced_mwh": 304.73,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 98.08
+    "availability_pct": 97.16
   },
   {
     "project": "desert_bloom",
@@ -4596,7 +4596,7 @@
     "date": "2026-02-16",
     "energy_produced_mwh": 339.71,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 98.27
+    "availability_pct": 97.35
   },
   {
     "project": "desert_bloom",
@@ -4610,7 +4610,7 @@
     "date": "2026-02-18",
     "energy_produced_mwh": 324.17,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 99.71
+    "availability_pct": 98.79
   },
   {
     "project": "desert_bloom",
@@ -4624,7 +4624,7 @@
     "date": "2026-02-20",
     "energy_produced_mwh": 436.27,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 98.28
+    "availability_pct": 97.36
   },
   {
     "project": "desert_bloom",
@@ -4638,7 +4638,7 @@
     "date": "2026-02-22",
     "energy_produced_mwh": 416.84,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 99.81
+    "availability_pct": 98.89
   },
   {
     "project": "desert_bloom",
@@ -4673,14 +4673,14 @@
     "date": "2026-02-27",
     "energy_produced_mwh": 405.05,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 98.0
+    "availability_pct": 97.08
   },
   {
     "project": "desert_bloom",
     "date": "2026-02-28",
     "energy_produced_mwh": 395.74,
     "energy_expected_mwh": 390.86,
-    "availability_pct": 100.0
+    "availability_pct": 99.84
   },
   {
     "project": "desert_bloom",
@@ -4694,21 +4694,21 @@
     "date": "2026-03-02",
     "energy_produced_mwh": 493.25,
     "energy_expected_mwh": 416.77,
-    "availability_pct": 99.94
+    "availability_pct": 98.8
   },
   {
     "project": "desert_bloom",
     "date": "2026-03-03",
     "energy_produced_mwh": 277.09,
     "energy_expected_mwh": 416.77,
-    "availability_pct": 99.89
+    "availability_pct": 98.75
   },
   {
     "project": "desert_bloom",
     "date": "2026-03-04",
     "energy_produced_mwh": 363.2,
     "energy_expected_mwh": 416.77,
-    "availability_pct": 98.83
+    "availability_pct": 97.7
   },
   {
     "project": "desert_bloom",
@@ -4722,21 +4722,21 @@
     "date": "2026-03-06",
     "energy_produced_mwh": 345.25,
     "energy_expected_mwh": 416.77,
-    "availability_pct": 100.0
+    "availability_pct": 99.02
   },
   {
     "project": "desert_bloom",
     "date": "2026-03-07",
     "energy_produced_mwh": 331.41,
     "energy_expected_mwh": 416.77,
-    "availability_pct": 99.99
+    "availability_pct": 98.85
   },
   {
     "project": "desert_bloom",
     "date": "2026-03-08",
     "energy_produced_mwh": 371.85,
     "energy_expected_mwh": 416.77,
-    "availability_pct": 100.0
+    "availability_pct": 99.23
   },
   {
     "project": "desert_bloom",
@@ -4750,28 +4750,28 @@
     "date": "2026-03-10",
     "energy_produced_mwh": 559.98,
     "energy_expected_mwh": 416.77,
-    "availability_pct": 99.06
+    "availability_pct": 97.92
   },
   {
     "project": "desert_bloom",
     "date": "2026-03-11",
     "energy_produced_mwh": 352.61,
     "energy_expected_mwh": 416.77,
-    "availability_pct": 99.85
+    "availability_pct": 98.71
   },
   {
     "project": "desert_bloom",
     "date": "2026-03-12",
     "energy_produced_mwh": 368.61,
     "energy_expected_mwh": 416.77,
-    "availability_pct": 100.0
+    "availability_pct": 99.51
   },
   {
     "project": "desert_bloom",
     "date": "2026-03-13",
     "energy_produced_mwh": 403.86,
     "energy_expected_mwh": 416.77,
-    "availability_pct": 98.5
+    "availability_pct": 97.36
   },
   {
     "project": "desert_bloom",
@@ -4785,21 +4785,21 @@
     "date": "2026-03-15",
     "energy_produced_mwh": 408.82,
     "energy_expected_mwh": 416.77,
-    "availability_pct": 98.68
+    "availability_pct": 97.54
   },
   {
     "project": "desert_bloom",
     "date": "2026-03-16",
     "energy_produced_mwh": 426.65,
     "energy_expected_mwh": 416.77,
-    "availability_pct": 100.0
+    "availability_pct": 98.89
   },
   {
     "project": "desert_bloom",
     "date": "2026-03-17",
     "energy_produced_mwh": 498.32,
     "energy_expected_mwh": 416.77,
-    "availability_pct": 100.0
+    "availability_pct": 98.88
   },
   {
     "project": "desert_bloom",
@@ -4813,21 +4813,21 @@
     "date": "2026-03-19",
     "energy_produced_mwh": 487.41,
     "energy_expected_mwh": 416.77,
-    "availability_pct": 99.96
+    "availability_pct": 98.82
   },
   {
     "project": "desert_bloom",
     "date": "2026-03-20",
     "energy_produced_mwh": 491.77,
     "energy_expected_mwh": 416.77,
-    "availability_pct": 99.92
+    "availability_pct": 98.79
   },
   {
     "project": "desert_bloom",
     "date": "2026-03-21",
     "energy_produced_mwh": 621.26,
     "energy_expected_mwh": 416.77,
-    "availability_pct": 99.79
+    "availability_pct": 98.65
   },
   {
     "project": "desert_bloom",
@@ -4862,14 +4862,14 @@
     "date": "2026-03-26",
     "energy_produced_mwh": 498.37,
     "energy_expected_mwh": 416.77,
-    "availability_pct": 100.0
+    "availability_pct": 99.67
   },
   {
     "project": "desert_bloom",
     "date": "2026-03-27",
     "energy_produced_mwh": 470.35,
     "energy_expected_mwh": 416.77,
-    "availability_pct": 99.79
+    "availability_pct": 98.65
   },
   {
     "project": "desert_bloom",
@@ -4904,14 +4904,14 @@
     "date": "2026-04-01",
     "energy_produced_mwh": 507.62,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 98.8
+    "availability_pct": 97.41
   },
   {
     "project": "desert_bloom",
     "date": "2026-04-02",
     "energy_produced_mwh": 579.99,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 100.0
+    "availability_pct": 99.03
   },
   {
     "project": "desert_bloom",
@@ -4932,7 +4932,7 @@
     "date": "2026-04-05",
     "energy_produced_mwh": 597.37,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 98.35
+    "availability_pct": 96.96
   },
   {
     "project": "desert_bloom",
@@ -4946,7 +4946,7 @@
     "date": "2026-04-07",
     "energy_produced_mwh": 511.17,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 100.0
+    "availability_pct": 99.57
   },
   {
     "project": "desert_bloom",
@@ -4960,7 +4960,7 @@
     "date": "2026-04-09",
     "energy_produced_mwh": 454.8,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 98.44
+    "availability_pct": 97.05
   },
   {
     "project": "desert_bloom",
@@ -4974,28 +4974,28 @@
     "date": "2026-04-11",
     "energy_produced_mwh": 415.53,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 99.14
+    "availability_pct": 97.75
   },
   {
     "project": "desert_bloom",
     "date": "2026-04-12",
     "energy_produced_mwh": 417.37,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 99.53
+    "availability_pct": 98.14
   },
   {
     "project": "desert_bloom",
     "date": "2026-04-13",
     "energy_produced_mwh": 468.59,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 100.0
+    "availability_pct": 99.53
   },
   {
     "project": "desert_bloom",
     "date": "2026-04-14",
     "energy_produced_mwh": 504.19,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 100.0
+    "availability_pct": 98.7
   },
   {
     "project": "desert_bloom",
@@ -5009,14 +5009,14 @@
     "date": "2026-04-16",
     "energy_produced_mwh": 546.78,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 99.28
+    "availability_pct": 97.89
   },
   {
     "project": "desert_bloom",
     "date": "2026-04-17",
     "energy_produced_mwh": 568.03,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 99.34
+    "availability_pct": 97.95
   },
   {
     "project": "desert_bloom",
@@ -5030,14 +5030,14 @@
     "date": "2026-04-19",
     "energy_produced_mwh": 388.74,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 99.4
+    "availability_pct": 98.01
   },
   {
     "project": "desert_bloom",
     "date": "2026-04-20",
     "energy_produced_mwh": 506.52,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 98.47
+    "availability_pct": 97.08
   },
   {
     "project": "desert_bloom",
@@ -5051,28 +5051,28 @@
     "date": "2026-04-22",
     "energy_produced_mwh": 472.38,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 99.53
+    "availability_pct": 98.13
   },
   {
     "project": "desert_bloom",
     "date": "2026-04-23",
     "energy_produced_mwh": 599.9,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 98.67
+    "availability_pct": 97.28
   },
   {
     "project": "desert_bloom",
     "date": "2026-04-24",
     "energy_produced_mwh": 403.41,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 99.41
+    "availability_pct": 98.02
   },
   {
     "project": "desert_bloom",
     "date": "2026-04-25",
     "energy_produced_mwh": 421.63,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 99.86
+    "availability_pct": 98.47
   },
   {
     "project": "desert_bloom",
@@ -5100,14 +5100,14 @@
     "date": "2026-04-29",
     "energy_produced_mwh": 601.63,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 100.0
+    "availability_pct": 98.68
   },
   {
     "project": "desert_bloom",
     "date": "2026-04-30",
     "energy_produced_mwh": 446.13,
     "energy_expected_mwh": 466.13,
-    "availability_pct": 99.09
+    "availability_pct": 97.7
   },
   {
     "project": "riverbend",
@@ -6402,7 +6402,7 @@
     "date": "2024-11-01",
     "energy_produced_mwh": 28.63,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 97.42
+    "availability_pct": 97.35
   },
   {
     "project": "riverbend",
@@ -6416,28 +6416,28 @@
     "date": "2024-11-03",
     "energy_produced_mwh": 32.57,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 97.53
+    "availability_pct": 97.46
   },
   {
     "project": "riverbend",
     "date": "2024-11-04",
     "energy_produced_mwh": 30.91,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 99.87
+    "availability_pct": 99.8
   },
   {
     "project": "riverbend",
     "date": "2024-11-05",
     "energy_produced_mwh": 23.03,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 97.96
+    "availability_pct": 97.89
   },
   {
     "project": "riverbend",
     "date": "2024-11-06",
     "energy_produced_mwh": 31.32,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 97.58
+    "availability_pct": 97.51
   },
   {
     "project": "riverbend",
@@ -6451,49 +6451,49 @@
     "date": "2024-11-08",
     "energy_produced_mwh": 34.28,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 98.56
+    "availability_pct": 98.49
   },
   {
     "project": "riverbend",
     "date": "2024-11-09",
     "energy_produced_mwh": 22.65,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 97.27
+    "availability_pct": 97.2
   },
   {
     "project": "riverbend",
     "date": "2024-11-10",
     "energy_produced_mwh": 32.52,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 97.89
+    "availability_pct": 97.82
   },
   {
     "project": "riverbend",
     "date": "2024-11-11",
     "energy_produced_mwh": 25.37,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 98.74
+    "availability_pct": 98.67
   },
   {
     "project": "riverbend",
     "date": "2024-11-12",
     "energy_produced_mwh": 31.98,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 98.17
+    "availability_pct": 98.1
   },
   {
     "project": "riverbend",
     "date": "2024-11-13",
     "energy_produced_mwh": 18.24,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 98.72
+    "availability_pct": 98.65
   },
   {
     "project": "riverbend",
     "date": "2024-11-14",
     "energy_produced_mwh": 23.38,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 98.82
+    "availability_pct": 98.75
   },
   {
     "project": "riverbend",
@@ -6507,21 +6507,21 @@
     "date": "2024-11-16",
     "energy_produced_mwh": 21.64,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 98.08
+    "availability_pct": 98.01
   },
   {
     "project": "riverbend",
     "date": "2024-11-17",
     "energy_produced_mwh": 33.47,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 99.65
+    "availability_pct": 99.57
   },
   {
     "project": "riverbend",
     "date": "2024-11-18",
     "energy_produced_mwh": 24.02,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 98.33
+    "availability_pct": 98.26
   },
   {
     "project": "riverbend",
@@ -6535,7 +6535,7 @@
     "date": "2024-11-20",
     "energy_produced_mwh": 27.27,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 99.03
+    "availability_pct": 98.96
   },
   {
     "project": "riverbend",
@@ -6563,7 +6563,7 @@
     "date": "2024-11-24",
     "energy_produced_mwh": 31.06,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 99.83
+    "availability_pct": 99.76
   },
   {
     "project": "riverbend",
@@ -6584,7 +6584,7 @@
     "date": "2024-11-27",
     "energy_produced_mwh": 32.44,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 97.69
+    "availability_pct": 97.62
   },
   {
     "project": "riverbend",
@@ -6598,21 +6598,21 @@
     "date": "2024-11-29",
     "energy_produced_mwh": 39.67,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 97.73
+    "availability_pct": 97.66
   },
   {
     "project": "riverbend",
     "date": "2024-11-30",
     "energy_produced_mwh": 30.95,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 99.58
+    "availability_pct": 99.51
   },
   {
     "project": "riverbend",
     "date": "2024-12-01",
     "energy_produced_mwh": 19.27,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 99.15
+    "availability_pct": 98.86
   },
   {
     "project": "riverbend",
@@ -6633,7 +6633,7 @@
     "date": "2024-12-04",
     "energy_produced_mwh": 19.77,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 98.09
+    "availability_pct": 97.79
   },
   {
     "project": "riverbend",
@@ -6647,28 +6647,28 @@
     "date": "2024-12-06",
     "energy_produced_mwh": 27.26,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 97.8
+    "availability_pct": 97.51
   },
   {
     "project": "riverbend",
     "date": "2024-12-07",
     "energy_produced_mwh": 18.78,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 99.26
+    "availability_pct": 98.96
   },
   {
     "project": "riverbend",
     "date": "2024-12-08",
     "energy_produced_mwh": 19.47,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 100.0
+    "availability_pct": 99.81
   },
   {
     "project": "riverbend",
     "date": "2024-12-09",
     "energy_produced_mwh": 19.56,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 98.85
+    "availability_pct": 98.55
   },
   {
     "project": "riverbend",
@@ -6682,7 +6682,7 @@
     "date": "2024-12-11",
     "energy_produced_mwh": 17.22,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 99.19
+    "availability_pct": 98.89
   },
   {
     "project": "riverbend",
@@ -6703,7 +6703,7 @@
     "date": "2024-12-14",
     "energy_produced_mwh": 17.56,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 100.0
+    "availability_pct": 99.85
   },
   {
     "project": "riverbend",
@@ -6717,21 +6717,21 @@
     "date": "2024-12-16",
     "energy_produced_mwh": 19.01,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 99.86
+    "availability_pct": 99.56
   },
   {
     "project": "riverbend",
     "date": "2024-12-17",
     "energy_produced_mwh": 23.72,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 99.7
+    "availability_pct": 99.4
   },
   {
     "project": "riverbend",
     "date": "2024-12-18",
     "energy_produced_mwh": 21.01,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 98.46
+    "availability_pct": 98.17
   },
   {
     "project": "riverbend",
@@ -6745,14 +6745,14 @@
     "date": "2024-12-20",
     "energy_produced_mwh": 28.52,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 100.0
+    "availability_pct": 99.99
   },
   {
     "project": "riverbend",
     "date": "2024-12-21",
     "energy_produced_mwh": 15.99,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 100.0
+    "availability_pct": 99.94
   },
   {
     "project": "riverbend",
@@ -6773,14 +6773,14 @@
     "date": "2024-12-24",
     "energy_produced_mwh": 23.7,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 99.94
+    "availability_pct": 99.64
   },
   {
     "project": "riverbend",
     "date": "2024-12-25",
     "energy_produced_mwh": 28.3,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 98.84
+    "availability_pct": 98.54
   },
   {
     "project": "riverbend",
@@ -6794,7 +6794,7 @@
     "date": "2024-12-27",
     "energy_produced_mwh": 14.18,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 99.43
+    "availability_pct": 99.13
   },
   {
     "project": "riverbend",
@@ -6808,7 +6808,7 @@
     "date": "2024-12-29",
     "energy_produced_mwh": 21.42,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 98.18
+    "availability_pct": 97.88
   },
   {
     "project": "riverbend",
@@ -6822,7 +6822,7 @@
     "date": "2024-12-31",
     "energy_produced_mwh": 17.94,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 98.17
+    "availability_pct": 97.88
   },
   {
     "project": "riverbend",
@@ -6843,7 +6843,7 @@
     "date": "2025-01-03",
     "energy_produced_mwh": 22.05,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 98.81
+    "availability_pct": 98.41
   },
   {
     "project": "riverbend",
@@ -6857,21 +6857,21 @@
     "date": "2025-01-05",
     "energy_produced_mwh": 25.87,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 99.55
+    "availability_pct": 99.16
   },
   {
     "project": "riverbend",
     "date": "2025-01-06",
     "energy_produced_mwh": 20.52,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 100.0
+    "availability_pct": 99.7
   },
   {
     "project": "riverbend",
     "date": "2025-01-07",
     "energy_produced_mwh": 29.6,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 99.68
+    "availability_pct": 99.28
   },
   {
     "project": "riverbend",
@@ -6892,7 +6892,7 @@
     "date": "2025-01-10",
     "energy_produced_mwh": 24.41,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 97.94
+    "availability_pct": 97.55
   },
   {
     "project": "riverbend",
@@ -6913,7 +6913,7 @@
     "date": "2025-01-13",
     "energy_produced_mwh": 28.31,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 98.2
+    "availability_pct": 97.8
   },
   {
     "project": "riverbend",
@@ -6941,7 +6941,7 @@
     "date": "2025-01-17",
     "energy_produced_mwh": 29.38,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 99.81
+    "availability_pct": 99.41
   },
   {
     "project": "riverbend",
@@ -6969,7 +6969,7 @@
     "date": "2025-01-21",
     "energy_produced_mwh": 31.9,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 100.0
+    "availability_pct": 99.94
   },
   {
     "project": "riverbend",
@@ -6983,7 +6983,7 @@
     "date": "2025-01-23",
     "energy_produced_mwh": 17.34,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 98.06
+    "availability_pct": 97.67
   },
   {
     "project": "riverbend",
@@ -6997,7 +6997,7 @@
     "date": "2025-01-25",
     "energy_produced_mwh": 20.81,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 99.31
+    "availability_pct": 98.91
   },
   {
     "project": "riverbend",
@@ -7011,7 +7011,7 @@
     "date": "2025-01-27",
     "energy_produced_mwh": 23.43,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 99.28
+    "availability_pct": 98.89
   },
   {
     "project": "riverbend",
@@ -7039,21 +7039,21 @@
     "date": "2025-01-31",
     "energy_produced_mwh": 27.08,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 99.59
+    "availability_pct": 99.19
   },
   {
     "project": "riverbend",
     "date": "2025-02-01",
     "energy_produced_mwh": 41.49,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 99.29
+    "availability_pct": 98.8
   },
   {
     "project": "riverbend",
     "date": "2025-02-02",
     "energy_produced_mwh": 41.35,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 100.0
+    "availability_pct": 99.83
   },
   {
     "project": "riverbend",
@@ -7074,7 +7074,7 @@
     "date": "2025-02-05",
     "energy_produced_mwh": 29.21,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 100.0
+    "availability_pct": 99.84
   },
   {
     "project": "riverbend",
@@ -7095,14 +7095,14 @@
     "date": "2025-02-08",
     "energy_produced_mwh": 27.06,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 98.59
+    "availability_pct": 98.1
   },
   {
     "project": "riverbend",
     "date": "2025-02-09",
     "energy_produced_mwh": 26.66,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 99.33
+    "availability_pct": 98.83
   },
   {
     "project": "riverbend",
@@ -7123,7 +7123,7 @@
     "date": "2025-02-12",
     "energy_produced_mwh": 27.22,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 99.7
+    "availability_pct": 99.2
   },
   {
     "project": "riverbend",
@@ -7165,7 +7165,7 @@
     "date": "2025-02-18",
     "energy_produced_mwh": 41.04,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 98.77
+    "availability_pct": 98.27
   },
   {
     "project": "riverbend",
@@ -7179,7 +7179,7 @@
     "date": "2025-02-20",
     "energy_produced_mwh": 32.07,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 99.6
+    "availability_pct": 99.1
   },
   {
     "project": "riverbend",
@@ -7193,7 +7193,7 @@
     "date": "2025-02-22",
     "energy_produced_mwh": 29.13,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 97.69
+    "availability_pct": 97.19
   },
   {
     "project": "riverbend",
@@ -7207,14 +7207,14 @@
     "date": "2025-02-24",
     "energy_produced_mwh": 25.42,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 99.9
+    "availability_pct": 99.4
   },
   {
     "project": "riverbend",
     "date": "2025-02-25",
     "energy_produced_mwh": 31.8,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 100.0
+    "availability_pct": 99.75
   },
   {
     "project": "riverbend",
@@ -7235,7 +7235,7 @@
     "date": "2025-02-28",
     "energy_produced_mwh": 30.04,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 98.22
+    "availability_pct": 97.72
   },
   {
     "project": "riverbend",
@@ -7249,21 +7249,21 @@
     "date": "2025-03-02",
     "energy_produced_mwh": 37.25,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 99.2
+    "availability_pct": 98.67
   },
   {
     "project": "riverbend",
     "date": "2025-03-03",
     "energy_produced_mwh": 30.91,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 98.68
+    "availability_pct": 98.15
   },
   {
     "project": "riverbend",
     "date": "2025-03-04",
     "energy_produced_mwh": 51.14,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 97.45
+    "availability_pct": 96.92
   },
   {
     "project": "riverbend",
@@ -7277,14 +7277,14 @@
     "date": "2025-03-06",
     "energy_produced_mwh": 42.14,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 97.97
+    "availability_pct": 97.44
   },
   {
     "project": "riverbend",
     "date": "2025-03-07",
     "energy_produced_mwh": 45.95,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 98.04
+    "availability_pct": 97.51
   },
   {
     "project": "riverbend",
@@ -7298,14 +7298,14 @@
     "date": "2025-03-09",
     "energy_produced_mwh": 37.13,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 98.03
+    "availability_pct": 97.5
   },
   {
     "project": "riverbend",
     "date": "2025-03-10",
     "energy_produced_mwh": 29.66,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 99.18
+    "availability_pct": 98.64
   },
   {
     "project": "riverbend",
@@ -7319,14 +7319,14 @@
     "date": "2025-03-12",
     "energy_produced_mwh": 34.88,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 97.71
+    "availability_pct": 97.18
   },
   {
     "project": "riverbend",
     "date": "2025-03-13",
     "energy_produced_mwh": 54.33,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 98.45
+    "availability_pct": 97.92
   },
   {
     "project": "riverbend",
@@ -7368,14 +7368,14 @@
     "date": "2025-03-19",
     "energy_produced_mwh": 34.77,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 97.78
+    "availability_pct": 97.25
   },
   {
     "project": "riverbend",
     "date": "2025-03-20",
     "energy_produced_mwh": 48.59,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 99.93
+    "availability_pct": 99.4
   },
   {
     "project": "riverbend",
@@ -7389,7 +7389,7 @@
     "date": "2025-03-22",
     "energy_produced_mwh": 33.34,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 99.58
+    "availability_pct": 99.05
   },
   {
     "project": "riverbend",
@@ -7410,7 +7410,7 @@
     "date": "2025-03-25",
     "energy_produced_mwh": 31.96,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 97.71
+    "availability_pct": 97.18
   },
   {
     "project": "riverbend",
@@ -7445,21 +7445,21 @@
     "date": "2025-03-30",
     "energy_produced_mwh": 33.95,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 98.92
+    "availability_pct": 98.39
   },
   {
     "project": "riverbend",
     "date": "2025-03-31",
     "energy_produced_mwh": 40.86,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 99.74
+    "availability_pct": 99.21
   },
   {
     "project": "riverbend",
     "date": "2025-04-01",
     "energy_produced_mwh": 72.26,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.04
+    "availability_pct": 97.35
   },
   {
     "project": "riverbend",
@@ -7480,7 +7480,7 @@
     "date": "2025-04-04",
     "energy_produced_mwh": 46.57,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.65
   },
   {
     "project": "riverbend",
@@ -7494,28 +7494,28 @@
     "date": "2025-04-06",
     "energy_produced_mwh": 46.06,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.88
   },
   {
     "project": "riverbend",
     "date": "2025-04-07",
     "energy_produced_mwh": 51.66,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.37
   },
   {
     "project": "riverbend",
     "date": "2025-04-08",
     "energy_produced_mwh": 47.22,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.14
+    "availability_pct": 97.45
   },
   {
     "project": "riverbend",
     "date": "2025-04-09",
     "energy_produced_mwh": 59.11,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 99.42
+    "availability_pct": 98.73
   },
   {
     "project": "riverbend",
@@ -7529,7 +7529,7 @@
     "date": "2025-04-11",
     "energy_produced_mwh": 65.43,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 97.92
+    "availability_pct": 97.23
   },
   {
     "project": "riverbend",
@@ -7571,7 +7571,7 @@
     "date": "2025-04-17",
     "energy_produced_mwh": 52.02,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.58
+    "availability_pct": 97.88
   },
   {
     "project": "riverbend",
@@ -7585,21 +7585,21 @@
     "date": "2025-04-19",
     "energy_produced_mwh": 42.41,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.72
+    "availability_pct": 98.03
   },
   {
     "project": "riverbend",
     "date": "2025-04-20",
     "energy_produced_mwh": 65.4,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.64
   },
   {
     "project": "riverbend",
     "date": "2025-04-21",
     "energy_produced_mwh": 66.86,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.24
+    "availability_pct": 97.55
   },
   {
     "project": "riverbend",
@@ -7613,42 +7613,42 @@
     "date": "2025-04-23",
     "energy_produced_mwh": 61.19,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.6
   },
   {
     "project": "riverbend",
     "date": "2025-04-24",
     "energy_produced_mwh": 66.87,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.4
+    "availability_pct": 97.71
   },
   {
     "project": "riverbend",
     "date": "2025-04-25",
     "energy_produced_mwh": 54.16,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 97.89
+    "availability_pct": 97.19
   },
   {
     "project": "riverbend",
     "date": "2025-04-26",
     "energy_produced_mwh": 74.62,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.8
   },
   {
     "project": "riverbend",
     "date": "2025-04-27",
     "energy_produced_mwh": 60.8,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.66
+    "availability_pct": 97.96
   },
   {
     "project": "riverbend",
     "date": "2025-04-28",
     "energy_produced_mwh": 60.13,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.36
+    "availability_pct": 97.67
   },
   {
     "project": "riverbend",
@@ -7886,14 +7886,14 @@
     "date": "2025-06-01",
     "energy_produced_mwh": 62.86,
     "energy_expected_mwh": 62.5,
-    "availability_pct": 99.7
+    "availability_pct": 98.81
   },
   {
     "project": "riverbend",
     "date": "2025-06-02",
     "energy_produced_mwh": 47.68,
     "energy_expected_mwh": 62.5,
-    "availability_pct": 98.2
+    "availability_pct": 97.31
   },
   {
     "project": "riverbend",
@@ -7907,14 +7907,14 @@
     "date": "2025-06-04",
     "energy_produced_mwh": 43.81,
     "energy_expected_mwh": 62.5,
-    "availability_pct": 99.07
+    "availability_pct": 98.18
   },
   {
     "project": "riverbend",
     "date": "2025-06-05",
     "energy_produced_mwh": 54.55,
     "energy_expected_mwh": 62.5,
-    "availability_pct": 99.1
+    "availability_pct": 98.21
   },
   {
     "project": "riverbend",
@@ -7928,7 +7928,7 @@
     "date": "2025-06-07",
     "energy_produced_mwh": 86.52,
     "energy_expected_mwh": 62.5,
-    "availability_pct": 97.85
+    "availability_pct": 96.95
   },
   {
     "project": "riverbend",
@@ -7970,28 +7970,28 @@
     "date": "2025-06-13",
     "energy_produced_mwh": 63.88,
     "energy_expected_mwh": 62.5,
-    "availability_pct": 100.0
+    "availability_pct": 99.57
   },
   {
     "project": "riverbend",
     "date": "2025-06-14",
     "energy_produced_mwh": 51.48,
     "energy_expected_mwh": 62.5,
-    "availability_pct": 98.95
+    "availability_pct": 98.06
   },
   {
     "project": "riverbend",
     "date": "2025-06-15",
     "energy_produced_mwh": 72.42,
     "energy_expected_mwh": 62.5,
-    "availability_pct": 98.8
+    "availability_pct": 97.9
   },
   {
     "project": "riverbend",
     "date": "2025-06-16",
     "energy_produced_mwh": 81.56,
     "energy_expected_mwh": 62.5,
-    "availability_pct": 97.84
+    "availability_pct": 96.94
   },
   {
     "project": "riverbend",
@@ -8005,7 +8005,7 @@
     "date": "2025-06-18",
     "energy_produced_mwh": 75.42,
     "energy_expected_mwh": 62.5,
-    "availability_pct": 98.42
+    "availability_pct": 97.52
   },
   {
     "project": "riverbend",
@@ -8026,14 +8026,14 @@
     "date": "2025-06-21",
     "energy_produced_mwh": 65.14,
     "energy_expected_mwh": 62.5,
-    "availability_pct": 100.0
+    "availability_pct": 99.66
   },
   {
     "project": "riverbend",
     "date": "2025-06-22",
     "energy_produced_mwh": 49.88,
     "energy_expected_mwh": 62.5,
-    "availability_pct": 98.12
+    "availability_pct": 97.23
   },
   {
     "project": "riverbend",
@@ -8047,14 +8047,14 @@
     "date": "2025-06-24",
     "energy_produced_mwh": 49.13,
     "energy_expected_mwh": 62.5,
-    "availability_pct": 100.0
+    "availability_pct": 99.23
   },
   {
     "project": "riverbend",
     "date": "2025-06-25",
     "energy_produced_mwh": 66.89,
     "energy_expected_mwh": 62.5,
-    "availability_pct": 97.89
+    "availability_pct": 97.0
   },
   {
     "project": "riverbend",
@@ -8082,14 +8082,14 @@
     "date": "2025-06-29",
     "energy_produced_mwh": 52.51,
     "energy_expected_mwh": 62.5,
-    "availability_pct": 99.6
+    "availability_pct": 98.71
   },
   {
     "project": "riverbend",
     "date": "2025-06-30",
     "energy_produced_mwh": 51.39,
     "energy_expected_mwh": 62.5,
-    "availability_pct": 100.0
+    "availability_pct": 99.53
   },
   {
     "project": "riverbend",
@@ -8320,7 +8320,7 @@
     "date": "2025-08-02",
     "energy_produced_mwh": 49.29,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 100.0
+    "availability_pct": 99.58
   },
   {
     "project": "riverbend",
@@ -8334,35 +8334,35 @@
     "date": "2025-08-04",
     "energy_produced_mwh": 84.18,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 100.0
+    "availability_pct": 99.8
   },
   {
     "project": "riverbend",
     "date": "2025-08-05",
     "energy_produced_mwh": 51.45,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 100.0
+    "availability_pct": 99.83
   },
   {
     "project": "riverbend",
     "date": "2025-08-06",
     "energy_produced_mwh": 43.52,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 97.67
+    "availability_pct": 97.16
   },
   {
     "project": "riverbend",
     "date": "2025-08-07",
     "energy_produced_mwh": 56.78,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 99.58
+    "availability_pct": 99.07
   },
   {
     "project": "riverbend",
     "date": "2025-08-08",
     "energy_produced_mwh": 59.45,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 97.69
+    "availability_pct": 97.18
   },
   {
     "project": "riverbend",
@@ -8383,7 +8383,7 @@
     "date": "2025-08-11",
     "energy_produced_mwh": 53.37,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 98.46
+    "availability_pct": 97.94
   },
   {
     "project": "riverbend",
@@ -8397,28 +8397,28 @@
     "date": "2025-08-13",
     "energy_produced_mwh": 74.12,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 99.67
+    "availability_pct": 99.16
   },
   {
     "project": "riverbend",
     "date": "2025-08-14",
     "energy_produced_mwh": 76.77,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 99.53
+    "availability_pct": 99.02
   },
   {
     "project": "riverbend",
     "date": "2025-08-15",
     "energy_produced_mwh": 74.64,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 100.0
+    "availability_pct": 99.79
   },
   {
     "project": "riverbend",
     "date": "2025-08-16",
     "energy_produced_mwh": 65.27,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 98.25
+    "availability_pct": 97.73
   },
   {
     "project": "riverbend",
@@ -8432,35 +8432,35 @@
     "date": "2025-08-18",
     "energy_produced_mwh": 46.0,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 99.59
+    "availability_pct": 99.07
   },
   {
     "project": "riverbend",
     "date": "2025-08-19",
     "energy_produced_mwh": 61.45,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 98.8
+    "availability_pct": 98.28
   },
   {
     "project": "riverbend",
     "date": "2025-08-20",
     "energy_produced_mwh": 77.67,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 100.0
+    "availability_pct": 99.79
   },
   {
     "project": "riverbend",
     "date": "2025-08-21",
     "energy_produced_mwh": 55.35,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 98.38
+    "availability_pct": 97.87
   },
   {
     "project": "riverbend",
     "date": "2025-08-22",
     "energy_produced_mwh": 63.12,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 97.67
+    "availability_pct": 97.16
   },
   {
     "project": "riverbend",
@@ -8474,7 +8474,7 @@
     "date": "2025-08-24",
     "energy_produced_mwh": 45.38,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 97.75
+    "availability_pct": 97.24
   },
   {
     "project": "riverbend",
@@ -8488,14 +8488,14 @@
     "date": "2025-08-26",
     "energy_produced_mwh": 66.29,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 97.53
+    "availability_pct": 97.01
   },
   {
     "project": "riverbend",
     "date": "2025-08-27",
     "energy_produced_mwh": 72.85,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 99.11
+    "availability_pct": 98.6
   },
   {
     "project": "riverbend",
@@ -8523,35 +8523,35 @@
     "date": "2025-08-31",
     "energy_produced_mwh": 52.05,
     "energy_expected_mwh": 60.48,
-    "availability_pct": 99.0
+    "availability_pct": 98.49
   },
   {
     "project": "riverbend",
     "date": "2025-09-01",
     "energy_produced_mwh": 49.12,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.93
   },
   {
     "project": "riverbend",
     "date": "2025-09-02",
     "energy_produced_mwh": 45.98,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.07
+    "availability_pct": 97.48
   },
   {
     "project": "riverbend",
     "date": "2025-09-03",
     "energy_produced_mwh": 55.02,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 97.72
+    "availability_pct": 97.13
   },
   {
     "project": "riverbend",
     "date": "2025-09-04",
     "energy_produced_mwh": 63.23,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.19
+    "availability_pct": 97.61
   },
   {
     "project": "riverbend",
@@ -8572,21 +8572,21 @@
     "date": "2025-09-07",
     "energy_produced_mwh": 59.2,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 99.71
+    "availability_pct": 99.12
   },
   {
     "project": "riverbend",
     "date": "2025-09-08",
     "energy_produced_mwh": 39.54,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.87
+    "availability_pct": 98.28
   },
   {
     "project": "riverbend",
     "date": "2025-09-09",
     "energy_produced_mwh": 69.3,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 99.78
+    "availability_pct": 99.19
   },
   {
     "project": "riverbend",
@@ -8600,7 +8600,7 @@
     "date": "2025-09-11",
     "energy_produced_mwh": 53.06,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.29
+    "availability_pct": 97.7
   },
   {
     "project": "riverbend",
@@ -8614,7 +8614,7 @@
     "date": "2025-09-13",
     "energy_produced_mwh": 52.26,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 99.94
+    "availability_pct": 99.35
   },
   {
     "project": "riverbend",
@@ -8628,14 +8628,14 @@
     "date": "2025-09-15",
     "energy_produced_mwh": 50.02,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 97.53
+    "availability_pct": 96.94
   },
   {
     "project": "riverbend",
     "date": "2025-09-16",
     "energy_produced_mwh": 62.3,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 99.38
+    "availability_pct": 98.8
   },
   {
     "project": "riverbend",
@@ -8649,7 +8649,7 @@
     "date": "2025-09-18",
     "energy_produced_mwh": 50.89,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.44
   },
   {
     "project": "riverbend",
@@ -8677,7 +8677,7 @@
     "date": "2025-09-22",
     "energy_produced_mwh": 43.33,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 99.56
+    "availability_pct": 98.97
   },
   {
     "project": "riverbend",
@@ -8691,14 +8691,14 @@
     "date": "2025-09-24",
     "energy_produced_mwh": 63.53,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.58
   },
   {
     "project": "riverbend",
     "date": "2025-09-25",
     "energy_produced_mwh": 54.3,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.78
+    "availability_pct": 98.19
   },
   {
     "project": "riverbend",
@@ -8712,28 +8712,28 @@
     "date": "2025-09-27",
     "energy_produced_mwh": 64.1,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.45
+    "availability_pct": 97.86
   },
   {
     "project": "riverbend",
     "date": "2025-09-28",
     "energy_produced_mwh": 58.78,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.04
+    "availability_pct": 97.45
   },
   {
     "project": "riverbend",
     "date": "2025-09-29",
     "energy_produced_mwh": 47.92,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.51
   },
   {
     "project": "riverbend",
     "date": "2025-09-30",
     "energy_produced_mwh": 36.53,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 97.97
+    "availability_pct": 97.38
   },
   {
     "project": "riverbend",
@@ -8754,21 +8754,21 @@
     "date": "2025-10-03",
     "energy_produced_mwh": 44.24,
     "energy_expected_mwh": 39.31,
-    "availability_pct": 98.39
+    "availability_pct": 97.1
   },
   {
     "project": "riverbend",
     "date": "2025-10-04",
     "energy_produced_mwh": 42.57,
     "energy_expected_mwh": 39.31,
-    "availability_pct": 99.58
+    "availability_pct": 98.29
   },
   {
     "project": "riverbend",
     "date": "2025-10-05",
     "energy_produced_mwh": 27.59,
     "energy_expected_mwh": 39.31,
-    "availability_pct": 99.63
+    "availability_pct": 98.34
   },
   {
     "project": "riverbend",
@@ -8782,7 +8782,7 @@
     "date": "2025-10-07",
     "energy_produced_mwh": 44.63,
     "energy_expected_mwh": 39.31,
-    "availability_pct": 100.0
+    "availability_pct": 99.27
   },
   {
     "project": "riverbend",
@@ -8796,14 +8796,14 @@
     "date": "2025-10-09",
     "energy_produced_mwh": 25.99,
     "energy_expected_mwh": 39.31,
-    "availability_pct": 99.9
+    "availability_pct": 98.61
   },
   {
     "project": "riverbend",
     "date": "2025-10-10",
     "energy_produced_mwh": 53.86,
     "energy_expected_mwh": 39.31,
-    "availability_pct": 100.0
+    "availability_pct": 98.99
   },
   {
     "project": "riverbend",
@@ -8824,7 +8824,7 @@
     "date": "2025-10-13",
     "energy_produced_mwh": 33.3,
     "energy_expected_mwh": 39.31,
-    "availability_pct": 98.83
+    "availability_pct": 97.54
   },
   {
     "project": "riverbend",
@@ -8859,14 +8859,14 @@
     "date": "2025-10-18",
     "energy_produced_mwh": 52.55,
     "energy_expected_mwh": 39.31,
-    "availability_pct": 100.0
+    "availability_pct": 99.65
   },
   {
     "project": "riverbend",
     "date": "2025-10-19",
     "energy_produced_mwh": 40.06,
     "energy_expected_mwh": 39.31,
-    "availability_pct": 98.36
+    "availability_pct": 97.06
   },
   {
     "project": "riverbend",
@@ -8880,7 +8880,7 @@
     "date": "2025-10-21",
     "energy_produced_mwh": 54.59,
     "energy_expected_mwh": 39.31,
-    "availability_pct": 99.57
+    "availability_pct": 98.28
   },
   {
     "project": "riverbend",
@@ -8894,7 +8894,7 @@
     "date": "2025-10-23",
     "energy_produced_mwh": 31.03,
     "energy_expected_mwh": 39.31,
-    "availability_pct": 99.68
+    "availability_pct": 98.39
   },
   {
     "project": "riverbend",
@@ -8908,14 +8908,14 @@
     "date": "2025-10-25",
     "energy_produced_mwh": 33.67,
     "energy_expected_mwh": 39.31,
-    "availability_pct": 100.0
+    "availability_pct": 99.76
   },
   {
     "project": "riverbend",
     "date": "2025-10-26",
     "energy_produced_mwh": 40.78,
     "energy_expected_mwh": 39.31,
-    "availability_pct": 99.81
+    "availability_pct": 98.51
   },
   {
     "project": "riverbend",
@@ -8936,14 +8936,14 @@
     "date": "2025-10-29",
     "energy_produced_mwh": 44.62,
     "energy_expected_mwh": 39.31,
-    "availability_pct": 99.41
+    "availability_pct": 98.12
   },
   {
     "project": "riverbend",
     "date": "2025-10-30",
     "energy_produced_mwh": 35.19,
     "energy_expected_mwh": 39.31,
-    "availability_pct": 99.13
+    "availability_pct": 97.84
   },
   {
     "project": "riverbend",
@@ -8971,7 +8971,7 @@
     "date": "2025-11-03",
     "energy_produced_mwh": 33.42,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 99.62
+    "availability_pct": 98.23
   },
   {
     "project": "riverbend",
@@ -8985,28 +8985,28 @@
     "date": "2025-11-05",
     "energy_produced_mwh": 28.6,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.91
   },
   {
     "project": "riverbend",
     "date": "2025-11-06",
     "energy_produced_mwh": 28.3,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 99.34
+    "availability_pct": 97.95
   },
   {
     "project": "riverbend",
     "date": "2025-11-07",
     "energy_produced_mwh": 39.01,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.66
   },
   {
     "project": "riverbend",
     "date": "2025-11-08",
     "energy_produced_mwh": 27.21,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 99.56
+    "availability_pct": 98.16
   },
   {
     "project": "riverbend",
@@ -9020,14 +9020,14 @@
     "date": "2025-11-10",
     "energy_produced_mwh": 24.86,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 99.71
+    "availability_pct": 98.32
   },
   {
     "project": "riverbend",
     "date": "2025-11-11",
     "energy_produced_mwh": 29.09,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.1
   },
   {
     "project": "riverbend",
@@ -9041,7 +9041,7 @@
     "date": "2025-11-13",
     "energy_produced_mwh": 29.25,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 99.97
+    "availability_pct": 98.58
   },
   {
     "project": "riverbend",
@@ -9055,28 +9055,28 @@
     "date": "2025-11-15",
     "energy_produced_mwh": 21.09,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 99.91
+    "availability_pct": 98.52
   },
   {
     "project": "riverbend",
     "date": "2025-11-16",
     "energy_produced_mwh": 23.6,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.19
   },
   {
     "project": "riverbend",
     "date": "2025-11-17",
     "energy_produced_mwh": 25.65,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 99.19
+    "availability_pct": 97.8
   },
   {
     "project": "riverbend",
     "date": "2025-11-18",
     "energy_produced_mwh": 30.6,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.9
   },
   {
     "project": "riverbend",
@@ -9090,14 +9090,14 @@
     "date": "2025-11-20",
     "energy_produced_mwh": 35.2,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 100.0
+    "availability_pct": 98.7
   },
   {
     "project": "riverbend",
     "date": "2025-11-21",
     "energy_produced_mwh": 30.3,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.29
   },
   {
     "project": "riverbend",
@@ -9111,7 +9111,7 @@
     "date": "2025-11-23",
     "energy_produced_mwh": 29.33,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.6
   },
   {
     "project": "riverbend",
@@ -9125,7 +9125,7 @@
     "date": "2025-11-25",
     "energy_produced_mwh": 33.43,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 98.41
+    "availability_pct": 97.02
   },
   {
     "project": "riverbend",
@@ -9146,7 +9146,7 @@
     "date": "2025-11-28",
     "energy_produced_mwh": 24.98,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.03
   },
   {
     "project": "riverbend",
@@ -9160,42 +9160,42 @@
     "date": "2025-11-30",
     "energy_produced_mwh": 34.06,
     "energy_expected_mwh": 28.12,
-    "availability_pct": 100.0
+    "availability_pct": 98.62
   },
   {
     "project": "riverbend",
     "date": "2025-12-01",
     "energy_produced_mwh": 22.73,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 98.18
+    "availability_pct": 97.87
   },
   {
     "project": "riverbend",
     "date": "2025-12-02",
     "energy_produced_mwh": 17.06,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 98.95
+    "availability_pct": 98.65
   },
   {
     "project": "riverbend",
     "date": "2025-12-03",
     "energy_produced_mwh": 19.37,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 98.83
+    "availability_pct": 98.53
   },
   {
     "project": "riverbend",
     "date": "2025-12-04",
     "energy_produced_mwh": 23.13,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 99.38
+    "availability_pct": 99.08
   },
   {
     "project": "riverbend",
     "date": "2025-12-05",
     "energy_produced_mwh": 25.87,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 99.69
+    "availability_pct": 99.38
   },
   {
     "project": "riverbend",
@@ -9216,7 +9216,7 @@
     "date": "2025-12-08",
     "energy_produced_mwh": 14.52,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 97.82
+    "availability_pct": 97.52
   },
   {
     "project": "riverbend",
@@ -9237,14 +9237,14 @@
     "date": "2025-12-11",
     "energy_produced_mwh": 15.02,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 98.14
+    "availability_pct": 97.83
   },
   {
     "project": "riverbend",
     "date": "2025-12-12",
     "energy_produced_mwh": 26.3,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 99.06
+    "availability_pct": 98.76
   },
   {
     "project": "riverbend",
@@ -9258,14 +9258,14 @@
     "date": "2025-12-14",
     "energy_produced_mwh": 18.51,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 97.37
+    "availability_pct": 97.07
   },
   {
     "project": "riverbend",
     "date": "2025-12-15",
     "energy_produced_mwh": 26.25,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 99.15
+    "availability_pct": 98.85
   },
   {
     "project": "riverbend",
@@ -9300,7 +9300,7 @@
     "date": "2025-12-20",
     "energy_produced_mwh": 22.79,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 99.06
+    "availability_pct": 98.76
   },
   {
     "project": "riverbend",
@@ -9314,7 +9314,7 @@
     "date": "2025-12-22",
     "energy_produced_mwh": 19.98,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 98.76
+    "availability_pct": 98.46
   },
   {
     "project": "riverbend",
@@ -9328,7 +9328,7 @@
     "date": "2025-12-24",
     "energy_produced_mwh": 24.85,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 100.0
+    "availability_pct": 99.72
   },
   {
     "project": "riverbend",
@@ -9342,14 +9342,14 @@
     "date": "2025-12-26",
     "energy_produced_mwh": 18.14,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 99.79
+    "availability_pct": 99.48
   },
   {
     "project": "riverbend",
     "date": "2025-12-27",
     "energy_produced_mwh": 17.37,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 97.25
+    "availability_pct": 96.94
   },
   {
     "project": "riverbend",
@@ -9370,7 +9370,7 @@
     "date": "2025-12-30",
     "energy_produced_mwh": 19.41,
     "energy_expected_mwh": 21.17,
-    "availability_pct": 98.78
+    "availability_pct": 98.48
   },
   {
     "project": "riverbend",
@@ -9384,28 +9384,28 @@
     "date": "2026-01-01",
     "energy_produced_mwh": 27.06,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 100.0
+    "availability_pct": 98.64
   },
   {
     "project": "riverbend",
     "date": "2026-01-02",
     "energy_produced_mwh": 27.65,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 99.99
+    "availability_pct": 98.53
   },
   {
     "project": "riverbend",
     "date": "2026-01-03",
     "energy_produced_mwh": 24.01,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 98.47
+    "availability_pct": 97.02
   },
   {
     "project": "riverbend",
     "date": "2026-01-04",
     "energy_produced_mwh": 18.2,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 99.47
+    "availability_pct": 98.02
   },
   {
     "project": "riverbend",
@@ -9419,21 +9419,21 @@
     "date": "2026-01-06",
     "energy_produced_mwh": 25.79,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 99.26
+    "availability_pct": 97.8
   },
   {
     "project": "riverbend",
     "date": "2026-01-07",
     "energy_produced_mwh": 23.42,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 100.0
+    "availability_pct": 98.77
   },
   {
     "project": "riverbend",
     "date": "2026-01-08",
     "energy_produced_mwh": 33.46,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 100.0
+    "availability_pct": 99.68
   },
   {
     "project": "riverbend",
@@ -9454,7 +9454,7 @@
     "date": "2026-01-11",
     "energy_produced_mwh": 18.17,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 99.51
+    "availability_pct": 98.05
   },
   {
     "project": "riverbend",
@@ -9468,7 +9468,7 @@
     "date": "2026-01-13",
     "energy_produced_mwh": 20.61,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 99.85
+    "availability_pct": 98.39
   },
   {
     "project": "riverbend",
@@ -9489,14 +9489,14 @@
     "date": "2026-01-16",
     "energy_produced_mwh": 28.6,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 100.0
+    "availability_pct": 99.74
   },
   {
     "project": "riverbend",
     "date": "2026-01-17",
     "energy_produced_mwh": 25.82,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 100.0
+    "availability_pct": 98.84
   },
   {
     "project": "riverbend",
@@ -9531,28 +9531,28 @@
     "date": "2026-01-22",
     "energy_produced_mwh": 19.88,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 100.0
+    "availability_pct": 98.56
   },
   {
     "project": "riverbend",
     "date": "2026-01-23",
     "energy_produced_mwh": 20.7,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 98.41
+    "availability_pct": 96.95
   },
   {
     "project": "riverbend",
     "date": "2026-01-24",
     "energy_produced_mwh": 19.42,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 100.0
+    "availability_pct": 99.75
   },
   {
     "project": "riverbend",
     "date": "2026-01-25",
     "energy_produced_mwh": 25.09,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 98.89
+    "availability_pct": 97.44
   },
   {
     "project": "riverbend",
@@ -9580,7 +9580,7 @@
     "date": "2026-01-29",
     "energy_produced_mwh": 25.74,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 99.75
+    "availability_pct": 98.3
   },
   {
     "project": "riverbend",
@@ -9594,21 +9594,21 @@
     "date": "2026-01-31",
     "energy_produced_mwh": 28.66,
     "energy_expected_mwh": 24.19,
-    "availability_pct": 99.51
+    "availability_pct": 98.06
   },
   {
     "project": "riverbend",
     "date": "2026-02-01",
     "energy_produced_mwh": 34.67,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 98.45
+    "availability_pct": 98.02
   },
   {
     "project": "riverbend",
     "date": "2026-02-02",
     "energy_produced_mwh": 33.23,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 98.99
+    "availability_pct": 98.55
   },
   {
     "project": "riverbend",
@@ -9622,21 +9622,21 @@
     "date": "2026-02-04",
     "energy_produced_mwh": 22.72,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 99.11
+    "availability_pct": 98.67
   },
   {
     "project": "riverbend",
     "date": "2026-02-05",
     "energy_produced_mwh": 28.16,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 97.34
+    "availability_pct": 96.9
   },
   {
     "project": "riverbend",
     "date": "2026-02-06",
     "energy_produced_mwh": 35.67,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 98.45
+    "availability_pct": 98.01
   },
   {
     "project": "riverbend",
@@ -9671,7 +9671,7 @@
     "date": "2026-02-11",
     "energy_produced_mwh": 31.84,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 98.0
+    "availability_pct": 97.56
   },
   {
     "project": "riverbend",
@@ -9685,7 +9685,7 @@
     "date": "2026-02-13",
     "energy_produced_mwh": 29.57,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 98.55
+    "availability_pct": 98.11
   },
   {
     "project": "riverbend",
@@ -9706,7 +9706,7 @@
     "date": "2026-02-16",
     "energy_produced_mwh": 35.51,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 99.53
+    "availability_pct": 99.1
   },
   {
     "project": "riverbend",
@@ -9727,14 +9727,14 @@
     "date": "2026-02-19",
     "energy_produced_mwh": 27.88,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 97.7
+    "availability_pct": 97.26
   },
   {
     "project": "riverbend",
     "date": "2026-02-20",
     "energy_produced_mwh": 40.03,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 99.83
+    "availability_pct": 99.4
   },
   {
     "project": "riverbend",
@@ -9748,7 +9748,7 @@
     "date": "2026-02-22",
     "energy_produced_mwh": 25.33,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 97.76
+    "availability_pct": 97.32
   },
   {
     "project": "riverbend",
@@ -9769,7 +9769,7 @@
     "date": "2026-02-25",
     "energy_produced_mwh": 28.03,
     "energy_expected_mwh": 33.48,
-    "availability_pct": 98.83
+    "availability_pct": 98.39
   },
   {
     "project": "riverbend",
@@ -9797,14 +9797,14 @@
     "date": "2026-03-01",
     "energy_produced_mwh": 39.94,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 99.42
+    "availability_pct": 98.79
   },
   {
     "project": "riverbend",
     "date": "2026-03-02",
     "energy_produced_mwh": 53.08,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 99.76
+    "availability_pct": 99.13
   },
   {
     "project": "riverbend",
@@ -9818,21 +9818,21 @@
     "date": "2026-03-04",
     "energy_produced_mwh": 46.96,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 98.81
+    "availability_pct": 98.18
   },
   {
     "project": "riverbend",
     "date": "2026-03-05",
     "energy_produced_mwh": 56.58,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 99.05
+    "availability_pct": 98.42
   },
   {
     "project": "riverbend",
     "date": "2026-03-06",
     "energy_produced_mwh": 54.39,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 99.91
+    "availability_pct": 99.28
   },
   {
     "project": "riverbend",
@@ -9846,7 +9846,7 @@
     "date": "2026-03-08",
     "energy_produced_mwh": 50.2,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 99.34
+    "availability_pct": 98.71
   },
   {
     "project": "riverbend",
@@ -9874,14 +9874,14 @@
     "date": "2026-03-12",
     "energy_produced_mwh": 48.7,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 97.75
+    "availability_pct": 97.13
   },
   {
     "project": "riverbend",
     "date": "2026-03-13",
     "energy_produced_mwh": 35.24,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 99.73
+    "availability_pct": 99.1
   },
   {
     "project": "riverbend",
@@ -9937,91 +9937,91 @@
     "date": "2026-03-21",
     "energy_produced_mwh": 43.06,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 100.0
+    "availability_pct": 99.4
   },
   {
     "project": "riverbend",
     "date": "2026-03-22",
     "energy_produced_mwh": 58.68,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 98.89
+    "availability_pct": 98.26
   },
   {
     "project": "riverbend",
     "date": "2026-03-23",
     "energy_produced_mwh": 48.69,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 97.59
+    "availability_pct": 96.97
   },
   {
     "project": "riverbend",
     "date": "2026-03-24",
     "energy_produced_mwh": 48.69,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 99.35
+    "availability_pct": 98.73
   },
   {
     "project": "riverbend",
     "date": "2026-03-25",
     "energy_produced_mwh": 31.73,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 98.42
+    "availability_pct": 97.8
   },
   {
     "project": "riverbend",
     "date": "2026-03-26",
     "energy_produced_mwh": 39.7,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 97.83
+    "availability_pct": 97.2
   },
   {
     "project": "riverbend",
     "date": "2026-03-27",
     "energy_produced_mwh": 47.7,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 100.0
+    "availability_pct": 99.57
   },
   {
     "project": "riverbend",
     "date": "2026-03-28",
     "energy_produced_mwh": 45.8,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 98.86
+    "availability_pct": 98.23
   },
   {
     "project": "riverbend",
     "date": "2026-03-29",
     "energy_produced_mwh": 36.61,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 98.32
+    "availability_pct": 97.69
   },
   {
     "project": "riverbend",
     "date": "2026-03-30",
     "energy_produced_mwh": 33.13,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 97.82
+    "availability_pct": 97.2
   },
   {
     "project": "riverbend",
     "date": "2026-03-31",
     "energy_produced_mwh": 35.59,
     "energy_expected_mwh": 42.34,
-    "availability_pct": 100.0
+    "availability_pct": 99.91
   },
   {
     "project": "riverbend",
     "date": "2026-04-01",
     "energy_produced_mwh": 62.24,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 99.01
+    "availability_pct": 98.38
   },
   {
     "project": "riverbend",
     "date": "2026-04-02",
     "energy_produced_mwh": 43.73,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 99.47
+    "availability_pct": 98.84
   },
   {
     "project": "riverbend",
@@ -10035,14 +10035,14 @@
     "date": "2026-04-04",
     "energy_produced_mwh": 49.49,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 99.45
+    "availability_pct": 98.82
   },
   {
     "project": "riverbend",
     "date": "2026-04-05",
     "energy_produced_mwh": 49.21,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 99.36
+    "availability_pct": 98.73
   },
   {
     "project": "riverbend",
@@ -10056,21 +10056,21 @@
     "date": "2026-04-07",
     "energy_produced_mwh": 46.89,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 97.8
+    "availability_pct": 97.17
   },
   {
     "project": "riverbend",
     "date": "2026-04-08",
     "energy_produced_mwh": 58.89,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 99.77
+    "availability_pct": 99.14
   },
   {
     "project": "riverbend",
     "date": "2026-04-09",
     "energy_produced_mwh": 69.39,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.2
+    "availability_pct": 97.57
   },
   {
     "project": "riverbend",
@@ -10084,14 +10084,14 @@
     "date": "2026-04-11",
     "energy_produced_mwh": 72.75,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 97.61
+    "availability_pct": 96.98
   },
   {
     "project": "riverbend",
     "date": "2026-04-12",
     "energy_produced_mwh": 53.59,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.6
   },
   {
     "project": "riverbend",
@@ -10105,14 +10105,14 @@
     "date": "2026-04-14",
     "energy_produced_mwh": 45.0,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 99.08
+    "availability_pct": 98.45
   },
   {
     "project": "riverbend",
     "date": "2026-04-15",
     "energy_produced_mwh": 57.5,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.38
+    "availability_pct": 97.75
   },
   {
     "project": "riverbend",
@@ -10126,7 +10126,7 @@
     "date": "2026-04-17",
     "energy_produced_mwh": 51.51,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.55
+    "availability_pct": 97.92
   },
   {
     "project": "riverbend",
@@ -10140,7 +10140,7 @@
     "date": "2026-04-19",
     "energy_produced_mwh": 41.62,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 97.58
+    "availability_pct": 96.95
   },
   {
     "project": "riverbend",
@@ -10154,21 +10154,21 @@
     "date": "2026-04-21",
     "energy_produced_mwh": 66.08,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 97.64
+    "availability_pct": 97.01
   },
   {
     "project": "riverbend",
     "date": "2026-04-22",
     "energy_produced_mwh": 69.3,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.92
+    "availability_pct": 98.29
   },
   {
     "project": "riverbend",
     "date": "2026-04-23",
     "energy_produced_mwh": 57.67,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 98.13
+    "availability_pct": 97.5
   },
   {
     "project": "riverbend",
@@ -10182,28 +10182,28 @@
     "date": "2026-04-25",
     "energy_produced_mwh": 44.13,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 100.0
+    "availability_pct": 99.65
   },
   {
     "project": "riverbend",
     "date": "2026-04-26",
     "energy_produced_mwh": 58.45,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 99.01
+    "availability_pct": 98.38
   },
   {
     "project": "riverbend",
     "date": "2026-04-27",
     "energy_produced_mwh": 52.54,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 99.89
+    "availability_pct": 99.26
   },
   {
     "project": "riverbend",
     "date": "2026-04-28",
     "energy_produced_mwh": 41.18,
     "energy_expected_mwh": 53.12,
-    "availability_pct": 99.64
+    "availability_pct": 99.01
   },
   {
     "project": "riverbend",

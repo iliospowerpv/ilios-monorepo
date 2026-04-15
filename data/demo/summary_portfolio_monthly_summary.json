@@ -2,193 +2,193 @@
   {
     "month": "2024-05-01",
     "total_production_mwh": 16761.0,
-    "total_revenue": 1050137.13,
+    "total_revenue": 873738.81,
     "total_expense": 54474.67,
-    "total_ebitda": 995662.46,
+    "total_ebitda": 819264.14,
     "avg_availability": 98.46
   },
   {
     "month": "2024-06-01",
     "total_production_mwh": 18021.6,
-    "total_revenue": 1106027.8,
+    "total_revenue": 965901.67,
     "total_expense": 53365.62,
-    "total_ebitda": 1052662.18,
+    "total_ebitda": 912536.05,
     "avg_availability": 99.11
   },
   {
     "month": "2024-07-01",
     "total_production_mwh": 19112.1,
-    "total_revenue": 1112805.14,
+    "total_revenue": 1012443.53,
     "total_expense": 53544.05,
-    "total_ebitda": 1059261.09,
+    "total_ebitda": 958899.48,
     "avg_availability": 98.44
   },
   {
     "month": "2024-08-01",
     "total_production_mwh": 16925.0,
-    "total_revenue": 1099239.44,
+    "total_revenue": 921324.41,
     "total_expense": 53650.43,
-    "total_ebitda": 1045589.01,
+    "total_ebitda": 867673.98,
     "avg_availability": 90.59
   },
   {
     "month": "2024-09-01",
     "total_production_mwh": 13467.8,
-    "total_revenue": 864325.43,
+    "total_revenue": 716478.28,
     "total_expense": 55050.91,
-    "total_ebitda": 809274.52,
+    "total_ebitda": 661427.37,
     "avg_availability": 85.13
   },
   {
     "month": "2024-10-01",
     "total_production_mwh": 12210.0,
-    "total_revenue": 777679.2,
+    "total_revenue": 666780.46,
     "total_expense": 52193.53,
-    "total_ebitda": 725485.67,
+    "total_ebitda": 614586.93,
     "avg_availability": 90.44
   },
   {
     "month": "2024-11-01",
     "total_production_mwh": 11259.7,
-    "total_revenue": 754011.93,
+    "total_revenue": 595605.88,
     "total_expense": 52937.46,
-    "total_ebitda": 701074.47,
-    "avg_availability": 99.38
+    "total_ebitda": 542668.42,
+    "avg_availability": 99.34
   },
   {
     "month": "2024-12-01",
     "total_production_mwh": 9758.4,
-    "total_revenue": 672006.85,
+    "total_revenue": 518009.26,
     "total_expense": 53785.42,
-    "total_ebitda": 618221.43,
-    "avg_availability": 100.02
+    "total_ebitda": 464223.84,
+    "avg_availability": 99.87
   },
   {
     "month": "2025-01-01",
     "total_production_mwh": 10625.8,
-    "total_revenue": 751306.86,
+    "total_revenue": 565279.27,
     "total_expense": 52486.57,
-    "total_ebitda": 698820.29,
-    "avg_availability": 100.09
+    "total_ebitda": 512792.7,
+    "avg_availability": 99.89
   },
   {
     "month": "2025-02-01",
     "total_production_mwh": 12047.5,
-    "total_revenue": 777815.72,
+    "total_revenue": 644478.06,
     "total_expense": 53172.19,
-    "total_ebitda": 724643.53,
-    "avg_availability": 100.4
+    "total_ebitda": 591305.87,
+    "avg_availability": 99.9
   },
   {
     "month": "2025-03-01",
     "total_production_mwh": 14435.9,
-    "total_revenue": 979309.52,
+    "total_revenue": 780452.12,
     "total_expense": 53349.66,
-    "total_ebitda": 925959.86,
-    "avg_availability": 100.06
+    "total_ebitda": 727102.46,
+    "avg_availability": 99.8
   },
   {
     "month": "2025-04-01",
     "total_production_mwh": 15994.2,
-    "total_revenue": 1050191.37,
+    "total_revenue": 873910.17,
     "total_expense": 53801.92,
-    "total_ebitda": 996389.45,
-    "avg_availability": 100.56
+    "total_ebitda": 820108.25,
+    "avg_availability": 99.9
   },
   {
     "month": "2025-05-01",
     "total_production_mwh": 16944.0,
-    "total_revenue": 1007262.63,
+    "total_revenue": 905902.07,
     "total_expense": 53386.83,
-    "total_ebitda": 953875.8,
+    "total_ebitda": 852515.24,
     "avg_availability": 99.77
   },
   {
     "month": "2025-06-01",
     "total_production_mwh": 18072.3,
-    "total_revenue": 1061465.54,
+    "total_revenue": 967444.74,
     "total_expense": 53587.58,
-    "total_ebitda": 1007877.96,
-    "avg_availability": 100.46
+    "total_ebitda": 913857.16,
+    "avg_availability": 99.9
   },
   {
     "month": "2025-07-01",
     "total_production_mwh": 15493.3,
-    "total_revenue": 958474.29,
+    "total_revenue": 824781.05,
     "total_expense": 53245.1,
-    "total_ebitda": 905229.19,
+    "total_ebitda": 771535.95,
     "avg_availability": 85.0
   },
   {
     "month": "2025-08-01",
     "total_production_mwh": 18159.4,
-    "total_revenue": 1160387.49,
+    "total_revenue": 992795.52,
     "total_expense": 54034.07,
-    "total_ebitda": 1106353.42,
-    "avg_availability": 100.31
+    "total_ebitda": 938761.45,
+    "avg_availability": 99.9
   },
   {
     "month": "2025-09-01",
     "total_production_mwh": 15896.9,
-    "total_revenue": 1002783.6,
+    "total_revenue": 874838.86,
     "total_expense": 53697.73,
-    "total_ebitda": 949085.87,
-    "avg_availability": 100.68
+    "total_ebitda": 821141.13,
+    "avg_availability": 99.9
   },
   {
     "month": "2025-10-01",
     "total_production_mwh": 13728.3,
-    "total_revenue": 927262.37,
+    "total_revenue": 742570.17,
     "total_expense": 52832.36,
-    "total_ebitda": 874430.01,
-    "avg_availability": 101.19
+    "total_ebitda": 689737.81,
+    "avg_availability": 99.9
   },
   {
     "month": "2025-11-01",
     "total_production_mwh": 11660.3,
-    "total_revenue": 796184.17,
+    "total_revenue": 607268.2,
     "total_expense": 53908.58,
-    "total_ebitda": 742275.59,
-    "avg_availability": 101.29
+    "total_ebitda": 553359.62,
+    "avg_availability": 99.9
   },
   {
     "month": "2025-12-01",
     "total_production_mwh": 9722.9,
-    "total_revenue": 662945.25,
+    "total_revenue": 514558.41,
     "total_expense": 53931.56,
-    "total_ebitda": 609013.69,
-    "avg_availability": 100.55
+    "total_ebitda": 460626.85,
+    "avg_availability": 99.9
   },
   {
     "month": "2026-01-01",
     "total_production_mwh": 10858.8,
-    "total_revenue": 717597.34,
+    "total_revenue": 578278.93,
     "total_expense": 53246.27,
-    "total_ebitda": 664351.07,
-    "avg_availability": 101.42
+    "total_ebitda": 525032.66,
+    "avg_availability": 99.9
   },
   {
     "month": "2026-02-01",
     "total_production_mwh": 11812.8,
-    "total_revenue": 774227.24,
+    "total_revenue": 619609.14,
     "total_expense": 52461.49,
-    "total_ebitda": 721765.75,
-    "avg_availability": 100.57
+    "total_ebitda": 567147.65,
+    "avg_availability": 99.9
   },
   {
     "month": "2026-03-01",
     "total_production_mwh": 14462.2,
-    "total_revenue": 951280.52,
+    "total_revenue": 768454.92,
     "total_expense": 54189.15,
-    "total_ebitda": 897091.37,
-    "avg_availability": 100.78
+    "total_ebitda": 714265.77,
+    "avg_availability": 99.9
   },
   {
     "month": "2026-04-01",
     "total_production_mwh": 15945.0,
-    "total_revenue": 1014472.74,
+    "total_revenue": 859326.95,
     "total_expense": 53434.52,
-    "total_ebitda": 961038.22,
-    "avg_availability": 100.91
+    "total_ebitda": 805892.43,
+    "avg_availability": 99.9
   }
 ]

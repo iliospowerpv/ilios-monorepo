@@ -4,7 +4,7 @@
     "invoice_id": "INV-AR-5001",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 866529.72,
+    "amount": 690131.4,
     "payment_date": "2024-05-20",
     "payment_method": "wire_transfer",
     "reference": "REF-7001-DE"
@@ -24,7 +24,7 @@
     "invoice_id": "INV-AR-5003",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 912776.58,
+    "amount": 772650.45,
     "payment_date": "2024-06-27",
     "payment_method": "ach",
     "reference": "REF-7003-DE"
@@ -44,7 +44,7 @@
     "invoice_id": "INV-AR-5005",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 910042.18,
+    "amount": 809680.57,
     "payment_date": "2024-07-20",
     "payment_method": "wire_transfer",
     "reference": "REF-7005-DE"
@@ -64,7 +64,7 @@
     "invoice_id": "INV-AR-5007",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 922952.37,
+    "amount": 745037.34,
     "payment_date": "2024-09-05",
     "payment_method": "wire_transfer",
     "reference": "REF-7007-DE"
@@ -84,7 +84,7 @@
     "invoice_id": "INV-AR-5009",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 730378.64,
+    "amount": 582531.49,
     "payment_date": "2024-10-01",
     "payment_method": "check",
     "reference": "REF-7009-DE"
@@ -104,7 +104,7 @@
     "invoice_id": "INV-AR-5011",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 658788.3,
+    "amount": 547889.56,
     "payment_date": "2024-10-18",
     "payment_method": "wire_transfer",
     "reference": "REF-7011-DE"
@@ -124,7 +124,7 @@
     "invoice_id": "INV-AR-5013",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 663476.04,
+    "amount": 505069.99,
     "payment_date": "2024-11-30",
     "payment_method": "check",
     "reference": "REF-7013-DE"
@@ -144,7 +144,7 @@
     "invoice_id": "INV-AR-5015",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 601223.06,
+    "amount": 447225.47,
     "payment_date": "2025-01-04",
     "payment_method": "wire_transfer",
     "reference": "REF-7015-DE"
@@ -164,7 +164,7 @@
     "invoice_id": "INV-AR-5017",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 670757.73,
+    "amount": 484730.14,
     "payment_date": "2025-01-29",
     "payment_method": "check",
     "reference": "REF-7017-DE"
@@ -184,7 +184,7 @@
     "invoice_id": "INV-AR-5019",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 681587.96,
+    "amount": 548250.3,
     "payment_date": "2025-02-27",
     "payment_method": "wire_transfer",
     "reference": "REF-7019-DE"
@@ -204,7 +204,7 @@
     "invoice_id": "INV-AR-5021",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 837104.76,
+    "amount": 638247.36,
     "payment_date": "2025-04-04",
     "payment_method": "wire_transfer",
     "reference": "REF-7021-DE"
@@ -224,7 +224,7 @@
     "invoice_id": "INV-AR-5023",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 877967.36,
+    "amount": 701686.16,
     "payment_date": "2025-04-23",
     "payment_method": "check",
     "reference": "REF-7023-DE"
@@ -244,7 +244,7 @@
     "invoice_id": "INV-AR-5025",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 809020.5,
+    "amount": 707659.94,
     "payment_date": "2025-05-29",
     "payment_method": "check",
     "reference": "REF-7025-DE"
@@ -264,7 +264,7 @@
     "invoice_id": "INV-AR-5027",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 865518.87,
+    "amount": 771498.07,
     "payment_date": "2025-06-17",
     "payment_method": "wire_transfer",
     "reference": "REF-7027-DE"
@@ -284,7 +284,7 @@
     "invoice_id": "INV-AR-5029",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 788555.52,
+    "amount": 654862.28,
     "payment_date": "2025-07-27",
     "payment_method": "wire_transfer",
     "reference": "REF-7029-DE"
@@ -304,7 +304,7 @@
     "invoice_id": "INV-AR-5031",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 954709.34,
+    "amount": 787117.37,
     "payment_date": "2025-08-18",
     "payment_method": "wire_transfer",
     "reference": "REF-7031-DE"
@@ -324,7 +324,7 @@
     "invoice_id": "INV-AR-5033",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 832588.84,
+    "amount": 704644.1,
     "payment_date": "2025-09-30",
     "payment_method": "check",
     "reference": "REF-7033-DE"
@@ -344,7 +344,7 @@
     "invoice_id": "INV-AR-5035",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 800412.9,
+    "amount": 615720.7,
     "payment_date": "2025-11-04",
     "payment_method": "wire_transfer",
     "reference": "REF-7035-DE"
@@ -364,7 +364,7 @@
     "invoice_id": "INV-AR-5037",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 704960.01,
+    "amount": 516044.04,
     "payment_date": "2025-12-06",
     "payment_method": "check",
     "reference": "REF-7037-DE"
@@ -384,7 +384,7 @@
     "invoice_id": "INV-AR-5039",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 591554.14,
+    "amount": 443167.3,
     "payment_date": "2026-01-05",
     "payment_method": "check",
     "reference": "REF-7039-DE"
@@ -404,7 +404,7 @@
     "invoice_id": "INV-AR-5041",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 634282.09,
+    "amount": 494963.68,
     "payment_date": "2026-02-04",
     "payment_method": "wire_transfer",
     "reference": "REF-7041-DE"
@@ -424,7 +424,7 @@
     "invoice_id": "INV-AR-5043",
     "project": "desert_bloom",
     "type": "accounts_receivable",
-    "amount": 672572.94,
+    "amount": 517954.84,
     "payment_date": "2026-02-16",
     "payment_method": "ach",
     "reference": "REF-7043-DE"

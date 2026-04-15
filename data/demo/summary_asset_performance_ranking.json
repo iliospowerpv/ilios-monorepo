@@ -4,15 +4,15 @@
     "capacity_mw": 75.0,
     "total_production_mwh": 310969.0,
     "avg_pr": 0.8186,
-    "avg_availability": 98.1,
-    "total_revenue": 18631333.0
+    "avg_availability": 97.63,
+    "total_revenue": 14992364.0
   },
   {
     "project": "Riverbend C&I Energy Center",
     "capacity_mw": 12.0,
     "total_production_mwh": 32406.0,
     "avg_pr": 0.8151,
-    "avg_availability": 98.2,
+    "avg_availability": 97.76,
     "total_revenue": 3397867.0
   }
 ]

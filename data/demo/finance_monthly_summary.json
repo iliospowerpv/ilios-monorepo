@@ -2,12 +2,12 @@
   {
     "project": "desert_bloom",
     "month": "2024-05-01",
-    "total_revenue": 866529.72,
+    "total_revenue": 690131.4,
     "total_expense": 44605.06,
-    "ebitda": 821924.66,
-    "ebitda_margin_pct": 94.85,
+    "ebitda": 645526.34,
+    "ebitda_margin_pct": 93.54,
     "om_cost_per_mw": 594.73,
-    "revenue_per_mwh": 57.69
+    "revenue_per_mwh": 45.95
   },
   {
     "project": "riverbend",
@@ -22,12 +22,12 @@
   {
     "project": "desert_bloom",
     "month": "2024-06-01",
-    "total_revenue": 912776.58,
+    "total_revenue": 772650.45,
     "total_expense": 43883.72,
-    "ebitda": 868892.87,
-    "ebitda_margin_pct": 95.19,
+    "ebitda": 728766.73,
+    "ebitda_margin_pct": 94.32,
     "om_cost_per_mw": 585.12,
-    "revenue_per_mwh": 56.52
+    "revenue_per_mwh": 47.84
   },
   {
     "project": "riverbend",
@@ -42,12 +42,12 @@
   {
     "project": "desert_bloom",
     "month": "2024-07-01",
-    "total_revenue": 910042.18,
+    "total_revenue": 809680.57,
     "total_expense": 43608.54,
-    "ebitda": 866433.64,
-    "ebitda_margin_pct": 95.21,
+    "ebitda": 766072.03,
+    "ebitda_margin_pct": 94.61,
     "om_cost_per_mw": 581.45,
-    "revenue_per_mwh": 52.96
+    "revenue_per_mwh": 47.12
   },
   {
     "project": "riverbend",
@@ -62,12 +62,12 @@
   {
     "project": "desert_bloom",
     "month": "2024-08-01",
-    "total_revenue": 922952.37,
+    "total_revenue": 745037.34,
     "total_expense": 43863.06,
-    "ebitda": 879089.31,
-    "ebitda_margin_pct": 95.25,
+    "ebitda": 701174.27,
+    "ebitda_margin_pct": 94.11,
     "om_cost_per_mw": 584.84,
-    "revenue_per_mwh": 60.63
+    "revenue_per_mwh": 48.94
   },
   {
     "project": "riverbend",
@@ -82,12 +82,12 @@
   {
     "project": "desert_bloom",
     "month": "2024-09-01",
-    "total_revenue": 730378.64,
+    "total_revenue": 582531.49,
     "total_expense": 44975.39,
-    "ebitda": 685403.25,
-    "ebitda_margin_pct": 93.84,
+    "ebitda": 537556.1,
+    "ebitda_margin_pct": 92.28,
     "om_cost_per_mw": 599.67,
-    "revenue_per_mwh": 60.21
+    "revenue_per_mwh": 48.02
   },
   {
     "project": "riverbend",
@@ -102,12 +102,12 @@
   {
     "project": "desert_bloom",
     "month": "2024-10-01",
-    "total_revenue": 658788.3,
+    "total_revenue": 547889.56,
     "total_expense": 42763.62,
-    "ebitda": 616024.68,
-    "ebitda_margin_pct": 93.51,
+    "ebitda": 505125.94,
+    "ebitda_margin_pct": 92.19,
     "om_cost_per_mw": 570.18,
-    "revenue_per_mwh": 59.48
+    "revenue_per_mwh": 49.47
   },
   {
     "project": "riverbend",
@@ -122,12 +122,12 @@
   {
     "project": "desert_bloom",
     "month": "2024-11-01",
-    "total_revenue": 663476.04,
+    "total_revenue": 505069.99,
     "total_expense": 43115.8,
-    "ebitda": 620360.25,
-    "ebitda_margin_pct": 93.5,
+    "ebitda": 461954.2,
+    "ebitda_margin_pct": 91.46,
     "om_cost_per_mw": 574.88,
-    "revenue_per_mwh": 63.84
+    "revenue_per_mwh": 48.6
   },
   {
     "project": "riverbend",
@@ -142,12 +142,12 @@
   {
     "project": "desert_bloom",
     "month": "2024-12-01",
-    "total_revenue": 601223.06,
+    "total_revenue": 447225.47,
     "total_expense": 44176.75,
-    "ebitda": 557046.31,
-    "ebitda_margin_pct": 92.65,
+    "ebitda": 403048.72,
+    "ebitda_margin_pct": 90.12,
     "om_cost_per_mw": 589.02,
-    "revenue_per_mwh": 66.23
+    "revenue_per_mwh": 49.27
   },
   {
     "project": "riverbend",
@@ -162,12 +162,12 @@
   {
     "project": "desert_bloom",
     "month": "2025-01-01",
-    "total_revenue": 670757.73,
+    "total_revenue": 484730.14,
     "total_expense": 42630.93,
-    "ebitda": 628126.8,
-    "ebitda_margin_pct": 93.64,
+    "ebitda": 442099.21,
+    "ebitda_margin_pct": 91.21,
     "om_cost_per_mw": 568.41,
-    "revenue_per_mwh": 67.98
+    "revenue_per_mwh": 49.13
   },
   {
     "project": "riverbend",
@@ -182,12 +182,12 @@
   {
     "project": "desert_bloom",
     "month": "2025-02-01",
-    "total_revenue": 681587.96,
+    "total_revenue": 548250.3,
     "total_expense": 43670.93,
-    "ebitda": 637917.04,
-    "ebitda_margin_pct": 93.59,
+    "ebitda": 504579.37,
+    "ebitda_margin_pct": 92.03,
     "om_cost_per_mw": 582.28,
-    "revenue_per_mwh": 61.33
+    "revenue_per_mwh": 49.33
   },
   {
     "project": "riverbend",
@@ -202,12 +202,12 @@
   {
     "project": "desert_bloom",
     "month": "2025-03-01",
-    "total_revenue": 837104.76,
+    "total_revenue": 638247.36,
     "total_expense": 43744.01,
-    "ebitda": 793360.76,
-    "ebitda_margin_pct": 94.77,
+    "ebitda": 594503.36,
+    "ebitda_margin_pct": 93.15,
     "om_cost_per_mw": 583.25,
-    "revenue_per_mwh": 63.98
+    "revenue_per_mwh": 48.78
   },
   {
     "project": "riverbend",
@@ -222,12 +222,12 @@
   {
     "project": "desert_bloom",
     "month": "2025-04-01",
-    "total_revenue": 877967.36,
+    "total_revenue": 701686.16,
     "total_expense": 43896.86,
-    "ebitda": 834070.51,
-    "ebitda_margin_pct": 95.0,
+    "ebitda": 657789.3,
+    "ebitda_margin_pct": 93.74,
     "om_cost_per_mw": 585.29,
-    "revenue_per_mwh": 61.18
+    "revenue_per_mwh": 48.9
   },
   {
     "project": "riverbend",
@@ -242,12 +242,12 @@
   {
     "project": "desert_bloom",
     "month": "2025-05-01",
-    "total_revenue": 809020.5,
+    "total_revenue": 707659.94,
     "total_expense": 43747.78,
-    "ebitda": 765272.72,
-    "ebitda_margin_pct": 94.59,
+    "ebitda": 663912.16,
+    "ebitda_margin_pct": 93.82,
     "om_cost_per_mw": 583.3,
-    "revenue_per_mwh": 53.59
+    "revenue_per_mwh": 46.88
   },
   {
     "project": "riverbend",
@@ -262,12 +262,12 @@
   {
     "project": "desert_bloom",
     "month": "2025-06-01",
-    "total_revenue": 865518.87,
+    "total_revenue": 771498.07,
     "total_expense": 43899.95,
-    "ebitda": 821618.92,
-    "ebitda_margin_pct": 94.93,
+    "ebitda": 727598.12,
+    "ebitda_margin_pct": 94.31,
     "om_cost_per_mw": 585.33,
-    "revenue_per_mwh": 53.45
+    "revenue_per_mwh": 47.64
   },
   {
     "project": "riverbend",
@@ -282,12 +282,12 @@
   {
     "project": "desert_bloom",
     "month": "2025-07-01",
-    "total_revenue": 788555.52,
+    "total_revenue": 654862.28,
     "total_expense": 43429.59,
-    "ebitda": 745125.93,
-    "ebitda_margin_pct": 94.49,
+    "ebitda": 611432.69,
+    "ebitda_margin_pct": 93.37,
     "om_cost_per_mw": 579.06,
-    "revenue_per_mwh": 56.87
+    "revenue_per_mwh": 47.23
   },
   {
     "project": "riverbend",
@@ -302,12 +302,12 @@
   {
     "project": "desert_bloom",
     "month": "2025-08-01",
-    "total_revenue": 954709.34,
+    "total_revenue": 787117.37,
     "total_expense": 44490.05,
-    "ebitda": 910219.29,
-    "ebitda_margin_pct": 95.34,
+    "ebitda": 742627.32,
+    "ebitda_margin_pct": 94.35,
     "om_cost_per_mw": 593.2,
-    "revenue_per_mwh": 58.83
+    "revenue_per_mwh": 48.5
   },
   {
     "project": "riverbend",
@@ -322,12 +322,12 @@
   {
     "project": "desert_bloom",
     "month": "2025-09-01",
-    "total_revenue": 832588.84,
+    "total_revenue": 704644.1,
     "total_expense": 43895.15,
-    "ebitda": 788693.69,
-    "ebitda_margin_pct": 94.73,
+    "ebitda": 660748.94,
+    "ebitda_margin_pct": 93.77,
     "om_cost_per_mw": 585.27,
-    "revenue_per_mwh": 58.4
+    "revenue_per_mwh": 49.43
   },
   {
     "project": "riverbend",
@@ -342,12 +342,12 @@
   {
     "project": "desert_bloom",
     "month": "2025-10-01",
-    "total_revenue": 800412.9,
+    "total_revenue": 615720.7,
     "total_expense": 43270.6,
-    "ebitda": 757142.3,
-    "ebitda_margin_pct": 94.59,
+    "ebitda": 572450.1,
+    "ebitda_margin_pct": 92.97,
     "om_cost_per_mw": 576.94,
-    "revenue_per_mwh": 63.91
+    "revenue_per_mwh": 49.17
   },
   {
     "project": "riverbend",
@@ -362,12 +362,12 @@
   {
     "project": "desert_bloom",
     "month": "2025-11-01",
-    "total_revenue": 704960.01,
+    "total_revenue": 516044.04,
     "total_expense": 44102.81,
-    "ebitda": 660857.2,
-    "ebitda_margin_pct": 93.74,
+    "ebitda": 471941.23,
+    "ebitda_margin_pct": 91.45,
     "om_cost_per_mw": 588.04,
-    "revenue_per_mwh": 65.32
+    "revenue_per_mwh": 47.81
   },
   {
     "project": "riverbend",
@@ -382,12 +382,12 @@
   {
     "project": "desert_bloom",
     "month": "2025-12-01",
-    "total_revenue": 591554.14,
+    "total_revenue": 443167.3,
     "total_expense": 44124.09,
-    "ebitda": 547430.05,
-    "ebitda_margin_pct": 92.54,
+    "ebitda": 399043.21,
+    "ebitda_margin_pct": 90.04,
     "om_cost_per_mw": 588.32,
-    "revenue_per_mwh": 65.37
+    "revenue_per_mwh": 48.97
   },
   {
     "project": "riverbend",
@@ -402,12 +402,12 @@
   {
     "project": "desert_bloom",
     "month": "2026-01-01",
-    "total_revenue": 634282.09,
+    "total_revenue": 494963.68,
     "total_expense": 43330.72,
-    "ebitda": 590951.37,
-    "ebitda_margin_pct": 93.17,
+    "ebitda": 451632.96,
+    "ebitda_margin_pct": 91.25,
     "om_cost_per_mw": 577.74,
-    "revenue_per_mwh": 62.96
+    "revenue_per_mwh": 49.13
   },
   {
     "project": "riverbend",
@@ -422,12 +422,12 @@
   {
     "project": "desert_bloom",
     "month": "2026-02-01",
-    "total_revenue": 672572.94,
+    "total_revenue": 517954.84,
     "total_expense": 42583.48,
-    "ebitda": 629989.45,
-    "ebitda_margin_pct": 93.67,
+    "ebitda": 475371.35,
+    "ebitda_margin_pct": 91.78,
     "om_cost_per_mw": 567.78,
-    "revenue_per_mwh": 62.02
+    "revenue_per_mwh": 47.76
   },
   {
     "project": "riverbend",
@@ -442,12 +442,12 @@
   {
     "project": "desert_bloom",
     "month": "2026-03-01",
-    "total_revenue": 809423.54,
+    "total_revenue": 626597.94,
     "total_expense": 44662.95,
-    "ebitda": 764760.59,
-    "ebitda_margin_pct": 94.48,
+    "ebitda": 581934.99,
+    "ebitda_margin_pct": 92.87,
     "om_cost_per_mw": 595.51,
-    "revenue_per_mwh": 61.84
+    "revenue_per_mwh": 47.87
   },
   {
     "project": "riverbend",
@@ -462,12 +462,12 @@
   {
     "project": "desert_bloom",
     "month": "2026-04-01",
-    "total_revenue": 834149.26,
+    "total_revenue": 679003.47,
     "total_expense": 43776.64,
-    "ebitda": 790372.62,
-    "ebitda_margin_pct": 94.75,
+    "ebitda": 635226.83,
+    "ebitda_margin_pct": 93.55,
     "om_cost_per_mw": 583.69,
-    "revenue_per_mwh": 58.38
+    "revenue_per_mwh": 47.52
   },
   {
     "project": "riverbend",

@@ -25,8 +25,8 @@
 **Key numbers to highlight:**
 - Portfolio: 87 MW AC across 2 operational projects
 - 24-month total production: ~343,000 MWh
-- Average availability: ~98.2%
-- EBITDA margin: ~94.2%
+- Average availability: ~97.7%
+- EBITDA margin: ~93%
 - Carbon offset: ~132,500 tons CO₂
 
 **Talking points:**
