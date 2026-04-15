@@ -34,6 +34,15 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
 - **Archive & Restore (Soft-Delete)**: Companies and Projects/Sites support soft-delete via `is_archived` flags with cascade archiving for companies. Admin-only PATCH endpoints for archive/restore and filterable lists.
 - **Home Dashboard "Your Projects" Widget**: Extends `/api/workspace` with project data for displaying access-controlled project cards on the Home Dashboard.
 
+## Documentation Governance
+- **Mandatory Rule**: All features must have corresponding documentation before being considered complete.
+- **Route-Help Registry**: `docs/route-help-registry.json` maps every app route to its help article slugs.
+- **Coverage Inventory**: `docs/documentation-coverage.json` tracks documentation status per module/page.
+- **Audit Script**: Run `npm run docs:audit` from `frontend/rea-investment-fe` to check coverage gaps.
+- **Developer Guide**: `docs/DOCUMENTATION_REQUIREMENTS.md` contains the full checklist and how-to instructions.
+- **AI Guardrails**: `docs/AI_DEVELOPMENT_GUARDRAILS.md` instructs AI agents to update docs with every feature change.
+- Any new module, page, workflow, report, dashboard, field, metric, status, navigation item, setting, permission, integration, or data concept requires: help content, FAQ updates, glossary entries, route-to-help mappings, and contextual help links.
+
 ## External Dependencies
 - **PostgreSQL**: Primary relational database.
 - **Redis**: Used for caching and session management.

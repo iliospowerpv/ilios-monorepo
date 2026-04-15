@@ -1,0 +1,172 @@
+{
+  "$schema": "Documentation Coverage Inventory",
+  "description": "Tracks documentation coverage status for every module and page in the application. Updated by the docs:audit script and during feature development.",
+  "lastUpdated": "2026-04-15",
+  "legend": {
+    "covered": "Has linked help articles with written content",
+    "partial": "Has help article mappings but content is stub/placeholder",
+    "missing": "No help article mappings exist"
+  },
+  "modules": {
+    "home": {
+      "label": "Home",
+      "status": "covered",
+      "overviewArticle": "home-overview",
+      "pages": [
+        { "route": "/home", "label": "Home Page", "status": "covered", "notes": "" }
+      ]
+    },
+    "onboarding": {
+      "label": "Onboarding",
+      "status": "covered",
+      "overviewArticle": null,
+      "pages": [
+        { "route": "/onboarding", "label": "Onboarding Wizard", "status": "covered", "notes": "" }
+      ]
+    },
+    "acquisitions": {
+      "label": "Acquisitions",
+      "status": "covered",
+      "overviewArticle": "acquisitions-overview",
+      "pages": [
+        { "route": "/acquisitions", "label": "Acquisitions Home", "status": "covered", "notes": "" },
+        { "route": "/acquisitions/deal/:dealId", "label": "Deal Detail", "status": "covered", "notes": "" },
+        { "route": "/acquisitions/scope/portfolio", "label": "Acquisitions (Portfolio Scope)", "status": "covered", "notes": "" },
+        { "route": "/acquisitions/scope/company/:companyId", "label": "Acquisitions (Company Scope)", "status": "covered", "notes": "" },
+        { "route": "/acquisitions/scope/project/:projectId", "label": "Acquisitions (Project Scope)", "status": "covered", "notes": "" }
+      ]
+    },
+    "project-hub": {
+      "label": "Project Hub",
+      "status": "covered",
+      "overviewArticle": "project-hub-overview",
+      "pages": [
+        { "route": "/project-hub", "label": "Project Hub Root", "status": "covered", "notes": "" },
+        { "route": "/project-hub/overview", "label": "Project Hub Overview", "status": "covered", "notes": "" },
+        { "route": "/project-hub/sites", "label": "Project Hub Sites", "status": "covered", "notes": "" },
+        { "route": "/project-hub/companies/:companyId", "label": "Company Details", "status": "covered", "notes": "" },
+        { "route": "/project-hub/companies/:companyId/overview", "label": "Company Overview", "status": "covered", "notes": "" },
+        { "route": "/project-hub/companies/:companyId/sites", "label": "Company Sites", "status": "covered", "notes": "" },
+        { "route": "/project-hub/companies/:companyId/tasks", "label": "Company Tasks", "status": "covered", "notes": "" },
+        { "route": "/project-hub/companies/:companyId/tasks/:taskId", "label": "Company Task Detail", "status": "covered", "notes": "" },
+        { "route": "/project-hub/projects/:siteId", "label": "Project Detail", "status": "covered", "notes": "" },
+        { "route": "/project-hub/projects/:siteId/overview", "label": "Project Overview", "status": "covered", "notes": "" },
+        { "route": "/project-hub/projects/:siteId/om", "label": "Project O&M Tab", "status": "covered", "notes": "" },
+        { "route": "/project-hub/projects/:siteId/tasks", "label": "Project Tasks Tab", "status": "covered", "notes": "" },
+        { "route": "/project-hub/projects/:siteId/finance", "label": "Project Finance Tab", "status": "covered", "notes": "" },
+        { "route": "/project-hub/projects/:siteId/data-room", "label": "Project Data Room Tab", "status": "covered", "notes": "" },
+        { "route": "/project-hub/projects/:siteId/reporting", "label": "Project Reporting Tab", "status": "covered", "notes": "" },
+        { "route": "/project-hub/scope/portfolio", "label": "Project Hub (Portfolio Scope)", "status": "covered", "notes": "" },
+        { "route": "/project-hub/scope/company/:companyId", "label": "Project Hub (Company Scope)", "status": "covered", "notes": "" },
+        { "route": "/project-hub/scope/project/:projectId", "label": "Project Hub (Project Scope)", "status": "covered", "notes": "" }
+      ]
+    },
+    "due-diligence": {
+      "label": "Due Diligence",
+      "status": "covered",
+      "overviewArticle": "data-room-overview",
+      "pages": [
+        { "route": "/due-diligence", "label": "Due Diligence Landing", "status": "covered", "notes": "" },
+        { "route": "/due-diligence/companies/:companyId/sites", "label": "DD Sites", "status": "covered", "notes": "" },
+        { "route": "/due-diligence/scope/portfolio", "label": "Due Diligence (Portfolio Scope)", "status": "covered", "notes": "" },
+        { "route": "/due-diligence/scope/company/:companyId", "label": "Due Diligence (Company Scope)", "status": "covered", "notes": "" },
+        { "route": "/due-diligence/scope/project/:projectId", "label": "Due Diligence (Project Scope)", "status": "covered", "notes": "" }
+      ]
+    },
+    "operations-and-maintenance": {
+      "label": "Operations & Maintenance",
+      "status": "covered",
+      "overviewArticle": "o-and-m-overview",
+      "pages": [
+        { "route": "/operations-and-maintenance", "label": "O&M Landing", "status": "covered", "notes": "" },
+        { "route": "/operations-and-maintenance/companies", "label": "O&M Companies List", "status": "covered", "notes": "" },
+        { "route": "/operations-and-maintenance/companies/:companyId", "label": "O&M Company", "status": "covered", "notes": "" },
+        { "route": "/operations-and-maintenance/companies/:companyId/overview", "label": "O&M Company Overview", "status": "covered", "notes": "" },
+        { "route": "/operations-and-maintenance/companies/:companyId/sites", "label": "O&M Company Sites", "status": "covered", "notes": "" },
+        { "route": "/operations-and-maintenance/companies/:companyId/alerts", "label": "O&M Company Alerts", "status": "covered", "notes": "" },
+        { "route": "/operations-and-maintenance/companies/:companyId/tasks", "label": "O&M Company Tasks", "status": "covered", "notes": "" },
+        { "route": "/operations-and-maintenance/companies/:companyId/tasks/:taskId", "label": "O&M Task Detail", "status": "covered", "notes": "" },
+        { "route": "/operations-and-maintenance/scope/portfolio", "label": "O&M (Portfolio Scope)", "status": "covered", "notes": "" },
+        { "route": "/operations-and-maintenance/scope/company/:companyId", "label": "O&M (Company Scope)", "status": "covered", "notes": "" },
+        { "route": "/operations-and-maintenance/scope/project/:projectId", "label": "O&M (Project Scope)", "status": "covered", "notes": "" },
+        { "route": "/operations-and-maintenance/scope/project/:projectId/telemetry", "label": "O&M Telemetry (Project Scope)", "status": "covered", "notes": "" }
+      ]
+    },
+    "finance": {
+      "label": "Finance",
+      "status": "covered",
+      "overviewArticle": "finance-overview",
+      "pages": [
+        { "route": "/finance", "label": "Finance Landing", "status": "covered", "notes": "" },
+        { "route": "/finance/companies/:companyId", "label": "Finance Company", "status": "covered", "notes": "" },
+        { "route": "/finance/companies/:companyId/sites/:siteId", "label": "Finance Site", "status": "covered", "notes": "" },
+        { "route": "/finance/scope/portfolio", "label": "Finance (Portfolio Scope)", "status": "covered", "notes": "" },
+        { "route": "/finance/scope/company/:companyId", "label": "Finance (Company Scope)", "status": "covered", "notes": "" },
+        { "route": "/finance/scope/project/:projectId", "label": "Finance (Project Scope)", "status": "covered", "notes": "" }
+      ]
+    },
+    "reports": {
+      "label": "Reports",
+      "status": "covered",
+      "overviewArticle": "reports-overview",
+      "pages": [
+        { "route": "/reports", "label": "Reports Landing", "status": "covered", "notes": "" },
+        { "route": "/reports/scope/portfolio", "label": "Reports (Portfolio Scope)", "status": "covered", "notes": "" },
+        { "route": "/reports/scope/company/:companyId", "label": "Reports (Company Scope)", "status": "covered", "notes": "" },
+        { "route": "/reports/scope/project/:projectId", "label": "Reports (Project Scope)", "status": "covered", "notes": "" }
+      ]
+    },
+    "portfolio": {
+      "label": "Portfolio",
+      "status": "covered",
+      "overviewArticle": null,
+      "pages": [
+        { "route": "/portfolio", "label": "Portfolio Overview", "status": "covered", "notes": "" },
+        { "route": "/portfolio/scope/portfolio", "label": "Portfolio (Portfolio Scope)", "status": "covered", "notes": "" },
+        { "route": "/portfolio/scope/company/:companyId", "label": "Portfolio (Company Scope)", "status": "covered", "notes": "" },
+        { "route": "/portfolio/scope/project/:projectId", "label": "Portfolio (Project Scope)", "status": "covered", "notes": "" }
+      ]
+    },
+    "portfolio-admin": {
+      "label": "Portfolio Admin",
+      "status": "covered",
+      "overviewArticle": "portfolio-admin-overview",
+      "pages": [
+        { "route": "/portfolio-admin", "label": "Portfolio Admin", "status": "covered", "notes": "" },
+        { "route": "/portfolio-admin/companies/:companyId", "label": "Company Admin", "status": "covered", "notes": "" },
+        { "route": "/portfolio-admin/projects/:projectId", "label": "Project Admin", "status": "covered", "notes": "" }
+      ]
+    },
+    "settings": {
+      "label": "Settings",
+      "status": "covered",
+      "overviewArticle": null,
+      "pages": [
+        { "route": "/settings", "label": "Settings", "status": "covered", "notes": "System users only" },
+        { "route": "/settings/audit-logs", "label": "Audit Logs", "status": "covered", "notes": "" },
+        { "route": "/settings/health-checks", "label": "Health Checks", "status": "covered", "notes": "" }
+      ]
+    },
+    "telemetry": {
+      "label": "Telemetry",
+      "status": "covered",
+      "overviewArticle": null,
+      "pages": [
+        { "route": "/projects/:projectId/telemetry", "label": "Project Telemetry", "status": "covered", "notes": "" }
+      ]
+    },
+    "core": {
+      "label": "Core / Account",
+      "status": "covered",
+      "overviewArticle": null,
+      "pages": [
+        { "route": "/", "label": "Landing / Index", "status": "covered", "notes": "" },
+        { "route": "/account", "label": "Account Settings", "status": "covered", "notes": "" },
+        { "route": "/security", "label": "Security Settings", "status": "covered", "notes": "" },
+        { "route": "/help", "label": "Help & Resources", "status": "covered", "notes": "" },
+        { "route": "/companies", "label": "Companies Picker", "status": "covered", "notes": "" },
+        { "route": "/projects", "label": "Projects Picker", "status": "covered", "notes": "" }
+      ]
+    }
+  }
+}

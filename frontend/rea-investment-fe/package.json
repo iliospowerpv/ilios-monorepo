@@ -9,7 +9,8 @@
     "test:coverage": "node scripts/test.js --coverage",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .js,.ts,.tsx --fix",
-    "prettier": "prettier --write \"src/**/*.{js,ts,tsx}\""
+    "prettier": "prettier --write \"src/**/*.{js,ts,tsx}\"",
+    "docs:audit": "node ../../scripts/docs-audit.js"
   },
   "dependencies": {
     "@cyntler/react-doc-viewer": "^1.14.1",

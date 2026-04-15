@@ -1,0 +1,1026 @@
+{
+  "$schema": "Route-to-Help Mapping Registry",
+  "description": "Maps every application route to its associated help articles. Used by the documentation audit script to verify coverage.",
+  "lastUpdated": "2026-04-15",
+  "helpContentDir": "frontend/rea-investment-fe/src/content/help/articles",
+  "routes": {
+    "/": {
+      "module": "core",
+      "label": "Landing / Index",
+      "helpArticles": ["navigation-guide"],
+      "description": "Authenticated landing page, redirects to home or login"
+    },
+    "/home": {
+      "module": "home",
+      "label": "Home",
+      "helpArticles": ["home-overview", "home-workflows", "home-key-screens", "navigation-guide"],
+      "description": "Unified landing page combining Dashboard and Workspace"
+    },
+    "/onboarding": {
+      "module": "onboarding",
+      "label": "Onboarding",
+      "helpArticles": ["navigation-guide"],
+      "description": "Onboarding wizard for new users"
+    },
+    "/account": {
+      "module": "core",
+      "label": "Account Settings",
+      "helpArticles": ["permissions-and-access"],
+      "description": "User account settings and profile management"
+    },
+    "/security": {
+      "module": "core",
+      "label": "Security Settings",
+      "helpArticles": ["permissions-and-access"],
+      "description": "User security settings including password and MFA"
+    },
+    "/help": {
+      "module": "core",
+      "label": "Help & Resources",
+      "helpArticles": ["navigation-guide"],
+      "description": "Help center and documentation hub"
+    },
+    "/portfolio": {
+      "module": "portfolio",
+      "label": "Portfolio Overview",
+      "helpArticles": ["navigation-guide", "portfolio-company-project-hierarchy", "portfolio-rollups-explained"],
+      "description": "Portfolio-level dashboard and KPI view"
+    },
+    "/companies": {
+      "module": "core",
+      "label": "Companies Picker",
+      "helpArticles": ["navigation-guide", "portfolio-company-project-hierarchy"],
+      "description": "Company selection view"
+    },
+    "/projects": {
+      "module": "core",
+      "label": "Projects Picker",
+      "helpArticles": ["navigation-guide", "projects-vs-deals", "portfolio-company-project-hierarchy"],
+      "description": "Project selection view"
+    },
+    "/acquisitions": {
+      "module": "acquisitions",
+      "label": "Acquisitions Home",
+      "helpArticles": ["acquisitions-overview", "acquisitions-workflows", "acquisitions-key-screens", "projects-vs-deals"],
+      "description": "Acquisitions pipeline and deal management"
+    },
+    "/acquisitions/deal/:dealId": {
+      "module": "acquisitions",
+      "label": "Deal Detail",
+      "helpArticles": ["acquisitions-workflows", "acquisitions-key-screens", "deal-to-project-conversion", "projects-vs-deals"],
+      "description": "Individual deal detail view"
+    },
+    "/acquisitions/scope/portfolio": {
+      "module": "acquisitions",
+      "label": "Acquisitions (Portfolio Scope)",
+      "helpArticles": ["acquisitions-overview", "acquisitions-key-screens"],
+      "description": "Acquisitions scoped to portfolio level"
+    },
+    "/acquisitions/scope/company/:companyId": {
+      "module": "acquisitions",
+      "label": "Acquisitions (Company Scope)",
+      "helpArticles": ["acquisitions-overview", "acquisitions-key-screens"],
+      "description": "Acquisitions scoped to company level"
+    },
+    "/acquisitions/scope/project/:projectId": {
+      "module": "acquisitions",
+      "label": "Acquisitions (Project Scope)",
+      "helpArticles": ["acquisitions-overview", "acquisitions-key-screens"],
+      "description": "Acquisitions scoped to project level"
+    },
+    "/project-hub": {
+      "module": "project-hub",
+      "label": "Project Hub",
+      "helpArticles": ["project-hub-overview", "project-hub-key-screens", "navigation-guide", "projects-vs-deals"],
+      "description": "Project Hub root with portfolio-level overview"
+    },
+    "/project-hub/overview": {
+      "module": "project-hub",
+      "label": "Project Hub Overview",
+      "helpArticles": ["project-hub-overview", "project-hub-key-screens", "navigation-guide"],
+      "description": "Project Hub overview tab"
+    },
+    "/project-hub/sites": {
+      "module": "project-hub",
+      "label": "Project Hub Sites",
+      "helpArticles": ["project-hub-key-screens", "navigation-guide"],
+      "description": "Project Hub sites listing"
+    },
+    "/project-hub/companies/:companyId": {
+      "module": "project-hub",
+      "label": "Project Hub Company Details",
+      "helpArticles": ["project-hub-key-screens", "navigation-guide", "portfolio-company-project-hierarchy"],
+      "description": "Company-level view within Project Hub"
+    },
+    "/project-hub/companies/:companyId/overview": {
+      "module": "project-hub",
+      "label": "Project Hub Company Overview",
+      "helpArticles": ["project-hub-key-screens"],
+      "description": "Company overview tab within Project Hub"
+    },
+    "/project-hub/companies/:companyId/sites": {
+      "module": "project-hub",
+      "label": "Project Hub Company Sites",
+      "helpArticles": ["project-hub-key-screens"],
+      "description": "Company sites tab within Project Hub"
+    },
+    "/project-hub/companies/:companyId/tasks": {
+      "module": "project-hub",
+      "label": "Project Hub Company Tasks",
+      "helpArticles": ["tasks-overview", "tasks-workflows"],
+      "description": "Tasks for a company within Project Hub"
+    },
+    "/project-hub/companies/:companyId/tasks/:taskId": {
+      "module": "project-hub",
+      "label": "Project Hub Company Task Detail",
+      "helpArticles": ["tasks-workflows", "tasks-key-screens"],
+      "description": "Individual task detail within Project Hub"
+    },
+    "/project-hub/projects/:siteId": {
+      "module": "project-hub",
+      "label": "Project Detail",
+      "helpArticles": ["project-hub-overview", "project-hub-key-screens", "projects-vs-deals", "lifecycle-stages"],
+      "description": "Project-level detail view"
+    },
+    "/project-hub/projects/:siteId/overview": {
+      "module": "project-hub",
+      "label": "Project Overview",
+      "helpArticles": ["project-hub-key-screens", "projects-vs-deals"],
+      "description": "Project overview tab"
+    },
+    "/project-hub/projects/:siteId/om": {
+      "module": "project-hub",
+      "label": "Project O&M",
+      "helpArticles": ["o-and-m-overview", "module-activation"],
+      "description": "Project O&M tab within Project Hub"
+    },
+    "/project-hub/projects/:siteId/tasks": {
+      "module": "project-hub",
+      "label": "Project Tasks",
+      "helpArticles": ["tasks-overview", "tasks-workflows"],
+      "description": "Project tasks tab"
+    },
+    "/project-hub/projects/:siteId/finance": {
+      "module": "project-hub",
+      "label": "Project Finance",
+      "helpArticles": ["finance-overview", "finance-readiness-explained"],
+      "description": "Project finance tab within Project Hub"
+    },
+    "/project-hub/projects/:siteId/data-room": {
+      "module": "project-hub",
+      "label": "Project Data Room",
+      "helpArticles": ["data-room-overview", "data-room-workflows"],
+      "description": "Project data room tab"
+    },
+    "/project-hub/projects/:siteId/reporting": {
+      "module": "project-hub",
+      "label": "Project Reporting",
+      "helpArticles": ["reports-overview"],
+      "description": "Project reporting tab"
+    },
+    "/project-hub/scope/portfolio": {
+      "module": "project-hub",
+      "label": "Project Hub (Portfolio Scope)",
+      "helpArticles": ["project-hub-overview", "project-hub-key-screens"],
+      "description": "Project Hub scoped to portfolio level"
+    },
+    "/project-hub/scope/company/:companyId": {
+      "module": "project-hub",
+      "label": "Project Hub (Company Scope)",
+      "helpArticles": ["project-hub-overview", "project-hub-key-screens"],
+      "description": "Project Hub scoped to company level"
+    },
+    "/project-hub/scope/project/:projectId": {
+      "module": "project-hub",
+      "label": "Project Hub (Project Scope)",
+      "helpArticles": ["project-hub-overview", "project-hub-key-screens"],
+      "description": "Project Hub scoped to project level"
+    },
+    "/project-hub/companies/:companyId/sites/:siteId": {
+      "module": "redirect",
+      "label": "PH Legacy Company Site (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to canonical Project Hub route",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId"
+    },
+    "/project-hub/companies/:companyId/sites/:siteId/overview": {
+      "module": "redirect",
+      "label": "PH Legacy Company Site Overview (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to Project Hub overview tab",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId/overview"
+    },
+    "/project-hub/companies/:companyId/sites/:siteId/devices": {
+      "module": "redirect",
+      "label": "PH Legacy Company Site Devices (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to Project Hub O&M tab",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId/om"
+    },
+    "/project-hub/companies/:companyId/sites/:siteId/devices/add": {
+      "module": "redirect",
+      "label": "PH Legacy Add Device (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to Project Hub O&M tab",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId/om"
+    },
+    "/project-hub/companies/:companyId/sites/:siteId/devices/:deviceId": {
+      "module": "redirect",
+      "label": "PH Legacy Device Detail (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to Project Hub O&M tab",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId/om"
+    },
+    "/project-hub/companies/:companyId/sites/:siteId/devices/:deviceId/overview": {
+      "module": "redirect",
+      "label": "PH Legacy Device Overview (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to Project Hub O&M tab",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId/om"
+    },
+    "/project-hub/companies/:companyId/sites/:siteId/devices/:deviceId/tasks": {
+      "module": "redirect",
+      "label": "PH Legacy Device Tasks (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to Project Hub tasks tab",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId/tasks"
+    },
+    "/project-hub/companies/:companyId/sites/:siteId/tasks": {
+      "module": "redirect",
+      "label": "PH Legacy Company Site Tasks (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to Project Hub tasks tab",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId/tasks"
+    },
+    "/project-hub/companies/:companyId/sites/:siteId/tasks/:taskId": {
+      "module": "redirect",
+      "label": "PH Legacy Company Site Task Detail (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to Project Hub tasks tab",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId/tasks"
+    },
+    "/project-hub/companies/:companyId/sites/:siteId/telemetry": {
+      "module": "redirect",
+      "label": "PH Legacy Company Site Telemetry (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to telemetry page",
+      "excludeFromCoverage": true,
+      "redirectTo": "/projects/:projectId/telemetry"
+    },
+    "/due-diligence": {
+      "module": "due-diligence",
+      "label": "Due Diligence",
+      "helpArticles": ["data-room-overview", "diligence-workflows-explained", "finance-readiness-explained"],
+      "description": "Due diligence module landing page"
+    },
+    "/due-diligence/companies/:companyId/sites": {
+      "module": "due-diligence",
+      "label": "Due Diligence Sites",
+      "helpArticles": ["data-room-key-screens", "diligence-workflows-explained"],
+      "description": "Sites list for due diligence by company"
+    },
+    "/due-diligence/scope/portfolio": {
+      "module": "due-diligence",
+      "label": "Due Diligence (Portfolio Scope)",
+      "helpArticles": ["data-room-overview", "diligence-workflows-explained"],
+      "description": "Due diligence scoped to portfolio level"
+    },
+    "/due-diligence/scope/company/:companyId": {
+      "module": "due-diligence",
+      "label": "Due Diligence (Company Scope)",
+      "helpArticles": ["data-room-overview", "diligence-workflows-explained"],
+      "description": "Due diligence scoped to company level"
+    },
+    "/due-diligence/scope/project/:projectId": {
+      "module": "due-diligence",
+      "label": "Due Diligence (Project Scope)",
+      "helpArticles": ["data-room-overview", "diligence-workflows-explained"],
+      "description": "Due diligence scoped to project level"
+    },
+    "/due-diligence/companies/:companyId/sites/:siteId": {
+      "module": "redirect",
+      "label": "DD Legacy Site Detail (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to Project Hub data-room tab",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId/data-room"
+    },
+    "/due-diligence/companies/:companyId/sites/:siteId/overview": {
+      "module": "redirect",
+      "label": "DD Legacy Site Overview (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to Project Hub overview tab",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId/overview"
+    },
+    "/due-diligence/companies/:companyId/sites/:siteId/due-diligence": {
+      "module": "redirect",
+      "label": "DD Legacy Site Due Diligence (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to Project Hub data-room tab",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId/data-room"
+    },
+    "/due-diligence/companies/:companyId/sites/:siteId/due-diligence/:documentId": {
+      "module": "redirect",
+      "label": "DD Legacy Document Detail (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to Project Hub data-room tab",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId/data-room"
+    },
+    "/operations-and-maintenance": {
+      "module": "operations-and-maintenance",
+      "label": "O&M All Companies",
+      "helpArticles": ["o-and-m-overview", "o-and-m-key-screens", "module-activation"],
+      "description": "Operations & Maintenance module landing"
+    },
+    "/operations-and-maintenance/companies": {
+      "module": "operations-and-maintenance",
+      "label": "O&M Companies List",
+      "helpArticles": ["o-and-m-overview", "o-and-m-key-screens"],
+      "description": "O&M companies listing"
+    },
+    "/operations-and-maintenance/companies/:companyId": {
+      "module": "operations-and-maintenance",
+      "label": "O&M Company Details",
+      "helpArticles": ["o-and-m-overview", "o-and-m-key-screens", "module-activation"],
+      "description": "O&M company-level detail"
+    },
+    "/operations-and-maintenance/companies/:companyId/overview": {
+      "module": "operations-and-maintenance",
+      "label": "O&M Company Overview",
+      "helpArticles": ["o-and-m-key-screens"],
+      "description": "O&M company overview tab"
+    },
+    "/operations-and-maintenance/companies/:companyId/sites": {
+      "module": "operations-and-maintenance",
+      "label": "O&M Company Sites",
+      "helpArticles": ["o-and-m-key-screens"],
+      "description": "O&M company sites tab"
+    },
+    "/operations-and-maintenance/companies/:companyId/alerts": {
+      "module": "operations-and-maintenance",
+      "label": "O&M Company Alerts",
+      "helpArticles": ["o-and-m-workflows", "o-and-m-troubleshooting"],
+      "description": "O&M company alerts tab"
+    },
+    "/operations-and-maintenance/companies/:companyId/tasks": {
+      "module": "operations-and-maintenance",
+      "label": "O&M Company Tasks",
+      "helpArticles": ["tasks-overview", "o-and-m-workflows"],
+      "description": "O&M company tasks tab"
+    },
+    "/operations-and-maintenance/companies/:companyId/tasks/:taskId": {
+      "module": "operations-and-maintenance",
+      "label": "O&M Task Detail",
+      "helpArticles": ["tasks-workflows", "o-and-m-workflows"],
+      "description": "O&M individual task detail"
+    },
+    "/operations-and-maintenance/scope/portfolio": {
+      "module": "operations-and-maintenance",
+      "label": "O&M (Portfolio Scope)",
+      "helpArticles": ["o-and-m-overview", "o-and-m-key-screens"],
+      "description": "O&M scoped to portfolio level"
+    },
+    "/operations-and-maintenance/scope/company/:companyId": {
+      "module": "operations-and-maintenance",
+      "label": "O&M (Company Scope)",
+      "helpArticles": ["o-and-m-overview", "o-and-m-key-screens"],
+      "description": "O&M scoped to company level"
+    },
+    "/operations-and-maintenance/scope/project/:projectId": {
+      "module": "operations-and-maintenance",
+      "label": "O&M (Project Scope)",
+      "helpArticles": ["o-and-m-overview", "o-and-m-key-screens"],
+      "description": "O&M scoped to project level"
+    },
+    "/operations-and-maintenance/scope/project/:projectId/telemetry": {
+      "module": "operations-and-maintenance",
+      "label": "O&M Telemetry (Project Scope)",
+      "helpArticles": ["o-and-m-overview", "o-and-m-performance-explained"],
+      "description": "Telemetry scoped within O&M module"
+    },
+    "/operations-and-maintenance/companies/:companyId/sites/:siteId": {
+      "module": "redirect",
+      "label": "O&M Legacy Site Detail (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to Project Hub O&M tab",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId/om"
+    },
+    "/operations-and-maintenance/companies/:companyId/sites/:siteId/overview": {
+      "module": "redirect",
+      "label": "O&M Legacy Site Overview (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to Project Hub overview tab",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId/overview"
+    },
+    "/operations-and-maintenance/companies/:companyId/sites/:siteId/devices": {
+      "module": "redirect",
+      "label": "O&M Legacy Site Devices (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to Project Hub O&M tab",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId/om"
+    },
+    "/operations-and-maintenance/companies/:companyId/sites/:siteId/alerts": {
+      "module": "redirect",
+      "label": "O&M Legacy Site Alerts (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to Project Hub O&M tab",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId/om"
+    },
+    "/operations-and-maintenance/companies/:companyId/sites/:siteId/security": {
+      "module": "redirect",
+      "label": "O&M Legacy Site Security (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to Project Hub O&M tab",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId/om"
+    },
+    "/operations-and-maintenance/companies/:companyId/sites/:siteId/tasks": {
+      "module": "redirect",
+      "label": "O&M Legacy Site Tasks (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to Project Hub tasks tab",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId/tasks"
+    },
+    "/operations-and-maintenance/companies/:companyId/sites/:siteId/tasks/:taskId": {
+      "module": "redirect",
+      "label": "O&M Legacy Site Task Detail (Redirect)",
+      "helpArticles": [],
+      "description": "Legacy redirect to Project Hub tasks tab",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:siteId/tasks"
+    },
+    "/finance": {
+      "module": "finance",
+      "label": "Finance Landing",
+      "helpArticles": ["finance-overview", "finance-key-screens", "finance-readiness-explained"],
+      "description": "Finance module landing page"
+    },
+    "/finance/companies/:companyId": {
+      "module": "finance",
+      "label": "Finance Company",
+      "helpArticles": ["finance-overview", "finance-key-screens", "finance-workflows"],
+      "description": "Finance company-level view"
+    },
+    "/finance/companies/:companyId/sites/:siteId": {
+      "module": "finance",
+      "label": "Finance Site",
+      "helpArticles": ["finance-key-screens", "finance-workflows", "budget-vs-actual-explained"],
+      "description": "Finance site-level view"
+    },
+    "/finance/scope/portfolio": {
+      "module": "finance",
+      "label": "Finance (Portfolio Scope)",
+      "helpArticles": ["finance-overview", "finance-key-screens"],
+      "description": "Finance scoped to portfolio level"
+    },
+    "/finance/scope/company/:companyId": {
+      "module": "finance",
+      "label": "Finance (Company Scope)",
+      "helpArticles": ["finance-overview", "finance-key-screens"],
+      "description": "Finance scoped to company level"
+    },
+    "/finance/scope/project/:projectId": {
+      "module": "finance",
+      "label": "Finance (Project Scope)",
+      "helpArticles": ["finance-overview", "finance-key-screens"],
+      "description": "Finance scoped to project level"
+    },
+    "/reports": {
+      "module": "reports",
+      "label": "Reports",
+      "helpArticles": ["reports-overview", "reports-key-screens", "reports-workflows"],
+      "description": "Reports module landing page"
+    },
+    "/reports/scope/portfolio": {
+      "module": "reports",
+      "label": "Reports (Portfolio Scope)",
+      "helpArticles": ["reports-overview", "reports-key-screens"],
+      "description": "Reports scoped to portfolio level"
+    },
+    "/reports/scope/company/:companyId": {
+      "module": "reports",
+      "label": "Reports (Company Scope)",
+      "helpArticles": ["reports-overview", "reports-key-screens"],
+      "description": "Reports scoped to company level"
+    },
+    "/reports/scope/project/:projectId": {
+      "module": "reports",
+      "label": "Reports (Project Scope)",
+      "helpArticles": ["reports-overview", "reports-key-screens"],
+      "description": "Reports scoped to project level"
+    },
+    "/portfolio/scope/portfolio": {
+      "module": "portfolio",
+      "label": "Portfolio (Portfolio Scope)",
+      "helpArticles": ["navigation-guide", "portfolio-rollups-explained"],
+      "description": "Portfolio scoped to portfolio level"
+    },
+    "/portfolio/scope/company/:companyId": {
+      "module": "portfolio",
+      "label": "Portfolio (Company Scope)",
+      "helpArticles": ["navigation-guide", "portfolio-rollups-explained"],
+      "description": "Portfolio scoped to company level"
+    },
+    "/portfolio/scope/project/:projectId": {
+      "module": "portfolio",
+      "label": "Portfolio (Project Scope)",
+      "helpArticles": ["navigation-guide", "portfolio-rollups-explained"],
+      "description": "Portfolio scoped to project level"
+    },
+    "/portfolio-admin": {
+      "module": "portfolio-admin",
+      "label": "Portfolio Admin",
+      "helpArticles": ["portfolio-admin-overview", "portfolio-admin-key-screens"],
+      "description": "Portfolio-level administration"
+    },
+    "/portfolio-admin/companies/:companyId": {
+      "module": "portfolio-admin",
+      "label": "Company Admin",
+      "helpArticles": ["portfolio-admin-workflows", "portfolio-admin-key-screens"],
+      "description": "Company-level administration"
+    },
+    "/portfolio-admin/projects/:projectId": {
+      "module": "portfolio-admin",
+      "label": "Project Admin",
+      "helpArticles": ["portfolio-admin-workflows", "portfolio-admin-key-screens"],
+      "description": "Project-level administration"
+    },
+    "/settings": {
+      "module": "settings",
+      "label": "Settings",
+      "helpArticles": ["permissions-and-access"],
+      "description": "System settings (system users only)"
+    },
+    "/settings/audit-logs": {
+      "module": "settings",
+      "label": "Audit Logs",
+      "helpArticles": ["permissions-and-access"],
+      "description": "System audit logs"
+    },
+    "/settings/health-checks": {
+      "module": "settings",
+      "label": "Health Checks",
+      "helpArticles": ["permissions-and-access"],
+      "description": "System health checks"
+    },
+    "/projects/:projectId/telemetry": {
+      "module": "telemetry",
+      "label": "Project Telemetry",
+      "helpArticles": ["o-and-m-overview", "o-and-m-performance-explained"],
+      "description": "Telemetry view for a specific project"
+    },
+    "/login": {
+      "module": "auth",
+      "label": "Login",
+      "helpArticles": [],
+      "description": "User login page",
+      "excludeFromCoverage": true
+    },
+    "/sign-up": {
+      "module": "auth",
+      "label": "Sign Up",
+      "helpArticles": [],
+      "description": "User registration page",
+      "excludeFromCoverage": true
+    },
+    "/forgot-password": {
+      "module": "auth",
+      "label": "Forgot Password",
+      "helpArticles": [],
+      "description": "Password reset request page",
+      "excludeFromCoverage": true
+    },
+    "/reset-notification": {
+      "module": "auth",
+      "label": "Password Reset Notification",
+      "helpArticles": [],
+      "description": "Password reset email sent confirmation",
+      "excludeFromCoverage": true
+    },
+    "/password-reset": {
+      "module": "auth",
+      "label": "Password Reset",
+      "helpArticles": [],
+      "description": "Password reset form",
+      "excludeFromCoverage": true
+    },
+    "/password-reset-success": {
+      "module": "auth",
+      "label": "Password Reset Success",
+      "helpArticles": [],
+      "description": "Password reset success confirmation",
+      "excludeFromCoverage": true
+    },
+    "/password-reset-invalid": {
+      "module": "auth",
+      "label": "Password Reset Invalid",
+      "helpArticles": [],
+      "description": "Invalid or expired password reset link",
+      "excludeFromCoverage": true
+    },
+    "/workspace": {
+      "module": "redirect",
+      "label": "Workspace (Legacy)",
+      "helpArticles": [],
+      "description": "Legacy redirect to /home",
+      "excludeFromCoverage": true,
+      "redirectTo": "/home"
+    },
+    "/workspace/*": {
+      "module": "redirect",
+      "label": "Workspace Wildcard (Legacy)",
+      "helpArticles": [],
+      "description": "Legacy redirect to /home (all subpaths)",
+      "excludeFromCoverage": true,
+      "redirectTo": "/home"
+    },
+    "/dashboard": {
+      "module": "redirect",
+      "label": "Dashboard (Legacy)",
+      "helpArticles": [],
+      "description": "Legacy redirect to /home",
+      "excludeFromCoverage": true,
+      "redirectTo": "/home"
+    },
+    "/dashboard/*": {
+      "module": "redirect",
+      "label": "Dashboard Wildcard (Legacy)",
+      "helpArticles": [],
+      "description": "Legacy redirect to /home (all subpaths)",
+      "excludeFromCoverage": true,
+      "redirectTo": "/home"
+    },
+    "/my-portfolio/*": {
+      "module": "redirect",
+      "label": "My Portfolio (Legacy)",
+      "helpArticles": [],
+      "description": "Legacy redirect to /portfolio",
+      "excludeFromCoverage": true,
+      "redirectTo": "/portfolio"
+    },
+    "/company-admin": {
+      "module": "redirect",
+      "label": "Company Admin (Legacy)",
+      "helpArticles": [],
+      "description": "Legacy redirect to /portfolio-admin",
+      "excludeFromCoverage": true,
+      "redirectTo": "/portfolio-admin"
+    },
+    "/admin/access-health": {
+      "module": "redirect",
+      "label": "Access Health (Legacy)",
+      "helpArticles": [],
+      "description": "Legacy redirect to /settings/health-checks",
+      "excludeFromCoverage": true,
+      "redirectTo": "/settings/health-checks"
+    },
+    "/settings/access-health": {
+      "module": "redirect",
+      "label": "Access Health Settings (Legacy)",
+      "helpArticles": [],
+      "description": "Legacy redirect to /settings/health-checks",
+      "excludeFromCoverage": true,
+      "redirectTo": "/settings/health-checks"
+    },
+    "/companies/:companyId": {
+      "module": "redirect",
+      "label": "Company Detail (Legacy)",
+      "helpArticles": [],
+      "description": "Legacy redirect to /project-hub/companies/:companyId",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/companies/:companyId"
+    },
+    "/projects/:projectId": {
+      "module": "redirect",
+      "label": "Project Detail (Legacy)",
+      "helpArticles": [],
+      "description": "Legacy redirect to /project-hub/projects/:projectId",
+      "excludeFromCoverage": true,
+      "redirectTo": "/project-hub/projects/:projectId"
+    }
+  },
+  "helpArticles": {
+    "projects-vs-deals": {
+      "title": "Understanding Projects vs Deals",
+      "section": "Getting Started",
+      "status": "published"
+    },
+    "navigation-guide": {
+      "title": "Navigating the Ilios Platform",
+      "section": "Getting Started",
+      "status": "published"
+    },
+    "lifecycle-stages": {
+      "title": "Lifecycle Stages Explained",
+      "section": "Getting Started",
+      "status": "published"
+    },
+    "module-activation": {
+      "title": "When Modules Become Active",
+      "section": "Getting Started",
+      "status": "published"
+    },
+    "permissions-and-access": {
+      "title": "Permissions & Access Control",
+      "section": "Getting Started",
+      "status": "published"
+    },
+    "portfolio-company-project-hierarchy": {
+      "title": "Portfolio, Company & Project Hierarchy",
+      "section": "Getting Started",
+      "status": "published"
+    },
+    "home-overview": {
+      "title": "Home Module Overview",
+      "section": "Home",
+      "status": "published"
+    },
+    "home-workflows": {
+      "title": "Home Workflows",
+      "section": "Home",
+      "status": "published"
+    },
+    "home-key-screens": {
+      "title": "Home Key Screens",
+      "section": "Home",
+      "status": "published"
+    },
+    "home-terms": {
+      "title": "Home Terms",
+      "section": "Home",
+      "status": "published"
+    },
+    "home-troubleshooting": {
+      "title": "Home Troubleshooting",
+      "section": "Home",
+      "status": "published"
+    },
+    "acquisitions-overview": {
+      "title": "Acquisitions Module Overview",
+      "section": "Acquisitions",
+      "status": "published"
+    },
+    "acquisitions-workflows": {
+      "title": "Acquisitions Workflows",
+      "section": "Acquisitions",
+      "status": "published"
+    },
+    "acquisitions-key-screens": {
+      "title": "Acquisitions Key Screens",
+      "section": "Acquisitions",
+      "status": "published"
+    },
+    "acquisitions-troubleshooting": {
+      "title": "Acquisitions Troubleshooting",
+      "section": "Acquisitions",
+      "status": "published"
+    },
+    "deal-to-project-conversion": {
+      "title": "Deal to Project Conversion",
+      "section": "Acquisitions",
+      "status": "published"
+    },
+    "project-hub-overview": {
+      "title": "Project Hub Overview",
+      "section": "Project Hub",
+      "status": "published"
+    },
+    "project-hub-workflows": {
+      "title": "Project Hub Workflows",
+      "section": "Project Hub",
+      "status": "published"
+    },
+    "project-hub-key-screens": {
+      "title": "Project Hub Key Screens",
+      "section": "Project Hub",
+      "status": "published"
+    },
+    "project-hub-troubleshooting": {
+      "title": "Project Hub Troubleshooting",
+      "section": "Project Hub",
+      "status": "published"
+    },
+    "data-room-overview": {
+      "title": "Data Room Overview",
+      "section": "Data Room",
+      "status": "published"
+    },
+    "data-room-workflows": {
+      "title": "Data Room Workflows",
+      "section": "Data Room",
+      "status": "published"
+    },
+    "data-room-key-screens": {
+      "title": "Data Room Key Screens",
+      "section": "Data Room",
+      "status": "published"
+    },
+    "data-room-troubleshooting": {
+      "title": "Data Room Troubleshooting",
+      "section": "Data Room",
+      "status": "published"
+    },
+    "o-and-m-overview": {
+      "title": "O&M Module Overview",
+      "section": "O&M",
+      "status": "published"
+    },
+    "o-and-m-workflows": {
+      "title": "O&M Workflows",
+      "section": "O&M",
+      "status": "published"
+    },
+    "o-and-m-key-screens": {
+      "title": "O&M Key Screens",
+      "section": "O&M",
+      "status": "published"
+    },
+    "o-and-m-troubleshooting": {
+      "title": "O&M Troubleshooting",
+      "section": "O&M",
+      "status": "published"
+    },
+    "o-and-m-performance-explained": {
+      "title": "O&M Performance Explained",
+      "section": "O&M",
+      "status": "published"
+    },
+    "finance-overview": {
+      "title": "Finance Module Overview",
+      "section": "Finance",
+      "status": "published"
+    },
+    "finance-workflows": {
+      "title": "Finance Workflows",
+      "section": "Finance",
+      "status": "published"
+    },
+    "finance-key-screens": {
+      "title": "Finance Key Screens",
+      "section": "Finance",
+      "status": "published"
+    },
+    "finance-troubleshooting": {
+      "title": "Finance Troubleshooting",
+      "section": "Finance",
+      "status": "published"
+    },
+    "finance-readiness-explained": {
+      "title": "Finance Readiness Explained",
+      "section": "Finance",
+      "status": "published"
+    },
+    "budget-vs-actual-explained": {
+      "title": "Budget vs Actual Explained",
+      "section": "Finance",
+      "status": "published"
+    },
+    "tasks-overview": {
+      "title": "Tasks Module Overview",
+      "section": "Tasks",
+      "status": "published"
+    },
+    "tasks-workflows": {
+      "title": "Tasks Workflows",
+      "section": "Tasks",
+      "status": "published"
+    },
+    "tasks-key-screens": {
+      "title": "Tasks Key Screens",
+      "section": "Tasks",
+      "status": "published"
+    },
+    "tasks-troubleshooting": {
+      "title": "Tasks Troubleshooting",
+      "section": "Tasks",
+      "status": "published"
+    },
+    "reports-overview": {
+      "title": "Reports Module Overview",
+      "section": "Reports",
+      "status": "published"
+    },
+    "reports-workflows": {
+      "title": "Reports Workflows",
+      "section": "Reports",
+      "status": "published"
+    },
+    "reports-key-screens": {
+      "title": "Reports Key Screens",
+      "section": "Reports",
+      "status": "published"
+    },
+    "reports-troubleshooting": {
+      "title": "Reports Troubleshooting",
+      "section": "Reports",
+      "status": "published"
+    },
+    "portfolio-admin-overview": {
+      "title": "Portfolio Admin Overview",
+      "section": "Portfolio Admin",
+      "status": "published"
+    },
+    "portfolio-admin-workflows": {
+      "title": "Portfolio Admin Workflows",
+      "section": "Portfolio Admin",
+      "status": "published"
+    },
+    "portfolio-admin-key-screens": {
+      "title": "Portfolio Admin Key Screens",
+      "section": "Portfolio Admin",
+      "status": "published"
+    },
+    "portfolio-admin-troubleshooting": {
+      "title": "Portfolio Admin Troubleshooting",
+      "section": "Portfolio Admin",
+      "status": "published"
+    },
+    "asset-hierarchy-explained": {
+      "title": "Asset Hierarchy Explained",
+      "section": "Concepts",
+      "status": "published"
+    },
+    "diligence-workflows-explained": {
+      "title": "Diligence Workflows Explained",
+      "section": "Concepts",
+      "status": "published"
+    },
+    "portfolio-rollups-explained": {
+      "title": "Portfolio Rollups Explained",
+      "section": "Concepts",
+      "status": "published"
+    },
+    "field-definitions": {
+      "title": "Field Definitions",
+      "section": "Reference",
+      "status": "published"
+    },
+    "kpi-definitions": {
+      "title": "KPI Definitions",
+      "section": "Reference",
+      "status": "published"
+    },
+    "status-definitions": {
+      "title": "Status Definitions",
+      "section": "Reference",
+      "status": "published"
+    },
+    "lifecycle-states-reference": {
+      "title": "Lifecycle States Reference",
+      "section": "Reference",
+      "status": "published"
+    },
+    "role-behavior-reference": {
+      "title": "Role Behavior Reference",
+      "section": "Reference",
+      "status": "published"
+    },
+    "troubleshooting-permissions": {
+      "title": "Troubleshooting Permissions",
+      "section": "Troubleshooting",
+      "status": "published"
+    },
+    "troubleshooting-missing-data": {
+      "title": "Troubleshooting Missing Data",
+      "section": "Troubleshooting",
+      "status": "published"
+    },
+    "troubleshooting-empty-dashboards": {
+      "title": "Troubleshooting Empty Dashboards",
+      "section": "Troubleshooting",
+      "status": "published"
+    },
+    "troubleshooting-uploads": {
+      "title": "Troubleshooting Uploads",
+      "section": "Troubleshooting",
+      "status": "published"
+    },
+    "troubleshooting-stale-metrics": {
+      "title": "Troubleshooting Stale Metrics",
+      "section": "Troubleshooting",
+      "status": "published"
+    },
+    "troubleshooting-report-mismatches": {
+      "title": "Troubleshooting Report Mismatches",
+      "section": "Troubleshooting",
+      "status": "published"
+    }
+  }
+}
