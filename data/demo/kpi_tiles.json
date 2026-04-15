@@ -21,9 +21,11 @@
     "om_cost_per_mw": 14756.0
   },
   "operations": {
-    "total_work_orders": 45,
+    "total_work_orders": 36,
     "open_work_orders": 3,
     "overdue_work_orders": 1,
-    "avg_resolution_days": 8.5
+    "avg_resolution_days": 8.1,
+    "total_events": 5,
+    "linked_work_orders": 4
   }
 }

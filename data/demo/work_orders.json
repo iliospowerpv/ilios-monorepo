@@ -301,7 +301,7 @@
     "parts_cost_usd": 4135.05,
     "contractor_cost_usd": 818.12,
     "warranty_covered": false,
-    "related_event": null
+    "related_event": "EVT-0001"
   },
   {
     "id": "WO-1020",
@@ -317,7 +317,7 @@
     "parts_cost_usd": 3675.85,
     "contractor_cost_usd": 4682.76,
     "warranty_covered": false,
-    "related_event": null
+    "related_event": "EVT-0002"
   },
   {
     "id": "WO-1021",
@@ -333,7 +333,7 @@
     "parts_cost_usd": 1990.2,
     "contractor_cost_usd": 2784.16,
     "warranty_covered": false,
-    "related_event": null
+    "related_event": "EVT-0003"
   },
   {
     "id": "WO-1022",
@@ -349,7 +349,7 @@
     "parts_cost_usd": 0,
     "contractor_cost_usd": 0,
     "warranty_covered": true,
-    "related_event": null
+    "related_event": "EVT-0005"
   },
   {
     "id": "WO-1023",

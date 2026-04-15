@@ -1,0 +1,218 @@
+[
+  {
+    "project": "desert_bloom",
+    "month": "2026-05-01",
+    "forecast_revenue": 889660.99,
+    "forecast_expense": 43886.08,
+    "forecast_noi": 845774.9,
+    "forecast_production_mwh": 14896.0,
+    "confidence": "high"
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2026-06-01",
+    "forecast_revenue": 954398.22,
+    "forecast_expense": 43995.52,
+    "forecast_noi": 910402.7,
+    "forecast_production_mwh": 15960.0,
+    "confidence": "high"
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2026-07-01",
+    "forecast_revenue": 1001092.45,
+    "forecast_expense": 44104.96,
+    "forecast_noi": 956987.48,
+    "forecast_production_mwh": 16720.0,
+    "confidence": "high"
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2026-08-01",
+    "forecast_revenue": 984114.79,
+    "forecast_expense": 44214.41,
+    "forecast_noi": 939900.38,
+    "forecast_production_mwh": 16416.0,
+    "confidence": "medium"
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2026-09-01",
+    "forecast_revenue": 866733.22,
+    "forecast_expense": 44323.85,
+    "forecast_noi": 822409.37,
+    "forecast_production_mwh": 14440.0,
+    "confidence": "medium"
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2026-10-01",
+    "forecast_revenue": 749056.97,
+    "forecast_expense": 44433.29,
+    "forecast_noi": 704623.68,
+    "forecast_production_mwh": 12464.0,
+    "confidence": "medium"
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2026-11-01",
+    "forecast_revenue": 621939.87,
+    "forecast_expense": 44542.73,
+    "forecast_noi": 577397.14,
+    "forecast_production_mwh": 10336.0,
+    "confidence": "low"
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2026-12-01",
+    "forecast_revenue": 549450.49,
+    "forecast_expense": 44652.17,
+    "forecast_noi": 504798.32,
+    "forecast_production_mwh": 9120.0,
+    "confidence": "low"
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2027-01-01",
+    "forecast_revenue": 595974.71,
+    "forecast_expense": 44761.61,
+    "forecast_noi": 551213.1,
+    "forecast_production_mwh": 9880.0,
+    "confidence": "low"
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2027-02-01",
+    "forecast_revenue": 660972.62,
+    "forecast_expense": 44871.06,
+    "forecast_noi": 616101.56,
+    "forecast_production_mwh": 10944.0,
+    "confidence": "low"
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2027-03-01",
+    "forecast_revenue": 781278.25,
+    "forecast_expense": 44980.5,
+    "forecast_noi": 736297.75,
+    "forecast_production_mwh": 12920.0,
+    "confidence": "low"
+  },
+  {
+    "project": "desert_bloom",
+    "month": "2027-04-01",
+    "forecast_revenue": 846661.5,
+    "forecast_expense": 45089.94,
+    "forecast_noi": 801571.56,
+    "forecast_production_mwh": 13984.0,
+    "confidence": "low"
+  },
+  {
+    "project": "riverbend",
+    "month": "2026-05-01",
+    "forecast_revenue": 201873.9,
+    "forecast_expense": 9682.02,
+    "forecast_noi": 192191.88,
+    "forecast_production_mwh": 1781.2,
+    "confidence": "high"
+  },
+  {
+    "project": "riverbend",
+    "month": "2026-06-01",
+    "forecast_revenue": 212852.42,
+    "forecast_expense": 9706.17,
+    "forecast_noi": 203146.25,
+    "forecast_production_mwh": 1875.0,
+    "confidence": "high"
+  },
+  {
+    "project": "riverbend",
+    "month": "2026-07-01",
+    "forecast_revenue": 223866.3,
+    "forecast_expense": 9730.31,
+    "forecast_noi": 214135.98,
+    "forecast_production_mwh": 1968.8,
+    "confidence": "high"
+  },
+  {
+    "project": "riverbend",
+    "month": "2026-08-01",
+    "forecast_revenue": 213559.57,
+    "forecast_expense": 9754.46,
+    "forecast_noi": 203805.11,
+    "forecast_production_mwh": 1875.0,
+    "confidence": "medium"
+  },
+  {
+    "project": "riverbend",
+    "month": "2026-09-01",
+    "forecast_revenue": 181826.18,
+    "forecast_expense": 9778.6,
+    "forecast_noi": 172047.57,
+    "forecast_production_mwh": 1593.8,
+    "confidence": "medium"
+  },
+  {
+    "project": "riverbend",
+    "month": "2026-10-01",
+    "forecast_revenue": 139273.37,
+    "forecast_expense": 9802.75,
+    "forecast_noi": 129470.62,
+    "forecast_production_mwh": 1218.8,
+    "confidence": "medium"
+  },
+  {
+    "project": "riverbend",
+    "month": "2026-11-01",
+    "forecast_revenue": 96579.13,
+    "forecast_expense": 9826.89,
+    "forecast_noi": 86752.24,
+    "forecast_production_mwh": 843.8,
+    "confidence": "low"
+  },
+  {
+    "project": "riverbend",
+    "month": "2026-12-01",
+    "forecast_revenue": 75240.86,
+    "forecast_expense": 9851.04,
+    "forecast_noi": 65389.82,
+    "forecast_production_mwh": 656.2,
+    "confidence": "low"
+  },
+  {
+    "project": "riverbend",
+    "month": "2027-01-01",
+    "forecast_revenue": 86130.98,
+    "forecast_expense": 9875.18,
+    "forecast_noi": 76255.8,
+    "forecast_production_mwh": 750.0,
+    "confidence": "low"
+  },
+  {
+    "project": "riverbend",
+    "month": "2027-02-01",
+    "forecast_revenue": 107840.51,
+    "forecast_expense": 9899.33,
+    "forecast_noi": 97941.19,
+    "forecast_production_mwh": 937.5,
+    "confidence": "low"
+  },
+  {
+    "project": "riverbend",
+    "month": "2027-03-01",
+    "forecast_revenue": 151224.22,
+    "forecast_expense": 9923.47,
+    "forecast_noi": 141300.75,
+    "forecast_production_mwh": 1312.5,
+    "confidence": "low"
+  },
+  {
+    "project": "riverbend",
+    "month": "2027-04-01",
+    "forecast_revenue": 183929.95,
+    "forecast_expense": 9947.62,
+    "forecast_noi": 173982.33,
+    "forecast_production_mwh": 1593.8,
+    "confidence": "low"
+  }
+]

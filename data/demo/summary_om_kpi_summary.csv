@@ -1,0 +1,3 @@
+project,total_om_cost,om_cost_per_mw,preventive_maintenance_total,corrective_maintenance_total,pm_to_cm_ratio,labor_total,parts_total,contractor_total,total_work_orders,closed_work_orders,open_work_orders,overdue_work_orders,avg_resolution_days,warranty_work_orders
+desert_bloom,2613.2,34.84,1271.31,448.48,2.83,601.91,112.12,179.38,24,22,2,0,8.7,1
+riverbend,535.52,44.63,287.68,73.57,3.91,126.44,18.4,29.43,12,10,1,1,6.8,0

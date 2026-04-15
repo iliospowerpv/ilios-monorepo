@@ -1,0 +1,36 @@
+[
+  {
+    "project": "desert_bloom",
+    "total_om_cost": 2613.2,
+    "om_cost_per_mw": 34.84,
+    "preventive_maintenance_total": 1271.31,
+    "corrective_maintenance_total": 448.48,
+    "pm_to_cm_ratio": 2.83,
+    "labor_total": 601.91,
+    "parts_total": 112.12,
+    "contractor_total": 179.38,
+    "total_work_orders": 24,
+    "closed_work_orders": 22,
+    "open_work_orders": 2,
+    "overdue_work_orders": 0,
+    "avg_resolution_days": 8.7,
+    "warranty_work_orders": 1
+  },
+  {
+    "project": "riverbend",
+    "total_om_cost": 535.52,
+    "om_cost_per_mw": 44.63,
+    "preventive_maintenance_total": 287.68,
+    "corrective_maintenance_total": 73.57,
+    "pm_to_cm_ratio": 3.91,
+    "labor_total": 126.44,
+    "parts_total": 18.4,
+    "contractor_total": 29.43,
+    "total_work_orders": 12,
+    "closed_work_orders": 10,
+    "open_work_orders": 1,
+    "overdue_work_orders": 1,
+    "avg_resolution_days": 6.8,
+    "warranty_work_orders": 0
+  }
+]

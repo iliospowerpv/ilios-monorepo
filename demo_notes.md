@@ -24,10 +24,10 @@
 
 **Key numbers to highlight:**
 - Portfolio: 87 MW AC across 2 operational projects
-- 24-month total production: ~390,000 MWh
-- Average availability: ~97%
-- EBITDA margin: ~80%+
-- Carbon offset: ~150,000 tons CO₂
+- 24-month total production: ~343,000 MWh
+- Average availability: ~98.2%
+- EBITDA margin: ~94.2%
+- Carbon offset: ~132,500 tons CO₂
 
 **Talking points:**
 - iliOS gives portfolio managers a single view across all assets
@@ -260,11 +260,13 @@ All generated data files are in `data/demo/`:
 | `operational_metrics_monthly.csv/json` | 24 months × 2 projects monthly production data |
 | `operational_metrics_daily.csv/json` | Daily production for trend charts |
 | `events.json` | 5 operational events with root causes and financial impacts |
-| `work_orders.json` | 45+ work orders (preventive/corrective, open/closed/overdue) |
+| `work_orders.json` | 36 work orders (preventive/corrective, open/closed/overdue) |
 | `finance_revenue.csv/json` | Monthly revenue by line item by project |
 | `finance_expenses.csv/json` | Monthly expense by category by project |
 | `finance_budgets_monthly.csv/json` | Budget vs. actual monthly |
 | `finance_invoices.json` | AR/AP invoices with aging |
+| `finance_payments.csv/json` | Payment records linked to invoices |
+| `finance_forecasts.csv/json` | 12-month forward revenue/expense/NOI forecasts |
 | `finance_monthly_summary.csv/json` | Monthly P&L summary |
 | `finance_project_summary.json` | Project-level lifetime financial summary |
 | `finance_variance_analysis.json` | Variance bridge with top drivers |
@@ -274,6 +276,7 @@ All generated data files are in `data/demo/`:
 | `summary_invoice_aging.json` | AR aging buckets |
 | `summary_battery_summary.json` | Battery system KPIs |
 | `summary_margin_trend.csv/json` | EBITDA margin over time |
+| `summary_om_kpi_summary.csv/json` | O&M cost breakdown and work order KPIs per project |
 
 ---
 
