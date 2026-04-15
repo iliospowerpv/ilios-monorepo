@@ -24,15 +24,22 @@ class LeasePDF(FPDF):
     def indent_body(self, text, indent=10):
         x = self.get_x()
         self.set_x(x + indent)
+        w = self.w - self.r_margin - (x + indent)
         self.set_font("Helvetica", "", 10)
-        self.multi_cell(0 - indent, 5, text)
+        self.multi_cell(w, 5, text)
         self.ln(2)
 
     def cover_field(self, label, value, lw=45):
+        x_start = self.get_x()
+        page_w = self.w - self.r_margin - x_start
         self.set_font("Helvetica", "B", 10)
-        self.cell(lw, 6, label, ln=False)
+        self.cell(lw, 6, label, new_x="RIGHT", new_y="TOP")
         self.set_font("Helvetica", "", 10)
-        self.multi_cell(0, 6, value)
+        remaining = page_w - lw
+        if remaining < 30:
+            remaining = page_w
+            self.ln()
+        self.multi_cell(remaining, 6, value)
 
 
 pdf = LeasePDF()
