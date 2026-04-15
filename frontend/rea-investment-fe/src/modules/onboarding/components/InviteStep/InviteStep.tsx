@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -108,15 +109,19 @@ export const InviteStep: React.FC<InviteStepProps> = ({
       queryClient.invalidateQueries({ queryKey: ['company-members', companyId] });
       setTimeout(() => setSuccessMessage(null), 3000);
     },
-    onError: (err: any) => {
-      const detail = err?.response?.data?.detail;
-      if (typeof detail === 'string') {
-        setError(detail);
-      } else if (detail?.message) {
-        setError(detail.message);
-      } else {
-        setError(err.message || 'Failed to add user to company');
+    onError: (err: Error) => {
+      if (err instanceof AxiosError) {
+        const detail = (err.response?.data as { detail?: string | { message?: string } })?.detail;
+        if (typeof detail === 'string') {
+          setError(detail);
+          return;
+        }
+        if (typeof detail === 'object' && detail?.message) {
+          setError(detail.message);
+          return;
+        }
       }
+      setError(err.message || 'Failed to add user to company');
     }
   });
 
