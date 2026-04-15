@@ -52,4 +52,6 @@ FINANCE_PORTFOLIO_TAG = "[Finance] Portfolio"
 
 WORKSPACE_TAG = "Workspace"
 
+USERS_TAG = "Users"
+
 ADMIN_ACCESS_HEALTH_TAG = "[Admin] Access Health"

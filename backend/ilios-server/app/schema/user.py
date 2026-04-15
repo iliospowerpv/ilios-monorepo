@@ -38,6 +38,7 @@ class ListUserSchema(CurrentUserSchema):
     is_registered: bool = Field(examples=[True])
     parent_company_id: Optional[int] = Field(examples=[1])
     phone: str = Field(examples=["0123456789"])
+    is_system_user: Optional[bool] = Field(default=False, examples=[False])
 
 
 class UsersListResponse(BasePaginator):

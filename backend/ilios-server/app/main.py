@@ -63,6 +63,7 @@ from .routers import (
     summary_stats_router,
     contacts_router,
     entities_router,
+    users_router,
 )
 from .routers.project_assumptions import assumptions_router
 from .routers.debug import router as debug_router
@@ -143,6 +144,7 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
     app.include_router(auth_router, prefix="/api/auth", tags=[tags.AUTH_TAG])
     # account related APIs
     app.include_router(account_router, prefix="/api/users/account", tags=[tags.ACCOUNT_USER_TAG])
+    app.include_router(users_router, prefix="/api/users", tags=[tags.USERS_TAG])
     app.include_router(dashboard_tasks_router, prefix="/api/account/dashboard", tags=[tags.ACCOUNT_DASHBOARD_TAG])
     app.include_router(
         dashboard_notifications_router, prefix="/api/account/dashboard/notifications", tags=[tags.ACCOUNT_DASHBOARD_TAG]
