@@ -62,6 +62,8 @@ class Company(RelatedBoards, Base):
     
     member_users = relationship("UserCompanyAccess", back_populates="company")
 
+    is_demo = Column(Boolean, nullable=False, default=False, server_default=expression.false())
+
     is_archived = Column(Boolean, nullable=False, default=False, server_default=expression.false())
     archived_at = Column(DateTime, nullable=True)
     archived_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)

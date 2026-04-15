@@ -1,0 +1,132 @@
+SPRINT: O&M Demo Telemetry with Toggle (Simulated vs Live Data)
+
+GOAL
+Enable O&M charts to display realistic operational data for demo purposes WITHOUT a live telemetry connection, while preserving the existing architecture and allowing a clean toggle between:
+- Live Data (default behavior)
+- Simulated Demo Data (for demo company only)
+
+CONSTRAINTS
+- DO NOT modify chart components or visualization logic
+- DO NOT hardcode chart data in UI
+- DO NOT break existing telemetry integrations
+- DO NOT impact non-demo companies or projects
+- All demo data must flow through the SAME pipeline as real telemetry
+- Toggle must switch the data source cleanly at the service/query layer
+
+CONTEXT
+- Demo is isolated to a single company (demo_company)
+- Only projects under this company should have access to simulated data
+- The system currently shows no charts because no telemetry is connected
+
+STEP 1 — IDENTIFY TELEMETRY PIPELINE
+Map:
+- Tables/models used for time-series telemetry (power, energy, irradiance, availability)
+- Services/APIs that fetch data for O&M charts
+- Where derived metrics (PR, availability, etc.) are calculated
+
+STEP 2 — ADD DEMO DATA FLAGGING
+Implement:
+- company.is_demo = true (or equivalent existing flag)
+- OR project.is_demo if already supported
+
+Ensure:
+- Only demo company/projects can access simulated data
+- Non-demo environments are completely unaffected
+
+STEP 3 — IMPLEMENT DATA SOURCE TOGGLE
+Add a toggle at the DATA ACCESS LAYER (not UI rendering):
+
+Example logic:
+IF project.company.is_demo AND toggle = "simulated"
+    use simulated telemetry dataset
+ELSE
+    use real telemetry pipeline
+
+The toggle should:
+- Default to "simulated" for demo company
+- Be switchable (optional UI control later, but backend must support it now)
+
+STEP 4 — GENERATE SIMULATED TELEMETRY DATA
+
+Generate 12–24 months of hourly time-series data per project.
+
+FIELDS (align to existing schema):
+- timestamp
+- power_kw
+- energy_kwh (or cumulative)
+- irradiance
+- expected_power
+- availability
+
+DATA PATTERNS (CRITICAL FOR DEMO QUALITY)
+
+1) SOLAR PRODUCTION SHAPE
+- Zero production at night
+- Smooth bell curve during daylight
+- Peak at solar noon
+
+2) SEASONALITY
+- Higher production in summer months
+- Lower in winter
+- Day length variation
+
+3) WEATHER VARIABILITY
+- Random cloud attenuation (10–40% dips)
+- Mix of clear and partially cloudy days
+
+4) PERFORMANCE VS EXPECTED
+- expected_power should represent ideal conditions
+- actual power should deviate realistically (PR ~ 75–95%)
+
+5) AVAILABILITY
+- Mostly high (97–100%)
+- Occasional dips during events
+
+6) INJECTED DEMO EVENTS (VERY IMPORTANT)
+Create 3–5 visible, explainable events:
+- Inverter outage (0 production for several hours during daylight)
+- Clipping (flat-top peak at max capacity)
+- One severe weather day (low production all day)
+- Minor degradation trend over time (~1–2% annually)
+- Optional: intermittent fault causing repeated dips
+
+These events must be visible in charts so users can tell a story during demos.
+
+STEP 5 — STORAGE
+- Store simulated data in existing telemetry tables if safe
+  OR
+- Create a parallel table (e.g., telemetry_simulated) with identical schema
+
+Tag all simulated records:
+- source = "simulated"
+
+Ensure:
+- Indexed properly for time-series queries
+- Compatible with existing aggregation logic
+
+STEP 6 — INTEGRATION
+- Ensure O&M charts render this data WITHOUT modification
+- Ensure filters (date range, project selection) work normally
+- Ensure derived metrics (PR, availability, etc.) compute correctly
+
+STEP 7 — VALIDATION
+Confirm:
+1) Charts populate for demo projects
+2) Data looks realistic (not random noise)
+3) Events are clearly visible in charts
+4) Switching toggle changes data source correctly
+5) Non-demo projects remain unaffected
+
+STEP 8 — OUTPUT
+Return:
+1) Telemetry model and tables used
+2) Where simulated data is stored
+3) Toggle implementation details (where logic lives)
+4) Data generation logic (how realism is achieved)
+5) How to regenerate/reset demo data
+6) Any risks or limitations
+
+IMPORTANT
+- Do not implement UI toggle unless trivial; focus on backend support
+- Do not alter core telemetry pipeline; extend it cleanly
+- Simulated data must behave identically to real data from the perspective of charts
