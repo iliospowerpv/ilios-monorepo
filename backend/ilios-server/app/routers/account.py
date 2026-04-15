@@ -169,8 +169,13 @@ async def get_accessible_entities(
     projects: list[AccessibleProjectSchema] = []
     
     if current_user.is_system_user:
-        all_companies = db_session.query(Company).order_by(Company.name).all()
-        all_sites = db_session.query(Site).join(Company).order_by(Company.name, Site.name).all()
+        all_companies = db_session.query(Company).filter(
+            Company.is_archived == False
+        ).order_by(Company.name).all()
+        all_sites = db_session.query(Site).join(Company).filter(
+            Site.is_archived == False,
+            Company.is_archived == False
+        ).order_by(Company.name, Site.name).all()
         
         companies = [
             AccessibleCompanySchema(id=c.id, name=c.name)
@@ -195,6 +200,7 @@ async def get_accessible_entities(
         
         if user_hub_ids:
             hub_companies = db_session.query(Company).filter(
+                Company.is_archived == False,
                 (Company.portfolio_hub_id.in_(user_hub_ids)) | (Company.id.in_(user_hub_ids))
             ).order_by(Company.name).all()
             
@@ -204,6 +210,7 @@ async def get_accessible_entities(
                     company_ids_seen.add(company.id)
             
             hub_sites = db_session.query(Site).filter(
+                Site.is_archived == False,
                 Site.company_id.in_([c.id for c in hub_companies])
             ).all()
             for site in hub_sites:
@@ -222,7 +229,7 @@ async def get_accessible_entities(
         ).all()
         
         for membership in company_memberships:
-            if membership.company and membership.company_id not in company_ids_seen:
+            if membership.company and not membership.company.is_archived and membership.company_id not in company_ids_seen:
                 companies.append(AccessibleCompanySchema(
                     id=membership.company.id,
                     name=membership.company.name
@@ -230,11 +237,11 @@ async def get_accessible_entities(
                 company_ids_seen.add(membership.company_id)
         
         for company in current_user.companies:
-            if company.id not in company_ids_seen:
+            if company.id not in company_ids_seen and not getattr(company, 'is_archived', False):
                 companies.append(AccessibleCompanySchema(id=company.id, name=company.name))
                 company_ids_seen.add(company.id)
         
-        if current_user.parent_company and current_user.parent_company.id not in company_ids_seen:
+        if current_user.parent_company and current_user.parent_company.id not in company_ids_seen and not getattr(current_user.parent_company, 'is_archived', False):
             companies.append(AccessibleCompanySchema(
                 id=current_user.parent_company.id,
                 name=current_user.parent_company.name
@@ -242,7 +249,7 @@ async def get_accessible_entities(
             company_ids_seen.add(current_user.parent_company.id)
         
         for site in current_user.sites:
-            if site.id not in project_ids_seen:
+            if site.id not in project_ids_seen and not getattr(site, 'is_archived', False):
                 projects.append(AccessibleProjectSchema(
                     id=site.id,
                     name=site.name,
