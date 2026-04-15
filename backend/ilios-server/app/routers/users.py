@@ -78,9 +78,7 @@ async def create_user(
     existing = user_crud.get_by_email(payload.email)
     if existing:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A user with this email already exists")
-    new_user = user_crud.create(payload.model_dump())
-    db_session.commit()
-    db_session.refresh(new_user)
+    new_user = user_crud.create_item(payload.model_dump())
     return {"message": "User created successfully", "code": 201, "id": new_user.id}
 
 
@@ -98,8 +96,8 @@ async def edit_user(
     user = user_crud.get_by_id(user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    user_crud.update(user, payload.model_dump(exclude_unset=True))
-    db_session.commit()
+    update_data = payload.model_dump(exclude_unset=True)
+    user_crud.update_by_id(user_id, update_data)
     return {"message": "User updated successfully", "code": 200}
 
 
