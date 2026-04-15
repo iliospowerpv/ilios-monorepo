@@ -92,6 +92,9 @@ export const AssetManagementCompanyDetails: React.FC<AssetManagementCompanyDetai
       setToast({ open: true, message: data.message, severity: 'success' });
       queryClient.invalidateQueries({ queryKey: ['company'] });
       queryClient.invalidateQueries({ queryKey: ['workspace'] });
+      queryClient.invalidateQueries({ queryKey: ['home-workspace'] });
+      queryClient.invalidateQueries({ queryKey: ['accessible-entities'] });
+      queryClient.invalidateQueries({ queryKey: ['accessible-entities-picker'] });
       setTimeout(() => navigate('/project-hub'), 1500);
     },
     onError: (error: any) => {

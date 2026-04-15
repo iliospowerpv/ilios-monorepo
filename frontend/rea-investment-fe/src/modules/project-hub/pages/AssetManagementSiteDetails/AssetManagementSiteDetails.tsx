@@ -129,6 +129,9 @@ export const AssetManagementSiteDetails: React.FC<AssetManagementSiteDetailsProp
       queryClient.invalidateQueries({ queryKey: ['site'] });
       queryClient.invalidateQueries({ queryKey: ['company'] });
       queryClient.invalidateQueries({ queryKey: ['workspace'] });
+      queryClient.invalidateQueries({ queryKey: ['home-workspace'] });
+      queryClient.invalidateQueries({ queryKey: ['accessible-entities'] });
+      queryClient.invalidateQueries({ queryKey: ['accessible-entities-picker'] });
       setTimeout(() => {
         if (siteDetails?.company?.id) {
           navigate(`/project-hub/companies/${siteDetails.company.id}/sites`);
