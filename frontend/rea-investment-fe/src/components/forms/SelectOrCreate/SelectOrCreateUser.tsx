@@ -279,6 +279,7 @@ export const SelectOrCreateUser: React.FC<SelectOrCreateUserProps> = ({
       value={selectedUser}
       options={options}
       filterOptions={customFilterOptions}
+      noOptionsText="No users available"
       getOptionLabel={option => {
         if (isSentinel(option)) {
           return '+ Create New User...';
