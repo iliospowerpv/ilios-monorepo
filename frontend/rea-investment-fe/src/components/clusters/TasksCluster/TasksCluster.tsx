@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, queryOptions } from '@tanstack/react-query';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 
 import TaskBoard from './internal/TaskBoard/TaskBoard';
 import TaskList from './internal/TaskList/TaskList';
@@ -48,8 +50,13 @@ export const Tasks: React.FC<TasksProps> = ({ module = '', scope, companyId, sit
   const [isFormOpen, setIsFormOpen] = React.useState<boolean>(false);
 
   const entityId = scope === 'company' ? companyId : siteId;
-  const { data: boardInfo } = useQuery(boardQuery(scope, entityId, true, false, module));
+  const {
+    data: boardInfo,
+    isLoading: isBoardLoading,
+    isError: isBoardError
+  } = useQuery(boardQuery(scope, entityId, true, false, module));
   const boardId = boardInfo?.items?.[0]?.id ? Number.parseInt(boardInfo.items[0].id as string) : -1;
+  const hasBoard = boardId > 0;
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
@@ -61,19 +68,54 @@ export const Tasks: React.FC<TasksProps> = ({ module = '', scope, companyId, sit
 
   const handleCloseForm = () => setIsFormOpen(false);
 
-  return (
-    <>
-      <SearchAndActions
-        showSearch={true}
-        showAdd={true}
-        reversOrder={true}
-        searchPlaceholder="Search"
-        btnAddLabel="Add a New Task"
-        onSearch={handleSearch}
-        onAdd={handleAddClick}
-        customActions={<ToggleGroup alignment={view} setAlignment={setView} />}
-      />
-      {scope === 'site' ? (
+  const emptyState = (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        py: 8,
+        color: 'text.secondary'
+      }}
+    >
+      <Typography variant="h6" gutterBottom>
+        No task board configured
+      </Typography>
+      <Typography variant="body2">
+        {scope === 'company'
+          ? 'No task board has been set up for this company yet.'
+          : 'No task board has been set up for this project yet.'}
+      </Typography>
+    </Box>
+  );
+
+  if (isBoardLoading) {
+    return (
+      <Box sx={{ py: 4, textAlign: 'center' }}>
+        <Typography color="text.secondary">Loading tasks...</Typography>
+      </Box>
+    );
+  }
+
+  if (isBoardError) {
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 8 }}>
+        <Typography variant="h6" color="error" gutterBottom>
+          Unable to load tasks
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          There was a problem retrieving the task board. Please try again later.
+        </Typography>
+      </Box>
+    );
+  }
+
+  const renderTaskViews = () => {
+    if (!hasBoard) return emptyState;
+
+    if (scope === 'site') {
+      return (
         <>
           {view === 'list' && (
             <TaskList
@@ -116,33 +158,45 @@ export const Tasks: React.FC<TasksProps> = ({ module = '', scope, companyId, sit
             module={module}
           />
         </>
-      ) : (
-        <>
-          {view === 'list' && (
-            <TaskList boardId={boardId} scope={scope} companyId={companyId} searchTerm={searchTerm} module={module} />
-          )}
-          {view === 'board' && (
-            <TaskBoard boardId={boardId} scope={scope} companyId={companyId} searchTerm={searchTerm} module={module} />
-          )}
-          {view === 'calendar' && (
-            <CalendarView
-              boardId={boardId}
-              scope={scope}
-              companyId={companyId}
-              searchTerm={searchTerm}
-              module={module}
-            />
-          )}
-          <AddTaskForm
-            open={isFormOpen}
-            onClose={handleCloseForm}
-            boardId={boardId}
-            scope={scope}
-            companyId={companyId}
-            module={module}
-          />
-        </>
-      )}
+      );
+    }
+
+    return (
+      <>
+        {view === 'list' && (
+          <TaskList boardId={boardId} scope={scope} companyId={companyId} searchTerm={searchTerm} module={module} />
+        )}
+        {view === 'board' && (
+          <TaskBoard boardId={boardId} scope={scope} companyId={companyId} searchTerm={searchTerm} module={module} />
+        )}
+        {view === 'calendar' && (
+          <CalendarView boardId={boardId} scope={scope} companyId={companyId} searchTerm={searchTerm} module={module} />
+        )}
+        <AddTaskForm
+          open={isFormOpen}
+          onClose={handleCloseForm}
+          boardId={boardId}
+          scope={scope}
+          companyId={companyId}
+          module={module}
+        />
+      </>
+    );
+  };
+
+  return (
+    <>
+      <SearchAndActions
+        showSearch={hasBoard}
+        showAdd={hasBoard}
+        reversOrder={true}
+        searchPlaceholder="Search"
+        btnAddLabel="Add a New Task"
+        onSearch={handleSearch}
+        onAdd={handleAddClick}
+        customActions={hasBoard ? <ToggleGroup alignment={view} setAlignment={setView} /> : undefined}
+      />
+      {renderTaskViews()}
     </>
   );
 };
