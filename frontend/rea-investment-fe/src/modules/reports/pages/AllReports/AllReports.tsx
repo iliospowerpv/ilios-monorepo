@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
 
 import EmptyReport from '../../components/EmptyReport';
 import { DeviceForm, DeviceFormFields } from '../../components/GenerateReportForm';
@@ -9,6 +10,7 @@ import PowerBIReport from '../../components/PowerBIReport';
 import { ApiClient } from '../../../../api';
 import { useNotify } from '../../../../contexts/notifications/notifications';
 import FullPageLoader from '../../../../components/common/FullPageLoader/FullPageLoader';
+import { LearnMoreLink } from '../../../../components/common/LearnMoreLink/LearnMoreLink';
 
 export const AllReportsPage: React.FC = () => {
   const [filters, setFilters] = useState<DeviceFormFields>();
@@ -78,7 +80,8 @@ export const AllReportsPage: React.FC = () => {
   return (
     <Box maxWidth="1600px" mx="auto">
       <FullPageLoader open={loading} />
-      <Box display="flex" flexDirection={'row'} justifyContent="flex-end">
+      <Stack direction="row" justifyContent="flex-end" alignItems="center" gap={2}>
+        <LearnMoreLink articleSlug="reports-overview" label="Learn more about Reports" />
         <Button
           onClick={() => exportPowerBIReportToPDF(filters?.type?.id ? filters?.type?.id : '')}
           fullWidth
@@ -89,7 +92,7 @@ export const AllReportsPage: React.FC = () => {
           <DownloadIcon sx={{ paddingRight: '8px' }} />
           Export Report
         </Button>
-      </Box>
+      </Stack>
       <Box sx={{ paddingTop: '24px' }}>
         <Box>
           <DeviceForm onFilterChange={setFilters} />

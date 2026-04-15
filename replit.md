@@ -42,3 +42,12 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
 - **Rombus**: Integrated for camera/security functionalities.
 - **AG Grid**: Enterprise license for advanced table functionalities.
 - **OpenAI**: Utilized for in-app AI parsing capabilities.
+
+## Help & Resources Documentation System
+- **Location**: Frontend-only content system under `frontend/rea-investment-fe/src/content/help/`
+- **Content Model**: Structured TypeScript data files with metadata (slug, title, summary, category, audience, articleType, tags, searchKeywords, relatedArticles, lastUpdated, body)
+- **Content Organization**: Articles organized by module (getting-started, home, acquisitions, project-hub, data-room, o-and-m, finance, tasks, reports, portfolio-admin, concepts, reference, troubleshooting), plus FAQ and glossary
+- **UI**: Full knowledge-base at `/help` with category browsing grid, client-side search, article detail with markdown rendering, breadcrumbs, table of contents, related articles sidebar, FAQ accordions, and alphabetical glossary
+- **Navigation**: URL search params for views (`?article=slug`, `?category=cat`, `?view=faq`, `?view=glossary`, `?q=search`)
+- **Contextual Links**: `LearnMoreLink` component at `src/components/common/LearnMoreLink/` used in Finance, O&M, and Reports modules
+- **Adding Content**: Add articles to the appropriate file in `src/content/help/articles/`, register in `src/content/help/index.ts`

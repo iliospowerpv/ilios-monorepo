@@ -1,7 +1,9 @@
 import React, { useCallback } from 'react';
 import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
 
 import { ApiClient } from '../../../../api';
+import { LearnMoreLink } from '../../../../components/common/LearnMoreLink/LearnMoreLink';
 import { GridApi, ColDef, RowClickedEvent } from 'ag-grid-community';
 import SearchAndActions from '../../../../components/common/tables/components/SearchAndActions/SearchAndActions';
 import BaseTable from '../../../../components/common/tables/BaseTable/BaseTable';
@@ -127,7 +129,10 @@ export const AllCompaniesPage: React.FC = () => {
 
   return (
     <Box>
-      <Box sx={{ paddingTop: '24px' }}>
+      <Stack direction="row" alignItems="center" justifyContent="flex-end" sx={{ pt: 2, pb: 1 }}>
+        <LearnMoreLink articleSlug="o-and-m-overview" label="Learn more about O&M" />
+      </Stack>
+      <Box sx={{ paddingTop: '0px' }}>
         <SearchAndActions
           showSearch={true}
           showExport={false}

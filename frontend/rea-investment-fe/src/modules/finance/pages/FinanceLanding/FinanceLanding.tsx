@@ -37,6 +37,7 @@ import { ApiClient } from '../../../../api';
 import { financeApi } from '../../api/finance';
 import { ApprovalDialog } from '../../components';
 import { type FinanceObligation, type FinanceBudget, type FinancePortfolioSummary } from '../../types';
+import { LearnMoreLink } from '../../../../components/common/LearnMoreLink/LearnMoreLink';
 
 const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('en-US', {
@@ -524,9 +525,12 @@ export const FinanceLanding: React.FC = () => {
 
   return (
     <Box p={3}>
-      <Typography variant="h4" marginBottom="24px" sx={{ fontWeight: 600 }} fontSize="34px" lineHeight="42px">
-        Finance
-      </Typography>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
+        <Typography variant="h4" sx={{ fontWeight: 600 }} fontSize="34px" lineHeight="42px">
+          Finance
+        </Typography>
+        <LearnMoreLink articleSlug="finance-overview" label="Learn more about Finance" />
+      </Stack>
 
       <Box display="flex" alignItems="center" gap={2} mb={3}>
         <SearchableSelect
