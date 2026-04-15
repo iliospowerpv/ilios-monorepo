@@ -48,7 +48,7 @@ export const Tasks: React.FC<TasksProps> = ({ module = '', scope, companyId, sit
   const [isFormOpen, setIsFormOpen] = React.useState<boolean>(false);
 
   const entityId = scope === 'company' ? companyId : siteId;
-  const { data: boardInfo } = useQuery(boardQuery(scope, entityId, true, true, module));
+  const { data: boardInfo } = useQuery(boardQuery(scope, entityId, true, false, module));
   const boardId = boardInfo ? Number.parseInt(boardInfo?.items[0].id as string) : -1;
 
   const handleSearch = (value: string) => {
