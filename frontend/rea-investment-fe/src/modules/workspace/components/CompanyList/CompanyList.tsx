@@ -107,7 +107,7 @@ export const CompanyList: React.FC<CompanyListProps> = ({ companies, isLoading }
           {companies.map(company => (
             <ListItemButton
               key={company.company_id}
-              onClick={() => navigate(`/companies/${company.company_id}`)}
+              onClick={() => navigate(`/project-hub/companies/${company.company_id}`)}
               sx={{
                 borderRadius: 1,
                 mb: 1,

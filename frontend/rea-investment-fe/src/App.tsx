@@ -24,7 +24,7 @@ import Index from './pages/Index/Index';
 import { AccountSettings } from './pages/Account';
 import { SecuritySettings } from './pages/Security';
 import { HelpResources } from './pages/Help';
-import { PortfolioView, CompaniesPickerView, CompanyView, ProjectsPickerView } from './pages/Hierarchy';
+import { PortfolioView, CompaniesPickerView, ProjectsPickerView } from './pages/Hierarchy';
 import { TelemetryPage, createTelemetryHandle, TelemetryRedirect } from './pages/Telemetry';
 import { ScopedModuleRoute } from './components/layout/ScopedModuleRoute';
 import { DeprecatedRouteRedirect } from './components/common/DeprecatedRouteRedirect';
@@ -89,6 +89,11 @@ import {
 const ProjectLandingRedirect: React.FC = () => {
   const { projectId } = useParams();
   return <Navigate to={`/project-hub/projects/${projectId}`} replace />;
+};
+
+const CompanyRedirect: React.FC = () => {
+  const { companyId } = useParams();
+  return <Navigate to={`/project-hub/companies/${companyId}`} replace />;
 };
 
 const queryClient = new QueryClient();
@@ -157,7 +162,7 @@ const router = createBrowserRouter(
         {/* Legacy Company Admin redirects to Portfolio Admin */}
         <Route path="/company-admin" element={<Navigate to="/portfolio-admin" replace />} />
         <Route path="/companies" element={<CompaniesPickerView />} />
-        <Route path="/companies/:companyId" element={<CompanyView />} />
+        <Route path="/companies/:companyId" element={<CompanyRedirect />} />
         <Route path="/projects" element={<ProjectsPickerView />} />
         <Route path="/projects/:projectId" element={<ProjectLandingRedirect />} />
         <Route path="/projects/:projectId/telemetry" handle={createTelemetryHandle()} element={<TelemetryPage />} />

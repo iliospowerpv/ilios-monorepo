@@ -12,7 +12,7 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
 
 ### Frontend
 - **Technology Stack**: React 18, TypeScript, Material UI (MUI), React Query, React Router DOM, AG Grid, Chart.js, Webpack 5.
-- **UI/UX Decisions**: Standardized "Projects" terminology, robust navigation (Entity Context, Module Sidebar, Breadcrumb), a unified Context Bar for scope management, a static Asset Management Overview with drag-and-drop features, a collapsible sidebar, and consolidated admin/settings modules for improved user experience and access control.
+- **UI/UX Decisions**: Standardized "Projects" terminology, robust navigation (Entity Context, Module Sidebar, Breadcrumb), a unified Context Bar for scope management, a static Asset Management Overview with drag-and-drop features, a collapsible sidebar, and consolidated admin/settings modules for improved user experience and access control. Unified company landing page at `/project-hub/companies/:companyId` with Overview (company info, portfolio summary, module Quick Actions), Projects, and Tasks tabs; legacy `/companies/:companyId` redirects there.
 - **Data Room**: Hybrid PDF/document viewer with AI-extracted field linking, programmatic navigation, text search, highlighting, and an audit trail with a sequential verification workflow and bulk acceptance. Features a collapsible Project Summary Panel for cross-document analysis.
 
 ### Backend

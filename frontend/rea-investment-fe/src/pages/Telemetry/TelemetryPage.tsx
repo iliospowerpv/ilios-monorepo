@@ -72,7 +72,7 @@ export const TelemetryPage: React.FC = () => {
         {company && (
           <Link
             component={RouterLink}
-            to={`/companies/${company.id}`}
+            to={`/project-hub/companies/${company.id}`}
             underline="hover"
             sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
           >

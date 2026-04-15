@@ -71,7 +71,7 @@ export const ProjectView: React.FC = () => {
             icon={<BusinessIcon />}
             label={company.name}
             component={Link}
-            to={`/companies/${company.id}`}
+            to={`/project-hub/companies/${company.id}`}
             clickable
             variant="outlined"
           />

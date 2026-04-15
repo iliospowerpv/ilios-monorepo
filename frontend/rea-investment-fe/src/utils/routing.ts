@@ -70,7 +70,7 @@ export function getCanonicalRoute(scope: ScopeType, params?: LensRouteParams): s
       return '/portfolio';
     case 'company':
       if (params?.companyId) {
-        return `/companies/${params.companyId}`;
+        return `/project-hub/companies/${params.companyId}`;
       }
       return '/companies';
     case 'project':

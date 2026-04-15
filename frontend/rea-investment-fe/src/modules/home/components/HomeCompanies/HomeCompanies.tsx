@@ -147,7 +147,7 @@ export const HomeCompanies: React.FC<HomeCompaniesProps> = ({ companies, isLoadi
                     variant="outlined"
                     size="small"
                     endIcon={<OpenInNewIcon />}
-                    onClick={() => navigate(`/companies/${company.company_id}`)}
+                    onClick={() => navigate(`/project-hub/companies/${company.company_id}`)}
                     fullWidth
                   >
                     Open Company

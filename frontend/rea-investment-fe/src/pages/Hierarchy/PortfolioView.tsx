@@ -16,7 +16,7 @@ export const PortfolioView: React.FC = () => {
   const handleCompanyClick = (company: { id: number; name: string }) => {
     setCurrentCompany(company);
     setCurrentScope('company');
-    navigate(`/companies/${company.id}`);
+    navigate(`/project-hub/companies/${company.id}`);
   };
 
   if (isLoading) {
