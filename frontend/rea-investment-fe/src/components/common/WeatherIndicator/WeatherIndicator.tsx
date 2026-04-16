@@ -2,7 +2,7 @@ import React from 'react';
 import Box from '@mui/material/Box';
 import { styled } from '@mui/material/styles';
 import CircularProgress from '@mui/material/CircularProgress';
-import BrokenImageIcon from '@mui/icons-material/BrokenImage';
+import WbCloudyIcon from '@mui/icons-material/WbCloudy';
 
 const WeatherIndicatorImage = styled('img')(() => ({
   borderRadius: '8px',
@@ -10,9 +10,20 @@ const WeatherIndicatorImage = styled('img')(() => ({
   widows: '32px'
 }));
 
+const DEMO_ICON_PREFIXES = ['DEMO_'];
+
 export const WeatherIndicator: React.FC<{ imageSrc: string | null }> = ({ imageSrc }) => {
-  const shouldLoad = imageSrc && imageSrc !== 'N/A';
+  const isDemoIcon = imageSrc && DEMO_ICON_PREFIXES.some(p => imageSrc.startsWith(p));
+  const shouldLoad = imageSrc && imageSrc !== 'N/A' && !isDemoIcon;
   const [isLoaded, setIsLoaded] = React.useState(false);
+
+  if (isDemoIcon) {
+    return (
+      <Box display="flex" borderRadius="8px" flexDirection="column" alignItems="center" justifyContent="center">
+        <WbCloudyIcon sx={{ fontSize: '32px', color: '#F9A825' }} />
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -32,17 +43,8 @@ export const WeatherIndicator: React.FC<{ imageSrc: string | null }> = ({ imageS
           onLoad={() => setIsLoaded(true)}
         />
       ) : (
-        <Box
-          height="32px"
-          width="32px"
-          borderRadius="8px"
-          bgcolor="#96B4E4"
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <BrokenImageIcon sx={{ color: '#FFFFFF', fontSize: '18px' }} />
+        <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+          <WbCloudyIcon sx={{ fontSize: '32px', color: '#90A4AE' }} />
         </Box>
       )}
       {shouldLoad && !isLoaded && (
