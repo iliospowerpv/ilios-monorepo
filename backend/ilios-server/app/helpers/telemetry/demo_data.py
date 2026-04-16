@@ -232,8 +232,23 @@ def _parse_dt(s):
     return datetime.now()
 
 
+def _ensure_daytime(dt):
+    """For instantaneous demo queries, shift nighttime timestamps to a
+    representative daytime hour so the demo always shows meaningful values.
+    Uses the same day but at solar noon (12:30) if the hour is outside
+    the typical production window."""
+    day_of_year = dt.timetuple().tm_yday
+    seasonal_factor = 0.5 + 0.5 * math.sin(2 * math.pi * (day_of_year - 80) / 365)
+    sunrise = 6.0 - seasonal_factor
+    sunset = 18.0 + 2 * seasonal_factor
+    hour = dt.hour + dt.minute / 60.0
+    if hour < sunrise or hour > sunset:
+        return datetime(dt.year, dt.month, dt.day, 12, 30)
+    return dt
+
+
 def generate_site_power_actual_vs_expected(site_ids, interval_start, interval_end, timezone):
-    dt = _parse_dt(interval_start)
+    dt = _ensure_daytime(_parse_dt(interval_start))
     results = []
     for sid in site_ids:
         cap = _get_site_capacity(sid)
@@ -341,7 +356,7 @@ def _get_site_inverter_count(site_id):
 
 
 def generate_device_power(device_ids, interval_start, interval_end, timezone):
-    dt = _parse_dt(interval_start)
+    dt = _ensure_daytime(_parse_dt(interval_start))
     dev_site_map = _get_device_site_map(device_ids)
 
     results = []
