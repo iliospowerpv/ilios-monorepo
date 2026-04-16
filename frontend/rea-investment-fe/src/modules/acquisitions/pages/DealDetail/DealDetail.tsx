@@ -15,7 +15,6 @@ import {
   Card,
   CardContent,
   Stack,
-  IconButton,
   Tooltip,
   Chip
 } from '@mui/material';
@@ -409,12 +408,14 @@ export const DealDetail: React.FC = () => {
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <IconButton onClick={() => navigate('/acquisitions')}>
-            <ArrowBackIcon />
-          </IconButton>
-          <Typography variant="h6" fontWeight={600}>
-            Deal Details
-          </Typography>
+          <Button
+            variant="text"
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate('/acquisitions')}
+            sx={{ minWidth: 'auto' }}
+          >
+            Back to Pipeline
+          </Button>
         </Box>
         <Stack direction="row" spacing={1}>
           {isEditing ? (
