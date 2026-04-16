@@ -345,7 +345,7 @@ def convert_deal_to_project(
         
         additional_fields = SiteAdditionalFieldList()
         additional_fields.site_id = site.id
-        additional_fields.lifecycle_state = LifecycleState.diligence.value
+        additional_fields.lifecycle_state = LifecycleState.due_diligence.value
         additional_fields.sales_stage = SalesStage.closed_won.value
         additional_fields.ownership_structure = deal.ownership_structure
         additional_fields.offtaker_name = deal.offtaker_legal_name or deal.offtaker_name
