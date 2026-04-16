@@ -43,7 +43,7 @@ def _validate_site_access(site_id: int, current_user: CurrentUserSchema, db_sess
         )
 
     site_crud = SiteCRUD(db_session)
-    site = site_crud.get_site_by_id(site_id)
+    site = site_crud.get_by_id(site_id)
     if not site:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

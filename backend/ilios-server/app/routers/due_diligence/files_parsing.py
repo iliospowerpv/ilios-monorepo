@@ -402,7 +402,7 @@ async def trigger_file_parsing(
         _run_parsing_background,
         file.id,
         run.id,
-        pipeline_document_name,
+        file.document.name.value,
         correlation_id,
     )
 
@@ -582,7 +582,7 @@ async def reprocess_file(
         _run_parsing_background,
         file.id,
         new_job.id,
-        pipeline_document_name,
+        doc_type_name,
         correlation_id,
     )
 
