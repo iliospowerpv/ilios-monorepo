@@ -220,7 +220,7 @@ const CollapsibleDocumentTermRenderer: React.FC<CollapsibleDocumentTermRenderer>
             <Typography variant="h6" fontSize="16px" fontWeight="600" py="8px">
               Legal Terms
             </Typography>
-            <AIText bgColor>{legal_term}</AIText>
+            <AIText bgColor>{aiValue || legal_term}</AIText>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="h6" fontSize="16px" fontWeight="600" py="8px">
                 Value
@@ -233,14 +233,14 @@ const CollapsibleDocumentTermRenderer: React.FC<CollapsibleDocumentTermRenderer>
                       padding: '8px',
                       margin: 0
                     }}
-                    onClick={() => copyToTextField(aiValue)}
+                    onClick={() => copyToTextField(userValue || aiValue)}
                   >
                     <ContentCopyIcon sx={{ fontSize: '20px', color: theme => theme.palette.text.secondary }} />
                   </IconButton>
                 </BootstrapTooltip>
               </Typography>
             </Box>
-            <AIText>{aiValue}</AIText>
+            <AIText>{userValue || aiValue}</AIText>
             <DocumentPoisonPill
               isPoisonPill={flagged}
               title={flagged ? poisonPillDetails : ''}

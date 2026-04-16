@@ -6,6 +6,7 @@ import TextField from '@mui/material/TextField';
 import Collapse from '@mui/material/Collapse';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
 
 import { useNotify } from '../../../../../contexts/notifications/notifications';
 import { ApiClient } from '../../../../../api';
@@ -91,6 +92,9 @@ export const DocumentTermUserInputField = React.forwardRef<
 
   return (
     <Box pl="12px" component="form" onSubmit={handleSubmit(onSubmit)}>
+      <Typography variant="h6" fontSize="16px" fontWeight="600" py="8px">
+        Accepted Value
+      </Typography>
       <Controller
         name="text"
         control={control}
