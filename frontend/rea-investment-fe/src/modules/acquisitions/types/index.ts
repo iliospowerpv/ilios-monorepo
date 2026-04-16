@@ -16,7 +16,7 @@ export enum SalesStage {
 }
 
 export enum LifecycleState {
-  PreDiligence = 'pre_diligence',
+  PreDiligence = 'sales_pre_diligence',
   DueDiligence = 'due_diligence',
   Implementation = 'implementation',
   PlacedInService = 'placed_in_service',

@@ -402,7 +402,7 @@ class SiteAdditionalFieldList(RelatedBoards, Base):
     date_of_rating = Column(Date, nullable=True)
 
     # Sales / Pipeline fields
-    lifecycle_state = Column(Enum(LifecycleState), nullable=True, default=LifecycleState.pre_diligence)
+    lifecycle_state = Column(Enum(LifecycleState), nullable=True, default=LifecycleState.sales_pre_diligence)
     sales_stage = Column(Enum(SalesStage), nullable=True)
     sales_source = Column(Enum(SalesSource), nullable=True)
     target_close_date = Column(Date, nullable=True)

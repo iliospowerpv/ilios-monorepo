@@ -46,7 +46,7 @@ class SignedAgreementResponse(BaseModel):
 
 
 LIFECYCLE_ORDER = [
-    LifecycleState.pre_diligence,
+    LifecycleState.sales_pre_diligence,
     LifecycleState.due_diligence,
     LifecycleState.implementation,
     LifecycleState.placed_in_service,

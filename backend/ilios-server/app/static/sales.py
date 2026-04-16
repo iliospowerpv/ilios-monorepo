@@ -23,7 +23,7 @@ class SalesStage(enum.Enum):
 
 class LifecycleState(enum.Enum):
     """Project lifecycle states controlling module activation."""
-    pre_diligence = "pre_diligence"
+    sales_pre_diligence = "sales_pre_diligence"
     due_diligence = "due_diligence"
     implementation = "implementation"
     placed_in_service = "placed_in_service"
@@ -80,7 +80,7 @@ HANDOFF_CHECKLIST_ITEMS = [
 ]
 
 LIFECYCLE_MODULE_ACTIVATION = {
-    LifecycleState.pre_diligence: {
+    LifecycleState.sales_pre_diligence: {
         "acquisitions": True,
         "data_room": False,
         "implementation": False,

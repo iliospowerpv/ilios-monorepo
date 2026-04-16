@@ -374,11 +374,26 @@ export const SalesHome: React.FC = () => {
       }
       return deal;
     },
-    onSuccess: () => {
+    onSuccess: (deal) => {
       queryClient.invalidateQueries({ queryKey: ['deals-pipeline'] });
       setAddDialogOpen(false);
       setDealForm({ ...initialDealForm, company_id: currentCompany?.id || 0 });
       setSelectedDeveloperEntityId(null);
+      setSnackbar({
+        open: true,
+        message: `Deal "${deal.name}" created in ${SALES_STAGE_LABELS[deal.sales_stage]}`,
+        severity: 'success'
+      });
+    },
+    onError: (error: any) => {
+      const detail = error?.response?.data?.detail;
+      const message =
+        typeof detail === 'string'
+          ? detail
+          : Array.isArray(detail)
+            ? detail.map((d: any) => d?.msg || JSON.stringify(d)).join('; ')
+            : error?.message || 'Failed to create deal';
+      setSnackbar({ open: true, message, severity: 'error' });
     }
   });
 
@@ -459,7 +474,21 @@ export const SalesHome: React.FC = () => {
 
   const handleSubmitDeal = () => {
     if (!dealForm.name || !dealForm.company_id) return;
-    createDealMutation.mutate(dealForm);
+    const dateFields: (keyof DealCreate)[] = [
+      'target_close_date',
+      'next_action_date',
+      'notice_to_proceed_date',
+      'mechanical_completion_date',
+      'permission_to_operate_date',
+      'substantial_completion_date'
+    ];
+    const payload: DealCreate = { ...dealForm };
+    dateFields.forEach(f => {
+      if ((payload as any)[f] === '') {
+        (payload as any)[f] = null;
+      }
+    });
+    createDealMutation.mutate(payload);
   };
 
   const allStages = [...ACTIVE_PIPELINE_STAGES, ...CLOSED_STAGES];
@@ -605,7 +634,7 @@ export const SalesHome: React.FC = () => {
         <DialogTitle>Add New Deal</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={4}>
               <TextField
                 label="Deal Name"
                 value={dealForm.name}
@@ -614,7 +643,23 @@ export const SalesHome: React.FC = () => {
                 required
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={4}>
+              <TextField
+                select
+                label="Stage"
+                value={dealForm.sales_stage || SalesStage.Prospect}
+                onChange={e => handleFormChange('sales_stage', e.target.value as SalesStage)}
+                fullWidth
+                required
+              >
+                {ACTIVE_PIPELINE_STAGES.map(stage => (
+                  <MenuItem key={stage} value={stage}>
+                    {SALES_STAGE_LABELS[stage]}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid item xs={12} md={4}>
               {dealForm.company_id ? (
                 <EntityPicker
                   portfolioId={dealForm.company_id}
