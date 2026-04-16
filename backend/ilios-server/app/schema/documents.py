@@ -114,6 +114,13 @@ class DocumentKeyUpdateSuccess(Success):
     message: str = Field(description="Success message", examples=["Document key has been successfully updated"])
 
 
+class DocumentKeyPoisonPillSchema(BaseModel):
+    is_poison_pill: bool = Field(examples=[True])
+    poison_pill_notes: Optional[str] = Field(default=None, max_length=2000)
+    key_name: Optional[str] = Field(default=None, max_length=500, description="Key name for upsert when key_id is 0")
+    file_id: Optional[int] = Field(default=None)
+
+
 class ParsableDocumentSchema(BaseModel):
     id: int = Field(examples=[1])
     name: str = Field(examples=["Site lease"])

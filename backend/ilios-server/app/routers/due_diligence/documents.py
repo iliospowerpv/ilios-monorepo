@@ -32,6 +32,7 @@ from app.schema.documents import (
     DocumentCreationSchema,
     DocumentCreationSuccess,
     DocumentDetailsSchema,
+    DocumentKeyPoisonPillSchema,
     DocumentKeyUpdateSchema,
     DocumentKeyUpdateSuccess,
     DocumentRemovalSuccess,
@@ -448,3 +449,69 @@ async def set_key(
             logger.warning(f"Failed to create candidate fact for key '{key.name}': {str(e)}")
 
     return {"code": status.HTTP_202_ACCEPTED, "message": DocumentMessages.document_key_update_success, "id": key_id}
+
+
+@documents_router.patch(
+    "/{document_id}/keys/{key_id}/poison-pill",
+    status_code=status.HTTP_200_OK,
+    response_model=DocumentKeyUpdateSuccess,
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
+    description="Toggle poison pill flag on a specific document key. Use key_id=0 with key_name in body to upsert.",
+)
+async def toggle_poison_pill(
+    key_id: int,
+    body: DocumentKeyPoisonPillSchema,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    document: Document = Depends(get_authorized_document),
+    db_session: Session = Depends(get_session),
+):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=document.site.company_id,
+        project_id=document.site_id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="edit",
+    )
+
+    document_key_crud = DocumentKeyCRUD(db_session)
+
+    update_payload = {"is_poison_pill": body.is_poison_pill}
+    if body.poison_pill_notes is not None:
+        update_payload["poison_pill_notes"] = body.poison_pill_notes
+
+    if key_id == 0:
+        if not body.key_name:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                "key_name is required when key_id is 0",
+            )
+        existing_key = document_key_crud.get_document_key(
+            name=body.key_name, document_id=document.id, file_id=body.file_id,
+        )
+        if existing_key:
+            document_key_crud.update_by_id(existing_key.id, update_payload)
+            result_id = existing_key.id
+        else:
+            new_key = document_key_crud.create_item({
+                "name": body.key_name,
+                "document_id": document.id,
+                "file_id": body.file_id,
+                "editor_id": current_user.id,
+                "source": "manual_entry",
+                "is_poison_pill": body.is_poison_pill,
+                "poison_pill_notes": body.poison_pill_notes,
+            })
+            result_id = new_key.id
+    else:
+        existing_key = document_key_crud.get_by_id(key_id)
+        if not existing_key or existing_key.document_id != document.id:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Document key not found")
+        document_key_crud.update_by_id(key_id, update_payload)
+        result_id = key_id
+
+    return {
+        "code": status.HTTP_200_OK,
+        "message": "Poison pill flag updated",
+        "id": result_id,
+    }

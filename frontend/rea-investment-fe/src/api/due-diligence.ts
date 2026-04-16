@@ -570,6 +570,27 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     return response.data;
   };
 
+  const togglePoisonPill = async (args: {
+    siteId: number;
+    documentId: number;
+    keyId: number;
+    isPoisonPill: boolean;
+    keyName?: string;
+    fileId?: number;
+  }): Promise<SetDocumentKeyValueResponse> => {
+    const { siteId, documentId, keyId, isPoisonPill, keyName, fileId } = args;
+    const body: Record<string, unknown> = { is_poison_pill: isPoisonPill };
+    if (keyId === 0 && keyName) {
+      body.key_name = keyName;
+      if (fileId) body.file_id = fileId;
+    }
+    const response = await httpClient.patch<SetDocumentKeyValueResponse>(
+      `/api/due-diligence/${siteId}/documents/${documentId}/keys/${keyId}/poison-pill`,
+      body
+    );
+    return response.data;
+  };
+
   const bulkAcceptAIValues = async (args: BulkAcceptAIValuesArgs): Promise<BulkAcceptAIValuesResponse> => {
     const { siteId, documentId, fileId, runId, fields, allowAcceptNonLatest } = args;
     const response = await httpClient.post<BulkAcceptAIValuesResponse>(
@@ -779,6 +800,7 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     downloadFileDirect,
     previewFileDirect,
     setDocumentKeyValue,
+    togglePoisonPill,
     bulkAcceptAIValues,
     getParseRunHistory,
     getParseRunDetail,

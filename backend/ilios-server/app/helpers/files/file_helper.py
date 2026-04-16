@@ -40,9 +40,15 @@ def combine_user_ai_parsing_results(
     # Build reverse mapping: display_name -> canonical name
     display_to_name = {v: k for k, v in name_to_display.items()}
 
-    # Get data stored in DB from user and AI
     existing_user_keys = {
-        key.name: {"value": key.value, "updated_at": key.updated_at, "id": key.id} for key in document.keys
+        key.name: {
+            "value": key.value,
+            "updated_at": key.updated_at,
+            "id": key.id,
+            "is_poison_pill": key.is_poison_pill,
+            "poison_pill_detailed": key.poison_pill_notes,
+        }
+        for key in document.keys
     }
     # ensure parsing record exists, parsing status is 'completed' and result is not empty
     ai_parsing_result = []
@@ -87,15 +93,18 @@ def combine_user_ai_parsing_results(
 
     for available_key in document_available_keys:
         display_name = available_key["name"]
-        # Get the canonical field name for matching with AI results
         canonical_name = display_to_name.get(display_name, "")
-        
-        # Update with data stored in DB (user keys use display_name)
+
         if existing_user_keys.get(display_name):
             available_key.update(existing_user_keys.get(display_name))
 
-        # Update with AI results (AI keys use canonical name)
         if canonical_name and existing_ai_keys.get(canonical_name):
             available_key.update(existing_ai_keys.get(canonical_name))
+
+        user_data = existing_user_keys.get(display_name)
+        if user_data and "is_poison_pill" in user_data:
+            available_key["is_poison_pill"] = user_data["is_poison_pill"]
+            if user_data.get("poison_pill_detailed") is not None:
+                available_key["poison_pill_detailed"] = user_data["poison_pill_detailed"]
 
     return document_available_keys

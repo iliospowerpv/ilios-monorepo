@@ -123,6 +123,34 @@ const CollapsibleDocumentTermRenderer: React.FC<CollapsibleDocumentTermRenderer>
   } = props;
   const userInputFormRef = React.useRef<DocumentTermUserInputFieldRef | null>(null);
   const [expanded, setExpanded] = React.useState<boolean>(true);
+  const [flagged, setFlagged] = React.useState<boolean>(isPoisonPill);
+  const [flagLoading, setFlagLoading] = React.useState<boolean>(false);
+  const queryClient = useQueryClient();
+
+  React.useEffect(() => {
+    setFlagged(isPoisonPill);
+  }, [isPoisonPill]);
+
+  const handleTogglePoisonPill = async () => {
+    setFlagLoading(true);
+    const newValue = !flagged;
+    setFlagged(newValue);
+    try {
+      await ApiClient.dueDiligence.togglePoisonPill({
+        siteId,
+        documentId,
+        keyId: id || 0,
+        isPoisonPill: newValue,
+        keyName: id ? undefined : termName,
+        fileId: id ? undefined : fileId
+      });
+      queryClient.invalidateQueries({ queryKey: ['document-terms', { siteId, documentId, fileId }] });
+    } catch {
+      setFlagged(!newValue);
+    } finally {
+      setFlagLoading(false);
+    }
+  };
 
   const copyToTextField = (text: string | null) => {
     if (!text) return;
@@ -213,7 +241,12 @@ const CollapsibleDocumentTermRenderer: React.FC<CollapsibleDocumentTermRenderer>
               </Typography>
             </Box>
             <AIText>{aiValue}</AIText>
-            <DocumentPoisonPill isPoisonPill={isPoisonPill} title={isPoisonPill ? poisonPillDetails : ''} />
+            <DocumentPoisonPill
+              isPoisonPill={flagged}
+              title={flagged ? poisonPillDetails : ''}
+              onToggle={handleTogglePoisonPill}
+              isLoading={flagLoading}
+            />
           </AIResponseContainer>
           <DocumentTermUserInputField
             ref={userInputFormRef}

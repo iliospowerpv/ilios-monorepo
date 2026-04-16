@@ -95,6 +95,8 @@ class DocumentKey(HasComments, Base):
     overridden_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     overridden_at = Column(DateTime, nullable=True)
     canonical_field = Column(String(100), nullable=True)
+    is_poison_pill = Column(Boolean, nullable=False, default=False, server_default=expression.false())
+    poison_pill_notes = Column(String, nullable=True)
 
     document = relationship("Document", back_populates="keys")
     file = relationship("File", back_populates="document_keys")
