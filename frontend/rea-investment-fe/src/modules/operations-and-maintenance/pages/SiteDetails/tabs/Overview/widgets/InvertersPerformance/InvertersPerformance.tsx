@@ -47,8 +47,15 @@ export const InvertersPerformance: React.FC<InvertersPerformanceProps> = ({ site
     refetchInterval: 15 * 60 * 1000
   });
 
-  const derivePerformanceColorFromValue = (): string => {
-    return theme.efficiencyColors.none;
+  const derivePerformanceColorFromValue = (performance: number | string | null): string => {
+    if (performance === null || performance === 'N/A' || performance === undefined) {
+      return theme.efficiencyColors.none;
+    }
+    const value = typeof performance === 'string' ? parseFloat(performance) : performance;
+    if (isNaN(value) || value === 0) return theme.efficiencyColors.low;
+    if (value < 51) return theme.efficiencyColors.low;
+    if (value < 90) return theme.efficiencyColors.mediocre;
+    return theme.efficiencyColors.good;
   };
 
   return (
@@ -69,9 +76,9 @@ export const InvertersPerformance: React.FC<InvertersPerformanceProps> = ({ site
           gap: '10px'
         }}
       >
-        {data?.data.map(({ name, actual }) => (
+        {data?.data.map(({ name, actual, performance }) => (
           <BootstrapTooltip key={name} title={name} placement="top">
-            <Item color={derivePerformanceColorFromValue()}>
+            <Item color={derivePerformanceColorFromValue(performance)}>
               <Typography
                 variant="body2"
                 sx={{

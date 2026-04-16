@@ -20,7 +20,7 @@ export const Performance: React.FC<AssetManagementCompanyDetailsTabProps> = ({ c
     !isLoading &&
     !isError &&
     chartData?.items?.some(
-      (item: { actual_kw?: number; expected_kw?: number }) => (item.actual_kw ?? 0) !== 0 || (item.expected_kw ?? 0) !== 0
+      (item) => (item.actual_kw ?? 0) !== 0 || (item.expected_kw ?? 0) !== 0
     );
   const showEmptyState = !isLoading && !isError && !hasTelemetryData;
 
