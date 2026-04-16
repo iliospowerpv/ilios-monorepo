@@ -125,18 +125,18 @@ export interface DealCreate {
   fmv?: number;
   grant_amount?: number;
   tax_equity?: number;
-  target_close_date?: string;
+  target_close_date?: string | null;
   probability?: number;
   pipeline_value?: number;
   assigned_owner_id?: number;
   last_action?: string;
   next_action?: string;
-  next_action_date?: string;
+  next_action_date?: string | null;
   next_action_status?: NextActionStatus;
-  notice_to_proceed_date?: string;
-  mechanical_completion_date?: string;
-  permission_to_operate_date?: string;
-  substantial_completion_date?: string;
+  notice_to_proceed_date?: string | null;
+  mechanical_completion_date?: string | null;
+  permission_to_operate_date?: string | null;
+  substantial_completion_date?: string | null;
   sales_notes?: string;
 }
 

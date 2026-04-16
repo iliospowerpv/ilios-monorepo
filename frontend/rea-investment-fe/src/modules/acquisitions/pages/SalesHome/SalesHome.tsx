@@ -474,20 +474,16 @@ export const SalesHome: React.FC = () => {
 
   const handleSubmitDeal = () => {
     if (!dealForm.name || !dealForm.company_id) return;
-    const dateFields: (keyof DealCreate)[] = [
-      'target_close_date',
-      'next_action_date',
-      'notice_to_proceed_date',
-      'mechanical_completion_date',
-      'permission_to_operate_date',
-      'substantial_completion_date'
-    ];
-    const payload: DealCreate = { ...dealForm };
-    dateFields.forEach(f => {
-      if ((payload as any)[f] === '') {
-        (payload as any)[f] = null;
-      }
-    });
+    const emptyToNull = (v: string | null | undefined) => (v === '' ? null : v);
+    const payload: DealCreate = {
+      ...dealForm,
+      target_close_date: emptyToNull(dealForm.target_close_date),
+      next_action_date: emptyToNull(dealForm.next_action_date),
+      notice_to_proceed_date: emptyToNull(dealForm.notice_to_proceed_date),
+      mechanical_completion_date: emptyToNull(dealForm.mechanical_completion_date),
+      permission_to_operate_date: emptyToNull(dealForm.permission_to_operate_date),
+      substantial_completion_date: emptyToNull(dealForm.substantial_completion_date)
+    };
     createDealMutation.mutate(payload);
   };
 
