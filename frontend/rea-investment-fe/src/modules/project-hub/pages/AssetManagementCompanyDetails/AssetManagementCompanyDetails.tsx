@@ -9,6 +9,7 @@ import Button from '@mui/material/Button';
 import SpaceDashboardIcon from '@mui/icons-material/SpaceDashboard';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
@@ -16,6 +17,7 @@ import { companyDetailsQuery } from './loader';
 import Overview from './tabs/Overview/Overview';
 import Sites from './tabs/Sites/Sites';
 import Tasks from './tabs/Tasks/Tasks';
+import Performance from './tabs/Performance/Performance';
 import type { AssetManagementCompanyDetailsTabProps } from './tabs/types';
 import { useEntityContext } from '../../../../contexts/entityContext';
 import { useAccess } from '../../../../hooks/access/access';
@@ -31,7 +33,7 @@ interface TabData {
   content: React.FC<AssetManagementCompanyDetailsTabProps> | null;
 }
 
-type TabType = 'overview' | 'sites' | 'tasks';
+type TabType = 'overview' | 'sites' | 'tasks' | 'performance';
 
 interface AssetManagementCompanyDetailsProps {
   tabId?: TabType;
@@ -61,6 +63,14 @@ const tabsData: TabData[] = [
     disabled: false,
     icon: <AssignmentTurnedInIcon />,
     content: Tasks
+  },
+  {
+    id: 'performance',
+    label: 'Performance',
+    link: '/project-hub/companies/:companyId/performance',
+    disabled: false,
+    icon: <ShowChartIcon />,
+    content: Performance
   }
 ];
 

@@ -536,6 +536,12 @@ const router = createBrowserRouter(
             element={<PHCompanyDetails.Component tabId="tasks" />}
           />
           <Route
+            path="/project-hub/companies/:companyId/performance"
+            handle={PHCompanyDetails.createHandle(queryClient)}
+            loader={withAuthControl(PHCompanyDetails.createLoader(queryClient))}
+            element={<PHCompanyDetails.Component tabId="performance" />}
+          />
+          <Route
             path="/project-hub/companies/:companyId/tasks/:taskId"
             handle={PHCompanyTask.createHandle(queryClient)}
             loader={withAuthControl(PHCompanyTask.createLoader(queryClient))}
