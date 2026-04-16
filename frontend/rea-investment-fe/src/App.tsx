@@ -34,6 +34,7 @@ import {
   Root as PHRoot,
   CompanyDetails as PHCompanyDetails,
   SiteDetails as PHSiteDetails,
+  AddDevice as PHAddDevice,
   ModuleContainer as PHModuleContainer
 } from './modules/project-hub';
 import {
@@ -559,7 +560,9 @@ const router = createBrowserRouter(
           <Route path="/project-hub/companies/:companyId/sites/:siteId/telemetry" element={<TelemetryRedirect />} />
           <Route
             path="/project-hub/companies/:companyId/sites/:siteId/devices/add"
-            element={<DeprecatedRouteRedirect targetTab="om" />}
+            handle={PHAddDevice.createHandle(queryClient)}
+            loader={withAuthControl(PHAddDevice.createLoader(queryClient))}
+            element={<PHAddDevice.Component />}
           />
           <Route
             path="/project-hub/companies/:companyId/sites/:siteId/devices/:deviceId"
