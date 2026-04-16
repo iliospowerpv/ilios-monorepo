@@ -131,7 +131,7 @@ const SitesTable: React.FC<SitesTableProps> = ({ columns, companyId, companyName
   );
 
   const handleAddClick = () => {
-    navigate(`/settings/company/${companyId}/site/add`);
+    navigate(`/onboarding?companyId=${companyId}`);
   };
 
   return (
