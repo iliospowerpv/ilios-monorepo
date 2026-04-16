@@ -33,6 +33,7 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
 - **Project Import Tool**: Bulk import projects from CSV/XLSX files via a multi-step wizard (Upload → Map Fields → Validate → Import) with auto-mapping, validation, duplicate detection, and full project initialization.
 - **Archive & Restore (Soft-Delete)**: Companies and Projects/Sites support soft-delete via `is_archived` flags with cascade archiving for companies. Admin-only PATCH endpoints for archive/restore and filterable lists.
 - **Home Dashboard "Your Projects" Widget**: Extends `/api/workspace` with project data for displaying access-controlled project cards on the Home Dashboard.
+- **In-App Performance Report**: Fallback reporting for demo sites where PowerBI has no BigQuery data. Backend endpoint (`/api/reporting/sites/{site_id}/performance-report/`) generates daily/monthly performance data using the demo telemetry pipeline. Frontend `InAppPerformanceReport` component renders KPI cards and AG Charts (daily generation, performance ratio, monthly breakdown). Activates only when: (1) the selected report type is "Performance Report", (2) the site is a demo site with `DEMO_TELEMETRY=true`. Non-demo sites and non-performance report types continue to use PowerBI embedding normally. Includes site-level access control enforcement and input validation.
 
 ## Documentation Governance
 - **Mandatory Rule**: All features must have corresponding documentation before being considered complete.

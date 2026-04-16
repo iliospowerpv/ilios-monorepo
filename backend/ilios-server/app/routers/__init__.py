@@ -26,7 +26,7 @@ from .health import health_router
 from .internal import internal_ai_router, internal_router, internal_sites_router
 from .investor_dashboard import investor_companies_router
 from .operations_and_maintenance import alerts_router, om_companies_router, om_site_cameras_router, om_sites_router
-from .reporting import reports_companies_router, reports_router, reports_sites_router
+from .reporting import performance_report_router, reports_companies_router, reports_router, reports_sites_router
 from .security import cameras_router
 from .task_tracker import (
     attachments_router,

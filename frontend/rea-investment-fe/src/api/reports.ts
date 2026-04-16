@@ -43,6 +43,51 @@ interface PowerBIFileExportStatusResponse {
   status: string;
 }
 
+export interface PerformanceReportDailyEntry {
+  date: string;
+  actual_kwh: number;
+  expected_kwh: number;
+  performance_ratio: number;
+}
+
+export interface PerformanceReportMonthlyEntry {
+  month: string;
+  actual_kwh: number;
+  expected_kwh: number;
+  performance_ratio: number;
+  days: number;
+}
+
+export interface PerformanceReportSummary {
+  total_actual_kwh: number;
+  total_expected_kwh: number;
+  total_actual_mwh: number;
+  total_expected_mwh: number;
+  performance_ratio: number;
+  capacity_factor: number;
+  avg_daily_generation_kwh: number;
+  num_days: number;
+  system_capacity_kw: number;
+  availability: number;
+}
+
+export interface PerformanceReportResponse {
+  available: boolean;
+  site_id?: number;
+  site_name?: string;
+  start_date?: string;
+  end_date?: string;
+  summary?: PerformanceReportSummary;
+  daily?: PerformanceReportDailyEntry[];
+  monthly?: PerformanceReportMonthlyEntry[];
+  message?: string;
+}
+
+export interface PerformanceReportAvailability {
+  available: boolean;
+  site_id: number;
+}
+
 export const buildReportsApi = (httpClient: AxiosInstance) => {
   const getCompanyList = async (
     search?: string,
@@ -126,6 +171,25 @@ export const buildReportsApi = (httpClient: AxiosInstance) => {
     return new Blob([response.data], { type: 'application/pdf' });
   };
 
+  const getPerformanceReport = async (
+    siteId: number,
+    startDate: string,
+    endDate: string
+  ): Promise<PerformanceReportResponse> => {
+    const response = await httpClient.get<PerformanceReportResponse>(
+      `/api/reporting/sites/${siteId}/performance-report/`,
+      { params: { start_date: startDate, end_date: endDate } }
+    );
+    return response.data;
+  };
+
+  const checkPerformanceReportAvailability = async (siteId: number): Promise<PerformanceReportAvailability> => {
+    const response = await httpClient.get<PerformanceReportAvailability>(
+      `/api/reporting/sites/${siteId}/performance-report/check/`
+    );
+    return response.data;
+  };
+
   return Object.freeze({
     getCompanyList,
     getSiteList,
@@ -134,7 +198,9 @@ export const buildReportsApi = (httpClient: AxiosInstance) => {
     getPages,
     exportToFile,
     getStatus,
-    getFile
+    getFile,
+    getPerformanceReport,
+    checkPerformanceReportAvailability
   });
 };
 

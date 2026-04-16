@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 
@@ -7,15 +7,46 @@ import { DeviceForm, DeviceFormFields } from '../../components/GenerateReportFor
 import Button from '@mui/material/Button';
 import DownloadIcon from '@mui/icons-material/Download';
 import PowerBIReport from '../../components/PowerBIReport';
+import InAppPerformanceReport from '../../components/InAppPerformanceReport';
 import { ApiClient } from '../../../../api';
 import { useNotify } from '../../../../contexts/notifications/notifications';
 import FullPageLoader from '../../../../components/common/FullPageLoader/FullPageLoader';
 import { LearnMoreLink } from '../../../../components/common/LearnMoreLink/LearnMoreLink';
 
+const isPerformanceReportType = (typeName?: string) => typeName?.toLowerCase().includes('performance') ?? false;
+
 export const AllReportsPage: React.FC = () => {
   const [filters, setFilters] = useState<DeviceFormFields>();
   const [loading, setLoading] = useState<boolean>(false);
+  const [inAppAvailable, setInAppAvailable] = useState<boolean>(false);
   const notify = useNotify();
+
+  useEffect(() => {
+    if (!filters?.site?.id) {
+      setInAppAvailable(false);
+      return;
+    }
+
+    let cancelled = false;
+    ApiClient.reports
+      .checkPerformanceReportAvailability(Number(filters.site.id))
+      .then(result => {
+        if (!cancelled) {
+          setInAppAvailable(result.available);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setInAppAvailable(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [filters?.site?.id]);
+
+  const useInAppReport = inAppAvailable && isPerformanceReportType(filters?.type?.name);
 
   async function exportPowerBIReportToPDF(reportId: string) {
     try {
@@ -77,27 +108,50 @@ export const AllReportsPage: React.FC = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  const renderReport = () => {
+    if (!filters?.site) {
+      return <EmptyReport />;
+    }
+
+    if (useInAppReport && filters.start_date && filters.end_date) {
+      return (
+        <InAppPerformanceReport
+          siteId={Number(filters.site.id)}
+          siteName={filters.site.name}
+          startDate={filters.start_date}
+          endDate={filters.end_date}
+        />
+      );
+    }
+
+    return <PowerBIReport filters={filters} />;
+  };
+
+  const showExportButton = filters?.site && !useInAppReport;
+
   return (
     <Box maxWidth="1600px" mx="auto">
       <FullPageLoader open={loading} />
       <Stack direction="row" justifyContent="flex-end" alignItems="center" gap={2}>
         <LearnMoreLink articleSlug="reports-overview" label="Learn more about Reports" />
-        <Button
-          onClick={() => exportPowerBIReportToPDF(filters?.type?.id ? filters?.type?.id : '')}
-          fullWidth
-          disabled={!filters?.type?.id || loading}
-          variant="outlined"
-          sx={{ maxWidth: '200px', width: '100%' }}
-        >
-          <DownloadIcon sx={{ paddingRight: '8px' }} />
-          Export Report
-        </Button>
+        {showExportButton && (
+          <Button
+            onClick={() => exportPowerBIReportToPDF(filters?.type?.id ? filters?.type?.id : '')}
+            fullWidth
+            disabled={!filters?.type?.id || loading}
+            variant="outlined"
+            sx={{ maxWidth: '200px', width: '100%' }}
+          >
+            <DownloadIcon sx={{ paddingRight: '8px' }} />
+            Export Report
+          </Button>
+        )}
       </Stack>
       <Box sx={{ paddingTop: '24px' }}>
         <Box>
           <DeviceForm onFilterChange={setFilters} />
         </Box>
-        {!filters?.site ? <EmptyReport /> : <PowerBIReport filters={filters} />}
+        {renderReport()}
       </Box>
     </Box>
   );

@@ -47,6 +47,7 @@ from .routers import (
     om_companies_router,
     om_site_cameras_router,
     om_sites_router,
+    performance_report_router,
     reports_companies_router,
     reports_router,
     reports_sites_router,
@@ -230,6 +231,7 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
         reports_sites_router, prefix="/api/reporting/companies/{company_id}/sites", tags=[tags.REPORTING_TAG]
     )
     app.include_router(reports_router, prefix="/api/reporting/reports", tags=[tags.REPORTING_TAG])
+    app.include_router(performance_report_router, prefix="/api/reporting/sites", tags=[tags.REPORTING_TAG])
     # finance related APIs
     app.include_router(
         finance_vendors_router,

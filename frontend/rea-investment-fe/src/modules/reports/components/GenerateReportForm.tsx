@@ -37,6 +37,13 @@ interface DeviceFormProps {
   onFilterChange: (newFilters: DeviceFormFields | undefined) => void;
 }
 
+const BUILTIN_PERFORMANCE_REPORT = {
+  id: '__builtin_performance__',
+  name: 'Performance Report',
+  web_url: '',
+  embed_url: ''
+};
+
 export const DeviceForm: React.FC<DeviceFormProps> = ({ onFilterChange }) => {
   const inputStyles = { fontSize: '0.875rem', lineHeight: 1.43, height: '40px' };
   const [startOpen, setStartOpen] = useState(false);
@@ -55,9 +62,23 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({ onFilterChange }) => {
   });
 
   const { data: reportsResponseData } = useQuery({
-    queryFn: () => ApiClient.reports.getReportsOption(),
+    queryFn: async () => {
+      try {
+        const data = await ApiClient.reports.getReportsOption();
+        return data;
+      } catch {
+        return { items: [] };
+      }
+    },
     queryKey: ['reports-options']
   });
+
+  const reportOptions = React.useMemo(() => {
+    const pbiItems = reportsResponseData?.items || [];
+    const hasPerformanceReport = pbiItems.some(r => r.name.toLowerCase().includes('performance'));
+    if (hasPerformanceReport) return pbiItems;
+    return [BUILTIN_PERFORMANCE_REPORT, ...pbiItems];
+  }, [reportsResponseData]);
 
   const onSubmit: SubmitHandler<DeviceFormFields> = async data => {
     const filters = data;
@@ -141,13 +162,13 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({ onFilterChange }) => {
           }}
           render={({ field }) => (
             <SearchableSelect
-              options={(reportsResponseData?.items || []).map(report => ({
+              options={reportOptions.map(report => ({
                 label: report.name,
                 value: report.id
               }))}
               value={(field.value as Type | undefined)?.id || null}
               onChange={val => {
-                const report = reportsResponseData?.items.find(r => r.id === val);
+                const report = reportOptions.find(r => r.id === val);
                 field.onChange(report ?? undefined);
               }}
               onBlur={field.onBlur}
