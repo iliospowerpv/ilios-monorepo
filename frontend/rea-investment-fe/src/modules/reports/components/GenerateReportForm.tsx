@@ -82,11 +82,10 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({ onFilterChange }) => {
 
   const onSubmit: SubmitHandler<DeviceFormFields> = async data => {
     const filters = data;
-    filters.start_date = dayjs(data.start_date, 'YYYY-MM-DD', true).startOf('month').format('YYYY-MM-DD');
+    filters.start_date = dayjs(data.start_date).format('YYYY-MM-DD');
     const selectedDate = dayjs(data.end_date);
     const now = dayjs();
-    const isCurrentMonth = selectedDate.isSame(now, 'month');
-    filters.end_date = isCurrentMonth ? now.format('YYYY-MM-DD') : selectedDate.endOf('month').format('YYYY-MM-DD');
+    filters.end_date = selectedDate.isAfter(now) ? now.format('YYYY-MM-DD') : selectedDate.format('YYYY-MM-DD');
     onFilterChange(filters);
     reset(getValues());
   };

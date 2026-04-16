@@ -21,7 +21,7 @@ from app.static import PermissionsActions
 logger = logging.getLogger(__name__)
 performance_report_router = APIRouter()
 
-MAX_DATE_RANGE_DAYS = 366
+MAX_DATE_RANGE_DAYS = 400
 
 
 def _validate_date_param(value: str, param_name: str) -> date:

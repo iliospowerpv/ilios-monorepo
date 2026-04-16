@@ -10,7 +10,11 @@ import ActualProductionVsProjected from '../../../../../operations-and-maintenan
 import Losses from '../../../../../operations-and-maintenance/pages/CompanyDetails/tabs/Overview/widgets/Losses/Losses';
 
 export const Performance: React.FC<AssetManagementCompanyDetailsTabProps> = ({ companyDetails }) => {
-  const { data: chartData, isLoading, isError } = useQuery({
+  const {
+    data: chartData,
+    isLoading,
+    isError
+  } = useQuery({
     queryFn: () => ApiClient.operationsAndMaintenance.companyActualVsExpectedProductionData(companyDetails.id),
     queryKey: ['companies', 'actual-vs-expected-production-data', { companyId: companyDetails.id }],
     refetchInterval: 15 * 60 * 1000
@@ -19,9 +23,7 @@ export const Performance: React.FC<AssetManagementCompanyDetailsTabProps> = ({ c
   const hasTelemetryData =
     !isLoading &&
     !isError &&
-    chartData?.items?.some(
-      (item) => (item.actual_kw ?? 0) !== 0 || (item.expected_kw ?? 0) !== 0
-    );
+    chartData?.items?.some(item => (item.actual_kw ?? 0) !== 0 || (item.expected_kw ?? 0) !== 0);
   const showEmptyState = !isLoading && !isError && !hasTelemetryData;
 
   return (
@@ -32,7 +34,7 @@ export const Performance: React.FC<AssetManagementCompanyDetailsTabProps> = ({ c
 
       {showEmptyState && (
         <Alert severity="info" sx={{ mb: 3 }}>
-          Performance charts will appear here once telemetry data is available for this portfolio's sites.
+          Performance charts will appear here once telemetry data is available for this portfolio&apos;s sites.
         </Alert>
       )}
 

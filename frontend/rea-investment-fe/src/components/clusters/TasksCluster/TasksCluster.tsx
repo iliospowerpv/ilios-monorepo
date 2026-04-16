@@ -46,7 +46,16 @@ type TasksCompanyScopeProps = TasksCommonProps & {
 
 type TasksProps = TasksSiteScopeProps | TasksCompanyScopeProps;
 
-export const Tasks: React.FC<TasksProps> = ({ module = '', scope, companyId, siteId, view, setView, focusTaskId, deviceId }) => {
+export const Tasks: React.FC<TasksProps> = ({
+  module = '',
+  scope,
+  companyId,
+  siteId,
+  view,
+  setView,
+  focusTaskId,
+  deviceId
+}) => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [isFormOpen, setIsFormOpen] = React.useState<boolean>(false);
 
