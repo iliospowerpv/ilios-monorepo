@@ -20,7 +20,7 @@ export const WeatherIndicator: React.FC<{ imageSrc: string | null }> = ({ imageS
   if (isDemoIcon) {
     return (
       <Box display="flex" borderRadius="8px" flexDirection="column" alignItems="center" justifyContent="center">
-        <WbCloudyIcon sx={{ fontSize: '32px', color: '#F9A825' }} />
+        <WbCloudyIcon sx={{ fontSize: '32px', color: '#90A4AE' }} />
       </Box>
     );
   }
