@@ -35,6 +35,7 @@ import {
   CompanyDetails as PHCompanyDetails,
   SiteDetails as PHSiteDetails,
   AddDevice as PHAddDevice,
+  DeviceDetails as PHDeviceDetails,
   ModuleContainer as PHModuleContainer
 } from './modules/project-hub';
 import {
@@ -566,11 +567,15 @@ const router = createBrowserRouter(
           />
           <Route
             path="/project-hub/companies/:companyId/sites/:siteId/devices/:deviceId"
-            element={<DeprecatedRouteRedirect targetTab="om" />}
+            handle={PHDeviceDetails.createHandle()}
+            loader={withAuthControl(PHDeviceDetails.createLoader(queryClient))}
+            element={<PHDeviceDetails.Component />}
           />
           <Route
             path="/project-hub/companies/:companyId/sites/:siteId/devices/:deviceId/overview"
-            element={<DeprecatedRouteRedirect targetTab="om" />}
+            handle={PHDeviceDetails.createHandle()}
+            loader={withAuthControl(PHDeviceDetails.createLoader(queryClient))}
+            element={<PHDeviceDetails.Component />}
           />
           <Route
             path="/project-hub/companies/:companyId/sites/:siteId/devices/:deviceId/tasks"
