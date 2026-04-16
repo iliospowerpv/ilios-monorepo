@@ -4,6 +4,7 @@ interface TasksViewCommonProps {
   companyId: number;
   module?: string;
   focusTaskId?: number | null;
+  deviceId?: number;
 }
 
 type TasksViewSiteScopeProps = TasksViewCommonProps & {

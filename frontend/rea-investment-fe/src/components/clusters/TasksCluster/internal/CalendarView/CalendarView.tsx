@@ -18,7 +18,7 @@ import { useNotify } from '../../../../../contexts/notifications/notifications';
 
 dayjs.extend(CustomParseFormatPlugin);
 
-const CalendarView: React.FC<TasksViewProps> = ({ boardId, scope, siteId, companyId, searchTerm, module }) => {
+const CalendarView: React.FC<TasksViewProps> = ({ boardId, scope, siteId, companyId, searchTerm, module, deviceId }) => {
   const notify = useNotify();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -30,10 +30,11 @@ const CalendarView: React.FC<TasksViewProps> = ({ boardId, scope, siteId, compan
       return ApiClient.taskManagement.getTasks(boardId, {
         skip: 0,
         limit: 1000,
-        ...(searchTerm && { search: searchTerm })
+        ...(searchTerm && { search: searchTerm }),
+        ...(deviceId && { affected_device_id: deviceId })
       });
     },
-    queryKey: ['tasks', { boardId, searchTerm }],
+    queryKey: ['tasks', { boardId, searchTerm, deviceId }],
     placeholderData: keepPreviousData
   });
 

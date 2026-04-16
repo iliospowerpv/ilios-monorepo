@@ -31,6 +31,7 @@ type TasksCommonProps = {
   companyId: number;
   module?: string;
   focusTaskId?: number | null;
+  deviceId?: number;
 };
 
 type TasksSiteScopeProps = TasksCommonProps & {
@@ -45,7 +46,7 @@ type TasksCompanyScopeProps = TasksCommonProps & {
 
 type TasksProps = TasksSiteScopeProps | TasksCompanyScopeProps;
 
-export const Tasks: React.FC<TasksProps> = ({ module = '', scope, companyId, siteId, view, setView, focusTaskId }) => {
+export const Tasks: React.FC<TasksProps> = ({ module = '', scope, companyId, siteId, view, setView, focusTaskId, deviceId }) => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [isFormOpen, setIsFormOpen] = React.useState<boolean>(false);
 
@@ -126,6 +127,7 @@ export const Tasks: React.FC<TasksProps> = ({ module = '', scope, companyId, sit
               searchTerm={searchTerm}
               module={module}
               focusTaskId={focusTaskId}
+              deviceId={deviceId}
             />
           )}
           {view === 'board' && (
@@ -136,6 +138,7 @@ export const Tasks: React.FC<TasksProps> = ({ module = '', scope, companyId, sit
               siteId={siteId}
               searchTerm={searchTerm}
               module={module}
+              deviceId={deviceId}
             />
           )}
           {view === 'calendar' && (
@@ -146,6 +149,7 @@ export const Tasks: React.FC<TasksProps> = ({ module = '', scope, companyId, sit
               siteId={siteId}
               searchTerm={searchTerm}
               module={module}
+              deviceId={deviceId}
             />
           )}
           <AddTaskForm

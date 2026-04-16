@@ -6,9 +6,11 @@ import Typography from '@mui/material/Typography';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import SpaceDashboardIcon from '@mui/icons-material/SpaceDashboard';
+import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import { deviceDetailsQuery } from './loader';
 import type { DeviceDetailsTabProps } from './tabs/types';
 import Overview from './tabs/Overview/Overview';
+import Tasks from './tabs/Tasks/Tasks';
 
 interface TabData {
   id: string;
@@ -33,6 +35,14 @@ const tabsData: TabData[] = [
     disabled: false,
     icon: <SpaceDashboardIcon />,
     content: Overview
+  },
+  {
+    id: 'tasks',
+    label: 'Tasks',
+    link: '/project-hub/companies/:companyId/sites/:siteId/devices/:deviceId/tasks',
+    disabled: false,
+    icon: <TaskAltIcon />,
+    content: Tasks
   }
 ];
 

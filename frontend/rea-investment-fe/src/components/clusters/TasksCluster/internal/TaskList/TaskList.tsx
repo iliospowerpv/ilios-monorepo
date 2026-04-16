@@ -13,7 +13,7 @@ import { TasksViewProps } from '../../types';
 import { resolveTaskDestination } from '../../../../../utils/navigation/taskDestinationResolver';
 import { useProjectNavigation, ProjectPicker } from '../../../../common/ProjectPicker';
 
-export const TaskList: React.FC<TasksViewProps> = ({ boardId, searchTerm, siteId, module }) => {
+export const TaskList: React.FC<TasksViewProps> = ({ boardId, searchTerm, siteId, module, deviceId }) => {
   const { isPickerOpen, closePicker, navigateWithFallback, handleProjectSelect } = useProjectNavigation();
   const { efficiencyColors, color } = useTheme();
   const taskPriority: any = {
@@ -140,7 +140,8 @@ export const TaskList: React.FC<TasksViewProps> = ({ boardId, searchTerm, siteId
             limit,
             ...(searchTerm && { search: searchTerm }),
             ...(orderBy && { order_by: orderBy }),
-            ...(orderDirection && { order_direction: orderDirection })
+            ...(orderDirection && { order_direction: orderDirection }),
+            ...(deviceId && { affected_device_id: deviceId })
           })
           .then(data => {
             if (!data.items.length) {
@@ -159,7 +160,7 @@ export const TaskList: React.FC<TasksViewProps> = ({ boardId, searchTerm, siteId
           });
       }
     }),
-    [searchTerm, boardId]
+    [searchTerm, boardId, deviceId]
   );
 
   return (

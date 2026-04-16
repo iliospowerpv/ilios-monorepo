@@ -583,10 +583,11 @@ const router = createBrowserRouter(
             loader={withAuthControl(PHDeviceDetails.createLoader(queryClient))}
             element={<PHDeviceDetails.Component />}
           />
-          {/* Intentional redirect: DeviceDetails has no tasks tab yet, so redirect to site-level tasks */}
           <Route
             path="/project-hub/companies/:companyId/sites/:siteId/devices/:deviceId/tasks"
-            element={<DeprecatedRouteRedirect targetTab="tasks" />}
+            handle={PHDeviceDetails.createHandle()}
+            loader={withAuthControl(PHDeviceDetails.createLoader(queryClient))}
+            element={<PHDeviceDetails.Component tabId="tasks" />}
           />
           <Route
             path="/project-hub/companies/:companyId/sites/:siteId/tasks/:taskId"

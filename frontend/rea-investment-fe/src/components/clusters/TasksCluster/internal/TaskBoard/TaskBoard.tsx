@@ -12,7 +12,7 @@ interface DragDetails {
   statusId: number;
 }
 
-const TaskBoard: React.FC<TasksViewProps> = ({ boardId, searchTerm, scope, companyId, siteId, module }) => {
+const TaskBoard: React.FC<TasksViewProps> = ({ boardId, searchTerm, scope, companyId, siteId, module, deviceId }) => {
   const notify = useNotify();
   const queryClient = useQueryClient();
   const [columns, setColumns] = useState(null);
@@ -30,10 +30,11 @@ const TaskBoard: React.FC<TasksViewProps> = ({ boardId, searchTerm, scope, compa
       return ApiClient.taskManagement.getTasks(boardId, {
         skip: 0,
         limit: 1000,
-        ...(searchTerm && { search: searchTerm })
+        ...(searchTerm && { search: searchTerm }),
+        ...(deviceId && { affected_device_id: deviceId })
       });
     },
-    queryKey: ['tasks', { boardId, searchTerm }],
+    queryKey: ['tasks', { boardId, searchTerm, deviceId }],
     placeholderData: keepPreviousData
   });
 
