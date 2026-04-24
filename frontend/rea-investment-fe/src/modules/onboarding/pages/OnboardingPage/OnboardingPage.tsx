@@ -56,7 +56,6 @@ export const OnboardingPage: React.FC = () => {
     if (workspaceQuery.isError) {
       bootstrappedRef.current = validUrlCompanyId;
       setBootstrapError("We couldn't load your companies. Please pick one below.");
-      setSearchParams({}, { replace: true });
       return;
     }
 
@@ -66,7 +65,6 @@ export const OnboardingPage: React.FC = () => {
     if (!matched) {
       bootstrappedRef.current = validUrlCompanyId;
       setBootstrapError("That company isn't available to you. Please pick one below.");
-      setSearchParams({}, { replace: true });
       return;
     }
 
@@ -74,13 +72,9 @@ export const OnboardingPage: React.FC = () => {
 
     setCurrentCompany({ id: matched.company_id, name: matched.company_name });
 
-    if (state.companyId !== matched.company_id) {
-      bootstrapCompanyFromUrl(matched.company_id, matched.company_name);
-    } else if (state.currentStep !== 'company') {
+    if (state.companyId !== matched.company_id || state.currentStep !== 'company') {
       bootstrapCompanyFromUrl(matched.company_id, matched.company_name);
     }
-
-    setSearchParams({}, { replace: true });
   }, [
     isLoaded,
     validUrlCompanyId,
@@ -90,8 +84,7 @@ export const OnboardingPage: React.FC = () => {
     state.companyId,
     state.currentStep,
     bootstrapCompanyFromUrl,
-    setCurrentCompany,
-    setSearchParams
+    setCurrentCompany
   ]);
 
   const handleCompanyComplete = (companyId: number, companyName: string) => {
