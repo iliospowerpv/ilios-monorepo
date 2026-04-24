@@ -18,8 +18,17 @@ import { ApiClient } from '../../../../api';
 import { useEntityContext } from '../../../../contexts/entityContext/entityContext';
 
 export const OnboardingPage: React.FC = () => {
-  const { state, isLoaded, setCompany, setProject, addInvitedUser, completeOnboarding, clearDraft, resetToStep } =
-    useOnboardingState();
+  const {
+    state,
+    isLoaded,
+    setCompany,
+    bootstrapCompanyFromUrl,
+    setProject,
+    addInvitedUser,
+    completeOnboarding,
+    clearDraft,
+    resetToStep
+  } = useOnboardingState();
   const { setCurrentCompany } = useEntityContext();
   const [searchParams, setSearchParams] = useSearchParams();
   const urlCompanyId = searchParams.get('companyId');
@@ -66,10 +75,9 @@ export const OnboardingPage: React.FC = () => {
     setCurrentCompany({ id: matched.company_id, name: matched.company_name });
 
     if (state.companyId !== matched.company_id) {
-      clearDraft();
-      setCompany(matched.company_id, matched.company_name);
-    } else if (state.currentStep === 'company') {
-      setCompany(matched.company_id, matched.company_name);
+      bootstrapCompanyFromUrl(matched.company_id, matched.company_name);
+    } else if (state.currentStep !== 'company') {
+      bootstrapCompanyFromUrl(matched.company_id, matched.company_name);
     }
 
     setSearchParams({}, { replace: true });
@@ -81,8 +89,7 @@ export const OnboardingPage: React.FC = () => {
     workspaceQuery.data,
     state.companyId,
     state.currentStep,
-    setCompany,
-    clearDraft,
+    bootstrapCompanyFromUrl,
     setCurrentCompany,
     setSearchParams
   ]);

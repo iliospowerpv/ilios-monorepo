@@ -79,6 +79,18 @@ export const useOnboardingState = () => {
     [state, saveState]
   );
 
+  const bootstrapCompanyFromUrl = useCallback(
+    (companyId: number, companyName: string) => {
+      saveState({
+        ...defaultState,
+        companyId,
+        companyName,
+        currentStep: 'company'
+      });
+    },
+    [saveState]
+  );
+
   const setProject = useCallback(
     (projectId: number, projectName: string) => {
       saveState({ ...state, projectId, projectName, currentStep: 'invite' });
@@ -137,6 +149,7 @@ export const useOnboardingState = () => {
     isLoaded,
     setStep,
     setCompany,
+    bootstrapCompanyFromUrl,
     setProject,
     addInvitedUser,
     completeOnboarding,
