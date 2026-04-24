@@ -7,12 +7,32 @@ interface Connection {
   token?: string | null;
   username?: string | null;
   password?: string | null;
+  share_with_portfolio?: boolean;
   isEditing?: boolean;
   isNotSaved?: boolean;
 }
 
 interface Connections {
   items: Connection[];
+}
+
+interface AvailableConnection {
+  id: number;
+  name: string;
+  provider: string;
+  company_id: number;
+  company_name: string;
+  owner_type: string;
+  owner_company_id: number | null;
+  owner_company_name: string | null;
+  last_test_at: string | null;
+  last_test_status: string | null;
+  last_test_message: string | null;
+}
+
+interface AvailableConnectionsResponse {
+  company_connections: AvailableConnection[];
+  portfolio_connections: AvailableConnection[];
 }
 
 interface ConnectionResponse {
@@ -129,13 +149,28 @@ interface CompanyProvidersResponse {
 
 export const buildConnectionsApi = (httpClient: AxiosInstance) => {
   const getConnections = async (companyId: number): Promise<Connections> => {
-    const response = await httpClient.get<Connections>(`/api/contractors/${companyId}/connections/`);
+    // Returns connections grouped by ownership; flatten into a single list for the wizard.
+    const response = await httpClient.get<AvailableConnectionsResponse>(
+      `/api/telemetry/connections/available?company_id=${companyId}`
+    );
+    const grouped = response.data;
+    const items: Connection[] = [
+      ...grouped.company_connections.map(c => ({ id: c.id, name: c.name, provider: c.provider })),
+      ...grouped.portfolio_connections.map(c => ({ id: c.id, name: c.name, provider: c.provider }))
+    ];
+    return { items };
+  };
+
+  const getAvailableConnections = async (companyId: number): Promise<AvailableConnectionsResponse> => {
+    const response = await httpClient.get<AvailableConnectionsResponse>(
+      `/api/telemetry/connections/available?company_id=${companyId}`
+    );
     return response.data;
   };
 
   const createConnection = async (companyId: number, attributes: Connection): Promise<ConnectionResponse> => {
     const response = await httpClient.post<ConnectionResponse>(
-      `/api/contractors/${companyId}/connections/`,
+      `/api/telemetry/companies/${companyId}/connections`,
       attributes
     );
     return response.data;
@@ -147,7 +182,7 @@ export const buildConnectionsApi = (httpClient: AxiosInstance) => {
     attributes: Connection
   ): Promise<ConnectionResponse> => {
     const response = await httpClient.put<ConnectionResponse>(
-      `/api/contractors/${companyId}/connections/${connectionId}`,
+      `/api/telemetry/companies/${companyId}/connections/${connectionId}`,
       attributes
     );
     return response.data;
@@ -155,13 +190,15 @@ export const buildConnectionsApi = (httpClient: AxiosInstance) => {
 
   const deleteConnection = async (companyId: number, connectionId: number | undefined): Promise<ConnectionResponse> => {
     const response = await httpClient.delete<ConnectionResponse>(
-      `/api/contractors/${companyId}/connections/${connectionId}`
+      `/api/telemetry/companies/${companyId}/connections/${connectionId}`
     );
     return response.data;
   };
 
   const getSites = async (companyId: number, connectionId: number): Promise<Sites> => {
-    const response = await httpClient.get<Sites>(`/api/contractors/${companyId}/connections/${connectionId}/sites`);
+    const response = await httpClient.get<Sites>(
+      `/api/telemetry/companies/${companyId}/connections/${connectionId}/sites`
+    );
     return response.data;
   };
 
@@ -247,6 +284,7 @@ export const buildConnectionsApi = (httpClient: AxiosInstance) => {
 
   return Object.freeze({
     getConnections,
+    getAvailableConnections,
     createConnection,
     updateConnection,
     deleteConnection,

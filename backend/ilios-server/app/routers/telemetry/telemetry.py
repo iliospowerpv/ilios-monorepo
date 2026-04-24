@@ -27,6 +27,7 @@ from app.helpers.telemetry.telemetry_helper import (
 )
 from app.models.device import Device, DeviceCategories
 from app.models.site import Site
+from app.models.telemetry import DASConnection, DASProvidersEnum, TelemetrySiteMapping
 from app.schema.telemetry import (
     AssignProviderSchema,
     AssignProviderSuccess,
@@ -36,8 +37,14 @@ from app.schema.telemetry import (
     BulkDeviceMappingSchema,
     CompanyProviderSchema,
     CompanyProvidersListSchema,
+    ConnectionCreateSchema,
+    ConnectionCreateSuccess,
+    ConnectionDeleteSuccess,
+    ConnectionSchema,
     ConnectionTestResponse,
     ConnectionTestSchema,
+    ConnectionUpdateSchema,
+    ConnectionUpdateSuccess,
     DeviceMappingDeleteSuccess,
     RemoveProviderSuccess,
     SiteMappingCreateSuccess,
@@ -204,6 +211,239 @@ async def get_site_available_connections(
         company_connections=[_serialize_connection(c) for c in grouped["company_connections"]],
         portfolio_connections=[_serialize_connection(c) for c in grouped["portfolio_connections"]],
     )
+
+
+def _generate_secret_token_name(company_id: int) -> str:
+    """Build a unique GCP secret id for a DAS connection."""
+    import uuid
+    return f"ilios-das-c{company_id}-{uuid.uuid4().hex[:8]}"
+
+
+def _store_credentials_secret(company_id: int, credentials: str) -> str:
+    """Create a new GCP secret + version, return secret_token_name."""
+    secret_name = _generate_secret_token_name(company_id)
+    secrets_manager = GCPSecretsManager()
+    secrets_manager.create_secret(secret_name)
+    secrets_manager.add_secret_version(secret_name, credentials)
+    return secret_name
+
+
+def _rotate_credentials_secret(secret_name: str, credentials: str) -> None:
+    """Add a new version to an existing GCP secret."""
+    GCPSecretsManager().add_secret_version(secret_name, credentials)
+
+
+def _delete_credentials_secret(secret_name: str) -> None:
+    """Best-effort delete of a GCP secret. Logs but does not raise."""
+    try:
+        GCPSecretsManager().delete_secret(secret_name)
+    except Exception as exc:
+        logger.warning(f"Failed to delete GCP secret {secret_name}: {exc}")
+
+
+@telemetry_router.post(
+    "/companies/{company_id}/connections",
+    status_code=status.HTTP_201_CREATED,
+    response_model=ConnectionCreateSuccess,
+    description="Create a DAS connection for a company (validates provider is licensed)",
+    dependencies=[Depends(AuthorizedUser(SettingsPermissions(PermissionsActions.edit)))],
+)
+async def create_connection(
+    request: Request,
+    payload: ConnectionCreateSchema,
+    company: Company = Depends(get_authorized_company),
+    db_session: Session = Depends(get_session),
+) -> dict:
+    """Create a DAS connection. Stores raw credentials in GCP Secret Manager and
+    persists only the secret reference + metadata in the DB."""
+    from app.crud.das_connection import DASConnectionCRUD
+
+    connection_crud = DASConnectionCRUD(db_session)
+    if connection_crud.get_company_connection_by_name(company.id, payload.name):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"A connection named '{payload.name}' already exists for this company.",
+        )
+
+    credentials = format_das_credentials(payload.provider, payload)
+    if not credentials:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Missing or invalid credentials payload")
+
+    secret_name = _store_credentials_secret(company.id, credentials)
+    try:
+        connection = connection_crud.create_item({
+            "company_id": company.id,
+            "name": payload.name,
+            "provider": payload.provider,
+            "secret_token_name": secret_name,
+            "owner_type": "portfolio" if payload.share_with_portfolio else "company",
+            "owner_company_id": company.id if payload.share_with_portfolio else None,
+        })
+    except Exception:
+        # Roll back the secret if the DB insert fails
+        _delete_credentials_secret(secret_name)
+        raise
+
+    _create_audit_log(
+        request,
+        db_session,
+        "connection_created",
+        f"Connection '{payload.name}' ({payload.provider.value}) created for company {company.id}",
+    )
+    return {
+        "code": status.HTTP_201_CREATED,
+        "message": str(TelemetryMessages.connection_create_success),
+        "id": connection.id,
+    }
+
+
+def _load_company_connection(connection_id: int, company_id: int, db_session: Session) -> DASConnection:
+    """Load a connection scoped to a company; 404 if not found, 403 if it belongs to another company."""
+    connection = db_session.query(DASConnection).get(connection_id)
+    if not connection:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Connection not found")
+    if connection.company_id != company_id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Connection not owned by this company")
+    return connection
+
+
+@telemetry_router.put(
+    "/companies/{company_id}/connections/{connection_id}",
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=ConnectionUpdateSuccess,
+    description="Update a DAS connection name and/or rotate credentials",
+    dependencies=[Depends(AuthorizedUser(SettingsPermissions(PermissionsActions.edit)))],
+)
+async def update_connection(
+    request: Request,
+    connection_id: int,
+    payload: ConnectionUpdateSchema,
+    company: Company = Depends(get_authorized_company),
+    db_session: Session = Depends(get_session),
+) -> dict:
+    """Update a connection. Provider is fixed (cannot change after creation).
+    If credential fields are populated, a new secret version is added."""
+    from app.crud.das_connection import DASConnectionCRUD
+
+    connection_crud = DASConnectionCRUD(db_session)
+    connection = _load_company_connection(connection_id, company.id, db_session)
+
+    if payload.name and payload.name != connection.name:
+        existing = connection_crud.get_company_connection_by_name(company.id, payload.name)
+        if existing and existing.id != connection.id:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                f"A connection named '{payload.name}' already exists for this company.",
+            )
+
+    # Detect whether the user submitted any credential fields (rotate) vs. metadata-only update
+    has_creds = bool(getattr(payload, "token", None) or getattr(payload, "username", None) or getattr(payload, "password", None))
+    if has_creds:
+        credentials = format_das_credentials(connection.provider, payload)
+        if not credentials:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Incomplete credentials for rotation")
+        _rotate_credentials_secret(connection.secret_token_name, credentials)
+
+    update_fields = {}
+    if payload.name and payload.name != connection.name:
+        update_fields["name"] = payload.name
+    new_owner_type = "portfolio" if payload.share_with_portfolio else "company"
+    if connection.owner_type != new_owner_type:
+        update_fields["owner_type"] = new_owner_type
+        update_fields["owner_company_id"] = company.id if payload.share_with_portfolio else None
+    if update_fields:
+        connection_crud.update_by_id(connection.id, update_fields)
+
+    _create_audit_log(
+        request,
+        db_session,
+        "connection_updated",
+        f"Connection {connection.id} updated (creds_rotated={has_creds})",
+    )
+    return {"code": status.HTTP_202_ACCEPTED, "message": str(TelemetryMessages.connection_update_success)}
+
+
+@telemetry_router.delete(
+    "/companies/{company_id}/connections/{connection_id}",
+    response_model=ConnectionDeleteSuccess,
+    description="Delete a DAS connection (blocked if any site mappings reference it)",
+    dependencies=[Depends(AuthorizedUser(SettingsPermissions(PermissionsActions.edit)))],
+)
+async def delete_connection(
+    request: Request,
+    connection_id: int,
+    company: Company = Depends(get_authorized_company),
+    db_session: Session = Depends(get_session),
+) -> dict:
+    """Delete a connection. Refuses if any TelemetrySiteMapping rows reference it
+    (callers must unmap sites first to avoid orphaning telemetry data)."""
+    from app.crud.das_connection import DASConnectionCRUD
+
+    connection = _load_company_connection(connection_id, company.id, db_session)
+
+    mapping_count = (
+        db_session.query(TelemetrySiteMapping)
+        .filter(TelemetrySiteMapping.connection_id == connection.id)
+        .count()
+    )
+    if mapping_count > 0:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"Cannot delete: this connection is used by {mapping_count} site mapping(s). Unmap first.",
+        )
+
+    secret_name = connection.secret_token_name
+    DASConnectionCRUD(db_session).delete_by_id(connection.id)
+    _delete_credentials_secret(secret_name)
+
+    _create_audit_log(
+        request,
+        db_session,
+        "connection_deleted",
+        f"Connection {connection.id} ({connection.name}) deleted from company {company.id}",
+    )
+    return {"code": status.HTTP_200_OK, "message": str(TelemetryMessages.connection_delete_success)}
+
+
+@telemetry_router.get(
+    "/companies/{company_id}/connections/{connection_id}/sites",
+    response_model=TelemetrySitesDevicesList,
+    description="Fetch the remote DAS provider's site catalog for a connection",
+    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.view)))],
+)
+async def get_connection_remote_sites(
+    connection_id: int,
+    company: Company = Depends(get_authorized_company),
+    db_session: Session = Depends(get_session),
+):
+    """List remote DAS sites visible to a connection. Authorized through the company
+    that the user is acting in; the connection must be owned by that company OR
+    shared into its portfolio hub."""
+    from app.crud.das_connection import DASConnectionCRUD
+
+    accessible = DASConnectionCRUD(db_session).get_hub_connections(company.id)
+    connection = next((c for c in accessible if c.id == connection_id), None)
+    if not connection:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            "Connection not found or not accessible from this company",
+        )
+
+    try:
+        remote_sites = TelemetryFuncHTTPClient().get_telemetry_sites(
+            connection.provider.name,
+            GCPSecretsManager().get_secret_version_id(connection.secret_token_name),
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception(f"Failed to fetch remote sites for connection {connection_id}: {exc}")
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY,
+            "Unable to fetch sites from DAS provider. Check connection credentials.",
+        )
+
+    return {"items": remote_sites}
 
 
 @telemetry_router.post(

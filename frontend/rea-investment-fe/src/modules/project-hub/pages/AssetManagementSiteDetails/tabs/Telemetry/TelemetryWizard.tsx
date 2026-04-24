@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '../../../../../../contexts/auth/auth';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -46,6 +48,9 @@ interface TelemetryWizardProps {
 
 export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose, siteDetails, readiness }) => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const canEditSettings = Boolean(user?.role?.permissions?.settings?.edit);
   const [activeStep, setActiveStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -331,10 +336,12 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
 
             {connectionMode === 'existing' && (
               <SearchableSelect
-                options={(connections?.items || []).filter(conn => conn.id != null).map(conn => ({
-                  label: `${conn.name} (${conn.provider})`,
-                  value: conn.id!
-                }))}
+                options={(connections?.items || [])
+                  .filter(conn => conn.id != null)
+                  .map(conn => ({
+                    label: `${conn.name} (${conn.provider})`,
+                    value: conn.id!
+                  }))}
                 value={selectedConnectionId ?? null}
                 onChange={val => setSelectedConnectionId(val ? Number(val) : null)}
                 label="Select Connection"
@@ -357,9 +364,35 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
             )}
 
             {connectionMode === 'new' && !isLoadingProviders && !isProvidersError && hasNoProviders && (
-              <Alert severity="info" sx={{ mb: 2 }}>
-                No telemetry providers have been assigned to this company. Please contact an administrator to configure
-                available providers.
+              <Alert
+                severity="info"
+                sx={{ mb: 2 }}
+                action={
+                  canEditSettings && companyId ? (
+                    <Button
+                      color="inherit"
+                      size="small"
+                      onClick={() => {
+                        onClose();
+                        navigate(`/portfolio-admin/companies/${companyId}`);
+                      }}
+                    >
+                      Configure Providers
+                    </Button>
+                  ) : undefined
+                }
+              >
+                {canEditSettings ? (
+                  <>
+                    No telemetry providers are licensed for this company yet. Configure providers in Portfolio Admin →
+                    Company → Telemetry Providers, then return here to create a connection.
+                  </>
+                ) : (
+                  <>
+                    No telemetry providers are licensed for this company yet. Please contact a portfolio administrator
+                    to enable a DAS provider (KMC or Also Energy) before connections can be created.
+                  </>
+                )}
               </Alert>
             )}
 
