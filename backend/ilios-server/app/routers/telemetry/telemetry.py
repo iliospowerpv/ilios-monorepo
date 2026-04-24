@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.crud.audit_log import AuditLogCRUD
@@ -857,11 +858,21 @@ async def get_company_providers(
     from app.crud.company_das_provider import CompanyDASProviderCRUD
 
     providers = CompanyDASProviderCRUD(db_session).get_providers(company.id)
+
+    connection_counts_rows = (
+        db_session.query(DASConnection.provider, func.count(DASConnection.id))
+        .filter(DASConnection.company_id == company.id)
+        .group_by(DASConnection.provider)
+        .all()
+    )
+    counts_by_provider = {row[0]: row[1] for row in connection_counts_rows}
+
     return CompanyProvidersListSchema(
         items=[
             CompanyProviderSchema(
                 provider=p.provider.name,
                 provider_display=p.provider.value,
+                connection_count=counts_by_provider.get(p.provider, 0),
             )
             for p in providers
         ]
@@ -927,6 +938,19 @@ async def remove_company_provider(
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             f"Invalid provider '{provider}'. Valid providers: {valid}",
+        )
+
+    in_use_count = (
+        db_session.query(func.count(DASConnection.id))
+        .filter(DASConnection.company_id == company.id, DASConnection.provider == provider_enum)
+        .scalar()
+        or 0
+    )
+    if in_use_count > 0:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"Cannot remove provider '{provider_enum.value}': {in_use_count} connection(s) still use it. "
+            "Delete those connections first.",
         )
 
     deleted = CompanyDASProviderCRUD(db_session).remove_provider(company.id, provider_enum)

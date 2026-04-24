@@ -217,6 +217,7 @@ class DeviceMappingDeleteSuccess(Success):
 class CompanyProviderSchema(BaseModel):
     provider: str = Field(description="Provider enum key", examples=["kmc"])
     provider_display: str = Field(description="Provider display name", examples=["KMC"])
+    connection_count: int = Field(default=0, description="Number of DAS connections currently using this provider")
 
 
 class CompanyProvidersListSchema(BaseModel):

@@ -141,6 +141,7 @@ interface BulkDeviceMappingResponse {
 interface CompanyProvider {
   provider: string;
   provider_display: string;
+  connection_count?: number;
 }
 
 interface CompanyProvidersResponse {

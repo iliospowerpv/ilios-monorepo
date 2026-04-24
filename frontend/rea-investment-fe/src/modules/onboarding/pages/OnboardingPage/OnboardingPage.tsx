@@ -30,7 +30,7 @@ export const OnboardingPage: React.FC = () => {
     resetToStep
   } = useOnboardingState();
   const { setCurrentCompany } = useEntityContext();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const urlCompanyId = searchParams.get('companyId');
   const parsedUrlCompanyId = urlCompanyId ? Number(urlCompanyId) : null;
   const validUrlCompanyId =
@@ -60,7 +60,7 @@ export const OnboardingPage: React.FC = () => {
     }
 
     const companies = workspaceQuery.data?.companies ?? [];
-    const matched = companies.find((c) => c.company_id === validUrlCompanyId);
+    const matched = companies.find(c => c.company_id === validUrlCompanyId);
 
     if (!matched) {
       bootstrappedRef.current = validUrlCompanyId;
