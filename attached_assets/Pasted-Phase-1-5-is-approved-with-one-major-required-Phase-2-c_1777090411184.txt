@@ -1,0 +1,63 @@
+Phase 1.5 is approved with one major required Phase 2 correction.
+
+The validation results are acceptable for Phase 1:
+- ff18 applies cleanly against the demo DB.
+- ff18 down/up validation passed.
+- catalog seeding is idempotent.
+- authenticated v2 catalog returns the seeded providers.
+- happy-path provider-account create/test works with mocked adapter.
+- cross-tenant mutations return 404.
+- legacy telemetry routes remain mounted and protected.
+- frontend still loads.
+- credential redaction passed the sentinel test.
+
+I understand that the fresh-database upgrade is blocked by a pre-existing migration-chain issue, not ff18. Do not let that block Phase 2, but please log it as a separate technical debt item because eventually we need clean fresh-DB bootstrap.
+
+However, the v2 credential store issue is a blocker before any frontend exposure. Phase 2 must start with durable credential storage.
+
+Please proceed with Phase 2 only, with this order:
+
+1. Replace the v2 InMemoryCredentialStore with a durable GCP Secret Manager-backed credential store.
+
+Requirements:
+- v2 provider account credentials must persist across backend restarts.
+- v2 should use the same GCP Secret Manager infrastructure/pattern as the legacy das_connections flow where practical.
+- secret names should remain company-scoped and non-guessable, preferably preserving the current pattern or a clear v2 successor pattern.
+- credentials must remain write-only.
+- provider-account GET/PATCH responses must never return stored secret values.
+- credential rotation must update the secret payload and audit the event.
+- deleting or archiving a provider account should not accidentally delete the secret unless we have an explicit safe deletion policy.
+- logs must continue to redact passwords, tokens, bearer strings, base64 credential payloads, and secret values.
+
+2. Add restart-durability validation.
+
+Please add or manually run a validation that:
+- creates a v2 provider account with credentials,
+- confirms the secret is written durably,
+- simulates backend restart or reconstructs the credential store,
+- runs provider-account test again,
+- confirms credentials are still available and redaction still holds.
+
+3. Wire v2 provider-account test/sync to durable credentials.
+
+The ProviderAdapter should receive account context and retrieve credentials from the durable store. Do not expose credential material outside the adapter/credential-store boundary.
+
+4. Keep frontend cutover out of scope until durable secret storage passes.
+
+Do not begin the company-page telemetry UI replacement until v2 credentials are durable.
+
+5. Keep cleanup migrations out of scope.
+
+Do not remove legacy fields, constraints, routes, or table names.
+
+6. Add the CI test DB wiring task manually if the task system rejected it.
+
+The current “tests import cleanly” state is acceptable for Phase 1, but not long-term. We need CI to run the integration tests against a real test DB.
+
+After durable secrets are complete, report back with:
+- credential store implementation summary,
+- secret naming scheme,
+- create/rotate/delete/archive behavior,
+- restart-durability test result,
+- redaction test result,
+- any compatibility impacts on the legacy GCP secret flow.

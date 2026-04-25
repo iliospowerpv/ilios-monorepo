@@ -68,3 +68,16 @@ class GCPSecretsManager:
     def get_secret_version_id(self, secret_id: str, version_id: str = "latest"):
         parent = self.secrets_client.secret_path(self.project_id, secret_id)
         return f"{parent}/versions/{version_id}"
+
+    def access_secret_value(self, secret_id: str, version_id: str = "latest") -> str:
+        """Fetch the decoded payload of a secret version.
+
+        Used by the in-process telemetry v2 credential store to read
+        credentials back at request time. The legacy DAS flow never
+        needed this because it forwarded the resource path to GCP cloud
+        functions which fetched the payload via their own service
+        accounts.
+        """
+        name = f"{self.secrets_client.secret_path(self.project_id, secret_id)}/versions/{version_id}"
+        response = self.secrets_client.access_secret_version(request={"name": name})
+        return response.payload.data.decode("UTF-8")

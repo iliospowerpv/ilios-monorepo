@@ -27,6 +27,7 @@ from app.integrations.telemetry import (
     get_adapter,
 )
 from app.integrations.telemetry.credential_store import (
+    V2_SECRET_PREFIX,
     CredentialStore,
     get_credential_store,
 )
@@ -450,6 +451,13 @@ def create_provider_account(
     secret_name = credential_store.store(
         payload.external_account_label or payload.name,
         payload.credentials.fields,
+        company_id=company_id,
+    )
+    logger.info(
+        "telemetry_v2_account_created company_id=%s actor=%s secret_name=%s",
+        company_id,
+        getattr(current_user, "id", None),
+        secret_name,
     )
 
     account = DASConnection(
@@ -466,8 +474,23 @@ def create_provider_account(
         created_by_user_id=getattr(current_user, "id", None),
     )
     db.add(account)
-    db.commit()
-    db.refresh(account)
+    try:
+        db.commit()
+        db.refresh(account)
+    except Exception:
+        # Compensating cleanup: the secret was already written to durable
+        # storage but the DB row could not be persisted. Without this the
+        # secret would be orphaned. Best-effort delete; surface the
+        # original DB error to the caller.
+        db.rollback()
+        try:
+            credential_store.delete(secret_name)
+        except Exception:  # noqa: BLE001
+            logger.warning(
+                "telemetry_v2_orphan_secret_cleanup_failed secret_name=%s",
+                secret_name,
+            )
+        raise
 
     return _account_to_response(
         account,
@@ -522,21 +545,60 @@ def update_provider_account(
             account.is_archived = True
             account.archived_at = _utcnow()
 
+    minted_new_secret: Optional[str] = None
     if payload.credentials is not None and payload.credentials.fields:
-        try:
-            credential_store.delete(account.secret_token_name)
-        except Exception:  # noqa: BLE001
-            logger.warning("Failed to delete previous credential entry for account_id=%s", account_id)
-        new_secret = credential_store.store(
-            account.external_account_label or account.name,
-            payload.credentials.fields,
-        )
+        # Rotate in place: same secret resource, new version. Old
+        # versions stay accessible for audit / rollback. We never
+        # destroy the previous credential set.
+        if account.secret_token_name and account.secret_token_name.startswith(
+            V2_SECRET_PREFIX
+        ):
+            # NOTE: rotate-in-place adds a new version to the existing
+            # secret. If the subsequent DB commit fails we cannot undo
+            # the version (and shouldn't — versions are the audit
+            # trail). The old version remains accessible by version
+            # number for rollback. credential_status will be re-derived
+            # by the next /test call, so the metadata heals itself.
+            credential_store.rotate(
+                account.secret_token_name, payload.credentials.fields
+            )
+            new_secret = account.secret_token_name
+        else:
+            # Account was created before durable storage existed (or
+            # under the placeholder backend). Mint a fresh durable
+            # secret instead of mutating the legacy reference.
+            new_secret = credential_store.store(
+                account.external_account_label or account.name,
+                payload.credentials.fields,
+                company_id=company_id,
+            )
+            minted_new_secret = new_secret
         account.secret_token_name = new_secret
         account.credential_status = CredentialStatus.unverified
         rotated_fp = fingerprint(next(iter(payload.credentials.fields.values()), None))
+        logger.info(
+            "telemetry_v2_account_credentials_rotated account_id=%s actor=%s secret_name=%s",
+            account_id,
+            getattr(current_user, "id", None),
+            new_secret,
+        )
 
-    db.commit()
-    db.refresh(account)
+    try:
+        db.commit()
+        db.refresh(account)
+    except Exception:
+        db.rollback()
+        # Compensating cleanup applies only to the mint-new fallback;
+        # rotated-in-place secrets are versioned and intentionally kept.
+        if minted_new_secret is not None:
+            try:
+                credential_store.delete(minted_new_secret)
+            except Exception:  # noqa: BLE001
+                logger.warning(
+                    "telemetry_v2_orphan_secret_cleanup_failed secret_name=%s",
+                    minted_new_secret,
+                )
+        raise
     return _account_to_response(account, catalog, credential_fingerprint=rotated_fp)
 
 
@@ -552,7 +614,7 @@ def delete_provider_account(
     account_id: int,
     db: Annotated[Session, Depends(get_session)],
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
-    credential_store: Annotated[CredentialStore, Depends(get_credential_store)],
+    credential_store: Annotated[CredentialStore, Depends(get_credential_store)],  # noqa: ARG001
 ) -> None:
     _enforce_company_visibility(current_user, company_id)
     account, _ = _require_account_for_company(db, company_id, account_id)
@@ -560,10 +622,16 @@ def delete_provider_account(
     account.status = ProviderAccountStatus.archived
     account.archived_at = _utcnow()
     db.commit()
-    try:
-        credential_store.delete(account.secret_token_name)
-    except Exception:  # noqa: BLE001
-        logger.warning("Failed to delete credentials for archived account_id=%s", account_id)
+    # Safe deletion policy: archive is reversible. The underlying secret
+    # is intentionally retained so that restoring the account brings the
+    # credentials back without operator intervention. Permanent secret
+    # purge (if ever introduced) must be a separate, explicit endpoint.
+    logger.info(
+        "telemetry_v2_account_archived account_id=%s actor=%s secret_name=%s (secret retained)",
+        account_id,
+        getattr(current_user, "id", None),
+        account.secret_token_name,
+    )
 
 
 # ---------------------------------------------------------------------------
