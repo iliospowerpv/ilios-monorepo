@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
+import CardActionArea from '@mui/material/CardActionArea';
 import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
@@ -124,6 +125,11 @@ export const CompanyLevelPage: React.FC = () => {
     setIsRemoveUserOpen(true);
   };
 
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Breadcrumbs sx={{ mb: 2 }}>
@@ -170,32 +176,44 @@ export const CompanyLevelPage: React.FC = () => {
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} md={4}>
           <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <FolderIcon sx={{ fontSize: 40, color: 'success.main' }} />
-                <Box>
-                  <Typography variant="h3" component="div">
-                    {isLoadingSites ? <Skeleton width={40} /> : projectCount}
-                  </Typography>
-                  <Typography color="text.secondary">Projects</Typography>
+            <CardActionArea
+              onClick={() => scrollToSection('projects-section')}
+              aria-label="Jump to Projects section"
+              sx={{ height: '100%' }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <FolderIcon sx={{ fontSize: 40, color: 'success.main' }} />
+                  <Box>
+                    <Typography variant="h3" component="div">
+                      {isLoadingSites ? <Skeleton width={40} /> : projectCount}
+                    </Typography>
+                    <Typography color="text.secondary">Projects</Typography>
+                  </Box>
                 </Box>
-              </Box>
-            </CardContent>
+              </CardContent>
+            </CardActionArea>
           </Card>
         </Grid>
         <Grid item xs={12} md={4}>
           <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <PersonAddIcon sx={{ fontSize: 40, color: 'primary.main' }} />
-                <Box>
-                  <Typography variant="h3" component="div">
-                    {isLoadingMembers ? <Skeleton width={40} /> : memberCount}
-                  </Typography>
-                  <Typography color="text.secondary">Users</Typography>
+            <CardActionArea
+              onClick={() => scrollToSection('users-section')}
+              aria-label="Jump to Users section"
+              sx={{ height: '100%' }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <PersonAddIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+                  <Box>
+                    <Typography variant="h3" component="div">
+                      {isLoadingMembers ? <Skeleton width={40} /> : memberCount}
+                    </Typography>
+                    <Typography color="text.secondary">Users</Typography>
+                  </Box>
                 </Box>
-              </Box>
-            </CardContent>
+              </CardContent>
+            </CardActionArea>
           </Card>
         </Grid>
         <Grid item xs={12} md={4}>
@@ -230,7 +248,82 @@ export const CompanyLevelPage: React.FC = () => {
       </Grid>
 
       <Grid container spacing={3}>
-        <Grid item xs={12} lg={6}>
+        <Grid item xs={12} lg={6} id="projects-section" sx={{ scrollMarginTop: 24 }}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Projects
+              </Typography>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Project Name</TableCell>
+                      <TableCell>Location</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {isLoadingSites ? (
+                      [1, 2, 3].map(i => (
+                        <TableRow key={i}>
+                          <TableCell>
+                            <Skeleton />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton width={80} />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton width={40} />
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : projectList.length > 0 ? (
+                      projectList.map((project: any) => (
+                        <TableRow
+                          key={project.id}
+                          hover
+                          sx={{ cursor: 'pointer' }}
+                          onClick={() => navigate(`/portfolio-admin/projects/${project.id}`)}
+                        >
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <FolderIcon fontSize="small" color="action" />
+                              {project.name}
+                            </Box>
+                          </TableCell>
+                          <TableCell>{project.state}</TableCell>
+                          <TableCell>
+                            <Chip size="small" label={project.status || 'Active'} color="success" />
+                          </TableCell>
+                          <TableCell align="right">
+                            <IconButton size="small">
+                              <ChevronRightIcon />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} align="center">
+                          <Typography color="text.secondary" sx={{ py: 3 }}>
+                            No projects found. Add your first project to this company.
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} lg={6} id="users-section" sx={{ scrollMarginTop: 24 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -297,81 +390,6 @@ export const CompanyLevelPage: React.FC = () => {
                         <TableCell colSpan={4} align="center">
                           <Typography color="text.secondary" sx={{ py: 3 }}>
                             No users found. Add users to grant them access to this company.
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} lg={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Projects
-              </Typography>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Project Name</TableCell>
-                      <TableCell>Location</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell align="right">Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {isLoadingSites ? (
-                      [1, 2, 3].map(i => (
-                        <TableRow key={i}>
-                          <TableCell>
-                            <Skeleton />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton width={80} />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton width={40} />
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : projectList.length > 0 ? (
-                      projectList.map((project: any) => (
-                        <TableRow
-                          key={project.id}
-                          hover
-                          sx={{ cursor: 'pointer' }}
-                          onClick={() => navigate(`/portfolio-admin/projects/${project.id}`)}
-                        >
-                          <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <FolderIcon fontSize="small" color="action" />
-                              {project.name}
-                            </Box>
-                          </TableCell>
-                          <TableCell>{project.state}</TableCell>
-                          <TableCell>
-                            <Chip size="small" label={project.status || 'Active'} color="success" />
-                          </TableCell>
-                          <TableCell align="right">
-                            <IconButton size="small">
-                              <ChevronRightIcon />
-                            </IconButton>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={4} align="center">
-                          <Typography color="text.secondary" sx={{ py: 3 }}>
-                            No projects found. Add your first project to this company.
                           </Typography>
                         </TableCell>
                       </TableRow>
