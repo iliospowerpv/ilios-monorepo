@@ -1,0 +1,255 @@
+We need to audit and refactor the Ilios telemetry integration architecture. The current implementation appears partially coded and incorrectly modeled. It looks like telemetry providers were created/configured at the parent application/global level, which only works for a single tenant/customer. Ilios is multi-company/multi-customer, and each company may have its own telemetry provider license, credentials, external account, and site list.
+Current Problem
+On the Company page, there is a “Telemetry Providers” section showing providers such as:
+•	KMC 
+•	AlsoEnergy 
+The UI indicates these are licensed data acquisition systems this company can use. However:
+1.	The provider rows are not clickable. 
+2.	Providers cannot be viewed, edited, configured, tested, disabled, or removed in any useful way. 
+3.	Clicking “Add Provider” opens a modal saying all supported providers are already assigned, which suggests the system treats supported providers as global/static records rather than company-specific licensed configurations. 
+4.	AlsoEnergy appears to have been configured outside the app or globally, as if there will only ever be one AlsoEnergy account/license. 
+5.	This breaks the intended multi-company architecture because each customer/company may have its own telemetry provider credentials and external site inventory. 
+Business Requirement
+Telemetry providers should be licensed and configured at the Company level, not globally at the application level.
+A Company may have zero, one, or many licensed telemetry providers. For example:
+•	Company A may use AlsoEnergy with its own username/password/API access. 
+•	Company B may also use AlsoEnergy, but with different credentials and a different site list. 
+•	Company C may use KMC. 
+•	Company D may use both AlsoEnergy and KMC. 
+•	Future providers must be supported without hardcoding provider behavior into one global integration. 
+Project users should only be able to create project telemetry connections using providers that are licensed/configured for that company.
+Known AlsoEnergy API Context
+The AlsoEnergy Swagger documentation is here:
+https://api.alsoenergy.com/swagger/#/Auth/Token
+Important known facts:
+•	The API uses POST /Auth/token. 
+•	Auth uses Content-Type: application/x-www-form-urlencoded. 
+•	The returned access token is a Bearer token. 
+•	If a request returns 401, the app should reauthenticate and retry. 
+•	The tested credentials successfully returned a token and listed 72 sites for the REA Investments account. 
+•	The token appears short-lived, roughly 15–20 minutes. 
+•	/Sites returned all 72 sites. 
+•	/Sites/{siteId}/Hardware returned hardware inventory. 
+•	BinData may return 404 depending on whether archived data is configured for that device/site/time window, so 404 for BinData should not automatically mean auth failure. 
+Goal
+Please inspect the existing codebase and produce a safe refactor plan first. Do not immediately rewrite large sections. We need to understand what currently exists.
+Step 1 — Audit Existing Implementation
+Search the codebase for all telemetry-related models, routes, services, frontend components, and database tables. Specifically look for:
+•	telemetry provider tables 
+•	company telemetry provider tables 
+•	project telemetry connection tables 
+•	provider enum/static config 
+•	AlsoEnergy service code 
+•	token/auth handling 
+•	refresh/retry logic 
+•	KMC service code 
+•	company settings pages 
+•	project Telemetry tab 
+•	Swagger/API helper utilities 
+•	environment variables used for AlsoEnergy credentials 
+•	any globally stored provider credential or token 
+Report back with:
+1.	Existing database schema related to telemetry. 
+2.	Existing backend routes related to telemetry. 
+3.	Existing frontend components related to telemetry. 
+4.	Existing services/helpers for AlsoEnergy/KMC. 
+5.	Any evidence that provider credentials are global instead of company-scoped. 
+6.	Any incomplete or stubbed UI flows. 
+7.	Any migration risks. 
+Step 2 — Confirm / Propose Correct Data Model
+Please compare the current model to the following target model and identify required migrations.
+Recommended conceptual model:
+telemetry_provider_catalog
+  id
+  key                 // alsoenergy, kmc, etc.
+  display_name
+  description
+  auth_type
+  is_supported
+  provider_metadata
+
+company_telemetry_providers
+  id
+  company_id
+  provider_catalog_id
+  display_name
+  status              // draft, active, error, disabled
+  credential_status   // missing, valid, invalid, expired
+  external_account_label
+  last_tested_at
+  last_success_at
+  last_error_at
+  last_error_message
+  created_by
+  created_at
+  updated_at
+
+company_telemetry_provider_credentials
+  id
+  company_telemetry_provider_id
+  encrypted_credentials_json
+  token_cache_json     // optional; encrypted if stored
+  token_expires_at
+  created_at
+  updated_at
+
+telemetry_external_sites
+  id
+  company_telemetry_provider_id
+  external_site_id
+  external_site_name
+  raw_payload_json
+  last_seen_at
+  is_active
+
+project_telemetry_connections
+  id
+  project_id
+  company_id
+  company_telemetry_provider_id
+  telemetry_external_site_id
+  status
+  sync_enabled
+  sync_frequency
+  last_sync_at
+  last_error_at
+  last_error_message
+  mapping_json
+  created_at
+  updated_at
+Important design rule:
+•	telemetry_provider_catalog is global/static provider definition. 
+•	company_telemetry_providers is the company’s licensed/configured instance. 
+•	Credentials must belong to the company provider instance, not the global provider catalog. 
+•	Project telemetry connections must reference the company provider instance. 
+•	Project users should not see or use providers that are not licensed/configured for their company. 
+If the current schema is different, propose the least disruptive migration path.
+Step 3 — Backend Requirements
+Implement or repair backend APIs to support:
+Company-Level Provider Management
+Required endpoints, names can follow existing conventions:
+GET    /api/companies/:companyId/telemetry-providers
+POST   /api/companies/:companyId/telemetry-providers
+GET    /api/companies/:companyId/telemetry-providers/:companyProviderId
+PATCH  /api/companies/:companyId/telemetry-providers/:companyProviderId
+DELETE /api/companies/:companyId/telemetry-providers/:companyProviderId
+POST   /api/companies/:companyId/telemetry-providers/:companyProviderId/test
+POST   /api/companies/:companyId/telemetry-providers/:companyProviderId/sync-sites
+GET    /api/companies/:companyId/telemetry-providers/:companyProviderId/sites
+Project-Level Connections
+GET    /api/projects/:projectId/telemetry-connections
+POST   /api/projects/:projectId/telemetry-connections
+GET    /api/projects/:projectId/telemetry-connections/:connectionId
+PATCH  /api/projects/:projectId/telemetry-connections/:connectionId
+DELETE /api/projects/:projectId/telemetry-connections/:connectionId
+POST   /api/projects/:projectId/telemetry-connections/:connectionId/test
+POST   /api/projects/:projectId/telemetry-connections/:connectionId/sync
+Step 4 — AlsoEnergy Integration Requirements
+Create or repair an AlsoEnergy integration service with clean responsibilities:
+AlsoEnergyClient
+  authenticate()
+  getValidToken()
+  requestWithAuthRetry()
+  listSites()
+  listHardware(siteId)
+  fetchBinData(...)
+  testConnection()
+Requirements:
+1.	Credentials are loaded from the encrypted company-level credential record. 
+2.	Token should be cached per company telemetry provider instance, not globally. 
+3.	Token cache must respect expiration. 
+4.	On 401, reauthenticate and retry once. 
+5.	Do not store credentials or tokens in plaintext. 
+6.	Do not log full tokens or passwords. 
+7.	Use form-urlencoded payload for POST /Auth/token. 
+8.	Treat /Sites success as a valid connection test. 
+9.	Treat BinData 404 carefully: 
+o	Do not mark provider credentials invalid solely because BinData returns 404. 
+o	Record it as “No archive data available/configured for this request” where appropriate. 
+10.	Store discovered external sites in telemetry_external_sites. 
+11.	Allow project connection mapping to one or more external sites as needed. 
+Step 5 — UI/UX Requirements
+Fix the Company page Telemetry Providers section.
+Current behavior is inadequate. Replace static/non-clickable rows with actionable rows/cards.
+Each provider row should show:
+•	Provider name 
+•	Description 
+•	Status: Active / Draft / Error / Disabled 
+•	Credential status 
+•	Number of synced external sites 
+•	Number of active project connections 
+•	Last tested date 
+•	Last sync date 
+•	Actions: 
+o	View 
+o	Edit Configuration 
+o	Test Connection 
+o	Sync Sites 
+o	Disable 
+o	Delete, if safe 
+Clicking a provider should open a detail/configuration drawer or page.
+The “Add Provider” button should not simply say all providers are assigned unless all provider catalog entries are already assigned to that company. Even then, the existing provider rows must be configurable.
+Add Provider flow should:
+1.	Show provider catalog options not yet assigned to this company. 
+2.	Allow choosing AlsoEnergy, KMC, or future providers. 
+3.	Create a company-level provider configuration in draft status. 
+4.	Prompt for provider-specific credential fields. 
+5.	Allow “Test Connection.” 
+6.	If successful, allow “Sync Sites.” 
+7.	Show discovered external sites. 
+8.	Allow the user to activate the provider. 
+Step 6 — Project Telemetry Tab Requirements
+In the Project Telemetry tab:
+1.	Only show providers licensed/configured for the project’s company. 
+2.	User selects a company telemetry provider. 
+3.	User selects one or more synced external sites/assets. 
+4.	User maps the external telemetry site to the Ilios project/site/asset. 
+5.	User can test the project connection. 
+6.	User can enable/disable sync. 
+7.	User can see last sync, errors, and basic status. 
+Do not allow project users to configure global provider credentials unless they have company admin permissions.
+Step 7 — Permissions / Multi-Tenant Safety
+Enforce access control:
+•	Company admins can add/edit/test/sync company telemetry providers. 
+•	Project users can create project-level connections only if they have access to that project and the provider is licensed to that company. 
+•	No user from Company A can see Company B provider credentials, sites, tokens, or sync results. 
+•	All backend queries must scope by company_id. 
+•	Add server-side validation. Do not rely on frontend filtering. 
+Step 8 — Migration Plan
+If the current implementation has global telemetry providers or globally stored AlsoEnergy credentials:
+1.	Identify existing tables/records/env vars. 
+2.	Do not delete immediately. 
+3.	Add new company-scoped model. 
+4.	Create a migration path: 
+o	Move existing AlsoEnergy config into the correct company if identifiable. 
+o	If not identifiable, create an admin warning requiring reassignment. 
+5.	Update references from global provider IDs to company provider IDs. 
+6.	Preserve existing project telemetry connections where possible. 
+7.	Add fallback safeguards and clear admin messaging for orphaned configurations. 
+Step 9 — Testing Requirements
+Add tests or at minimum testable acceptance checks for:
+1.	A company can add AlsoEnergy credentials. 
+2.	The app can authenticate with AlsoEnergy. 
+3.	The app can list external sites. 
+4.	Sites are stored under the correct company provider instance. 
+5.	A second company can add its own AlsoEnergy provider without seeing the first company’s sites. 
+6.	Tokens are cached per company provider, not globally. 
+7.	401 triggers reauth and one retry. 
+8.	BinData 404 does not invalidate the provider. 
+9.	Project connection only shows providers licensed to that project’s company. 
+10.	Provider rows are clickable and editable. 
+11.	Add Provider flow works when only some providers are already assigned. 
+12.	Add Provider flow explains when all catalog providers are already assigned but still allows editing existing provider configs. 
+Step 10 — Deliverables
+Please respond with:
+1.	Audit findings. 
+2.	Current schema summary. 
+3.	Current route/service/component summary. 
+4.	Identification of incorrect global/provider-level assumptions. 
+5.	Proposed schema changes. 
+6.	Required migrations. 
+7.	Backend implementation plan. 
+8.	Frontend implementation plan. 
+9.	Risk areas. 
+10.	Then stop and ask for approval before coding. 
+Do not make broad unrelated changes. Focus only on telemetry provider architecture, company-level provider configuration, AlsoEnergy auth/site sync, project telemetry connection setup, and the broken UI/UX around provider configuration.
