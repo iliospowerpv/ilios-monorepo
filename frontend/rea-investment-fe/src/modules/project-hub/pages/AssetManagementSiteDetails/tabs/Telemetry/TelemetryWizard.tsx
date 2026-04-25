@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
 import { useAuth } from '../../../../../../contexts/auth/auth';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -25,7 +26,12 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import Chip from '@mui/material/Chip';
+import Radio from '@mui/material/Radio';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 import { ApiClient } from '../../../../../../api';
 import type { SiteDetailedInfo } from '../../../../../../api';
@@ -36,6 +42,8 @@ import type {
   DeviceMapping,
   CreateSiteMappingAttributes
 } from '../../../../../../api/connections';
+import { ConfirmationModal } from '../../../../../../components/modals/ConfirmationModal/ConfirmationModal';
+import { EditConnectionDialog, ConnectionToEdit } from './EditConnectionDialog';
 
 const STEPS = ['Connection', 'Site Mapping', 'Device Mapping', 'Confirm'];
 
@@ -55,7 +63,7 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
   const [error, setError] = useState<string | null>(null);
 
   const [connectionMode, setConnectionMode] = useState<'existing' | 'new'>(
-    readiness?.is_connected ? 'existing' : 'new'
+    readiness?.is_connected || !canEditSettings ? 'existing' : 'new'
   );
   const [selectedConnectionId, setSelectedConnectionId] = useState<number | null>(readiness?.connection_id || null);
   const [newConnectionForm, setNewConnectionForm] = useState({
@@ -79,13 +87,16 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
   >({});
   const [selectedDevices, setSelectedDevices] = useState<Set<number>>(new Set());
 
+  const [editingConnection, setEditingConnection] = useState<ConnectionToEdit | null>(null);
+  const [deletingConnection, setDeletingConnection] = useState<ConnectionToEdit | null>(null);
+
   const companyId = siteDetails.company?.id;
 
   useEffect(() => {
     if (open) {
       setActiveStep(0);
       setError(null);
-      setConnectionMode(readiness?.is_connected ? 'existing' : 'new');
+      setConnectionMode(readiness?.is_connected || !canEditSettings ? 'existing' : 'new');
       setSelectedConnectionId(readiness?.connection_id || null);
       setNewConnectionForm({
         name: '',
@@ -103,6 +114,8 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
       );
       setDeviceMappings({});
       setSelectedDevices(new Set());
+      setEditingConnection(null);
+      setDeletingConnection(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -126,18 +139,26 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
 
   const hasNoProviders = companyProviders !== undefined && providers.length === 0;
 
-  const { data: connections, isLoading: isLoadingConnections } = useQuery({
-    queryKey: ['connections', companyId],
-    queryFn: () => ApiClient.connections.getConnections(companyId as number),
+  const { data: availableConnections, isLoading: isLoadingConnections } = useQuery({
+    queryKey: ['available-connections', companyId],
+    queryFn: () => ApiClient.connections.getAvailableConnections(companyId as number),
     enabled: !!companyId && open
   });
 
+  const allConnections = useMemo(
+    () => [
+      ...(availableConnections?.company_connections ?? []),
+      ...(availableConnections?.portfolio_connections ?? [])
+    ],
+    [availableConnections]
+  );
+
   const selectedConnection = useMemo(() => {
     if (connectionMode === 'existing' && selectedConnectionId) {
-      return connections?.items.find(c => c.id === selectedConnectionId);
+      return allConnections.find(c => c.id === selectedConnectionId);
     }
     return null;
-  }, [connectionMode, selectedConnectionId, connections]);
+  }, [connectionMode, selectedConnectionId, allConnections]);
 
   const { data: dasSites, isLoading: isLoadingDasSites } = useQuery({
     queryKey: ['das-sites', companyId, selectedConnectionId],
@@ -174,6 +195,27 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
     mutationFn: (attrs: Connection) => ApiClient.connections.createConnection(companyId as number, attrs),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['connections', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['available-connections', companyId] });
+    }
+  });
+
+  const deleteConnectionMutation = useMutation({
+    mutationFn: (connectionId: number) => ApiClient.connections.deleteConnection(companyId as number, connectionId),
+    onSuccess: (_data, connectionId) => {
+      queryClient.invalidateQueries({ queryKey: ['connections', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['available-connections', companyId] });
+      if (selectedConnectionId === connectionId) {
+        setSelectedConnectionId(null);
+      }
+      setDeletingConnection(null);
+    },
+    onError: (err: unknown) => {
+      const message =
+        err instanceof AxiosError
+          ? err.response?.data?.message || err.message
+          : (err as Error)?.message || 'Failed to delete connection';
+      setError(message);
+      setDeletingConnection(null);
     }
   });
 
@@ -207,6 +249,10 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
 
     if (activeStep === 0) {
       if (connectionMode === 'new') {
+        if (!canEditSettings) {
+          setError('You do not have permission to create connections. Contact a portfolio administrator.');
+          return;
+        }
         if (!connectionTested) {
           setError('Please test the connection before proceeding');
           return;
@@ -220,8 +266,8 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
               ? { username: newConnectionForm.username, password: newConnectionForm.password }
               : {})
           });
-          const refreshedConnections = await ApiClient.connections.getConnections(companyId as number);
-          const newConn = refreshedConnections.items.find(c => c.name === newConnectionForm.name);
+          const refreshedConnections = await ApiClient.connections.getAvailableConnections(companyId as number);
+          const newConn = refreshedConnections.company_connections.find(c => c.name === newConnectionForm.name);
           if (newConn?.id) {
             setSelectedConnectionId(newConn.id);
             setConnectionMode('existing');
@@ -320,35 +366,126 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
         return (
           <Box>
             <Typography variant="body1" gutterBottom>
-              Choose an existing connection or create a new one.
+              {canEditSettings
+                ? 'Choose an existing connection or create a new one.'
+                : 'Choose a saved connection. Contact a portfolio administrator to add or change connections.'}
             </Typography>
-            <SearchableSelect
-              options={[
-                { label: 'Use Existing Connection', value: 'existing' },
-                { label: 'Create New Connection', value: 'new' }
-              ]}
-              value={connectionMode}
-              onChange={val => setConnectionMode(val as 'existing' | 'new')}
-              label="Connection Mode"
-              disableClearable
-              sx={{ mb: 2 }}
-            />
-
-            {connectionMode === 'existing' && (
+            {canEditSettings && (
               <SearchableSelect
-                options={(connections?.items || [])
-                  .filter(conn => conn.id != null)
-                  .map(conn => ({
-                    label: `${conn.name} (${conn.provider})`,
-                    value: conn.id!
-                  }))}
-                value={selectedConnectionId ?? null}
-                onChange={val => setSelectedConnectionId(val ? Number(val) : null)}
-                label="Select Connection"
-                disabled={isLoadingConnections}
-                loading={isLoadingConnections}
+                options={[
+                  { label: 'Use Existing Connection', value: 'existing' },
+                  { label: 'Create New Connection', value: 'new' }
+                ]}
+                value={connectionMode}
+                onChange={val => setConnectionMode(val as 'existing' | 'new')}
+                label="Connection Mode"
+                disableClearable
                 sx={{ mb: 2 }}
               />
+            )}
+
+            {connectionMode === 'existing' && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Select a saved connection:
+                </Typography>
+                {isLoadingConnections ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : (
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                      <TableBody>
+                        {allConnections.length === 0 && (
+                          <TableRow>
+                            <TableCell>
+                              <Typography variant="body2" color="text.secondary" align="center">
+                                {canEditSettings
+                                  ? 'No saved connections yet. Switch to "Create New Connection" to add one.'
+                                  : 'No saved connections yet. Contact a portfolio administrator to add one.'}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        {allConnections.map(conn => {
+                          const isOwned = conn.company_id === companyId;
+                          const isSelected = selectedConnectionId === conn.id;
+                          return (
+                            <TableRow
+                              key={conn.id}
+                              hover
+                              selected={isSelected}
+                              onClick={() => setSelectedConnectionId(conn.id)}
+                              sx={{ cursor: 'pointer' }}
+                            >
+                              <TableCell padding="checkbox">
+                                <Radio
+                                  checked={isSelected}
+                                  onChange={() => setSelectedConnectionId(conn.id)}
+                                  inputProps={{ 'aria-label': `Select ${conn.name}` }}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2">{conn.name}</Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {conn.provider}
+                                  {!isOwned && conn.company_name && ` • Shared from ${conn.company_name}`}
+                                  {isOwned && conn.owner_type === 'portfolio' && ' • Shared with portfolio'}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align="right" sx={{ width: 110 }}>
+                                {canEditSettings && isOwned && (
+                                  <>
+                                    <Tooltip title="Edit connection">
+                                      <span>
+                                        <IconButton
+                                          size="small"
+                                          onClick={e => {
+                                            e.stopPropagation();
+                                            setEditingConnection({
+                                              id: conn.id,
+                                              name: conn.name,
+                                              provider: conn.provider,
+                                              owner_type: conn.owner_type
+                                            });
+                                          }}
+                                          aria-label={`Edit ${conn.name}`}
+                                        >
+                                          <EditIcon fontSize="small" />
+                                        </IconButton>
+                                      </span>
+                                    </Tooltip>
+                                    <Tooltip title="Delete connection">
+                                      <span>
+                                        <IconButton
+                                          size="small"
+                                          onClick={e => {
+                                            e.stopPropagation();
+                                            setDeletingConnection({
+                                              id: conn.id,
+                                              name: conn.name,
+                                              provider: conn.provider,
+                                              owner_type: conn.owner_type
+                                            });
+                                          }}
+                                          aria-label={`Delete ${conn.name}`}
+                                        >
+                                          <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                      </span>
+                                    </Tooltip>
+                                  </>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </Box>
             )}
 
             {connectionMode === 'new' && isLoadingProviders && (
@@ -647,6 +784,28 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
           </Button>
         )}
       </DialogActions>
+
+      {editingConnection && companyId && (
+        <EditConnectionDialog
+          open={!!editingConnection}
+          onClose={() => setEditingConnection(null)}
+          companyId={companyId}
+          connection={editingConnection}
+        />
+      )}
+
+      <ConfirmationModal
+        open={!!deletingConnection}
+        confirmationTitle={deletingConnection ? `Delete "${deletingConnection.name}"?` : 'Delete Connection?'}
+        confirmationMessage="This action cannot be undone. If this connection is currently used by any site mappings, deletion will be blocked."
+        confirmationDisabled={deleteConnectionMutation.isPending}
+        onClose={() => setDeletingConnection(null)}
+        onConfirm={() => {
+          if (deletingConnection) {
+            deleteConnectionMutation.mutate(deletingConnection.id);
+          }
+        }}
+      />
     </Dialog>
   );
 };
