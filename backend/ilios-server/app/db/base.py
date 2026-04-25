@@ -8,6 +8,7 @@ from app.models.board import Board, BoardRelatedEntity, BoardStatus
 from app.models.chatbot import ChatBotConversation
 from app.models.comment import Comment
 from app.models.company import Company
+from app.models.contact import Contact
 from app.models.device import Device
 from app.models.device_document import DeviceDocument
 from app.models.document import Document
