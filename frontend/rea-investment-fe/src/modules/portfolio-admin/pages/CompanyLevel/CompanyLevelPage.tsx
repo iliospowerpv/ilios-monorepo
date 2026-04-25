@@ -87,9 +87,13 @@ export const CompanyLevelPage: React.FC = () => {
     staleTime: 5 * 60 * 1000
   });
 
+  // Source of truth for the project list/count: GET /api/sites with the
+  // backend SiteFilter's `company_id` query param. Do NOT pass the company
+  // id via `search` — that filter only matches against Site.name and will
+  // silently return the wrong rows.
   const { data: sites, isLoading: isLoadingSites } = useQuery({
     queryKey: ['companySites', companyIdNum],
-    queryFn: () => ApiClient.assetManagement.sites({ skip: 0, limit: 100, search: String(companyIdNum) } as any),
+    queryFn: () => ApiClient.assetManagement.sites({ skip: 0, limit: 100, company_id: companyIdNum } as any),
     enabled: companyIdNum > 0,
     staleTime: 5 * 60 * 1000
   });
@@ -103,6 +107,10 @@ export const CompanyLevelPage: React.FC = () => {
 
   const companyName = company?.name || 'Company';
   const projectList = sites?.items || [];
+  // Count comes from the paginator's `total`, not `items.length`, so the
+  // card stays correct even if the company has more projects than the
+  // request page size (limit=100 above).
+  const projectCount = sites?.total ?? projectList.length;
   const memberList = members || [];
   const memberCount = memberList.length;
 
@@ -167,7 +175,7 @@ export const CompanyLevelPage: React.FC = () => {
                 <FolderIcon sx={{ fontSize: 40, color: 'success.main' }} />
                 <Box>
                   <Typography variant="h3" component="div">
-                    {isLoadingSites ? <Skeleton width={40} /> : projectList.length}
+                    {isLoadingSites ? <Skeleton width={40} /> : projectCount}
                   </Typography>
                   <Typography color="text.secondary">Projects</Typography>
                 </Box>
