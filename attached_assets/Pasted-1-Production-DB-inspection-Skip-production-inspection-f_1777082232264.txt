@@ -1,0 +1,48 @@
+1. Production DB inspection
+
+Skip production inspection for now unless there is a known production database beyond the demo environment.
+
+This is still development/demo, and I do not want to slow down Phase 1 waiting on production access if the local/demo data is the only active deployment data. If there is a real production database or deployed demo database with different data than local, inspect it read-only before cleanup or destructive migrations.
+
+For Phase 1, proceed using the local/demo DB shape because the migration is additive and legacy routes remain untouched.
+
+2. Phase-1 endpoint surface
+
+Use parallel /api/telemetry/v2/... routes.
+
+I agree with your recommendation. Parallel v2 routes are safer because the existing UI and demo behavior can continue using the legacy routes while we build and test the new architecture. Then the frontend can migrate page by page.
+
+Do not extend existing /api/telemetry/... paths in place during Phase 1.
+
+3. Table renames
+
+Defer table renames to a third migration.
+
+I agree. Phase 1 should be additive. Phase 2 cleanup can remove legacy fields and constraints after validation. A separate Phase 3 rename-only migration is the cleanest and easiest to debug.
+
+So for now:
+- keep current table names
+- add the new fields
+- add the new catalog/external-sites tables
+- add v2 models/schemas naming them conceptually as Provider Catalog, Licensed Provider, Provider Account, External Site, Mapping
+- do physical table renames later after the app is fully migrated and stable
+
+4. telemetry:admin permission
+
+Create the new telemetry:admin permission key, but initially map it to the same roles/users that currently have settings:edit.
+
+I want the clean long-term permission model, but I do not want to create access-control friction during development. So create telemetry:admin now and seed it to the same admin profiles that currently have settings:edit. Company-level telemetry provider/account management should check telemetry:admin. Site/project mapping should continue to check the relevant asset/project edit permissions.
+
+Please begin Phase 1 with:
+
+A. additive migration
+B. provider catalog seed
+C. telemetry_external_sites table
+D. extended existing tables, without dropping legacy fields
+E. v2 backend models/schemas/routes
+F. ProviderAdapter abstraction wrapping the current Cloud Functions
+G. credential redaction/write-only handling
+H. demo seed updates
+I. backend tests for catalog, provider account, adapter error mapping, sync-sites, and tenancy
+
+Do not migrate the frontend yet except where needed to compile. After Phase 1 is complete, report back with the migration summary, new endpoint list, test results, and any issues found.

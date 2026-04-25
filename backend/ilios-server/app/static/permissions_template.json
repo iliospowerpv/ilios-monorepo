@@ -26,5 +26,8 @@
   "Reports": {
     "edit": false,
     "view": false
+  },
+  "Telemetry": {
+    "admin": false
   }
 }

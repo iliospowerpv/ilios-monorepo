@@ -70,7 +70,8 @@ from .routers.project_assumptions import assumptions_router
 from .routers.debug import router as debug_router
 from .routers.internal.base import internal_telemetry_router
 from .routers.investor_dashboard import investor_sites_router
-from .routers.telemetry import telemetry_router
+from .routers.telemetry import telemetry_router, telemetry_v2_router
+from .security.redaction import configure_redaction
 from .settings import settings
 from .static import HTTP_422_RESPONSE, tags
 from .utils import http_500_exception_handler, http_exception_handler, validation_exception_handler
@@ -81,6 +82,7 @@ logging.basicConfig(
     # specify logging format for the gunicorn
     format="%(levelname)s::%(name)s::%(message)s",
 )
+configure_redaction()
 
 
 logger = logging.getLogger(__name__)
@@ -225,6 +227,7 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
     app.include_router(cameras_router, prefix="/api/security/cameras", tags=[tags.CAMERAS_TAG])
     # telemetry related APIs
     app.include_router(telemetry_router, prefix="/api/telemetry", tags=[tags.TELEMETRY_TAG])
+    app.include_router(telemetry_v2_router, prefix="/api/telemetry", tags=[tags.TELEMETRY_TAG])
     # reports related APIs
     app.include_router(reports_companies_router, prefix="/api/reporting/companies", tags=[tags.REPORTING_TAG])
     app.include_router(

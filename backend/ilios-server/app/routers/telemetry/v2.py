@@ -1,0 +1,760 @@
+"""Telemetry v2 API router (Phase 1 introduce).
+
+All endpoints live under ``/api/telemetry/v2`` and operate against the new
+catalog / license / provider-account model. The legacy
+``/api/telemetry/...`` routes continue to function unchanged.
+"""
+from __future__ import annotations
+
+import logging
+import secrets
+from datetime import datetime, timezone
+from typing import Annotated, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
+from sqlalchemy.orm import Session, joinedload
+
+from app.db.session import get_session
+from app.helpers.authentication import get_current_user
+from app.helpers.authorization.module_based.telemetry import telemetry_admin_required
+from app.integrations.telemetry import (
+    CredentialError,
+    MappingError,
+    NoData,
+    ProviderUnavailable,
+    RateLimited,
+    get_adapter,
+)
+from app.integrations.telemetry.credential_store import (
+    CredentialStore,
+    get_credential_store,
+)
+from app.models.telemetry import (
+    CompanyDASProvider,
+    CompanyProviderStatus,
+    CredentialStatus,
+    DASConnection,
+    DASProvidersEnum,
+    ExternalSiteSyncStatus,
+    LastSyncStatus,
+    ProviderAccountStatus,
+    TelemetryExternalSite,
+    TelemetryProviderCatalog,
+)
+from app.schema.telemetry_v2 import (
+    ExternalSiteList,
+    ExternalSiteResponse,
+    LicenseCreateRequest,
+    LicensedProviderList,
+    LicensedProviderResponse,
+    ProviderAccountCreateRequest,
+    ProviderAccountList,
+    ProviderAccountResponse,
+    ProviderAccountUpdateRequest,
+    ProviderCatalogEntry,
+    ProviderCatalogList,
+    SyncSitesResponse,
+    TestAccountResponse,
+)
+from app.security.redaction import fingerprint
+from app.schema.user import CurrentUserSchema
+
+logger = logging.getLogger(__name__)
+
+telemetry_v2_router = APIRouter()
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def _new_run_id() -> str:
+    return f"run_{secrets.token_hex(8)}"
+
+
+def _provider_key_to_enum(provider_key: str) -> DASProvidersEnum:
+    try:
+        return DASProvidersEnum[provider_key]
+    except KeyError as exc:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Unknown provider_key '{provider_key}'",
+        ) from exc
+
+
+def _account_to_response(
+    account: DASConnection,
+    catalog: Optional[TelemetryProviderCatalog],
+    credential_fingerprint: Optional[str] = None,
+) -> ProviderAccountResponse:
+    provider_key = catalog.provider_key if catalog else account.provider.name
+    display_name = catalog.display_name if catalog else account.provider.value
+    return ProviderAccountResponse(
+        id=account.id,
+        company_id=account.company_id,
+        name=account.name,
+        provider_key=provider_key,
+        display_name=display_name,
+        external_account_label=account.external_account_label,
+        status=account.status,
+        credential_status=account.credential_status,
+        last_sync_status=account.last_sync_status,
+        last_success_at=account.last_success_at,
+        last_error_at=account.last_error_at,
+        last_error_message=account.last_error_message,
+        is_archived=account.is_archived,
+        archived_at=account.archived_at,
+        created_at=account.created_at,
+        updated_at=account.updated_at,
+        credentials_fingerprint=credential_fingerprint,
+    )
+
+
+def _require_account_for_company(
+    db: Session, company_id: int, account_id: int
+) -> tuple[DASConnection, Optional[TelemetryProviderCatalog]]:
+    """Fetch a provider account scoped to ``company_id``.
+
+    Cross-tenant requests return 404 (not 403) to avoid leaking the existence
+    of accounts outside the caller's company.
+    """
+    account = (
+        db.query(DASConnection)
+        .filter(DASConnection.id == account_id, DASConnection.company_id == company_id)
+        .first()
+    )
+    if account is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Provider account not found")
+    catalog = _resolve_catalog_for_account(db, account)
+    return account, catalog
+
+
+def _require_account(
+    db: Session, account_id: int, current_user: CurrentUserSchema
+) -> tuple[DASConnection, Optional[TelemetryProviderCatalog]]:
+    """Fetch a provider account scoped to companies the user can access."""
+    account = db.get(DASConnection, account_id)
+    if account is None or account.is_archived:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Provider account not found")
+
+    if not getattr(current_user, "is_system_user", False):
+        accessible = set(getattr(current_user, "get_limited_companies_ids", lambda: [])() or [])
+        if accessible and account.company_id not in accessible:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Provider account not found")
+
+    return account, _resolve_catalog_for_account(db, account)
+
+
+def _resolve_catalog_for_account(
+    db: Session, account: DASConnection
+) -> Optional[TelemetryProviderCatalog]:
+    if account.company_provider_id:
+        license_row = db.get(CompanyDASProvider, account.company_provider_id)
+        if license_row and license_row.catalog_id:
+            return db.get(TelemetryProviderCatalog, license_row.catalog_id)
+    return (
+        db.query(TelemetryProviderCatalog)
+        .filter(TelemetryProviderCatalog.provider_key == account.provider.name)
+        .first()
+    )
+
+
+def _ensure_license(
+    db: Session, company_id: int, provider_key: str
+) -> tuple[CompanyDASProvider, TelemetryProviderCatalog]:
+    catalog = (
+        db.query(TelemetryProviderCatalog)
+        .filter(TelemetryProviderCatalog.provider_key == provider_key)
+        .first()
+    )
+    if catalog is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Provider '{provider_key}' is not in the catalog")
+    if not catalog.is_enabled:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Provider '{provider_key}' is disabled")
+
+    license_row = (
+        db.query(CompanyDASProvider)
+        .filter(
+            CompanyDASProvider.company_id == company_id,
+            CompanyDASProvider.catalog_id == catalog.id,
+        )
+        .first()
+    )
+    if license_row is None:
+        # Backwards compat: license may exist via legacy enum column only.
+        provider_enum = _provider_key_to_enum(provider_key)
+        license_row = (
+            db.query(CompanyDASProvider)
+            .filter(
+                CompanyDASProvider.company_id == company_id,
+                CompanyDASProvider.provider == provider_enum,
+            )
+            .first()
+        )
+    if license_row is None:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            f"Company {company_id} is not licensed for provider '{provider_key}'",
+        )
+    if license_row.status == CompanyProviderStatus.suspended:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            f"License for provider '{provider_key}' is suspended",
+        )
+    return license_row, catalog
+
+
+# ---------------------------------------------------------------------------
+# Catalog
+# ---------------------------------------------------------------------------
+
+
+@telemetry_v2_router.get(
+    "/v2/catalog",
+    response_model=ProviderCatalogList,
+    summary="List telemetry provider catalog (v2)",
+)
+def list_catalog(
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],  # noqa: ARG001
+) -> ProviderCatalogList:
+    rows = (
+        db.query(TelemetryProviderCatalog)
+        .order_by(TelemetryProviderCatalog.display_name)
+        .all()
+    )
+    return ProviderCatalogList(
+        items=[ProviderCatalogEntry.model_validate(row) for row in rows]
+    )
+
+
+# ---------------------------------------------------------------------------
+# Licenses (company ↔ catalog)
+# ---------------------------------------------------------------------------
+
+
+@telemetry_v2_router.get(
+    "/v2/companies/{company_id}/licensed-providers",
+    response_model=LicensedProviderList,
+    summary="List licensed providers for a company",
+)
+def list_licensed_providers(
+    company_id: int,
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> LicensedProviderList:
+    _enforce_company_visibility(current_user, company_id)
+    rows = (
+        db.query(CompanyDASProvider)
+        .options(joinedload(CompanyDASProvider.catalog))
+        .filter(CompanyDASProvider.company_id == company_id)
+        .order_by(CompanyDASProvider.id)
+        .all()
+    )
+    counts = dict(
+        db.query(DASConnection.company_provider_id, func.count(DASConnection.id))
+        .filter(
+            DASConnection.company_id == company_id,
+            DASConnection.is_archived.is_(False),
+        )
+        .group_by(DASConnection.company_provider_id)
+        .all()
+    )
+    items: list[LicensedProviderResponse] = []
+    for row in rows:
+        catalog = row.catalog
+        provider_key = catalog.provider_key if catalog else row.provider.name
+        display_name = catalog.display_name if catalog else row.provider.value
+        items.append(
+            LicensedProviderResponse(
+                id=row.id,
+                company_id=row.company_id,
+                provider_key=provider_key,
+                display_name=display_name,
+                status=row.status,
+                notes=row.notes,
+                account_count=counts.get(row.id, 0),
+                created_at=row.created_at,
+                updated_at=row.updated_at,
+            )
+        )
+    return LicensedProviderList(items=items)
+
+
+@telemetry_v2_router.post(
+    "/v2/companies/{company_id}/licensed-providers",
+    response_model=LicensedProviderResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Grant a provider license to a company",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def create_license(
+    company_id: int,
+    payload: LicenseCreateRequest,
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> LicensedProviderResponse:
+    _enforce_company_visibility(current_user, company_id)
+    catalog = (
+        db.query(TelemetryProviderCatalog)
+        .filter(TelemetryProviderCatalog.provider_key == payload.provider_key)
+        .first()
+    )
+    if catalog is None or not catalog.is_enabled:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Unknown or disabled provider")
+
+    existing = (
+        db.query(CompanyDASProvider)
+        .filter(
+            CompanyDASProvider.company_id == company_id,
+            CompanyDASProvider.catalog_id == catalog.id,
+        )
+        .first()
+    )
+    if existing:
+        existing.status = CompanyProviderStatus.active
+        if payload.notes is not None:
+            existing.notes = payload.notes
+        db.commit()
+        db.refresh(existing)
+        license_row = existing
+    else:
+        license_row = CompanyDASProvider(
+            company_id=company_id,
+            provider=_provider_key_to_enum(payload.provider_key),
+            catalog_id=catalog.id,
+            status=CompanyProviderStatus.active,
+            notes=payload.notes,
+        )
+        db.add(license_row)
+        db.commit()
+        db.refresh(license_row)
+
+    return LicensedProviderResponse(
+        id=license_row.id,
+        company_id=company_id,
+        provider_key=catalog.provider_key,
+        display_name=catalog.display_name,
+        status=license_row.status,
+        notes=license_row.notes,
+        account_count=0,
+        created_at=license_row.created_at,
+        updated_at=license_row.updated_at,
+    )
+
+
+@telemetry_v2_router.delete(
+    "/v2/companies/{company_id}/licensed-providers/{license_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+    summary="Revoke a provider license (refused if accounts exist)",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def delete_license(
+    company_id: int,
+    license_id: int,
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> None:
+    _enforce_company_visibility(current_user, company_id)
+    license_row = (
+        db.query(CompanyDASProvider)
+        .filter(
+            CompanyDASProvider.id == license_id,
+            CompanyDASProvider.company_id == company_id,
+        )
+        .first()
+    )
+    if license_row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "License not found")
+
+    accounts = (
+        db.query(func.count(DASConnection.id))
+        .filter(DASConnection.company_provider_id == license_row.id)
+        .scalar()
+    )
+    if accounts and accounts > 0:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"Cannot revoke license while {accounts} provider account(s) reference it",
+        )
+
+    db.delete(license_row)
+    db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Provider accounts
+# ---------------------------------------------------------------------------
+
+
+def _enforce_company_visibility(current_user: CurrentUserSchema, company_id: int) -> None:
+    if getattr(current_user, "is_system_user", False):
+        return
+    accessible = set(getattr(current_user, "get_limited_companies_ids", lambda: [])() or [])
+    if accessible and company_id not in accessible:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Company not found")
+
+
+@telemetry_v2_router.get(
+    "/v2/companies/{company_id}/provider-accounts",
+    response_model=ProviderAccountList,
+    summary="List provider accounts for a company",
+)
+def list_provider_accounts(
+    company_id: int,
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    include_archived: bool = False,
+) -> ProviderAccountList:
+    _enforce_company_visibility(current_user, company_id)
+    query = db.query(DASConnection).filter(DASConnection.company_id == company_id)
+    if not include_archived:
+        query = query.filter(DASConnection.is_archived.is_(False))
+    rows = query.order_by(DASConnection.id).all()
+
+    by_id: dict[int, TelemetryProviderCatalog] = {}
+    for row in rows:
+        catalog = _resolve_catalog_for_account(db, row)
+        if catalog is not None:
+            by_id[row.id] = catalog
+
+    return ProviderAccountList(
+        items=[_account_to_response(row, by_id.get(row.id)) for row in rows]
+    )
+
+
+@telemetry_v2_router.post(
+    "/v2/companies/{company_id}/provider-accounts",
+    response_model=ProviderAccountResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a provider account",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def create_provider_account(
+    company_id: int,
+    payload: ProviderAccountCreateRequest,
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    credential_store: Annotated[CredentialStore, Depends(get_credential_store)],
+) -> ProviderAccountResponse:
+    _enforce_company_visibility(current_user, company_id)
+    license_row, catalog = _ensure_license(db, company_id, payload.provider_key)
+
+    secret_name = credential_store.store(
+        payload.external_account_label or payload.name,
+        payload.credentials.fields,
+    )
+
+    account = DASConnection(
+        company_id=company_id,
+        name=payload.name,
+        provider=_provider_key_to_enum(payload.provider_key),
+        secret_token_name=secret_name,
+        owner_type="company",
+        company_provider_id=license_row.id,
+        status=ProviderAccountStatus.active,
+        credential_status=CredentialStatus.unverified,
+        last_sync_status=LastSyncStatus.never,
+        external_account_label=payload.external_account_label,
+        created_by_user_id=getattr(current_user, "id", None),
+    )
+    db.add(account)
+    db.commit()
+    db.refresh(account)
+
+    return _account_to_response(
+        account,
+        catalog,
+        credential_fingerprint=fingerprint(
+            next(iter(payload.credentials.fields.values()), None)
+        ),
+    )
+
+
+@telemetry_v2_router.get(
+    "/v2/companies/{company_id}/provider-accounts/{account_id}",
+    response_model=ProviderAccountResponse,
+    summary="Get a single provider account",
+)
+def get_provider_account(
+    company_id: int,
+    account_id: int,
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> ProviderAccountResponse:
+    _enforce_company_visibility(current_user, company_id)
+    account, catalog = _require_account_for_company(db, company_id, account_id)
+    return _account_to_response(account, catalog)
+
+
+@telemetry_v2_router.patch(
+    "/v2/companies/{company_id}/provider-accounts/{account_id}",
+    response_model=ProviderAccountResponse,
+    summary="Update a provider account (optionally rotate credentials)",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def update_provider_account(
+    company_id: int,
+    account_id: int,
+    payload: ProviderAccountUpdateRequest,
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    credential_store: Annotated[CredentialStore, Depends(get_credential_store)],
+) -> ProviderAccountResponse:
+    _enforce_company_visibility(current_user, company_id)
+    account, catalog = _require_account_for_company(db, company_id, account_id)
+    rotated_fp: Optional[str] = None
+
+    if payload.name is not None:
+        account.name = payload.name
+    if payload.external_account_label is not None:
+        account.external_account_label = payload.external_account_label
+    if payload.status is not None:
+        account.status = payload.status
+        if payload.status == ProviderAccountStatus.archived:
+            account.is_archived = True
+            account.archived_at = _utcnow()
+
+    if payload.credentials is not None and payload.credentials.fields:
+        try:
+            credential_store.delete(account.secret_token_name)
+        except Exception:  # noqa: BLE001
+            logger.warning("Failed to delete previous credential entry for account_id=%s", account_id)
+        new_secret = credential_store.store(
+            account.external_account_label or account.name,
+            payload.credentials.fields,
+        )
+        account.secret_token_name = new_secret
+        account.credential_status = CredentialStatus.unverified
+        rotated_fp = fingerprint(next(iter(payload.credentials.fields.values()), None))
+
+    db.commit()
+    db.refresh(account)
+    return _account_to_response(account, catalog, credential_fingerprint=rotated_fp)
+
+
+@telemetry_v2_router.delete(
+    "/v2/companies/{company_id}/provider-accounts/{account_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+    summary="Archive a provider account (soft delete)",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def delete_provider_account(
+    company_id: int,
+    account_id: int,
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    credential_store: Annotated[CredentialStore, Depends(get_credential_store)],
+) -> None:
+    _enforce_company_visibility(current_user, company_id)
+    account, _ = _require_account_for_company(db, company_id, account_id)
+    account.is_archived = True
+    account.status = ProviderAccountStatus.archived
+    account.archived_at = _utcnow()
+    db.commit()
+    try:
+        credential_store.delete(account.secret_token_name)
+    except Exception:  # noqa: BLE001
+        logger.warning("Failed to delete credentials for archived account_id=%s", account_id)
+
+
+# ---------------------------------------------------------------------------
+# Test + sync sites
+# ---------------------------------------------------------------------------
+
+
+@telemetry_v2_router.post(
+    "/v2/provider-accounts/{account_id}/test",
+    response_model=TestAccountResponse,
+    summary="Test stored credentials for a provider account",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def test_provider_account(
+    account_id: int,
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    credential_store: Annotated[CredentialStore, Depends(get_credential_store)],
+) -> TestAccountResponse:
+    account, catalog = _require_account(db, account_id, current_user)
+    if catalog is None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Provider account has no catalog mapping")
+
+    creds = credential_store.retrieve(account.secret_token_name)
+    adapter = get_adapter(db, catalog.provider_key, catalog=catalog)
+    try:
+        result = adapter.test_credentials(creds)
+    except CredentialError as exc:
+        account.credential_status = CredentialStatus.invalid
+        account.last_error_at = _utcnow()
+        account.last_error_message = str(exc)
+        db.commit()
+        return TestAccountResponse(
+            success=False,
+            message=str(exc) or "Invalid credentials",
+            credential_status=CredentialStatus.invalid,
+        )
+
+    if result.success:
+        account.credential_status = CredentialStatus.verified
+        account.last_success_at = _utcnow()
+        account.last_error_message = None
+    else:
+        account.credential_status = CredentialStatus.invalid
+        account.last_error_at = _utcnow()
+        account.last_error_message = result.message
+    db.commit()
+    return TestAccountResponse(
+        success=result.success,
+        message=result.message,
+        credential_status=account.credential_status,
+        available_sites_count=result.available_sites_count,
+    )
+
+
+@telemetry_v2_router.post(
+    "/v2/provider-accounts/{account_id}/sync-sites",
+    response_model=SyncSitesResponse,
+    summary="Pull external site list and update provenance",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def sync_provider_account_sites(
+    account_id: int,
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    credential_store: Annotated[CredentialStore, Depends(get_credential_store)],
+) -> SyncSitesResponse:
+    account, catalog = _require_account(db, account_id, current_user)
+    if catalog is None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Provider account has no catalog mapping")
+
+    creds = credential_store.retrieve(account.secret_token_name)
+    adapter = get_adapter(db, catalog.provider_key, catalog=catalog)
+    run_id = _new_run_id()
+    now = _utcnow()
+
+    try:
+        records = list(adapter.list_sites(creds))
+    except CredentialError as exc:
+        account.credential_status = CredentialStatus.invalid
+        account.last_sync_status = LastSyncStatus.failed
+        account.last_error_at = now
+        account.last_error_message = str(exc)
+        db.commit()
+        return SyncSitesResponse(
+            sync_run_id=run_id,
+            last_sync_status=LastSyncStatus.failed,
+            seen_count=0,
+            new_count=0,
+            missing_count=0,
+            error=str(exc) or "Invalid credentials",
+        )
+    except (NoData, ProviderUnavailable, RateLimited, MappingError) as exc:
+        account.last_sync_status = LastSyncStatus.failed
+        account.last_error_at = now
+        account.last_error_message = str(exc)
+        db.commit()
+        return SyncSitesResponse(
+            sync_run_id=run_id,
+            last_sync_status=LastSyncStatus.failed,
+            seen_count=0,
+            new_count=0,
+            missing_count=0,
+            error=str(exc) or "Provider error",
+        )
+
+    existing = {
+        row.external_site_id: row
+        for row in db.query(TelemetryExternalSite)
+        .filter(TelemetryExternalSite.provider_account_id == account.id)
+        .all()
+    }
+    seen_ids: set[str] = set()
+    new_count = 0
+    for record in records:
+        ext_id = str(record.external_site_id)
+        seen_ids.add(ext_id)
+        if ext_id in existing:
+            row = existing[ext_id]
+            row.external_site_name = record.external_site_name or row.external_site_name
+            row.raw_metadata = record.raw_metadata or row.raw_metadata
+            row.last_seen_at = now
+            row.last_synced_at = now
+            row.last_sync_run_id = run_id
+            row.sync_status = ExternalSiteSyncStatus.seen
+            row.last_sync_error = None
+        else:
+            db.add(
+                TelemetryExternalSite(
+                    provider_account_id=account.id,
+                    external_site_id=ext_id,
+                    external_site_name=record.external_site_name,
+                    raw_metadata=record.raw_metadata or None,
+                    first_seen_at=now,
+                    last_seen_at=now,
+                    last_synced_at=now,
+                    last_sync_run_id=run_id,
+                    sync_status=ExternalSiteSyncStatus.seen,
+                )
+            )
+            new_count += 1
+
+    missing_count = 0
+    for ext_id, row in existing.items():
+        if ext_id not in seen_ids:
+            row.sync_status = ExternalSiteSyncStatus.missing
+            row.last_synced_at = now
+            row.last_sync_run_id = run_id
+            missing_count += 1
+
+    if records:
+        account.credential_status = CredentialStatus.verified
+        account.last_success_at = now
+        account.last_sync_status = (
+            LastSyncStatus.partial if missing_count else LastSyncStatus.success
+        )
+        account.last_error_message = None
+    else:
+        account.last_sync_status = LastSyncStatus.partial
+    db.commit()
+
+    return SyncSitesResponse(
+        sync_run_id=run_id,
+        last_sync_status=account.last_sync_status,
+        seen_count=len(seen_ids),
+        new_count=new_count,
+        missing_count=missing_count,
+    )
+
+
+@telemetry_v2_router.get(
+    "/v2/provider-accounts/{account_id}/external-sites",
+    response_model=ExternalSiteList,
+    summary="List external sites for a provider account",
+)
+def list_external_sites(
+    account_id: int,
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> ExternalSiteList:
+    account, _ = _require_account(db, account_id, current_user)
+    rows = (
+        db.query(TelemetryExternalSite)
+        .filter(TelemetryExternalSite.provider_account_id == account.id)
+        .order_by(TelemetryExternalSite.external_site_name.asc().nullslast(),
+                  TelemetryExternalSite.external_site_id.asc())
+        .all()
+    )
+    return ExternalSiteList(
+        items=[ExternalSiteResponse.model_validate(row) for row in rows],
+        last_sync_run_id=rows[0].last_sync_run_id if rows else None,
+        last_sync_status=account.last_sync_status,
+        last_success_at=account.last_success_at,
+    )
