@@ -1,0 +1,48 @@
+Good. Telemetry Phase 2 is accepted, subject to a short closeout summary.
+
+Before changing tasks or moving into Entity Data Models, please provide a concise Phase 2 closeout with:
+
+1. Which durable credential store is now used for v2 in non-dev environments.
+2. The exact secret naming pattern.
+3. How local/dev fallback works when no GCP service account is available.
+4. How create, rotate, archive, delete, and failed DB-commit orphan cleanup behave.
+5. Confirmation that credentials remain write-only in all v2 responses.
+6. Confirmation that the redaction filter still passed.
+7. Confirmation that restart durability passed.
+8. Any remaining known gaps, especially CI test DB wiring and the alembic-from-scratch bootstrap issue.
+
+Do not start or redo the Entity Data Models task. If T001-T012 appear already completed, leave them alone unless I specifically ask for that audit.
+
+After the Phase 2 closeout, proceed to Telemetry Phase 3: frontend company-page telemetry admin UI cutover.
+
+Phase 3 should focus only on the company-level telemetry administration experience:
+
+A. Replace the current static Telemetry Providers section on the Company page.
+B. Use the new /api/telemetry/v2 catalog, licensed-provider, provider-account, test, sync-sites, and external-sites endpoints.
+C. Clearly separate:
+   - Licensed Provider Types
+   - Provider Accounts
+   - External Sites
+   - Project/Site Mappings
+D. Add provider account cards/table with:
+   - provider type
+   - account label/name
+   - lifecycle status
+   - credential status
+   - sync status
+   - external site count
+   - active mapping count, if available
+   - last test / last success / last error
+   - actions: View/Edit, Test, Sync Sites, Disable/Archive
+E. Add an account detail drawer/page with:
+   - Configuration
+   - External Sites
+   - Project/Site Mappings, read-only if mapping endpoints are not cut over yet
+F. Add the Add Licensed Provider / Add Provider Account flow.
+G. Credentials must remain write-only. Never render saved secrets back into the UI.
+H. Do not touch the legacy project/site telemetry wizard yet except if needed to avoid compile errors.
+I. Do not run cleanup migrations.
+J. Do not remove legacy routes or fields.
+K. Keep the UI role-aware using telemetry:admin.
+
+Please return a Phase 3 implementation plan before coding. Include affected files, API calls, UI components, state/query strategy, and acceptance checks.
