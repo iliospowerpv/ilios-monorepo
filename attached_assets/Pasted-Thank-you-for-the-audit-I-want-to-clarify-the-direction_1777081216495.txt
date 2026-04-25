@@ -1,0 +1,136 @@
+Thank you for the audit. I want to clarify the direction before coding.
+
+Please do not treat your expressed recommendations as approved decisions. I want the bigger architectural fix now. This is not in production yet. We have only deployed the demo, so now is the right time to correct the model, UI, and telemetry hierarchy properly rather than patching around the current design.
+
+My decisions are below.
+
+1. AlsoEnergy / KMC integration path
+
+Use Path A for now, but do not design it as a dead-end.
+
+Keep the existing GCP Cloud Functions in place temporarily as the provider execution layer, but wrap them behind a clean provider adapter/service abstraction inside the FastAPI app.
+
+The app should not have Cloud Function details scattered through route handlers or UI assumptions. I want a structure where the backend can call something like:
+
+- providerAdapter.testConnection()
+- providerAdapter.listSites()
+- providerAdapter.listDevices()
+- providerAdapter.fetchTelemetry()
+- providerAdapter.syncExternalSites()
+
+For now, the AlsoEnergy adapter can delegate to the existing Cloud Functions. Later, we should be able to replace that adapter with a native AlsoEnergyClient without changing the rest of the app.
+
+So: do not pull AlsoEnergy fully in-process yet, but do create the internal abstraction boundary that makes that future move clean.
+
+2. One account per company/provider vs many
+
+Support many provider accounts/connections per company/provider.
+
+Do not collapse to one-account-per-(company, provider). That is too restrictive.
+
+A company may have multiple AlsoEnergy accounts, multiple KMC accounts, or different provider accounts for different portfolios, owners, legacy systems, managed assets, or acquired project groups.
+
+The target hierarchy should be:
+
+Platform
+  Company
+    Licensed Provider Type / Catalog Provider
+      Provider Account / Connection Instance
+        Credentials / Secret Reference
+        External Account Label
+        Connection Status
+        Synced External Sites
+        Project/Site/Asset Mappings
+
+In other words:
+
+- telemetry_provider_catalog = global list of supported provider types
+- company_telemetry_providers = company is licensed/enabled to use that provider type
+- company_telemetry_connections or das_connections = actual provider account/configuration/credential instance
+- telemetry_external_sites = cached discovered sites/assets for that specific connection
+- project/site telemetry mappings = mappings from Ilios projects/sites/assets to external provider sites/devices
+
+You may preserve and evolve das_connections if that is the cleanest path, but semantically it should become the provider account/connection instance under a licensed company provider.
+
+3. Catalog location
+
+Use a DB-backed provider catalog, seeded by migration.
+
+I do not want the provider catalog hardcoded only in the frontend. The frontend should call the backend to retrieve supported provider types and provider metadata.
+
+The catalog should eventually support:
+
+- provider key
+- display name
+- description
+- provider category
+- auth type
+- credential field schema/metadata
+- capabilities
+- enabled/disabled status
+- sort order
+- help text / configuration instructions
+
+It is fine if adding a real new provider still requires backend code for the adapter. But the UI should not require a frontend code change just to display, enable, disable, describe, or configure catalog metadata.
+
+4. Production/demo data inspection
+
+Yes, please query the production/demo database read-only before writing migrations so we understand existing data shape. However, do not let the current development/demo data force us into a compromised model. If the right answer requires a breaking migration, propose it.
+
+5. Mapping model
+
+Design the database for many-to-many mapping.
+
+The first UI can make the common path simple, such as one internal site mapped to one external site, but the schema should not prevent:
+
+- one internal project/site mapped to multiple external telemetry sites
+- one external provider account containing many sites
+- one internal site using multiple telemetry providers
+- one physical project having inverter, meter, weather, and other device mappings
+- future storage, EV, meter, DAS, and SCADA telemetry sources
+
+Please avoid hardcoding a 1:1 assumption into the new architecture.
+
+Important clarification:
+
+The existing UI problem is not merely that provider rows are not clickable. The deeper issue is that the company-level telemetry provider licensing/configuration/account/site sync model is not expressed clearly in the product.
+
+The Company page should become the admin control center for telemetry providers and provider accounts.
+
+The Project/Site telemetry tab should become the operational mapping layer that uses only provider accounts already licensed/configured for that company.
+
+Please now produce a revised big-fix implementation plan before coding.
+
+I want the plan to include:
+
+1. Final target architecture.
+2. Proposed final schema, including whether existing tables are renamed, extended, or replaced.
+3. Migration strategy from current tables:
+   - company_das_providers
+   - das_connections
+   - telemetry_sites_mapping
+   - telemetry_devices_mapping
+4. Provider catalog table and seed data.
+5. Provider adapter abstraction design.
+6. How the current GCP Cloud Functions will be wrapped.
+7. How AlsoEnergy auth/token behavior will be represented even while Cloud Functions remain underneath.
+8. Company page UX redesign.
+9. Provider account/connection detail drawer or page UX.
+10. Add Provider / Add Provider Account flow.
+11. Sync External Sites flow.
+12. Project/Site telemetry mapping flow.
+13. Permissions and tenancy enforcement.
+14. Demo data preservation.
+15. Test plan.
+16. Step-by-step implementation phases.
+
+Please explicitly separate:
+
+- Phase 1: schema and backend architecture
+- Phase 2: provider catalog and company provider/account management
+- Phase 3: external site sync and caching
+- Phase 4: project/site mapping refactor
+- Phase 5: UI/UX replacement
+- Phase 6: tests and cleanup
+
+Do not start coding yet. Return the revised plan first.
