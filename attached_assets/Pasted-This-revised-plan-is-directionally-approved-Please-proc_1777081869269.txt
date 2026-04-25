@@ -1,0 +1,85 @@
+This revised plan is directionally approved. Please proceed, but incorporate the guardrails below before coding.
+
+First, I want to avoid a brittle one-shot migration. Please split the migration strategy into a safe two-step approach:
+
+Phase 1 migration:
+- create telemetry_provider_catalog
+- create telemetry_external_sites
+- rename/extend existing tables if needed
+- add new columns and foreign keys
+- backfill new fields
+- keep legacy columns temporarily where they may still be referenced
+- update application code to use the new fields
+
+Cleanup migration:
+- only after tests and manual verification
+- remove deprecated columns, old constraints, and compatibility aliases
+
+Do not drop legacy fields in the same migration that introduces the new architecture unless you first prove there are no runtime references.
+
+Before writing migrations, produce a reference map of every backend, frontend, seed-script, report, and helper file that references the current telemetry tables:
+
+- company_das_providers
+- das_connections
+- telemetry_sites_mapping
+- telemetry_devices_mapping
+
+I want to see the impact map before schema changes are applied.
+
+Please also incorporate the following schema/status refinements:
+
+1. telemetry_external_sites should include enough sync provenance to debug provider drift:
+- first_seen_at
+- last_seen_at
+- last_synced_at
+- last_sync_run_id, if useful
+- sync_status
+- last_sync_error
+
+2. Provider account state should separate account lifecycle, credential health, and sync state:
+- status: draft / active / disabled / archived
+- credential_status: unknown / missing / valid / invalid / expired
+- last_sync_status: never_synced / success / warning / error
+
+A provider account can have valid credentials but failed site sync, so those states should not be conflated.
+
+3. Be precise with TokenState while Cloud Functions remain underneath. The UI should not imply that Ilios knows the actual AlsoEnergy token expiration unless the Cloud Function returns it. Use language like:
+- Credentials verified 4 minutes ago
+- Last provider test successful
+- Last sync failed
+Do not show:
+- Token active
+- Token expires in X
+unless a future native adapter provides that data.
+
+4. Credential handling must be write-only from the UI:
+- backend never returns stored credential values
+- edit forms show placeholders only, such as “Password saved” or “Token saved”
+- logs must never contain passwords, tokens, bearer strings, base64 credential strings, or GCP secret payloads
+- credential rotation should update the GCP secret and audit the event without exposing the secret
+
+5. UI language should clearly distinguish:
+- Licensed Provider Types
+- Provider Accounts
+- External Sites
+- Project/Site/Asset Mappings
+
+Avoid using “provider” for everything, because that is part of the current conceptual confusion.
+
+6. Please make server-side tenancy checks explicit. When creating or updating a mapping, the backend must verify:
+- the internal site belongs to the correct project/company
+- the provider account belongs to that same company or is validly portfolio-shared
+- the external site belongs to that provider account
+- any external device mapping belongs under the selected provider account and external site
+- users from one company cannot infer the existence of another company’s provider accounts, external sites, or mappings
+
+7. Keep the Cloud Functions for now, but fully wrap them behind the ProviderAdapter abstraction as planned. No route or UI code should know the Cloud Function payload format. That should be isolated to the adapter implementation.
+
+Please now start with Phase 0 / Phase 1 only:
+
+A. read-only DB inspection
+B. current telemetry reference map
+C. final migration outline
+D. backend model/adapter scaffolding plan
+
+Return those findings before making code changes.
