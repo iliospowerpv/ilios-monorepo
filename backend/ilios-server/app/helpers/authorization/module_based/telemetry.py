@@ -55,3 +55,21 @@ class TelemetryPermissions:
 
 
 telemetry_admin_required = TelemetryPermissions(TELEMETRY_ADMIN_ACTION)
+
+
+def user_has_telemetry_admin(current_user: CurrentUserSchema) -> bool:
+    """Non-throwing variant of :class:`TelemetryPermissions` for read paths.
+
+    Use this when an endpoint is open to any company-visible user but
+    needs to gate sensitive metadata (e.g. credential fingerprints) to
+    telemetry administrators only.
+    """
+    if getattr(current_user, "is_system_user", False):
+        return True
+    role = getattr(current_user, "role", None)
+    permissions = getattr(role, "permissions", None) or {}
+    telemetry_perms = permissions.get(TELEMETRY_PERMISSION_MODULE) or {}
+    if telemetry_perms.get(TELEMETRY_ADMIN_ACTION):
+        return True
+    settings_perms = permissions.get("Settings Page") or {}
+    return bool(settings_perms.get("edit"))

@@ -126,11 +126,23 @@ class CloudFunctionAdapter:
 
     def _require_fields(self, credentials: dict[str, str]) -> None:
         missing = [k for k in self.required_credential_fields if not credentials.get(k)]
-        if missing:
+        if not missing:
+            return
+        # Distinguish "nothing stored at all" from "partial config". The
+        # former is the normal state after an in-memory store wipe and
+        # deserves an actionable message that points operators at the
+        # Rotate Credentials flow.
+        if not any(credentials.values()):
             raise CredentialError(
-                f"Missing credential fields: {', '.join(missing)}",
+                "No credentials are stored for this account. "
+                "Use Rotate Credentials to enter them.",
                 provider_key=self.provider_key,
             )
+        raise CredentialError(
+            f"Missing credential fields: {', '.join(missing)}. "
+            "Use Rotate Credentials to update them.",
+            provider_key=self.provider_key,
+        )
 
     def _invoke(self, payload: dict[str, Any]) -> Any:
         client = self._get_client()

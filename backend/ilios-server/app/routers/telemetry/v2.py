@@ -17,7 +17,10 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.db.session import get_session
 from app.helpers.authentication import get_current_user
-from app.helpers.authorization.module_based.telemetry import telemetry_admin_required
+from app.helpers.authorization.module_based.telemetry import (
+    telemetry_admin_required,
+    user_has_telemetry_admin,
+)
 from app.integrations.telemetry import (
     CredentialError,
     MappingError,
@@ -88,6 +91,29 @@ def _provider_key_to_enum(provider_key: str) -> DASProvidersEnum:
             status.HTTP_400_BAD_REQUEST,
             f"Unknown provider_key '{provider_key}'",
         ) from exc
+
+
+def _safe_stored_fingerprint(
+    credential_store: CredentialStore, secret_token_name: Optional[str]
+) -> Optional[str]:
+    """Best-effort fingerprint of currently-stored credentials.
+
+    Returns ``None`` when the secret cannot be retrieved or is empty.
+    Errors are swallowed to keep list/detail reads cheap and resilient
+    when the credential backend is transiently unavailable.
+    """
+    if not secret_token_name:
+        return None
+    try:
+        stored = credential_store.retrieve(secret_token_name) or {}
+    except Exception:  # noqa: BLE001
+        logger.warning(
+            "telemetry_v2_fingerprint_lookup_failed secret_name=%s",
+            secret_token_name,
+        )
+        return None
+    first_value = next((v for v in stored.values() if v), None)
+    return fingerprint(first_value) if first_value else None
 
 
 def _account_to_response(
@@ -514,6 +540,7 @@ def list_provider_accounts(
     company_id: int,
     db: Annotated[Session, Depends(get_session)],
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    credential_store: Annotated[CredentialStore, Depends(get_credential_store)],
     include_archived: bool = False,
 ) -> ProviderAccountList:
     _enforce_company_visibility(current_user, company_id)
@@ -532,11 +559,17 @@ def list_provider_accounts(
     site_counts = _batch_external_site_counts(db, account_ids)
     mapping_counts = _batch_active_mapping_counts(db, account_ids)
 
+    is_admin = user_has_telemetry_admin(current_user)
     return ProviderAccountList(
         items=[
             _account_to_response(
                 row,
                 by_id.get(row.id),
+                credential_fingerprint=(
+                    _safe_stored_fingerprint(credential_store, row.secret_token_name)
+                    if is_admin
+                    else None
+                ),
                 external_site_count=site_counts.get(row.id, 0),
                 active_mapping_count=mapping_counts.get(row.id, 0),
             )
@@ -627,12 +660,19 @@ def get_provider_account(
     account_id: int,
     db: Annotated[Session, Depends(get_session)],
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    credential_store: Annotated[CredentialStore, Depends(get_credential_store)],
 ) -> ProviderAccountResponse:
     _enforce_company_visibility(current_user, company_id)
     account, catalog = _require_account_for_company(db, company_id, account_id)
+    credential_fingerprint = (
+        _safe_stored_fingerprint(credential_store, account.secret_token_name)
+        if user_has_telemetry_admin(current_user)
+        else None
+    )
     return _account_to_response(
         account,
         catalog,
+        credential_fingerprint=credential_fingerprint,
         external_site_count=_count_external_sites(db, account.id),
         active_mapping_count=_count_active_mappings(db, account.id),
     )

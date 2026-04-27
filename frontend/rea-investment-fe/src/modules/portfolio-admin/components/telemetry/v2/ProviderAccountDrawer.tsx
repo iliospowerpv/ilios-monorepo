@@ -213,12 +213,27 @@ export const ProviderAccountDrawer: React.FC<ProviderAccountDrawerProps> = ({
                         {current.is_archived ? 'Archived' : isArchiving ? 'Archiving…' : 'Archive'}
                       </Button>
                     </Stack>
-                    {current.credential_status !== 'verified' && current.status === 'active' && (
-                      <Alert severity="warning">
-                        Credentials have not been verified. <strong>Click Test Credentials</strong> to verify before
-                        syncing sites.
+                    {!current.credentials_fingerprint && current.status === 'active' && (
+                      <Alert
+                        severity="warning"
+                        action={
+                          <Button color="inherit" size="small" onClick={() => onRotate(current)}>
+                            Rotate Credentials
+                          </Button>
+                        }
+                      >
+                        No credentials are stored for this account. Click <strong>Rotate Credentials</strong> to enter
+                        them.
                       </Alert>
                     )}
+                    {!!current.credentials_fingerprint &&
+                      current.credential_status !== 'verified' &&
+                      current.status === 'active' && (
+                        <Alert severity="warning">
+                          Credentials have not been verified. <strong>Click Test Credentials</strong> to verify before
+                          syncing sites.
+                        </Alert>
+                      )}
                   </>
                 )}
               </Stack>
