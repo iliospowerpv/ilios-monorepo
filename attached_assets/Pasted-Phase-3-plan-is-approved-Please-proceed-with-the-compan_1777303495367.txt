@@ -1,0 +1,59 @@
+Phase 3 plan is approved.
+
+Please proceed with the company-level telemetry admin UI cutover as scoped. Stay strictly within this telemetry phase. Do not touch the Entity task queue, cleanup migrations, legacy route removal, or the project/site telemetry wizard except if needed for compile safety.
+
+On the open question: yes, please add active_mapping_count to ProviderAccountResponse as a small additive backend change with no schema impact.
+
+Reason:
+- the company admin needs to see whether a provider account is actively used before archive/disable/rotation decisions;
+- it improves the usefulness of the Provider Accounts table immediately;
+- it is low risk if computed from existing mapping tables;
+- it avoids a visibly incomplete column in the new UI.
+
+Please also include external_site_count if it is not already in the account/list response, because the Provider Accounts table needs to show synced site inventory without making excessive per-row calls.
+
+Guardrails for the additive backend DTO change:
+1. No schema migration.
+2. No destructive changes.
+3. No legacy route changes.
+4. Counts must be server-side computed and company/tenant scoped.
+5. If a count cannot be computed safely, return 0 rather than leaking cross-tenant information.
+6. Archived/inactive mappings should not be counted as active mappings.
+7. External site count should count active external sites for that provider account.
+8. Include the fields in list and detail responses if practical.
+
+Important account-creation behavior:
+- Creating a provider account should save the account and write-only credentials, but should not automatically call the external provider.
+- New accounts should appear with credential_status unknown/unverified and sync_status never_synced.
+- The UI should clearly prompt the user to click Test Credentials as the next step.
+- Test Credentials should be a deliberate user action.
+- Sync Sites should only be enabled after a successful credential test, unless the backend already safely blocks it.
+- After credential rotation, credential_status should return to unknown/unverified and the UI should prompt the user to test again.
+
+Proceed in this order:
+1. telemetryV2 API client and types.
+2. React Query hooks.
+3. TelemetryAdminSection shell on the Company page.
+4. Licensed Provider Types panel.
+5. Provider Accounts table.
+6. Provider Account drawer.
+7. Add Licensed Provider dialog.
+8. Add Provider Account dialog.
+9. Test / Sync Sites / Rotate Credentials / Archive actions.
+10. Help article and docs registry updates.
+11. Screenshot and acceptance-check report.
+
+Credential handling remains critical:
+- credentials are write-only;
+- never populate saved credential values back into the UI;
+- never include credential values in response handling, logs, toast messages, component props, or table state;
+- clear credential form state after submit/close;
+- network responses should contain only status, timestamps, fingerprint/status metadata, and redacted messages.
+
+For Phase 3, non-admin behavior should be read-only rather than hidden unless the existing app’s permission pattern strongly prefers hiding the entire section. Non-admin project/company viewers can benefit from seeing configured telemetry status, but mutation buttons must remain hidden or disabled for them.
+
+Please return milestone screenshots or concise progress notes after:
+A. section/table renders,
+B. account drawer works,
+C. add account/test/sync flow works,
+D. final acceptance checks pass.

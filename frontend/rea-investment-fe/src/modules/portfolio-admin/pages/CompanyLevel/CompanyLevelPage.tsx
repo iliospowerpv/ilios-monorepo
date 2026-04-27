@@ -35,7 +35,7 @@ import ContactsIcon from '@mui/icons-material/Contacts';
 import { ApiClient } from '../../../../api';
 import { ContactsList } from '../../components/contacts';
 import { FinanceIntegrationsSection, FinanceHealthCard } from '../../components/finance';
-import { TelemetryProvidersSection } from '../../components/telemetry';
+import { TelemetryAdminSection } from '../../components/telemetry/v2';
 import type { CompanyMember } from '../../../../api';
 import {
   AddProjectDialog,
@@ -416,7 +416,7 @@ export const CompanyLevelPage: React.FC = () => {
 
       <FinanceIntegrationsSection companyId={companyIdNum} />
 
-      <TelemetryProvidersSection companyId={companyIdNum} />
+      <TelemetryAdminSection companyId={companyIdNum} />
 
       <AddProjectDialog
         open={isAddProjectOpen}

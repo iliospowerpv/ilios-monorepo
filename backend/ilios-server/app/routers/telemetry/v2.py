@@ -42,6 +42,7 @@ from app.models.telemetry import (
     ProviderAccountStatus,
     TelemetryExternalSite,
     TelemetryProviderCatalog,
+    TelemetrySiteMapping,
 )
 from app.schema.telemetry_v2 import (
     ExternalSiteList,
@@ -93,6 +94,8 @@ def _account_to_response(
     account: DASConnection,
     catalog: Optional[TelemetryProviderCatalog],
     credential_fingerprint: Optional[str] = None,
+    external_site_count: int = 0,
+    active_mapping_count: int = 0,
 ) -> ProviderAccountResponse:
     provider_key = catalog.provider_key if catalog else account.provider.name
     display_name = catalog.display_name if catalog else account.provider.value
@@ -114,7 +117,106 @@ def _account_to_response(
         created_at=account.created_at,
         updated_at=account.updated_at,
         credentials_fingerprint=credential_fingerprint,
+        external_site_count=external_site_count,
+        active_mapping_count=active_mapping_count,
     )
+
+
+def _count_external_sites(db: Session, account_id: int) -> int:
+    """Return the count of external sites for an account.
+
+    Tenant scoping is the caller's responsibility — this helper must only be
+    invoked after the account has already been resolved to the caller's
+    company. Returns 0 on any unexpected error so we never leak a partial
+    or cross-tenant value into the response.
+    """
+    try:
+        return (
+            db.query(func.count(TelemetryExternalSite.id))
+            .filter(TelemetryExternalSite.provider_account_id == account_id)
+            .scalar()
+            or 0
+        )
+    except Exception:  # noqa: BLE001
+        logger.warning(
+            "telemetry_v2_external_site_count_failed account_id=%s", account_id
+        )
+        return 0
+
+
+def _count_active_mappings(db: Session, account_id: int) -> int:
+    """Return the count of active site mappings for an account.
+
+    Inactive (``is_active=False``) mappings are excluded by definition.
+    Tenant scoping is the caller's responsibility. Device mappings live
+    underneath site mappings and are not double-counted here.
+    """
+    try:
+        return (
+            db.query(func.count(TelemetrySiteMapping.id))
+            .filter(
+                TelemetrySiteMapping.provider_account_id == account_id,
+                TelemetrySiteMapping.is_active.is_(True),
+            )
+            .scalar()
+            or 0
+        )
+    except Exception:  # noqa: BLE001
+        logger.warning(
+            "telemetry_v2_active_mapping_count_failed account_id=%s", account_id
+        )
+        return 0
+
+
+def _batch_external_site_counts(
+    db: Session, account_ids: list[int]
+) -> dict[int, int]:
+    """Batch-count external sites for many accounts in one query."""
+    if not account_ids:
+        return {}
+    try:
+        rows = (
+            db.query(
+                TelemetryExternalSite.provider_account_id,
+                func.count(TelemetryExternalSite.id),
+            )
+            .filter(TelemetryExternalSite.provider_account_id.in_(account_ids))
+            .group_by(TelemetryExternalSite.provider_account_id)
+            .all()
+        )
+        return {pid: int(c) for pid, c in rows}
+    except Exception:  # noqa: BLE001
+        logger.warning(
+            "telemetry_v2_external_site_count_batch_failed n=%s", len(account_ids)
+        )
+        return {}
+
+
+def _batch_active_mapping_counts(
+    db: Session, account_ids: list[int]
+) -> dict[int, int]:
+    """Batch-count active site mappings for many accounts in one query."""
+    if not account_ids:
+        return {}
+    try:
+        rows = (
+            db.query(
+                TelemetrySiteMapping.provider_account_id,
+                func.count(TelemetrySiteMapping.id),
+            )
+            .filter(
+                TelemetrySiteMapping.provider_account_id.in_(account_ids),
+                TelemetrySiteMapping.is_active.is_(True),
+            )
+            .group_by(TelemetrySiteMapping.provider_account_id)
+            .all()
+        )
+        return {pid: int(c) for pid, c in rows}
+    except Exception:  # noqa: BLE001
+        logger.warning(
+            "telemetry_v2_active_mapping_count_batch_failed n=%s", len(account_ids)
+        )
+        return {}
 
 
 def _require_account_for_company(
@@ -426,8 +528,20 @@ def list_provider_accounts(
         if catalog is not None:
             by_id[row.id] = catalog
 
+    account_ids = [row.id for row in rows]
+    site_counts = _batch_external_site_counts(db, account_ids)
+    mapping_counts = _batch_active_mapping_counts(db, account_ids)
+
     return ProviderAccountList(
-        items=[_account_to_response(row, by_id.get(row.id)) for row in rows]
+        items=[
+            _account_to_response(
+                row,
+                by_id.get(row.id),
+                external_site_count=site_counts.get(row.id, 0),
+                active_mapping_count=mapping_counts.get(row.id, 0),
+            )
+            for row in rows
+        ]
     )
 
 
@@ -498,6 +612,8 @@ def create_provider_account(
         credential_fingerprint=fingerprint(
             next(iter(payload.credentials.fields.values()), None)
         ),
+        external_site_count=_count_external_sites(db, account.id),
+        active_mapping_count=_count_active_mappings(db, account.id),
     )
 
 
@@ -514,7 +630,12 @@ def get_provider_account(
 ) -> ProviderAccountResponse:
     _enforce_company_visibility(current_user, company_id)
     account, catalog = _require_account_for_company(db, company_id, account_id)
-    return _account_to_response(account, catalog)
+    return _account_to_response(
+        account,
+        catalog,
+        external_site_count=_count_external_sites(db, account.id),
+        active_mapping_count=_count_active_mappings(db, account.id),
+    )
 
 
 @telemetry_v2_router.patch(
@@ -599,7 +720,13 @@ def update_provider_account(
                     minted_new_secret,
                 )
         raise
-    return _account_to_response(account, catalog, credential_fingerprint=rotated_fp)
+    return _account_to_response(
+        account,
+        catalog,
+        credential_fingerprint=rotated_fp,
+        external_site_count=_count_external_sites(db, account.id),
+        active_mapping_count=_count_active_mappings(db, account.id),
+    )
 
 
 @telemetry_v2_router.delete(

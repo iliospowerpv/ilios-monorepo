@@ -22,6 +22,7 @@ import { createContactsApi } from './contacts';
 import { createEntitiesApi } from './entities';
 import { financeIntegrations, financeData } from './financeIntegrations';
 import { buildProjectImportApi } from './project-import';
+import { buildTelemetryV2Api } from './telemetryV2';
 
 export const ApiClient = Object.freeze({
   _tokenManager: tokenManager,
@@ -48,7 +49,8 @@ export const ApiClient = Object.freeze({
   ...createEntitiesApi(httpClient),
   financeIntegrations,
   financeData,
-  projectImport: buildProjectImportApi(httpClient)
+  projectImport: buildProjectImportApi(httpClient),
+  telemetryV2: buildTelemetryV2Api(httpClient)
 });
 
 export type {

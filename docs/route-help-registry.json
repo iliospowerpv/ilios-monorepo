@@ -553,7 +553,11 @@
     "/portfolio-admin/companies/:companyId": {
       "module": "portfolio-admin",
       "label": "Company Admin",
-      "helpArticles": ["portfolio-admin-workflows", "portfolio-admin-key-screens"],
+      "helpArticles": [
+        "portfolio-admin-workflows",
+        "portfolio-admin-key-screens",
+        "company-telemetry-administration"
+      ],
       "description": "Company-level administration"
     },
     "/portfolio-admin/projects/:projectId": {
@@ -949,6 +953,11 @@
     },
     "portfolio-admin-troubleshooting": {
       "title": "Portfolio Admin Troubleshooting",
+      "section": "Portfolio Admin",
+      "status": "published"
+    },
+    "company-telemetry-administration": {
+      "title": "Company Telemetry Administration",
       "section": "Portfolio Admin",
       "status": "published"
     },

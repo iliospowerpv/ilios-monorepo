@@ -139,6 +139,23 @@ class ProviderAccountResponse(BaseModel):
         description="Short non-reversible fingerprint of stored credentials, "
         "for operator correlation only.",
     )
+    external_site_count: int = Field(
+        default=0,
+        description=(
+            "Number of external sites currently known for this provider "
+            "account. Counted server-side and tenant-scoped; defaults to 0 "
+            "if the count cannot be computed."
+        ),
+    )
+    active_mapping_count: int = Field(
+        default=0,
+        description=(
+            "Number of active project/site mappings for this provider "
+            "account. Archived/inactive mappings are excluded. Counted "
+            "server-side and tenant-scoped; defaults to 0 if the count "
+            "cannot be computed."
+        ),
+    )
 
 
 class ProviderAccountList(BaseModel):

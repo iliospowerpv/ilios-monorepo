@@ -197,5 +197,94 @@ The user management interface provides:
 - Email address may be incorrect
 
 **Solution:** Verify the email address and ask the user to check their spam folder. Resend the invitation if needed.`
+  },
+  {
+    slug: 'company-telemetry-administration',
+    title: 'Company Telemetry Administration',
+    summary:
+      'License telemetry provider types, manage provider accounts and stored credentials, and review external sites at the company level.',
+    category: 'portfolio-admin',
+    module: 'portfolio-admin',
+    audience: ['admin'],
+    articleType: 'guide',
+    tags: ['portfolio-admin', 'telemetry', 'integration', 'credentials', 'providers'],
+    searchKeywords: [
+      'telemetry',
+      'provider',
+      'credentials',
+      'rotate',
+      'sync sites',
+      'AlsoEnergy',
+      'KMC',
+      'archived',
+      'license',
+      'verified',
+      'unverified'
+    ],
+    relatedArticles: ['portfolio-admin-overview', 'portfolio-admin-workflows'],
+    lastUpdated: '2026-04-27',
+    body: `## What This Page Manages
+
+The **Telemetry Administration** section on the Company page manages everything telemetry at the company scope:
+
+- **Licensed Provider Types** — which telemetry vendors this company is allowed to use (for example AlsoEnergy or KMC)
+- **Provider Accounts** — one per vendor login. Stores credentials write-only and tracks the lifecycle, credential, and sync status of each account
+- **External Sites** — the inventory of sites synced from each provider
+
+## Permissions
+
+Mutations require the **Telemetry administrator** permission (or the legacy **Settings — edit** permission as a fallback). Users without those permissions see the tables in read-only mode; all action buttons are hidden.
+
+## Three Status Indicators
+
+Each Provider Account has three independent status chips:
+
+- **Lifecycle** — Active, Paused, or Archived
+- **Credentials** — Not tested, Verified, Invalid, or Expired
+- **Sync** — Never synced, Synced, Partial, or Sync failed
+
+## Adding a Licensed Provider Type
+
+1. In **Licensed Provider Types**, click **Add Licensed Provider**
+2. Pick a provider type from the catalog
+3. Optionally add notes
+4. Click **Add License**
+
+Once licensed, you can create Provider Accounts that use this provider.
+
+## Adding a Provider Account
+
+1. In **Provider Accounts**, click **Add Provider Account**
+2. Choose a licensed provider, give the account a name, and (optionally) the external account label
+3. Enter the credential fields (these are write-only — they will never be displayed back)
+4. Click **Save Account**
+
+The new account is saved with **Credentials = Not tested** and **Sync = Never synced**. iliOS will not contact the provider until you click **Test Credentials**.
+
+## Testing Credentials
+
+Click **Test** on any active account. If the test succeeds, the **Credentials** chip becomes **Verified**. If it fails, the chip becomes **Invalid** and the failure message is shown in the **Last error** column.
+
+## Syncing Sites
+
+The **Sync Sites** button is disabled until **Credentials = Verified**. Once verified, click **Sync Sites** to enumerate the sites available to this account from the provider. Synced sites appear in the **External Sites** tab in the account drawer.
+
+## Rotating Credentials
+
+Use the **Rotate Credentials** action (row menu or drawer) when the underlying provider password or token changes. After rotation:
+
+- A new credential version is stored
+- The **Credentials** chip resets to **Not tested**
+- You must click **Test Credentials** to verify the new values before syncing again
+
+Old credential versions are retained for audit and rollback.
+
+## Archive vs. Delete
+
+Archive is a **safe, reversible** action. The account is hidden by default in lists, but the stored credentials are retained until an explicit purge endpoint is added. Archive does not delete the underlying secret.
+
+## Project / Site Mappings
+
+The **Project / Site Mappings** tab on each account shows how many active mappings reference this account. Mappings themselves are managed inside the project Telemetry tab on each project page, not here.`
   }
 ];

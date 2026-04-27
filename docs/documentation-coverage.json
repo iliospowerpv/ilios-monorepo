@@ -1,7 +1,7 @@
 {
   "$schema": "Documentation Coverage Inventory",
   "description": "Tracks documentation coverage status for every module and page in the application. Updated by the docs:audit script and during feature development.",
-  "lastUpdated": "2026-04-15",
+  "lastUpdated": "2026-04-27",
   "legend": {
     "covered": "Has linked help articles with written content",
     "partial": "Has help article mappings but content is stub/placeholder",
@@ -133,7 +133,7 @@
       "overviewArticle": "portfolio-admin-overview",
       "pages": [
         { "route": "/portfolio-admin", "label": "Portfolio Admin", "status": "covered", "notes": "" },
-        { "route": "/portfolio-admin/companies/:companyId", "label": "Company Admin", "status": "covered", "notes": "" },
+        { "route": "/portfolio-admin/companies/:companyId", "label": "Company Admin", "status": "covered", "notes": "Includes Telemetry Administration section (Phase 3 v2 cutover)." },
         { "route": "/portfolio-admin/projects/:projectId", "label": "Project Admin", "status": "covered", "notes": "" }
       ]
     },
