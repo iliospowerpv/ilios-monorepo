@@ -1,0 +1,51 @@
+Phase 3 is accepted pending a short Phase 3.5 manual validation pass.
+
+The implementation appears aligned:
+- company-level TelemetryAdminSection is now v2-driven;
+- legacy telemetry routes and the project/site wizard were left untouched;
+- provider accounts include active_mapping_count and external_site_count;
+- credentials remain write-only;
+- account creation does not auto-test;
+- Sync Sites is disabled until credentials are verified;
+- rotation resets credentials to unverified;
+- non-admins are read-only;
+- docs audit passed;
+- architect review passed.
+
+Before moving to Phase 4, please complete a logged-in validation pass against the actual company page. The prior screenshot only showed the login page, so we still need confirmation that the new UI renders correctly in context.
+
+Please validate:
+
+1. Log in as a telemetry admin/system user.
+2. Open a company page with existing licensed providers.
+3. Confirm the new Telemetry Admin section renders in place of the old static Telemetry Providers section.
+4. Confirm Licensed Provider Types render correctly.
+5. Confirm Provider Accounts table renders correctly, including:
+   - lifecycle status
+   - credential status
+   - sync status
+   - external_site_count
+   - active_mapping_count
+   - last success/error/test fields where available
+6. Open the Provider Account drawer and confirm all three tabs render:
+   - Configuration
+   - External Sites
+   - Mappings
+7. Confirm Add Licensed Provider flow works where a provider is not already licensed.
+8. Confirm Add Provider Account flow creates an account without auto-testing.
+9. Confirm Test Credentials works or returns a redacted provider-safe error.
+10. Confirm Sync Sites remains disabled until credentials are verified.
+11. Confirm Rotate Credentials clears form state and resets status to unverified.
+12. Confirm Archive/Disable behavior is safe and does not expose secrets.
+13. Log in or simulate a non-admin user and confirm the section is read-only with mutation actions hidden.
+14. Confirm network tab from this company page uses only `/api/telemetry/v2/*` for the new telemetry section and does not call legacy `/api/telemetry/*` routes.
+15. Confirm no credential values appear in response payloads, console logs, toast messages, or component-visible state.
+16. Provide screenshots of:
+   - the company telemetry admin section,
+   - provider account drawer,
+   - add provider account dialog,
+   - external sites tab after sync or empty-state.
+
+Do not start Phase 4 until this validation is complete.
+
+After Phase 3.5 passes, proceed to Phase 4 planning only: project/site telemetry mapping cutover to v2. Do not code Phase 4 until we review the plan.
