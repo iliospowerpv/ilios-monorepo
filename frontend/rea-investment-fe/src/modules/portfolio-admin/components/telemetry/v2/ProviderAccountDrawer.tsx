@@ -80,7 +80,18 @@ export const ProviderAccountDrawer: React.FC<ProviderAccountDrawerProps> = ({
   const syncDisabled = !current || current.credential_status !== 'verified' || current.status !== 'active';
 
   return (
-    <Drawer anchor="right" open={open} onClose={onClose} PaperProps={{ sx: { width: { xs: '100%', sm: 560 } } }}>
+    <Drawer
+      anchor="right"
+      open={open}
+      onClose={onClose}
+      PaperProps={{
+        sx: {
+          width: { xs: '100%', sm: 560 },
+          backgroundColor: 'background.paper',
+          color: 'text.primary'
+        }
+      }}
+    >
       {!current ? (
         <Box sx={{ p: 2 }}>
           <Skeleton variant="rectangular" height={240} />
