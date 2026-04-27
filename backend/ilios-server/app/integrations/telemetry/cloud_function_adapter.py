@@ -205,9 +205,25 @@ class CloudFunctionAdapter:
 
         # Lazy import + lazy default client construction so unit tests can
         # inject a fake without forcing GCS credentials to load.
-        from app.helpers.telemetry.cloud_function_telemetry_client import (  # type: ignore
-            CloudFunctionTelemetryClient,
-        )
+        try:
+            from app.helpers.telemetry.cloud_function_telemetry_client import (  # type: ignore
+                CloudFunctionTelemetryClient,
+            )
+        except ImportError as exc:
+            # The v2 cloud-function client glue is not wired up in this
+            # environment. Surface a clean ProviderUnavailable so callers
+            # (e.g. test_credentials) return a meaningful message instead
+            # of crashing the request with a 500.
+            logger.warning(
+                "CloudFunctionTelemetryClient unavailable for provider %s: %s",
+                self.provider_key,
+                exc,
+            )
+            raise ProviderUnavailable(
+                "Live credential testing is not available in this environment. "
+                "Contact a telemetry administrator to enable the provider integration.",
+                provider_key=self.provider_key,
+            ) from exc
 
         self._http_client = CloudFunctionTelemetryClient()
         return self._http_client
