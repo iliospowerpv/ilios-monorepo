@@ -207,7 +207,12 @@ export const ProviderAccountsTable: React.FC<ProviderAccountsTableProps> = ({
               </TableHead>
               <TableBody>
                 {accounts.map(account => (
-                  <TableRow key={account.id} hover>
+                  <TableRow
+                    key={account.id}
+                    hover
+                    sx={{ cursor: 'pointer' }}
+                    onClick={() => onView(account)}
+                  >
                     <TableCell>
                       <Typography variant="body2">{account.display_name}</Typography>
                       <Typography variant="caption" color="text.secondary">
@@ -263,7 +268,9 @@ export const ProviderAccountsTable: React.FC<ProviderAccountsTableProps> = ({
                         </Typography>
                       )}
                     </TableCell>
-                    <TableCell align="right">{renderActions(account)}</TableCell>
+                    <TableCell align="right" onClick={e => e.stopPropagation()}>
+                      {renderActions(account)}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

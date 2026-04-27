@@ -1,1 +1,1 @@
-export { TelemetryProvidersSection } from './TelemetryProvidersSection';
+export { TelemetryAdminSection } from './v2';

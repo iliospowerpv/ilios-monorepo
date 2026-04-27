@@ -16,7 +16,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SensorsIcon from '@mui/icons-material/Sensors';
 
 import type { LicensedProvider } from '../../../../../types/telemetryV2';
-import { useLicensedProviders, useTelemetryAdminMutations } from '../../../../../hooks/telemetryV2';
+import { useLicensedProviders, useProviderCatalog, useTelemetryAdminMutations } from '../../../../../hooks/telemetryV2';
 
 interface LicensedProviderTypesPanelProps {
   companyId: number;
@@ -32,10 +32,17 @@ export const LicensedProviderTypesPanel: React.FC<LicensedProviderTypesPanelProp
   onError
 }) => {
   const { data, isLoading, error } = useLicensedProviders(companyId);
+  const { data: catalog, isLoading: catalogLoading } = useProviderCatalog();
   const { revokeLicense } = useTelemetryAdminMutations(companyId);
   const [confirming, setConfirming] = React.useState<LicensedProvider | null>(null);
 
-  const items = data?.items ?? [];
+  const items = React.useMemo(() => data?.items ?? [], [data]);
+  const licensedKeys = React.useMemo(() => new Set(items.map(l => l.provider_key)), [items]);
+  const availableToLicense = React.useMemo(
+    () => (catalog?.items ?? []).filter(entry => entry.is_enabled && !licensedKeys.has(entry.provider_key)),
+    [catalog, licensedKeys]
+  );
+  const noneAvailable = !catalogLoading && availableToLicense.length === 0;
 
   const handleRevoke = (license: LicensedProvider) => {
     revokeLicense.mutate(license.id, {
@@ -59,9 +66,25 @@ export const LicensedProviderTypesPanel: React.FC<LicensedProviderTypesPanelProp
             <Chip size="small" label={`${items.length}`} variant="outlined" />
           </Box>
           {canEdit && (
-            <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={onAddLicense}>
-              Add Licensed Provider
-            </Button>
+            <Tooltip
+              title={
+                noneAvailable
+                  ? 'All catalog providers are already licensed for this company.'
+                  : 'License a new provider type for this company'
+              }
+            >
+              <span>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<AddIcon />}
+                  onClick={onAddLicense}
+                  disabled={noneAvailable}
+                >
+                  Add Licensed Provider
+                </Button>
+              </span>
+            </Tooltip>
           )}
         </Box>
 
