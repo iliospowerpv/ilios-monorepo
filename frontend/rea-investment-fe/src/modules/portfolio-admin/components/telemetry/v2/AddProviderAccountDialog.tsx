@@ -12,7 +12,6 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
 
 import { useLicensedProviders, useProviderCatalog, useTelemetryAdminMutations } from '../../../../../hooks/telemetryV2';
 import { CredentialFieldsForm, resolveCredentialFields } from './CredentialFieldsForm';
@@ -41,7 +40,7 @@ export const AddProviderAccountDialog: React.FC<AddProviderAccountDialogProps> =
   const [error, setError] = React.useState<string | null>(null);
 
   const licensedItems = licensed?.items ?? [];
-  const catalogItems = catalog?.items ?? [];
+  const catalogItems = React.useMemo(() => catalog?.items ?? [], [catalog]);
 
   const selectedCatalog = React.useMemo(
     () => catalogItems.find(c => c.provider_key === providerKey) ?? null,
