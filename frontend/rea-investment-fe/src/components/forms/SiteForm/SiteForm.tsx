@@ -423,10 +423,12 @@ export const SiteForm: React.FC<SiteFormProps> = props => {
           const isFieldDisabled = (isEdit && !!siteData?.telemetry_site_name) || isLoadingConnectionData;
 
           const connectionOptions: SearchableSelectOption[] = isFieldDisabled
-            ? (field.value ? [{ label: field.value, value: field.value }] : [])
-            : (connectionData?.items?.length
-                ? connectionData.items.map(conn => ({ label: conn.name, value: conn.name }))
-                : [{ label: 'No connections to show', value: '__none__', disabled: true }]);
+            ? field.value
+              ? [{ label: field.value, value: field.value }]
+              : []
+            : connectionData?.items?.length
+              ? connectionData.items.map(conn => ({ label: conn.name, value: conn.name }))
+              : [{ label: 'No connections to show', value: '__none__', disabled: true }];
 
           return (
             <SearchableSelect
@@ -462,8 +464,10 @@ export const SiteForm: React.FC<SiteFormProps> = props => {
             const isFieldDisabled = (isEdit && !!siteData?.telemetry_site_name) || isLoadingSitesData;
 
             const siteOptions: SearchableSelectOption[] = isFieldDisabled
-              ? (field.value ? [{ label: field.value, value: field.value }] : [])
-              : (siteMappingData?.items?.map(site => ({ label: site.name, value: site.name })) || []);
+              ? field.value
+                ? [{ label: field.value, value: field.value }]
+                : []
+              : siteMappingData?.items?.map(site => ({ label: site.name, value: site.name })) || [];
 
             return (
               <SearchableSelect

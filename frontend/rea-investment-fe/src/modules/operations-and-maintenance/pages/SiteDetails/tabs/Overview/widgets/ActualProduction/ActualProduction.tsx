@@ -85,12 +85,12 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
   const [alignment, setAlignment] = React.useState('current');
 
   const { system_size_ac = 0, system_size_dc = 0, weather = 'Sunny' } = data || {};
-  const actual_kw = alignment === 'current' ? data?.actual_kw ?? 0 : data?.cumulative_actual_kw ?? 0;
-  const expected_kw = alignment === 'current' ? data?.expected_kw ?? 0 : data?.cumulative_expected_kw ?? 0;
+  const actual_kw = alignment === 'current' ? (data?.actual_kw ?? 0) : (data?.cumulative_actual_kw ?? 0);
+  const expected_kw = alignment === 'current' ? (data?.expected_kw ?? 0) : (data?.cumulative_expected_kw ?? 0);
   const actual_vs_expected =
-    alignment === 'current' ? data?.actual_vs_expected ?? 0 : data?.cumulative_actual_vs_expected ?? 0;
+    alignment === 'current' ? (data?.actual_vs_expected ?? 0) : (data?.cumulative_actual_vs_expected ?? 0);
 
-  const actualVsExpected = actual_vs_expected > 100 ? 100 : actual_vs_expected ?? 0;
+  const actualVsExpected = actual_vs_expected > 100 ? 100 : (actual_vs_expected ?? 0);
   const actualVsExpectedRest = 100 - actualVsExpected ?? 0;
 
   const deriveProductionColorFromValue = (progress: number): string => {

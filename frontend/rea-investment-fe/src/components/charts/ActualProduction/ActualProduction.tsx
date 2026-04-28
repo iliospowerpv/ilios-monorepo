@@ -139,10 +139,11 @@ const ActualProduction: React.FC<ActualProductionProps> = ({
   const [alignment, setAlignment] = React.useState('current');
 
   const { total_sites = 0, total_system_size_ac = 0, total_system_size_dc = 0 } = data || {};
-  const total_actual_kw = alignment === 'current' ? data?.total_actual_kw ?? 0 : data?.cumulative_actual_kw ?? 0;
-  const total_expected_kw = alignment === 'current' ? data?.total_expected_kw ?? 0 : data?.cumulative_expected_kw ?? 0;
+  const total_actual_kw = alignment === 'current' ? (data?.total_actual_kw ?? 0) : (data?.cumulative_actual_kw ?? 0);
+  const total_expected_kw =
+    alignment === 'current' ? (data?.total_expected_kw ?? 0) : (data?.cumulative_expected_kw ?? 0);
   const actual_vs_expected =
-    alignment === 'current' ? data?.actual_vs_expected ?? 0 : data?.cumulative_actual_vs_expected ?? 0;
+    alignment === 'current' ? (data?.actual_vs_expected ?? 0) : (data?.cumulative_actual_vs_expected ?? 0);
 
   const actualVsExpected =
     typeof actual_vs_expected === 'number' ? (actual_vs_expected > 100 ? 100 : actual_vs_expected) : 0;

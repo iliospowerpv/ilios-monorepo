@@ -12,7 +12,7 @@ import { ApiClient, Connection } from '../../../api';
 import { useNotify } from '../../../contexts/notifications/notifications';
 import { PasswordInputField } from '../PasswordInputField/PasswordInputField';
 import { DAS_CONNECTION } from '../../../utils/asset-managment';
-import { SearchableSelect, SearchableSelectOption } from '../../common/SearchableSelect/SearchableSelect';
+import { SearchableSelect } from '../../common/SearchableSelect/SearchableSelect';
 
 const noBottomLineStyles = {
   '& .MuiInputBase-root:not(.Mui-disabled, .Mui-error)': {
@@ -72,7 +72,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = props => {
   }, [companyProviders]);
 
   const providerOptions = React.useMemo(() => {
-    return Object.entries(connection.isNotSaved ? allowedProviders : DAS_CONNECTION).map(([key, value]) => ({
+    return Object.entries(connection.isNotSaved ? allowedProviders : DAS_CONNECTION).map(([, value]) => ({
       label: value as string,
       value: value as string
     }));

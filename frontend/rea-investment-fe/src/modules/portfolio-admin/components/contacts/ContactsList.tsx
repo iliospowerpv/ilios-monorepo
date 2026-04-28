@@ -40,10 +40,9 @@ import { ContactFormModal } from './ContactFormModal';
 interface ContactsListProps {
   scopeType: ContactScopeType;
   scopeId: number;
-  title?: string;
 }
 
-export const ContactsList: React.FC<ContactsListProps> = ({ scopeType, scopeId, title = 'Contacts' }) => {
+export const ContactsList: React.FC<ContactsListProps> = ({ scopeType, scopeId }) => {
   const queryClient = useQueryClient();
   const notify = useNotify();
   const [search, setSearch] = useState('');
@@ -250,7 +249,9 @@ export const ContactsList: React.FC<ContactsListProps> = ({ scopeType, scopeId, 
               <TableRow>
                 <TableCell colSpan={7} align="center">
                   <Typography color="text.secondary" sx={{ py: 3 }}>
-                    {search ? 'No contacts match your search' : 'No contacts yet. Add your first contact to get started.'}
+                    {search
+                      ? 'No contacts match your search'
+                      : 'No contacts yet. Add your first contact to get started.'}
                   </Typography>
                 </TableCell>
               </TableRow>
@@ -310,12 +311,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({ scopeType, scopeId, 
         </DialogActions>
       </Dialog>
 
-      <ContactFormModal
-        open={isAddOpen}
-        onClose={() => setIsAddOpen(false)}
-        scopeType={scopeType}
-        scopeId={scopeId}
-      />
+      <ContactFormModal open={isAddOpen} onClose={() => setIsAddOpen(false)} scopeType={scopeType} scopeId={scopeId} />
 
       <ContactFormModal
         open={!!editContact}

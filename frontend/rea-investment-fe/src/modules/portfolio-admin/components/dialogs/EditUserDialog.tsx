@@ -11,7 +11,6 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 
-
 import { ApiClient } from '../../../../api';
 import type { UpdateMemberRequest, CompanyMember, RoleProfile } from '../../../../api';
 import { useNotify } from '../../../../contexts/notifications/notifications';
@@ -162,7 +161,13 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
               value={selectedRoleProfileKey || ''}
               onChange={val => setSelectedRoleProfileKey((val as string) || null)}
               label="Role Profile (Optional)"
-              helperText={selectedProfile ? selectedProfile.description : (!selectedRoleProfileKey ? 'Optionally assign a role profile for specialized module access' : undefined)}
+              helperText={
+                selectedProfile
+                  ? selectedProfile.description
+                  : !selectedRoleProfileKey
+                    ? 'Optionally assign a role profile for specialized module access'
+                    : undefined
+              }
               disabled={isLoadingProfiles}
               disableClearable
               fullWidth

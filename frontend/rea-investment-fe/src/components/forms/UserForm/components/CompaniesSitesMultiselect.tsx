@@ -200,7 +200,10 @@ export const CompaniesSitesMultiselect: React.FC<CompaniesSitesMultiselectProps>
           )}
         >
           <MenuItem value="stub" sx={{ display: 'none' }} />
-          <Box sx={{ px: 1.5, py: 1, position: 'sticky', top: 0, bgcolor: 'background.paper', zIndex: 1 }} onKeyDown={e => e.stopPropagation()}>
+          <Box
+            sx={{ px: 1.5, py: 1, position: 'sticky', top: 0, bgcolor: 'background.paper', zIndex: 1 }}
+            onKeyDown={e => e.stopPropagation()}
+          >
             <TextField
               size="small"
               fullWidth

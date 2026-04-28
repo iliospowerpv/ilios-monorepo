@@ -1,5 +1,5 @@
 import { RouteHandle } from '../../../../handles';
-import { BREADCRUMB_LABELS, CANONICAL_ROUTES } from '../../../../utils/breadcrumbs';
+import { BREADCRUMB_LABELS } from '../../../../utils/breadcrumbs';
 
 export const createMyCompanySettingsHandle = () => {
   return RouteHandle.createHandle({

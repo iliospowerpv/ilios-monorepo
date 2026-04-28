@@ -305,7 +305,13 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
                 value={selectedRoleProfileKey || ''}
                 onChange={val => setSelectedRoleProfileKey((val as string) || null)}
                 label="Role Profile (Optional)"
-                helperText={selectedProfile ? selectedProfile.description : (!selectedRoleProfileKey ? 'Optionally assign a role profile for specialized module access' : undefined)}
+                helperText={
+                  selectedProfile
+                    ? selectedProfile.description
+                    : !selectedRoleProfileKey
+                      ? 'Optionally assign a role profile for specialized module access'
+                      : undefined
+                }
                 disabled={isLoadingProfiles}
                 disableClearable
                 fullWidth

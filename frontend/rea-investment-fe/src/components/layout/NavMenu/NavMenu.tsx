@@ -206,7 +206,7 @@ export const NavMenu: React.FC<NavMenuProps> = ({ containerRef, isMenuOpen }) =>
   const [pendingTab, setPendingTab] = React.useState<ProjectHubTab | null>(null);
 
   // Get project from route params or entity context (persisted selection)
-  const currentProjectId = params.siteId ? parseInt(params.siteId, 10) : currentProject?.id ?? null;
+  const currentProjectId = params.siteId ? parseInt(params.siteId, 10) : (currentProject?.id ?? null);
 
   const navigateToProjectHub = React.useCallback(
     (projectId: number, tab: ProjectHubTab = 'overview') => {

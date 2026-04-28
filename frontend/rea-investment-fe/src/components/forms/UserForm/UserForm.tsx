@@ -4,9 +4,6 @@ import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
-import FormControl from '@mui/material/FormControl';
-import FormHelperText from '@mui/material/FormHelperText';
-import InputLabel from '@mui/material/InputLabel';
 import TextField from '@mui/material/TextField';
 import Alert from '@mui/material/Alert';
 import Collapse from '@mui/material/Collapse';
@@ -256,7 +253,7 @@ export const UserForm: React.FC<UserFormProps> = ({ mode, userData, userId, leve
         rules={{
           required: 'First Name is required field.',
           pattern: {
-            value: /^[\p{L}\s'\u2019.\-]+$/u,
+            value: /^[\p{L}\s'\u2019.-]+$/u,
             message: 'First Name should contain only letters, spaces, hyphens, apostrophes, or periods.'
           },
           minLength: {
@@ -289,7 +286,7 @@ export const UserForm: React.FC<UserFormProps> = ({ mode, userData, userId, leve
         rules={{
           required: 'Last Name is required field.',
           pattern: {
-            value: /^[\p{L}\s'\u2019.\-]+$/u,
+            value: /^[\p{L}\s'\u2019.-]+$/u,
             message: 'Last Name should contain only letters, spaces, hyphens, apostrophes, or periods.'
           },
           minLength: {

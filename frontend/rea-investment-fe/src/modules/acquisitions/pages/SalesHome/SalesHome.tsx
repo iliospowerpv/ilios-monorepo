@@ -374,7 +374,7 @@ export const SalesHome: React.FC = () => {
       }
       return deal;
     },
-    onSuccess: (deal) => {
+    onSuccess: deal => {
       queryClient.invalidateQueries({ queryKey: ['deals-pipeline'] });
       setAddDialogOpen(false);
       setDealForm({ ...initialDealForm, company_id: currentCompany?.id || 0 });

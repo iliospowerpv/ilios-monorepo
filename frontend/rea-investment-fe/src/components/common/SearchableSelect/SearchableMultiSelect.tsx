@@ -46,7 +46,7 @@ export const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
   formControlSx,
   fullWidth = true,
   sx,
-  disableCloseOnSelect = true,
+  disableCloseOnSelect = true
 }) => {
   const selectedOptions = options.filter(opt => value.includes(opt.value));
 
@@ -58,9 +58,9 @@ export const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
       onChange={(_event, newValue) => {
         onChange(newValue.map(opt => opt.value));
       }}
-      getOptionLabel={(option) => option.label}
+      getOptionLabel={option => option.label}
       isOptionEqualToValue={(option, val) => option.value === val.value}
-      getOptionDisabled={(option) => !!option.disabled}
+      getOptionDisabled={option => !!option.disabled}
       disableCloseOnSelect={disableCloseOnSelect}
       disabled={disabled}
       loading={loading}
@@ -78,7 +78,7 @@ export const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
           return <Chip key={key} label={option.label} {...chipProps} />;
         })
       }
-      renderInput={(params) => (
+      renderInput={params => (
         <TextField
           {...params}
           label={label}
@@ -98,7 +98,7 @@ export const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
                 {loading ? <CircularProgress color="inherit" size={20} /> : null}
                 {params.InputProps.endAdornment}
               </>
-            ),
+            )
           }}
         />
       )}
