@@ -1,9 +1,4 @@
-export type HomeSectionType =
-  | 'summary-cards'
-  | 'tasks'
-  | 'notifications'
-  | 'quick-actions'
-  | 'companies';
+export type HomeSectionType = 'summary-cards' | 'tasks' | 'notifications' | 'quick-actions' | 'companies';
 
 export interface HomeSection {
   id: HomeSectionType;
