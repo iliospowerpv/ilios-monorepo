@@ -43,3 +43,4 @@ Do not change the fundamental "Site" entity in the backend; use "Project" only a
 - **Rombus**: Integrated for camera/security functionalities.
 - **AG Grid**: Enterprise license for advanced table functionalities.
 - **OpenAI**: Utilized for in-app AI parsing capabilities.
+- 
