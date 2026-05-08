@@ -94,7 +94,7 @@ def _require_admin_access(
     
     This prevents cross-company data leakage via debug endpoints.
     """
-    if current_user.is_system_user:
+    if current_user.has_platform_bypass:
         return
     
     access = db_session.query(UserCompanyAccess).filter(

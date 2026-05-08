@@ -103,7 +103,7 @@ async def create(
         db_session, new_site.documents_board, new_site.documents, current_user.id, freeze_external_id=True
     )
 
-    if not current_user.is_system_user:
+    if not current_user.has_platform_bypass:
         UserProjectCRUD(db_session).create_item(
             {"user_id": current_user.id, "site_id": new_site.id, "company_id": new_site.company_id}
         )
@@ -125,7 +125,7 @@ async def get(
     site_filter: SiteFilter = FilterDepends(SiteFilter),
     db_session: Session = Depends(get_session),
 ) -> dict:
-    if not current_user.is_system_user:
+    if not current_user.has_platform_bypass:
         if is_archived or include_all:
             raise HTTPException(status_code=403, detail="Only system users can view archived projects")
         require_module_permission_any_context(

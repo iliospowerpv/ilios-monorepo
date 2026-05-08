@@ -160,7 +160,7 @@ class GetAuthorizedEntity:
         AUTHORITATIVE: Uses resolver as the single source of truth.
         No legacy fallback - if resolver denies, access is denied.
         """
-        if self.current_user.is_system_user:
+        if self.current_user.has_platform_bypass:
             return
 
         if not entity:
@@ -267,7 +267,7 @@ def get_authorized_breadcrumbs_device(
     """Ensure user has access to the device based and site device belongs to"""
     device = DeviceCRUD(db_session).get_by_id(device_id)
     validate_entity_exists(device, device_id, "device")
-    if current_user.is_system_user:
+    if current_user.has_platform_bypass:
         return device
 
     # validate device belongs to the user sites
@@ -297,7 +297,7 @@ def get_authorized_document(
         )
         raise HTTPException(status.HTTP_403_FORBIDDEN)
 
-    if current_user.is_system_user:
+    if current_user.has_platform_bypass:
         return document
 
     output_roles_ids = RoleDocumentsHandlerFactory.get_available_roles_by_document(
@@ -323,7 +323,7 @@ def get_authorized_breadcrumbs_document(
     """For the due diligence module, ensure user has access to the document and site document belongs to"""
     document = DocumentCRUD(db_session).get_by_id(document_id)
     validate_entity_exists(document, document_id, "document")
-    if current_user.is_system_user:
+    if current_user.has_platform_bypass:
         return document
 
     # validate document belongs to the user sites

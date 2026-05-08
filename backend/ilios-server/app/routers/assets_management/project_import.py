@@ -573,7 +573,7 @@ async def execute_import(
                 db_session, new_site.documents_board, new_site.documents, current_user.id, freeze_external_id=True
             )
 
-            if not current_user.is_system_user:
+            if not current_user.has_platform_bypass:
                 UserProjectCRUD(db_session).create_item(
                     {"user_id": current_user.id, "site_id": new_site.id, "company_id": company_id}
                 )

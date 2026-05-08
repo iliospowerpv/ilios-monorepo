@@ -42,6 +42,28 @@ class User(Base):
     # system user, similar to super-admin in Django
     is_system_user = Column(Boolean, default=False)
 
+    # Global Admin (Phase 1) — when True, the user bypasses per-company /
+    # per-portfolio access checks at the resolver and module-permission layers.
+    # Distinct from is_system_user (which is reserved for the internal
+    # automation account). Granted via /api/admin/global-admins or the
+    # `scripts/grant_global_admin.py` CLI. See ff19 migration for safeguards.
+    is_global_admin = Column(Boolean, default=False, nullable=False, server_default="false")
+
+    @property
+    def has_platform_bypass(self) -> bool:
+        """True when the user bypasses per-company authorization checks.
+
+        Used by the canonical authorization layer (access_resolver,
+        permission_guards, the various authorization/* helpers, and
+        routers that gate read/write on platform-wide privilege).
+
+        - is_system_user: internal automation account (created by initial setup).
+        - is_global_admin: human users with platform-wide privilege for
+          testing, validation, and support (Phase 1 of the Global Admin
+          feature). See ff19 migration and /api/admin/global-admins.
+        """
+        return bool(self.is_system_user) or bool(self.is_global_admin)
+
     # relationships
     parent_company = relationship("Company", back_populates="users", foreign_keys=[parent_company_id])
     role = relationship("Role", back_populates="users")
@@ -112,11 +134,11 @@ class User(Base):
 
     def get_limited_sites_ids(self):
         """Return IDs of sites user has access to. If user is system - return None"""
-        return None if self.is_system_user else {site.id for site in self.sites}
+        return None if self.has_platform_bypass else {site.id for site in self.sites}
 
     def get_limited_companies_ids(self):
         """Return IDs of companies user has access to. If user is system - return None"""
-        return None if self.is_system_user else {company.id for company in self.companies}
+        return None if self.has_platform_bypass else {company.id for company in self.companies}
 
 
 class UserProject(Base):

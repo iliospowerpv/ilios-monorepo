@@ -39,7 +39,7 @@ from .task_tracker import (
 from .sales import router as sales_router
 from .project_hub import router as project_hub_router
 from .workspace import workspace_router
-from .admin import access_health_router, extraction_registry_router
+from .admin import access_health_router, extraction_registry_router, global_admin_router
 from .role_profiles import role_profiles_router
 from .contacts import contacts_router
 from .entities import router as entities_router

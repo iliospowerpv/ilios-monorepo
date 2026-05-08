@@ -55,7 +55,7 @@ async def get_access_health(
     db_session: Session = Depends(get_session),
 ) -> AccessHealthResponse:
     """Run access health validation checks."""
-    if not current_user.is_system_user:
+    if not current_user.has_platform_bypass:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only system administrators can view access health"
@@ -246,7 +246,7 @@ async def repair_orphaned_memberships(
     db_session: Session = Depends(get_session),
 ) -> RepairResult:
     """Remove orphaned membership rows."""
-    if not current_user.is_system_user:
+    if not current_user.has_platform_bypass:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only system administrators can perform repairs"
@@ -289,7 +289,7 @@ async def repair_inv1_violations(
     db_session: Session = Depends(get_session),
 ) -> RepairResult:
     """Fix INV-1 violations by setting correct company_id from sites."""
-    if not current_user.is_system_user:
+    if not current_user.has_platform_bypass:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only system administrators can perform repairs"

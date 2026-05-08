@@ -168,7 +168,7 @@ async def get_accessible_entities(
     companies: list[AccessibleCompanySchema] = []
     projects: list[AccessibleProjectSchema] = []
     
-    if current_user.is_system_user:
+    if current_user.has_platform_bypass:
         all_companies = db_session.query(Company).filter(
             Company.is_archived == False
         ).order_by(Company.name).all()

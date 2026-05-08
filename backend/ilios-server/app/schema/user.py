@@ -39,6 +39,7 @@ class ListUserSchema(CurrentUserSchema):
     parent_company_id: Optional[int] = Field(examples=[1])
     phone: str = Field(examples=["0123456789"])
     is_system_user: Optional[bool] = Field(default=False, examples=[False])
+    is_global_admin: Optional[bool] = Field(default=False, examples=[False])
 
 
 class UsersListResponse(BasePaginator):
@@ -69,6 +70,7 @@ class MyUserSchema(BaseUserSchema):
     role: Optional[RoleWithPermissions]
     sites: list[MinimalisticSiteSchema]
     is_system_user: Optional[bool] = Field(examples=[True])
+    is_global_admin: Optional[bool] = Field(default=False, examples=[False])
     diligence_overview_access: bool = Field(examples=[True])
 
 

@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def get_current_admin_user(current_user: Annotated[CurrentUserSchema, Depends(get_current_user)]):
     """Provide current user object if it is system user, otherwise throws 403 HTTPException."""
-    if not current_user.is_system_user:
+    if not current_user.has_platform_bypass:
         logger.info(f"User {current_user.id} tried to access system-user endpoint without such status.")
         raise HTTPException(status.HTTP_403_FORBIDDEN)
     return current_user
@@ -51,7 +51,7 @@ class AuthorizedUser:
 
     def __call__(self, current_user: Annotated[CurrentUserSchema, Depends(get_current_user)], request: Request):
         """Check at least one of required actions are allowed to provide access"""
-        if current_user.is_system_user:
+        if current_user.has_platform_bypass:
             return current_user
 
         if not current_user.role:

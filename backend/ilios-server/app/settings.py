@@ -20,6 +20,14 @@ class Settings(BaseSettings):
     secret_key: str
     api_key: str
     access_token_expire_minutes: Optional[int] = 60 * 24
+    # Global Admin safeguards (Phase 1)
+    # Hard cap on the number of users with is_global_admin=True. Grants
+    # are refused once this limit is reached. Bounds blast radius of the
+    # privilege.
+    max_global_admins: Optional[int] = 3
+    # Shorter access-token (and DB session) lifetime for global admin
+    # sessions, to limit damage from a stolen token.
+    global_admin_session_minutes: Optional[int] = 15
     invitation_link_expire_days: Optional[int] = 1
     invitation_url: str
     reset_password_expires_minutes: Optional[int] = 30

@@ -6,6 +6,7 @@ import { Navigate } from 'react-router-dom';
 import { PageHeader } from '../PageHeader/PageHeader';
 import { PageSidebar } from '../PageSidebar/PageSidebar';
 import { Main } from '../Main/Main';
+import { GlobalAdminBanner } from '../GlobalAdminBanner/GlobalAdminBanner';
 import { useAuth } from '../../../contexts/auth/auth';
 import { SidebarProvider } from '../../../contexts/sidebar';
 import { EntityContextProvider } from '../../../contexts/entityContext';
@@ -24,6 +25,7 @@ export const BaseLayout: React.FC = () => {
       <SidebarProvider>
         <Box sx={{ display: 'flex' }}>
           <CssBaseline />
+          <GlobalAdminBanner />
           <PageHeader />
           <PageSidebar />
           <Main />

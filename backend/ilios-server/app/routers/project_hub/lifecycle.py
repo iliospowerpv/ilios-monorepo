@@ -70,7 +70,7 @@ def _is_admin_or_superuser(
     
     Uses the canonical effective-access resolver to determine admin status.
     """
-    if user.is_system_user:
+    if user.has_platform_bypass:
         return True
     
     access_result = resolve_effective_access(

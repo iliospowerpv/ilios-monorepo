@@ -40,7 +40,7 @@ def _require_finance_view(
     company_id: int,
 ) -> None:
     """Guard: finance:view + company access."""
-    if current_user.is_system_user:
+    if current_user.has_platform_bypass:
         return
     require_module_permission(
         user_id=current_user.id,

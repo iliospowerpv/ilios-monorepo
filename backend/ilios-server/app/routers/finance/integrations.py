@@ -57,7 +57,7 @@ def _require_company_admin_with_finance_permission(
     Raises:
         HTTPException: 403 if user is not a company admin or lacks Finance permission.
     """
-    if current_user.is_system_user:
+    if current_user.has_platform_bypass:
         return
     
     access = require_module_permission(

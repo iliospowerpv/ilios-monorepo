@@ -272,7 +272,7 @@ def _require_account(
     if account is None or account.is_archived:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Provider account not found")
 
-    if not getattr(current_user, "is_system_user", False):
+    if not getattr(current_user, "has_platform_bypass", False):
         accessible = set(getattr(current_user, "get_limited_companies_ids", lambda: [])() or [])
         if accessible and account.company_id not in accessible:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Provider account not found")
@@ -524,7 +524,7 @@ def delete_license(
 
 
 def _enforce_company_visibility(current_user: CurrentUserSchema, company_id: int) -> None:
-    if getattr(current_user, "is_system_user", False):
+    if getattr(current_user, "has_platform_bypass", False):
         return
     accessible = set(getattr(current_user, "get_limited_companies_ids", lambda: [])() or [])
     if accessible and company_id not in accessible:

@@ -45,6 +45,34 @@ const columnDefs: ColDef[] = [
     flex: 1
   },
   {
+    headerName: 'Global Admin',
+    field: 'is_global_admin',
+    colId: 'is_global_admin',
+    flex: 1,
+    filter: false,
+    sortable: false,
+    cellRenderer: (params: any) =>
+      params?.data?.is_global_admin ? (
+        <span
+          style={{
+            display: 'inline-block',
+            padding: '2px 8px',
+            borderRadius: 12,
+            backgroundColor: '#FFF4CE',
+            color: '#5C4400',
+            border: '1px solid #E0B400',
+            fontSize: 12,
+            fontWeight: 600
+          }}
+          title="This user has platform-wide access. Actions are audited."
+        >
+          Global Admin
+        </span>
+      ) : (
+        ''
+      )
+  },
+  {
     field: 'actions',
     editable: false,
     filter: false,

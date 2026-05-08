@@ -56,7 +56,7 @@ async def create_company(
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    if not current_user.is_system_user:
+    if not current_user.has_platform_bypass:
         raise HTTPException(status_code=403, detail="Only system users can create companies")
 
     company_crud = CompanyCRUD(db_session)
@@ -96,7 +96,7 @@ async def get(
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    if not current_user.is_system_user:
+    if not current_user.has_platform_bypass:
         if is_archived or include_all:
             raise HTTPException(status_code=403, detail="Only system users can view archived companies")
         require_module_permission_any_context(
@@ -136,7 +136,7 @@ async def get_company_sites(
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
 ):
-    if not current_user.is_system_user:
+    if not current_user.has_platform_bypass:
         require_module_permission_any_context(
             user_id=current_user.id,
             company_ids=current_user.get_limited_companies_ids(),

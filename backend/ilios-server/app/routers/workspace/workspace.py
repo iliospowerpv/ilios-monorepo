@@ -66,7 +66,7 @@ async def get_workspace(
     company_ids_seen = set()
     companies_data: List[UserCompanySchema] = []
     
-    if current_user.is_system_user:
+    if current_user.has_platform_bypass:
         all_companies = db_session.query(Company).filter(Company.is_archived == False).order_by(Company.name).all()
         all_projects_count = db_session.query(Site).filter(Site.is_archived == False).count()
         
@@ -171,7 +171,7 @@ async def get_workspace(
     projects_data: List[WorkspaceProjectSchema] = []
     company_name_map = {c.company_id: c.company_name for c in companies_data}
     
-    if current_user.is_system_user:
+    if current_user.has_platform_bypass:
         sites = db_session.query(Site).filter(Site.is_archived == False).order_by(Site.name).all()
     else:
         full_access_company_ids = {
@@ -250,7 +250,7 @@ async def get_company_members(
     has_portfolio_access = portfolio_crud.get_by_user(current_user.id) is not None
     has_company_access = company_crud.has_company_access(current_user.id, company_id)
     
-    if not current_user.is_system_user and not has_company_access and not has_portfolio_access:
+    if not current_user.has_platform_bypass and not has_company_access and not has_portfolio_access:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have access to this company"
@@ -345,7 +345,7 @@ async def add_company_member(
     """Add a user to a company."""
     crud = UserCompanyAccessCRUD(db_session)
     
-    if not current_user.is_system_user and not crud.is_company_admin(current_user.id, company_id):
+    if not current_user.has_platform_bypass and not crud.is_company_admin(current_user.id, company_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only company admins can add members"
@@ -424,7 +424,7 @@ async def update_company_member(
     """Update a company membership."""
     crud = UserCompanyAccessCRUD(db_session)
     
-    if not current_user.is_system_user and not crud.is_company_admin(current_user.id, company_id):
+    if not current_user.has_platform_bypass and not crud.is_company_admin(current_user.id, company_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only company admins can update memberships"
@@ -474,7 +474,7 @@ async def remove_company_member(
     """Remove a company membership."""
     crud = UserCompanyAccessCRUD(db_session)
     
-    if not current_user.is_system_user and not crud.is_company_admin(current_user.id, company_id):
+    if not current_user.has_platform_bypass and not crud.is_company_admin(current_user.id, company_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only company admins can remove memberships"
@@ -502,7 +502,7 @@ async def get_portfolio_hubs(
     db_session: Session = Depends(get_session),
 ) -> AvailableHubsSchema:
     """Get all available portfolio hubs for granting access."""
-    if not current_user.is_system_user:
+    if not current_user.has_platform_bypass:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only system administrators can view portfolio hubs"
@@ -542,7 +542,7 @@ async def get_portfolio_members(
     """Get all users with portfolio-level access, optionally filtered by hub."""
     from app.models.user import User
     
-    if not current_user.is_system_user:
+    if not current_user.has_platform_bypass:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only system administrators can view portfolio members"
@@ -586,7 +586,7 @@ async def add_portfolio_member(
     db_session: Session = Depends(get_session),
 ) -> UserPortfolioAccessSchema:
     """Add a user to portfolio level (grants access to companies within the hub)."""
-    if not current_user.is_system_user:
+    if not current_user.has_platform_bypass:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only system administrators can add portfolio members"
@@ -640,7 +640,7 @@ async def remove_portfolio_member(
     db_session: Session = Depends(get_session),
 ):
     """Remove portfolio-level access for a user. Does not affect direct company/project grants."""
-    if not current_user.is_system_user:
+    if not current_user.has_platform_bypass:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only system administrators can remove portfolio members"
@@ -695,7 +695,7 @@ async def get_project_members(
     has_company_access = company_crud.has_company_access(current_user.id, project.company_id)
     has_project_access = project_crud.has_project_access(current_user.id, project_id)
     
-    if not current_user.is_system_user and not has_project_access and not has_company_access and not has_portfolio_access:
+    if not current_user.has_platform_bypass and not has_project_access and not has_company_access and not has_portfolio_access:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have access to this project"
@@ -795,7 +795,7 @@ async def add_project_member(
     project_crud = UserProjectCRUD(db_session)
     company_crud = UserCompanyAccessCRUD(db_session)
     
-    if not current_user.is_system_user:
+    if not current_user.has_platform_bypass:
         is_company_admin = company_crud.is_company_admin(current_user.id, project.company_id)
         is_project_admin = project_crud.is_project_admin(current_user.id, project_id)
         if not is_company_admin and not is_project_admin:
@@ -856,7 +856,7 @@ async def remove_project_member(
     project_crud = UserProjectCRUD(db_session)
     company_crud = UserCompanyAccessCRUD(db_session)
     
-    if not current_user.is_system_user:
+    if not current_user.has_platform_bypass:
         is_company_admin = company_crud.is_company_admin(current_user.id, project.company_id)
         is_project_admin = project_crud.is_project_admin(current_user.id, project_id)
         if not is_company_admin and not is_project_admin:
@@ -898,7 +898,7 @@ async def get_portfolio_hubs(
     from sqlalchemy import func
     from app.helpers.portfolio_hub import resolve_company_hub_id
     
-    if current_user.is_system_user:
+    if current_user.has_platform_bypass:
         hub_ids_query = db_session.query(Company.id).filter(
             Company.portfolio_hub_id.is_(None)
         ).all()

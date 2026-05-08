@@ -11,7 +11,7 @@ def get_company_site_ids_to_limit(company, current_user):
     """Get sites user has access to depends on the system role:
     - for the system user, it's all sites of the company,
     - for the regular user, it's based on the project access"""
-    if current_user.is_system_user:
+    if current_user.has_platform_bypass:
         return [site.id for site in company.sites]
 
     return [site.id for site in company.sites if site.id in current_user.get_limited_sites_ids()]

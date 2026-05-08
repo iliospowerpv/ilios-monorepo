@@ -87,6 +87,7 @@ interface User {
   is_registered: boolean;
   parent_company_id: number | null;
   is_system_user: boolean;
+  is_global_admin?: boolean;
   diligence_overview_access: boolean;
 }
 

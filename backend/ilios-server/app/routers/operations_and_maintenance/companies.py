@@ -62,7 +62,7 @@ async def get_companies_list(
     # return only details about sites user has access to
     site_ids_to_limit = current_user.get_limited_sites_ids()
     # for the system user, consider sites_ids_to_limit as IDs of all sites in the platform
-    if current_user.is_system_user:
+    if current_user.has_platform_bypass:
         site_ids_to_limit = SiteCRUD(db_session).get_all_sites_ids()
     total, companies = company_crud.get_with_sites_info(
         current_user.get_limited_companies_ids(),

@@ -30,7 +30,7 @@ class TelemetryPermissions:
         current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
         request: Request,
     ) -> CurrentUserSchema:
-        if getattr(current_user, "is_system_user", False):
+        if getattr(current_user, "has_platform_bypass", False):
             return current_user
 
         role = getattr(current_user, "role", None)
@@ -64,7 +64,7 @@ def user_has_telemetry_admin(current_user: CurrentUserSchema) -> bool:
     needs to gate sensitive metadata (e.g. credential fingerprints) to
     telemetry administrators only.
     """
-    if getattr(current_user, "is_system_user", False):
+    if getattr(current_user, "has_platform_bypass", False):
         return True
     role = getattr(current_user, "role", None)
     permissions = getattr(role, "permissions", None) or {}

@@ -64,11 +64,27 @@ class AuthenticationHandler:
                 content=jsonable_encoder(BadRequestError(message="The password is incorrect")),
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
-        # generate and save auth session to db
-        session_id = SessionCRUD(db_session).create_item({"user_id": user.id}).id
-
-        # generate JWT using session_id as primary key
-        access_token = self.create_access_token(data={"sub": session_id})
+        # Determine session lifetime. Global admins get a shorter
+        # access-token + DB-session expiry (Phase 1 safeguard) to limit
+        # damage from a stolen token. is_system_user is the internal
+        # automation account and keeps the standard lifetime.
+        if user.is_global_admin and not user.is_system_user:
+            session_minutes = settings.global_admin_session_minutes
+            expires_at = datetime.now(timezone.utc) + timedelta(minutes=session_minutes)
+            session_id = SessionCRUD(db_session).create_item(
+                {"user_id": user.id, "expires_at": expires_at}
+            ).id
+            access_token = self.create_access_token(
+                data={"sub": session_id},
+                access_token_expire_minutes=session_minutes,
+            )
+            logger.info(
+                f"Global admin session issued for user_id={user.id} "
+                f"(expires in {session_minutes} min, session_id={session_id})"
+            )
+        else:
+            session_id = SessionCRUD(db_session).create_item({"user_id": user.id}).id
+            access_token = self.create_access_token(data={"sub": session_id})
 
         return JSONResponse(content=jsonable_encoder(Token(access_token=access_token, token_type="bearer")))
 

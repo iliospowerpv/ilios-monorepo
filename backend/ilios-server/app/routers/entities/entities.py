@@ -41,7 +41,7 @@ def _check_portfolio_access(
     current_user: CurrentUserSchema,
     portfolio_id: int,
 ) -> None:
-    if current_user.is_system_user:
+    if current_user.has_platform_bypass:
         return
 
     portfolio = db_session.query(Company).filter(Company.id == portfolio_id).first()

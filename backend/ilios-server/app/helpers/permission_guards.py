@@ -404,7 +404,7 @@ class ModulePermissionChecker:
         db_session: Session = Depends(get_session),
     ) -> EffectiveAccessResult:
         """Check module permission and return access result."""
-        if current_user.is_system_user:
+        if current_user.has_platform_bypass:
             return EffectiveAccessResult(
                 decision=AccessDecision.ALLOW,
                 reason_code="system_user",
@@ -499,7 +499,7 @@ def get_finance_view_permission(
     db_session: Session = Depends(get_session),
 ) -> EffectiveAccessResult:
     """Convenience dependency for Finance:view permission."""
-    if current_user.is_system_user:
+    if current_user.has_platform_bypass:
         return EffectiveAccessResult(
             decision=AccessDecision.ALLOW,
             reason_code="system_user",
@@ -522,7 +522,7 @@ def get_finance_edit_permission(
     db_session: Session = Depends(get_session),
 ) -> EffectiveAccessResult:
     """Convenience dependency for Finance:edit permission."""
-    if current_user.is_system_user:
+    if current_user.has_platform_bypass:
         return EffectiveAccessResult(
             decision=AccessDecision.ALLOW,
             reason_code="system_user",

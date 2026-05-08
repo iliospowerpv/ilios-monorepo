@@ -21,7 +21,7 @@ class DiligenceOverviewPagePermissions:
         Then, check user parent company if it allows overview page access
         """
         # skip extra check for the system user
-        if current_user.is_system_user:
+        if current_user.has_platform_bypass:
             return current_user
 
         if current_user.role.related_company_type.company_type not in self.allowed_company_types:

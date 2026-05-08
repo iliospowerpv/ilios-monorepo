@@ -47,7 +47,7 @@ def _check_scope_access(
     - Company level: must have company membership
     - Project level: must have project membership
     """
-    if current_user.is_system_user:
+    if current_user.has_platform_bypass:
         return True
     
     if scope_type == "portfolio":
