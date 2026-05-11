@@ -44,8 +44,8 @@ export const GlobalAdminBanner: React.FC = () => {
         Global Admin session
       </Typography>
       <Typography variant="body2">
-        — you have platform-wide access. All actions are audited and your session expires after 15 minutes
-        of inactivity.
+        — you have platform-wide access. All actions are audited and your session expires after 15 minutes of
+        inactivity.
       </Typography>
     </Box>
   );
