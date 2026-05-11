@@ -1,8 +1,11 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
 from app.db.session import get_session
@@ -290,6 +293,51 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
     app.include_router(global_admin_router, prefix="/api/admin/global-admins", tags=["Admin - Global Admins"])
     # Debug APIs (admin-only)
     app.include_router(debug_router, prefix="/api")
+
+    # ------------------------------------------------------------------
+    # Serve the built React frontend from the same origin.
+    #
+    # In production the deployment runs only the FastAPI backend; the
+    # frontend's compiled `build/` directory is served from here so that
+    # the browser sees one origin (no CORS, no proxy). All API/docs
+    # routes registered above keep precedence over the SPA catch-all
+    # because they are explicit routes registered first.
+    # ------------------------------------------------------------------
+    frontend_build_dir = os.environ.get(
+        "FRONTEND_BUILD_DIR",
+        os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "..", "frontend", "rea-investment-fe", "build")
+        ),
+    )
+    index_file = os.path.join(frontend_build_dir, "index.html")
+    # Only enable SPA serving when an actual React build exists. The
+    # dev workflow runs the frontend on its own port via npm start, so
+    # in dev there is typically no index.html here and we skip mounting.
+    if os.path.isfile(index_file):
+        static_dir = os.path.join(frontend_build_dir, "static")
+        if os.path.isdir(static_dir):
+            app.mount("/static", StaticFiles(directory=static_dir), name="frontend-static")
+
+        build_root = os.path.abspath(frontend_build_dir)
+
+        @app.get("/{full_path:path}", include_in_schema=False)
+        async def spa_fallback(full_path: str):  # noqa: U100
+            # API/docs routes are matched before this catch-all because
+            # they are registered earlier with explicit paths. Anything
+            # reaching here is a frontend asset or a client-side route.
+            if full_path:
+                candidate = os.path.normpath(os.path.join(build_root, full_path))
+                # Prevent path traversal: candidate must stay inside build dir
+                if candidate.startswith(build_root + os.sep) and os.path.isfile(candidate):
+                    return FileResponse(candidate)
+            return FileResponse(index_file)
+
+        logger.info(f"Serving frontend SPA from {build_root}")
+    else:
+        logger.info(
+            f"Frontend index.html not found at {index_file}; SPA serving disabled (dev mode — frontend served by npm start)"
+        )
+
     return app
 
 
