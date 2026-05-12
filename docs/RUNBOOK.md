@@ -237,28 +237,116 @@ Rule of thumb for this sprint: **do not rotate `secret_key`.**
 
 ---
 
-## 11. What Happens if Telemetry V2 Credentials are In-Memory
+## 11. Telemetry V2 Credential Testing & Storage
 
-The telemetry V2 credential store auto-selects between GCP Secret Manager
-and an in-memory fallback (`backend/ilios-server/app/integrations/telemetry/credential_store.py`).
-Production currently runs **in-memory** because no GCP service-account
-credentials are configured in the production env scope.
+This section is two readiness checks rolled together: **(a)** is credential
+*testing* wired end-to-end, and **(b)** is credential *storage* durable.
+Today (a) is fixed; (b) is still in-memory.
+
+### 11.a How credential testing works
+
+The user-facing **Test Credentials** button (Portfolio Admin → Telemetry →
+provider account drawer) flows through the following path:
+
+| Layer | File | Role |
+|---|---|---|
+| UI button | `frontend/.../telemetry/v2/ProviderAccountDrawer.tsx` | Calls `telemetryV2Api.testProviderAccount(accountId)` |
+| API client | `frontend/rea-investment-fe/src/api/telemetryV2.ts` | `POST /api/telemetry/v2/provider-accounts/{id}/test` |
+| Router | `backend/ilios-server/app/routers/telemetry/v2.py` (`test_provider_account`) | Loads creds from store, dispatches to adapter |
+| Adapter base | `backend/ilios-server/app/integrations/telemetry/cloud_function_adapter.py` (`test_credentials`) | Issues `action="validate"` payload (does **not** enumerate sites) |
+| Vendor adapter | `also_energy_adapter.py` / `kmc_adapter.py` | Encodes `{auth_scheme, token}` |
+| Bridge shim | `backend/ilios-server/app/helpers/telemetry/cloud_function_telemetry_client.py` | Translates `action="validate"` → legacy `validate_token(provider, token)` |
+| Legacy client | `backend/ilios-server/app/helpers/telemetry/telemetry_cloud_function_client.py` (`TelemetryFuncHTTPClient`) | POSTs to `telemetry_token_function_url` with a GCP ID token |
+
+Provider catalog rows are seeded by Alembic migration
+`alembic/versions/ff18_telemetry_v2_introduce.py`. `also_energy` resolves to
+`AlsoEnergyAdapter` (required fields `username` + `password`); `kmc`
+resolves to `KmcAdapter` (required field `token`). Both rows ship
+`is_enabled = true`.
+
+### 11.b Bug history (resolved)
+
+Before commit `c6a7d46` the adapter tried to import
+`app.helpers.telemetry.cloud_function_telemetry_client`, which did not
+exist. Every Test Credentials click returned **"Live credential testing is
+not available in this environment"** in both dev and production. The shim
+file referenced above was added to close the gap and the adapter now uses
+a dedicated `validate` action so credential verification no longer depends
+on the (still-unwired) v2 site enumeration path.
+
+### 11.c What must be true before internal users test real credentials
+
+1. The boot log line `telemetry_v2_credential_backend=…` is **present**.
+2. `telemetry_token_function_url` is set in the production env scope.
+3. The deploy has GCP service-account auth (for the cloud function ID
+   token in `BaseCloudFuncHTTPClient.post(use_token=True)`). Without it
+   the validate call will fail with "Provider rejected credentials" even
+   for valid creds.
+4. The user understands credentials are **non-durable** — see §11.d.
+
+### 11.d Storage backend (production today: in-memory)
+
+The credential store auto-selects between GCP Secret Manager and an
+in-memory fallback (`credential_store.py::_build_default_store`).
+Production currently runs **in-memory** — confirmed by the deploy log
+line `telemetry_v2_credential_backend=in-memory (no GCP credentials in
+environment). Credentials WILL NOT survive process restart.`
 
 Consequences:
-- Any provider-account credentials saved through the V2 telemetry flow live
-  only in the gunicorn worker's process memory.
-- They are lost when the container restarts (for any reason: deploy, crash,
-  Replit infra event).
-- Customers would need to re-enter credentials after every restart — not
-  acceptable for live use.
+- Any provider-account credentials saved through the V2 telemetry flow
+  live only in the gunicorn worker's process memory.
+- They are lost when the container restarts (for any reason: deploy,
+  crash, Replit infra event).
+- The `secret_token_name` row in `das_connections` will keep pointing at
+  a name that no longer resolves; subsequent Test Credentials clicks will
+  return `Missing credential fields…` until the operator re-enters them
+  via Update Credentials.
+- After any restart, treat saved provider accounts as *invalid by
+  default*; either delete-and-recreate or run Update Credentials before
+  testing.
 
-For now (Phase 0):
-- Do **not** ask customers to attach real provider accounts.
-- The boot log prints a `PRODUCTION WARNING` block when this state is detected.
-- Demo telemetry on `is_demo=true` companies is unaffected.
+### 11.e Sync Sites gating
 
-A later **Phase 4** sprint will provision GCP service-account credentials and
-flip this warning into a hard-fail.
+Sync Sites is gated in two places:
+
+- Frontend (`ProviderAccountDrawer.tsx` line 80,
+  `ProviderAccountsTable.tsx` line 85): the button is `disabled` unless
+  `credential_status === 'verified'` **and** `status === 'active'`.
+- Backend (`cloud_function_telemetry_client.py`): even with verified
+  credentials the shim raises a `ProviderUnavailable` for `list_sites`
+  with a "Site enumeration via the v2 cloud-function client is not wired
+  up yet" message. The v2 sync handler then records
+  `last_sync_status=failed` and **does not** zero-out existing external
+  site mappings. This is intentional pending Phase 4.
+
+### 11.f Approval status (Phase 0)
+
+| Question | Answer |
+|---|---|
+| Is the wiring bug fixed? | Yes (commit `c6a7d46`) |
+| May internal users test credentials? | **Yes**, with the caveat below |
+| May external customers attach real accounts? | **No** |
+| Will saved credentials survive a restart? | **No** — in-memory backend |
+| Should existing pre-fix saved credentials be re-entered? | **Yes**, on next visit |
+| Does Sync Sites work end-to-end? | **No** — gated server-side until Phase 4 wiring |
+
+A later **Phase 4** sprint will provision GCP service-account credentials,
+flip the in-memory warning into a hard-fail, and wire the v2 list-sites
+endpoint to a Secret-Manager-backed token reference so Sync Sites returns
+a real list.
+
+### 11.g Operator actions for Invalid status
+
+1. Open Portfolio Admin → Telemetry, click the offending account row.
+2. Note the `Last error` value (the credential rejection detail surfaces
+   here verbatim from the cloud function).
+3. Click **Update Credentials**, re-enter values, **Save**, then **Test
+   Credentials** again.
+4. If the chip still flips to Invalid: confirm the
+   `telemetry_token_function_url` is reachable from the deploy by
+   inspecting the deployment logs for an `Invoking telemetry provider
+   adapter provider=…` line. Absence of that log line means the request
+   never left the app — usually a missing env var, not bad credentials.
 
 ---
 
