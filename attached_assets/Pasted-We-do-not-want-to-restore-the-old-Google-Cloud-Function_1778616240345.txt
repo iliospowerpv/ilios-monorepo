@@ -1,0 +1,209 @@
+We do not want to restore the old Google Cloud Function as the primary telemetry integration path.
+
+The previous GCP function was built around the old hierarchy, single-instance telemetry assumptions, and difficult auth-token/refresh-token choreography. Ilios now has a company-specific V2 provider-account model, and telemetry integration should live natively inside Ilios where it can be tenant-scoped, auditable, observable, and supportable.
+
+Do not reconnect the old Cloud Function as the main path.
+Do not add a dev mock.
+Do not merely improve the error message.
+Do not implement QuickBooks.
+Do not touch auth.
+Do not migrate JWT storage.
+Do not expose credential values.
+Do not print secrets.
+
+Objective
+
+Build the foundation for native Ilios telemetry provider integrations using the current V2 provider-account model.
+
+The first target is AlsoEnergy credential validation. If KMC uses the same pattern and can be handled safely, include KMC. Otherwise document it as the next adapter.
+
+Current confirmed state
+V2 provider accounts exist.
+also_energy exists in telemetry_provider_catalog.
+Provider account UI exists.
+Test Credentials reaches the V2 backend endpoint.
+Current adapter path uses CloudFunctionAdapter.
+The old Cloud Function path fails because Ilios cannot fetch a GCP ID token.
+Production credential storage is currently non-durable/in-memory.
+V2 Sync Sites is not wired.
+Existing V2 credentials entered before durable storage should be treated as invalid and re-entered.
+Strategic decision
+
+The V2 telemetry path should move toward:
+
+Ilios → Native Provider Adapter → Provider API
+
+not:
+
+Ilios → Google Cloud Function → Provider API
+
+Legacy Cloud Function code may be inspected and reused as a reference, but V2 should not depend on it for credential testing.
+
+Required Tasks
+1. Inspect existing telemetry code and legacy provider logic
+
+Inspect:
+
+app/integrations/telemetry/
+current CloudFunctionAdapter
+AlsoEnergyAdapter
+KmcAdapter
+legacy telemetry clients/helpers
+any code under backend/rea-telemetry/
+any GCP function source related to telemetry validation, token validation, site listing, or device listing
+
+Determine:
+
+Where the old provider auth logic lives.
+Whether AlsoEnergy auth/token/refresh behavior is implemented anywhere.
+Whether KMC auth/token/refresh behavior is implemented anywhere.
+Whether existing code is reliable enough to port.
+Whether any provider API documentation is referenced in code/comments.
+
+Return the files and functions involved.
+
+2. Decide native adapter scope
+
+Based on the inspection, recommend one of these:
+
+Option A — Port existing working AlsoEnergy logic
+
+Use the legacy code only as a reference and implement native Ilios V2 logic.
+
+Option B — Implement minimal known-good AlsoEnergy credential validation
+
+If the API pattern is clear, implement only credential validation first.
+
+Option C — Stop and request provider documentation
+
+If the provider auth/token flow is unclear or dangerous to guess, do not implement. Return the exact missing information needed.
+
+Do not guess provider auth flows.
+
+3. Implement durable credential storage first
+
+Before native provider validation is used by internal testers, production must not store credentials in memory.
+
+Implement one durable credential store path.
+
+Preferred options:
+
+GCP Secret Manager using service account JSON stored in Replit secret, if practical.
+Encrypted database-backed credential store using a dedicated credential-encryption key.
+Existing encrypted credential table if already suitable.
+
+Requirements:
+
+Tenant/company scoped.
+Provider-account scoped.
+No credential values logged.
+Credentials survive redeploy/restart.
+Production must block credential save/test if only in-memory storage is active.
+Existing non-durable provider credentials should be marked or treated as requiring re-entry.
+
+If this is too large, stop and return a recommended credential-storage sprint before provider work.
+
+4. Replace V2 AlsoEnergy test path with native adapter
+
+For V2 provider accounts:
+
+POST /api/telemetry/v2/provider-accounts/{id}/test
+
+should call the native AlsoEnergy adapter, not the Cloud Function adapter.
+
+Native adapter should:
+
+Load credentials from durable store.
+Validate required fields.
+Call AlsoEnergy API directly if known.
+Return standardized result:
+verified
+rejected credentials
+provider unavailable
+configuration missing
+unexpected provider response
+
+Do not log usernames/passwords/tokens.
+
+If direct AlsoEnergy API details are not available, do not fake success. Stop and document missing API details.
+
+5. Preserve backward compatibility
+
+Do not delete legacy Cloud Function code.
+
+Instead:
+
+Keep it available only for legacy paths if still used.
+Clearly document that V2 native provider accounts do not depend on it.
+Avoid breaking any old telemetry route that still works.
+6. Prepare V2 Sync Sites, but do not overbuild
+
+For this sprint, only implement V2 sync-sites if:
+
+the provider site-list API is already clearly implemented or documented,
+credentials are durable,
+and mapping preservation is safe.
+
+Otherwise leave sync-sites disabled and document the next sprint.
+
+At minimum:
+
+Do not allow sync-sites to run on invalid credentials.
+Do not wipe mappings on provider failure.
+Return user-safe errors.
+7. Improve operator diagnostics
+
+Add or confirm internal diagnostic fields for provider accounts:
+
+last credential test status
+last credential test timestamp
+last error category
+last error message
+provider response category
+credential storage backend
+durable/non-durable indicator
+
+Do not expose secrets.
+
+8. Update runbook
+
+Update docs/RUNBOOK.md telemetry section:
+
+V2 native adapter direction
+Legacy Cloud Function status
+Durable credential storage requirement
+How to test AlsoEnergy credentials
+What errors mean
+Whether Sync Sites is available
+What internal users may and may not test
+Acceptance Criteria
+V2 telemetry credential testing no longer depends on the old GCP Cloud Function.
+Production does not accept telemetry credentials into in-memory-only storage.
+AlsoEnergy credential validation either:
+works natively, or
+is blocked with a precise list of missing provider API details.
+No mock success path exists.
+No credential values are logged or printed.
+Existing provider accounts with prior in-memory credentials are treated as needing credential re-entry.
+Runbook is updated.
+Legacy routes are not broken.
+Validation Required
+
+Report:
+
+Files inspected
+Legacy provider logic found or not found
+Native adapter decision: A, B, or C
+Credential storage implementation/decision
+Files changed
+Whether V2 AlsoEnergy test now bypasses Cloud Function
+Whether a real credential test was run
+Result of test, without exposing credentials
+Whether Sync Sites remains disabled or is now implemented
+Remaining blockers
+Whether internal users can continue telemetry testing
+Important warning
+
+Do not invent provider API behavior.
+
+If AlsoEnergy auth/token/refresh behavior is not clearly present in existing code or docs, stop and ask for provider API documentation or a known-good request/response sample.
