@@ -172,17 +172,38 @@ class Settings(BaseSettings):
     def assemble_db_uri(cls, field_value, info: ValidationInfo) -> str:
         if isinstance(field_value, str) and field_value:
             return field_value
-        
-        # Use db_* vars if set, otherwise fall back to Replit's PG* vars
-        db_user = info.data.get("db_user") or info.data.get("PGUSER")
-        db_password = info.data.get("db_password") or info.data.get("PGPASSWORD")
-        db_host = info.data.get("db_host") or info.data.get("PGHOST")
-        db_name = info.data.get("db_name") or info.data.get("PGDATABASE")
-        pg_port = info.data.get("PGPORT")
-        
+
+        # Highest priority: explicit DATABASE_URL (used by Replit Helium Postgres in deployments).
+        # Normalize the scheme so SQLAlchemy uses the psycopg2 driver consistently.
+        import os as _os
+        database_url = info.data.get("DATABASE_URL") or _os.environ.get("DATABASE_URL")
+        if database_url:
+            if database_url.startswith("postgres://"):
+                database_url = "postgresql+psycopg2://" + database_url[len("postgres://"):]
+            elif database_url.startswith("postgresql://"):
+                database_url = "postgresql+psycopg2://" + database_url[len("postgresql://"):]
+            return database_url
+
+        # Fallback: build from db_* vars or Replit's PG* vars.
+        # Read from the model fields first, then env directly as a last resort.
+        def _v(field_name, env_name):
+            return info.data.get(field_name) or info.data.get(env_name) or _os.environ.get(env_name)
+
+        db_user = _v("db_user", "PGUSER")
+        db_password = _v("db_password", "PGPASSWORD")
+        db_host = _v("db_host", "PGHOST")
+        db_name = _v("db_name", "PGDATABASE")
+        pg_port = info.data.get("PGPORT") or _os.environ.get("PGPORT")
+
+        if not db_host:
+            raise ValueError(
+                "Database is not configured: set DATABASE_URL, or db_host/db_user/db_password/db_name, "
+                "or PGHOST/PGUSER/PGPASSWORD/PGDATABASE."
+            )
+
         # Build connection string with port if available
         host_with_port = f"{db_host}:{pg_port}" if pg_port and not info.data.get("db_host") else db_host
-        
+
         return PostgresDsn.build(
             scheme="postgresql+psycopg2",
             username=db_user,
