@@ -107,9 +107,9 @@ pbi_client_id = "96aec30d-0ebe-416c-9f26-a09f42278916"
 
 [userenv.production]
 pbi_workspace_id = "EF47351C-2E0B-4891-843C-BC091B232E41"
-secret_key = "21f3869f9e099b69ab9b6f74424c1545bbc2f6f4d84e0a4d7ea89c74ef377453"
-api_key = "dev-api-key-placeholder"
-system_user_password = "SystemUser123!"
+secret_key = "6440bbcf4e3ed9e8735e42ab829a211972da3ffd9b2ac3969d399374a0c14e78"
+api_key = "ilios_cTT8UFKLym7DEraAoj1Rt8oXOh2X2iPrL2OcdmHbWT0"
+system_user_password = "MEe38pOHsJDOsUg6UB25oUA6vzWIiCgFAa1!"
 environment_name = "production"
 mailgun_rest_api_endpoint = "api.mailgun.net"
 mailgun_domain_name = "iliospower.com"

@@ -1,0 +1,122 @@
+Phase 0 Production Hardening Guardrails is mostly complete. Before moving to Phase 0B, perform a closeout pass and address production secret hygiene.
+
+Do not implement new features. Do not change auth architecture. Do not implement QuickBooks. Do not implement telemetry credential migration.
+
+Objective
+
+Confirm Phase 0 is actually active in production and clean up obvious production-default secrets before any internal users or real data are introduced.
+
+Tasks
+1. Confirm production boot behavior
+
+Verify the deployed production app is actually running with:
+
+environment_name=production
+production safety checks active
+demo flags blocked
+CORS allowlist active
+security headers active
+
+Provide relevant log snippets, redacted if needed.
+
+Do not print secrets.
+
+2. Run production smoke test
+
+Run:
+
+cd backend/ilios-server
+python scripts/smoke_test_prod.py --base-url https://app.iliospower.com
+
+If smoke credentials are not configured, the auth check may be skipped, but /health must pass.
+
+Report the exact result.
+
+3. Verify production headers
+
+Run:
+
+curl -I https://app.iliospower.com/
+
+Confirm these are present:
+
+Strict-Transport-Security
+X-Content-Type-Options
+X-Frame-Options
+Referrer-Policy
+Permissions-Policy
+4. Verify production CORS rejection
+
+Run:
+
+curl -I \
+  -H "Origin: https://malicious.example" \
+  https://app.iliospower.com/health
+
+Confirm no permissive Access-Control-Allow-Origin is returned.
+
+5. Production secret hygiene review
+
+The prior summary noted that secret_key, api_key, and system_user_password are dev-default values shared with production scope.
+
+Because there are no real users and no real production data yet, this is the correct time to rotate production defaults.
+
+Please inspect the production environment values without printing the values.
+
+Classify each as:
+
+clearly default/dev/test
+likely production-grade
+missing
+unknown
+
+Specifically review:
+
+secret_key
+api_key
+system_user_password
+JWT/signing-related settings
+database URL handling
+telemetry credential settings
+external API keys
+
+Do not print secret values.
+
+6. Rotate only obvious production defaults if safe
+
+If secret_key, api_key, or system_user_password are clearly default/dev/test values, rotate them in the production environment.
+
+Constraints:
+
+Do not rotate database credentials.
+Do not rotate third-party API keys in code or notebooks in this sprint.
+Do not rotate anything that would break an existing real integration.
+Since no real users/data/integrations exist yet, rotating app-level signing/system credentials should be safe.
+Document any consequence in docs/RUNBOOK.md.
+
+For generated values:
+
+Use cryptographically strong random values.
+Store only in Replit production env.
+Do not commit secrets to repo.
+Do not print secrets in logs or chat.
+7. Update runbook
+
+Update docs/RUNBOOK.md with:
+
+Date of production secret hygiene pass
+Which categories were rotated, without values
+Consequences of future secret_key rotation
+Reminder that hardcoded notebook secrets still require manual rotation outside the app deploy
+Response Format
+
+Return:
+
+Phase 0 closeout validation results
+Production smoke test result
+Header/CORS verification result
+Secret hygiene classification, redacted
+What was rotated, if anything
+Files changed
+Whether Phase 0 can be considered complete
+Recommended next sprint

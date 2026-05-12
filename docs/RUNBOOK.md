@@ -300,4 +300,84 @@ flip this warning into a hard-fail.
   the correct comma-separated list and Redeploy.
 
 ---
+
+## 14. Production Secret Hygiene Pass
+
+**Date:** 2026-05-12 (Phase 0 closeout sprint).
+
+### What was rotated
+
+The following three values in the **production** env scope were inherited from
+the development scope as plaintext defaults shared between both environments
+(visible in `.replit`). Because no real users, no real production data, and no
+real external integrations existed at the time of this pass, they were rotated
+in place using cryptographically strong random values generated locally and
+written via the env-var tool. Values were never printed to logs or chat; only
+SHA-256 fingerprint prefixes were used to confirm the rotation took effect.
+
+| Key                      | Scope       | Before         | After          |
+|--------------------------|-------------|----------------|----------------|
+| `secret_key`             | production  | dev default    | rotated (CSPRNG, 64-hex) |
+| `api_key`                | production  | dev default    | rotated (CSPRNG, base64url) |
+| `system_user_password`   | production  | dev default    | rotated (CSPRNG, base64url + complexity suffix) |
+
+The development scope was deliberately left unchanged so local workflows keep
+working with the existing dev fixtures.
+
+### What was NOT rotated this pass
+
+- **Database credentials** (`DATABASE_URL`, `PG*`): managed by Replit; rotating
+  them is outside the app's control and would require a Helium DB credential
+  reissue.
+- **Third-party API keys** (`mailgun_api_key`, `rombus_api_key`, `ml_api_key`,
+  `pbi_client_secret`, OpenAI key, AG Grid license): rotating these requires
+  coordinating with the upstream vendor and is out of scope for this sprint.
+- **Hardcoded secrets in `backend/ilios-DocAI/notebooks/*.ipynb`** (Google API
+  key, DB password committed in notebook source): these still require manual
+  rotation outside the app deploy. They are flagged in the production
+  readiness audit (§6) and remain a follow-up item.
+
+### Required follow-up actions after rotation
+
+1. **Redeploy production.** Env vars are loaded at boot via Pydantic Settings;
+   the new values do not take effect until the next deploy cycle. Click
+   **Redeploy** in the Publishing pane.
+2. **Re-bootstrap the system user account in production.** Because
+   `system_user_password` was rotated, any existing system-user DB row whose
+   password hash was derived from the old value can no longer be authenticated
+   against. If a system user already exists in the production DB, run the
+   bootstrap/reset routine for that account against production once after the
+   redeploy. (Skip if no system user has been created in prod yet.)
+3. **Verify boot logs** show the new `production_mode=True` block and no
+   safety-check failures (see §3).
+
+### Consequences of any FUTURE `secret_key` rotation
+
+`secret_key` is used by `cryptography.fernet` to encrypt
+`finance_integrations.encrypted_credentials` (and any future symmetric-encrypted
+column). If `secret_key` is rotated again **after** real finance integration
+credentials have been stored:
+
+- All previously stored encrypted credentials become unreadable and the
+  affected integrations will fail to authenticate.
+- The remediation is to disconnect and reconnect every affected integration
+  after rotation, which forces re-entry of the upstream credentials.
+- For this reason, **once the first real finance integration is connected in
+  production, treat `secret_key` as immutable** and plan any future rotation
+  as a coordinated maintenance window with explicit re-connection of every
+  integration.
+
+This pass was safe to perform because no real finance integrations were yet
+connected in production.
+
+### Reminder: notebook secrets are out of scope
+
+Hardcoded credentials inside Jupyter notebooks under
+`backend/ilios-DocAI/notebooks/` are not loaded by the FastAPI app and were not
+touched by this pass. They must still be rotated manually at the upstream
+provider (Google Cloud / DB owner) and scrubbed from notebook source as a
+separate operational task before those notebooks are run against any
+sensitive data.
+
+---
 *End of runbook.*
