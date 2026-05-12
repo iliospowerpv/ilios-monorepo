@@ -243,7 +243,7 @@ This section is two readiness checks rolled together: **(a)** is credential
 *testing* wired end-to-end, and **(b)** is credential *storage* durable.
 Today (a) is fixed; (b) is still in-memory.
 
-### 11.a How credential testing works
+### 11.a How credential testing works (V2 native path)
 
 The user-facing **Test Credentials** button (Portfolio Admin → Telemetry →
 provider account drawer) flows through the following path:
@@ -253,26 +253,56 @@ provider account drawer) flows through the following path:
 | UI button | `frontend/.../telemetry/v2/ProviderAccountDrawer.tsx` | Calls `telemetryV2Api.testProviderAccount(accountId)` |
 | API client | `frontend/rea-investment-fe/src/api/telemetryV2.ts` | `POST /api/telemetry/v2/provider-accounts/{id}/test` |
 | Router | `backend/ilios-server/app/routers/telemetry/v2.py` (`test_provider_account`) | Loads creds from store, dispatches to adapter |
-| Adapter base | `backend/ilios-server/app/integrations/telemetry/cloud_function_adapter.py` (`test_credentials`) | Issues `action="validate"` payload (does **not** enumerate sites) |
-| Vendor adapter | `also_energy_adapter.py` / `kmc_adapter.py` | Encodes `{auth_scheme, token}` |
-| Bridge shim | `backend/ilios-server/app/helpers/telemetry/cloud_function_telemetry_client.py` | Translates `action="validate"` → legacy `validate_token(provider, token)` |
-| Legacy client | `backend/ilios-server/app/helpers/telemetry/telemetry_cloud_function_client.py` (`TelemetryFuncHTTPClient`) | POSTs to `telemetry_token_function_url` with a GCP ID token |
+| Adapter resolver | `app/integrations/telemetry/registry.py` (`get_adapter`) | Imports the dotted-path class stored in `telemetry_provider_catalog.adapter_class` |
+| **Native AlsoEnergy adapter** | `app/integrations/telemetry/native_also_energy_adapter.py` (`NativeAlsoEnergyAdapter`) | Calls `https://api.alsoenergy.com/Auth/token` directly. **No GCP Cloud Function involved.** |
 
-Provider catalog rows are seeded by Alembic migration
-`alembic/versions/ff18_telemetry_v2_introduce.py`. `also_energy` resolves to
-`AlsoEnergyAdapter` (required fields `username` + `password`); `kmc`
-resolves to `KmcAdapter` (required field `token`). Both rows ship
-`is_enabled = true`.
+Provider catalog rows are originally seeded by Alembic migration
+`ff18_telemetry_v2_introduce.py`. The `also_energy` row was switched to the
+native adapter by migration `ff21_telemetry_v2_native_also_energy_adapter.py`.
 
-### 11.b Bug history (resolved)
+| Provider | Adapter class (current) | Required fields | Path |
+|---|---|---|---|
+| `also_energy` | `app.integrations.telemetry.native_also_energy_adapter.NativeAlsoEnergyAdapter` | `username`, `password` | **native** (direct REST) |
+| `kmc` | `app.integrations.telemetry.kmc_adapter.KmcAdapter` | `token` | legacy CloudFunction (will be migrated next sprint) |
 
-Before commit `c6a7d46` the adapter tried to import
-`app.helpers.telemetry.cloud_function_telemetry_client`, which did not
-exist. Every Test Credentials click returned **"Live credential testing is
-not available in this environment"** in both dev and production. The shim
-file referenced above was added to close the gap and the adapter now uses
-a dedicated `validate` action so credential verification no longer depends
-on the (still-unwired) v2 site enumeration path.
+#### Native AlsoEnergy result categories
+| Category | Trigger | UI message |
+|---|---|---|
+| `verified` | `POST /Auth/token` returns 2xx with `access_token` | "Credentials verified" |
+| `rejected` | 400/401/403 from `/Auth/token` | "Provider rejected credentials (HTTP nnn)" |
+| `rate_limited` | 429 from `/Auth/token` (Retry-After honoured) | "Provider rate-limited the token request" |
+| `unavailable` | 5xx, malformed JSON, missing `access_token`, or transport error after retries | "Provider unavailable" / "Provider call failed: …" |
+| `configuration_missing` | Stored credentials are empty or missing required fields | "No credentials are stored for this account…" / "Missing credential fields: …" |
+
+Credential and access-token values are *never* logged. Token is reduced to
+a fingerprint (`***xxxx(len=N)`) via `app.security.redaction.fingerprint`.
+
+### 11.b Legacy Cloud Function status
+
+The legacy `CloudFunctionAdapter` (`cloud_function_adapter.py`) and its
+shim `cloud_function_telemetry_client.py` are **kept in the codebase**
+unchanged. They are still referenced by:
+
+* `KmcAdapter` (until KMC native adapter ships next sprint)
+* The non-V2 telemetry endpoints under `app/routers/telemetry/telemetry.py`
+
+V2 `also_energy` no longer depends on either. Rolling back to the legacy
+adapter is one DB row update — see §11.b.1.
+
+#### 11.b.1 Rollback to legacy AlsoEnergy adapter
+
+Run the down-migration:
+
+```
+alembic downgrade ff20_auth_security_events
+```
+
+This restores `telemetry_provider_catalog.adapter_class` for `also_energy`
+to `app.integrations.telemetry.also_energy_adapter.AlsoEnergyAdapter`.
+Stored credentials in GCP Secret Manager (or in-memory in dev) are *not*
+touched, so existing accounts continue to work after rollback. The
+`NativeAlsoEnergyAdapter` class file is left in place so a re-`upgrade`
+can flip back to native without redeploying code.
 
 ### 11.c Storage backend selection rules
 
@@ -336,17 +366,38 @@ written or returned in error responses.
 
 ### 11.g Sync Sites gating
 
-Sync Sites is gated in two places:
+V2 Sync Sites is **not disabled at the route level**. The
+`POST /api/telemetry/v2/provider-accounts/{id}/sync-sites` handler is
+registered and reachable; what blocks customer-visible use today is a
+combination of the production durability guard, the legacy adapter wired
+to KMC, and the deliberate UI button gate. Layered gates, top-down:
 
-- Frontend (`ProviderAccountDrawer.tsx` line 80,
-  `ProviderAccountsTable.tsx` line 85): the button is `disabled` unless
+- **Frontend** (`ProviderAccountDrawer.tsx`, `ProviderAccountsTable.tsx`):
+  the Sync Sites button is `disabled` unless
   `credential_status === 'verified'` **and** `status === 'active'`.
-- Backend (`cloud_function_telemetry_client.py`): even with verified
-  credentials the shim raises a `ProviderUnavailable` for `list_sites`
-  with a "Site enumeration via the v2 cloud-function client is not wired
-  up yet" message. The v2 sync handler then records
+- **Backend production durability gate** (`v2.py::_block_if_storage_not_durable`):
+  in a production environment with a non-durable credential store the
+  route returns HTTP 503 before any provider call. In dev (in-memory) the
+  gate is skipped.
+- **Backend adapter (KMC accounts)**: KMC still resolves to `KmcAdapter`
+  → `CloudFunctionAdapter`; the legacy
+  `cloud_function_telemetry_client.py` shim raises `ProviderUnavailable`
+  for `list_sites`. The v2 sync handler records
   `last_sync_status=failed` and **does not** zero-out existing external
-  site mappings. This is intentional pending Phase 4.
+  site mappings.
+- **Backend adapter (AlsoEnergy accounts)**:
+  `NativeAlsoEnergyAdapter.list_sites()` is fully implemented and unit-
+  tested. With the durability gate satisfied (or in dev), Sync Sites for
+  an AlsoEnergy account will issue a real `GET /Sites` to
+  `api.alsoenergy.com` and persist the returned external sites. Mapping
+  preservation rules and the approval-workflow review for end-to-end
+  customer enablement are scheduled for a follow-up sprint; until that
+  review lands, do **not** invite external customers to use Sync Sites.
+
+Operator behaviour today: clicking Sync Sites returns 503 in production
+(non-durable storage); in dev or once durable storage is on, it invokes
+the adapter and either succeeds (AlsoEnergy) or returns a "not wired up"
+ProviderUnavailable (KMC). Existing mappings are never wiped on failure.
 
 ### 11.h How to verify the backend at boot
 
