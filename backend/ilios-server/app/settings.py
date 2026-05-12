@@ -213,4 +213,13 @@ class Settings(BaseSettings):
         return log_level
 
 
-settings = Settings()
+try:
+    settings = Settings()
+except Exception as _e:
+    import sys, traceback
+    sys.stderr.write("\n========== SETTINGS INIT FAILED ==========\n")
+    sys.stderr.write(f"{type(_e).__name__}: {_e}\n")
+    sys.stderr.write(traceback.format_exc())
+    sys.stderr.write("==========================================\n")
+    sys.stderr.flush()
+    raise
