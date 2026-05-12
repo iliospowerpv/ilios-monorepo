@@ -1,4 +1,28 @@
+"""GCP Secret Manager wrapper used by telemetry V2 credential storage.
+
+Authentication priority (first match wins):
+
+1. ``GOOGLE_APPLICATION_CREDENTIALS_JSON`` env var
+   The full service-account JSON key, stored inline as a Replit secret.
+   Preferred for Replit deployments — no file is ever written to the
+   container image and nothing is committed to the repo. The JSON is
+   parsed in-memory and passed to
+   ``service_account.Credentials.from_service_account_info``.
+2. ``service_account_key_file_path`` setting
+   Legacy file-mounted key. Still supported so older deployments and the
+   chatbot/file-parse cloud-function helpers continue to work.
+3. Application Default Credentials (ADC)
+   Falls back to the Google client library's default discovery
+   (``gcloud auth application-default``, GCE metadata, Workload
+   Identity, etc.). Only useful outside Replit; on Replit this almost
+   always means "no credentials" and the SDK call will raise.
+
+Secret values are never logged. Errors during init log only the
+exception type, not the body.
+"""
+import json
 import logging
+import os
 from functools import wraps
 
 from fastapi import HTTPException
@@ -10,18 +34,47 @@ from app.settings import settings
 logger = logging.getLogger(__name__)
 
 
+def _build_credentials():
+    """Resolve service-account credentials per the priority list above.
+
+    Returns ``None`` to signal "use ADC" (the SDK will pick up
+    ``GOOGLE_APPLICATION_CREDENTIALS`` or platform metadata on its own).
+    Raises ``ValueError`` only when an explicit source is present but
+    malformed — a missing source falls through to the next option.
+    """
+    json_blob = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+    if json_blob:
+        try:
+            info = json.loads(json_blob)
+        except json.JSONDecodeError as exc:
+            raise ValueError(
+                "GOOGLE_APPLICATION_CREDENTIALS_JSON is set but is not valid JSON"
+            ) from exc
+        # `from_service_account_info` validates required keys
+        # (client_email, private_key, token_uri, …) and raises ValueError
+        # with a non-secret message if any are missing.
+        return service_account.Credentials.from_service_account_info(info)
+
+    key_path = getattr(settings, "service_account_key_file_path", None)
+    if key_path and os.path.isfile(key_path):
+        return service_account.Credentials.from_service_account_file(key_path)
+
+    return None  # ADC
+
+
 class GCPSecretsManager:
     """Class to handle actions related to Google Cloud Secrets.
 
-    Note that Google Cloud Storage Client requires a service account key file. You can not use this if you are
-    using Application Default Credentials from Google ComputeEngine or from the Google Cloud SDK.
-
-    Path to service account key file is stored under 'service_account_key_file_path' settings variable.
+    See module docstring for the auth-source priority order.
     """
 
     def __init__(self):
-        credentials = service_account.Credentials.from_service_account_file(settings.service_account_key_file_path)
-        self.secrets_client = SecretManagerServiceClient(credentials=credentials)
+        credentials = _build_credentials()
+        if credentials is None:
+            # ADC path — let the SDK try platform-default discovery.
+            self.secrets_client = SecretManagerServiceClient()
+        else:
+            self.secrets_client = SecretManagerServiceClient(credentials=credentials)
         self.project_id = settings.gcp_project_id
 
     @staticmethod

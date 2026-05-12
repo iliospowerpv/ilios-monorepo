@@ -33,7 +33,9 @@ from app.integrations.telemetry.credential_store import (
     V2_SECRET_PREFIX,
     CredentialStore,
     get_credential_store,
+    is_credential_store_durable,
 )
+from app.settings import settings
 from app.models.telemetry import (
     CompanyDASProvider,
     CompanyProviderStatus,
@@ -81,6 +83,45 @@ def _utcnow() -> datetime:
 
 def _new_run_id() -> str:
     return f"run_{secrets.token_hex(8)}"
+
+
+PROD_LIKE_ENV_NAMES = {"production", "prod", "staging", "stage", "live"}
+
+
+def _is_production() -> bool:
+    return (settings.environment_name or "").strip().lower() in PROD_LIKE_ENV_NAMES
+
+
+def _block_if_storage_not_durable(
+    credential_store: CredentialStore,
+    *,
+    operation: str,
+) -> None:
+    """Refuse credential writes/tests when the store would lose them.
+
+    Policy:
+
+    - In production with the in-memory backend: always block. Accepting
+      credentials we cannot persist would be silent data loss.
+    - In dev/non-production: allow. Local development uses in-memory by
+      design; the boot warning is enough.
+
+    Returns 503 (Service Unavailable) with a user-facing, secret-free
+    message. The exception detail is what the frontend renders verbatim.
+    """
+    if not _is_production():
+        return
+    if is_credential_store_durable(credential_store):
+        return
+    logger.warning(
+        "telemetry_v2_credential_op_blocked operation=%s reason=in_memory_backend",
+        operation,
+    )
+    raise HTTPException(
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+        "Telemetry credential storage is not enabled for production. "
+        "Contact an administrator.",
+    )
 
 
 def _provider_key_to_enum(provider_key: str) -> DASProvidersEnum:
@@ -593,6 +634,7 @@ def create_provider_account(
     credential_store: Annotated[CredentialStore, Depends(get_credential_store)],
 ) -> ProviderAccountResponse:
     _enforce_company_visibility(current_user, company_id)
+    _block_if_storage_not_durable(credential_store, operation="create_account")
     license_row, catalog = _ensure_license(db, company_id, payload.provider_key)
 
     secret_name = credential_store.store(
@@ -708,6 +750,10 @@ def update_provider_account(
 
     minted_new_secret: Optional[str] = None
     if payload.credentials is not None and payload.credentials.fields:
+        # Block silent loss: only gate when we are actually about to write
+        # credentials. Renaming/archiving is allowed even on a non-durable
+        # store so operators can still clean up.
+        _block_if_storage_not_durable(credential_store, operation="rotate_credentials")
         # Rotate in place: same secret resource, new version. Old
         # versions stay accessible for audit / rollback. We never
         # destroy the previous credential set.
@@ -821,6 +867,10 @@ def test_provider_account(
     account, catalog = _require_account(db, account_id, current_user)
     if catalog is None:
         raise HTTPException(status.HTTP_409_CONFLICT, "Provider account has no catalog mapping")
+    # Block test if we're on the in-memory backend in production: we'd be
+    # validating credentials that may have been silently lost on the last
+    # restart, producing a misleading red/green result.
+    _block_if_storage_not_durable(credential_store, operation="test_credentials")
 
     creds = credential_store.retrieve(account.secret_token_name)
     adapter = get_adapter(db, catalog.provider_key, catalog=catalog)
@@ -869,6 +919,10 @@ def sync_provider_account_sites(
     account, catalog = _require_account(db, account_id, current_user)
     if catalog is None:
         raise HTTPException(status.HTTP_409_CONFLICT, "Provider account has no catalog mapping")
+    # Same rationale as test_provider_account: sync needs to retrieve and
+    # re-present credentials to the provider. On a non-durable backend in
+    # production those credentials may already have been silently lost.
+    _block_if_storage_not_durable(credential_store, operation="sync_sites")
 
     creds = credential_store.retrieve(account.secret_token_name)
     adapter = get_adapter(db, catalog.provider_key, catalog=catalog)
@@ -967,6 +1021,78 @@ def sync_provider_account_sites(
         new_count=new_count,
         missing_count=missing_count,
     )
+
+
+@telemetry_v2_router.get(
+    "/v2/companies/{company_id}/provider-accounts/credential-audit",
+    summary=(
+        "List provider accounts whose stored credentials are missing "
+        "(typically because they were entered before a durable backend was "
+        "configured and were lost on restart)."
+    ),
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def credential_audit(
+    company_id: int,
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    credential_store: Annotated[CredentialStore, Depends(get_credential_store)],
+) -> dict:
+    """Diagnose provider accounts that need credential re-entry.
+
+    For every non-archived account on ``company_id``, attempts to read the
+    credential payload from the active store. Empty payloads mean either:
+
+    - the account was created under the in-memory backend and the worker
+      has restarted since (credentials lost), or
+    - the secret resource has been manually deleted in GCP.
+
+    No credential values are returned; only the account id, name, and a
+    boolean ``has_stored_credentials`` flag.
+
+    The endpoint is read-only. Operators clear the bad state by clicking
+    ``Update Credentials`` in the UI (or PATCHing the account with a new
+    ``credentials.fields`` payload), which mints a fresh secret on the
+    durable backend.
+    """
+    _enforce_company_visibility(current_user, company_id)
+    rows = (
+        db.query(DASConnection)
+        .filter(
+            DASConnection.company_id == company_id,
+            DASConnection.is_archived.is_(False),
+        )
+        .order_by(DASConnection.id)
+        .all()
+    )
+    durable = is_credential_store_durable(credential_store)
+    items: list[dict] = []
+    missing_count = 0
+    for row in rows:
+        try:
+            stored = credential_store.retrieve(row.secret_token_name)
+        except Exception:  # noqa: BLE001
+            stored = {}
+        has_creds = bool(stored)
+        if not has_creds:
+            missing_count += 1
+        items.append(
+            {
+                "id": row.id,
+                "name": row.name,
+                "credential_status": row.credential_status.value
+                if row.credential_status
+                else None,
+                "has_stored_credentials": has_creds,
+                "needs_reentry": not has_creds,
+            }
+        )
+    return {
+        "company_id": company_id,
+        "credential_backend_durable": durable,
+        "missing_credentials_count": missing_count,
+        "items": items,
+    }
 
 
 @telemetry_v2_router.get(

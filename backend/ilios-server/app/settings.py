@@ -114,6 +114,11 @@ class Settings(BaseSettings):
     ml_api_key: str
 
     # Telemetry integration settings
+    # When True (e.g. in production), the boot-time guard refuses to start
+    # if the telemetry V2 credential store is the in-memory fallback, and
+    # the credential save/test routes return 503 instead of silently
+    # accepting credentials that would be lost on restart.
+    telemetry_v2_enabled: bool = False
     telemetry_token_function_url: str
     telemetry_sites_function_url: str
     telemetry_devices_function_url: str

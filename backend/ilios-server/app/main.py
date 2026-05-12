@@ -178,22 +178,41 @@ def _validate_configuration():
                     f"Refusing to start. Unset {flag} in the production env scope."
                 )
 
-        # Telemetry credential backend: warn loudly but do not fail in this sprint.
-        cred_backend = (os.environ.get("TELEMETRY_V2_CREDENTIAL_BACKEND") or "auto").strip().lower()
-        gcp_key_present = bool(
-            os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-            or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+        # Telemetry credential backend.
+        #
+        # The selected backend is decided once by credential_store at import
+        # time, so we ask it directly rather than re-deriving the rule here.
+        # Two modes:
+        #   - telemetry_v2_enabled == True  -> in-memory is a HARD FAIL.
+        #   - telemetry_v2_enabled == False -> in-memory boots with a loud
+        #     warning, and the v2 credential write/test routes are blocked
+        #     server-side (see require_durable_credential_store).
+        from app.integrations.telemetry.credential_store import (
+            is_credential_store_durable,
         )
-        if cred_backend == "in-memory" or (cred_backend == "auto" and not gcp_key_present):
+
+        durable = is_credential_store_durable()
+        v2_enabled = bool(getattr(settings, "telemetry_v2_enabled", False))
+        if not durable:
+            if v2_enabled:
+                raise RuntimeError(
+                    "PRODUCTION SAFETY: telemetry_v2_enabled=true but the "
+                    "telemetry V2 credential store is in-memory. Refusing to "
+                    "start. Configure a durable backend by setting "
+                    "GOOGLE_APPLICATION_CREDENTIALS_JSON (preferred) or "
+                    "service_account_key_file_path, then redeploy. To boot "
+                    "without telemetry V2, set telemetry_v2_enabled=false."
+                )
+            logger.warning("=" * 60)
             logger.warning(
-                "=" * 60
-            )
-            logger.warning(
-                "PRODUCTION WARNING: Telemetry V2 credentials will use the IN-MEMORY backend. "
-                "Provider account credentials WILL NOT survive process restart. "
-                "This will be made a hard-fail in a later telemetry sprint."
+                "PRODUCTION WARNING: Telemetry V2 credentials will use the "
+                "IN-MEMORY backend. telemetry_v2_enabled is false, so the "
+                "credential save/test routes will return 503 until a durable "
+                "backend is configured. See docs/RUNBOOK.md §11."
             )
             logger.warning("=" * 60)
+        else:
+            logger.info("Telemetry V2 credential backend: durable (GCP)")
 
         logger.info("Production safety checks: PASSED")
     else:

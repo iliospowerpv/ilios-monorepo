@@ -17,9 +17,15 @@ The selected backend is decided once at process start by
 
 1. If env var ``TELEMETRY_V2_CREDENTIAL_BACKEND`` is set, honour it
    (``gcp`` or ``in-memory``).
-2. Otherwise, prefer GCP if both ``service_account_key_file_path`` and
-   ``gcp_project_id`` settings are present and the key file exists.
+2. Otherwise, prefer GCP if ``gcp_project_id`` is set AND any of:
+   - ``GOOGLE_APPLICATION_CREDENTIALS_JSON`` env var is set, OR
+   - ``service_account_key_file_path`` setting points at an existing file.
 3. Otherwise, fall back to in-memory and emit a startup warning.
+
+Use :func:`is_credential_store_durable` to ask whether the active
+backend persists credentials across process restarts. Production
+startup and the credential write/test routes use this to refuse unsafe
+operation.
 
 The credential payload format on disk (GCP) is a JSON object of
 ``{field_name: value}`` pairs. Nothing else is ever written to a
@@ -232,16 +238,30 @@ class GCPSecretManagerCredentialStore:
 
 
 def _gcp_config_available() -> bool:
-    """Return True if we can construct a working GCPSecretsManager."""
+    """Return True if we can construct a working GCPSecretsManager.
+
+    Two supported credential sources (matches secrets_manager._build_credentials):
+
+    1. ``GOOGLE_APPLICATION_CREDENTIALS_JSON`` env var (preferred on Replit;
+       inline service-account JSON, never written to disk in the repo).
+    2. ``service_account_key_file_path`` setting pointing at an existing file
+       (legacy file-mounted key).
+
+    In both cases ``gcp_project_id`` setting must also be present.
+    """
     try:
         from app.settings import settings  # local import to avoid cycles
     except Exception:  # noqa: BLE001
         return False
-    key_path = getattr(settings, "service_account_key_file_path", None)
     project_id = getattr(settings, "gcp_project_id", None)
-    if not key_path or not project_id:
+    if not project_id:
         return False
-    return os.path.isfile(key_path)
+    if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON"):
+        return True
+    key_path = getattr(settings, "service_account_key_file_path", None)
+    if key_path and os.path.isfile(key_path):
+        return True
+    return False
 
 
 def _build_default_store() -> CredentialStore:
@@ -299,3 +319,18 @@ def reset_credential_store() -> CredentialStore:
     global _default_store
     _default_store = _build_default_store()
     return _default_store
+
+
+def is_credential_store_durable(
+    store: Optional[CredentialStore] = None,
+) -> bool:
+    """Whether the active store persists credentials across restarts.
+
+    ``InMemoryCredentialStore`` and ``PlaceholderCredentialStore`` are
+    non-durable. Anything else (currently only
+    ``GCPSecretManagerCredentialStore``) is treated as durable.
+    """
+    target = store if store is not None else _default_store
+    return not isinstance(
+        target, (InMemoryCredentialStore, PlaceholderCredentialStore)
+    )

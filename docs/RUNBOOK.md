@@ -274,38 +274,67 @@ file referenced above was added to close the gap and the adapter now uses
 a dedicated `validate` action so credential verification no longer depends
 on the (still-unwired) v2 site enumeration path.
 
-### 11.c What must be true before internal users test real credentials
+### 11.c Storage backend selection rules
 
-1. The boot log line `telemetry_v2_credential_backend=…` is **present**.
-2. `telemetry_token_function_url` is set in the production env scope.
-3. The deploy has GCP service-account auth (for the cloud function ID
-   token in `BaseCloudFuncHTTPClient.post(use_token=True)`). Without it
-   the validate call will fail with "Provider rejected credentials" even
-   for valid creds.
-4. The user understands credentials are **non-durable** — see §11.d.
+`backend/ilios-server/app/integrations/telemetry/credential_store.py::_build_default_store`
+picks one backend per process:
 
-### 11.d Storage backend (production today: in-memory)
+| Order | Source | Result |
+|---|---|---|
+| 1 | env `TELEMETRY_V2_CREDENTIAL_BACKEND=gcp` | force GCP (boots-fail if creds missing — intentional) |
+| 2 | env `TELEMETRY_V2_CREDENTIAL_BACKEND=in-memory` | force in-memory (dev only) |
+| 3 | `gcp_project_id` set AND `GOOGLE_APPLICATION_CREDENTIALS_JSON` set | auto-select GCP |
+| 4 | `gcp_project_id` set AND `service_account_key_file_path` exists on disk | auto-select GCP |
+| 5 | otherwise | in-memory fallback + warning |
 
-The credential store auto-selects between GCP Secret Manager and an
-in-memory fallback (`credential_store.py::_build_default_store`).
-Production currently runs **in-memory** — confirmed by the deploy log
-line `telemetry_v2_credential_backend=in-memory (no GCP credentials in
-environment). Credentials WILL NOT survive process restart.`
+`GCPSecretsManager.__init__` (`app/helpers/telemetry/secrets_manager.py`)
+honours the same priority: inline JSON env var first, key file second,
+ADC last. `GOOGLE_APPLICATION_CREDENTIALS_JSON` is the **preferred
+production source** because no JSON ever lands on disk in the repo.
 
-Consequences:
-- Any provider-account credentials saved through the V2 telemetry flow
-  live only in the gunicorn worker's process memory.
-- They are lost when the container restarts (for any reason: deploy,
-  crash, Replit infra event).
-- The `secret_token_name` row in `das_connections` will keep pointing at
-  a name that no longer resolves; subsequent Test Credentials clicks will
-  return `Missing credential fields…` until the operator re-enters them
-  via Update Credentials.
-- After any restart, treat saved provider accounts as *invalid by
-  default*; either delete-and-recreate or run Update Credentials before
-  testing.
+### 11.d Required production env vars for durable storage
 
-### 11.e Sync Sites gating
+To turn off the warning and unlock credential save/test in production:
+
+| Env var / setting | Value | Notes |
+|---|---|---|
+| `gcp_project_id` | numeric GCP project id | already set in production |
+| `GOOGLE_APPLICATION_CREDENTIALS_JSON` | full service-account JSON, single-line | Replit Secret. **Never** committed. Service account needs `roles/secretmanager.admin` on the project (create / addVersion / access / delete). |
+| `telemetry_v2_enabled` | `true` | Flips the boot guard from "warn" to "hard-fail" if the store is non-durable. |
+| `TELEMETRY_V2_CREDENTIAL_BACKEND` | unset (preferred) or `gcp` | Leaving unset uses the auto-selector. Set `gcp` to make a misconfiguration crash-loud at boot. |
+
+After setting, redeploy and confirm boot logs show
+`Telemetry V2 credential backend: durable (GCP)`.
+
+### 11.e Production startup behaviour
+
+`_validate_configuration` in `app/main.py` enforces:
+
+| State | Production with `telemetry_v2_enabled=true` | Production with `telemetry_v2_enabled=false` |
+|---|---|---|
+| Durable backend | boot OK; logs `durable (GCP)` | boot OK; logs `durable (GCP)` |
+| In-memory fallback | **HARD FAIL**: `RuntimeError("PRODUCTION SAFETY: telemetry_v2_enabled=true but the telemetry V2 credential store is in-memory…")` | boot with loud `PRODUCTION WARNING` block; routes blocked at request time (see §11.f) |
+
+Dev/non-production is never gated.
+
+### 11.f Route-level safety net
+
+`_block_if_storage_not_durable` in `app/routers/telemetry/v2.py`
+returns **HTTP 503** with body
+`"Telemetry credential storage is not enabled for production. Contact an administrator."`
+when the backend is in-memory in a production env. It guards:
+
+- `POST /v2/companies/{company_id}/provider-accounts` (create)
+- `PATCH /v2/companies/{company_id}/provider-accounts/{id}` *only when
+  the request body contains `credentials.fields`* (rotate)
+- `POST /v2/provider-accounts/{id}/test`
+- `POST /v2/provider-accounts/{id}/sync-sites`
+
+Renaming, archiving, listing, and the credential-audit endpoint remain
+available so operators can clean up safely. No credentials are ever
+written or returned in error responses.
+
+### 11.g Sync Sites gating
 
 Sync Sites is gated in two places:
 
@@ -319,30 +348,100 @@ Sync Sites is gated in two places:
   `last_sync_status=failed` and **does not** zero-out existing external
   site mappings. This is intentional pending Phase 4.
 
-### 11.f Approval status (Phase 0)
+### 11.h How to verify the backend at boot
+
+After every redeploy, scan the Publishing logs for one of:
+
+- `Telemetry V2 credential backend: durable (GCP)` — ✅ go.
+- `telemetry_v2_credential_backend=in-memory (no GCP credentials in environment)` — ❌ stop and configure §11.d.
+- `RuntimeError: PRODUCTION SAFETY: telemetry_v2_enabled=true but the telemetry V2 credential store is in-memory` — ❌ deploy crash-looped on purpose; the previous revision is still serving. Add the missing env vars and redeploy.
+
+### 11.i How to rotate provider credentials
+
+1. UI path (preferred): Portfolio Admin → Telemetry → account row →
+   **Update Credentials** → enter new values → **Save**. The router
+   appends a new version to the same GCP secret resource; the previous
+   version remains accessible by version number for rollback.
+2. API path: `PATCH /api/telemetry/v2/companies/{company_id}/provider-accounts/{account_id}`
+   with body `{"credentials": {"fields": {…}}}`. Same compensating
+   cleanup behaviour: a failed DB commit on a brand-new mint deletes the
+   orphan secret, but rotated-in-place versions are intentionally
+   retained for audit.
+
+The `secret_token_name` is **not** rotated; only the secret *version*
+changes. Account-id ↔ secret-name mapping is stable for the life of the
+account.
+
+### 11.j How to handle credentials entered before durability
+
+Use the **credential audit endpoint** to find them:
+
+```
+GET /api/telemetry/v2/companies/{company_id}/provider-accounts/credential-audit
+```
+
+(Telemetry-admin only.) Response shape:
+
+```json
+{
+  "company_id": 12,
+  "credential_backend_durable": true,
+  "missing_credentials_count": 1,
+  "items": [
+    {"id": 7, "name": "AlsoEnergy prod",
+     "credential_status": "verified",
+     "has_stored_credentials": false,
+     "needs_reentry": true}
+  ]
+}
+```
+
+`has_stored_credentials=false` means the GCP secret resource the row
+points at returns an empty payload. Operator action:
+
+1. For each `needs_reentry: true` row, open the account in the UI.
+2. Click **Update Credentials** and re-enter the values from the
+   customer's source-of-truth (1Password / vendor portal / etc.). Saving
+   mints a fresh durable secret and re-routes `secret_token_name` to it.
+3. Re-test. The audit endpoint will then return `needs_reentry: false`.
+
+The endpoint never returns credential values — only the boolean
+presence flag. No values are recoverable from an in-memory store after
+restart; do **not** attempt recovery.
+
+### 11.k What internal users should do after the durable backend is enabled
+
+1. Stop treating the AlsoEnergy demo company as a test target — saved
+   creds are now real and persistent.
+2. Run the credential-audit endpoint once per company you previously
+   touched. Re-enter for any `needs_reentry: true` row.
+3. The Test Credentials button should now flip the chip Verified and
+   stay there across redeploys. If a redeploy breaks it, the audit
+   endpoint is the first diagnostic to run.
+
+### 11.l Approval status
 
 | Question | Answer |
 |---|---|
 | Is the wiring bug fixed? | Yes (commit `c6a7d46`) |
-| May internal users test credentials? | **Yes**, with the caveat below |
-| May external customers attach real accounts? | **No** |
-| Will saved credentials survive a restart? | **No** — in-memory backend |
-| Should existing pre-fix saved credentials be re-entered? | **Yes**, on next visit |
-| Does Sync Sites work end-to-end? | **No** — gated server-side until Phase 4 wiring |
+| Is the in-memory storage hole closed? | Yes — production refuses to silently accept lost credentials. Saves/tests return 503 until §11.d is configured; with `telemetry_v2_enabled=true` the deploy hard-fails instead of booting. |
+| Are credentials durable when GCP is configured? | Yes — `GCPSecretManagerCredentialStore`, secret-per-account, version-on-rotate. |
+| May internal users test credentials? | **Yes**, only after §11.d. While the env vars are missing the route returns 503 with the operator-friendly message. |
+| May external customers attach real accounts? | Not yet — Sync Sites is still 501 (Phase 4). |
+| Should existing pre-fix saved credentials be re-entered? | **Yes** — see §11.j. |
+| Does Sync Sites work end-to-end? | **No** — gated server-side until Phase 4 wiring. |
 
-A later **Phase 4** sprint will provision GCP service-account credentials,
-flip the in-memory warning into a hard-fail, and wire the v2 list-sites
-endpoint to a Secret-Manager-backed token reference so Sync Sites returns
-a real list.
-
-### 11.g Operator actions for Invalid status
+### 11.m Operator actions for Invalid status
 
 1. Open Portfolio Admin → Telemetry, click the offending account row.
 2. Note the `Last error` value (the credential rejection detail surfaces
    here verbatim from the cloud function).
 3. Click **Update Credentials**, re-enter values, **Save**, then **Test
    Credentials** again.
-4. If the chip still flips to Invalid: confirm the
+4. If Test returns HTTP 503 "Telemetry credential storage is not enabled
+   for production": the deploy is on the in-memory backend. Configure
+   §11.d and redeploy.
+5. If the chip still flips to Invalid: confirm the
    `telemetry_token_function_url` is reachable from the deploy by
    inspecting the deployment logs for an `Invoking telemetry provider
    adapter provider=…` line. Absence of that log line means the request
@@ -355,7 +454,8 @@ a real list.
 | Limitation | Status | Mitigation |
 |---|---|---|
 | **QuickBooks integration is not implemented.** Only generic `finance_integrations` plumbing exists. | Phase 3 | Do not promise or accept QBO connections. |
-| **Telemetry V2 credentials are in-memory in production.** | Phase 4 | See §11. |
+| **Telemetry V2 credentials default to in-memory until `GOOGLE_APPLICATION_CREDENTIALS_JSON` + `telemetry_v2_enabled=true` are set in the production env scope.** Until configured, credential save/test routes return HTTP 503 instead of silently dropping data. | Configurable | See §11.c–§11.f. |
+| **Telemetry V2 Sync Sites** is still wired to a 501 from the v2 cloud-function shim; existing site mappings are preserved. | Phase 4 | See §11.g. |
 | **JWT is stored in `localStorage`** on the frontend. | Phase 2 | Do not invite external users until cookie migration. |
 | **No login rate limiting / account lockout.** | Phase 1 (next sprint) | Use strong passwords; small audience only. |
 | **No external error reporting (Sentry).** | Phase 1 | Watch deployment logs in the Publishing pane. |
