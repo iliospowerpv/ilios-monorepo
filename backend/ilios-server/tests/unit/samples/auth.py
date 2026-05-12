@@ -12,9 +12,14 @@ LOGIN_PAYLOAD_MISSING_REQUIRED_FIELDS_ERR = (
 )
 LOGIN_PAYLOAD_MISSING_EMAIL_ERR = "Validation error: body.email - Field required"
 LOGIN_PAYLOAD_MISSING_PASSWORD_ERR = "Validation error: body.password - Field required"
-LOGIN_PAYLOAD_USER_404_ERR = "We can’t find account with such email"
-LOGIN_PAYLOAD_WRONG_PASSWORD_ERR = "The password is incorrect"
-LOGING_PAYLOAD_ACC_NOT_SET_UP_ERR = "Account is not fully set up"
+# Phase 0C: all login failure modes (no-such-account, account-not-set-up,
+# wrong-password) return the SAME generic user-facing message so the
+# response body cannot be used to enumerate accounts. Internal reason
+# categories are preserved on the AuthSecurityEvent record.
+_GENERIC_LOGIN_FAILURE = "Wrong credentials"
+LOGIN_PAYLOAD_USER_404_ERR = _GENERIC_LOGIN_FAILURE
+LOGIN_PAYLOAD_WRONG_PASSWORD_ERR = _GENERIC_LOGIN_FAILURE
+LOGING_PAYLOAD_ACC_NOT_SET_UP_ERR = _GENERIC_LOGIN_FAILURE
 
 AUTH_MISSING_HEADER_ERR = "Missing 'Authorization' header."
 AUTH_HEADER_TOO_SHORT_ERR = "Expected 'Authorization' header in the format 'Bearer JWT', got 'wrong'."

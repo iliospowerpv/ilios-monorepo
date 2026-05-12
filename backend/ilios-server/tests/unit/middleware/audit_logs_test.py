@@ -38,7 +38,7 @@ class TestAuditLog:
 
         audit_log = AuditLogCRUD(db_session).get_by_id(response.headers["x-request-audit-id"])
         assert audit_log.is_success is False
-        assert audit_log.details == "The password is incorrect"
+        assert audit_log.details == "Wrong credentials"
         assert audit_log.source == "Authentication"
         assert audit_log.action == "Login"
         assert audit_log.user.email == samples.LOGIN_PAYLOAD_VALID["email"]

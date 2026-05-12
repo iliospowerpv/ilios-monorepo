@@ -1,0 +1,131 @@
+The native AlsoEnergy telemetry adapter sprint has passed review. We now need a closeout pass to verify production state after the auth and telemetry migrations.
+
+Do not implement new features.
+Do not implement KMC.
+Do not enable full Sync Sites for customers.
+Do not implement QuickBooks.
+Do not touch JWT storage.
+Do not add Sentry yet.
+Do not expose credentials or tokens.
+
+Objective
+
+Verify that production is running the current expected baseline:
+
+Phase 0 production guardrails
+Phase 0B auth abuse protection
+Phase 0C auth response leak fix, if already completed
+Native AlsoEnergy V2 adapter via Alembic ff21
+No dependency on the old GCP Cloud Function for V2 AlsoEnergy credential testing
+Required Tasks
+1. Verify production deployment and migrations
+
+Confirm in production:
+
+app boots successfully
+environment_name=production
+Alembic current head is ff21_telemetry_v2_native_ae
+ff20_auth_security_events is applied
+ff21_telemetry_v2_native_ae is applied
+auth_security_events table exists
+telemetry_provider_catalog.also_energy.adapter_class equals:
+app.integrations.telemetry.native_also_energy_adapter.NativeAlsoEnergyAdapter
+
+Report results.
+
+2. Run production smoke test
+
+Run:
+
+cd backend/ilios-server
+python scripts/smoke_test_prod.py --base-url https://app.iliospower.com
+
+Report:
+
+health check result
+login result, if smoke credentials exist
+authenticated endpoint result, if applicable
+3. Confirm AlsoEnergy V2 does not use GCP Cloud Function
+
+In production/current code, verify:
+
+V2 also_energy adapter resolves to NativeAlsoEnergyAdapter
+Test Credentials path imports/calls native adapter
+no cloud_function_*
+no GCP ID-token generation
+no telemetry_token_function_url
+
+Return exact file paths and resolver path.
+
+4. Confirm auth response leak is closed
+
+If the account-enumeration leak noted in the runbook has not yet been fixed, fix it now.
+
+Any login/authentication failure should return the same generic user-facing response regardless of whether:
+
+account does not exist
+password is wrong
+account is inactive
+account is in cooldown/lockout
+
+Keep internal security-event reason categories for operators.
+
+Acceptance criteria:
+
+nonexistent account and wrong-password account produce indistinguishable user-facing responses
+locked/cooldown account response is generic
+internal auth security events retain reason categories
+successful login still works
+5. Controlled production-safe auth validation
+
+Do not hammer production.
+
+If a designated test user exists:
+
+perform a limited failed-login test
+confirm auth security events are recorded
+confirm lockout behavior only if using a safe test account
+
+If no safe test user exists, report that production testing was limited and rely on dev validation.
+
+6. Controlled AlsoEnergy credential validation guidance
+
+Do not ask for credentials in chat.
+
+Provide precise operator steps for a real user to test through the UI:
+
+Open provider account.
+Click Update Credentials.
+Enter valid AlsoEnergy username/password.
+Save.
+Click Test Credentials.
+Confirm status changes to Verified or rejected.
+
+Confirm that:
+
+valid credentials should mark verified
+invalid credentials should return provider rejection
+GCP/ConnectionError should not appear for AlsoEnergy V2
+7. Update runbook if needed
+
+Ensure docs/RUNBOOK.md clearly states:
+
+AlsoEnergy V2 uses native adapter
+legacy Cloud Function adapter remains for rollback/reference
+KMC still uses legacy/deferred path
+Sync Sites is not broadly customer-enabled yet
+production durable credential storage is required before relying on saved credentials
+how to rollback ff21
+Response Format
+
+Return:
+
+Production migration status
+Smoke test result
+Native adapter resolution proof
+Auth leak fix/verification status
+Auth validation result
+AlsoEnergy credential-test operator instructions
+Files changed, if any
+Remaining blockers
+Whether internal users can test AlsoEnergy credentials now

@@ -277,6 +277,29 @@ native adapter by migration `ff21_telemetry_v2_native_also_energy_adapter.py`.
 Credential and access-token values are *never* logged. Token is reduced to
 a fingerprint (`***xxxx(len=N)`) via `app.security.redaction.fingerprint`.
 
+### 11.a.1 Phase 0C — auth response leak closed
+
+`POST /api/auth/login` previously returned three distinguishable bodies
+on failure (`We can't find account with such email`, `Account is not
+fully set up`, `The password is incorrect`), enabling account
+enumeration. As of this sprint all failure paths in
+`AuthenticationHandler.authenticate_user` return the same body
+`{"message": "Wrong credentials", "code": 400}`, including the
+router-level lockout path. Per-IP rate-limit responses remain
+`HTTP 429` with the generic `"Too many login attempts. Please try again
+later."` message (intentional — distinguishable from credential
+failure but contains no per-account information).
+
+Internal reason categories (`account_not_found`, `account_not_setup`,
+`bad_password`, plus `lockout` / `ip_rate_limit` set at the router
+layer) are still recorded on the `auth_security_events` row so
+operators retain forensic granularity. Reasons are passed inside the
+process via `request.state.auth_failure_reason` and never appear in any
+response payload, header, or log emitted to the client.
+
+Verified end-to-end in dev: nonexistent email and known-account /
+wrong-password produce byte-identical JSON responses with HTTP 400.
+
 ### 11.b Legacy Cloud Function status
 
 The legacy `CloudFunctionAdapter` (`cloud_function_adapter.py`) and its

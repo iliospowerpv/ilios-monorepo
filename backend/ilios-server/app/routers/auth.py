@@ -130,6 +130,11 @@ async def login_for_access_token(
         )
         clear_failed_logins_for_identifier(db_session, identifier_hash)
     else:
+        # Granular internal reason set by AuthenticationHandler. Defaults
+        # to "bad_credentials" for unexpected paths (e.g. legacy/forced
+        # 4xx). Reasons stay in the security-event log only — never on
+        # the user-facing response (see Phase 0C / runbook §11).
+        reason = getattr(request.state, "auth_failure_reason", None) or "bad_credentials"
         record_event(
             db_session,
             event_type=EVENT_LOGIN,
@@ -138,7 +143,7 @@ async def login_for_access_token(
             identifier_hash=identifier_hash,
             ip_address=ip,
             user_agent=ua,
-            reason="bad_credentials",
+            reason=reason,
         )
     return response
 

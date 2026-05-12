@@ -44,26 +44,34 @@ class AuthenticationHandler:
         return encoded_jwt
 
     def authenticate_user(self, request: Request, email: str, password: str, db_session: Session):  # noqa: CFQ004
-        """Authenticate user and if valid return JWT token for the session"""
+        """Authenticate user and if valid return JWT token for the session.
+
+        All failure modes return the same generic user-facing response so
+        the caller cannot distinguish between "no such account", "account
+        not yet set up", and "wrong password". The internal reason is
+        attached to ``request.state.auth_failure_reason`` so the router
+        can record a granular security-event category for operators
+        without exposing it on the wire.
+        """
+        # Identical generic body for every failure path below.
+        generic_failure = JSONResponse(
+            content=jsonable_encoder(BadRequestError(message="Wrong credentials")),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
         user = UserCRUD(db_session).get_by_email(email=email)
         if not user:
-            return JSONResponse(
-                content=jsonable_encoder(BadRequestError(message=UserAccountMessages.account_not_exists)),
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
+            request.state.auth_failure_reason = "account_not_found"
+            return generic_failure
 
         request.state.current_user_id = user.id
 
         if not user.is_registered:
-            return JSONResponse(
-                content=jsonable_encoder(BadRequestError(message=UserAccountMessages.account_not_setup)),
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
+            request.state.auth_failure_reason = "account_not_setup"
+            return generic_failure
         if not self._verify_password(password, user.hashed_password):
-            return JSONResponse(
-                content=jsonable_encoder(BadRequestError(message="The password is incorrect")),
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
+            request.state.auth_failure_reason = "bad_password"
+            return generic_failure
         # Determine session lifetime. Global admins get a shorter
         # access-token + DB-session expiry (Phase 1 safeguard) to limit
         # damage from a stolen token. is_system_user is the internal
