@@ -269,9 +269,9 @@ Click **Test** on any active account. If the test succeeds, the **Credentials** 
 
 The **Sync Sites** button is disabled until **Credentials = Verified**. Once verified, click **Sync Sites** to enumerate the sites available to this account from the provider. Synced sites appear in the **External Sites** tab in the account drawer.
 
-## Rotating Credentials
+## Updating Credentials
 
-Use the **Rotate Credentials** action (row menu or drawer) when the underlying provider password or token changes. After rotation:
+Use the **Update Credentials** action (row menu or drawer) when the underlying provider password or token changes. After updating:
 
 - A new credential version is stored
 - The **Credentials** chip resets to **Not tested**

@@ -141,7 +141,7 @@ export const EditConnectionDialog: React.FC<EditConnectionDialogProps> = ({ open
             sx={{ mb: 2 }}
           />
 
-          <Typography variant="subtitle2">Rotate credentials (optional)</Typography>
+          <Typography variant="subtitle2">Update credentials (optional)</Typography>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
             Leave blank to keep the existing credentials. To replace them, enter new values and test before saving.
           </Typography>
@@ -203,7 +203,7 @@ export const EditConnectionDialog: React.FC<EditConnectionDialogProps> = ({ open
 
           {partialCreds && (
             <Alert severity="warning" sx={{ mb: 2 }}>
-              Enter both username and password (and test) to rotate credentials, or clear both fields to keep the
+              Enter both username and password (and test) to update credentials, or clear both fields to keep the
               existing ones.
             </Alert>
           )}

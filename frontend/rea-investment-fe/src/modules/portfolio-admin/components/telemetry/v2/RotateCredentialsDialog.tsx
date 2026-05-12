@@ -58,7 +58,7 @@ export const RotateCredentialsDialog: React.FC<RotateCredentialsDialogProps> = (
       if (value) trimmed[field.key] = value;
     }
     if (Object.keys(trimmed).length === 0) {
-      setError('Enter the new credential values to rotate.');
+      setError('Enter the new credential values to update.');
       return;
     }
     setError(null);
@@ -73,7 +73,7 @@ export const RotateCredentialsDialog: React.FC<RotateCredentialsDialogProps> = (
           onClose();
         },
         onError: (err: Error & { response?: { data?: { detail?: string } } }) => {
-          setError(err.response?.data?.detail || err.message || 'Failed to rotate credentials.');
+          setError(err.response?.data?.detail || err.message || 'Failed to update credentials.');
         }
       }
     );
@@ -82,7 +82,7 @@ export const RotateCredentialsDialog: React.FC<RotateCredentialsDialogProps> = (
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle>
-        Rotate Credentials
+        Update Credentials
         {account && (
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
             {account.display_name} — {account.name}
@@ -101,7 +101,7 @@ export const RotateCredentialsDialog: React.FC<RotateCredentialsDialogProps> = (
             />
           )}
           <Alert severity="info">
-            After rotation, credential status returns to <strong>Not tested</strong>. Click{' '}
+            After updating, credential status returns to <strong>Not tested</strong>. Click{' '}
             <strong>Test Credentials</strong> on the account to verify the new values before syncing sites.
           </Alert>
           {error && <Alert severity="error">{error}</Alert>}
@@ -115,7 +115,7 @@ export const RotateCredentialsDialog: React.FC<RotateCredentialsDialogProps> = (
           disabled={updateAccount.isPending || !account}
           startIcon={updateAccount.isPending ? <CircularProgress size={16} color="inherit" /> : null}
         >
-          {updateAccount.isPending ? 'Rotating…' : 'Rotate Credentials'}
+          {updateAccount.isPending ? 'Updating…' : 'Update Credentials'}
         </Button>
       </DialogActions>
     </Dialog>

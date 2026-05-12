@@ -202,7 +202,7 @@ export const ProviderAccountDrawer: React.FC<ProviderAccountDrawerProps> = ({
                         {isSyncing ? 'Syncing…' : 'Sync Sites'}
                       </Button>
                       <Button variant="outlined" onClick={() => onRotate(current)}>
-                        Rotate Credentials
+                        Update Credentials
                       </Button>
                       <Button
                         variant="outlined"
@@ -218,11 +218,11 @@ export const ProviderAccountDrawer: React.FC<ProviderAccountDrawerProps> = ({
                         severity="warning"
                         action={
                           <Button color="inherit" size="small" onClick={() => onRotate(current)}>
-                            Rotate Credentials
+                            Update Credentials
                           </Button>
                         }
                       >
-                        No credentials are stored for this account. Click <strong>Rotate Credentials</strong> to enter
+                        No credentials are stored for this account. Click <strong>Update Credentials</strong> to enter
                         them.
                       </Alert>
                     )}

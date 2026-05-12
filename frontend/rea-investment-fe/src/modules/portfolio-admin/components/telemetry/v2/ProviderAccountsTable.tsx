@@ -280,7 +280,7 @@ export const ProviderAccountsTable: React.FC<ProviderAccountsTableProps> = ({
               closeMenu();
             }}
           >
-            Rotate Credentials
+            Update Credentials
           </MenuItem>
           <MenuItem
             onClick={() => {

@@ -37,7 +37,7 @@ const credentialMeta: Record<CredentialStatus, { label: string; color: ChipProps
   invalid: {
     label: 'Invalid',
     color: 'error',
-    tooltip: 'Credentials failed on the most recent test. Rotate the credentials and test again before syncing.'
+    tooltip: 'Credentials failed on the most recent test. Update the credentials and test again before syncing.'
   },
   expired: {
     label: 'Expired',
