@@ -352,12 +352,32 @@ To turn off the warning and unlock credential save/test in production:
 | Env var / setting | Value | Notes |
 |---|---|---|
 | `gcp_project_id` | numeric GCP project id | already set in production |
-| `GOOGLE_APPLICATION_CREDENTIALS_JSON` | full service-account JSON, single-line | Replit Secret. **Never** committed. Service account needs `roles/secretmanager.admin` on the project (create / addVersion / access / delete). |
+| `GOOGLE_APPLICATION_CREDENTIALS_JSON` | full service-account JSON, single-line | Replit Secret. **Never** committed. See IAM table below. |
 | `telemetry_v2_enabled` | `true` | Flips the boot guard from "warn" to "hard-fail" if the store is non-durable. |
 | `TELEMETRY_V2_CREDENTIAL_BACKEND` | unset (preferred) or `gcp` | Leaving unset uses the auto-selector. Set `gcp` to make a misconfiguration crash-loud at boot. |
 
 After setting, redeploy and confirm boot logs show
-`Telemetry V2 credential backend: durable (GCP)`.
+`telemetry_v2_credential_backend=gcp (auto-selected)`.
+
+**Least-privilege IAM** for the service account whose JSON is placed in
+`GOOGLE_APPLICATION_CREDENTIALS_JSON`. Code paths used:
+`GCPSecretsManager.create_secret` / `add_secret_version` /
+`access_secret_value` / `delete_secret`
+(`app/helpers/telemetry/secrets_manager.py`).
+
+| Permission | Why we need it | Granted by |
+|---|---|---|
+| `secretmanager.secrets.create` | First save of a provider account mints a new secret resource. | `roles/secretmanager.admin` |
+| `secretmanager.versions.add` | Saving / rotating credentials adds a new version to the resource. | `roles/secretmanager.secretVersionAdder` (rotation) + `secretmanager.admin` (create) |
+| `secretmanager.versions.access` | `retrieve()` reads `versions/latest` at credential-test time. | `roles/secretmanager.secretAccessor` |
+| `secretmanager.secrets.delete` | `delete()` removes the secret on account hard-delete / failed-mint compensation. | `roles/secretmanager.admin` |
+
+The pragmatic grant is `roles/secretmanager.admin` on the project (or,
+preferred, restricted via an IAM Condition to resources whose name
+starts with `projects/<id>/secrets/ilios-telemetry-v2-`). A truly
+minimal grant is a custom role bundling exactly the four permissions
+above, scoped the same way. Avoid `roles/owner` /
+`roles/editor` — both are far too broad for a credential vault key.
 
 ### 11.e Production startup behaviour
 
@@ -501,9 +521,9 @@ restart; do **not** attempt recovery.
 | Is the in-memory storage hole closed? | Yes — production refuses to silently accept lost credentials. Saves/tests return 503 until §11.d is configured; with `telemetry_v2_enabled=true` the deploy hard-fails instead of booting. |
 | Are credentials durable when GCP is configured? | Yes — `GCPSecretManagerCredentialStore`, secret-per-account, version-on-rotate. |
 | May internal users test credentials? | **Yes**, only after §11.d. While the env vars are missing the route returns 503 with the operator-friendly message. |
-| May external customers attach real accounts? | Not yet — Sync Sites is still 501 (Phase 4). |
+| May external customers attach real accounts? | Not yet — Sync Sites customer enablement is gated on the mapping-preservation review (see §11.g). |
 | Should existing pre-fix saved credentials be re-entered? | **Yes** — see §11.j. |
-| Does Sync Sites work end-to-end? | **No** — gated server-side until Phase 4 wiring. |
+| Does Sync Sites work end-to-end (AlsoEnergy)? | **Yes for internal use** once §11.d is satisfied: `NativeAlsoEnergyAdapter.list_sites()` is implemented and verified in dev. KMC still on the legacy `KmcAdapter` → `CloudFunctionAdapter` shim and returns `ProviderUnavailable`. |
 
 ### 11.m Operator actions for Invalid status
 
@@ -520,6 +540,57 @@ restart; do **not** attempt recovery.
    inspecting the deployment logs for an `Invoking telemetry provider
    adapter provider=…` line. Absence of that log line means the request
    never left the app — usually a missing env var, not bad credentials.
+
+### 11.n Sprint enablement checklist (operator)
+
+Use this checklist exactly once, the first time durable storage is
+turned on in production. Steps 1–3 are operator-only; the agent cannot
+perform them from the dev environment.
+
+1. **Provision GCP service account.** In the same GCP project as
+   `gcp_project_id`, create a new service account
+   (e.g. `ilios-telemetry-v2-prod@<project>.iam.gserviceaccount.com`).
+   Grant it the IAM bundle from the table in §11.d, scoped via IAM
+   Condition to resource name prefix `ilios-telemetry-v2-` if
+   possible. Generate a JSON key for it. Do not place the key in this
+   repo.
+2. **Add Replit production secrets** (Workspace → Deployments → this
+   deployment → Secrets):
+   - `GOOGLE_APPLICATION_CREDENTIALS_JSON` = the full JSON key blob
+     from step 1, on a single line.
+   - `telemetry_v2_enabled` = `true`.
+   - `gcp_project_id` should already be set; verify it matches the
+     project the service account lives in.
+   - Leave `TELEMETRY_V2_CREDENTIAL_BACKEND` unset (auto-select).
+3. **Redeploy** the production deployment. While the new revision
+   boots, watch deployment logs (`fetch_deployment_logs`) for one of:
+   - ✅ `telemetry_v2_credential_backend=gcp (auto-selected)` — go.
+   - ❌ `telemetry_v2_credential_backend=in-memory (GCP init failed: <ExcType>)`
+     → JSON is malformed or service account lacks permissions; revert
+     `telemetry_v2_enabled` to `false` and fix.
+   - ❌ `RuntimeError: PRODUCTION SAFETY: telemetry_v2_enabled=true …`
+     → deploy crash-looped intentionally; previous revision still
+     serves. Same fix path.
+4. **Re-entry pass.** Run the credential-audit endpoint (§11.j) for
+   every company that previously had AlsoEnergy creds saved while the
+   backend was in-memory. Re-enter every `needs_reentry: true` row
+   through the UI. Do not paste credentials into chat or logs.
+5. **Smoke test.** Pick one freshly re-entered AlsoEnergy account.
+   Click **Test Credentials**. Expected: chip goes Verified;
+   `last_credential_test_at` updates; backend logs emit
+   `telemetry_native_also_energy_token_obtained provider=also_energy
+   token_fp=***xxxx(len=N)`. The literal strings `Cloud Function`,
+   `cloud_function_adapter`, `ConnectionError`, or any GCP traceback
+   in the response = stop, that's a regression.
+6. **Durability check.** Trigger a redeploy (or in a controlled
+   maintenance window, restart the production app). Without re-entering
+   creds, click **Test Credentials** on the same account again. It must
+   still flip Verified — that proves the credential survived a fresh
+   process and was retrieved from GCP Secret Manager rather than from
+   in-process memory.
+7. **Close the loop.** File a one-line note in this runbook under
+   §11.l with the date the durable backend was first enabled in
+   production.
 
 ---
 
