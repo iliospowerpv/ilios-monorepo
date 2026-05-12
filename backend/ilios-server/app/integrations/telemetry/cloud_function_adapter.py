@@ -46,8 +46,14 @@ class CloudFunctionAdapter:
 
     def test_credentials(self, credentials: dict[str, str]) -> TestResult:
         self._require_fields(credentials)
+        # Use a dedicated ``validate`` action rather than ``list_sites`` so the
+        # cloud-function client can route credential verification through a
+        # cheap auth check (the legacy ``validate_token`` endpoint) without
+        # triggering full site enumeration. Site enumeration may require
+        # provider state (secret-manager-backed token references) that is not
+        # available during credential entry.
         try:
-            sites = self.list_sites(credentials)
+            self._invoke(self._build_payload("validate", credentials, {}))
         except CredentialError as exc:
             return TestResult(success=False, message=str(exc) or "Invalid credentials")
         except RateLimited as exc:
@@ -57,7 +63,7 @@ class CloudFunctionAdapter:
         return TestResult(
             success=True,
             message="Credentials verified",
-            available_sites_count=len(sites),
+            available_sites_count=None,
         )
 
     def list_sites(self, credentials: dict[str, str]) -> Sequence[ExternalSiteRecord]:

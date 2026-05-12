@@ -102,15 +102,18 @@ class TestTestCredentialsConvertsExceptionsToTestResult:
         result = adapter.test_credentials({"token": "x"})
         assert result.success is False
 
-    def test_success_returns_site_count(self):
+    def test_success_returns_credentials_verified(self):
+        # ``test_credentials`` now uses a dedicated ``validate`` action and no
+        # longer enumerates sites, so a successful response need not include a
+        # site list. ``available_sites_count`` is intentionally None.
         class OkClient:
             def invoke(self, payload):  # noqa: ARG002
-                return {"sites": [{"id": "s1"}, {"id": "s2"}]}
+                return {"valid": True}
 
         adapter = AlsoEnergyAdapter(http_client=OkClient())
-        result = adapter.test_credentials({"token": "x"})
+        result = adapter.test_credentials({"username": "u", "password": "p"})
         assert result.success is True
-        assert result.available_sites_count == 2
+        assert result.available_sites_count is None
 
 
 class TestPayloadRedactionInLogs:

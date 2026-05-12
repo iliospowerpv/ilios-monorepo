@@ -1,0 +1,91 @@
+Now validate the fix and harden the telemetry provider flow without broad refactoring.
+
+Do not implement unrelated roadmap items.
+Do not touch auth.
+Do not implement QuickBooks.
+Do not migrate JWT storage.
+Do not add new UI unless necessary for clear error handling.
+Do not print or expose credential values.
+
+Objective
+
+Confirm the AlsoEnergy provider account credential test path is correctly wired, determine whether it is safe for internal users to test real credentials, and identify any remaining blocker before site sync is enabled.
+
+Required Tasks
+1. Validate the wiring fix
+
+Confirm:
+
+The corrected helper naming convention is used consistently.
+The shim wiring is present.
+The provider account test endpoint calls the intended provider adapter/helper.
+The UI Test Credentials action reaches the correct backend endpoint.
+The previous “Live credential testing is not available…” error no longer occurs due to missing wiring.
+
+Report the exact files/code paths involved.
+
+2. Validate AlsoEnergy provider configuration
+
+Confirm:
+
+also_energy exists in the provider catalog.
+It is enabled.
+It maps to the intended adapter/helper.
+Its required credential fields are correct.
+Its test method is implemented and not a stub.
+Its site sync method is implemented and not a stub, or clearly mark it as not yet implemented.
+3. Validate credential storage backend
+
+Confirm at runtime:
+
+Which telemetry credential backend is active in production.
+Whether credentials are stored durably or in-memory.
+Whether the current provider account credential fingerprint corresponds to a credential that will survive redeploy/restart.
+Whether any provider credentials entered before this bug fix should be deleted and re-entered.
+
+Do not expose credential values.
+
+4. Run safe credential test validation
+
+If safe and credentials are available through the test account:
+
+Run the AlsoEnergy credential test.
+Confirm whether the provider account status changes from Invalid to valid/verified.
+Confirm last successful test timestamp updates.
+Confirm last error clears or is replaced with a real provider error.
+
+If not safe:
+
+Explain exactly why not.
+Identify the missing environment variable, provider credential backend, or provider configuration.
+5. Validate Sync Sites gating
+
+Confirm:
+
+Sync Sites remains disabled until credentials are valid.
+Sync Sites becomes enabled only after successful credential test.
+Sync action calls the intended adapter/helper.
+Failed sync produces a user-safe error and preserves detailed internal diagnostics.
+6. Update runbook or readiness report
+
+Update docs/RUNBOOK.md or the telemetry readiness section with:
+
+How telemetry provider credential testing works.
+What must be true before internal users test real provider credentials.
+Whether current production uses durable or non-durable credential storage.
+Whether AlsoEnergy is currently approved for internal testing.
+What operators should do if credentials show Invalid.
+Validation Results Required
+
+Return:
+
+Files changed or inspected
+Root cause of the original error
+Whether the bug fix resolved the missing wiring issue
+Active telemetry credential backend
+Whether credentials are durable
+AlsoEnergy test result
+Sync Sites gating result
+Whether existing saved credentials should be deleted/re-entered
+Remaining blockers
+Whether internal users may continue testing telemetry credentials
