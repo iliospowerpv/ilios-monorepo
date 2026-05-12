@@ -3,7 +3,7 @@
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.params import Depends
 from pydantic import EmailStr
 from sqlalchemy.orm import Session
@@ -12,6 +12,17 @@ from app.crud.user import UserCRUD
 from app.crud.user_invitation import UserInvitationCRUD
 from app.crud.user_password_recovery import UserPasswordRecoveryCRUD
 from app.db.session import get_session
+from app.helpers.auth_security import (
+    EVENT_PASSWORD_RESET_REQUEST,
+    OUTCOME_FAILURE,
+    OUTCOME_SUCCESS,
+    OUTCOME_THROTTLED,
+    check_password_reset_throttle,
+    get_request_ip,
+    get_request_ua,
+    hash_identifier,
+    record_event,
+)
 from app.helpers.authentication import get_current_user, get_password_hash
 from app.helpers.authorization.custom.diligence_overview_page import DiligenceOverviewPagePermissions
 from app.helpers.email import EmailTokenValidator, EmailUtility
@@ -130,22 +141,87 @@ async def password_setup(
         },
     },
 )
-async def password_recovery(reset_data: ResetPasswordSchema, db_session: Session = Depends(get_session)):
+async def password_recovery(
+    reset_data: ResetPasswordSchema,
+    request: Request,
+    db_session: Session = Depends(get_session),
+):
+    # Phase 0B: always return the same generic 200 response regardless of
+    # whether the email exists, the account is registered, or the email
+    # send succeeded. Disclosing any of those signals leaks account
+    # existence and enables enumeration. Per-IP and per-email throttles
+    # cap abuse; every outcome is recorded in auth_security_events for
+    # operator visibility.
+    ip = get_request_ip(request)
+    ua = get_request_ua(request)
+    identifier_hash = hash_identifier(reset_data.email)
+    generic_response = {
+        "code": status.HTTP_200_OK,
+        "message": "If an account exists, password reset instructions will be sent.",
+    }
+
+    throttle = check_password_reset_throttle(
+        db_session, ip_address=ip, identifier_hash=identifier_hash
+    )
+    if not throttle.allowed:
+        record_event(
+            db_session,
+            event_type=EVENT_PASSWORD_RESET_REQUEST,
+            outcome=OUTCOME_THROTTLED,
+            identifier_hash=identifier_hash,
+            ip_address=ip,
+            user_agent=ua,
+            reason=throttle.reason,
+        )
+        return generic_response
+
     user = UserCRUD(db_session).get_by_email(reset_data.email)
-    if not user:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, UserAccountMessages.account_not_exists)
-    if not user.is_registered:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, UserAccountMessages.account_not_setup)
+    if not user or not user.is_registered:
+        record_event(
+            db_session,
+            event_type=EVENT_PASSWORD_RESET_REQUEST,
+            outcome=OUTCOME_FAILURE,
+            user_id=(user.id if user else None),
+            identifier_hash=identifier_hash,
+            ip_address=ip,
+            user_agent=ua,
+            reason=("not_registered" if user else "no_such_account"),
+        )
+        return generic_response
 
     password_reset_handler = UserPasswordRecoveryHandler(db_session=db_session, user=user)
     password_reset_handler.update_password_recovery_object()
-    email_sending_error = EmailUtility().send_password_recovery_email(recipient=user, token=password_reset_handler.token)
+    email_sending_error = EmailUtility().send_password_recovery_email(
+        recipient=user, token=password_reset_handler.token
+    )
     if email_sending_error:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            "The reset password email could not be send. Please try again.",
+        # Log internally but still respond generically — email-delivery
+        # failures must not be observable to an unauthenticated caller.
+        logger.error(
+            f"Password recovery email send failed for user_id={user.id}: {email_sending_error}"
         )
-    return {"code": status.HTTP_200_OK, "message": "Email with password reset instructions was sent"}
+        record_event(
+            db_session,
+            event_type=EVENT_PASSWORD_RESET_REQUEST,
+            outcome=OUTCOME_FAILURE,
+            user_id=user.id,
+            identifier_hash=identifier_hash,
+            ip_address=ip,
+            user_agent=ua,
+            reason="email_send_failure",
+        )
+        return generic_response
+
+    record_event(
+        db_session,
+        event_type=EVENT_PASSWORD_RESET_REQUEST,
+        outcome=OUTCOME_SUCCESS,
+        user_id=user.id,
+        identifier_hash=identifier_hash,
+        ip_address=ip,
+        user_agent=ua,
+    )
+    return generic_response
 
 
 @account_router.get(

@@ -380,4 +380,126 @@ separate operational task before those notebooks are run against any
 sensitive data.
 
 ---
+
+## 15. Auth Abuse Protection (Phase 0B)
+
+The `/api/auth/login` and `/api/users/account/password-recovery` endpoints
+have application-level abuse protection. State is stored in the
+`auth_security_events` table (migration `ff20_auth_security_events`) so the
+policy survives process restart and is consistent across the two Gunicorn
+workers — Redis is **not** required.
+
+### Policies (configurable in `app/settings.py`)
+
+| Setting | Default | What it caps |
+|---|---|---|
+| `login_rate_limit_per_minute` | 10 | Failed/limited login attempts per source IP per minute |
+| `login_rate_limit_per_hour` | 50 | Failed/limited login attempts per source IP per hour |
+| `account_lockout_threshold` | 5 | Failed logins per account in the window before lockout |
+| `account_lockout_window_minutes` | 15 | Window in which failures are counted toward lockout |
+| `account_lockout_cooldown_minutes` | 15 | Cooldown after threshold; extends from the most recent failure |
+| `password_reset_per_ip_per_hour` | 5 | Password reset requests per source IP per hour |
+| `password_reset_per_email_per_hour` | 3 | Password reset requests per email per hour |
+
+To tighten or relax in production, override via env (e.g.
+`LOGIN_RATE_LIMIT_PER_MINUTE=5`) and redeploy.
+
+### Response shapes (deliberate, do not change without security review)
+
+- **Login bad credentials, account-not-found, or account-locked:** all return
+  `400 {"code": 400, "message": "Wrong credentials"}` so the response does
+  not disclose whether the account exists or is in lockout.
+  - **Pre-existing leak (NOT closed in Phase 0B):** the underlying
+    `AuthenticationHandler` still returns the more specific
+    `"We can't find account with such email"` for unknown emails when the
+    request reaches it (i.e. before lockout/rate-limit kicks in). Closing
+    this leak requires changing the handler itself and is out of scope for
+    this sprint. Lockout and rate-limit responses are already generic.
+- **Login rate-limited (per IP):** `429 {"code": 429, "message": "Too many
+  login attempts. Please try again later."}` with `Retry-After: 60` (or 3600
+  for the per-hour bucket).
+- **Password reset (any outcome — no such email, not registered, email send
+  failed, throttled, success):** always returns
+  `200 {"code": 200, "message": "If an account exists, password reset
+  instructions will be sent."}`. This is a deliberate behavior change vs
+  pre-Phase-0B, where the endpoint returned 400/422 and leaked existence
+  and registration state. Frontend's success path is unchanged; the new
+  response just makes failure paths indistinguishable from success.
+
+### Operator visibility
+
+Every login attempt and every password-reset request writes a row to
+`auth_security_events` (best effort — auditing failures never break legit
+auth). Sensitive values (passwords, tokens, raw email of unknown accounts)
+are never stored. For unknown identifiers the row carries an HMAC-SHA256
+of the normalized email keyed by `secret_key` (the same value attempts
+against the same identifier hash to the same bucket; the raw email is not
+recoverable from a leaked table without the secret).
+
+Inspect recent activity via the admin endpoint (requires
+`is_global_admin=True` — same gate as `/api/admin/global-admins`):
+
+```bash
+curl -H "Authorization: Bearer <admin-token>" \
+  "https://app.iliospower.com/api/admin/auth-security-events?limit=200"
+```
+
+Useful filters: `?event_type=login&outcome=locked`,
+`?event_type=password_reset_request&outcome=throttled`.
+
+Or query the DB directly:
+
+```sql
+-- Top offending IPs in the last hour
+SELECT ip_address, count(*) AS attempts
+FROM auth_security_events
+WHERE event_type = 'login'
+  AND outcome IN ('failure','rate_limited','locked')
+  AND created_at > now() - interval '1 hour'
+GROUP BY ip_address ORDER BY 2 DESC LIMIT 20;
+
+-- Accounts currently locked or recently locked
+SELECT normalized_identifier_hash, count(*) AS failures, max(created_at) AS last_failure
+FROM auth_security_events
+WHERE event_type='login' AND outcome='failure'
+  AND created_at > now() - interval '15 minutes'
+GROUP BY 1 HAVING count(*) >= 5;
+```
+
+### Manual remediation
+
+To clear a stuck account before cooldown expires (e.g. legitimate user
+self-locked while typing on phone), delete its recent failed-login rows:
+
+```sql
+DELETE FROM auth_security_events
+WHERE event_type='login' AND outcome='failure'
+  AND user_id = <USER_ID>;
+-- or, if user_id is null because the account was looked up by hash only:
+DELETE FROM auth_security_events
+WHERE event_type='login' AND outcome='failure'
+  AND normalized_identifier_hash = '<HASH>';
+```
+
+The hash for a given email is reproducible from a Python shell:
+
+```python
+import hmac, hashlib
+from app.settings import settings
+hmac.new(settings.secret_key.encode(), 'user@example.com'.strip().lower().encode(),
+         hashlib.sha256).hexdigest()
+```
+
+A successful login from the same identifier also auto-clears its failed
+rows.
+
+### What this sprint did NOT cover
+
+Out of scope (deliberately): MFA, JWT-to-cookie migration, broader RBAC
+refactor, Sentry/external alerting, telemetry credential durability,
+QuickBooks. The pre-existing "We can't find account with such email" leak
+in `AuthenticationHandler` is documented above and tracked for a later
+sprint.
+
+---
 *End of runbook.*

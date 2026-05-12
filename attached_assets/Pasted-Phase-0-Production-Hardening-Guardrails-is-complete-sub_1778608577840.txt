@@ -1,0 +1,255 @@
+Phase 0 Production Hardening Guardrails is complete subject to post-redeploy verification. We now need a narrow Phase 0B sprint focused only on authentication abuse protection before any internal users are onboarded.
+
+Do not implement QuickBooks.
+Do not implement telemetry credential migration.
+Do not migrate JWTs from localStorage to cookies in this sprint.
+Do not add MFA in this sprint.
+Do not refactor RBAC.
+Do not make broad auth architecture changes.
+Do not touch production secrets.
+
+Objective
+
+Add basic protection against brute-force login, credential stuffing, and password reset abuse while preserving the existing login flow and frontend behavior.
+
+The app currently has:
+
+Custom JWT/session auth
+Login route likely at POST /api/auth/login
+JWT returned in JSON and stored by the frontend
+No login rate limiting
+No account lockout
+No failed-login audit visibility
+
+This sprint should be additive and safe.
+
+Required Tasks
+1. Confirm current auth routes and flow
+
+Before coding, inspect and document the current auth routes.
+
+Identify:
+
+Login endpoint path
+Password reset/request endpoint path, if present
+Password reset confirmation endpoint path, if present
+Current user/me endpoint path
+Existing audit logging for login/logout
+Existing session table behavior
+Existing user model fields relevant to locking or status
+
+Do not change behavior during this inspection.
+
+2. Add per-IP login rate limiting
+
+Add rate limiting to the login endpoint.
+
+Preferred approach:
+
+Use a lightweight FastAPI-compatible limiter such as slowapi, if it fits the existing stack cleanly.
+If adding a dependency is undesirable, implement a small Redis-backed limiter using the existing Redis/cache infrastructure if available.
+If Redis is unavailable in production, use DB-backed rate limiting rather than in-memory.
+
+Minimum behavior:
+
+Limit repeated login attempts from the same IP.
+Suggested starting policy:
+10 attempts per minute per IP
+50 attempts per hour per IP
+Return HTTP 429 with a generic message.
+Do not reveal whether the username/email exists.
+
+Acceptance criteria:
+
+Repeated failed login attempts from one IP eventually return 429.
+Normal login still works.
+Rate limit state is not stored only in process memory if avoidable.
+3. Add per-account failed-login tracking and lockout/cooldown
+
+Add account-level protection.
+
+Preferred implementation:
+
+Create a small table such as failed_login_attempts or auth_security_events, or add narrowly scoped fields to the existing user model if that is cleaner.
+I prefer a separate table if it avoids risky user-model changes.
+
+Suggested policy:
+
+Track failed attempts by normalized email/username.
+After 5 failed attempts within 15 minutes, lock/cool down that account for 15 minutes.
+Successful login clears recent failed attempts or resets the counter.
+Return a generic message. Do not disclose whether the account exists.
+Admin/system users should not bypass protection by default.
+System user should still be protected.
+
+Acceptance criteria:
+
+5 failed attempts against the same account within the window cause temporary lockout/cooldown.
+Correct password during lockout does not authenticate until cooldown expires.
+After cooldown, correct password works.
+Successful login clears failed-attempt state.
+Responses do not leak account existence.
+4. Add password reset/request throttling if password reset exists
+
+If password reset/request endpoints exist, add abuse protection.
+
+Suggested policy:
+
+Per-IP limit.
+Per-account/email limit.
+Generic response always: “If an account exists, reset instructions will be sent.”
+Do not reveal account existence.
+Do not send unlimited emails.
+
+Acceptance criteria:
+
+Repeated password reset requests are throttled.
+Response remains generic.
+Existing legitimate reset flow still works.
+
+If password reset does not exist or is not active, document that and skip implementation.
+
+5. Add audit/security event logging
+
+Add audit entries for:
+
+successful login
+failed login
+rate-limited login
+account lockout triggered
+password reset requested, if applicable
+password reset rate-limited, if applicable
+
+Use existing audit infrastructure if practical. If existing audit tables are not suitable, create a narrow auth-security-event table.
+
+Do not log passwords, tokens, reset tokens, or secret values.
+
+Include:
+
+user ID if known
+normalized email/username hash or redacted identifier if user unknown
+IP address
+user agent
+event type
+timestamp
+outcome
+reason/category
+
+Acceptance criteria:
+
+Events are queryable by an operator.
+Sensitive values are not logged.
+Failed attempts against nonexistent accounts are represented safely without exposing the raw password or whether the account exists.
+6. Add admin/operator visibility
+
+Add minimal visibility for support.
+
+Preferred:
+
+Add an internal/admin endpoint to list recent auth security events.
+If there is already an admin settings/audit-log UI, add these events there.
+If UI work is risky, provide the backend endpoint and document it in the runbook.
+
+Must be admin-only.
+
+Acceptance criteria:
+
+Global admin can view recent auth-security events.
+Non-admin users cannot access them.
+No password/token data is exposed.
+7. Update runbook
+
+Update docs/RUNBOOK.md with:
+
+Login rate-limit policy
+Account lockout/cooldown policy
+How to identify a locked account
+How to wait out or clear a lockout, if an admin clear action exists
+How to interpret auth security events
+Reminder that JWT still uses current architecture and cookie migration is Phase 2
+Data model guidance
+
+Schema changes are allowed only if small and directly required for this sprint.
+
+If adding a table, include Alembic migration.
+
+Suggested table options:
+
+Option A: auth_security_events
+
+Fields:
+
+id
+event_type
+user_id nullable
+normalized_identifier_hash nullable
+ip_address
+user_agent
+outcome
+reason
+created_at
+Option B: failed_login_attempts
+
+Fields:
+
+id
+normalized_identifier_hash
+ip_address
+user_agent
+created_at
+cleared_at nullable
+
+A combined design is acceptable if simple.
+
+Avoid storing raw passwords or reset tokens.
+
+Security behavior requirements
+All failed-login responses should be generic.
+Lockout responses should be generic.
+Do not reveal whether the account exists.
+Do not print secrets.
+Do not log passwords or tokens.
+Do not block /health.
+Do not break the existing frontend login flow.
+Do not require frontend changes unless necessary to display a generic lockout/rate-limit message.
+Validation checklist
+
+Run and report:
+
+Backend starts cleanly.
+Alembic migration applies cleanly, if added.
+Existing login success still works.
+Wrong password attempts are tracked.
+Per-account lockout triggers after threshold.
+Correct password during lockout is rejected.
+Correct password after cooldown succeeds, or describe how cooldown was tested with shortened window in dev.
+Per-IP rate limit returns 429.
+Password reset throttling works, if applicable.
+Admin-only auth-event visibility works.
+Non-admin access to auth-event visibility is rejected.
+Frontend login still works.
+Runbook updated.
+Explicitly out of scope
+JWT localStorage-to-cookie migration
+MFA
+Sentry
+QuickBooks
+Telemetry credential durability
+Broad audit-log coverage for all business mutations
+RBAC redesign
+Customer onboarding
+External user readiness
+Response format
+
+When complete, return:
+
+Files changed
+Current auth routes confirmed
+Data model/migration changes
+Rate limit policy implemented
+Account lockout policy implemented
+Password reset throttling result
+Audit/security event visibility added
+Validation results
+Any risks or follow-up items
+Whether the app is now safe for first trusted internal users

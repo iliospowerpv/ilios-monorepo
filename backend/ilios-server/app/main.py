@@ -63,6 +63,7 @@ from .routers import (
     tasks_router,
     workspace_router,
     access_health_router,
+    auth_security_events_router,
     global_admin_router,
     role_profiles_router,
     extraction_registry_router,
@@ -377,6 +378,11 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
     app.include_router(access_health_router, prefix="/api/admin/access-health", tags=[tags.ADMIN_ACCESS_HEALTH_TAG])
     app.include_router(extraction_registry_router, prefix="/api/admin/extraction", tags=["Admin - Extraction Registry"])
     app.include_router(global_admin_router, prefix="/api/admin/global-admins", tags=["Admin - Global Admins"])
+    app.include_router(
+        auth_security_events_router,
+        prefix="/api/admin/auth-security-events",
+        tags=["Admin - Auth Security"],
+    )
     # Debug APIs (admin-only)
     app.include_router(debug_router, prefix="/api")
 

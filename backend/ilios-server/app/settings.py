@@ -45,6 +45,17 @@ class Settings(BaseSettings):
     system_user_phone: Optional[str] = "0123456789"
     system_user_password: str
 
+    # Phase 0B auth abuse protection (per-IP rate limit + per-account lockout
+    # + password reset throttle). Counts are stored in auth_security_events
+    # so the policy survives process restart and is consistent across workers.
+    login_rate_limit_per_minute: int = 10
+    login_rate_limit_per_hour: int = 50
+    account_lockout_threshold: int = 5
+    account_lockout_window_minutes: int = 15
+    account_lockout_cooldown_minutes: int = 15
+    password_reset_per_ip_per_hour: int = 5
+    password_reset_per_email_per_hour: int = 3
+
     # logging middleware settings
     log_level: Optional[str] = DEFAULT_LOG_LEVEL
     enable_requests_logger: Optional[bool] = True
