@@ -176,7 +176,7 @@ class Settings(BaseSettings):
         # Highest priority: explicit DATABASE_URL (used by Replit Helium Postgres in deployments).
         # Normalize the scheme so SQLAlchemy uses the psycopg2 driver consistently.
         import os as _os
-        database_url = info.data.get("DATABASE_URL") or _os.environ.get("DATABASE_URL")
+        database_url = (info.data.get("DATABASE_URL") or _os.environ.get("DATABASE_URL") or "").strip()
         if database_url:
             if database_url.startswith("postgres://"):
                 database_url = "postgresql+psycopg2://" + database_url[len("postgres://"):]
@@ -237,10 +237,15 @@ class Settings(BaseSettings):
 try:
     settings = Settings()
 except Exception as _e:
-    import sys, traceback
+    import sys, re, traceback
+    def _redact(text: str) -> str:
+        # Strip passwords from common DSN/URL forms and key=value style dumps.
+        text = re.sub(r"(://[^:/@\s]+:)[^@\s]+(@)", r"\1***\2", text)
+        text = re.sub(r"(?i)(password\s*=\s*)['\"]?[^'\"\s,)}]+", r"\1***", text)
+        return text
     sys.stderr.write("\n========== SETTINGS INIT FAILED ==========\n")
-    sys.stderr.write(f"{type(_e).__name__}: {_e}\n")
-    sys.stderr.write(traceback.format_exc())
+    sys.stderr.write(_redact(f"{type(_e).__name__}: {_e}\n"))
+    sys.stderr.write(_redact(traceback.format_exc()))
     sys.stderr.write("==========================================\n")
     sys.stderr.flush()
     raise
