@@ -1,0 +1,326 @@
+We just completed the first real publish of the Ilios app to the production URL. There are currently no real users and no real production data, but we need to prepare the application to function safely with live users.
+
+Do not build new user-facing features yet unless explicitly requested below. This sprint is an audit, stabilization, and roadmap-reset sprint.
+
+Current Context
+
+Ilios is a solar/infrastructure site management and financial operations platform. It includes or is expected to include:
+
+Company / portfolio / project management
+Solar site/project due diligence
+Contract and asset management
+Financial dashboarding
+QuickBooks Online integration
+Telemetry/provider-account concepts
+Eventually live-user access, customer/company-level separation, and production data workflows
+
+The app has already been published to the production URL, but no real users or data exist there yet.
+
+Important existing constraints:
+
+Do not break the existing QuickBooks dashboard OAuth flow or routes.
+Do not rotate secrets.
+Do not refactor working flows unless necessary for a production-readiness fix.
+Prefer additive changes.
+Preserve existing dashboard functionality.
+Preserve existing demo/synthetic data behavior unless explicitly flagged as unsafe for production.
+Clearly distinguish development/demo behavior from production-safe behavior.
+
+Known QuickBooks/OAuth context to preserve unless the codebase proves otherwise:
+
+OAuth start route may be GET /auth/quickbooks
+OAuth callback route may be GET /callback
+Scope may be com.intuit.quickbooks.accounting
+Tokens and realm_id may currently be stored in Flask session
+Refresh flow exists
+Production QBO base URL may be https://quickbooks.api.intuit.com/v3/company
+No QuickBooks webhooks yet
+
+Known telemetry roadmap context to evaluate against the current codebase:
+
+Target model may include:
+Platform
+Company
+Licensed Provider Type
+Provider Account
+Cached External Sites
+Project/Site/Asset Mappings
+Prior work referenced v2 telemetry APIs, provider adapters, durable secret storage, provider account drawers, external site sync/test/activate flows, and legacy route preservation.
+Please verify what actually exists now.
+Objective
+
+Produce a codebase-grounded production-readiness report and updated implementation roadmap for Ilios now that the app has reached its first production URL.
+
+This should prepare us for live users, live company data, real financial/QuickBooks connections, and operational support.
+
+Required Deliverables
+
+Create a markdown file at the project root:
+
+ILIOS_PRODUCTION_READINESS_AND_ROADMAP.md
+
+The report should be specific, code-referenced, and organized into the following sections.
+
+1. Current Production Architecture Snapshot
+
+Document what the app actually is today.
+
+Include:
+
+Frontend framework and entry points
+Backend framework and entry points
+Database / ORM / migration system
+Auth system
+Session/cookie handling
+Environment variable usage
+Production/development mode detection
+Current production URL/deployment assumptions if visible in config
+Any background jobs, cron jobs, workers, queues, or scheduled tasks
+Third-party integrations currently wired
+QuickBooks integration routes and flow
+Telemetry/provider integration routes and flow
+Demo/synthetic data handling
+
+For each item, include relevant file paths.
+
+2. Live User Readiness Audit
+
+Evaluate whether the app is ready for live users.
+
+Cover:
+
+Login/authentication readiness
+User invitation or onboarding flow
+Role-based access control
+Company/tenant isolation
+Admin vs customer user separation
+Protection against cross-company data exposure
+Whether users can access or mutate data they should not
+Whether there are public routes that should be protected
+Whether any admin routes are exposed too broadly
+Whether seed/demo data could appear in production
+Whether customer-visible pages have empty states
+Whether errors are user-safe
+
+For each issue, classify severity:
+
+Blocker
+High
+Medium
+Low
+
+Do not fix unless it is a small, clearly safe, additive production guard.
+
+3. Production Data Readiness Audit
+
+Evaluate whether the app is ready for real customer/company/project/financial data.
+
+Cover:
+
+Required tables/entities
+Missing constraints or indexes
+Migration state
+Seed/demo data risk
+Tenant/company scoping
+Audit logging
+Soft delete/archive behavior
+Data import/export readiness
+Backup/restore assumptions
+Whether destructive operations exist
+Whether production has enough guardrails before data entry starts
+
+Identify any DB-level invariants that should be added before live use.
+
+4. QuickBooks / Financials Readiness Audit
+
+Review the current QuickBooks and financial dashboard implementation.
+
+Important: do not break or refactor the existing OAuth flow.
+
+Document:
+
+OAuth start route
+OAuth callback route
+Token storage mechanism
+Refresh handling
+Realm/company ID handling
+Whether tokens are durable or session-only
+Whether multi-company/multi-user QBO connections are supported
+Whether token ownership is tenant-scoped
+Whether disconnected/reconnect/error states are handled
+Whether rev-share or financial calculations are implemented
+Whether QBO data is cached or fetched live
+Whether webhooks exist
+Whether audit logs exist for connection, refresh, sync, disconnect, and error events
+
+Flag what must be done before real customer QBO connections are allowed.
+
+5. Telemetry / Provider Account Readiness Audit
+
+Review the current telemetry/provider integration state.
+
+Document:
+
+Existing telemetry/provider tables
+Existing routes
+Legacy routes
+v2 routes, if present
+Adapter abstractions, if present
+Secret/credential storage
+Provider account lifecycle states
+External site sync/test/activate flows
+Project/site/asset mappings
+Demo telemetry behavior
+Production safety gaps
+
+Identify whether telemetry is safe to expose to real users yet.
+
+6. Security and Compliance Readiness
+
+Audit:
+
+Secrets in code
+Environment variable use
+OAuth secret handling
+Session cookie security
+CSRF protection
+CORS settings
+Auth middleware
+API authorization checks
+Input validation
+File upload handling, if any
+Logging of sensitive data
+Error output leakage
+Rate limiting
+Admin-only route protection
+Dependency vulnerabilities if available through package tooling
+
+Do not rotate secrets.
+
+If secrets appear exposed in code, flag them clearly and recommend manual rotation outside this sprint.
+
+7. Observability and Support Readiness
+
+Evaluate whether a team member could support live users.
+
+Cover:
+
+Logging quality
+Error reporting
+Health checks
+Integration status visibility
+Admin diagnostics
+User activity/audit logs
+Failed OAuth/debug visibility
+Failed sync/debug visibility
+Ability to identify which company/user/project experienced an issue
+Runbook gaps
+
+Recommend what support screens or logs should be added before onboarding users.
+
+8. Deployment and Environment Readiness
+
+Review:
+
+Replit deployment configuration
+Build/start commands
+Production vs development environment variables
+Database connection handling
+Migration process
+Rollback process, if any
+Whether deploys are repeatable
+Whether production build warnings/errors exist
+Whether demo seed routines can run in production accidentally
+Whether background workers start correctly
+Whether production URL callback settings align with QuickBooks/Intuit configuration
+
+Create a deployment checklist for future publishes.
+
+9. Recommended Roadmap Reset
+
+Create a prioritized roadmap from the current state.
+
+Break it into:
+
+Phase 0 — Immediate Production Hardening Before Any Users
+
+This should include only blockers and high-risk production-readiness items.
+
+Phase 1 — First Internal Users
+
+What must be done before Jeff/internal team can use it with non-sensitive real data.
+
+Phase 2 — First External Customer / Investor Demo Users
+
+What must be done before external users can log in safely.
+
+Phase 3 — Real Financial / QuickBooks Connections
+
+What must be done before connecting real QBO accounts.
+
+Phase 4 — Real Operational Telemetry / Provider Accounts
+
+What must be done before exposing telemetry/provider integrations to users.
+
+Phase 5 — Scale and Support
+
+What must be done for repeatable onboarding, support, auditability, reporting, and operations.
+
+For each phase include:
+
+Objective
+Required work
+Why it matters
+Dependencies
+Acceptance criteria
+Suggested sprint order
+10. Proposed Next Sprint
+
+Recommend the single best next sprint.
+
+The next sprint should be narrow, production-focused, and safe.
+
+Provide:
+
+Sprint name
+Objective
+Exact implementation tasks
+Files likely affected
+Data model changes, if any
+API changes, if any
+UI changes, if any
+Security implications
+Test/validation checklist
+What is explicitly out of scope
+
+My bias is that the next sprint should probably be one of these, unless the codebase proves otherwise:
+
+Production mode guardrails and environment safety
+Auth/RBAC/tenant isolation audit and fixes
+QuickBooks connection durability and tenant scoping
+Admin/support diagnostics
+Production deployment checklist and runbook
+
+Choose based on actual codebase risk.
+
+Output Requirements
+
+At the end of the report, include a concise executive summary:
+
+Is Ilios safe for live users today?
+Is Ilios safe for real customer data today?
+Is Ilios safe for real QuickBooks connections today?
+Is Ilios safe for external customer access today?
+Top 5 blockers
+Recommended next sprint
+
+Do not overstate certainty. Ground findings in actual files and code paths.
+
+After creating the report, provide a short chat summary with:
+
+Where the report was created
+Top 5 risks found
+Recommended next sprint
+Anything you safely fixed, if anything
+
+Do not implement broad refactors. Do not rotate secrets. Do not break the current production URL or OAuth routes.
