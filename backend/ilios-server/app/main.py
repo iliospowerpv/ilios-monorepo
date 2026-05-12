@@ -11,6 +11,7 @@ from starlette.middleware.cors import CORSMiddleware
 from app.db.session import get_session
 from app.helpers.initial_setup_helper import AppInitHelper
 from app.middlewares.logging_middleware import RequestsLoggerMiddleware
+from app.middlewares.security_headers import SecurityHeadersMiddleware
 
 from . import __version__
 from .middlewares.audit_middleware import AuditingMiddleware
@@ -92,20 +93,56 @@ configure_redaction()
 logger = logging.getLogger(__name__)
 
 
+PROD_LIKE_ENV_NAMES = {"production", "prod", "staging", "stage", "live"}
+
+
+def _is_production() -> bool:
+    return (settings.environment_name or "").strip().lower() in PROD_LIKE_ENV_NAMES
+
+
+def _resolve_cors_origins() -> list[str]:
+    """Resolve allowed CORS origins from CORS_ALLOWED_ORIGINS env var.
+
+    - If CORS_ALLOWED_ORIGINS is set, use the comma-separated list verbatim.
+    - Otherwise default to safe values per environment:
+        prod  -> https://app.iliospower.com plus the public Replit deploy URL.
+        dev   -> common local origins plus REPLIT_DEV_DOMAIN if present.
+    """
+    raw = (os.environ.get("CORS_ALLOWED_ORIGINS") or "").strip()
+    if raw:
+        return [o.strip() for o in raw.split(",") if o.strip()]
+
+    if _is_production():
+        return [
+            "https://app.iliospower.com",
+            "https://ilios-monorepo.replit.app",
+        ]
+
+    dev_origins = [
+        "http://localhost:5000",
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:5000",
+        "http://127.0.0.1:3000",
+    ]
+    replit_dev = os.environ.get("REPLIT_DEV_DOMAIN")
+    if replit_dev:
+        dev_origins.append(f"https://{replit_dev}")
+    return dev_origins
+
+
 def _validate_configuration():
     """Validate critical configuration at startup."""
     logger.info(f"Storage provider: {settings.storage_provider}")
     logger.info(f"Registry fallback: {settings.allow_config_fallback}")
 
     if settings.storage_provider.lower() == "replit":
-        import os
         bucket_id = os.environ.get("DEFAULT_OBJECT_STORAGE_BUCKET_ID")
         if bucket_id:
             logger.info(f"Replit Object Storage bucket: {bucket_id[:20]}...")
         else:
             logger.warning("Replit storage enabled but DEFAULT_OBJECT_STORAGE_BUCKET_ID not set")
 
-    import os
     openai_api_key = os.environ.get("AI_INTEGRATIONS_OPENAI_API_KEY")
     openai_base_url = os.environ.get("AI_INTEGRATIONS_OPENAI_BASE_URL")
     if openai_api_key and openai_base_url:
@@ -115,6 +152,52 @@ def _validate_configuration():
             "AI parsing not configured. Install OpenAI integration via Replit AI Integrations "
             "to enable document parsing."
         )
+
+    # Production-mode safety checks
+    env_name = (settings.environment_name or "unknown").strip().lower()
+    is_prod = env_name in PROD_LIKE_ENV_NAMES
+    logger.info("=" * 60)
+    logger.info(f"Environment: {env_name} (production_mode={is_prod})")
+
+    if is_prod:
+        # Hard-fail: demo telemetry in prod would silently feed fake data to real users.
+        demo_telemetry = (os.environ.get("DEMO_TELEMETRY") or "").strip().lower()
+        if demo_telemetry in {"1", "true", "yes", "on"}:
+            raise RuntimeError(
+                "PRODUCTION SAFETY: DEMO_TELEMETRY is enabled in a production environment. "
+                "Refusing to start. Unset DEMO_TELEMETRY in the production env scope."
+            )
+
+        # Flag any other demo-mode env vars we know about.
+        for flag in ("DEMO_MODE", "USE_DEMO_DATA", "ENABLE_DEMO"):
+            val = (os.environ.get(flag) or "").strip().lower()
+            if val in {"1", "true", "yes", "on"}:
+                raise RuntimeError(
+                    f"PRODUCTION SAFETY: {flag} is enabled in a production environment. "
+                    f"Refusing to start. Unset {flag} in the production env scope."
+                )
+
+        # Telemetry credential backend: warn loudly but do not fail in this sprint.
+        cred_backend = (os.environ.get("TELEMETRY_V2_CREDENTIAL_BACKEND") or "auto").strip().lower()
+        gcp_key_present = bool(
+            os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+            or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+        )
+        if cred_backend == "in-memory" or (cred_backend == "auto" and not gcp_key_present):
+            logger.warning(
+                "=" * 60
+            )
+            logger.warning(
+                "PRODUCTION WARNING: Telemetry V2 credentials will use the IN-MEMORY backend. "
+                "Provider account credentials WILL NOT survive process restart. "
+                "This will be made a hard-fail in a later telemetry sprint."
+            )
+            logger.warning("=" * 60)
+
+        logger.info("Production safety checks: PASSED")
+    else:
+        logger.info("Non-production environment; production safety checks skipped.")
+    logger.info("=" * 60)
 
 
 @asynccontextmanager
@@ -134,13 +217,16 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
         lifespan=lifespan,
         responses=HTTP_422_RESPONSE,
     )
+    cors_origins = _resolve_cors_origins()
+    logger.info(f"CORS allowed origins: {cors_origins}")
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=cors_origins,
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["*"],
     )
+    app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RequestsLoggerMiddleware)
     app.add_middleware(AuditingMiddleware)
     app.add_exception_handler(HTTPException, http_exception_handler)

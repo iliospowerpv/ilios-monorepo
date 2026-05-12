@@ -4,6 +4,7 @@ import { LicenseManager } from 'ag-grid-enterprise';
 import './index.css';
 import './styles/focus-highlight.css';
 import App from './App';
+import RootErrorBoundary from './components/RootErrorBoundary';
 
 if (typeof process.env.REACT_APP_AG_GRID_LICENSE_KEY === 'string') {
   LicenseManager.setLicenseKey(process.env.REACT_APP_AG_GRID_LICENSE_KEY);
@@ -26,4 +27,8 @@ window.ResizeObserver = class ResizeObserver extends OriginalResizeObserver {
 };
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
-root.render(<App />);
+root.render(
+  <RootErrorBoundary>
+    <App />
+  </RootErrorBoundary>
+);

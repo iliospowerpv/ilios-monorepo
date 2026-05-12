@@ -1,0 +1,238 @@
+We reviewed the production readiness audit at ILIOS_PRODUCTION_READINESS_AND_ROADMAP.md. Proceed with the recommended Phase 0 — Production Hardening Guardrails sprint.
+
+This sprint must be narrow, additive, and production-safety focused.
+
+Do not implement QuickBooks. The audit confirmed QuickBooks does not currently exist beyond generic finance integration plumbing, so QBO is out of scope.
+
+Do not implement telemetry credential migration yet. The audit confirmed production currently falls back to in-memory telemetry V2 credentials. For this sprint, warn loudly but do not fail startup. We will make durable credentials mandatory in a later telemetry sprint.
+
+Do not refactor auth, RBAC, routing, finance, telemetry, or dashboard behavior except where explicitly listed below.
+
+Objective
+
+Move Ilios from “published to production URL” to “safe to leave running while we prepare for first internal users.”
+
+The app currently has no real users and no real production data. This sprint should reduce the risk of accidental demo-data contamination, unsafe production configuration, poor browser security defaults, and poor operational visibility.
+
+Required Tasks
+1. Add production guards to demo/data scripts
+
+Add a shared helper or direct guard to the following scripts:
+
+backend/ilios-server/scripts/seed_demo_environment.py
+backend/ilios-server/scripts/seed_demo_deal.py
+backend/ilios-server/scripts/seed_demo_telemetry.py
+backend/ilios-server/scripts/backfill_demo_document_tasks.py
+
+Behavior:
+
+If the resolved environment is production, prod, or staging, the script must refuse to run by default.
+The refusal message should be clear and explicit.
+Add an escape hatch only for deliberate emergency use: --allow-prod.
+If --allow-prod is passed, require a second confirmation argument such as --confirm-prod-data-write.
+Do not rely only on ENVIRONMENT; also inspect DATABASE_URL or settings if available.
+The default should be safe.
+
+Acceptance criteria:
+
+Running any demo seed script against production without flags exits nonzero and writes no data.
+Running against development still works.
+The guard logic is documented in the runbook.
+2. Add production startup environment assertions/warnings
+
+Update backend/ilios-server/app/main.py inside the existing configuration validation/startup path.
+
+In production:
+
+Assert DEMO_TELEMETRY is not true.
+Assert obvious demo-mode environment flags are not true.
+Warn loudly if telemetry V2 credential backend resolves to in-memory.
+Do not fail boot for the in-memory telemetry credential backend yet; this is a warning only for now.
+Log a clear production configuration summary without leaking secrets.
+
+Also add a migration-state check if safe:
+
+Compare Alembic current revision to Alembic head.
+If this is too risky to run during FastAPI startup, implement it as a standalone script instead and document it in the runbook.
+Do not add a startup failure if there is any risk of false-positive deploy failure. Prefer warning in this sprint.
+
+Acceptance criteria:
+
+Production boot logs clearly state whether production safety checks passed.
+If DEMO_TELEMETRY=true in prod, startup fails fast.
+If telemetry credentials are in-memory in prod, startup warns clearly but still boots.
+No secrets are printed.
+3. Tighten CORS
+
+Replace wildcard CORS in backend/ilios-server/app/main.py.
+
+Current risk from audit:
+
+allow_origins=["*"]
+allow_credentials=True
+
+Implement an environment-driven allowlist.
+
+Production allowed origins should include:
+
+https://app.iliospower.com
+the current Replit app domain if needed
+
+Development should allow:
+
+local frontend origin
+Replit dev domain if available from env
+
+Recommended behavior:
+
+Use an env var such as CORS_ALLOWED_ORIGINS, comma-separated.
+If unset in production, default to https://app.iliospower.com.
+If unset in development, default to reasonable dev origins.
+Keep allow_credentials=True.
+Restrict methods to GET, POST, PUT, PATCH, DELETE, OPTIONS.
+Keep headers broad for now if needed.
+
+Acceptance criteria:
+
+Production no longer uses wildcard CORS.
+Malicious/unknown origins do not receive permissive CORS headers.
+The production frontend still works.
+The development frontend still works.
+4. Add security headers middleware
+
+Add lightweight middleware that sets:
+
+Strict-Transport-Security: max-age=63072000; includeSubDomains
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Referrer-Policy: strict-origin-when-cross-origin
+
+Optional if safe:
+
+Add a conservative Permissions-Policy.
+
+Do not add a strict CSP yet unless you fully verify the React bundle and Material UI behavior. CSP can be a later hardening sprint.
+
+Acceptance criteria:
+
+curl -I https://app.iliospower.com/ shows the new headers.
+App still loads normally.
+App is not embeddable in an iframe.
+5. Add frontend Root ErrorBoundary
+
+Add a React root-level error boundary.
+
+Likely files:
+
+frontend/rea-investment-fe/src/index.tsx
+new file: frontend/rea-investment-fe/src/components/RootErrorBoundary.tsx
+
+Behavior:
+
+Catch render-time errors.
+Show a friendly fallback:
+“Something went wrong.”
+“Please refresh the page.”
+Optional support message.
+Log the error to console for now.
+Do not add Sentry in this sprint.
+
+Acceptance criteria:
+
+A forced render error in dev shows the fallback instead of a white screen.
+Normal app routing and login still work.
+No layout regressions.
+6. Create operations runbook
+
+Create:
+
+docs/RUNBOOK.md
+
+Include at least:
+
+Production deployment checklist
+Environment variable checklist
+How to confirm production boot
+How to confirm DB migration status
+How to run smoke tests
+How to roll back code using Replit/checkpoints
+How to think about DB rollback/snapshots
+How to grant/revoke global admin
+How to avoid running demo seed scripts in production
+What happens if secret_key is rotated
+What happens if telemetry credentials are in-memory
+Known current limitations:
+QuickBooks is not implemented yet.
+Telemetry credentials are not durable in production yet.
+JWT is still stored in localStorage.
+Login rate limiting/account lockout is next sprint.
+
+Acceptance criteria:
+
+Runbook is specific enough for a team member who did not build the app.
+It includes exact commands where known.
+It clearly separates development, staging, and production behavior.
+7. Add production smoke test script
+
+Create:
+
+backend/ilios-server/scripts/smoke_test_prod.py
+
+Behavior:
+
+Accept base URL as argument, defaulting to https://app.iliospower.com.
+Check /health.
+Optionally test login only if username/password env vars are provided.
+If login env vars are missing, skip login test with a clear message.
+If login succeeds, call a basic authenticated endpoint such as /api/auth/me if available.
+Exit nonzero on failed required checks.
+Do not print credentials or tokens.
+
+Suggested env vars:
+
+ILIOS_SMOKE_USERNAME
+ILIOS_SMOKE_PASSWORD
+
+Acceptance criteria:
+
+Script can run safely after every deploy.
+Script returns nonzero if health fails.
+Script skips auth check safely when credentials are not provided.
+Runbook documents usage.
+Explicitly Out of Scope
+
+Do not implement:
+
+QuickBooks OAuth or provider
+Login rate limiting/account lockout
+JWT-to-cookie migration
+MFA
+Sentry
+Telemetry credential migration
+Schema changes
+Broad RBAC refactors
+New dashboards
+External-user onboarding changes
+Validation Required
+
+After implementation, run:
+
+Backend startup validation.
+Frontend build.
+Existing tests if available.
+Manual CORS check.
+Header check with curl -I.
+Demo seed-script refusal test.
+Smoke test script against the production URL, or document why it could not be run.
+Response Format
+
+When complete, respond with:
+
+Files changed
+Summary of each implemented task
+Validation results
+Any errors or warnings
+Whether the app is now safer for first internal users
+Recommended next sprint
+
+Do not overstate readiness. This sprint does not make the app ready for external users.
