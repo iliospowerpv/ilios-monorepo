@@ -47,3 +47,9 @@ id = "6BzeKUgVhLr-bpl6J5zBi"
 uri = "file://data/demo/sample_documents/Desert_Bloom_PVSyst_As_Built_Report.pdf"
 type = "pdf"
 title = "Desert Bloom - PVSyst As-Built Report"
+
+[[outputs]]
+id = "6qT1eO3qqvFpfolVWt6hc"
+uri = "file://ILIOS_STYLE_GUIDE.md"
+type = "text"
+title = "iliOS Visual Style Guide"
