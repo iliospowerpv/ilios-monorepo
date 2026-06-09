@@ -260,6 +260,8 @@ class TelemetrySiteMapping(Base):
         ForeignKey("das_connections.id", ondelete="SET NULL"),
         nullable=True,
     )
+    company_id = Column(Integer, ForeignKey("companies.id", ondelete="SET NULL"), nullable=True)
+    created_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     mapping_role = Column(String(32), nullable=False, default="primary", server_default="primary")
     is_active = Column(Boolean, nullable=False, default=True, server_default="true")
 

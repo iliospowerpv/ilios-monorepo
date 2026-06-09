@@ -40,9 +40,9 @@ import type {
   TelemetryReadinessResponse,
   Connection,
   TelemetryDevice,
-  DeviceMapping,
-  CreateSiteMappingAttributes
+  DeviceMapping
 } from '../../../../../../api/connections';
+import type { SiteMappingSavePayload } from '../../../../../../types/telemetryV2';
 import { ConfirmationModal } from '../../../../../../components/modals/ConfirmationModal/ConfirmationModal';
 import { EditConnectionDialog, ConnectionToEdit } from './EditConnectionDialog';
 
@@ -230,12 +230,14 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
     }
   });
 
-  const createSiteMappingMutation = useMutation({
-    mutationFn: (attrs: CreateSiteMappingAttributes) => ApiClient.connections.createSiteMapping(siteDetails.id, attrs)
-  });
-
-  const updateSiteMappingMutation = useMutation({
-    mutationFn: (attrs: CreateSiteMappingAttributes) => ApiClient.connections.updateSiteMapping(siteDetails.id, attrs)
+  // V2 (DB-only) site mapping save. Upserts the mapping in the iliOS DB and
+  // does not require a live provider call or any GCP/Firestore sync.
+  const saveSiteMappingMutation = useMutation({
+    mutationFn: (payload: SiteMappingSavePayload) => ApiClient.telemetryV2.saveSiteMapping(siteDetails.id, payload),
+    onSuccess: () => {
+      // Refresh the readiness strip so the new mapping is reflected immediately.
+      queryClient.invalidateQueries({ queryKey: ['telemetry-readiness', siteDetails.id] });
+    }
   });
 
   const bulkMapDevicesMutation = useMutation({
@@ -298,19 +300,19 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
         setError('Please select a DAS site to map');
         return;
       }
+      if (!selectedConnectionId) {
+        setError('Please select a connection before mapping a site');
+        return;
+      }
       try {
-        const mappingPayload: CreateSiteMappingAttributes = {
-          connection_id: selectedConnectionId as number,
-          telemetry_site_id: selectedDasSite.id,
-          telemetry_site_name: selectedDasSite.name
-        };
-        if (readiness?.is_site_mapped) {
-          await updateSiteMappingMutation.mutateAsync(mappingPayload);
-        } else {
-          await createSiteMappingMutation.mutateAsync(mappingPayload);
-        }
+        // Upsert handles both first-time mapping and re-mapping, so there is no
+        // need to branch on readiness.is_site_mapped.
+        await saveSiteMappingMutation.mutateAsync({
+          provider_account_id: selectedConnectionId,
+          external_site_id: selectedDasSite.id
+        });
       } catch (err: unknown) {
-        setError((err as Error).message || 'Failed to map site');
+        setError(getApiErrorMessage(err, 'Failed to map site'));
         return;
       }
     }

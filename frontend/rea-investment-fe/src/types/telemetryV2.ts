@@ -127,3 +127,30 @@ export interface SyncSitesResponse {
   missing_count: number;
   error: string | null;
 }
+
+/**
+ * Payload for the V2 (DB-only) project/site mapping save. The mapping is keyed
+ * on `{provider_account_id, external_site_id}`; the display name is resolved
+ * server-side from the iliOS external-site cache, so no live provider call is
+ * required when the site has already been synced.
+ */
+export interface SiteMappingSavePayload {
+  provider_account_id: number;
+  external_site_id: string;
+  mapping_role?: string;
+}
+
+export interface SiteMappingResponse {
+  id: number;
+  site_id: number | null;
+  company_id: number | null;
+  connection_id: number | null;
+  provider_account_id: number | null;
+  telemetry_site_id: string;
+  telemetry_site_name: string;
+  mapping_role: string;
+  is_active: boolean;
+  created_by_user_id: number | null;
+  created_at: string | null;
+  updated_at: string | null;
+}

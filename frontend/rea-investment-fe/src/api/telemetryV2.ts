@@ -10,6 +10,8 @@ import type {
   ProviderAccountList,
   ProviderAccountUpdatePayload,
   ProviderCatalogList,
+  SiteMappingResponse,
+  SiteMappingSavePayload,
   SyncSitesResponse,
   TestAccountResponse
 } from '../types/telemetryV2';
@@ -110,6 +112,17 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     return data;
   };
 
+  /**
+   * Create or update the project/site -> external-site mapping in the iliOS DB.
+   * This is the V2 (DB-only) save path: it does not require a live provider call
+   * or any GCP/Firestore sync. The selected external site must already exist in
+   * the synced cache for the connection.
+   */
+  const saveSiteMapping = async (siteId: number, payload: SiteMappingSavePayload): Promise<SiteMappingResponse> => {
+    const { data } = await httpClient.put<SiteMappingResponse>(`${V2}/sites/${siteId}/mapping`, payload);
+    return data;
+  };
+
   return {
     getCatalog,
     listLicensedProviders,
@@ -122,7 +135,8 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     archiveProviderAccount,
     testProviderAccount,
     syncProviderAccountSites,
-    listExternalSites
+    listExternalSites,
+    saveSiteMapping
   };
 };
 

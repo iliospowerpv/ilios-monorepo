@@ -125,7 +125,11 @@ class Settings(BaseSettings):
     telemetry_device_static_info_func_url: str
 
     # Google Secrets settings
-    gcp_project_id: int
+    # A GCP project id is a string (e.g. "ilios-prod-telemetry"). Optional so the
+    # app still boots when GCP Secret Manager is not configured (dev uses the
+    # in-memory credential backend); callers already treat an absent value as
+    # "GCP not configured" via getattr(settings, "gcp_project_id", None).
+    gcp_project_id: Optional[str] = None
 
     # AI parsing config
     ai_parsing_config_path: Optional[str] = "configs/ai_parsing_config.json"

@@ -11,15 +11,19 @@ import secrets
 from datetime import datetime, timezone
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.db.session import get_session
 from app.helpers.authentication import get_current_user
+from app.helpers.authorization import AuthorizedUser, SettingsPermissions
 from app.helpers.authorization.module_based.telemetry import (
     telemetry_admin_required,
     user_has_telemetry_admin,
+)
+from app.helpers.authorization.project_access import (
+    get_authorized_site_with_company_admin,
 )
 from app.integrations.telemetry import (
     CredentialError,
@@ -49,6 +53,8 @@ from app.models.telemetry import (
     TelemetryProviderCatalog,
     TelemetrySiteMapping,
 )
+from app.models.site import Site
+from app.static import PermissionsActions
 from app.schema.telemetry_v2 import (
     ExternalSiteList,
     ExternalSiteResponse,
@@ -61,6 +67,8 @@ from app.schema.telemetry_v2 import (
     ProviderAccountUpdateRequest,
     ProviderCatalogEntry,
     ProviderCatalogList,
+    SiteMappingCreateRequest,
+    SiteMappingResponse,
     SyncSitesResponse,
     TestAccountResponse,
 )
@@ -1119,3 +1127,127 @@ def list_external_sites(
         last_sync_status=account.last_sync_status,
         last_success_at=account.last_success_at,
     )
+
+
+# ---------------------------------------------------------------------------
+# Site mapping (project <-> external site) -- DB-only, no legacy GCP/Firestore
+# ---------------------------------------------------------------------------
+
+
+@telemetry_v2_router.put(
+    "/v2/sites/{site_id}/mapping",
+    response_model=SiteMappingResponse,
+    summary="Create or update a project/site telemetry mapping (V2, DB-only)",
+    dependencies=[Depends(AuthorizedUser(SettingsPermissions(PermissionsActions.edit)))],
+)
+def upsert_site_mapping(
+    payload: SiteMappingCreateRequest,
+    request: Request,
+    site: Annotated[Site, Depends(get_authorized_site_with_company_admin)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> SiteMappingResponse:
+    """Persist a project/site -> external-site mapping directly in iliOS.
+
+    This is the V2 (DB-backed) save path. It deliberately does **not** call the
+    external provider and does **not** touch any GCP / Firestore pipeline:
+
+    - The external site must already exist in the iliOS sync cache
+      (``telemetry_external_sites``); the display name is read from there
+      instead of making a live provider call.
+    - GCP is only ever used for durable credential storage (Secret Manager),
+      never as part of this mapping save.
+    - The write is additive and scoped to ``{company_id, provider_account_id,
+      external_site_id, site_id, created_by, timestamps}``. Existing mappings
+      are upserted in place; nothing is wiped on any downstream/provider error,
+      because no such call is made here.
+    """
+    # 1. Resolve + authorize the provider account (scoped to the caller's companies).
+    account, _ = _require_account(db, payload.provider_account_id, current_user)
+
+    # 2. The provider account must belong to the same company as the project/site.
+    if account.company_id != site.company_id:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Provider account does not belong to this project's company.",
+        )
+
+    # 3. The external site must already be in the iliOS cache. We never make a
+    #    live provider call here; if it is missing the user must sync first.
+    external = (
+        db.query(TelemetryExternalSite)
+        .filter(
+            TelemetryExternalSite.provider_account_id == account.id,
+            TelemetryExternalSite.external_site_id == payload.external_site_id,
+        )
+        .first()
+    )
+    if external is None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            "Selected site is not in the synced site cache for this connection. "
+            "Sync sites for the connection and try again.",
+        )
+
+    site_name = external.external_site_name or external.external_site_id
+    mapping_role = (payload.mapping_role or "primary").strip() or "primary"
+    now = _utcnow()
+
+    # 4. Upsert the mapping. ``site_id`` is unique, so there is at most one row.
+    mapping = (
+        db.query(TelemetrySiteMapping)
+        .filter(TelemetrySiteMapping.site_id == site.id)
+        .first()
+    )
+    created = mapping is None
+    if mapping is None:
+        mapping = TelemetrySiteMapping(
+            site_id=site.id,
+            company_id=site.company_id,
+            connection_id=account.id,
+            provider_account_id=account.id,
+            telemetry_site_id=external.external_site_id,
+            telemetry_site_name=site_name,
+            mapping_role=mapping_role,
+            is_active=True,
+            created_by_user_id=getattr(current_user, "id", None),
+        )
+        db.add(mapping)
+    else:
+        mapping.company_id = site.company_id
+        mapping.connection_id = account.id
+        mapping.provider_account_id = account.id
+        mapping.telemetry_site_id = external.external_site_id
+        mapping.telemetry_site_name = site_name
+        mapping.mapping_role = mapping_role
+        mapping.is_active = True
+        mapping.updated_at = now
+
+    db.commit()
+    db.refresh(mapping)
+
+    logger.info(
+        "telemetry_v2_site_mapping_saved site_id=%s account_id=%s external_site_id=%s created=%s",
+        site.id,
+        account.id,
+        external.external_site_id,
+        created,
+    )
+
+    # Best-effort audit trail; never blocks or rolls back the saved mapping.
+    try:
+        from app.routers.telemetry.telemetry import _create_audit_log
+
+        _create_audit_log(
+            request,
+            db,
+            "telemetry_v2_site_mapping_saved" if created else "telemetry_v2_site_mapping_updated",
+            (
+                f"Mapped project/site {site.id} to external site "
+                f"{external.external_site_id} via provider account {account.id}"
+            ),
+        )
+    except Exception:  # noqa: BLE001
+        logger.warning("telemetry_v2_site_mapping_audit_failed site_id=%s", site.id)
+
+    return SiteMappingResponse.model_validate(mapping)

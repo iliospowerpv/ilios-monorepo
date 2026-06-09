@@ -1,1 +1,1 @@
-- [Telemetry wizard GCP dependency](telemetry-wizard-gcp-dependency.md) — two telemetry stacks share das_connections; v1 reads/saves need live GCP, V2 is DB-backed; wizard Site-Mapping list now uses V2, save still v1/Firestore.
+- [Telemetry wizard GCP dependency](telemetry-wizard-gcp-dependency.md) — v1 telemetry needs live GCP, V2 is DB-backed (shared das_connections); wizard site-mapping now fully V2, device-mapping still v1.

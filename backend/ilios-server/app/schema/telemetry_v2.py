@@ -211,9 +211,15 @@ class SyncSitesResponse(BaseModel):
 
 
 class SiteMappingCreateRequest(BaseModel):
-    site_id: int
+    """Body for the V2 (DB-only) project/site mapping save.
+
+    The mapping is keyed on ``{provider_account_id, external_site_id}``; the
+    display name is resolved server-side from the iliOS external-site cache, so
+    no live provider call is needed when the site has already been synced.
+    """
+
+    provider_account_id: int
     external_site_id: str = Field(min_length=1, max_length=255)
-    external_site_name: str = Field(min_length=1, max_length=512)
     mapping_role: str = Field(default="primary", max_length=32)
 
 
@@ -222,11 +228,16 @@ class SiteMappingResponse(BaseModel):
 
     id: int
     site_id: Optional[int]
+    company_id: Optional[int] = None
+    connection_id: Optional[int] = None
     provider_account_id: Optional[int]
     telemetry_site_id: str
     telemetry_site_name: str
     mapping_role: str = "primary"
     is_active: bool = True
+    created_by_user_id: Optional[int] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
 class SiteMappingList(BaseModel):
