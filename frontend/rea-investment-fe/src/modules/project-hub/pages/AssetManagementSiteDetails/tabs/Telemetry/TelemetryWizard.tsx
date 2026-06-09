@@ -160,16 +160,28 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
     return null;
   }, [connectionMode, selectedConnectionId, allConnections]);
 
-  const { data: dasSites, isLoading: isLoadingDasSites } = useQuery({
+  const {
+    data: dasSites,
+    isLoading: isLoadingDasSites,
+    isError: isDasSitesError,
+    error: dasSitesError
+  } = useQuery({
     queryKey: ['das-sites', companyId, selectedConnectionId],
     queryFn: () => ApiClient.connections.getSites(companyId as number, selectedConnectionId as number),
-    enabled: !!companyId && !!selectedConnectionId && activeStep >= 1
+    enabled: !!companyId && !!selectedConnectionId && activeStep >= 1,
+    retry: 1
   });
 
-  const { data: dasDevices, isLoading: isLoadingDasDevices } = useQuery({
+  const {
+    data: dasDevices,
+    isLoading: isLoadingDasDevices,
+    isError: isDasDevicesError,
+    error: dasDevicesError
+  } = useQuery({
     queryKey: ['das-devices', siteDetails.id],
     queryFn: () => ApiClient.connections.getTelemetryDevices(siteDetails.id),
-    enabled: !!siteDetails.id && !!selectedDasSite && activeStep >= 2
+    enabled: !!siteDetails.id && !!selectedDasSite && activeStep >= 2,
+    retry: 1
   });
 
   const { data: eligibleDevices, isLoading: isLoadingEligibleDevices } = useQuery({
@@ -358,6 +370,17 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
         return next;
       });
     }
+  };
+
+  const getApiErrorMessage = (err: unknown, fallback: string): string => {
+    if (err instanceof AxiosError) {
+      const detail = err.response?.data?.detail;
+      const message = err.response?.data?.message;
+      if (typeof detail === 'string') return detail;
+      if (typeof message === 'string') return message;
+      return err.message || fallback;
+    }
+    return (err as Error)?.message || fallback;
   };
 
   const renderStepContent = () => {
@@ -608,6 +631,17 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
             </Typography>
             {isLoadingDasSites ? (
               <CircularProgress />
+            ) : isDasSitesError ? (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {getApiErrorMessage(
+                  dasSitesError,
+                  'Unable to fetch sites from the DAS provider. Check the connection credentials and try again.'
+                )}
+              </Alert>
+            ) : (dasSites?.items?.length || 0) === 0 ? (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                No sites were returned by the DAS provider for this connection.
+              </Alert>
             ) : (
               <SearchableSelect
                 options={(dasSites?.items || []).map(site => ({
@@ -639,6 +673,13 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
 
             {isLoadingEligibleDevices || isLoadingDasDevices ? (
               <CircularProgress />
+            ) : isDasDevicesError ? (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {getApiErrorMessage(
+                  dasDevicesError,
+                  'Unable to fetch devices from the DAS provider. Check the connection credentials and try again.'
+                )}
+              </Alert>
             ) : (
               <TableContainer component={Paper} sx={{ maxHeight: 400 }}>
                 <Table stickyHeader size="small">

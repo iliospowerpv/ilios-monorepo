@@ -1,0 +1,1 @@
+- [Telemetry wizard GCP dependency](telemetry-wizard-gcp-dependency.md) — site-level wizard uses legacy v1 endpoints needing GCP Secret Manager ADC; 502s silently without creds (e.g. dev).
