@@ -35,6 +35,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 import { ApiClient } from '../../../../../../api';
 import type { SiteDetailedInfo } from '../../../../../../api';
+import { useExternalSites } from '../../../../../../hooks/telemetryV2';
 import type {
   TelemetryReadinessResponse,
   Connection,
@@ -165,10 +166,8 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
     isLoading: isLoadingDasSites,
     isError: isDasSitesError,
     error: dasSitesError
-  } = useQuery({
-    queryKey: ['das-sites', companyId, selectedConnectionId],
-    queryFn: () => ApiClient.connections.getSites(companyId as number, selectedConnectionId as number),
-    enabled: !!companyId && !!selectedConnectionId && activeStep >= 1,
+  } = useExternalSites(selectedConnectionId, {
+    enabled: !!selectedConnectionId && activeStep >= 1,
     retry: 1
   });
 
@@ -633,26 +632,27 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
               <CircularProgress />
             ) : isDasSitesError ? (
               <Alert severity="error" sx={{ mb: 2 }}>
-                {getApiErrorMessage(
-                  dasSitesError,
-                  'Unable to fetch sites from the DAS provider. Check the connection credentials and try again.'
-                )}
+                {getApiErrorMessage(dasSitesError, 'Unable to load sites for this account. Please try again.')}
               </Alert>
             ) : (dasSites?.items?.length || 0) === 0 ? (
               <Alert severity="info" sx={{ mb: 2 }}>
-                No sites were returned by the DAS provider for this connection.
+                No sites have been synced for this account yet. Sync sites for this provider account in the company
+                telemetry settings, then return here.
               </Alert>
             ) : (
               <SearchableSelect
                 options={(dasSites?.items || []).map(site => ({
-                  label: site.name,
-                  value: String(site.id)
+                  label: site.external_site_name || site.external_site_id,
+                  value: site.external_site_id
                 }))}
                 value={selectedDasSite?.id || null}
                 onChange={val => {
-                  const site = dasSites?.items.find(s => String(s.id) === val);
+                  const site = dasSites?.items.find(s => s.external_site_id === val);
                   if (site) {
-                    setSelectedDasSite({ id: String(site.id), name: site.name });
+                    setSelectedDasSite({
+                      id: site.external_site_id,
+                      name: site.external_site_name || site.external_site_id
+                    });
                   }
                 }}
                 label="DAS Site"

@@ -1,28 +1,38 @@
 ---
 name: Telemetry wizard GCP dependency
-description: Why the site-level Telemetry Setup Wizard's Site/Device Mapping steps fail (spin/blank) in environments without GCP credentials.
+description: Which telemetry flows need live GCP (Secret Manager / Firestore) vs. the DB-backed V2 path, and how that shapes the project-level Telemetry Setup Wizard.
 ---
 
-# Telemetry Setup Wizard depends on GCP Secret Manager (legacy v1 path)
+# Telemetry: two systems, and the wizard straddles both
 
-The **site-level** Telemetry Setup Wizard's "Site Mapping" and "Device Mapping" steps
-call the **legacy v1** telemetry endpoints (e.g. `GET /api/telemetry/companies/{id}/connections/{id}/sites`).
-That handler constructs `GCPSecretsManager()` → `SecretManagerServiceClient()` to read the
-DAS provider token, which requires **GCP Application Default Credentials**. In any environment
-without GCP ADC (notably dev, and prod until `GOOGLE_APPLICATION_CREDENTIALS_JSON` is set), this
-raises `DefaultCredentialsError` and the endpoint returns **502**.
+There are two coexisting telemetry stacks that share the **same `das_connections` table**
+(a v1 "connection" row and a v2 "provider account" row are the *same* row / same id):
 
-**Why this matters:** With the app's default React Query config (`new QueryClient()`, no
-defaultOptions → `retry: 3` + exponential backoff), a failing fetch spins ~7s, then the step
-historically rendered a blank dropdown because the query's `isError`/`error` were never read —
-i.e. a *silent* failure that looks like "spins and shows nothing." Always surface query errors
-in multi-step wizards; don't assume data-only rendering.
+- **Legacy v1** — live provider calls gated on **GCP Secret Manager** for credentials and
+  **Firestore** for ingestion config (and **BigQuery** for readiness). Fails hard in any
+  environment without GCP Application Default Credentials (dev, and prod until ADC is set):
+  `google.auth.default()` raises `DefaultCredentialsError`.
+- **V2** — provider accounts + external-sites, **DB-backed** with a credential-store that has a
+  non-GCP fallback. Test + sync-sites + list external-sites all work without live GCP. This is
+  why a user can sync 71 sites at the company level while the v1 live-fetch 502s.
 
-**Two telemetry systems coexist:**
-- **Legacy v1** — `connections` + `get_connection_remote_sites`, live calls gated on GCP Secret Manager. Used by the site-level wizard.
-- **V2** — `provider-accounts` + `external-sites`, DB-backed (`TelemetryExternalSite` table), works without live GCP. Used by portfolio-admin. Returns 200 even when v1 502s.
+## The project-level Telemetry Setup Wizard
+- **Site Mapping (list):** now reads the already-synced sites from the **V2 external-sites**
+  endpoint (DB-backed). Because connection_id == provider_account_id, the wizard's selected
+  connection id is passed straight through as the v2 account id.
+- **Save path (still v1/GCP):** creating/updating a site mapping writes SQL **then** calls
+  Firestore, and on *any* Firestore failure it **rolls back the SQL row and re-raises**. So the
+  save fails without GCP even though the list now works. Device Mapping (list + bulk save) is
+  likewise v1/GCP-dependent.
 
-**How to apply:** If telemetry site/device mapping "doesn't work" in dev or a fresh prod, suspect
-missing GCP ADC first (check logs for `DefaultCredentialsError`), not app logic. The strategic fix
-to make the wizard work without GCP is to migrate its Site Mapping step onto the V2 `external-sites`
-endpoint; the stopgap is configuring GCP credentials.
+**Why it matters / how to apply:**
+- If telemetry mapping "spins and shows nothing," suspect the v1 live-fetch hitting missing GCP
+  ADC; the DB-backed V2 path is the fix for *reads*.
+- Always surface React Query `isError`/`error` in multi-step wizards — the original silent
+  failure was a query whose error was never read (default retry:3 → ~7s spinner → blank).
+- Making the wizard's *save* work without GCP is a product decision (make Firestore sync
+  best-effort vs. build a V2 DB-only mapping endpoint vs. configure GCP creds) — it changes
+  production write semantics, so confirm direction before changing it.
+- v2's `_require_account` auth is stricter than v1's hub-aware `get_hub_connections`: a
+  portfolio-shared connection owned by a hub company the user can't directly access will 404 on
+  external-sites. Fine for company-owned accounts; revisit if portfolio-shared must work.

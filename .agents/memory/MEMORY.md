@@ -1,1 +1,1 @@
-- [Telemetry wizard GCP dependency](telemetry-wizard-gcp-dependency.md) — site-level wizard uses legacy v1 endpoints needing GCP Secret Manager ADC; 502s silently without creds (e.g. dev).
+- [Telemetry wizard GCP dependency](telemetry-wizard-gcp-dependency.md) — two telemetry stacks share das_connections; v1 reads/saves need live GCP, V2 is DB-backed; wizard Site-Mapping list now uses V2, save still v1/Firestore.
