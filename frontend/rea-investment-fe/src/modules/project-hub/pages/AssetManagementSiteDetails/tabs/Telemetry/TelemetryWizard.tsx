@@ -375,6 +375,16 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
           external_device_id: deviceMappings[deviceId].telemetry_device_id
         }));
 
+      // Guard against silently advancing with unsaved work: if DAS devices were
+      // picked but every row ended up unchecked (e.g. the header select-all was
+      // cleared after picking), surface an error instead of skipping the save.
+      if (mappingsToCreate.length === 0 && Object.keys(deviceMappings).length > 0) {
+        setError(
+          'You picked DAS devices but no rows are checked. Check the rows you want to map (or clear the DAS device selections) before continuing.'
+        );
+        return;
+      }
+
       if (mappingsToCreate.length > 0) {
         if (!selectedConnectionId || !selectedDasSite) {
           setError('Please select a connection and DAS site before mapping devices');
@@ -431,10 +441,24 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
           telemetry_device_name: selection.name
         }
       }));
+      // Picking a DAS device is the mapping intent: auto-select the row so the
+      // mapping is actually persisted on "Next" (the save payload is the
+      // intersection of selectedDevices and deviceMappings).
+      setSelectedDevices(prev => {
+        const next = new Set(prev);
+        next.add(deviceId);
+        return next;
+      });
     } else {
       setDeviceMappings(prev => {
         const next = { ...prev };
         delete next[deviceId];
+        return next;
+      });
+      // Clearing the DAS device unmaps the row; drop it from the selection too.
+      setSelectedDevices(prev => {
+        const next = new Set(prev);
+        next.delete(deviceId);
         return next;
       });
     }
