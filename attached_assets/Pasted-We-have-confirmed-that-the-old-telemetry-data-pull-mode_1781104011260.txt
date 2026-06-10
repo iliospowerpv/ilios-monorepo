@@ -1,0 +1,203 @@
+We have confirmed that the old telemetry data pull model was not actually a native scheduler or ingestion system. It referenced legacy BigQuery-oriented setup and does not match the new V2 telemetry hierarchy.
+
+We need to design and implement a native Ilios V2 telemetry ingestion and rollup architecture.
+
+Current validated V2 setup layer:
+- Company-level provider credentials are stored durably in GCP Secret Manager.
+- AlsoEnergy credentials test successfully after restart.
+- External sites sync successfully.
+- Project/site mapping is DB-backed.
+- External devices sync successfully.
+- Project-device mapping is DB-backed.
+- Legacy GCP/Firestore/project-level DAS credential flow should not be revived.
+
+Objective:
+Build the native V2 telemetry operations layer:
+- user-triggered manual telemetry refresh
+- scheduled telemetry pulls
+- normalized telemetry readings storage
+- sync job tracking
+- scheduler state
+- site/company/portfolio rollup strategy
+- provider/account/site/device hierarchy preservation
+- bounded backfill support later
+
+Important product requirement:
+The manual pull should be implemented as a reusable user-facing Refresh Telemetry action, not just as a developer endpoint. Users should be able to trigger a refresh instead of waiting for the scheduled pull. For phase 1, implement refresh for a single mapped site. Design it so later we can reuse the same pattern for company-level refresh and portfolio-level refresh.
+
+Do not use the old BigQuery path as the canonical ingestion path.
+Do not revive legacy project-level DAS credentials.
+Do not use old Cloud Functions or Firestore.
+Do not change GCP Secret Manager credential storage.
+Do not overwrite site/device mappings.
+Do not auto-create project assets in this task.
+Do not build full dashboards in this task unless needed only for validation.
+
+Required hierarchy:
+Company
+→ provider account / das_connection
+→ external provider site
+→ Ilios project/site mapping
+→ external provider device
+→ Ilios project device mapping
+→ normalized telemetry readings
+→ site rollups
+→ company rollups
+→ portfolio rollups
+
+Please perform a design-first implementation.
+
+Phase 1: Discovery / Code Audit
+
+1. Identify all current telemetry data-pull, BigQuery, scheduler, and legacy DAS references.
+2. Identify what data models already exist for telemetry readings, if any.
+3. Identify whether any existing tables can be reused safely.
+4. Identify current dashboard/reporting assumptions that expect telemetry data.
+5. Identify the current AlsoEnergy API methods available for time-series/site/device readings.
+6. Confirm required provider API endpoints for:
+   - site-level readings
+   - device-level readings
+   - meter readings
+   - inverter readings
+   - weather/irradiance readings, if available
+7. Return a design before coding.
+
+Phase 2: Proposed DB model
+
+Propose migrations for the minimum ingestion layer:
+
+1. telemetry_sync_jobs
+2. telemetry_readings or equivalent normalized readings table
+3. telemetry_metric_catalog or provider metric mapping table
+4. telemetry_scheduler_state
+
+Each reading must preserve:
+- company_id
+- provider_account_id
+- external_site_id
+- Ilios site/project id
+- external_device_id, nullable
+- Ilios device id, nullable
+- provider key
+- provider metric/point id
+- normalized metric name
+- timestamp
+- value
+- unit
+- quality/status if available
+- sync_job_id
+- created_at
+
+Also propose, but do not necessarily fully implement unless low-risk:
+
+5. telemetry_site_interval_rollups
+6. telemetry_device_interval_rollups
+7. telemetry_company_rollups
+8. telemetry_portfolio_rollups, or a design-compatible placeholder if portfolio is not yet a formal entity
+
+Rollups should support dashboards and reporting without recalculating all raw readings on every page load.
+
+Phase 3: Manual Refresh First
+
+Implement the first user-facing refresh path before scheduler automation:
+
+Backend:
+POST /api/telemetry/v2/sites/{site_id}/refresh-readings
+
+Requirements:
+- Uses company-level provider account credentials from GCP Secret Manager.
+- Requires an existing project/site mapping.
+- Uses external site/device cache and device mappings where available.
+- Pulls a bounded time window, default last 24 hours or provider-safe equivalent.
+- Normalizes provider readings.
+- Writes readings to Ilios DB idempotently.
+- Creates telemetry_sync_jobs row.
+- Updates scheduler/refresh state if applicable.
+- Triggers or prepares site-level rollup calculation for the pulled window.
+- Returns records requested/received/written, rollup status, provider errors, and last refreshed timestamp.
+- Does not wipe mappings, cached devices, or previous readings on failure.
+
+Frontend:
+Add a reusable Refresh Telemetry button/component that can be placed in multiple areas later.
+
+Phase 1 UI placement:
+- Site/project telemetry setup or telemetry status area for a mapped site.
+
+Button behavior:
+- Shows disabled state if credentials are not verified.
+- Shows disabled state if site is not mapped.
+- Shows progress while refresh is running.
+- Shows last refreshed timestamp.
+- Shows success count after completion.
+- Shows actionable error if provider fails.
+- Does not imply cached data was deleted on provider failure.
+
+Design the component so it can later support:
+- refresh this site
+- refresh all company sites
+- refresh portfolio
+
+Phase 4: Rollup / Transformation Layer
+
+Design the app-owned calculation layer.
+
+Requirements:
+- Raw/normalized readings remain source-of-truth for telemetry ingestion.
+- Rollups are derived tables used for dashboards/reporting.
+- Site rollups aggregate readings by site and time bucket.
+- Device rollups aggregate readings by mapped device and time bucket.
+- Company rollups aggregate mapped site rollups by company.
+- Portfolio rollups aggregate company/site rollups later.
+- Rollups must track calculated_at and data completeness.
+- Failed rollup calculation should not delete raw readings.
+- Recalculation should be idempotent for a time window.
+
+For first implementation, at minimum:
+- calculate and store site-level rollup for the refresh window, or
+- provide a clearly separated rollup service with a documented stub if readings schema must be validated first.
+
+Phase 5: Scheduler
+
+After manual refresh is validated:
+- Add scheduler state per mapped site/provider account.
+- Add enabled/disabled flag and cadence.
+- Run safe scheduled pulls hourly by default.
+- Use the same ingestion service as manual Refresh Telemetry.
+- Advance last_successful_pull_at only after successful write and rollup.
+- Do not create overlapping jobs for the same provider account/site.
+- Log partial failures without deleting data.
+- Add admin/status endpoint for scheduler health.
+
+Phase 6: Backfill Later
+
+Backfill should be manual, bounded, and explicit:
+- last 7 days
+- last 30 days
+- custom range
+
+No automatic large historical backfill in the first implementation.
+
+Validation required:
+1. Manual Refresh Telemetry works for 110 Shawmut.
+2. Readings are written with correct company/provider/site/device hierarchy.
+3. Device-mapped readings link to Ilios devices where mappings exist.
+4. Unmapped readings are retained with external_device_id and null Ilios device id.
+5. Restart does not lose scheduler state or credentials.
+6. Failed provider call creates failed sync job but does not wipe cache/mappings/readings.
+7. Refresh button shows clear success/failure/last refreshed state.
+8. Site-level rollup is calculated or the rollup service boundary is validated.
+9. Company/portfolio rollup design is documented and compatible with future dashboards.
+10. Scheduled run can later pull the next window without duplication.
+11. No old BigQuery/legacy project credential path is used.
+12. No secrets or tokens are logged.
+
+Return before coding:
+- existing code audit findings
+- proposed schema
+- proposed endpoints
+- proposed Refresh Telemetry UI placement/component design
+- provider API assumptions
+- rollup strategy
+- scheduler strategy
+- implementation plan
+- risks
