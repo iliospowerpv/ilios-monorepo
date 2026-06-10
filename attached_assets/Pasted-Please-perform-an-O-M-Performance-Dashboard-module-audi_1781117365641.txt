@@ -1,0 +1,52 @@
+Please perform an O&M Performance Dashboard module audit before making further changes.
+
+Goal:
+We need to understand what each widget is intended to show, what data source it currently uses, what V2 data is now available, and what remains missing.
+
+Current observed state:
+- Production card shows V2 actual production, but expected is 0.
+- Actual Production vs Expected chart shows the V2 Actual line, but Expected is blank.
+- Past Performance shows daily 0%.
+- Devices summary shows device counts.
+- Inverters Actual Production shows inverter tiles but values are 0 and color/performance indicators are not meaningful yet.
+
+Please audit the following components:
+- Production summary card
+- Actual Production vs Expected chart
+- Past Performance
+- Devices summary
+- Inverters Actual Production
+
+For each component, return:
+1. component file name
+2. backend endpoint called
+3. current data source: V2 PostgreSQL, BigQuery, project DB, or mixed
+4. intended business meaning
+5. required input data
+6. which inputs are currently available
+7. which inputs are missing
+8. whether the component requires expected/projected baseline data
+9. whether the component requires device-level telemetry mappings
+10. why the current screenshot shows blank/0/missing values
+11. proposed V2-compatible fix
+12. whether fix should be immediate or parked for a later sprint
+
+Special focus:
+Expected/projected baseline:
+- Identify exactly where expected/projected values currently come from.
+- Determine whether they are legacy BigQuery, site design, due diligence, onboarding data, or hardcoded assumptions.
+- Determine whether site 4 / 110 Shawmut has any expected/projected baseline.
+- Do not invent expected values.
+- Do not derive expected values from actual telemetry.
+- If expected baseline is missing, UI should show “Expected baseline not available” rather than 0.00 or 0%.
+
+Inverter/device performance:
+- Identify what drives tile values and colors.
+- Determine whether device-level V2 rollups exist for mapped inverters.
+- Determine whether the component is reading V2 device rollups or legacy BigQuery.
+- Determine what rules should drive green/yellow/red/gray status.
+- If expected or threshold data is missing, use a neutral/no-baseline state rather than red or 0.
+
+Do not change ingestion, scheduler, credentials, mappings, provider adapters, Secret Manager, or rollup calculations.
+
+Return an audit and recommended implementation sequence before coding.
