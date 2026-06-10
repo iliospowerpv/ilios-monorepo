@@ -18,7 +18,9 @@ from app.models.telemetry import (
     ExternalSiteSyncStatus,
     LastSyncStatus,
     ProviderAccountStatus,
+    TelemetrySyncScope,
     TelemetrySyncStatus,
+    TelemetrySyncTrigger,
 )
 
 
@@ -471,3 +473,100 @@ class BackfillReadingsResponse(BaseModel):
     readings_written: int = 0
     chunks: list[BackfillChunkResult] = Field(default_factory=list)
     error: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Read-only rollup views (chart wiring)
+#
+# These power the V2 telemetry read API and the O&M chart precedence (V2 ->
+# BigQuery -> empty). They are derived purely from the PostgreSQL rollup/reading
+# tables; building them never calls a provider, touches credentials, or reads
+# BigQuery. Every list defaults to empty so an unmapped/empty site returns a
+# successful empty payload rather than an error.
+# ---------------------------------------------------------------------------
+
+
+class TelemetrySeriesPoint(BaseModel):
+    """One rollup bucket of a normalized metric."""
+
+    bucket_start: datetime
+    value: float
+    sample_count: int = 0
+    completeness: Optional[float] = None
+
+
+class TelemetrySeriesResponse(BaseModel):
+    """Site-level rollup series for one metric + bucket size."""
+
+    site_id: int
+    metric: str
+    bucket_size: str
+    unit: Optional[str] = None
+    agg: Optional[str] = None
+    count: int = 0
+    latest_bucket_start: Optional[datetime] = None
+    points: list[TelemetrySeriesPoint] = Field(default_factory=list)
+
+
+class TelemetryDeviceSeries(BaseModel):
+    """One device's rollup series for the requested metric."""
+
+    device_id: int
+    device_name: Optional[str] = None
+    unit: Optional[str] = None
+    count: int = 0
+    points: list[TelemetrySeriesPoint] = Field(default_factory=list)
+
+
+class TelemetryDeviceSeriesResponse(BaseModel):
+    """Per-device rollup series for one metric + bucket size."""
+
+    site_id: int
+    metric: str
+    bucket_size: str
+    devices: list[TelemetryDeviceSeries] = Field(default_factory=list)
+
+
+class TelemetryLatestMetric(BaseModel):
+    """Latest known value of a normalized metric for a site."""
+
+    metric: str
+    value: float
+    unit: Optional[str] = None
+    bucket_size: Optional[str] = None
+    bucket_start: datetime
+
+
+class TelemetryLatestResponse(BaseModel):
+    """Freshness snapshot: newest reading/rollup time + latest per-metric values."""
+
+    site_id: int
+    latest_reading_at: Optional[datetime] = None
+    latest_bucket_start: Optional[datetime] = None
+    metrics: list[TelemetryLatestMetric] = Field(default_factory=list)
+
+
+class TelemetrySyncJobSummary(BaseModel):
+    """A single ingestion attempt, for surfacing last-sync status."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    scope: TelemetrySyncScope
+    status: TelemetrySyncStatus
+    trigger: TelemetrySyncTrigger
+    window_start: Optional[datetime] = None
+    window_end: Optional[datetime] = None
+    records_received: int = 0
+    records_written: int = 0
+    last_error: Optional[str] = None
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+
+
+class TelemetrySyncJobListResponse(BaseModel):
+    """Most-recent-first ingestion attempts for a site."""
+
+    site_id: int
+    jobs: list[TelemetrySyncJobSummary] = Field(default_factory=list)

@@ -19,6 +19,12 @@ import type {
   SiteMappingSavePayload,
   SyncDevicesResponse,
   SyncSitesResponse,
+  TelemetryDeviceSeriesQuery,
+  TelemetryDeviceSeriesResponse,
+  TelemetryLatestResponse,
+  TelemetrySeriesQuery,
+  TelemetrySeriesResponse,
+  TelemetrySyncJobListResponse,
   TestAccountResponse
 } from '../types/telemetryV2';
 
@@ -185,6 +191,59 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     return data;
   };
 
+  /**
+   * Read a site-level V2 rollup series for one normalized metric. Read-only:
+   * never triggers a provider/credential call or BigQuery query. Returns an
+   * empty `points` list (still HTTP 200) when the site has no matching rollups.
+   */
+  const getSiteRollupSeries = async (
+    siteId: number,
+    query: TelemetrySeriesQuery
+  ): Promise<TelemetrySeriesResponse> => {
+    const params = new URLSearchParams({ metric: query.metric });
+    if (query.bucketSize) params.set('bucket_size', query.bucketSize);
+    if (query.from) params.set('from', query.from);
+    if (query.to) params.set('to', query.to);
+    const { data } = await httpClient.get<TelemetrySeriesResponse>(
+      `${V2}/sites/${siteId}/series?${params.toString()}`
+    );
+    return data;
+  };
+
+  /** Read per-device V2 rollup series for one metric, grouped by device. */
+  const getSiteDeviceRollupSeries = async (
+    siteId: number,
+    query: TelemetryDeviceSeriesQuery
+  ): Promise<TelemetryDeviceSeriesResponse> => {
+    const params = new URLSearchParams({ metric: query.metric });
+    if (query.bucketSize) params.set('bucket_size', query.bucketSize);
+    if (query.deviceId != null) params.set('device_id', String(query.deviceId));
+    if (query.from) params.set('from', query.from);
+    if (query.to) params.set('to', query.to);
+    const { data } = await httpClient.get<TelemetryDeviceSeriesResponse>(
+      `${V2}/sites/${siteId}/device-series?${params.toString()}`
+    );
+    return data;
+  };
+
+  /**
+   * Read the freshness snapshot for a site: newest reading/rollup timestamps
+   * plus the latest value per normalized metric. Used to show a "data as of"
+   * caption on the O&M charts. Empty (all-null) for non-V2 sites.
+   */
+  const getSiteLatestTelemetry = async (siteId: number): Promise<TelemetryLatestResponse> => {
+    const { data } = await httpClient.get<TelemetryLatestResponse>(`${V2}/sites/${siteId}/latest`);
+    return data;
+  };
+
+  /** Read most-recent-first V2 ingestion attempts for a site. */
+  const listSiteSyncJobs = async (siteId: number, limit = 20): Promise<TelemetrySyncJobListResponse> => {
+    const { data } = await httpClient.get<TelemetrySyncJobListResponse>(
+      `${V2}/sites/${siteId}/sync-jobs?limit=${limit}`
+    );
+    return data;
+  };
+
   return {
     getCatalog,
     listLicensedProviders,
@@ -202,7 +261,11 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     listExternalDevices,
     syncProviderAccountDevices,
     saveDeviceMappings,
-    refreshSiteReadings
+    refreshSiteReadings,
+    getSiteRollupSeries,
+    getSiteDeviceRollupSeries,
+    getSiteLatestTelemetry,
+    listSiteSyncJobs
   };
 };
 

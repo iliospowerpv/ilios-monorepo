@@ -11,7 +11,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
@@ -23,6 +23,7 @@ from app.helpers.authorization.module_based.telemetry import (
     user_has_telemetry_admin,
 )
 from app.helpers.authorization.project_access import (
+    get_authorized_site,
     get_authorized_site_with_company_admin,
 )
 from app.integrations.telemetry import (
@@ -88,11 +89,26 @@ from app.schema.telemetry_v2 import (
     SiteMappingResponse,
     SyncDevicesResponse,
     SyncSitesResponse,
+    TelemetryDeviceSeries,
+    TelemetryDeviceSeriesResponse,
+    TelemetryLatestMetric,
+    TelemetryLatestResponse,
+    TelemetrySeriesPoint,
+    TelemetrySeriesResponse,
+    TelemetrySyncJobListResponse,
+    TelemetrySyncJobSummary,
     TestAccountResponse,
 )
 from app.security.redaction import fingerprint
 from app.schema.user import CurrentUserSchema
-from app.crud.telemetry_native import TelemetrySchedulerStateCRUD
+from app.crud.telemetry_native import (
+    TelemetryDeviceRollupCRUD,
+    TelemetryReadingCRUD,
+    TelemetrySchedulerStateCRUD,
+    TelemetrySiteRollupCRUD,
+    TelemetrySyncJobCRUD,
+)
+from app.models.device import Device
 from app.services.telemetry.ingestion_service import (
     IngestionConfigError,
     run_site_refresh,
@@ -2264,4 +2280,207 @@ def backfill_site_readings(
         readings_written=total_written,
         chunks=chunks,
         error=overall_error,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Read-only rollup views (chart wiring)
+#
+# View-level auth (``Depends(get_authorized_site)``) — the same access a normal
+# O&M chart viewer has; intentionally NOT ``telemetry_admin_required`` so
+# dashboards render for ordinary users. These endpoints read ONLY the PostgreSQL
+# rollup/reading tables: no provider call, no credential access, no BigQuery.
+# Unknown/unmapped sites and empty windows return a successful empty payload.
+# ---------------------------------------------------------------------------
+
+_ALLOWED_BUCKET_SIZES = ("15m", "30m", "1h", "1d")
+_SERIES_DEFAULT_DAYS = 7
+_SERIES_MAX_DAYS = 90
+
+
+def _validate_bucket_size(bucket_size: str) -> None:
+    if bucket_size not in _ALLOWED_BUCKET_SIZES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"Unsupported bucket_size '{bucket_size}'. "
+                f"Allowed: {', '.join(_ALLOWED_BUCKET_SIZES)}."
+            ),
+        )
+
+
+def _clamp_series_window(
+    frm: Optional[datetime], to: Optional[datetime]
+) -> tuple[datetime, datetime]:
+    """Resolve and bound a ``[start, end]`` window.
+
+    Defaults to the last ``_SERIES_DEFAULT_DAYS`` days and clamps the span to
+    ``_SERIES_MAX_DAYS`` so a single read can never scan an unbounded range.
+    """
+    now = datetime.utcnow()
+    # Normalize tz-aware inputs (e.g. ISO "...Z") to the UTC-naive storage
+    # convention so comparisons against naive `bucket_start` / `utcnow()` never
+    # raise and never mis-window.
+    frm = _coerce_naive_utc(frm) if frm else None
+    to = _coerce_naive_utc(to) if to else None
+    end = to or now
+    start = frm or (end - timedelta(days=_SERIES_DEFAULT_DAYS))
+    if start > end:
+        start, end = end, start
+    earliest = end - timedelta(days=_SERIES_MAX_DAYS)
+    if start < earliest:
+        start = earliest
+    return start, end
+
+
+def _to_series_point(row) -> TelemetrySeriesPoint:
+    return TelemetrySeriesPoint(
+        bucket_start=row.bucket_start,
+        value=float(row.value),
+        sample_count=row.sample_count or 0,
+        completeness=(
+            float(row.completeness) if row.completeness is not None else None
+        ),
+    )
+
+
+@telemetry_v2_router.get(
+    "/v2/sites/{site_id}/series",
+    response_model=TelemetrySeriesResponse,
+    summary="Read a site-level V2 telemetry rollup series",
+)
+def get_site_rollup_series(
+    metric: str,
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db_session: Annotated[Session, Depends(get_session)],
+    bucket_size: str = "1h",
+    from_: Annotated[Optional[datetime], Query(alias="from")] = None,
+    to: Optional[datetime] = None,
+) -> TelemetrySeriesResponse:
+    """Site-level rollup series for one normalized metric.
+
+    Returns an empty ``points`` list (still HTTP 200) when the site has no
+    rollups for the metric/window.
+    """
+    _validate_bucket_size(bucket_size)
+    start, end = _clamp_series_window(from_, to)
+    rows = TelemetrySiteRollupCRUD(db_session).get_series(
+        site_id=site.id,
+        normalized_metric=metric,
+        bucket_size=bucket_size,
+        start=start,
+        end=end,
+    )
+    points = [_to_series_point(r) for r in rows]
+    return TelemetrySeriesResponse(
+        site_id=site.id,
+        metric=metric,
+        bucket_size=bucket_size,
+        unit=rows[-1].unit if rows else None,
+        agg=rows[-1].agg if rows else None,
+        count=len(points),
+        latest_bucket_start=points[-1].bucket_start if points else None,
+        points=points,
+    )
+
+
+@telemetry_v2_router.get(
+    "/v2/sites/{site_id}/device-series",
+    response_model=TelemetryDeviceSeriesResponse,
+    summary="Read per-device V2 telemetry rollup series",
+)
+def get_site_device_rollup_series(
+    metric: str,
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db_session: Annotated[Session, Depends(get_session)],
+    bucket_size: str = "1h",
+    device_id: Optional[int] = None,
+    from_: Annotated[Optional[datetime], Query(alias="from")] = None,
+    to: Optional[datetime] = None,
+) -> TelemetryDeviceSeriesResponse:
+    """Per-device rollup series, grouped by device. Empty ``devices`` when none."""
+    _validate_bucket_size(bucket_size)
+    start, end = _clamp_series_window(from_, to)
+    rows = TelemetryDeviceRollupCRUD(db_session).get_series(
+        site_id=site.id,
+        normalized_metric=metric,
+        bucket_size=bucket_size,
+        device_id=device_id,
+        start=start,
+        end=end,
+    )
+    grouped: dict[int, list] = {}
+    for row in rows:
+        grouped.setdefault(row.device_id, []).append(row)
+    names: dict[int, str] = {}
+    if grouped:
+        for did, dname in (
+            db_session.query(Device.id, Device.name)
+            .filter(Device.id.in_(list(grouped.keys())))
+            .all()
+        ):
+            names[did] = dname
+    devices = [
+        TelemetryDeviceSeries(
+            device_id=did,
+            device_name=names.get(did),
+            unit=drows[-1].unit if drows else None,
+            count=len(drows),
+            points=[_to_series_point(r) for r in drows],
+        )
+        for did, drows in sorted(grouped.items())
+    ]
+    return TelemetryDeviceSeriesResponse(
+        site_id=site.id,
+        metric=metric,
+        bucket_size=bucket_size,
+        devices=devices,
+    )
+
+
+@telemetry_v2_router.get(
+    "/v2/sites/{site_id}/latest",
+    response_model=TelemetryLatestResponse,
+    summary="Latest V2 telemetry values + freshness for a site",
+)
+def get_site_latest_telemetry(
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db_session: Annotated[Session, Depends(get_session)],
+) -> TelemetryLatestResponse:
+    """Newest reading/rollup timestamps + latest value per normalized metric."""
+    site_crud = TelemetrySiteRollupCRUD(db_session)
+    latest_rows = site_crud.get_latest_per_metric(site.id)
+    return TelemetryLatestResponse(
+        site_id=site.id,
+        latest_reading_at=TelemetryReadingCRUD(db_session).latest_metric_ts(site.id),
+        latest_bucket_start=site_crud.latest_bucket_start(site.id),
+        metrics=[
+            TelemetryLatestMetric(
+                metric=r.normalized_metric,
+                value=float(r.value),
+                unit=r.unit,
+                bucket_size=r.bucket_size,
+                bucket_start=r.bucket_start,
+            )
+            for r in latest_rows
+        ],
+    )
+
+
+@telemetry_v2_router.get(
+    "/v2/sites/{site_id}/sync-jobs",
+    response_model=TelemetrySyncJobListResponse,
+    summary="Recent V2 ingestion attempts for a site",
+)
+def get_site_sync_jobs(
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db_session: Annotated[Session, Depends(get_session)],
+    limit: int = 20,
+) -> TelemetrySyncJobListResponse:
+    """Most-recent-first ingestion attempts (for a 'last refreshed' view)."""
+    limit = max(1, min(limit, 100))
+    jobs = TelemetrySyncJobCRUD(db_session).list_for_site(site.id, limit=limit)
+    return TelemetrySyncJobListResponse(
+        site_id=site.id,
+        jobs=[TelemetrySyncJobSummary.model_validate(j) for j in jobs],
     )

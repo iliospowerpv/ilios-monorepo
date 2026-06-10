@@ -144,7 +144,9 @@ class OMSitePastPerformanceSchema(BaseModel):
 class SiteActualVSExpectedPerformance(BaseModel):
     period: datetime
     actual: float
-    expected: float
+    # V2 telemetry has no projected/"expected" baseline metric, so V2-driven
+    # points leave this unset. BigQuery-driven points still supply a float.
+    expected: Optional[float] = None
     irradiance: float
 
 

@@ -261,3 +261,96 @@ export interface RefreshReadingsResponse {
   error: string | null;
   errors: string[];
 }
+
+/**
+ * Read-only V2 rollup views (chart wiring). These are derived purely from the
+ * PostgreSQL rollup/reading tables — reading them never triggers a provider
+ * call, credential access, or BigQuery query. An unmapped/empty site returns a
+ * successful empty payload (empty `points` / `devices` / `metrics` / `jobs`).
+ */
+export type TelemetryBucketSize = '15m' | '30m' | '1h' | '1d';
+
+export type TelemetrySyncScope = 'site' | 'company' | 'portfolio';
+
+export type TelemetrySyncTrigger = 'manual' | 'scheduled' | 'backfill';
+
+export interface TelemetrySeriesPoint {
+  bucket_start: string;
+  value: number;
+  sample_count: number;
+  completeness: number | null;
+}
+
+export interface TelemetrySeriesResponse {
+  site_id: number;
+  metric: string;
+  bucket_size: string;
+  unit: string | null;
+  agg: string | null;
+  count: number;
+  latest_bucket_start: string | null;
+  points: TelemetrySeriesPoint[];
+}
+
+export interface TelemetryDeviceSeries {
+  device_id: number;
+  device_name: string | null;
+  unit: string | null;
+  count: number;
+  points: TelemetrySeriesPoint[];
+}
+
+export interface TelemetryDeviceSeriesResponse {
+  site_id: number;
+  metric: string;
+  bucket_size: string;
+  devices: TelemetryDeviceSeries[];
+}
+
+export interface TelemetryLatestMetric {
+  metric: string;
+  value: number;
+  unit: string | null;
+  bucket_size: string | null;
+  bucket_start: string;
+}
+
+export interface TelemetryLatestResponse {
+  site_id: number;
+  latest_reading_at: string | null;
+  latest_bucket_start: string | null;
+  metrics: TelemetryLatestMetric[];
+}
+
+export interface TelemetrySyncJobSummary {
+  id: number;
+  scope: TelemetrySyncScope;
+  status: TelemetrySyncStatus;
+  trigger: TelemetrySyncTrigger;
+  window_start: string | null;
+  window_end: string | null;
+  records_received: number;
+  records_written: number;
+  last_error: string | null;
+  started_at: string | null;
+  ended_at: string | null;
+  created_at: string | null;
+}
+
+export interface TelemetrySyncJobListResponse {
+  site_id: number;
+  jobs: TelemetrySyncJobSummary[];
+}
+
+/** Query params for the site-level rollup series read. */
+export interface TelemetrySeriesQuery {
+  metric: string;
+  bucketSize?: TelemetryBucketSize;
+  from?: string;
+  to?: string;
+}
+
+/** Query params for the per-device rollup series read. */
+export interface TelemetryDeviceSeriesQuery extends TelemetrySeriesQuery {
+  deviceId?: number;
+}

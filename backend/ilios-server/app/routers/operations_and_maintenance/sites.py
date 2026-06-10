@@ -18,6 +18,11 @@ from app.helpers.pagination import pagination_details
 from app.helpers.query_params_validator import validate_skip_and_limit
 from app.helpers.telemetry.bigquery import TelemetryDeviceBigQuery, TelemetrySiteBigQuery
 from app.helpers.telemetry.sites_helper import get_production_chart_data_per_site
+from app.helpers.telemetry.v2_chart_data import (
+    apply_v2_actual_production,
+    build_actual_vs_expected_series,
+    site_has_v2_rollups,
+)
 from app.models.device import DeviceCategories
 from app.models.site import Site
 from app.schema.om_device import OMDeviceListPaginator
@@ -104,14 +109,29 @@ async def get_site_devices(
 )
 async def get_actual_production_chart(
     site: Site = Depends(get_authorized_site),
+    db_session: Session = Depends(get_session),
 ):
-    telemetry_details = get_production_chart_data_per_site(site.id)
-    site.actual_kw, site.expected_kw, site.cumulative_actual_kw, site.cumulative_expected_kw = (
-        telemetry_details.actual_kw,
-        telemetry_details.expected_kw,
-        telemetry_details.cumulative_actual_kw,
-        telemetry_details.cumulative_expected_kw,
-    )
+    # V2-first precedence: if the site has any V2 rollups, render from PostgreSQL
+    # and never touch BigQuery (even if today's window is empty).
+    if site_has_v2_rollups(db_session, site.id):
+        apply_v2_actual_production(db_session, site)
+        return site
+    # Legacy BigQuery path, wrapped so BQ unavailability yields an empty (all-0)
+    # chart instead of a 500. round_to_scale_2 has no None guard, so use 0.0.
+    try:
+        telemetry_details = get_production_chart_data_per_site(site.id)
+        site.actual_kw, site.expected_kw, site.cumulative_actual_kw, site.cumulative_expected_kw = (
+            telemetry_details.actual_kw,
+            telemetry_details.expected_kw,
+            telemetry_details.cumulative_actual_kw,
+            telemetry_details.cumulative_expected_kw,
+        )
+    except Exception:  # noqa: BLE001
+        logger.exception("om_actual_production_chart_bigquery_failed site_id=%s", site.id)
+        site.actual_kw = 0.0
+        site.expected_kw = 0.0
+        site.cumulative_actual_kw = 0.0
+        site.cumulative_expected_kw = 0.0
     return site
 
 
@@ -128,9 +148,15 @@ async def get_inverters_performance_chart(
     site_inverters = [device for device in site.devices if device.category == DeviceCategories.inverter]
     # make calls only for mapped inverters with active connection to reduce BQ interactions
     mapped_inverters_ids = [device.id for device in site_inverters if device.das_connection_active]
-    telemetry_devices_data = (
-        TelemetryDeviceBigQuery().get_devices_performance(mapped_inverters_ids) if mapped_inverters_ids else None
-    )
+    # Inverter-level performance has no V2 equivalent (no per-device projection),
+    # so it stays on BigQuery; wrap so BQ unavailability degrades to "N/A" rows.
+    telemetry_devices_data = None
+    if mapped_inverters_ids:
+        try:
+            telemetry_devices_data = TelemetryDeviceBigQuery().get_devices_performance(mapped_inverters_ids)
+        except Exception:  # noqa: BLE001
+            logger.exception("om_inverters_performance_chart_bigquery_failed site_id=%s", site.id)
+            telemetry_devices_data = None
     response = []
     # build response object accounting mapping status and telemetry response
     for device in site_inverters:
@@ -145,7 +171,9 @@ async def get_inverters_performance_chart(
             continue
         # find telemetry value for the mapped devices
         telemetry_performance_item_search_results = [
-            telemetry_device for telemetry_device in telemetry_devices_data if telemetry_device["device_id"] == device.id
+            telemetry_device
+            for telemetry_device in (telemetry_devices_data or [])
+            if telemetry_device["device_id"] == device.id
         ]
         if telemetry_performance_item_search_results:
             telemetry_performance_item = telemetry_performance_item_search_results[0]
@@ -164,7 +192,13 @@ async def get_inverters_performance_chart(
 async def get_site_past_performance_chart(
     site: Site = Depends(get_authorized_site),
 ):
-    return {"data": TelemetrySiteBigQuery().get_site_past_performance(site.id)}
+    # Past-performance (daily) has no V2 rollup yet, so it stays on BigQuery;
+    # wrap so BQ unavailability yields an empty chart instead of a 500.
+    try:
+        return {"data": TelemetrySiteBigQuery().get_site_past_performance(site.id)}
+    except Exception:  # noqa: BLE001
+        logger.exception("om_past_performance_chart_bigquery_failed site_id=%s", site.id)
+        return {"data": {}}
 
 
 @om_sites_router.get(
@@ -175,8 +209,18 @@ async def get_site_past_performance_chart(
 )
 async def get_site_actual_vs_expected_chart(
     site: Site = Depends(get_authorized_site),
+    db_session: Session = Depends(get_session),
 ):
-    return {"data": TelemetrySiteBigQuery().get_site_actual_vs_expected_irradiance(site.id)}
+    # V2-first precedence: render actual power + irradiance from PostgreSQL
+    # rollups (expected is left null — no V2 projection baseline).
+    if site_has_v2_rollups(db_session, site.id):
+        return {"data": build_actual_vs_expected_series(db_session, site.id)}
+    # Legacy BigQuery path, wrapped so BQ unavailability yields an empty chart.
+    try:
+        return {"data": TelemetrySiteBigQuery().get_site_actual_vs_expected_irradiance(site.id)}
+    except Exception:  # noqa: BLE001
+        logger.exception("om_actual_vs_expected_chart_bigquery_failed site_id=%s", site.id)
+        return {"data": []}
 
 
 @om_sites_router.get(

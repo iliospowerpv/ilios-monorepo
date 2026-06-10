@@ -19,6 +19,7 @@ import type {
   RefreshReadingsResponse,
   SyncDevicesResponse,
   SyncSitesResponse,
+  TelemetryLatestResponse,
   TestAccountResponse
 } from '../types/telemetryV2';
 
@@ -32,7 +33,8 @@ export const telemetryV2Keys = {
     [...telemetryV2Keys.all, 'providerAccount', companyId, accountId] as const,
   externalSites: (accountId: number) => [...telemetryV2Keys.all, 'externalSites', accountId] as const,
   externalDevices: (accountId: number, externalSiteId: string) =>
-    [...telemetryV2Keys.all, 'externalDevices', accountId, externalSiteId] as const
+    [...telemetryV2Keys.all, 'externalDevices', accountId, externalSiteId] as const,
+  siteLatest: (siteId: number) => [...telemetryV2Keys.all, 'siteLatest', siteId] as const
 };
 
 const STALE_LIST = 30 * 1000;
@@ -112,6 +114,25 @@ export const useExternalDevices = (
     queryKey: telemetryV2Keys.externalDevices(accountId ?? -1, externalSiteId ?? ''),
     queryFn: () => ApiClient.telemetryV2.listExternalDevices(accountId as number, externalSiteId as string),
     enabled: !!accountId && accountId > 0 && !!externalSiteId,
+    staleTime: STALE_LIST,
+    ...options
+  });
+
+/**
+ * Read the V2 freshness snapshot for a site (newest reading/rollup time + latest
+ * value per metric). Read-only and safe for any site: non-V2 sites return an
+ * all-null payload, so the caller can simply hide the "data as of" caption. Used
+ * by the O&M Overview charts to show when the rendered telemetry was last
+ * ingested.
+ */
+export const useSiteLatestTelemetry = (
+  siteId: number,
+  options?: Omit<UseQueryOptions<TelemetryLatestResponse>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery({
+    queryKey: telemetryV2Keys.siteLatest(siteId),
+    queryFn: () => ApiClient.telemetryV2.getSiteLatestTelemetry(siteId),
+    enabled: Number.isFinite(siteId) && siteId > 0,
     staleTime: STALE_LIST,
     ...options
   });

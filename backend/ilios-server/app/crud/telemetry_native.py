@@ -15,7 +15,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Optional
 
-from sqlalchemy import or_, update
+from sqlalchemy import func, or_, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -115,6 +115,21 @@ class TelemetrySyncJobCRUD(BaseCRUD):
         self.db_session.refresh(job)
         return job
 
+    def list_for_site(self, site_id: int, *, limit: int = 20) -> list[TelemetrySyncJob]:
+        """Most-recent-first ingestion attempts for a site (read-only).
+
+        Used by the V2 read API to surface a "last refreshed"/last-sync-status
+        view without inspecting raw readings. Ordered by id desc so the newest
+        attempt is first.
+        """
+        return (
+            self.db_session.query(TelemetrySyncJob)
+            .filter(TelemetrySyncJob.site_id == site_id)
+            .order_by(TelemetrySyncJob.id.desc())
+            .limit(limit)
+            .all()
+        )
+
 
 class TelemetryReadingCRUD(BaseCRUD):
     """Idempotent upsert + reads for normalized telemetry readings."""
@@ -168,6 +183,18 @@ class TelemetryReadingCRUD(BaseCRUD):
             .count()
         )
 
+    def latest_metric_ts(self, site_id: int) -> Optional[datetime]:
+        """Newest raw reading timestamp for a site (read-only).
+
+        Drives the "data as of" freshness indicator. Returns None when the site
+        has no readings yet.
+        """
+        return (
+            self.db_session.query(func.max(TelemetryReading.metric_ts))
+            .filter(TelemetryReading.site_id == site_id)
+            .scalar()
+        )
+
 
 class TelemetrySiteRollupCRUD(BaseCRUD):
     """Idempotent upsert for per-site interval rollups."""
@@ -205,6 +232,68 @@ class TelemetrySiteRollupCRUD(BaseCRUD):
         self.db_session.flush()
         return affected
 
+    def has_rollups(self, site_id: int) -> bool:
+        """True if ANY site rollup exists for the site (window-agnostic).
+
+        This is the V2-vs-BigQuery precedence switch for O&M charts: presence of
+        any rollup means the site is V2-backed, so a chart must read V2 (even if
+        the requested window happens to be empty) and never fall back to stale
+        BigQuery.
+        """
+        return (
+            self.db_session.query(TelemetrySiteIntervalRollup.id)
+            .filter(TelemetrySiteIntervalRollup.site_id == site_id)
+            .first()
+            is not None
+        )
+
+    def get_series(
+        self,
+        *,
+        site_id: int,
+        normalized_metric: str,
+        bucket_size: str,
+        start: Optional[datetime] = None,
+        end: Optional[datetime] = None,
+    ) -> list[TelemetrySiteIntervalRollup]:
+        """Ascending site rollup rows for one metric + bucket size (read-only)."""
+        query = self.db_session.query(TelemetrySiteIntervalRollup).filter(
+            TelemetrySiteIntervalRollup.site_id == site_id,
+            TelemetrySiteIntervalRollup.normalized_metric == normalized_metric,
+            TelemetrySiteIntervalRollup.bucket_size == bucket_size,
+        )
+        if start is not None:
+            query = query.filter(TelemetrySiteIntervalRollup.bucket_start >= start)
+        if end is not None:
+            query = query.filter(TelemetrySiteIntervalRollup.bucket_start <= end)
+        return query.order_by(TelemetrySiteIntervalRollup.bucket_start.asc()).all()
+
+    def get_latest_per_metric(
+        self, site_id: int, *, bucket_size: Optional[str] = None
+    ) -> list[TelemetrySiteIntervalRollup]:
+        """Latest row per normalized metric for a site (Postgres DISTINCT ON)."""
+        query = self.db_session.query(TelemetrySiteIntervalRollup).filter(
+            TelemetrySiteIntervalRollup.site_id == site_id
+        )
+        if bucket_size is not None:
+            query = query.filter(TelemetrySiteIntervalRollup.bucket_size == bucket_size)
+        return (
+            query.distinct(TelemetrySiteIntervalRollup.normalized_metric)
+            .order_by(
+                TelemetrySiteIntervalRollup.normalized_metric.asc(),
+                TelemetrySiteIntervalRollup.bucket_start.desc(),
+            )
+            .all()
+        )
+
+    def latest_bucket_start(self, site_id: int) -> Optional[datetime]:
+        """Newest rollup bucket_start for a site, or None."""
+        return (
+            self.db_session.query(func.max(TelemetrySiteIntervalRollup.bucket_start))
+            .filter(TelemetrySiteIntervalRollup.site_id == site_id)
+            .scalar()
+        )
+
 
 class TelemetryDeviceRollupCRUD(BaseCRUD):
     """Idempotent upsert for per-device interval rollups."""
@@ -237,6 +326,58 @@ class TelemetryDeviceRollupCRUD(BaseCRUD):
             affected += result.rowcount or 0
         self.db_session.flush()
         return affected
+
+    def get_series(
+        self,
+        *,
+        site_id: int,
+        normalized_metric: str,
+        bucket_size: str,
+        device_id: Optional[int] = None,
+        start: Optional[datetime] = None,
+        end: Optional[datetime] = None,
+    ) -> list[TelemetryDeviceIntervalRollup]:
+        """Device rollup rows ordered by device, then bucket_start (read-only).
+
+        Pass ``device_id`` to scope to a single device; otherwise returns every
+        mapped device's rows for the metric so the caller can group them.
+        """
+        query = self.db_session.query(TelemetryDeviceIntervalRollup).filter(
+            TelemetryDeviceIntervalRollup.site_id == site_id,
+            TelemetryDeviceIntervalRollup.normalized_metric == normalized_metric,
+            TelemetryDeviceIntervalRollup.bucket_size == bucket_size,
+        )
+        if device_id is not None:
+            query = query.filter(TelemetryDeviceIntervalRollup.device_id == device_id)
+        if start is not None:
+            query = query.filter(TelemetryDeviceIntervalRollup.bucket_start >= start)
+        if end is not None:
+            query = query.filter(TelemetryDeviceIntervalRollup.bucket_start <= end)
+        return query.order_by(
+            TelemetryDeviceIntervalRollup.device_id.asc(),
+            TelemetryDeviceIntervalRollup.bucket_start.asc(),
+        ).all()
+
+    def list_device_ids(
+        self,
+        site_id: int,
+        *,
+        normalized_metric: Optional[str] = None,
+        bucket_size: Optional[str] = None,
+    ) -> list[int]:
+        """Distinct device ids that have rollups for a site (read-only)."""
+        query = self.db_session.query(TelemetryDeviceIntervalRollup.device_id).filter(
+            TelemetryDeviceIntervalRollup.site_id == site_id
+        )
+        if normalized_metric is not None:
+            query = query.filter(
+                TelemetryDeviceIntervalRollup.normalized_metric == normalized_metric
+            )
+        if bucket_size is not None:
+            query = query.filter(
+                TelemetryDeviceIntervalRollup.bucket_size == bucket_size
+            )
+        return [row[0] for row in query.distinct().all()]
 
 
 class TelemetrySchedulerStateCRUD(BaseCRUD):

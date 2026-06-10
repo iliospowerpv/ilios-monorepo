@@ -15,12 +15,21 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { WidgetContainer } from '../../Overview.style';
 import { formatFloatValue } from '../../../../../../../../utils/formatters/formatFloatValue';
 import { ApiClient } from '../../../../../../../../api';
+import { useSiteLatestTelemetry } from '../../../../../../../../hooks/telemetryV2';
 import WeatherIndicator from '../../../../../../../../components/common/WeatherIndicator/WeatherIndicator';
 import ToggleGroup from '../../../../../../../../components/common/ToogleGroup/ToggleGroup';
 
 interface ActualProductionProps {
   siteId: number;
 }
+
+// Render an absolute timestamp from the V2 /latest snapshot. Returns '' for a
+// missing/invalid value so the caption can be hidden for non-V2 sites.
+const formatWhen = (iso: string | null | undefined): string => {
+  if (!iso) return '';
+  const when = new Date(iso);
+  return Number.isNaN(when.getTime()) ? '' : when.toLocaleString();
+};
 
 const Loading: React.FC = () => (
   <Box position="absolute" width="100%" border="1px solid transparent" height="calc(100% - 32px)">
@@ -81,6 +90,11 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
     staleTime: 15 * 60 * 1000
   });
 
+  // Read-only freshness snapshot; empty (all-null) for non-V2 sites, in which
+  // case the caption below is hidden.
+  const { data: latestTelemetry } = useSiteLatestTelemetry(siteId);
+  const lastRefreshed = formatWhen(latestTelemetry?.latest_reading_at);
+
   const theme = useTheme();
   const [alignment, setAlignment] = React.useState('current');
 
@@ -135,9 +149,16 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
           alignItems: 'flex-start'
         }}
       >
-        <Typography variant="h6" mb="6px">
-          Production
-        </Typography>
+        <Box>
+          <Typography variant="h6" mb="6px">
+            Production
+          </Typography>
+          {lastRefreshed && (
+            <Typography variant="caption" color={theme => theme.palette.text.secondary} sx={{ display: 'block' }}>
+              Last refreshed {lastRefreshed}
+            </Typography>
+          )}
+        </Box>
         <Box>
           <ToggleGroup alignment={alignment} setAlignment={setAlignment} />
           <IconButton title="Refetch" disabled={!!isFetching} onClick={() => refetch()}>

@@ -1,0 +1,74 @@
+Next task: Wire O&M performance charts to V2 telemetry rollups.
+
+Context:
+The V2 telemetry ingestion pipeline is now working and the manual boundary-hour rollup bug has been fixed. Site 4 / 110 Shawmut has V2 telemetry_readings, telemetry_site_interval_rollups, and telemetry_device_interval_rollups populated and repaired.
+
+Current gap:
+The existing O&M/performance charts still read from legacy BigQuery-backed endpoints, so V2-ingested telemetry does not appear in the UI.
+
+Objective:
+Make V2-ingested telemetry visible in the app.
+
+Scope:
+1. Add read-only V2 telemetry series endpoints backed by PostgreSQL rollup tables.
+2. Wire the relevant chart components to V2 data, either directly or via a safe fallback when BigQuery has no data.
+3. Do not remove BigQuery code yet.
+4. Do not write V2 data into BigQuery.
+5. Do not change ingestion, scheduler, credentials, mappings, provider adapters, or GCP Secret Manager.
+6. Do not change rollup calculation logic unless a display-only issue requires a narrow fix.
+
+Existing affected chart components:
+- ActualProduction.tsx
+- ActualProjectedPower.tsx
+- PastPerformance.tsx
+- InvertersPerformance.tsx
+
+Existing legacy endpoints:
+- /api/operations-and-maintenance/sites/{id}/actual-production-chart
+- /api/operations-and-maintenance/sites/{id}/actual-vs-expected-chart
+- /api/operations-and-maintenance/sites/{id}/past-performance-chart
+- /api/operations-and-maintenance/sites/{id}/inverters-performance-chart
+
+Proposed new/read endpoints:
+- GET /api/telemetry/v2/sites/{site_id}/series
+- GET /api/telemetry/v2/sites/{site_id}/device-series
+- GET /api/telemetry/v2/sites/{site_id}/latest
+- GET /api/telemetry/v2/sites/{site_id}/sync-jobs
+
+Endpoint requirements:
+- Read from telemetry_site_interval_rollups and telemetry_device_interval_rollups.
+- Support metric, bucket_size, from, and to query parameters.
+- Return site-level time series.
+- Return device-level time series where applicable.
+- Return latest reading timestamp.
+- Return last refresh/sync status.
+- Return data completeness where available.
+- Return empty-but-successful responses when no V2 data exists.
+- Do not fail because BigQuery is unavailable.
+
+Frontend requirements:
+- Make V2 telemetry visible for 110 Shawmut.
+- Prefer a minimal safe implementation over a broad dashboard rewrite.
+- If using fallback, clearly define source precedence:
+  - V2 data if available
+  - BigQuery data if V2 unavailable
+  - empty state if neither exists
+- Show a clear empty state if no V2 rollups exist.
+- Show last refreshed timestamp where practical.
+- Do not show stale BigQuery blank charts when V2 rollups exist.
+
+Validation:
+1. Confirm V2 series endpoint returns non-empty data for site 4 / 110 Shawmut.
+2. Confirm O&M chart renders V2 data after Refresh Telemetry.
+3. Confirm repeated refresh does not duplicate chart data.
+4. Confirm charts continue to handle sites with no V2 telemetry gracefully.
+5. Confirm no BigQuery writes are introduced.
+6. Confirm no credentials or provider calls are made merely to render charts.
+7. Confirm no changes to mappings, ingestion, scheduler, or credential storage.
+
+Return before/after summary:
+- endpoints added or modified
+- frontend components changed
+- data-source precedence
+- validation counts
+- known remaining visualization gaps

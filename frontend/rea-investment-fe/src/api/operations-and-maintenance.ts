@@ -329,7 +329,9 @@ interface OMSitePastPerformanceResponse {
 interface OMSiteActualVsExpectedProductionEntry {
   period: string;
   actual: number;
-  expected: number;
+  // V2 telemetry has no projected/"expected" baseline, so V2-driven points
+  // return null here; BigQuery-driven points still return a number.
+  expected: number | null;
   irradiance: number;
 }
 
