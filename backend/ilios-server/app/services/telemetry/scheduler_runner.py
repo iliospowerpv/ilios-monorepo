@@ -40,7 +40,11 @@ from app.integrations.telemetry.credential_store import (
     get_credential_store,
     is_credential_store_durable,
 )
-from app.models.telemetry import TelemetrySyncStatus, TelemetrySyncTrigger
+from app.models.telemetry import (
+    TelemetrySiteMapping,
+    TelemetrySyncStatus,
+    TelemetrySyncTrigger,
+)
 from app.services.telemetry.ingestion_service import (
     IngestionConfigError,
     IngestionSummary,
@@ -191,6 +195,23 @@ def scheduler_should_run() -> tuple[bool, str]:
     return True, "enabled"
 
 
+def resolve_current_account(session: Session, site_id: int) -> Optional[int]:
+    """Resolve a site's CURRENT mapped provider account.
+
+    Mirrors the ingestion service and the API helper: ``provider_account_id``
+    first, then the legacy ``connection_id``. Returns ``None`` when the site has
+    no mapping. Used to detect scheduler rows left stale by an account remap.
+    """
+    mapping = (
+        session.query(TelemetrySiteMapping)
+        .filter(TelemetrySiteMapping.site_id == site_id)
+        .first()
+    )
+    if mapping is None:
+        return None
+    return mapping.provider_account_id or mapping.connection_id
+
+
 class TelemetrySchedulerRunner:
     """Daemon-thread poll loop that claims and runs due scheduler rows."""
 
@@ -278,6 +299,31 @@ class TelemetrySchedulerRunner:
             state = crud.get_by_id(state_id)
             if state is None:
                 return
+            # Stale-mapping guard: ingestion always pulls for the site's CURRENT
+            # mapping, so a row whose account no longer matches must NOT run — it
+            # would either pull for the wrong account's cursor or double-run
+            # alongside the current account's row. Disable it and release.
+            current_account = resolve_current_account(session, state.site_id)
+            if current_account is None or current_account != state.provider_account_id:
+                crud.finish_run(
+                    state_id,
+                    token=token,
+                    last_run_at=now,
+                    last_status="stale_mapping",
+                    last_error=(
+                        "site mapping no longer points to this provider account; "
+                        "scheduler row disabled"
+                    ),
+                    enabled=False,
+                )
+                logger.warning(
+                    "telemetry_scheduler_stale_mapping site_id=%s row_account=%s "
+                    "current_account=%s",
+                    state.site_id,
+                    state.provider_account_id,
+                    current_account,
+                )
+                return
             cadence = state.cadence or DEFAULT_CADENCE
             next_due_at = now + cadence_to_timedelta(cadence)
             window_start, window_end = compute_scheduled_window(
@@ -315,12 +361,25 @@ class TelemetrySchedulerRunner:
             cursor_kwargs = (
                 {"last_successful_pull_at": window_end} if advance else {}
             )
+            # Reflect rollup health in the persisted status: the readings upsert
+            # can succeed while the rollup fails. The cursor already (correctly)
+            # does not advance in that case, but the status must report it as
+            # partial with the rollup error so admin status isn't misleading.
+            if (
+                rollup.status == "failed"
+                and summary.status == TelemetrySyncStatus.succeeded
+            ):
+                persisted_status = "partial"
+                persisted_error = rollup.error or summary.error
+            else:
+                persisted_status = summary.status.value
+                persisted_error = summary.error
             crud.finish_run(
                 state_id,
                 token=token,
                 last_run_at=now,
-                last_status=summary.status.value,
-                last_error=summary.error,
+                last_status=persisted_status[:16],
+                last_error=persisted_error,
                 last_sync_job_id=summary.sync_job_id,
                 next_due_at=next_due_at,
                 **cursor_kwargs,

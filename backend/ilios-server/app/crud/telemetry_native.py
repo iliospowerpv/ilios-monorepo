@@ -252,17 +252,16 @@ class TelemetrySchedulerStateCRUD(BaseCRUD):
     def __init__(self, db_session: Session):
         super().__init__(model=TelemetrySchedulerState, db_session=db_session)
 
-    def get_by_site(self, site_id: int) -> Optional[TelemetrySchedulerState]:
-        return (
-            self.db_session.query(TelemetrySchedulerState)
-            .filter(TelemetrySchedulerState.site_id == site_id)
-            .order_by(TelemetrySchedulerState.id.asc())
-            .first()
-        )
-
     def get_by_site_account(
         self, site_id: int, provider_account_id: int
     ) -> Optional[TelemetrySchedulerState]:
+        """Fetch the row for an EXACT (site, provider account) pair.
+
+        Control and status reads must always go through here (after resolving the
+        site's *current* mapped account) — never a site-only "first row wins"
+        selector — so a row left behind by a prior account remap is never treated
+        as the live one.
+        """
         return (
             self.db_session.query(TelemetrySchedulerState)
             .filter(
@@ -272,20 +271,22 @@ class TelemetrySchedulerStateCRUD(BaseCRUD):
             .first()
         )
 
-    def map_by_site(self, site_ids: list[int]) -> dict[int, TelemetrySchedulerState]:
-        """Return the scheduler state for each given site id (first row wins)."""
+    def index_by_site_account(
+        self, site_ids: list[int]
+    ) -> dict[tuple[int, int], TelemetrySchedulerState]:
+        """Return all rows for the given sites keyed by (site_id, account_id).
+
+        The caller resolves each site's current mapped account and looks up the
+        exact pair, so stale rows for prior accounts are simply not matched.
+        """
         if not site_ids:
             return {}
         rows = (
             self.db_session.query(TelemetrySchedulerState)
             .filter(TelemetrySchedulerState.site_id.in_(site_ids))
-            .order_by(TelemetrySchedulerState.id.asc())
             .all()
         )
-        out: dict[int, TelemetrySchedulerState] = {}
-        for row in rows:
-            out.setdefault(row.site_id, row)
-        return out
+        return {(row.site_id, row.provider_account_id): row for row in rows}
 
     def ensure_state(
         self, *, site_id: int, provider_account_id: int, company_id: int
@@ -342,6 +343,21 @@ class TelemetrySchedulerStateCRUD(BaseCRUD):
             state.enabled = enabled
         if next_due_at is not _UNSET:
             state.next_due_at = next_due_at  # type: ignore[assignment]
+        # One active scheduler per site: disable any sibling rows for this site
+        # that belong to a different (stale) provider account. After an account
+        # remap this prevents a leftover enabled row from running in parallel
+        # with the current account's row (two locks => double execution).
+        self.db_session.query(TelemetrySchedulerState).filter(
+            TelemetrySchedulerState.site_id == site_id,
+            TelemetrySchedulerState.provider_account_id != provider_account_id,
+            TelemetrySchedulerState.enabled.is_(True),
+        ).update(
+            {
+                TelemetrySchedulerState.enabled: False,
+                TelemetrySchedulerState.updated_at: datetime.utcnow(),
+            },
+            synchronize_session=False,
+        )
         self.db_session.commit()
         self.db_session.refresh(state)
         return state
@@ -421,6 +437,7 @@ class TelemetrySchedulerStateCRUD(BaseCRUD):
         last_sync_job_id: Optional[int] = None,
         next_due_at: object = _UNSET,
         last_successful_pull_at: object = _UNSET,
+        enabled: object = _UNSET,
         now: Optional[datetime] = None,
     ) -> bool:
         """Record results and release the lock — but only if we still hold it.
@@ -446,6 +463,8 @@ class TelemetrySchedulerStateCRUD(BaseCRUD):
             values["next_due_at"] = next_due_at
         if last_successful_pull_at is not _UNSET:
             values["last_successful_pull_at"] = last_successful_pull_at
+        if enabled is not _UNSET:
+            values["enabled"] = enabled
         stmt = (
             update(TelemetrySchedulerState)
             .where(

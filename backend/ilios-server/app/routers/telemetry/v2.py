@@ -1852,14 +1852,24 @@ def get_site_scheduler(
     db: Annotated[Session, Depends(get_session)],
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
 ) -> SchedulerStateResponse:
-    """Return the scheduler row for a site, or synthesized disabled defaults."""
+    """Return the scheduler row for a site, or synthesized disabled defaults.
+
+    Resolves the site's CURRENT mapped account and returns that exact row — never
+    a site-only "first row wins" lookup — so a row left behind by a prior account
+    remap can't masquerade as the live scheduler state.
+    """
     _enforce_company_visibility(current_user, site.company_id)
-    state = TelemetrySchedulerStateCRUD(db).get_by_site(site.id)
+    account_id = _resolve_scheduler_account(db, site.id)
+    state = (
+        TelemetrySchedulerStateCRUD(db).get_by_site_account(site.id, account_id)
+        if account_id is not None
+        else None
+    )
     if state is not None:
         return _scheduler_state_to_response(state)
     return SchedulerStateResponse(
         site_id=site.id,
-        provider_account_id=_resolve_scheduler_account(db, site.id),
+        provider_account_id=account_id,
         company_id=site.company_id,
         enabled=False,
         cadence=DEFAULT_CADENCE,
@@ -1968,20 +1978,21 @@ def company_scheduler_status(
         .all()
     )
     site_ids = [m.site_id for m in mappings]
-    states = TelemetrySchedulerStateCRUD(db).map_by_site(site_ids)
+    index = TelemetrySchedulerStateCRUD(db).index_by_site_account(site_ids)
 
     items: list[SchedulerStateResponse] = []
     for mapping in mappings:
-        state = states.get(mapping.site_id)
+        # Match each site to its CURRENT mapped account, so a stale row from a
+        # prior account is never reported as this site's live scheduler state.
+        account_id = mapping.provider_account_id or mapping.connection_id
+        state = index.get((mapping.site_id, account_id))
         if state is not None:
             items.append(_scheduler_state_to_response(state))
         else:
             items.append(
                 SchedulerStateResponse(
                     site_id=mapping.site_id,
-                    provider_account_id=(
-                        mapping.provider_account_id or mapping.connection_id
-                    ),
+                    provider_account_id=account_id,
                     company_id=company_id,
                     enabled=False,
                     cadence=DEFAULT_CADENCE,
@@ -2161,7 +2172,13 @@ def backfill_site_readings(
                 break
 
             chunks_succeeded += 1
-            if summary.status == TelemetrySyncStatus.partial:
+            # Readings landed but the rollup for this chunk failed: the chunk
+            # still counts as succeeded (readings are durable), but the overall
+            # backfill is partial — mirrors the scheduler's partial semantics.
+            if (
+                summary.status == TelemetrySyncStatus.partial
+                or rollup.status == "failed"
+            ):
                 saw_partial = True
             chunk_start = chunk_end
         else:
