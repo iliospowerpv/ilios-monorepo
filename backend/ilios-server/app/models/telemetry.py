@@ -682,3 +682,81 @@ class TelemetryDeviceIntervalRollup(Base):
     sample_count = Column(Integer, nullable=False, default=0, server_default="0")
     completeness = Column(Numeric, nullable=True)
     calculated_at = Column(DateTime, nullable=False, server_default=utcnow())
+
+
+# ---------------------------------------------------------------------------
+# Scheduler state (one row per mapped site/provider account)
+# ---------------------------------------------------------------------------
+
+
+class TelemetrySchedulerState(Base):
+    """Per-(site, provider account) automation state for native V2 telemetry.
+
+    Drives the in-process scheduler runner and the bounded backfill endpoint.
+    Both triggers reuse the *same* ingestion + rollup services as the manual
+    Refresh Telemetry action; this table only carries scheduling metadata and a
+    DB-backed lock so overlapping runs for the same site cannot start.
+
+    Rows are created lazily on the first enable/backfill — there is no migration
+    seed, so new site mappings created after the migration get the same lazy
+    path. ``last_status`` is a free string (not the sync-status enum) because it
+    must also be able to hold ``config_error`` (raised before any sync job row
+    exists) and ``skipped``.
+
+    Cursor contract: ``last_successful_pull_at`` advances ONLY when a scheduled
+    run's readings upsert AND rollup both succeed. Backfill never touches it.
+
+    Overlap contract: ``lock_token``/``locked_until`` form a lease-based claim.
+    A run claims the row with an atomic conditional UPDATE; a crashed run's lease
+    self-expires so the row is reclaimable without manual intervention.
+    """
+
+    __tablename__ = "telemetry_scheduler_state"
+    __table_args__ = (
+        UniqueConstraint(
+            "site_id",
+            "provider_account_id",
+            name="uq_telemetry_scheduler_state_site_account",
+        ),
+        Index(
+            "ix_telemetry_scheduler_state_due",
+            "enabled",
+            "next_due_at",
+        ),
+    )
+
+    id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
+    site_id = Column(
+        Integer, ForeignKey("sites.id", ondelete="CASCADE"), nullable=False
+    )
+    provider_account_id = Column(
+        Integer,
+        ForeignKey("das_connections.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    company_id = Column(
+        Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+    enabled = Column(Boolean, nullable=False, default=False, server_default="false")
+    # ISO-8601 duration from a fixed whitelist (PT15M/PT30M/PT1H/PT6H/PT24H).
+    cadence = Column(
+        String(16), nullable=False, default="PT1H", server_default="PT1H"
+    )
+    last_run_at = Column(DateTime, nullable=True)
+    last_successful_pull_at = Column(DateTime, nullable=True)
+    # Free string: succeeded/partial/failed/skipped/config_error.
+    last_status = Column(String(16), nullable=True)
+    last_error = Column(Text, nullable=True)
+    last_sync_job_id = Column(
+        Integer,
+        ForeignKey("telemetry_sync_jobs.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    next_due_at = Column(DateTime, nullable=True)
+    lock_token = Column(String(64), nullable=True)
+    locked_until = Column(DateTime, nullable=True)
+
+    created_at = Column(DateTime, nullable=False, server_default=utcnow())
+    updated_at = Column(
+        DateTime, nullable=False, server_default=utcnow(), onupdate=utcnow()
+    )

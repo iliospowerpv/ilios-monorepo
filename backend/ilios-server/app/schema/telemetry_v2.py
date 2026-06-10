@@ -370,3 +370,104 @@ class RefreshReadingsResponse(BaseModel):
     ended_at: Optional[datetime] = None
     error: Optional[str] = None
     errors: list[str] = Field(default_factory=list)
+
+
+class SchedulerStateResponse(BaseModel):
+    """Current automation state for one mapped site's telemetry scheduler.
+
+    Returned even when no scheduler row exists yet (synthesized defaults:
+    ``enabled=False``, default cadence) so the UI can render a consistent
+    control without a separate "configured?" probe.
+    """
+
+    site_id: int
+    provider_account_id: Optional[int] = None
+    company_id: Optional[int] = None
+    enabled: bool = False
+    cadence: str = "PT1H"
+    next_due_at: Optional[datetime] = None
+    last_run_at: Optional[datetime] = None
+    last_status: Optional[str] = None
+    last_error: Optional[str] = None
+    last_successful_pull_at: Optional[datetime] = None
+    last_sync_job_id: Optional[int] = None
+    locked_until: Optional[datetime] = None
+
+
+class SchedulerUpdateRequest(BaseModel):
+    """Enable/disable or change cadence for one site's scheduler.
+
+    Both fields are optional so a caller can change just one. ``cadence`` is
+    validated server-side against the cadence whitelist; an unknown value is
+    rejected with 422.
+    """
+
+    enabled: Optional[bool] = Field(
+        default=None, description="Enable or disable scheduled ingestion."
+    )
+    cadence: Optional[str] = Field(
+        default=None,
+        description="ISO-8601 cadence (e.g. PT1H). Must be a whitelisted value.",
+    )
+
+
+class CompanySchedulerStatusList(BaseModel):
+    """Per-site scheduler status across a company's mapped telemetry sites."""
+
+    company_id: int
+    items: list[SchedulerStateResponse] = Field(default_factory=list)
+
+
+class BackfillReadingsRequest(BaseModel):
+    """Body for a bounded historical backfill of native readings.
+
+    Provide either a ``preset`` (``7d`` / ``30d``) or an explicit window. The
+    total span is capped at 30 days; an inverted or oversized window is rejected
+    with 422. Timestamps are interpreted as UTC.
+    """
+
+    preset: Optional[str] = Field(
+        default=None, description="Convenience window: '7d' or '30d'."
+    )
+    window_start: Optional[datetime] = Field(
+        default=None, description="UTC start of the backfill window (inclusive)."
+    )
+    window_end: Optional[datetime] = Field(
+        default=None,
+        description="UTC end of the backfill window (inclusive); defaults to now.",
+    )
+
+
+class BackfillChunkResult(BaseModel):
+    """Outcome of one 24h backfill chunk."""
+
+    window_start: datetime
+    window_end: datetime
+    sync_job_id: Optional[int] = None
+    status: str
+    readings_received: int = 0
+    readings_written: int = 0
+    rollup_status: Optional[str] = None
+    error: Optional[str] = None
+
+
+class BackfillReadingsResponse(BaseModel):
+    """Aggregate outcome of a bounded backfill.
+
+    ``status`` is succeeded | partial | failed. The backfill processes 24h
+    chunks oldest->newest and stops on the first failed chunk, returning every
+    chunk attempted. It NEVER advances the scheduled cursor.
+    """
+
+    site_id: int
+    company_id: Optional[int] = None
+    status: str
+    requested_window_start: datetime
+    requested_window_end: datetime
+    chunks_total: int = 0
+    chunks_succeeded: int = 0
+    chunks_failed: int = 0
+    readings_received: int = 0
+    readings_written: int = 0
+    chunks: list[BackfillChunkResult] = Field(default_factory=list)
+    error: Optional[str] = None

@@ -225,7 +225,35 @@ async def lifespan(app: FastAPI):  # noqa: U100
     _validate_configuration()
     db = next(get_session())
     AppInitHelper(db).set_predefined_data()
-    yield
+
+    # Native V2 telemetry scheduler (Task #38). Started only behind the gate
+    # (flag + telemetry_v2_enabled + non-prod-or-durable store); a daemon thread
+    # bridges the synchronous ingestion/rollup services. Stopped gracefully after
+    # yield so an in-flight run can release its DB lease.
+    scheduler_runner = None
+    try:
+        from app.services.telemetry.scheduler_runner import (
+            TelemetrySchedulerRunner,
+            scheduler_should_run,
+        )
+
+        should_run, reason = scheduler_should_run()
+        if should_run:
+            scheduler_runner = TelemetrySchedulerRunner()
+            scheduler_runner.start()
+        else:
+            logger.info("Telemetry scheduler not started: %s", reason)
+    except Exception:  # noqa: BLE001 — scheduler must never block app startup
+        logger.exception("Telemetry scheduler failed to start")
+
+    try:
+        yield
+    finally:
+        if scheduler_runner is not None:
+            try:
+                scheduler_runner.stop()
+            except Exception:  # noqa: BLE001
+                logger.exception("Telemetry scheduler failed to stop cleanly")
 
 
 def ilios_api() -> FastAPI:  # noqa: CFQ001

@@ -119,6 +119,11 @@ class Settings(BaseSettings):
     # the credential save/test routes return 503 instead of silently
     # accepting credentials that would be lost on restart.
     telemetry_v2_enabled: bool = False
+    # In-process native telemetry scheduler (Task #38). Default off; the runner
+    # only starts when this is True AND telemetry_v2_enabled is True AND (the env
+    # is non-prod OR the credential store is durable). Backfill/control endpoints
+    # work regardless of this flag — it gates only the background poll loop.
+    telemetry_scheduler_enabled: bool = False
     telemetry_token_function_url: str
     telemetry_sites_function_url: str
     telemetry_devices_function_url: str

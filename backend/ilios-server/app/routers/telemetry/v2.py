@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
-from app.db.session import get_session
+from app.db.session import SessionFactory, get_session
 from app.helpers.authentication import get_current_user
 from app.helpers.authorization import AuthorizedUser, SettingsPermissions
 from app.helpers.authorization.module_based.telemetry import (
@@ -55,6 +55,8 @@ from app.models.telemetry import (
     TelemetryExternalSite,
     TelemetryProviderCatalog,
     TelemetrySiteMapping,
+    TelemetrySyncStatus,
+    TelemetrySyncTrigger,
 )
 from app.models.site import Site
 from app.static import PermissionsActions
@@ -76,6 +78,12 @@ from app.schema.telemetry_v2 import (
     ProviderCatalogList,
     RefreshReadingsRequest,
     RefreshReadingsResponse,
+    BackfillChunkResult,
+    BackfillReadingsRequest,
+    BackfillReadingsResponse,
+    CompanySchedulerStatusList,
+    SchedulerStateResponse,
+    SchedulerUpdateRequest,
     SiteMappingCreateRequest,
     SiteMappingResponse,
     SyncDevicesResponse,
@@ -84,11 +92,17 @@ from app.schema.telemetry_v2 import (
 )
 from app.security.redaction import fingerprint
 from app.schema.user import CurrentUserSchema
+from app.crud.telemetry_native import TelemetrySchedulerStateCRUD
 from app.services.telemetry.ingestion_service import (
     IngestionConfigError,
     run_site_refresh,
 )
 from app.services.telemetry.rollup_service import run_rollups_for_window
+from app.services.telemetry.scheduler_runner import (
+    ALLOWED_CADENCES,
+    DEFAULT_CADENCE,
+    run_ingestion_with_rollup,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -1786,4 +1800,447 @@ def refresh_site_readings(
         ended_at=summary.ended_at,
         error=summary.error,
         errors=summary.errors,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Scheduler control + status (Task #38)
+# ---------------------------------------------------------------------------
+
+
+def _resolve_scheduler_account(db: Session, site_id: int) -> Optional[int]:
+    """Resolve the provider account id backing a site's telemetry mapping.
+
+    Mirrors the ingestion service: ``provider_account_id`` first, then the
+    legacy ``connection_id``. Returns ``None`` when the site has no mapping.
+    """
+    mapping = (
+        db.query(TelemetrySiteMapping)
+        .filter(TelemetrySiteMapping.site_id == site_id)
+        .first()
+    )
+    if mapping is None:
+        return None
+    return mapping.provider_account_id or mapping.connection_id
+
+
+def _scheduler_state_to_response(state) -> SchedulerStateResponse:
+    return SchedulerStateResponse(
+        site_id=state.site_id,
+        provider_account_id=state.provider_account_id,
+        company_id=state.company_id,
+        enabled=state.enabled,
+        cadence=state.cadence or DEFAULT_CADENCE,
+        next_due_at=state.next_due_at,
+        last_run_at=state.last_run_at,
+        last_status=state.last_status,
+        last_error=state.last_error,
+        last_successful_pull_at=state.last_successful_pull_at,
+        last_sync_job_id=state.last_sync_job_id,
+        locked_until=state.locked_until,
+    )
+
+
+@telemetry_v2_router.get(
+    "/v2/sites/{site_id}/scheduler",
+    response_model=SchedulerStateResponse,
+    summary="Get the native telemetry scheduler state for one site",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def get_site_scheduler(
+    site: Annotated[Site, Depends(get_authorized_site_with_company_admin)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> SchedulerStateResponse:
+    """Return the scheduler row for a site, or synthesized disabled defaults."""
+    _enforce_company_visibility(current_user, site.company_id)
+    state = TelemetrySchedulerStateCRUD(db).get_by_site(site.id)
+    if state is not None:
+        return _scheduler_state_to_response(state)
+    return SchedulerStateResponse(
+        site_id=site.id,
+        provider_account_id=_resolve_scheduler_account(db, site.id),
+        company_id=site.company_id,
+        enabled=False,
+        cadence=DEFAULT_CADENCE,
+    )
+
+
+@telemetry_v2_router.put(
+    "/v2/sites/{site_id}/scheduler",
+    response_model=SchedulerStateResponse,
+    summary="Enable/disable or set cadence for a site's telemetry scheduler",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def update_site_scheduler(
+    payload: SchedulerUpdateRequest,
+    request: Request,
+    site: Annotated[Site, Depends(get_authorized_site_with_company_admin)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> SchedulerStateResponse:
+    """Lazily upsert the scheduler row for a site.
+
+    Enabling re-arms the cursor (``next_due_at = now``) so the next poll runs
+    promptly; disabling leaves the cursor untouched. Cadence is validated
+    against the server whitelist. The runner thread is gated independently by
+    ``telemetry_scheduler_enabled`` — toggling here records intent regardless.
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+
+    if payload.cadence is not None and payload.cadence not in ALLOWED_CADENCES:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            (
+                f"Unsupported cadence '{payload.cadence}'. Allowed values: "
+                f"{', '.join(sorted(ALLOWED_CADENCES))}."
+            ),
+        )
+
+    account_id = _resolve_scheduler_account(db, site.id)
+    if account_id is None:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            (
+                "Site is not mapped to a telemetry provider account; configure "
+                "telemetry before enabling the scheduler."
+            ),
+        )
+
+    kwargs = dict(
+        site_id=site.id,
+        provider_account_id=account_id,
+        company_id=site.company_id,
+        enabled=payload.enabled,
+        cadence=payload.cadence,
+    )
+    if payload.enabled is True:
+        kwargs["next_due_at"] = _utcnow()
+
+    state = TelemetrySchedulerStateCRUD(db).upsert_config(**kwargs)
+
+    try:
+        from app.routers.telemetry.telemetry import _create_audit_log
+
+        _create_audit_log(
+            request,
+            db,
+            "telemetry_v2_scheduler_update",
+            (
+                f"Updated telemetry scheduler for project/site {site.id} "
+                f"(enabled={state.enabled}, cadence={state.cadence})"
+            ),
+            is_success=True,
+        )
+    except Exception:  # noqa: BLE001
+        logger.warning(
+            "telemetry_v2_scheduler_update_audit_failed site_id=%s", site.id
+        )
+
+    return _scheduler_state_to_response(state)
+
+
+@telemetry_v2_router.get(
+    "/v2/companies/{company_id}/scheduler/status",
+    response_model=CompanySchedulerStatusList,
+    summary="Scheduler status across a company's mapped telemetry sites",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def company_scheduler_status(
+    company_id: int,
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> CompanySchedulerStatusList:
+    """List per-site scheduler state for every mapped site in a company.
+
+    Sites that are mapped but have no scheduler row yet are returned with
+    synthesized disabled defaults so the company view is complete.
+    """
+    _enforce_company_visibility(current_user, company_id)
+
+    mappings = (
+        db.query(TelemetrySiteMapping)
+        .join(Site, Site.id == TelemetrySiteMapping.site_id)
+        .filter(
+            Site.company_id == company_id,
+            TelemetrySiteMapping.is_active.is_(True),
+        )
+        .all()
+    )
+    site_ids = [m.site_id for m in mappings]
+    states = TelemetrySchedulerStateCRUD(db).map_by_site(site_ids)
+
+    items: list[SchedulerStateResponse] = []
+    for mapping in mappings:
+        state = states.get(mapping.site_id)
+        if state is not None:
+            items.append(_scheduler_state_to_response(state))
+        else:
+            items.append(
+                SchedulerStateResponse(
+                    site_id=mapping.site_id,
+                    provider_account_id=(
+                        mapping.provider_account_id or mapping.connection_id
+                    ),
+                    company_id=company_id,
+                    enabled=False,
+                    cadence=DEFAULT_CADENCE,
+                )
+            )
+    return CompanySchedulerStatusList(company_id=company_id, items=items)
+
+
+# ---------------------------------------------------------------------------
+# Bounded historical backfill (Task #38)
+# ---------------------------------------------------------------------------
+
+_BACKFILL_PRESETS = {"7d": timedelta(days=7), "30d": timedelta(days=30)}
+_MAX_BACKFILL_WINDOW = timedelta(days=30)
+_BACKFILL_CHUNK = timedelta(hours=24)
+# Generous lease so a long multi-chunk backfill holds the lock for its whole
+# run. If it ever overruns, idempotent upserts make the overlap harmless and the
+# token-guarded release prevents clobbering a newer run.
+_BACKFILL_LEASE_SECONDS = 3600
+
+
+@telemetry_v2_router.post(
+    "/v2/sites/{site_id}/backfill-readings",
+    response_model=BackfillReadingsResponse,
+    summary="Bounded historical backfill of native telemetry readings",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def backfill_site_readings(
+    payload: BackfillReadingsRequest,
+    request: Request,
+    site: Annotated[Site, Depends(get_authorized_site_with_company_admin)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    credential_store: Annotated[CredentialStore, Depends(get_credential_store)],
+) -> BackfillReadingsResponse:
+    """Backfill native readings for one mapped site over a bounded window.
+
+    Same safety contract as the manual refresh (never wipes, idempotent,
+    additive-only, GCP only as credential store), with these backfill specifics:
+
+    - **Bounded.** Total span capped at 30 days; inverted/oversized -> 422.
+    - **Chunked.** Processed as 24h chunks oldest->newest, with bucket-aligned
+      rollups per chunk; stops on the first failed chunk and returns ``partial``.
+    - **Serialized.** Claims the *same* per-site lease lock as the scheduler, so
+      a backfill and a scheduled run can never overlap (-> 409 when held).
+    - **Cursor-safe.** NEVER advances ``last_successful_pull_at`` or
+      ``next_due_at`` — a backfill of old data must not move the live cursor.
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+    _block_if_storage_not_durable(credential_store, operation="backfill_readings")
+
+    # Resolve the window from a preset or explicit bounds.
+    window_end = (
+        _coerce_naive_utc(payload.window_end) if payload.window_end else _utcnow()
+    )
+    if payload.preset is not None:
+        if payload.preset not in _BACKFILL_PRESETS:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                (
+                    f"Unsupported preset '{payload.preset}'. Allowed: "
+                    f"{', '.join(sorted(_BACKFILL_PRESETS))}."
+                ),
+            )
+        window_start = window_end - _BACKFILL_PRESETS[payload.preset]
+    elif payload.window_start is not None:
+        window_start = _coerce_naive_utc(payload.window_start)
+    else:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "Provide a preset ('7d'/'30d') or an explicit window_start.",
+        )
+
+    if window_end <= window_start:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "window_end must be after window_start.",
+        )
+    if window_end - window_start > _MAX_BACKFILL_WINDOW:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            (
+                "Backfill window exceeds the maximum of "
+                f"{_MAX_BACKFILL_WINDOW.days} days."
+            ),
+        )
+
+    # Resolve the provider account and lazily ensure a scheduler row to hold the
+    # lock (a site may be backfilled without ever enabling the scheduler).
+    account_id = _resolve_scheduler_account(db, site.id)
+    if account_id is None:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Site is not mapped to a telemetry provider account.",
+        )
+
+    crud = TelemetrySchedulerStateCRUD(db)
+    state = crud.ensure_state(
+        site_id=site.id,
+        provider_account_id=account_id,
+        company_id=site.company_id,
+    )
+
+    token = secrets.token_hex(16)
+    if not crud.claim(
+        state.id,
+        token=token,
+        lease_seconds=_BACKFILL_LEASE_SECONDS,
+        require_enabled=False,
+    ):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            (
+                "A telemetry ingestion run is already in progress for this "
+                "site. Try again once it completes."
+            ),
+        )
+
+    chunks: list[BackfillChunkResult] = []
+    chunks_succeeded = 0
+    chunks_failed = 0
+    total_received = 0
+    total_written = 0
+    saw_partial = False
+    overall_status = "succeeded"
+    overall_error: Optional[str] = None
+
+    try:
+        chunk_start = window_start
+        while chunk_start < window_end:
+            chunk_end = min(chunk_start + _BACKFILL_CHUNK, window_end)
+            try:
+                result = run_ingestion_with_rollup(
+                    db,
+                    site_id=site.id,
+                    window_start=chunk_start,
+                    window_end=chunk_end,
+                    trigger=TelemetrySyncTrigger.backfill,
+                    triggered_by_user_id=getattr(current_user, "id", None),
+                    credential_store=credential_store,
+                )
+            except IngestionConfigError as exc:
+                chunks.append(
+                    BackfillChunkResult(
+                        window_start=chunk_start,
+                        window_end=chunk_end,
+                        status="config_error",
+                        error=exc.detail,
+                    )
+                )
+                chunks_failed += 1
+                overall_status = "partial" if chunks_succeeded else "failed"
+                overall_error = exc.detail
+                break
+
+            summary = result.summary
+            rollup = result.rollup
+            total_received += summary.readings_received
+            total_written += summary.readings_written
+            chunks.append(
+                BackfillChunkResult(
+                    window_start=chunk_start,
+                    window_end=chunk_end,
+                    sync_job_id=summary.sync_job_id,
+                    status=summary.status.value,
+                    readings_received=summary.readings_received,
+                    readings_written=summary.readings_written,
+                    rollup_status=rollup.status,
+                    error=summary.error,
+                )
+            )
+
+            if summary.status == TelemetrySyncStatus.failed:
+                chunks_failed += 1
+                overall_status = "partial" if chunks_succeeded else "failed"
+                overall_error = summary.error
+                break
+
+            chunks_succeeded += 1
+            if summary.status == TelemetrySyncStatus.partial:
+                saw_partial = True
+            chunk_start = chunk_end
+        else:
+            overall_status = "partial" if saw_partial else "succeeded"
+    finally:
+        # Release the lock WITHOUT advancing the cursor or next_due_at: a
+        # historical backfill must never move the live scheduled cursor. The
+        # token guard makes this a no-op if our lease already expired and the
+        # row was re-claimed.
+        #
+        # Use a FRESH session: an unexpected error may have left the request
+        # session (db) in a broken transaction, which would make the release
+        # itself fail and strand the lock until the lease self-expires. Mirrors
+        # the scheduler runner's _release_after_error pattern.
+        last_job_id = next(
+            (c.sync_job_id for c in reversed(chunks) if c.sync_job_id is not None),
+            None,
+        )
+        release_session = SessionFactory()
+        try:
+            TelemetrySchedulerStateCRUD(release_session).finish_run(
+                state.id,
+                token=token,
+                last_run_at=_utcnow(),
+                last_status=f"bf_{overall_status}"[:16],
+                last_error=overall_error,
+                last_sync_job_id=last_job_id,
+            )
+        except Exception:  # noqa: BLE001
+            logger.exception(
+                "telemetry_v2_backfill_release_failed site_id=%s state_id=%s",
+                site.id,
+                state.id,
+            )
+        finally:
+            release_session.close()
+
+    logger.info(
+        "telemetry_v2_backfill site_id=%s status=%s chunks=%s ok=%s failed=%s "
+        "received=%s written=%s",
+        site.id,
+        overall_status,
+        len(chunks),
+        chunks_succeeded,
+        chunks_failed,
+        total_received,
+        total_written,
+    )
+
+    try:
+        from app.routers.telemetry.telemetry import _create_audit_log
+
+        _create_audit_log(
+            request,
+            db,
+            "telemetry_v2_backfill_readings",
+            (
+                f"Backfilled telemetry for project/site {site.id} "
+                f"(status {overall_status}, {chunks_succeeded} chunk(s) ok, "
+                f"{total_written} readings written)"
+            ),
+            is_success=(overall_status != "failed"),
+        )
+    except Exception:  # noqa: BLE001
+        logger.warning(
+            "telemetry_v2_backfill_readings_audit_failed site_id=%s", site.id
+        )
+
+    return BackfillReadingsResponse(
+        site_id=site.id,
+        company_id=site.company_id,
+        status=overall_status,
+        requested_window_start=window_start,
+        requested_window_end=window_end,
+        chunks_total=len(chunks),
+        chunks_succeeded=chunks_succeeded,
+        chunks_failed=chunks_failed,
+        readings_received=total_received,
+        readings_written=total_written,
+        chunks=chunks,
+        error=overall_error,
     )

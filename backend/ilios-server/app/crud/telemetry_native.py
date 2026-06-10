@@ -12,22 +12,30 @@ Rollup tables are written by the rollup service and have their own CRUD.
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
+from sqlalchemy import or_, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.crud.base_crud import BaseCRUD
 from app.models.telemetry import (
     TelemetryDeviceIntervalRollup,
     TelemetryReading,
+    TelemetrySchedulerState,
     TelemetrySiteIntervalRollup,
     TelemetrySyncJob,
     TelemetrySyncScope,
     TelemetrySyncStatus,
     TelemetrySyncTrigger,
 )
+
+# Sentinel so ``finish_run`` can distinguish "leave this column unchanged" from
+# "set it to NULL". Scheduled runs always advance ``next_due_at`` and may set the
+# cursor; backfill must leave both untouched.
+_UNSET: object = object()
 
 # Keep a single ON CONFLICT statement from growing unbounded for wide windows.
 _UPSERT_CHUNK_SIZE = 1000
@@ -229,3 +237,224 @@ class TelemetryDeviceRollupCRUD(BaseCRUD):
             affected += result.rowcount or 0
         self.db_session.flush()
         return affected
+
+
+class TelemetrySchedulerStateCRUD(BaseCRUD):
+    """Scheduling/automation state + lease-based overlap lock.
+
+    Shared by the in-process scheduler runner and the bounded backfill endpoint.
+    The lock primitive (:meth:`claim` / :meth:`finish_run`) guarantees that at
+    most one run executes for a given (site, provider account) at a time, even
+    across uvicorn ``--reload`` restarts and multiple workers, because the claim
+    is a single atomic conditional UPDATE.
+    """
+
+    def __init__(self, db_session: Session):
+        super().__init__(model=TelemetrySchedulerState, db_session=db_session)
+
+    def get_by_site(self, site_id: int) -> Optional[TelemetrySchedulerState]:
+        return (
+            self.db_session.query(TelemetrySchedulerState)
+            .filter(TelemetrySchedulerState.site_id == site_id)
+            .order_by(TelemetrySchedulerState.id.asc())
+            .first()
+        )
+
+    def get_by_site_account(
+        self, site_id: int, provider_account_id: int
+    ) -> Optional[TelemetrySchedulerState]:
+        return (
+            self.db_session.query(TelemetrySchedulerState)
+            .filter(
+                TelemetrySchedulerState.site_id == site_id,
+                TelemetrySchedulerState.provider_account_id == provider_account_id,
+            )
+            .first()
+        )
+
+    def map_by_site(self, site_ids: list[int]) -> dict[int, TelemetrySchedulerState]:
+        """Return the scheduler state for each given site id (first row wins)."""
+        if not site_ids:
+            return {}
+        rows = (
+            self.db_session.query(TelemetrySchedulerState)
+            .filter(TelemetrySchedulerState.site_id.in_(site_ids))
+            .order_by(TelemetrySchedulerState.id.asc())
+            .all()
+        )
+        out: dict[int, TelemetrySchedulerState] = {}
+        for row in rows:
+            out.setdefault(row.site_id, row)
+        return out
+
+    def ensure_state(
+        self, *, site_id: int, provider_account_id: int, company_id: int
+    ) -> TelemetrySchedulerState:
+        """Lazily create a disabled scheduler row if one does not yet exist."""
+        state = self.get_by_site_account(site_id, provider_account_id)
+        if state is not None:
+            return state
+        state = TelemetrySchedulerState(
+            site_id=site_id,
+            provider_account_id=provider_account_id,
+            company_id=company_id,
+            enabled=False,
+            cadence="PT1H",
+        )
+        self.db_session.add(state)
+        try:
+            self.db_session.commit()
+        except IntegrityError:
+            # A concurrent first-time enable/backfill won the unique
+            # (site_id, provider_account_id) race; fall back to the row it
+            # created instead of surfacing a 500.
+            self.db_session.rollback()
+            existing = self.get_by_site_account(site_id, provider_account_id)
+            if existing is None:
+                raise
+            return existing
+        self.db_session.refresh(state)
+        return state
+
+    def upsert_config(
+        self,
+        *,
+        site_id: int,
+        provider_account_id: int,
+        company_id: int,
+        enabled: Optional[bool] = None,
+        cadence: Optional[str] = None,
+        next_due_at: object = _UNSET,
+    ) -> TelemetrySchedulerState:
+        """Create-or-update the enable flag / cadence (the PUT path).
+
+        ``next_due_at`` is left untouched unless explicitly provided so callers
+        can decide scheduling semantics (e.g. set it to "now" on enable).
+        """
+        state = self.ensure_state(
+            site_id=site_id,
+            provider_account_id=provider_account_id,
+            company_id=company_id,
+        )
+        if cadence is not None:
+            state.cadence = cadence
+        if enabled is not None:
+            state.enabled = enabled
+        if next_due_at is not _UNSET:
+            state.next_due_at = next_due_at  # type: ignore[assignment]
+        self.db_session.commit()
+        self.db_session.refresh(state)
+        return state
+
+    def list_due(
+        self, *, now: Optional[datetime] = None, limit: int = 50
+    ) -> list[TelemetrySchedulerState]:
+        """Enabled rows that are due and not currently locked (advisory select).
+
+        The authoritative overlap guard is :meth:`claim`; this is just a cheap
+        candidate filter for the poll loop.
+        """
+        now = now or datetime.utcnow()
+        return (
+            self.db_session.query(TelemetrySchedulerState)
+            .filter(
+                TelemetrySchedulerState.enabled.is_(True),
+                or_(
+                    TelemetrySchedulerState.next_due_at.is_(None),
+                    TelemetrySchedulerState.next_due_at <= now,
+                ),
+                or_(
+                    TelemetrySchedulerState.locked_until.is_(None),
+                    TelemetrySchedulerState.locked_until < now,
+                ),
+            )
+            .order_by(TelemetrySchedulerState.id.asc())
+            .limit(limit)
+            .all()
+        )
+
+    def claim(
+        self,
+        state_id: int,
+        *,
+        token: str,
+        lease_seconds: int,
+        require_enabled: bool = False,
+        now: Optional[datetime] = None,
+    ) -> bool:
+        """Atomically claim the lock. Returns True only for the single winner.
+
+        The conditional UPDATE (``locked_until IS NULL OR locked_until < now``)
+        is the entire overlap-prevention mechanism — two concurrent callers race
+        on the same row and exactly one gets ``rowcount == 1``. Committed in its
+        own short transaction before any provider work begins.
+        """
+        now = now or datetime.utcnow()
+        lease_until = now + timedelta(seconds=lease_seconds)
+        conditions = [
+            TelemetrySchedulerState.id == state_id,
+            or_(
+                TelemetrySchedulerState.locked_until.is_(None),
+                TelemetrySchedulerState.locked_until < now,
+            ),
+        ]
+        if require_enabled:
+            conditions.append(TelemetrySchedulerState.enabled.is_(True))
+        stmt = (
+            update(TelemetrySchedulerState)
+            .where(*conditions)
+            .values(lock_token=token, locked_until=lease_until, updated_at=now)
+            .execution_options(synchronize_session=False)
+        )
+        result = self.db_session.execute(stmt)
+        self.db_session.commit()
+        return (result.rowcount or 0) == 1
+
+    def finish_run(
+        self,
+        state_id: int,
+        *,
+        token: str,
+        last_run_at: datetime,
+        last_status: str,
+        last_error: Optional[str] = None,
+        last_sync_job_id: Optional[int] = None,
+        next_due_at: object = _UNSET,
+        last_successful_pull_at: object = _UNSET,
+        now: Optional[datetime] = None,
+    ) -> bool:
+        """Record results and release the lock — but only if we still hold it.
+
+        The ``lock_token == token`` guard means a run whose lease already expired
+        (and was re-claimed by another worker) becomes a no-op here, so it can
+        never clobber the newer run's cursor or lock. ``next_due_at`` and
+        ``last_successful_pull_at`` stay unchanged unless explicitly passed, which
+        is how backfill avoids advancing the scheduled cursor or the cadence.
+        """
+        now = now or datetime.utcnow()
+        values: dict = {
+            "last_run_at": last_run_at,
+            "last_status": last_status,
+            "last_error": last_error,
+            "lock_token": None,
+            "locked_until": None,
+            "updated_at": now,
+        }
+        if last_sync_job_id is not None:
+            values["last_sync_job_id"] = last_sync_job_id
+        if next_due_at is not _UNSET:
+            values["next_due_at"] = next_due_at
+        if last_successful_pull_at is not _UNSET:
+            values["last_successful_pull_at"] = last_successful_pull_at
+        stmt = (
+            update(TelemetrySchedulerState)
+            .where(
+                TelemetrySchedulerState.id == state_id,
+                TelemetrySchedulerState.lock_token == token,
+            )
+            .values(**values)
+            .execution_options(synchronize_session=False)
+        )
+        result = self.db_session.execute(stmt)
+        self.db_session.commit()
+        return (result.rowcount or 0) == 1
