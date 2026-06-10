@@ -260,6 +260,11 @@ export interface RefreshReadingsResponse {
   ended_at: string | null;
   error: string | null;
   errors: string[];
+  /**
+   * Seconds until another manual refresh/backfill is allowed for this project
+   * (shared per-project cooldown). 0 means a manual run is available now.
+   */
+  cooldown_seconds: number;
 }
 
 /**
@@ -445,4 +450,9 @@ export interface BackfillReadingsResponse {
   readings_written: number;
   chunks: BackfillChunkResult[];
   error: string | null;
+  /**
+   * Seconds until another manual refresh/backfill is allowed for this project
+   * (shared per-project cooldown). 0 means a manual run is available now.
+   */
+  cooldown_seconds: number;
 }

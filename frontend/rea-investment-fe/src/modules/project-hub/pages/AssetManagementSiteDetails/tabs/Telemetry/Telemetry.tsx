@@ -12,6 +12,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import ErrorIcon from '@mui/icons-material/Error';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import SettingsInputAntennaIcon from '@mui/icons-material/SettingsInputAntenna';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 
 import { ApiClient } from '../../../../../../api';
 import type {
@@ -20,10 +21,11 @@ import type {
   TelemetryHealthResponse
 } from '../../../../../../api/connections';
 import { useTelemetryAdminPermission } from '../../../../../../hooks/useTelemetryAdminPermission';
+import { useTelemetryCooldown } from '../../../../../../hooks/useTelemetryCooldown';
 import { AssetManagementSiteDetailsTabProps } from '../types';
 import { TelemetryWizard } from './TelemetryWizard';
 import { RefreshTelemetryButton } from './RefreshTelemetryButton';
-import { SchedulerAdminCard } from './SchedulerAdminCard';
+import { ScheduleDialog } from './ScheduleDialog';
 
 const getStatusColor = (status: TelemetryHealthStatus): 'success' | 'warning' | 'error' | 'default' => {
   switch (status) {
@@ -178,6 +180,8 @@ const HealthStrip: React.FC<HealthStripProps> = ({ health }) => {
 
 export const Telemetry: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDetails }) => {
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const cooldown = useTelemetryCooldown();
 
   const {
     data: readiness,
@@ -241,14 +245,27 @@ export const Telemetry: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDe
             <RefreshTelemetryButton
               siteId={siteDetails.id}
               disabledReason={refreshDisabledReason}
+              isCoolingDown={cooldown.isCoolingDown}
+              cooldownSecondsRemaining={cooldown.secondsRemaining}
+              onCooldown={cooldown.startCooldown}
               onRefreshed={() => {
                 refetchReadiness();
                 refetchHealth();
               }}
             />
           )}
+          {isConfigured && isTelemetryAdmin && (
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<ScheduleIcon />}
+              onClick={() => setScheduleOpen(true)}
+            >
+              Automatic Refresh Schedule
+            </Button>
+          )}
           <Button variant="contained" color="primary" onClick={() => setWizardOpen(true)}>
-            {isConfigured ? 'Manage Telemetry' : 'Connect Telemetry'}
+            {isConfigured ? 'Map Telemetry' : 'Connect Telemetry'}
           </Button>
         </Box>
       </Box>
@@ -256,12 +273,6 @@ export const Telemetry: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDe
       {readiness && <ReadinessStrip readiness={readiness} />}
 
       {health && <HealthStrip health={health} />}
-
-      {isConfigured && isTelemetryAdmin && (
-        <Box sx={{ mt: 2 }}>
-          <SchedulerAdminCard siteId={siteDetails.id} />
-        </Box>
-      )}
 
       {!isConfigured && (
         <Alert severity="info" sx={{ mt: 2 }}>
@@ -287,6 +298,15 @@ export const Telemetry: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDe
       )}
 
       <TelemetryWizard open={wizardOpen} onClose={handleWizardClose} siteDetails={siteDetails} readiness={readiness} />
+
+      {isConfigured && isTelemetryAdmin && (
+        <ScheduleDialog
+          open={scheduleOpen}
+          onClose={() => setScheduleOpen(false)}
+          siteId={siteDetails.id}
+          cooldown={cooldown}
+        />
+      )}
     </Box>
   );
 };

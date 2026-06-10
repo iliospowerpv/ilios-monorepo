@@ -10,6 +10,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
 import { useRefreshSiteReadings } from '../../../../../../hooks/telemetryV2';
+import { formatCooldown, parseRetryAfterSeconds } from '../../../../../../hooks/useTelemetryCooldown';
 import type { RefreshReadingsResponse } from '../../../../../../types/telemetryV2';
 
 interface RefreshTelemetryButtonProps {
@@ -22,6 +23,16 @@ interface RefreshTelemetryButtonProps {
    */
   disabledReason?: string;
   onRefreshed?: (result: RefreshReadingsResponse) => void;
+  /** True while the shared per-project manual cooldown is still counting down. */
+  isCoolingDown?: boolean;
+  /** Whole seconds left on that cooldown (drives the disabled-state countdown). */
+  cooldownSecondsRemaining?: number;
+  /**
+   * Called with the cooldown length (seconds) whenever the backend reports one —
+   * after a successful refresh (response `cooldown_seconds`) or a 429 rejection
+   * (`Retry-After`). Lets the parent share one cooldown across Refresh + Catch-up.
+   */
+  onCooldown?: (seconds: number) => void;
 }
 
 interface Feedback {
@@ -67,7 +78,10 @@ export const RefreshTelemetryButton: React.FC<RefreshTelemetryButtonProps> = ({
   siteId,
   disabled,
   disabledReason,
-  onRefreshed
+  onRefreshed,
+  isCoolingDown = false,
+  cooldownSecondsRemaining = 0,
+  onCooldown
 }) => {
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
@@ -76,9 +90,21 @@ export const RefreshTelemetryButton: React.FC<RefreshTelemetryButtonProps> = ({
     onSuccess: result => {
       setFeedback(summarizeResult(result));
       setLastRefreshedAt(result.ended_at || new Date().toISOString());
+      onCooldown?.(result.cooldown_seconds);
       onRefreshed?.(result);
     },
     onError: (err: unknown) => {
+      // A 429 means the shared per-project cooldown is still active; surface it
+      // as a soft warning and arm the countdown rather than a hard error.
+      const retryAfter = parseRetryAfterSeconds(err);
+      if (retryAfter !== null) {
+        onCooldown?.(retryAfter);
+        setFeedback({
+          severity: 'warning',
+          message: `Telemetry was refreshed recently. Try again in ${formatCooldown(retryAfter)}.`
+        });
+        return;
+      }
       const axiosErr = err as { response?: { data?: { detail?: string } }; message?: string };
       const message = axiosErr?.response?.data?.detail || axiosErr?.message || 'Telemetry refresh failed.';
       setFeedback({ severity: 'error', message });
@@ -87,8 +113,14 @@ export const RefreshTelemetryButton: React.FC<RefreshTelemetryButtonProps> = ({
 
   const isPending = refresh.isPending;
   const isBlocked = Boolean(disabledReason);
-  const tooltipTitle =
-    disabledReason || 'Pull the latest telemetry for every device on this project (most recent 24 hours).';
+  let tooltipTitle: string;
+  if (disabledReason) {
+    tooltipTitle = disabledReason;
+  } else if (isCoolingDown) {
+    tooltipTitle = `Telemetry was refreshed recently. Available again in ${formatCooldown(cooldownSecondsRemaining)}.`;
+  } else {
+    tooltipTitle = 'Pull the latest telemetry for every device on this project (most recent 24 hours).';
+  }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
@@ -99,9 +131,13 @@ export const RefreshTelemetryButton: React.FC<RefreshTelemetryButtonProps> = ({
             color="primary"
             startIcon={isPending ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
             onClick={() => refresh.mutate({})}
-            disabled={disabled || isBlocked || isPending}
+            disabled={disabled || isBlocked || isPending || isCoolingDown}
           >
-            {isPending ? 'Refreshing…' : 'Refresh Telemetry'}
+            {isPending
+              ? 'Refreshing…'
+              : isCoolingDown
+                ? `Available in ${formatCooldown(cooldownSecondsRemaining)}`
+                : 'Refresh Telemetry'}
           </Button>
         </span>
       </Tooltip>

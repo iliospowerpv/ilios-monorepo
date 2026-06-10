@@ -56,6 +56,7 @@ from app.models.telemetry import (
     TelemetryExternalSite,
     TelemetryProviderCatalog,
     TelemetrySiteMapping,
+    TelemetrySyncJob,
     TelemetrySyncStatus,
     TelemetrySyncTrigger,
 )
@@ -1672,6 +1673,63 @@ def _coerce_naive_utc(dt: datetime) -> datetime:
     return dt
 
 
+# Manual triggers (the user-facing "Refresh" and "Catch-up"/backfill controls)
+# share one short per-project cooldown. Opening these controls to more roles
+# widens the abuse surface, so a successful manual run blocks the next manual run
+# on the same project for this window. Scheduled runs are exempt, and the
+# scheduler's own 15-minute cadence floor is enforced separately and unchanged.
+_MANUAL_TRIGGER_COOLDOWN = timedelta(minutes=5)
+_MANUAL_TRIGGERS = (TelemetrySyncTrigger.manual, TelemetrySyncTrigger.backfill)
+
+
+def _manual_cooldown_remaining(db: Session, site_id: int) -> int:
+    """Seconds remaining before another manual refresh/backfill is allowed.
+
+    Looks at the most recent *manual* or *backfill* sync job for the site
+    (scheduled runs are exempt) and compares its start time to now. Returns 0
+    when no cooldown is in effect. Timestamps are naive UTC, matching the
+    storage convention used across this module.
+    """
+    last = (
+        db.query(TelemetrySyncJob)
+        .filter(
+            TelemetrySyncJob.site_id == site_id,
+            TelemetrySyncJob.trigger.in_(_MANUAL_TRIGGERS),
+        )
+        .order_by(TelemetrySyncJob.id.desc())
+        .first()
+    )
+    if last is None:
+        return 0
+    started = last.started_at or last.created_at
+    if started is None:
+        return 0
+    remaining = _MANUAL_TRIGGER_COOLDOWN - (_utcnow() - started)
+    seconds = int(remaining.total_seconds())
+    return seconds if seconds > 0 else 0
+
+
+def _enforce_manual_cooldown(db: Session, site_id: int, *, action: str) -> None:
+    """Raise HTTP 429 when a manual refresh/backfill is still cooling down.
+
+    The check runs *before* any new job is created, so the most recent job
+    considered is always a prior run, never the in-flight one. A 429 here means
+    no provider pull is started. The ``Retry-After`` header carries the exact
+    seconds remaining so the UI can drive an accurate countdown.
+    """
+    remaining = _manual_cooldown_remaining(db, site_id)
+    if remaining > 0:
+        minutes = (remaining + 59) // 60
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            (
+                f"{action} is cooling down for this project to protect the "
+                f"telemetry provider. Try again in about {minutes} minute(s)."
+            ),
+            headers={"Retry-After": str(remaining)},
+        )
+
+
 @telemetry_v2_router.post(
     "/v2/sites/{site_id}/refresh-readings",
     response_model=RefreshReadingsResponse,
@@ -1712,6 +1770,10 @@ def refresh_site_readings(
     # In production, a manual refresh re-presents stored credentials to the
     # provider; refuse if the credential store cannot durably hold them.
     _block_if_storage_not_durable(credential_store, operation="refresh_readings")
+
+    # Abuse protection: reject (429) if a manual refresh/backfill ran for this
+    # project within the cooldown window, before any provider pull is started.
+    _enforce_manual_cooldown(db, site.id, action="Refresh")
 
     # Resolve + bound the pull window (default: most recent 24h).
     window_end = _coerce_naive_utc(payload.window_end) if payload.window_end else _utcnow()
@@ -1797,6 +1859,10 @@ def refresh_site_readings(
             "telemetry_v2_refresh_readings_audit_failed site_id=%s", site.id
         )
 
+    # Reflect the cooldown started by the job we just created so the UI can drive
+    # an accurate countdown without re-fetching.
+    cooldown_seconds = _manual_cooldown_remaining(db, site.id)
+
     return RefreshReadingsResponse(
         sync_job_id=summary.sync_job_id,
         correlation_id=summary.correlation_id,
@@ -1820,6 +1886,7 @@ def refresh_site_readings(
         ended_at=summary.ended_at,
         error=summary.error,
         errors=summary.errors,
+        cooldown_seconds=cooldown_seconds,
     )
 
 
@@ -2064,6 +2131,10 @@ def backfill_site_readings(
     _enforce_company_visibility(current_user, site.company_id)
     _block_if_storage_not_durable(credential_store, operation="backfill_readings")
 
+    # Abuse protection: shares the same per-project cooldown as the manual
+    # refresh, checked before claiming the lease so it returns 429 (not 409).
+    _enforce_manual_cooldown(db, site.id, action="Catch-up")
+
     # Resolve the window from a preset or explicit bounds.
     window_end = (
         _coerce_naive_utc(payload.window_end) if payload.window_end else _utcnow()
@@ -2267,6 +2338,8 @@ def backfill_site_readings(
             "telemetry_v2_backfill_readings_audit_failed site_id=%s", site.id
         )
 
+    cooldown_seconds = _manual_cooldown_remaining(db, site.id)
+
     return BackfillReadingsResponse(
         site_id=site.id,
         company_id=site.company_id,
@@ -2280,6 +2353,7 @@ def backfill_site_readings(
         readings_written=total_written,
         chunks=chunks,
         error=overall_error,
+        cooldown_seconds=cooldown_seconds,
     )
 
 

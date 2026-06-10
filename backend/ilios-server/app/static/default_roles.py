@@ -48,6 +48,8 @@ PROJECT_SITE_OWNER_ROLES = [
                 # Reporting
                 f"{PermissionsModules.reporting}.{PermissionsActions.edit}",
                 f"{PermissionsModules.reporting}.{PermissionsActions.view}",
+                # Telemetry (scheduler / manual refresh administration)
+                f"{PermissionsModules.telemetry}.{PermissionsActions.admin}",
             ],
         ),
         CompanyTypes.project_site_owner,
@@ -267,6 +269,8 @@ PROJECT_SITE_OWNER_ROLES = [
                 # Reporting
                 f"{PermissionsModules.reporting}.{PermissionsActions.edit}",
                 f"{PermissionsModules.reporting}.{PermissionsActions.view}",
+                # Telemetry (scheduler / manual refresh administration)
+                f"{PermissionsModules.telemetry}.{PermissionsActions.admin}",
             ],
         ),
         CompanyTypes.project_site_owner,
@@ -557,6 +561,8 @@ OM_CONTRACTOR_ROLES = [
                 # Reporting
                 f"{PermissionsModules.reporting}.{PermissionsActions.edit}",
                 f"{PermissionsModules.reporting}.{PermissionsActions.view}",
+                # Telemetry (scheduler / manual refresh administration)
+                f"{PermissionsModules.telemetry}.{PermissionsActions.admin}",
             ],
         ),
         CompanyTypes.operation_maintenance_contractor,

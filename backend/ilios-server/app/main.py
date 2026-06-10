@@ -273,6 +273,10 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["*"],
+        # Retry-After is not a CORS-safelisted response header, so it must be
+        # explicitly exposed for the browser to read it on a 429 (manual
+        # telemetry refresh/backfill cooldown) and drive the UI countdown.
+        expose_headers=["Retry-After"],
     )
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RequestsLoggerMiddleware)

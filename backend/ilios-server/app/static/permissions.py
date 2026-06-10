@@ -11,11 +11,13 @@ class PermissionsModules(BaseMessageEnum):
     role_based_dashboard = "Role-based Homepage/Tab"
     settings = "Settings Page"
     reporting = "Reports"
+    telemetry = "Telemetry"
 
 
 class PermissionsActions(BaseMessageEnum):
     view = "view"
     edit = "edit"
+    admin = "admin"
 
 
 class PermissionType:

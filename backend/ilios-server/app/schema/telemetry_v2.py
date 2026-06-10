@@ -372,6 +372,13 @@ class RefreshReadingsResponse(BaseModel):
     ended_at: Optional[datetime] = None
     error: Optional[str] = None
     errors: list[str] = Field(default_factory=list)
+    cooldown_seconds: int = Field(
+        default=0,
+        description=(
+            "Seconds until another manual refresh/backfill is allowed for this "
+            "project (shared per-project cooldown). 0 means available now."
+        ),
+    )
 
 
 class SchedulerStateResponse(BaseModel):
@@ -473,6 +480,13 @@ class BackfillReadingsResponse(BaseModel):
     readings_written: int = 0
     chunks: list[BackfillChunkResult] = Field(default_factory=list)
     error: Optional[str] = None
+    cooldown_seconds: int = Field(
+        default=0,
+        description=(
+            "Seconds until another manual refresh/backfill is allowed for this "
+            "project (shared per-project cooldown). 0 means available now."
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------
