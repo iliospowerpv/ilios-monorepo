@@ -96,7 +96,6 @@ class _SiteIngestionContext:
     catalog: TelemetryProviderCatalog
     external_site_id: str
     metric_specs: tuple[MetricFieldSpec, ...]
-    external_device_ids: tuple[str, ...]
     external_to_device: dict[str, int]
 
 
@@ -239,9 +238,13 @@ def _resolve_site_ingestion_context(
             status_code=409,
         )
 
-    # Mapped devices define the pull scope. Each active device mapping under
-    # this site contributes its external device id; readings are restricted to
-    # these so we never pull hardware the user hasn't mapped.
+    # The pull scope is the whole mapped site: we ingest every device the
+    # provider returns for the site, not only the ones the user has mapped.
+    # Active device mappings are still loaded so provider device ids can be
+    # resolved to iliOS device ids; any provider-returned device that isn't
+    # mapped is persisted with ``device_id = NULL`` (its external device id is
+    # always retained for fidelity and later reconciliation). A mapped site
+    # with zero mapped devices is therefore still refreshable.
     device_rows = (
         db.query(TelemetryDeviceMapping, Device)
         .join(Device, Device.id == TelemetryDeviceMapping.device_id)
@@ -259,13 +262,6 @@ def _resolve_site_ingestion_context(
         # First active mapping wins if duplicates somehow exist.
         external_to_device.setdefault(ext_id, device.id)
 
-    if not external_to_device:
-        raise IngestionConfigError(
-            "No devices are mapped for this project, so there is nothing to "
-            "refresh.",
-            status_code=409,
-        )
-
     company_id = mapping.company_id or site.company_id or account.company_id
 
     return _SiteIngestionContext(
@@ -275,7 +271,6 @@ def _resolve_site_ingestion_context(
         catalog=catalog,
         external_site_id=external_site_id,
         metric_specs=metric_specs,
-        external_device_ids=tuple(external_to_device.keys()),
         external_to_device=external_to_device,
     )
 
@@ -339,11 +334,33 @@ def run_site_refresh(
         window_end=window_end,
         provider_key=ctx.catalog.provider_key,
         external_site_id=ctx.external_site_id,
-        devices_mapped=len(ctx.external_device_ids),
+        devices_mapped=len(ctx.external_to_device),
         started_at=job.started_at,
     )
 
-    creds = store.retrieve(ctx.account.secret_token_name)
+    # --- Credential retrieval (a secret-store outage must not strand the job) ---
+    try:
+        creds = store.retrieve(ctx.account.secret_token_name)
+    except Exception as exc:  # noqa: BLE001 — never let a store outage strand a running job
+        logger.exception(
+            "telemetry_ingestion_credential_retrieval_failed job_id=%s site_id=%s",
+            job.id,
+            site_id,
+        )
+        return _finish_failed(
+            db,
+            job_crud,
+            job.id,
+            summary,
+            account=ctx.account,
+            error=(
+                "Could not retrieve telemetry credentials from the secret "
+                f"store: {type(exc).__name__}. No data was changed."
+            ),
+            # A secret-store / Secret Manager outage is not the same as bad
+            # credentials, so we do not flip the account to ``invalid`` here.
+            auth_failure=False,
+        )
 
     # --- Provider pull (session-fatal failures raise; we record + return) ---
     try:
@@ -353,7 +370,9 @@ def run_site_refresh(
             metric_specs=ctx.metric_specs,
             window_start=window_start,
             window_end=window_end,
-            external_device_ids=ctx.external_device_ids,
+            # Pull every device the provider returns for the site. Unmapped
+            # devices are persisted with ``device_id = NULL`` (see below).
+            external_device_ids=None,
         )
     except CredentialError as exc:
         return _finish_failed(

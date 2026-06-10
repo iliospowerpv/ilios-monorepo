@@ -213,6 +213,18 @@ export const Telemetry: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDe
 
   const isConfigured = readiness?.is_connected && readiness?.is_site_mapped;
 
+  // The refresh control appears whenever a telemetry provider is connected, but
+  // is disabled with an explicit reason until the project is fully ready: it must
+  // be mapped to a telemetry site and have verified credentials before a manual
+  // refresh can re-present those credentials to the provider.
+  const isConnected = Boolean(readiness?.is_connected);
+  let refreshDisabledReason: string | undefined;
+  if (!readiness?.is_site_mapped) {
+    refreshDisabledReason = 'Map this project to a telemetry site before refreshing.';
+  } else if (readiness?.credential_status && readiness.credential_status !== 'verified') {
+    refreshDisabledReason = "Verify the telemetry connection's credentials before refreshing.";
+  }
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -221,7 +233,16 @@ export const Telemetry: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDe
           Telemetry
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-          {isConfigured && <RefreshTelemetryButton siteId={siteDetails.id} />}
+          {isConnected && (
+            <RefreshTelemetryButton
+              siteId={siteDetails.id}
+              disabledReason={refreshDisabledReason}
+              onRefreshed={() => {
+                refetchReadiness();
+                refetchHealth();
+              }}
+            />
+          )}
           <Button variant="contained" color="primary" onClick={() => setWizardOpen(true)}>
             {isConfigured ? 'Manage Telemetry' : 'Connect Telemetry'}
           </Button>

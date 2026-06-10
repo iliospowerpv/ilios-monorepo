@@ -712,6 +712,11 @@ async def get_site_telemetry_readiness(
         telemetry_site_name=site.telemetry_mapping.telemetry_site_name if site.telemetry_mapping else None,
         mapped_device_count=mapped_count,
         total_eligible_device_count=total_eligible,
+        credential_status=(
+            site.das_connection.credential_status.value
+            if site.das_connection and site.das_connection.credential_status
+            else None
+        ),
     )
 
 

@@ -15,6 +15,12 @@ import type { RefreshReadingsResponse } from '../../../../../../types/telemetryV
 interface RefreshTelemetryButtonProps {
   siteId: number;
   disabled?: boolean;
+  /**
+   * When set, the button is disabled and this text is shown as the tooltip,
+   * explaining why a refresh is not currently possible (e.g. the project is not
+   * mapped to a telemetry site, or its credentials are not yet verified).
+   */
+  disabledReason?: string;
   onRefreshed?: (result: RefreshReadingsResponse) => void;
 }
 
@@ -57,7 +63,12 @@ const summarizeResult = (result: RefreshReadingsResponse): Feedback => {
  * time. The underlying mutation invalidates the site's readiness + health panels
  * on success, and the endpoint never wipes existing data on failure.
  */
-export const RefreshTelemetryButton: React.FC<RefreshTelemetryButtonProps> = ({ siteId, disabled, onRefreshed }) => {
+export const RefreshTelemetryButton: React.FC<RefreshTelemetryButtonProps> = ({
+  siteId,
+  disabled,
+  disabledReason,
+  onRefreshed
+}) => {
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
 
@@ -75,17 +86,20 @@ export const RefreshTelemetryButton: React.FC<RefreshTelemetryButtonProps> = ({ 
   });
 
   const isPending = refresh.isPending;
+  const isBlocked = Boolean(disabledReason);
+  const tooltipTitle =
+    disabledReason || 'Pull the latest telemetry for every device on this project (most recent 24 hours).';
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
-      <Tooltip title="Pull the latest telemetry for this project's mapped devices (most recent 24 hours).">
+      <Tooltip title={tooltipTitle}>
         <span>
           <Button
             variant="outlined"
             color="primary"
             startIcon={isPending ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
             onClick={() => refresh.mutate({})}
-            disabled={disabled || isPending}
+            disabled={disabled || isBlocked || isPending}
           >
             {isPending ? 'Refreshing…' : 'Refresh Telemetry'}
           </Button>

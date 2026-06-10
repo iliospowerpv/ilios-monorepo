@@ -94,6 +94,7 @@ interface TelemetryReadinessResponse {
   telemetry_site_name: string | null;
   mapped_device_count: number;
   total_eligible_device_count: number;
+  credential_status?: string | null;
 }
 
 interface TelemetryDevice {

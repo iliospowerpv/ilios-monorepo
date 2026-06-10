@@ -191,6 +191,13 @@ class TelemetryReadinessResponse(BaseModel):
     telemetry_site_name: Optional[str] = Field(None, description="Mapped DAS site name")
     mapped_device_count: int = Field(0, description="Number of devices with telemetry mapping")
     total_eligible_device_count: int = Field(0, description="Total telemetry-eligible devices")
+    credential_status: Optional[str] = Field(
+        None,
+        description=(
+            "DAS connection credential status when connected "
+            "(unverified/verified/invalid/expired); None when not connected"
+        ),
+    )
 
 
 class DeviceMappingSchema(BaseModel):

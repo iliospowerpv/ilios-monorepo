@@ -36,6 +36,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from statistics import median
 from typing import Optional
 
 from sqlalchemy.orm import Session
@@ -62,6 +63,10 @@ _BUCKET_SIZES: dict[str, timedelta] = {
 
 _EPOCH = datetime(1970, 1, 1)
 
+# Stable stand-in for site-level points (device_id IS NULL) when counting the
+# distinct series that contribute to a site bucket's completeness ratio.
+_SITE_SERIES_SENTINEL = 0
+
 # Safety cap: a manual single-site refresh should never scan an unbounded set.
 _MAX_READINGS_SCAN = 500_000
 
@@ -86,6 +91,31 @@ def _floor_to_bucket(ts: datetime, size: timedelta) -> datetime:
     elapsed = (ts - _EPOCH).total_seconds()
     floored = (elapsed // bucket_seconds) * bucket_seconds
     return _EPOCH + timedelta(seconds=floored)
+
+
+def _infer_cadence_seconds(timestamps: set[datetime]) -> Optional[float]:
+    """Infer a metric's native sampling cadence (seconds) from its timestamps.
+
+    Uses the *median* gap between consecutive distinct timestamps, which is
+    robust to the occasional missing sample. Returns ``None`` when there are too
+    few points to infer a cadence — completeness is then left unknown rather
+    than guessed from insufficient data.
+    """
+    if len(timestamps) < 2:
+        return None
+    ordered = sorted(timestamps)
+    deltas = [
+        (ordered[i + 1] - ordered[i]).total_seconds()
+        for i in range(len(ordered) - 1)
+    ]
+    deltas = [d for d in deltas if d > 0]
+    if not deltas:
+        return None
+    deltas.sort()
+    mid = len(deltas) // 2
+    if len(deltas) % 2:
+        return deltas[mid]
+    return (deltas[mid - 1] + deltas[mid]) / 2.0
 
 
 def run_rollups_for_window(
@@ -140,28 +170,42 @@ def run_rollups_for_window(
             return summary
 
         # Accumulators keyed by bucket identity. Each holds running sum/count to
-        # produce the mean, plus a representative unit.
-        # site:   (size, bucket_start, metric) -> [sum, count, unit]
+        # produce the mean, plus a representative unit. Site buckets also track
+        # the set of contributing series (one per device, plus a sentinel for
+        # site-level points) so completeness reflects every series in the bucket.
+        # site:   (size, bucket_start, metric) -> [sum, count, unit, {series}]
         # device: (size, device_id, bucket_start, metric) -> [sum, count, unit]
         site_acc: dict[tuple, list] = {}
         device_acc: dict[tuple, list] = {}
         metrics_seen: set[str] = set()
+        # Distinct timestamps per (series, metric) drive a *per-series* cadence
+        # inference. A "series" is one device (or the site-level sentinel for
+        # device_id IS NULL points). Merging timestamps across devices would
+        # interleave their offset schedules into an artificially tiny gap and so
+        # wildly overstate the expected sample count, so each series is tracked
+        # independently.
+        series_timestamps: dict[tuple, set[datetime]] = {}
 
         for device_id, metric, unit, metric_ts, value in readings:
             if value is None or metric_ts is None:
                 continue
             fvalue = float(value)
             metrics_seen.add(metric)
+            # device_id IS NULL means a site-level point; give it a stable
+            # sentinel so it counts as exactly one contributing series.
+            series_id = device_id if device_id is not None else _SITE_SERIES_SENTINEL
+            series_timestamps.setdefault((series_id, metric), set()).add(metric_ts)
             for size in sizes:
                 bucket_start = _floor_to_bucket(metric_ts, _BUCKET_SIZES[size])
 
                 site_key = (size, bucket_start, metric)
                 s = site_acc.get(site_key)
                 if s is None:
-                    site_acc[site_key] = [fvalue, 1, unit]
+                    site_acc[site_key] = [fvalue, 1, unit, {series_id}]
                 else:
                     s[0] += fvalue
                     s[1] += 1
+                    s[3].add(series_id)
 
                 if device_id is not None:
                     dev_key = (size, device_id, bucket_start, metric)
@@ -171,6 +215,52 @@ def run_rollups_for_window(
                     else:
                         d[0] += fvalue
                         d[1] += 1
+
+        # Per-series native cadence (seconds), plus a per-metric representative
+        # cadence (median across that metric's series) used as a fallback when a
+        # single series has too few points to infer its own cadence.
+        cadence_by_series: dict[tuple, Optional[float]] = {
+            key: _infer_cadence_seconds(ts) for key, ts in series_timestamps.items()
+        }
+        _cadences_by_metric: dict[str, list[float]] = {}
+        for (series_id, metric), cadence in cadence_by_series.items():
+            if cadence and cadence > 0:
+                _cadences_by_metric.setdefault(metric, []).append(cadence)
+        metric_cadence: dict[str, Optional[float]] = {
+            metric: (median(cadences) if cadences else None)
+            for metric, cadences in _cadences_by_metric.items()
+        }
+
+        def _expected(cadence: Optional[float], size: str) -> Optional[float]:
+            """Expected samples in one bucket of ``size`` for a series at ``cadence``."""
+            if not cadence or cadence <= 0:
+                return None
+            return max(1.0, round(_BUCKET_SIZES[size].total_seconds() / cadence))
+
+        def _ratio(count: int, expected: Optional[float]) -> Optional[float]:
+            if not expected or expected <= 0:
+                return None
+            return round(min(1.0, count / expected), 4)
+
+        def _series_cadence(series_id: object, metric: str) -> Optional[float]:
+            return cadence_by_series.get((series_id, metric)) or metric_cadence.get(metric)
+
+        def _device_completeness(
+            device_id: int, metric: str, size: str, count: int
+        ) -> Optional[float]:
+            return _ratio(count, _expected(_series_cadence(device_id, metric), size))
+
+        def _site_completeness(
+            metric: str, size: str, count: int, series: set
+        ) -> Optional[float]:
+            # Expected = sum of each contributing series' own expected sample
+            # count for this bucket, so mixed-cadence series compose correctly.
+            expected_total = 0.0
+            for series_id in series:
+                exp = _expected(_series_cadence(series_id, metric), size)
+                if exp is not None:
+                    expected_total += exp
+            return _ratio(count, expected_total) if expected_total > 0 else None
 
         calculated_at = datetime.utcnow()
 
@@ -185,10 +275,15 @@ def run_rollups_for_window(
                 "value": total / count if count else 0.0,
                 "unit": unit,
                 "sample_count": count,
-                "completeness": None,
+                "completeness": _site_completeness(metric, size, count, series),
                 "calculated_at": calculated_at,
             }
-            for (size, bucket_start, metric), (total, count, unit) in site_acc.items()
+            for (size, bucket_start, metric), (
+                total,
+                count,
+                unit,
+                series,
+            ) in site_acc.items()
         ]
 
         device_rows = [
@@ -203,7 +298,7 @@ def run_rollups_for_window(
                 "value": total / count if count else 0.0,
                 "unit": unit,
                 "sample_count": count,
-                "completeness": None,
+                "completeness": _device_completeness(device_id, metric, size, count),
                 "calculated_at": calculated_at,
             }
             for (size, device_id, bucket_start, metric), (
