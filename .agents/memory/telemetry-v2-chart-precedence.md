@@ -12,14 +12,20 @@ All BigQuery calls in the chart path are wrapped try/except → graceful-empty, 
 
 **Why:** V2 ingestion replaced the legacy GCP/BigQuery pull, but BigQuery data still exists for older sites. Precedence keeps newly-ingested sites (e.g. site 4 / 110 Shawmut) showing live data without removing BigQuery support.
 
-## Known visualization gap (not a bug)
-V2 carries **actual telemetry only** (AC power, irradiance, cell temperature). There is **no projected/"expected" baseline metric and no daily rollup** in V2.
-Consequences for V2-driven sites:
-- The "Expected" line on actual-vs-expected is intentionally `None` (AG line series skips null y-values).
-- `expected_kw` / `cumulative_expected_kw` are set to `0.0` (not None) on the actual-production response — `round_to_scale_2` has no None-guard, and `calculate_actual_vs_expected` treats 0 as "no comparison" (returns 0%) rather than dividing by zero.
-- past-performance and inverters-performance charts have **no V2 equivalent** and stay BigQuery-backed.
+## V2 has no expected baseline — show honest "N/A", never fabricate
+V2 carries **actual telemetry only** (AC power, irradiance, cell temperature). There is **no projected/"expected" baseline metric and no daily rollup** in V2. Phase 1 makes every chart state honest instead of fabricating zeros.
 
-**How to apply:** If asked "why isn't the Expected/projected line showing for a V2 site?" — that's the expected gap, not a regression. Restoring it requires a real expected/baseline metric in V2 (new ingestion + catalog work), not a chart fix.
+Contract + behavior for V2-driven sites:
+- A boolean `expected_baseline_available` flag is added to the actual-production, actual-vs-expected, and past-performance responses. It is `True` on every BigQuery / non-V2 path (including the try/except fallbacks) and `False` only behind `site_has_v2_rollups`. The FE defaults it `?? true`, so non-V2 rendering is untouched.
+- `expected_kw` / `cumulative_expected_kw` are `None` (NOT 0.0) for V2; `round_to_scale_2` is now None-safe. FE shows "N/A" / "Baseline not available" + a neutral ring when the flag is False.
+- The "Expected" line on actual-vs-expected is hidden for V2 (`visible`/`showInLegend=false`) with an explanatory caption; the AG line series also skips null y-values.
+- past-performance returns `{}` data for V2 (FE shows a no-baseline message).
+- V2 inverter tiles have a builder (`build_v2_inverter_tiles`): real actual kW (incl a legit `0.0`) with a **neutral** `performance="N/A"` status (no green/red, since there's no baseline). "Mapped" is keyed on `telemetry_mapping` (NOT `das_connection_active`) to stay consistent with the V2 not-responding logic and correct for V2 sites whose legacy DAS status isn't "connected".
+- not-responding for V2 is derived from raw-reading recency (`settings.device_no_respond_threshold`, `total_seconds()`); a mapped telemetry-category device with zero readings counts as not responding.
+
+**Why:** the dashboard previously fabricated 0% / 0-expected for V2 sites, which read as "underperforming" when there is simply no baseline to compare against. Honest N/A states avoid false negatives; never invent/derive an expected value.
+
+**How to apply:** any new V2 chart/tile must surface actuals + honest N/A, gate "mapped" on `telemetry_mapping`, and never emit a non-null expected for V2. Restoring a real Expected line requires a genuine baseline metric in V2 (new ingestion + catalog work), not a chart fix.
 
 ## Readiness gate must use the SAME V2 predicate as the charts
 The telemetry readiness `is_data_flowing` flag originally derived ONLY from BigQuery `get_device_last_reported`, so V2-ingested sites (PostgreSQL rollups, no BigQuery) always read as "not flowing". This silently hid the Project Hub O&M Performance Dashboard, because its render gate is `is_connected && is_site_mapped && is_data_flowing` — the charts never even mounted, so their endpoints were never called. The same flag also drives the Telemetry tab "Data Flowing" chip.

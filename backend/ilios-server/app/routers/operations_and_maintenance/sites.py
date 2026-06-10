@@ -21,6 +21,7 @@ from app.helpers.telemetry.sites_helper import get_production_chart_data_per_sit
 from app.helpers.telemetry.v2_chart_data import (
     apply_v2_actual_production,
     build_actual_vs_expected_series,
+    build_v2_inverter_tiles,
     site_has_v2_rollups,
 )
 from app.models.device import DeviceCategories
@@ -116,8 +117,9 @@ async def get_actual_production_chart(
     if site_has_v2_rollups(db_session, site.id):
         apply_v2_actual_production(db_session, site)
         return site
-    # Legacy BigQuery path, wrapped so BQ unavailability yields an empty (all-0)
-    # chart instead of a 500. round_to_scale_2 has no None guard, so use 0.0.
+    # Legacy BigQuery path: it supplies an expected baseline, so keep the flag
+    # True. Wrapped so BQ unavailability yields an empty chart instead of a 500.
+    site.expected_baseline_available = True
     try:
         telemetry_details = get_production_chart_data_per_site(site.id)
         site.actual_kw, site.expected_kw, site.cumulative_actual_kw, site.cumulative_expected_kw = (
@@ -143,9 +145,14 @@ async def get_actual_production_chart(
 )
 async def get_inverters_performance_chart(
     site: Site = Depends(get_authorized_site),
+    db_session: Session = Depends(get_session),
 ):
     # filter only inverter devices
     site_inverters = [device for device in site.devices if device.category == DeviceCategories.inverter]
+    # V2-first precedence: render each tile's actual from the V2 device rollups
+    # with a neutral status (no per-device baseline). Never touch BigQuery.
+    if site_has_v2_rollups(db_session, site.id):
+        return {"data": build_v2_inverter_tiles(db_session, site_inverters)}
     # make calls only for mapped inverters with active connection to reduce BQ interactions
     mapped_inverters_ids = [device.id for device in site_inverters if device.das_connection_active]
     # Inverter-level performance has no V2 equivalent (no per-device projection),
@@ -191,14 +198,24 @@ async def get_inverters_performance_chart(
 )
 async def get_site_past_performance_chart(
     site: Site = Depends(get_authorized_site),
+    db_session: Session = Depends(get_session),
 ):
-    # Past-performance (daily) has no V2 rollup yet, so it stays on BigQuery;
-    # wrap so BQ unavailability yields an empty chart instead of a 500.
+    # V2-first precedence: daily past-performance is an actual-vs-expected ratio
+    # and V2 has no expected baseline, so return an empty series flagged as
+    # no-baseline (the frontend shows a message) rather than falling back to
+    # stale BigQuery.
+    if site_has_v2_rollups(db_session, site.id):
+        return {"data": {}, "expected_baseline_available": False}
+    # Legacy BigQuery path (supplies an expected baseline); wrap so BQ
+    # unavailability yields an empty chart instead of a 500.
     try:
-        return {"data": TelemetrySiteBigQuery().get_site_past_performance(site.id)}
+        return {
+            "data": TelemetrySiteBigQuery().get_site_past_performance(site.id),
+            "expected_baseline_available": True,
+        }
     except Exception:  # noqa: BLE001
         logger.exception("om_past_performance_chart_bigquery_failed site_id=%s", site.id)
-        return {"data": {}}
+        return {"data": {}, "expected_baseline_available": True}
 
 
 @om_sites_router.get(
@@ -212,15 +229,23 @@ async def get_site_actual_vs_expected_chart(
     db_session: Session = Depends(get_session),
 ):
     # V2-first precedence: render actual power + irradiance from PostgreSQL
-    # rollups (expected is left null — no V2 projection baseline).
+    # rollups (expected is left null — no V2 projection baseline), flagged so the
+    # frontend shows an actual-only chart with a no-baseline caption.
     if site_has_v2_rollups(db_session, site.id):
-        return {"data": build_actual_vs_expected_series(db_session, site.id)}
-    # Legacy BigQuery path, wrapped so BQ unavailability yields an empty chart.
+        return {
+            "data": build_actual_vs_expected_series(db_session, site.id),
+            "expected_baseline_available": False,
+        }
+    # Legacy BigQuery path (supplies an expected series); wrap so BQ
+    # unavailability yields an empty chart.
     try:
-        return {"data": TelemetrySiteBigQuery().get_site_actual_vs_expected_irradiance(site.id)}
+        return {
+            "data": TelemetrySiteBigQuery().get_site_actual_vs_expected_irradiance(site.id),
+            "expected_baseline_available": True,
+        }
     except Exception:  # noqa: BLE001
         logger.exception("om_actual_vs_expected_chart_bigquery_failed site_id=%s", site.id)
-        return {"data": []}
+        return {"data": [], "expected_baseline_available": True}
 
 
 @om_sites_router.get(

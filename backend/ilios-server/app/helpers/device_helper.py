@@ -5,7 +5,9 @@ from typing import List, Optional
 from fastapi import HTTPException, status
 
 from app.crud.alert import AlertCRUD
+from app.crud.telemetry_native import TelemetryReadingCRUD
 from app.helpers.telemetry.bigquery import TelemetryDeviceBigQuery
+from app.helpers.telemetry.v2_chart_data import site_has_v2_rollups
 from app.models.device import Device, DeviceCategories, DeviceManufacturers, DeviceStatuses, DeviceTypes
 from app.settings import settings
 
@@ -241,8 +243,15 @@ def get_site_devices_info(site, db_session):
     devices_critical_alerts = AlertCRUD(db_session).get_critical_devices_alerts_stats(
         [device.id for device in site.devices]
     )
+    # V2-first precedence for the "not responding" recency check: when the site
+    # is V2-backed, derive liveness from the freshest raw V2 reading per device
+    # (more current than the laggier hourly rollups) and never touch BigQuery.
+    is_v2_site = site_has_v2_rollups(db_session, site.id)
+    latest_ts_by_device = (
+        TelemetryReadingCRUD(db_session).latest_metric_ts_per_device(site.id) if is_v2_site else {}
+    )
+    devices_bq_data = [] if is_v2_site else get_devices_last_reported(site.devices)
     devices_info = []
-    devices_bq_data = get_devices_last_reported(site.devices)
     for device_category in DeviceCategories:
         # nullify critical alerts number to ensure we start count from 0 for each device type
         critical_errors = 0
@@ -253,13 +262,18 @@ def get_site_devices_info(site, db_session):
         ]
         if device_critical_alert:
             critical_errors = device_critical_alert[0].total
-        devices_in_category = [device.id for device in site.devices if device.category == device_category]
+        category_devices = [device for device in site.devices if device.category == device_category]
+        if is_v2_site:
+            no_respond = get_v2_devices_no_respond_count(device_category, category_devices, latest_ts_by_device)
+        else:
+            devices_in_category = [device.id for device in category_devices]
+            no_respond = get_devices_no_respond_count(device_category, devices_in_category, devices_bq_data)
         devices_info.append(
             {
                 "device_type": device_category,
                 "critical_errors": critical_errors,
-                "devices": len(devices_in_category),
-                "no_respond": get_devices_no_respond_count(device_category, devices_in_category, devices_bq_data),
+                "devices": len(category_devices),
+                "no_respond": no_respond,
             }
         )
 
@@ -311,6 +325,32 @@ def get_devices_no_respond_count(device_category, devices_in_category, telemetry
         # calculate difference between now and device last report to treat it as 'no respond'
         response_diff = datetime.now(timezone.utc).replace(tzinfo=None) - telemetry_item["device_last_report_ts"]
         if response_diff.seconds >= settings.device_no_respond_threshold:
+            no_respond_devices_count += 1
+    return no_respond_devices_count
+
+
+def get_v2_devices_no_respond_count(device_category, category_devices, latest_ts_by_device):
+    """Count not-responding devices for a V2 site from raw-reading recency.
+
+    A telemetry-mapped device in a telemetry category counts as not responding
+    when its freshest V2 reading is older than ``settings.device_no_respond_threshold``
+    seconds, or when it has no reading at all (treated as infinitely stale).
+    Non-telemetry categories and unmapped devices never count.
+
+    Uses ``total_seconds()`` deliberately — the legacy BigQuery path uses
+    ``timedelta.seconds``, which wraps every 24h and under-counts long outages.
+    """
+    if device_category not in TELEMETRY_DEVICES_CATEGORIES:
+        return 0
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    threshold_seconds = settings.device_no_respond_threshold
+    no_respond_devices_count = 0
+    for device in category_devices:
+        # only mapped devices are expected to report telemetry
+        if device.telemetry_mapping is None:
+            continue
+        latest_ts = latest_ts_by_device.get(device.id)
+        if latest_ts is None or (now - latest_ts).total_seconds() >= threshold_seconds:
             no_respond_devices_count += 1
     return no_respond_devices_count
 

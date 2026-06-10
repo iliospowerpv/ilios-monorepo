@@ -107,6 +107,12 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
   const actualVsExpected = actual_vs_expected > 100 ? 100 : (actual_vs_expected ?? 0);
   const actualVsExpectedRest = 100 - actualVsExpected ?? 0;
 
+  // V2 telemetry sites carry actual-only data (no projected baseline). When the
+  // baseline is unavailable, render an honest neutral ring and "N/A" /
+  // "Baseline not available" instead of a misleading red 0% / 0 kW.
+  const baselineAvailable = data?.expected_baseline_available ?? true;
+  const expectedDisplay = baselineAvailable ? formatFloatValue(expected_kw ?? 0) : 'N/A';
+
   const deriveProductionColorFromValue = (progress: number): string => {
     if (progress < 51) return theme.efficiencyColors.low;
     if (progress < 90) return theme.efficiencyColors.mediocre;
@@ -117,8 +123,12 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
   const chartData = {
     datasets: [
       {
-        data: [actualVsExpected, actualVsExpectedRest],
-        backgroundColor: [deriveProductionColorFromValue(actual_vs_expected), '#F3F4F8'],
+        // No baseline -> fully neutral ring (0 filled) so it reads as "no data".
+        data: baselineAvailable ? [actualVsExpected, actualVsExpectedRest] : [0, 100],
+        backgroundColor: [
+          baselineAvailable ? deriveProductionColorFromValue(actual_vs_expected) : theme.efficiencyColors.none,
+          '#F3F4F8'
+        ],
         cutout: '75%'
       }
     ]
@@ -189,18 +199,29 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
                     textAlign: 'center'
                   }}
                 >
-                  {actual_vs_expected ?? 0}{' '}
-                  <Typography
-                    variant="body2"
-                    display="inline-block"
-                    fontSize={12}
-                    color={theme => theme.palette.text.secondary}
-                  >
-                    %
-                  </Typography>
-                  <Typography variant="body2" fontSize={12} color={theme => theme.palette.text.secondary}>
-                    from Expected
-                  </Typography>
+                  {baselineAvailable ? (
+                    <>
+                      {actual_vs_expected ?? 0}{' '}
+                      <Typography
+                        variant="body2"
+                        display="inline-block"
+                        fontSize={12}
+                        color={theme => theme.palette.text.secondary}
+                      >
+                        %
+                      </Typography>
+                      <Typography variant="body2" fontSize={12} color={theme => theme.palette.text.secondary}>
+                        from Expected
+                      </Typography>
+                    </>
+                  ) : (
+                    <>
+                      N/A
+                      <Typography variant="body2" fontSize={12} color={theme => theme.palette.text.secondary}>
+                        Baseline not available
+                      </Typography>
+                    </>
+                  )}
                 </Typography>
                 <Box
                   sx={{
@@ -215,7 +236,7 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
                     0
                   </Typography>
                   <Typography variant="body2" fontSize={12} color={theme => theme.palette.text.secondary}>
-                    {formatFloatValue(expected_kw ?? 0)}
+                    {expectedDisplay}
                   </Typography>
                 </Box>
               </Grid>
@@ -276,7 +297,7 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
                     }}
                   >
                     <Typography variant="h6" fontWeight={700} fontSize={20} lineHeight="32px">
-                      {formatFloatValue(expected_kw ?? 0)}
+                      {expectedDisplay}
                     </Typography>
                     <Typography variant="caption" color={theme => theme.palette.text.secondary}>
                       {alignment === 'current' ? `Expected (kW)` : `Expected (kWh)`}

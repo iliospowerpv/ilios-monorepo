@@ -2,6 +2,7 @@
 
 from decimal import ROUND_HALF_UP, Decimal
 from enum import Enum
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -18,7 +19,13 @@ class SuccessUpdateSchema(BaseModel):
     code: int = Field(description="Success status code", examples=[202])
 
 
-def round_to_scale_2(value: float):
+def round_to_scale_2(value: Optional[float]):
+    # None-safe: V2 telemetry sites have no expected/projected baseline, so
+    # expected_kw/cumulative_expected_kw can legitimately be None. Pydantic v2
+    # still runs this validator on None, and round(None, 2) raises TypeError
+    # (a 500). Passing None through unchanged keeps the no-baseline contract.
+    if value is None:
+        return None
     return round(value, 2)
 
 

@@ -284,14 +284,19 @@ interface OMSiteWeather {
 interface OMSiteDashboardProductionResponse {
   actual_kw: number;
   actual_vs_expected: number;
-  expected_kw: number;
+  // null for V2 telemetry sites, which carry actual-only data (no projection).
+  expected_kw: number | null;
   performance_index: number;
   system_size_ac: number;
   system_size_dc: number;
   weather: OMSiteWeather | string | null;
   cumulative_actual_kw: number;
-  cumulative_expected_kw: number;
+  cumulative_expected_kw: number | null;
   cumulative_actual_vs_expected: number;
+  // True when an expected/projected baseline exists (BigQuery sites); false for
+  // actual-only V2 telemetry sites, where the UI shows "N/A" / "Baseline not
+  // available" instead of a misleading 0% / 0 kW.
+  expected_baseline_available: boolean;
 }
 
 interface OMCompanyActualVsExpectedProductionEntry {
@@ -324,6 +329,9 @@ interface OMSiteInvertersPerformanceResponse {
 
 interface OMSitePastPerformanceResponse {
   data: { [key: string]: number };
+  // False for V2 sites: daily past-performance is an actual-vs-expected ratio,
+  // and V2 carries no expected baseline, so the widget shows a no-baseline note.
+  expected_baseline_available: boolean;
 }
 
 interface OMSiteActualVsExpectedProductionEntry {
@@ -337,6 +345,8 @@ interface OMSiteActualVsExpectedProductionEntry {
 
 interface OMSiteActualVsExpectedProductionResponse {
   data: OMSiteActualVsExpectedProductionEntry[];
+  // False for V2 sites; the chart then shows the Actual line only plus a note.
+  expected_baseline_available: boolean;
 }
 
 interface OMSiteDevicesOverviewEntry {

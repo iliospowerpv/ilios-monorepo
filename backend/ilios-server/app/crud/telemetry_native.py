@@ -195,6 +195,29 @@ class TelemetryReadingCRUD(BaseCRUD):
             .scalar()
         )
 
+    def latest_metric_ts_per_device(self, site_id: int) -> dict[int, datetime]:
+        """Newest raw reading timestamp per device for a site (read-only).
+
+        Drives the V2 "not responding" recency check: the freshest reading is a
+        better liveness signal than the (laggier) hourly rollups. Only rows with
+        a non-null ``device_id`` are considered (site-level metrics are skipped).
+        Returns ``{device_id: latest_metric_ts}``; devices with no readings are
+        simply absent from the map.
+        """
+        rows = (
+            self.db_session.query(
+                TelemetryReading.device_id,
+                func.max(TelemetryReading.metric_ts),
+            )
+            .filter(
+                TelemetryReading.site_id == site_id,
+                TelemetryReading.device_id.isnot(None),
+            )
+            .group_by(TelemetryReading.device_id)
+            .all()
+        )
+        return {device_id: latest_ts for device_id, latest_ts in rows}
+
 
 class TelemetrySiteRollupCRUD(BaseCRUD):
     """Idempotent upsert for per-site interval rollups."""
@@ -378,6 +401,30 @@ class TelemetryDeviceRollupCRUD(BaseCRUD):
                 TelemetryDeviceIntervalRollup.bucket_size == bucket_size
             )
         return [row[0] for row in query.distinct().all()]
+
+    def get_latest_per_device(
+        self, site_id: int, *, normalized_metric: str, bucket_size: str
+    ) -> list[TelemetryDeviceIntervalRollup]:
+        """Latest rollup row per device for one metric + bucket size (read-only).
+
+        Postgres ``DISTINCT ON (device_id)`` keeping the newest ``bucket_start``
+        per device (mirrors :meth:`TelemetrySiteRollupCRUD.get_latest_per_metric`).
+        Used to populate the V2 inverter tiles' latest actual value.
+        """
+        return (
+            self.db_session.query(TelemetryDeviceIntervalRollup)
+            .filter(
+                TelemetryDeviceIntervalRollup.site_id == site_id,
+                TelemetryDeviceIntervalRollup.normalized_metric == normalized_metric,
+                TelemetryDeviceIntervalRollup.bucket_size == bucket_size,
+            )
+            .distinct(TelemetryDeviceIntervalRollup.device_id)
+            .order_by(
+                TelemetryDeviceIntervalRollup.device_id.asc(),
+                TelemetryDeviceIntervalRollup.bucket_start.desc(),
+            )
+            .all()
+        )
 
 
 class TelemetrySchedulerStateCRUD(BaseCRUD):

@@ -43,6 +43,10 @@ const ActualProjectedPower: React.FC<ActualProjectedPowerProps> = ({ siteId }) =
     period: new Date(period)
   }));
 
+  // V2 sites carry actual-only data: hide the Expected line + legend entry and
+  // show an explanatory caption instead of a phantom empty series.
+  const baselineAvailable = data?.expected_baseline_available ?? true;
+
   const options: AgChartOptions = {
     autoSize: true,
     height: 350,
@@ -78,6 +82,8 @@ const ActualProjectedPower: React.FC<ActualProjectedPowerProps> = ({ siteId }) =
         xKey: 'period',
         yKey: 'expected',
         yName: 'Expected',
+        visible: baselineAvailable,
+        showInLegend: baselineAvailable,
         stroke: '#E26D69',
         strokeWidth: 2,
         marker: {
@@ -129,8 +135,21 @@ const ActualProjectedPower: React.FC<ActualProjectedPowerProps> = ({ siteId }) =
       onClickRefetch={refetch}
     >
       <AgChartsReact options={options} />
+      {!baselineAvailable && (
+        <Typography
+          variant="caption"
+          color={theme => theme.palette.text.secondary}
+          sx={{ display: 'block', mt: '4px' }}
+        >
+          Expected baseline not available for this site; showing actual production only.
+        </Typography>
+      )}
       {dataAsOf && (
-        <Typography variant="caption" color={theme => theme.palette.text.secondary} sx={{ display: 'block', mt: '4px' }}>
+        <Typography
+          variant="caption"
+          color={theme => theme.palette.text.secondary}
+          sx={{ display: 'block', mt: '4px' }}
+        >
           Data as of {dataAsOf}
         </Typography>
       )}

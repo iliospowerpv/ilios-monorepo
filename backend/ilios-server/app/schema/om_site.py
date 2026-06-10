@@ -127,6 +127,11 @@ class SiteDashboardActualProductionSection(OMSitesBaseExtendedSchema, Cumulative
     system_size_ac: float
     system_size_dc: float
     performance_index: Optional[float] = Field(None, validate_default=True, examples=[2.0])
+    # False for V2-telemetry sites, which carry actuals only and have no
+    # projected/"expected" baseline. The frontend uses this (not the numeric
+    # percent, which collapses to 0) to render "N/A"/"Baseline not available".
+    # Defaults True so the BigQuery path is unchanged.
+    expected_baseline_available: bool = True
 
     _round_system_sizes_to_scale_2 = field_validator("system_size_ac", "system_size_dc")(round_to_scale_2)
 
@@ -139,6 +144,10 @@ class SiteDashboardActualProductionSection(OMSitesBaseExtendedSchema, Cumulative
 
 class OMSitePastPerformanceSchema(BaseModel):
     data: dict[datetime, int]
+    # False for V2-telemetry sites: daily past-performance is an actual-vs-expected
+    # ratio and V2 has no expected baseline, so ``data`` is empty and the frontend
+    # shows a no-baseline message instead of empty bars. True on the BigQuery path.
+    expected_baseline_available: bool = True
 
 
 class SiteActualVSExpectedPerformance(BaseModel):
@@ -152,6 +161,10 @@ class SiteActualVSExpectedPerformance(BaseModel):
 
 class SiteActualVSExpectedPerformanceListSchema(BaseModel):
     data: list[SiteActualVSExpectedPerformance]
+    # False for V2-telemetry sites: per-point ``expected`` is null (no V2
+    # baseline) so the frontend shows an actual-only chart with a caption note.
+    # True on the BigQuery path, which supplies an expected series.
+    expected_baseline_available: bool = True
 
 
 class OMSiteSchema(BaseModel):

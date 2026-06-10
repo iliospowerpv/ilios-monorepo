@@ -1,0 +1,70 @@
+Proceed with Phase 1 only, in this order:
+
+1. Honest no-baseline states
+2. V2 inverter tile actual values with neutral/no-baseline status
+3. V2 not-responding calculation from latest device telemetry recency
+
+Do not start Phase 2 expected/projected baseline modeling.
+Do not invent expected values.
+Do not derive expected values from actual telemetry.
+Do not change ingestion, scheduler, credentials, mappings, provider adapters, GCP Secret Manager, or rollup calculations.
+Do not remove BigQuery fallback.
+Do not write V2 data to BigQuery.
+
+Detailed requirements:
+
+A. Honest no-baseline states
+
+For V2 sites where no expected/projected baseline exists:
+- Production Summary should show actual kW and actual 24-hour kWh if available.
+- Expected should show “Baseline not available” or “N/A”, not 0.00.
+- Percent from Expected should show “N/A” or a clear “Expected baseline not available” state, not 0%.
+- Actual Production vs Expected should continue showing the Actual line.
+- Expected line should remain absent/null.
+- Add a visible caption or note: “Expected baseline not available for this site.”
+- Past Performance should not show 0% bars. Show an empty/no-baseline state: “Daily performance vs expected is not available because this site has no approved expected baseline.”
+- Update backend contracts safely so expected values can be null without 500s or NaN values.
+- Update round_to_scale_2 / schema / frontend null handling as needed.
+
+B. V2 inverter tile actual values
+
+For V2 sites:
+- Inverters Actual Production should be V2-first.
+- Read actual inverter/device production from telemetry_device_interval_rollups using device_power_ac_kw.
+- Show actual value per mapped inverter.
+- Do not require expected baseline to show actual value.
+- If expected baseline is missing, set performance status to neutral/no-baseline, not red/orange/green.
+- Do not show 0 just because legacy BigQuery has no data.
+- Preserve BigQuery fallback for non-V2 sites.
+- Clearly distinguish “actual value is 0” from “no data available.”
+
+C. V2 Not Responding
+
+For the Devices summary:
+- Keep project DB device counts and alert counts.
+- Replace or add V2-first Not Responding calculation for V2 sites.
+- Compute not responding from latest V2 device reading/rollup recency.
+- Use the existing device_no_respond_threshold if available.
+- If no threshold exists, use a conservative default and document it.
+- Do not mark a device not responding merely because expected baseline is missing.
+- Preserve BigQuery fallback for non-V2 sites.
+
+Validation required on site 4 / 110 Shawmut:
+1. Production Summary shows actual values and does not show expected as 0.00.
+2. Percent from Expected is N/A or no-baseline, not 0%.
+3. Actual Production vs Expected shows Actual line and a clear no-baseline note for Expected.
+4. Past Performance does not show misleading 0% bars.
+5. Inverter tiles show actual V2 values for mapped inverters.
+6. Inverter tiles use neutral/no-baseline status where expected is missing.
+7. Devices summary shows V2-based Not Responding count.
+8. Non-V2/BigQuery sites still behave as before.
+9. No 500s from null expected values.
+10. No NaN values in frontend.
+11. No ingestion/scheduler/credential/mapping changes.
+
+Return:
+- files changed
+- endpoint contract changes
+- null/no-baseline handling details
+- validation screenshots or browser-session confirmation
+- known remaining gaps

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 import LinearProgress, { linearProgressClasses, LinearProgressProps } from '@mui/material/LinearProgress';
 import { WidgetWrapper } from '../../Overview.style';
 import dayjs from 'dayjs';
@@ -43,7 +44,7 @@ interface PastPerformanceProps {
 
 export const PastPerformance: React.FC<PastPerformanceProps> = ({ siteId }) => {
   const {
-    data: { data } = {},
+    data: { data, expected_baseline_available } = {},
     isFetching,
     error,
     refetch
@@ -54,6 +55,8 @@ export const PastPerformance: React.FC<PastPerformanceProps> = ({ siteId }) => {
     refetchInterval: 15 * 60 * 1000
   });
 
+  // V2 sites have no expected baseline to compute the daily ratio against.
+  const baselineAvailable = expected_baseline_available ?? true;
   const entries = typeof data === 'object' && data !== null ? Object.entries(data) : [];
   const isValueOutOfRange = (value: number) => value > 100;
   const formatDate = (date: string) => {
@@ -69,27 +72,36 @@ export const PastPerformance: React.FC<PastPerformanceProps> = ({ siteId }) => {
       onClickRefetch={refetch}
     >
       <Box display="flex" flexDirection="column" flexGrow="1" height="100%">
-        {entries.map(item => (
-          <Box
-            key={item[0]}
-            sx={{
-              display: 'inline-flex',
-              flexGrow: 1,
-              alignItems: 'center',
-              '& > span': { width: '75px', px: '8px', textAlign: 'center' }
-            }}
-          >
-            <span>{formatDate(item[0])}</span>
-            <Box flexGrow={1} my="auto">
-              <BorderLinearProgress
-                variant="determinate"
-                value={isValueOutOfRange(item[1]) ? 100 : item[1]}
-                beyondTheRange={isValueOutOfRange(item[1])}
-              />
-            </Box>
-            <span>{item[1]}%</span>
+        {!baselineAvailable ? (
+          <Box display="flex" flexGrow={1} alignItems="center" justifyContent="center" px="16px">
+            <Typography variant="body2" textAlign="center" color={theme => theme.palette.text.secondary}>
+              Past performance compares actual output against an expected baseline, which isn&apos;t available for this
+              site&apos;s telemetry.
+            </Typography>
           </Box>
-        ))}
+        ) : (
+          entries.map(item => (
+            <Box
+              key={item[0]}
+              sx={{
+                display: 'inline-flex',
+                flexGrow: 1,
+                alignItems: 'center',
+                '& > span': { width: '75px', px: '8px', textAlign: 'center' }
+              }}
+            >
+              <span>{formatDate(item[0])}</span>
+              <Box flexGrow={1} my="auto">
+                <BorderLinearProgress
+                  variant="determinate"
+                  value={isValueOutOfRange(item[1]) ? 100 : item[1]}
+                  beyondTheRange={isValueOutOfRange(item[1])}
+                />
+              </Box>
+              <span>{item[1]}%</span>
+            </Box>
+          ))
+        )}
       </Box>
     </WidgetWrapper>
   );
