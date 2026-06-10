@@ -7,9 +7,16 @@ and are out of scope for Phase 1.
 """
 from __future__ import annotations
 
-from typing import Protocol, Sequence, runtime_checkable
+from datetime import datetime
+from typing import Mapping, Protocol, Sequence, runtime_checkable
 
-from .models import ExternalDeviceRecord, ExternalSiteRecord, TestResult
+from .models import (
+    ExternalDeviceRecord,
+    ExternalSiteRecord,
+    MetricFieldSpec,
+    ReadingsPullResult,
+    TestResult,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -98,4 +105,50 @@ class DeviceListingAdapter(Protocol):
         - auth failure -> :class:`CredentialError`,
         - rate limiting -> :class:`RateLimited`,
         - 5xx / transport failure -> :class:`ProviderUnavailable`.
+        """
+
+
+@runtime_checkable
+class ReadingsAdapter(Protocol):
+    """Optional capability: pull normalized time-series readings for one site.
+
+    Kept as a *separate* Protocol from :class:`ProviderAdapter` for the same
+    reason as :class:`DeviceListingAdapter`: not every vendor adapter can pull
+    readings, and folding it into the base Protocol would silently break
+    ``isinstance`` checks. Callers must guard with
+    ``isinstance(adapter, ReadingsAdapter)`` before invoking.
+
+    The method is *best-effort and partial-failure tolerant*: per-target
+    provider errors are accumulated on the returned
+    :class:`~app.integrations.telemetry.models.ReadingsPullResult` rather than
+    aborting the whole pull, so an ingestion run can persist whatever was
+    retrieved. Only session-fatal failures (token mint, site/device discovery)
+    raise a structured exception:
+
+    - auth failure -> :class:`CredentialError`,
+    - the site is unknown to the provider -> :class:`MappingError`,
+    - rate limiting on the *initial* requests -> :class:`RateLimited`,
+    - 5xx / transport failure on discovery -> :class:`ProviderUnavailable`.
+    """
+
+    provider_key: str
+
+    def get_readings(
+        self,
+        credentials: Mapping[str, str],
+        *,
+        external_site_id: str,
+        metric_specs: Sequence[MetricFieldSpec],
+        window_start: datetime,
+        window_end: datetime,
+        external_device_ids: Sequence[str] | None = None,
+        bin_size: str = "BinRaw",
+    ) -> ReadingsPullResult:
+        """Pull readings for ``metric_specs`` across the site's devices.
+
+        ``external_device_ids`` restricts the pull to those provider device
+        ids; ``None`` means "every device the provider reports for the site".
+        ``bin_size`` is passed through to the provider's binning parameter;
+        ``BinRaw`` is the only value verified against the live API, other bin
+        sizes are provider-dependent pass-throughs.
         """

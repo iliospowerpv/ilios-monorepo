@@ -215,3 +215,49 @@ export interface DeviceMappingBulkResponse {
   failed_count: number;
   errors: string[] | null;
 }
+
+/**
+ * Lifecycle of a single native ingestion attempt (manual refresh). `partial`
+ * means some device/metric pulls succeeded while others failed; `failed` means
+ * nothing was written.
+ */
+export type TelemetrySyncStatus = 'queued' | 'running' | 'partial' | 'succeeded' | 'failed';
+
+/**
+ * Optional bounded window for a manual readings refresh. Omitting both bounds
+ * refreshes the most recent 24h. Timestamps are ISO-8601 (UTC).
+ */
+export interface RefreshReadingsPayload {
+  window_start?: string | null;
+  window_end?: string | null;
+}
+
+/**
+ * Structured outcome of a manual readings refresh. Returned for every outcome
+ * (including provider failures) so the UI can show status + last-refreshed
+ * without inspecting raw rows.
+ */
+export interface RefreshReadingsResponse {
+  sync_job_id: number;
+  correlation_id: string;
+  status: TelemetrySyncStatus;
+  site_id: number;
+  company_id: number;
+  provider_key: string | null;
+  external_site_id: string | null;
+  window_start: string;
+  window_end: string;
+  devices_mapped: number;
+  devices_seen: number;
+  targets_attempted: number;
+  targets_with_data: number;
+  targets_failed: number;
+  targets_ambiguous: number;
+  readings_received: number;
+  readings_written: number;
+  rate_limited: boolean;
+  started_at: string | null;
+  ended_at: string | null;
+  error: string | null;
+  errors: string[];
+}

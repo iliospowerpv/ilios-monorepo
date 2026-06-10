@@ -18,6 +18,7 @@ from app.models.telemetry import (
     ExternalSiteSyncStatus,
     LastSyncStatus,
     ProviderAccountStatus,
+    TelemetrySyncStatus,
 )
 
 
@@ -316,3 +317,56 @@ class DeviceMappingBulkResponse(BaseModel):
     successful_count: int
     failed_count: int
     errors: Optional[list[str]] = None
+
+
+# ---------------------------------------------------------------------------
+# Native readings ingestion — manual refresh
+# ---------------------------------------------------------------------------
+
+
+class RefreshReadingsRequest(BaseModel):
+    """Body for the manual single-site readings refresh.
+
+    Both bounds are optional: omitting them refreshes the most recent 24h. The
+    endpoint clamps any supplied window to a maximum span (and rejects an
+    inverted window) so a manual refresh can never trigger an unbounded pull.
+    Timestamps are interpreted as UTC.
+    """
+
+    window_start: Optional[datetime] = Field(
+        default=None, description="UTC start of the pull window (inclusive)."
+    )
+    window_end: Optional[datetime] = Field(
+        default=None, description="UTC end of the pull window (inclusive)."
+    )
+
+
+class RefreshReadingsResponse(BaseModel):
+    """Structured outcome of a manual readings refresh.
+
+    Always returned (even for provider failures) so the UI can show a
+    "last refreshed" time and an accurate status without inspecting raw rows.
+    """
+
+    sync_job_id: int
+    correlation_id: str
+    status: TelemetrySyncStatus
+    site_id: int
+    company_id: int
+    provider_key: Optional[str] = None
+    external_site_id: Optional[str] = None
+    window_start: datetime
+    window_end: datetime
+    devices_mapped: int = 0
+    devices_seen: int = 0
+    targets_attempted: int = 0
+    targets_with_data: int = 0
+    targets_failed: int = 0
+    targets_ambiguous: int = 0
+    readings_received: int = 0
+    readings_written: int = 0
+    rate_limited: bool = False
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    error: Optional[str] = None
+    errors: list[str] = Field(default_factory=list)

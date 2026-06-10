@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -74,6 +74,8 @@ from app.schema.telemetry_v2 import (
     ProviderAccountUpdateRequest,
     ProviderCatalogEntry,
     ProviderCatalogList,
+    RefreshReadingsRequest,
+    RefreshReadingsResponse,
     SiteMappingCreateRequest,
     SiteMappingResponse,
     SyncDevicesResponse,
@@ -82,6 +84,11 @@ from app.schema.telemetry_v2 import (
 )
 from app.security.redaction import fingerprint
 from app.schema.user import CurrentUserSchema
+from app.services.telemetry.ingestion_service import (
+    IngestionConfigError,
+    run_site_refresh,
+)
+from app.services.telemetry.rollup_service import run_rollups_for_window
 
 logger = logging.getLogger(__name__)
 
@@ -1610,4 +1617,173 @@ def bulk_upsert_device_mappings(
         successful_count=successful,
         failed_count=failed,
         errors=errors if errors else None,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Native readings ingestion -- manual single-site refresh (V2)
+# ---------------------------------------------------------------------------
+
+# A manual refresh is bounded so it can never trigger an unbounded provider
+# pull. Omitting the window refreshes the most recent 24h.
+_MAX_REFRESH_WINDOW = timedelta(hours=24)
+_DEFAULT_REFRESH_WINDOW = timedelta(hours=24)
+
+
+def _coerce_naive_utc(dt: datetime) -> datetime:
+    """Normalize a request timestamp to UTC-naive (the storage convention).
+
+    tz-aware inputs are converted to UTC then stripped; naive inputs are
+    assumed to already be UTC.
+    """
+    if dt.tzinfo is not None:
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
+
+
+@telemetry_v2_router.post(
+    "/v2/sites/{site_id}/refresh-readings",
+    response_model=RefreshReadingsResponse,
+    summary="Manually refresh native telemetry readings for one mapped site",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def refresh_site_readings(
+    payload: RefreshReadingsRequest,
+    request: Request,
+    site: Annotated[Site, Depends(get_authorized_site_with_company_admin)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    credential_store: Annotated[CredentialStore, Depends(get_credential_store)],
+) -> RefreshReadingsResponse:
+    """Pull + persist native telemetry readings for one mapped project/site.
+
+    This is the in-app replacement for the legacy GCP/BigQuery pull. It pulls
+    readings for the site's mapped devices over a bounded window through the
+    provider adapter, upserts them idempotently into ``telemetry_readings``,
+    then computes derived interval rollups. No BigQuery / Firestore / Cloud
+    Function is involved; GCP is only ever the durable credential store.
+
+    Safety contract:
+
+    - **Never wipes on failure.** Every persistence path only upserts. A
+      provider or rollup failure leaves all previously stored readings,
+      mappings and cached devices untouched, and still records a sync-job row.
+    - **Idempotent.** Re-running the same window corrects values in place.
+    - **Bounded.** The window is clamped to a maximum span so a manual refresh
+      cannot trigger an unbounded pull.
+    - **Additive only.** The "Site" entity is never modified.
+    """
+    # Authorization: the site dependency restricts to the caller's companies and
+    # company-admin scope; telemetry_admin_required gates the action. Enforce
+    # company visibility explicitly as defense in depth before doing any work.
+    _enforce_company_visibility(current_user, site.company_id)
+
+    # In production, a manual refresh re-presents stored credentials to the
+    # provider; refuse if the credential store cannot durably hold them.
+    _block_if_storage_not_durable(credential_store, operation="refresh_readings")
+
+    # Resolve + bound the pull window (default: most recent 24h).
+    window_end = _coerce_naive_utc(payload.window_end) if payload.window_end else _utcnow()
+    if payload.window_start:
+        window_start = _coerce_naive_utc(payload.window_start)
+    else:
+        window_start = window_end - _DEFAULT_REFRESH_WINDOW
+
+    if window_end <= window_start:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "window_end must be after window_start.",
+        )
+    if window_end - window_start > _MAX_REFRESH_WINDOW:
+        # Clamp rather than reject so a too-wide request still does useful work.
+        window_start = window_end - _MAX_REFRESH_WINDOW
+
+    # Ingest. Missing preconditions (no mapping/devices/catalog) surface as a
+    # typed config error mapped to the right HTTP status; no job is created.
+    try:
+        summary = run_site_refresh(
+            db,
+            site_id=site.id,
+            window_start=window_start,
+            window_end=window_end,
+            triggered_by_user_id=getattr(current_user, "id", None),
+            credential_store=credential_store,
+        )
+    except IngestionConfigError as exc:
+        raise HTTPException(exc.status_code, exc.detail)
+
+    # Derived rollups run after the readings commit and are failure-isolated:
+    # a rollup error never undoes committed readings nor fails the refresh.
+    rollup = run_rollups_for_window(
+        db,
+        site_id=site.id,
+        company_id=summary.company_id,
+        window_start=window_start,
+        window_end=window_end,
+        bucket_sizes=("1h",),
+        sync_job_id=summary.sync_job_id,
+    )
+    if rollup.status == "failed":
+        logger.warning(
+            "telemetry_v2_refresh_rollup_failed site_id=%s job_id=%s error=%s",
+            site.id,
+            summary.sync_job_id,
+            rollup.error,
+        )
+
+    logger.info(
+        "telemetry_v2_refresh_readings site_id=%s job_id=%s status=%s "
+        "received=%s written=%s targets_failed=%s rollup_status=%s",
+        site.id,
+        summary.sync_job_id,
+        summary.status.value,
+        summary.readings_received,
+        summary.readings_written,
+        summary.targets_failed,
+        rollup.status,
+    )
+
+    # Best-effort audit trail; never blocks or rolls back the refresh.
+    try:
+        from app.routers.telemetry.telemetry import _create_audit_log
+
+        _create_audit_log(
+            request,
+            db,
+            "telemetry_v2_refresh_readings",
+            (
+                f"Refreshed telemetry for project/site {site.id} "
+                f"(job {summary.sync_job_id}, status {summary.status.value}, "
+                f"{summary.readings_written} readings written)"
+            ),
+            is_success=(summary.status.value != "failed"),
+        )
+    except Exception:  # noqa: BLE001
+        logger.warning(
+            "telemetry_v2_refresh_readings_audit_failed site_id=%s", site.id
+        )
+
+    return RefreshReadingsResponse(
+        sync_job_id=summary.sync_job_id,
+        correlation_id=summary.correlation_id,
+        status=summary.status,
+        site_id=summary.site_id,
+        company_id=summary.company_id,
+        provider_key=summary.provider_key,
+        external_site_id=summary.external_site_id,
+        window_start=summary.window_start,
+        window_end=summary.window_end,
+        devices_mapped=summary.devices_mapped,
+        devices_seen=summary.devices_seen,
+        targets_attempted=summary.targets_attempted,
+        targets_with_data=summary.targets_with_data,
+        targets_failed=summary.targets_failed,
+        targets_ambiguous=summary.targets_ambiguous,
+        readings_received=summary.readings_received,
+        readings_written=summary.readings_written,
+        rate_limited=summary.rate_limited,
+        started_at=summary.started_at,
+        ended_at=summary.ended_at,
+        error=summary.error,
+        errors=summary.errors,
     )

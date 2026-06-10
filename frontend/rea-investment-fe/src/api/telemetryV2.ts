@@ -13,6 +13,8 @@ import type {
   ProviderAccountList,
   ProviderAccountUpdatePayload,
   ProviderCatalogList,
+  RefreshReadingsPayload,
+  RefreshReadingsResponse,
   SiteMappingResponse,
   SiteMappingSavePayload,
   SyncDevicesResponse,
@@ -169,6 +171,20 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     return data;
   };
 
+  /**
+   * Trigger a native V2 telemetry pull for one mapped project/site. Pulls the
+   * site's mapped devices over a bounded window (default: most recent 24h) and
+   * upserts readings idempotently. Never wipes existing data on failure; always
+   * resolves with a structured summary (including for provider failures).
+   */
+  const refreshSiteReadings = async (
+    siteId: number,
+    payload: RefreshReadingsPayload = {}
+  ): Promise<RefreshReadingsResponse> => {
+    const { data } = await httpClient.post<RefreshReadingsResponse>(`${V2}/sites/${siteId}/refresh-readings`, payload);
+    return data;
+  };
+
   return {
     getCatalog,
     listLicensedProviders,
@@ -185,7 +201,8 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     saveSiteMapping,
     listExternalDevices,
     syncProviderAccountDevices,
-    saveDeviceMappings
+    saveDeviceMappings,
+    refreshSiteReadings
   };
 };
 

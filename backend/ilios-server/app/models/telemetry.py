@@ -1,6 +1,7 @@
 import enum
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     CheckConstraint,
     Column,
@@ -8,8 +9,11 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Identity,
+    Index,
     Integer,
+    Numeric,
     String,
+    Text,
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -354,3 +358,327 @@ class TelemetryDeviceMapping(Base):
 
     created_at = Column(DateTime, server_default=utcnow())
     updated_at = Column(DateTime, server_default=utcnow())
+
+
+# ---------------------------------------------------------------------------
+# Native V2 ingestion enums (Phase: native ingestion + manual refresh)
+# ---------------------------------------------------------------------------
+
+
+class TelemetrySyncStatus(str, enum.Enum):
+    """Lifecycle of a single ingestion attempt (mirrors ``finance_sync_runs``).
+
+    ``partial`` is the V2 addition: some device/metric pulls succeeded while
+    others failed within the same run. It is distinct from ``failed`` (nothing
+    written) and ``succeeded`` (no per-target errors).
+    """
+
+    queued = "queued"
+    running = "running"
+    succeeded = "succeeded"
+    partial = "partial"
+    failed = "failed"
+
+
+class TelemetrySyncScope(str, enum.Enum):
+    """Scope a sync job targets.
+
+    Only ``site`` is executed today. ``company`` / ``portfolio`` exist so the
+    follow-up scheduler/backfill task can reuse the same table and service with
+    a wider scope without a schema change.
+    """
+
+    site = "site"
+    company = "company"
+    portfolio = "portfolio"
+
+
+class TelemetrySyncTrigger(str, enum.Enum):
+    """What initiated a sync job."""
+
+    manual = "manual"
+    scheduled = "scheduled"
+    backfill = "backfill"
+
+
+# ---------------------------------------------------------------------------
+# Metric catalog (provider field -> normalized metric)
+# ---------------------------------------------------------------------------
+
+
+class TelemetryMetricCatalog(Base):
+    """Maps a provider's raw point/field to a normalized iliOS metric.
+
+    Seeded from the legacy AlsoEnergy point-tag map. Each row is the unit of
+    "pull this field, store it as this normalized metric".
+
+    Two provider field names are tracked because AlsoEnergy uses different
+    identifiers for discovery vs. query:
+
+    * ``provider_field_name`` — the name that appears in a device's
+      ``fieldsArchived`` list (the legacy short name, e.g. ``KwAC``). This is
+      what the ingestion service intersects with a device's available fields,
+      and what the BinData response echoes back in ``info[0].name``.
+    * ``provider_query_field`` — the canonical field name sent as the BinData
+      request ``fieldName`` (e.g. ``Active_Power``). Replicates the legacy
+      contract exactly; nothing about the provider API is invented here.
+
+    Multiple rows may share a ``normalized_metric`` (e.g. AlsoEnergy ``Sun`` ->
+    POA and ``Sun2`` -> GHI both normalize to ``irradiance_wm2``). When a single
+    device exposes more than one provider field for the same normalized metric
+    the pull is *ambiguous* and is skipped for that device — mirroring the
+    legacy pipeline behaviour.
+    """
+
+    __tablename__ = "telemetry_metric_catalog"
+    __table_args__ = (
+        UniqueConstraint(
+            "provider_key",
+            "provider_field_name",
+            name="uq_telemetry_metric_catalog_provider_field",
+        ),
+        Index("ix_telemetry_metric_catalog_provider", "provider_key"),
+    )
+
+    id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
+    provider_key = Column(String(64), nullable=False)
+    provider_field_name = Column(String(255), nullable=False)
+    provider_query_field = Column(String(255), nullable=True)
+    normalized_metric = Column(String(64), nullable=False)
+    unit = Column(String(32), nullable=False)
+    device_category = Column(String(64), nullable=True)
+    is_enabled = Column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+
+    created_at = Column(DateTime, server_default=utcnow())
+    updated_at = Column(DateTime, server_default=utcnow(), onupdate=utcnow())
+
+
+# ---------------------------------------------------------------------------
+# Sync jobs (one row per ingestion attempt)
+# ---------------------------------------------------------------------------
+
+
+class TelemetrySyncJob(Base):
+    """One ingestion attempt. Mirrors ``finance_sync_runs`` with telemetry
+    specifics (scope/trigger/window + per-device stats).
+
+    A row is created for *every* attempt — including provider failures — so the
+    UI can surface a "last refreshed" timestamp and an error without inspecting
+    raw readings. A failed run never deletes mappings, cached devices, or
+    previously stored readings.
+    """
+
+    __tablename__ = "telemetry_sync_jobs"
+    __table_args__ = (
+        Index("ix_telemetry_sync_jobs_company", "company_id"),
+        Index("ix_telemetry_sync_jobs_site", "site_id"),
+        Index("ix_telemetry_sync_jobs_status", "status"),
+        Index("ix_telemetry_sync_jobs_started_at", "started_at"),
+    )
+
+    id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
+    company_id = Column(
+        Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+    provider_account_id = Column(
+        Integer, ForeignKey("das_connections.id", ondelete="SET NULL"), nullable=True
+    )
+    site_id = Column(
+        Integer, ForeignKey("sites.id", ondelete="SET NULL"), nullable=True
+    )
+    scope = Column(
+        Enum(TelemetrySyncScope, name="telemetry_sync_scope_enum"),
+        nullable=False,
+        default=TelemetrySyncScope.site,
+        server_default=TelemetrySyncScope.site.value,
+    )
+    status = Column(
+        Enum(TelemetrySyncStatus, name="telemetry_sync_status_enum"),
+        nullable=False,
+        default=TelemetrySyncStatus.queued,
+        server_default=TelemetrySyncStatus.queued.value,
+    )
+    trigger = Column(
+        Enum(TelemetrySyncTrigger, name="telemetry_sync_trigger_enum"),
+        nullable=False,
+        default=TelemetrySyncTrigger.manual,
+        server_default=TelemetrySyncTrigger.manual.value,
+    )
+    window_start = Column(DateTime, nullable=True)
+    window_end = Column(DateTime, nullable=True)
+    correlation_id = Column(String(64), nullable=False)
+    triggered_by_user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    records_requested = Column(Integer, nullable=False, default=0, server_default="0")
+    records_received = Column(Integer, nullable=False, default=0, server_default="0")
+    records_written = Column(Integer, nullable=False, default=0, server_default="0")
+    last_error = Column(Text, nullable=True)
+    stats_json = Column(JSONB, nullable=True)
+    started_at = Column(DateTime, nullable=True)
+    ended_at = Column(DateTime, nullable=True)
+
+    created_at = Column(DateTime, nullable=False, server_default=utcnow())
+    updated_at = Column(
+        DateTime, nullable=False, server_default=utcnow(), onupdate=utcnow()
+    )
+
+
+# ---------------------------------------------------------------------------
+# Readings (normalized source of truth)
+# ---------------------------------------------------------------------------
+
+
+class TelemetryReading(Base):
+    """A single normalized reading, carrying the full provenance hierarchy:
+
+    company -> provider account -> external site -> iliOS site ->
+    external device -> iliOS device -> normalized metric.
+
+    Idempotency: re-pulling the same window must not create duplicates. The
+    dedupe key is ``(provider_account_id, dedupe_key, provider_metric,
+    metric_ts)``. ``external_device_id`` is kept nullable for fidelity (a
+    provider could one day report a site-level point with no device), but
+    Postgres treats NULLs as distinct in unique constraints, which would defeat
+    idempotency. ``dedupe_key`` is therefore a NOT NULL projection of the
+    external device id (falling back to the ``__site__`` sentinel) used solely
+    for the upsert conflict target.
+
+    Timestamps are stored as UTC-naive ``DateTime`` to match the rest of the
+    schema. ``device_id`` is null for devices the provider returns that are not
+    mapped to an iliOS device.
+    """
+
+    __tablename__ = "telemetry_readings"
+    __table_args__ = (
+        UniqueConstraint(
+            "provider_account_id",
+            "dedupe_key",
+            "provider_metric",
+            "metric_ts",
+            name="uq_telemetry_readings_dedupe",
+        ),
+        Index("ix_telemetry_readings_site_ts", "site_id", "metric_ts"),
+        Index("ix_telemetry_readings_device_ts", "device_id", "metric_ts"),
+        Index("ix_telemetry_readings_sync_job", "sync_job_id"),
+    )
+
+    id = Column(BigInteger, Identity(start=1, increment=1), primary_key=True)
+    company_id = Column(
+        Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+    provider_account_id = Column(
+        Integer, ForeignKey("das_connections.id", ondelete="SET NULL"), nullable=True
+    )
+    external_site_id = Column(String(255), nullable=False)
+    site_id = Column(
+        Integer, ForeignKey("sites.id", ondelete="CASCADE"), nullable=False
+    )
+    external_device_id = Column(String(255), nullable=True)
+    device_id = Column(
+        Integer, ForeignKey("devices.id", ondelete="SET NULL"), nullable=True
+    )
+    dedupe_key = Column(String(255), nullable=False)
+
+    provider_key = Column(String(64), nullable=False)
+    provider_metric = Column(String(255), nullable=False)
+    normalized_metric = Column(String(64), nullable=False)
+    metric_ts = Column(DateTime, nullable=False)
+    value = Column(Numeric, nullable=False)
+    unit = Column(String(32), nullable=True)
+    quality = Column(String(32), nullable=True)
+
+    sync_job_id = Column(
+        Integer,
+        ForeignKey("telemetry_sync_jobs.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    created_at = Column(DateTime, nullable=False, server_default=utcnow())
+
+    SITE_LEVEL_SENTINEL = "__site__"
+
+
+# ---------------------------------------------------------------------------
+# Interval rollups (derived; idempotent per window)
+# ---------------------------------------------------------------------------
+
+
+class TelemetrySiteIntervalRollup(Base):
+    """Per-site, per-metric time-bucket aggregate.
+
+    Lets dashboards read pre-aggregated intervals without rescanning raw
+    readings. Idempotent per window: re-running a refresh upserts the same
+    ``(site_id, bucket_start, bucket_size, normalized_metric)`` row. A rollup
+    failure never deletes raw readings.
+    """
+
+    __tablename__ = "telemetry_site_interval_rollups"
+    __table_args__ = (
+        UniqueConstraint(
+            "site_id",
+            "bucket_start",
+            "bucket_size",
+            "normalized_metric",
+            name="uq_telemetry_site_rollup",
+        ),
+        Index("ix_telemetry_site_rollup_site_bucket", "site_id", "bucket_start"),
+    )
+
+    id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
+    site_id = Column(
+        Integer, ForeignKey("sites.id", ondelete="CASCADE"), nullable=False
+    )
+    company_id = Column(
+        Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+    bucket_start = Column(DateTime, nullable=False)
+    bucket_size = Column(String(16), nullable=False)
+    normalized_metric = Column(String(64), nullable=False)
+    agg = Column(String(16), nullable=False)
+    value = Column(Numeric, nullable=False)
+    unit = Column(String(32), nullable=True)
+    sample_count = Column(Integer, nullable=False, default=0, server_default="0")
+    completeness = Column(Numeric, nullable=True)
+    calculated_at = Column(DateTime, nullable=False, server_default=utcnow())
+
+
+class TelemetryDeviceIntervalRollup(Base):
+    """Per-device, per-metric time-bucket aggregate. Same shape as
+    :class:`TelemetrySiteIntervalRollup` but keyed by ``device_id``.
+    """
+
+    __tablename__ = "telemetry_device_interval_rollups"
+    __table_args__ = (
+        UniqueConstraint(
+            "device_id",
+            "bucket_start",
+            "bucket_size",
+            "normalized_metric",
+            name="uq_telemetry_device_rollup",
+        ),
+        Index("ix_telemetry_device_rollup_device_bucket", "device_id", "bucket_start"),
+        Index("ix_telemetry_device_rollup_site", "site_id"),
+    )
+
+    id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
+    device_id = Column(
+        Integer, ForeignKey("devices.id", ondelete="CASCADE"), nullable=False
+    )
+    site_id = Column(
+        Integer, ForeignKey("sites.id", ondelete="CASCADE"), nullable=False
+    )
+    company_id = Column(
+        Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+    bucket_start = Column(DateTime, nullable=False)
+    bucket_size = Column(String(16), nullable=False)
+    normalized_metric = Column(String(64), nullable=False)
+    agg = Column(String(16), nullable=False)
+    value = Column(Numeric, nullable=False)
+    unit = Column(String(32), nullable=True)
+    sample_count = Column(Integer, nullable=False, default=0, server_default="0")
+    completeness = Column(Numeric, nullable=True)
+    calculated_at = Column(DateTime, nullable=False, server_default=utcnow())

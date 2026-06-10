@@ -21,6 +21,7 @@ implementation; no API behaviour is invented.
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Any, Mapping, Sequence
 
@@ -34,7 +35,14 @@ from .base import (
     ProviderUnavailable,
     RateLimited,
 )
-from .models import ExternalDeviceRecord, ExternalSiteRecord, TestResult
+from .models import (
+    ExternalDeviceRecord,
+    ExternalSiteRecord,
+    MetricFieldSpec,
+    ReadingRecord,
+    ReadingsPullResult,
+    TestResult,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +50,10 @@ ALSO_ENERGY_API_BASE = "https://api.alsoenergy.com"
 TOKEN_PATH = "/Auth/token"
 SITES_PATH = "/Sites"
 HARDWARE_PATH_TEMPLATE = "/Sites/{site_id}/Hardware"
+BINDATA_PATH = "/v2/Data/BinData"
+
+# Only verified bin size against the live API (matches the legacy pipeline).
+DEFAULT_BIN_SIZE = "BinRaw"
 
 DEFAULT_TIMEOUT_SECONDS = 15
 DEFAULT_RETRIES = 2
@@ -329,20 +341,59 @@ class NativeAlsoEnergyAdapter:
             headers={"Authorization": f"Bearer {access_token}"},
         )
 
-    def _hardware_request(self, access_token: str, site_id: str) -> requests.Response:
+    def _hardware_request(
+        self,
+        access_token: str,
+        site_id: str,
+        *,
+        include_archived_fields: bool = False,
+    ) -> requests.Response:
         url = f"{self._base_url}{HARDWARE_PATH_TEMPLATE.format(site_id=site_id)}"
+        params = (
+            {"includeArchivedFields": "true"} if include_archived_fields else None
+        )
         return self._get_with_retry(
             url,
             headers={"Authorization": f"Bearer {access_token}"},
+            params=params,
         )
 
     def _post_with_retry(self, url: str, *, data: Mapping[str, str]) -> requests.Response:
         return self._with_retry(lambda s: s.post(url, data=dict(data), timeout=self._timeout))
 
     def _get_with_retry(
-        self, url: str, *, headers: Mapping[str, str]
+        self,
+        url: str,
+        *,
+        headers: Mapping[str, str],
+        params: Mapping[str, str] | None = None,
     ) -> requests.Response:
-        return self._with_retry(lambda s: s.get(url, headers=dict(headers), timeout=self._timeout))
+        return self._with_retry(
+            lambda s: s.get(
+                url,
+                headers=dict(headers),
+                params=dict(params) if params else None,
+                timeout=self._timeout,
+            )
+        )
+
+    def _post_json_with_retry(
+        self,
+        url: str,
+        *,
+        params: Mapping[str, str],
+        json_body: Any,
+        headers: Mapping[str, str],
+    ) -> requests.Response:
+        return self._with_retry(
+            lambda s: s.post(
+                url,
+                params=dict(params),
+                json=json_body,
+                headers=dict(headers),
+                timeout=self._timeout,
+            )
+        )
 
     def _with_retry(self, call):
         session = self._get_session()
@@ -383,3 +434,367 @@ class NativeAlsoEnergyAdapter:
             return int(raw)
         except (TypeError, ValueError):
             return None
+
+    # ------------------------------------------------------------------
+    # Readings capability (ReadingsAdapter)
+    # ------------------------------------------------------------------
+
+    def get_readings(
+        self,
+        credentials: Mapping[str, str],
+        *,
+        external_site_id: str,
+        metric_specs: Sequence[MetricFieldSpec],
+        window_start: datetime,
+        window_end: datetime,
+        external_device_ids: Sequence[str] | None = None,
+        bin_size: str = DEFAULT_BIN_SIZE,
+    ) -> ReadingsPullResult:
+        """Pull normalized readings for one site. See ``ReadingsAdapter``.
+
+        Session-fatal failures (token mint, site/device discovery) raise a
+        structured exception. Per-target provider errors are accumulated on the
+        result so the caller can persist partial data without wiping anything.
+        """
+        creds = self._validate_required_fields(credentials)
+        site_ref = str(external_site_id).strip()
+        if not site_ref:
+            raise MappingError(
+                "No external site id supplied for the readings pull",
+                provider_key=self.provider_key,
+            )
+
+        if not metric_specs:
+            return ReadingsPullResult(readings=tuple())
+
+        # Token mint and device-field discovery are session-fatal: if either
+        # fails we have nothing to persist, so we raise instead of returning a
+        # partial result (the caller records a cleanly-failed job, no wipe).
+        access_token = self._fetch_access_token(creds["username"], creds["password"])
+        device_fields = self._discover_site_device_fields(access_token, site_ref)
+
+        requested: set[str] | None = None
+        if external_device_ids is not None:
+            requested = {
+                str(d).strip() for d in external_device_ids if str(d).strip()
+            }
+
+        target_device_ids = [
+            device_id
+            for device_id in device_fields
+            if requested is None or device_id in requested
+        ]
+
+        readings: list[ReadingRecord] = []
+        errors: list[str] = []
+        targets_attempted = 0
+        targets_with_data = 0
+        targets_failed = 0
+        targets_ambiguous = 0
+        rate_limited = False
+        stop = False
+
+        for device_id in target_device_ids:
+            if stop:
+                break
+            available = device_fields.get(device_id) or set()
+            for spec in metric_specs:
+                matching = [
+                    (legacy, query)
+                    for (legacy, query) in spec.candidates
+                    if legacy in available
+                ]
+                if not matching:
+                    # Device simply doesn't expose this metric — normal.
+                    continue
+                if len(matching) > 1:
+                    targets_ambiguous += 1
+                    logger.info(
+                        "telemetry_readings_ambiguous provider=%s device=%s metric=%s candidates=%s",
+                        self.provider_key,
+                        device_id,
+                        spec.normalized_metric,
+                        len(matching),
+                    )
+                    continue
+
+                legacy_field, query_field = matching[0]
+                targets_attempted += 1
+                try:
+                    pulled = self._pull_target(
+                        access_token,
+                        device_id=device_id,
+                        legacy_field=legacy_field,
+                        query_field=query_field,
+                        spec=spec,
+                        window_start=window_start,
+                        window_end=window_end,
+                        bin_size=bin_size or DEFAULT_BIN_SIZE,
+                    )
+                except RateLimited:
+                    rate_limited = True
+                    targets_failed += 1
+                    errors.append(
+                        f"rate limited pulling {spec.normalized_metric} for device {device_id}"
+                    )
+                    stop = True
+                    break
+                except CredentialError:
+                    # Token died mid-run. Stop and keep whatever we have.
+                    targets_failed += 1
+                    errors.append(
+                        f"authentication lost pulling {spec.normalized_metric} for device {device_id}"
+                    )
+                    stop = True
+                    break
+                except ProviderUnavailable as exc:
+                    targets_failed += 1
+                    errors.append(
+                        f"provider error pulling {spec.normalized_metric} for device {device_id}: {exc}"
+                    )
+                    continue
+
+                if pulled:
+                    readings.extend(pulled)
+                    targets_with_data += 1
+
+        return ReadingsPullResult(
+            readings=tuple(readings),
+            devices_seen=len(device_fields),
+            targets_attempted=targets_attempted,
+            targets_with_data=targets_with_data,
+            targets_failed=targets_failed,
+            targets_ambiguous=targets_ambiguous,
+            rate_limited=rate_limited,
+            errors=tuple(errors),
+        )
+
+    def _discover_site_device_fields(
+        self, access_token: str, external_site_id: str
+    ) -> dict[str, set[str]]:
+        """Return ``{external_device_id: {legacy field names}}`` for the site.
+
+        Uses ``includeArchivedFields=true`` so the response carries each
+        device's ``fieldsArchived`` legacy names, which are what metric-spec
+        candidates are matched against.
+        """
+        response = self._hardware_request(
+            access_token, external_site_id, include_archived_fields=True
+        )
+        status = response.status_code
+
+        if status == HTTPStatus.NO_CONTENT:
+            return {}
+        if status == HTTPStatus.NOT_FOUND:
+            raise MappingError(
+                "Provider does not recognise the configured site for this account",
+                provider_key=self.provider_key,
+            )
+        if status in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN):
+            raise CredentialError(
+                f"Provider rejected hardware discovery (HTTP {int(status)})",
+                provider_key=self.provider_key,
+            )
+        if status == HTTPStatus.TOO_MANY_REQUESTS:
+            raise RateLimited(
+                "Provider rate-limited hardware discovery",
+                retry_after=self._parse_retry_after(response.headers),
+                provider_key=self.provider_key,
+            )
+        if 500 <= int(status) < 600:
+            raise ProviderUnavailable(
+                f"Provider responded with HTTP {int(status)} on hardware discovery",
+                provider_key=self.provider_key,
+            )
+        if not (200 <= int(status) < 300):
+            raise ProviderUnavailable(
+                f"Unexpected provider response (HTTP {int(status)}) on hardware discovery",
+                provider_key=self.provider_key,
+            )
+
+        try:
+            payload = response.json() or {}
+        except ValueError as exc:
+            raise ProviderUnavailable(
+                "Provider returned an unparseable hardware payload",
+                provider_key=self.provider_key,
+            ) from exc
+
+        result: dict[str, set[str]] = {}
+        for item in payload.get("hardware") or []:
+            if not isinstance(item, dict):
+                continue
+            raw_id = item.get("id")
+            if raw_id is None:
+                continue
+            device_id = str(raw_id).strip()
+            if not device_id:
+                continue
+            fields = item.get("fieldsArchived") or []
+            result[device_id] = {str(f) for f in fields if f is not None}
+        return result
+
+    def _pull_target(
+        self,
+        access_token: str,
+        *,
+        device_id: str,
+        legacy_field: str,
+        query_field: str,
+        spec: MetricFieldSpec,
+        window_start: datetime,
+        window_end: datetime,
+        bin_size: str,
+    ) -> list[ReadingRecord]:
+        """Pull one ``(device, metric)`` target. Returns [] for no-data.
+
+        Raises :class:`RateLimited` / :class:`CredentialError` /
+        :class:`ProviderUnavailable` for the corresponding provider responses so
+        the caller can decide whether to stop or continue.
+        """
+        response = self._bindata_request(
+            access_token,
+            hardware_id=device_id,
+            query_field=query_field,
+            window_start=window_start,
+            window_end=window_end,
+            bin_size=bin_size,
+        )
+        status = response.status_code
+
+        if status in (HTTPStatus.BAD_REQUEST, HTTPStatus.NO_CONTENT):
+            # Provider rejected/has no data for this field+window — treat as
+            # no-data (the legacy pipeline skips these silently).
+            return []
+        if status == HTTPStatus.TOO_MANY_REQUESTS:
+            raise RateLimited(
+                "Provider rate-limited the readings request",
+                retry_after=self._parse_retry_after(response.headers),
+                provider_key=self.provider_key,
+            )
+        if status in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN):
+            raise CredentialError(
+                f"Provider rejected the readings request (HTTP {int(status)})",
+                provider_key=self.provider_key,
+            )
+        if 500 <= int(status) < 600:
+            raise ProviderUnavailable(
+                f"Provider responded with HTTP {int(status)} on readings",
+                provider_key=self.provider_key,
+            )
+        if not (200 <= int(status) < 300):
+            raise ProviderUnavailable(
+                f"Unexpected provider response (HTTP {int(status)}) on readings",
+                provider_key=self.provider_key,
+            )
+
+        try:
+            payload = response.json() or {}
+        except ValueError as exc:
+            raise ProviderUnavailable(
+                "Provider returned an unparseable readings payload",
+                provider_key=self.provider_key,
+            ) from exc
+
+        # Verify the response describes the field we asked for. The BinData
+        # response echoes the *legacy* field name in ``info[0].name``; if it
+        # doesn't match we skip rather than risk mislabelling values.
+        info = payload.get("info") or []
+        if len(info) != 1 or not isinstance(info[0], dict) or info[0].get("name") != legacy_field:
+            logger.info(
+                "telemetry_readings_field_mismatch provider=%s device=%s expected_field=%s",
+                self.provider_key,
+                device_id,
+                legacy_field,
+            )
+            return []
+
+        out: list[ReadingRecord] = []
+        for item in payload.get("items") or []:
+            if not isinstance(item, dict):
+                continue
+            data = item.get("data")
+            if not isinstance(data, list) or len(data) != 1:
+                continue
+            metric_ts = self._parse_reading_timestamp(item.get("timestamp"))
+            if metric_ts is None:
+                continue
+            out.append(
+                ReadingRecord(
+                    external_device_id=device_id,
+                    normalized_metric=spec.normalized_metric,
+                    unit=spec.unit,
+                    provider_field=legacy_field,
+                    metric_ts=metric_ts,
+                    value=self._coerce_reading_value(data[0]),
+                )
+            )
+        return out
+
+    def _bindata_request(
+        self,
+        access_token: str,
+        *,
+        hardware_id: str,
+        query_field: str,
+        window_start: datetime,
+        window_end: datetime,
+        bin_size: str,
+    ) -> requests.Response:
+        url = f"{self._base_url}{BINDATA_PATH}"
+        params = {
+            "from": self._format_window(window_start),
+            "to": self._format_window(window_end),
+            "binSizes": bin_size,
+        }
+        body = [{"hardwareId": hardware_id, "fieldName": query_field}]
+        return self._post_json_with_retry(
+            url,
+            params=params,
+            json_body=body,
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+    @staticmethod
+    def _format_window(value: datetime) -> str:
+        """Format a window bound as the provider expects (UTC, naive wall-clock)."""
+        if value.tzinfo is not None:
+            value = value.astimezone(timezone.utc).replace(tzinfo=None)
+        return value.strftime("%Y-%m-%dT%H:%M:%S")
+
+    @staticmethod
+    def _parse_reading_timestamp(raw: Any) -> datetime | None:
+        """Parse a provider timestamp into a UTC-naive datetime, or None."""
+        if not raw:
+            return None
+        try:
+            parsed = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc).replace(tzinfo=None)
+
+    @staticmethod
+    def _coerce_reading_value(raw: Any) -> float:
+        """Coerce a provider data point to float; NaN/None/blank -> 0.0.
+
+        Matches the legacy pipeline: missing or ``"NaN"`` samples become 0.0.
+        """
+        if raw is None:
+            return 0.0
+        if isinstance(raw, str):
+            stripped = raw.strip()
+            if not stripped or stripped.lower() == "nan":
+                return 0.0
+            try:
+                raw = float(stripped)
+            except ValueError:
+                return 0.0
+        try:
+            value = float(raw)
+        except (TypeError, ValueError):
+            return 0.0
+        if value != value:  # float('nan')
+            return 0.0
+        return round(value, 9)

@@ -21,6 +21,7 @@ import type {
 } from '../../../../../../api/connections';
 import { AssetManagementSiteDetailsTabProps } from '../types';
 import { TelemetryWizard } from './TelemetryWizard';
+import { RefreshTelemetryButton } from './RefreshTelemetryButton';
 
 const getStatusColor = (status: TelemetryHealthStatus): 'success' | 'warning' | 'error' | 'default' => {
   switch (status) {
@@ -219,9 +220,12 @@ export const Telemetry: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDe
           <SettingsInputAntennaIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
           Telemetry
         </Typography>
-        <Button variant="contained" color="primary" onClick={() => setWizardOpen(true)}>
-          {isConfigured ? 'Manage Telemetry' : 'Connect Telemetry'}
-        </Button>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+          {isConfigured && <RefreshTelemetryButton siteId={siteDetails.id} />}
+          <Button variant="contained" color="primary" onClick={() => setWizardOpen(true)}>
+            {isConfigured ? 'Manage Telemetry' : 'Connect Telemetry'}
+          </Button>
+        </Box>
       </Box>
 
       {readiness && <ReadinessStrip readiness={readiness} />}

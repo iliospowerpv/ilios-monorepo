@@ -15,6 +15,8 @@ import type {
   ProviderAccountList,
   ProviderAccountUpdatePayload,
   ProviderCatalogList,
+  RefreshReadingsPayload,
+  RefreshReadingsResponse,
   SyncDevicesResponse,
   SyncSitesResponse,
   TestAccountResponse
@@ -240,5 +242,30 @@ export const useTelemetryAdminMutations = (companyId: number) => {
 };
 
 export type UseTelemetryAdminMutationsReturn = ReturnType<typeof useTelemetryAdminMutations>;
+
+/**
+ * Trigger a manual native telemetry refresh for one project/site. On success it
+ * invalidates the site's readiness + health panels (legacy `telemetry-readiness`
+ * / `telemetry-health` query keys) so the UI reflects newly ingested data right
+ * away. A caller-supplied `onSuccess`/`onError` still runs after the built-in
+ * invalidation.
+ */
+export const useRefreshSiteReadings = (
+  siteId: number,
+  options?: Omit<UseMutationOptions<RefreshReadingsResponse, Error, RefreshReadingsPayload | void>, 'mutationFn'>
+) => {
+  const queryClient = useQueryClient();
+  const { onSuccess, ...rest } = options ?? {};
+
+  return useMutation<RefreshReadingsResponse, Error, RefreshReadingsPayload | void>({
+    mutationFn: payload => ApiClient.telemetryV2.refreshSiteReadings(siteId, payload || {}),
+    ...rest,
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['telemetry-readiness', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['telemetry-health', siteId] });
+      onSuccess?.(data, variables, context);
+    }
+  });
+};
 
 export type { UseMutationOptions };

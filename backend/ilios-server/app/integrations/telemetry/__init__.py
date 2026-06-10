@@ -13,8 +13,16 @@ from .base import (
     ProviderError,
     ProviderUnavailable,
     RateLimited,
+    ReadingsAdapter,
 )
-from .models import ExternalDeviceRecord, ExternalSiteRecord, TestResult
+from .models import (
+    ExternalDeviceRecord,
+    ExternalSiteRecord,
+    MetricFieldSpec,
+    ReadingRecord,
+    ReadingsPullResult,
+    TestResult,
+)
 from .registry import clear_registry_cache, get_adapter
 
 __all__ = [
@@ -26,8 +34,12 @@ __all__ = [
     "ProviderError",
     "ProviderUnavailable",
     "RateLimited",
+    "ReadingsAdapter",
     "ExternalDeviceRecord",
     "ExternalSiteRecord",
+    "MetricFieldSpec",
+    "ReadingRecord",
+    "ReadingsPullResult",
     "TestResult",
     "clear_registry_cache",
     "get_adapter",
