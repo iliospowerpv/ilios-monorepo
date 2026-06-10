@@ -101,7 +101,7 @@ telemetry_token_function_url = "https://placeholder-function.com/telemetry-token
 telemetry_sites_function_url = "https://placeholder-function.com/telemetry-sites"
 telemetry_devices_function_url = "https://placeholder-function.com/telemetry-devices"
 telemetry_device_static_info_func_url = "https://placeholder-function.com/telemetry-static"
-gcp_project_id = "ilios-prod-telemetry"
+gcp_project_id = "ilios-production-telemetry"
 pbi_tenant_id = "904fc939-8148-4b54-b032-1bc4f81966a9"
 pbi_client_id = "96aec30d-0ebe-416c-9f26-a09f42278916"
 
@@ -127,7 +127,7 @@ telemetry_token_function_url = "https://placeholder-function.com/telemetry-token
 telemetry_sites_function_url = "https://placeholder-function.com/telemetry-sites"
 telemetry_devices_function_url = "https://placeholder-function.com/telemetry-devices"
 telemetry_device_static_info_func_url = "https://placeholder-function.com/telemetry-static"
-gcp_project_id = "ilios-prod-telemetry"
+gcp_project_id = "ilios-production-telemetry"
 pbi_tenant_id = "904fc939-8148-4b54-b032-1bc4f81966a9"
 pbi_client_id = "96aec30d-0ebe-416c-9f26-a09f42278916"
 
