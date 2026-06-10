@@ -1,0 +1,58 @@
+Device Mapping now loads, but the external device list is empty. Manual Refresh also returns empty.
+
+Please troubleshoot narrowly. Do not change GCP Secret Manager, company credentials, site mapping, or the DB-backed mapping save path.
+
+Context:
+- AlsoEnergy credentials are verified and persisted after restart.
+- Sites sync successfully.
+- Site Mapping works.
+- Device Mapping opens without Network Error.
+- The problem is that the external device cache/list is empty.
+
+Please inspect the V2 device-sync path end to end:
+
+1. Confirm the selected project/site mapping points to the expected telemetry_external_site row.
+2. Confirm which external_site_id/site identifier is passed into NativeAlsoEnergyAdapter.list_devices().
+3. Log redacted request metadata only:
+   - provider account id
+   - company id
+   - telemetry_external_site id
+   - external site identifier used for the provider call
+   - endpoint/path being called
+   - response status
+   - count of raw records returned
+   - count of records accepted into telemetry_external_devices
+   - count filtered out and why
+
+Do not log credentials, tokens, auth headers, or full provider payloads.
+
+4. Determine whether AlsoEnergy returned:
+   - zero raw records
+   - nonzero raw records but parser mapped zero
+   - nonzero raw records but all were filtered out
+   - an error being swallowed as empty
+
+5. Confirm the exact AlsoEnergy endpoint used for devices. The term "device" may not map directly to AlsoEnergy. We may need to pull equipment/inverters/meters/assets/components/points depending on their API model.
+
+6. Inspect the raw response shape safely using fake/redacted output. Return only:
+   - top-level keys
+   - first record keys
+   - count by apparent object type
+   - no sensitive values
+
+7. Confirm whether the previously synced 71 sites include metadata that identifies device/equipment endpoints or site IDs needed for device lookup.
+
+8. If the selected site truly has no devices from the current endpoint, test one or two other synced sites to see whether devices appear there.
+
+9. Do not treat empty response as success until we know whether the provider has devices available.
+
+Return:
+- selected external site id/name, redacted if needed
+- provider site identifier passed to AlsoEnergy
+- endpoint called
+- raw record count
+- parsed device count
+- filtered count with reasons
+- DB inserted/upserted count
+- whether this is an endpoint mismatch, ID mismatch, parser issue, permission issue, or genuinely no devices
+- proposed fix

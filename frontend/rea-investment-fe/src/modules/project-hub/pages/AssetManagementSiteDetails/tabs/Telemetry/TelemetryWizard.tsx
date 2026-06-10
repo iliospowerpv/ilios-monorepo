@@ -734,6 +734,7 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
       case 2: {
         const unmappedDevices = eligibleDevices?.items.filter(d => !d.is_mapped) || [];
         const dasDeviceItems = dasDevices?.items || [];
+        const eligibleItems = eligibleDevices?.items || [];
         const isSyncingDevices = syncDevicesMutation.isPending;
         const devicesLoading = isLoadingEligibleDevices || isLoadingDasDevices || isSyncingDevices;
         // The cache read is 200 even when the provider is down; a failed *sync*
@@ -794,6 +795,16 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
               <Alert severity="info" sx={{ mb: 2 }}>
                 No devices are available for this DAS site yet. Use Refresh to pull the latest device list from the
                 provider.
+              </Alert>
+            ) : eligibleItems.length === 0 ? (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                This project has no telemetry-eligible devices to map yet. Add devices in the Inverter, Module, or
+                Weather Station category to this project, then return here to map them
+                {dasDeviceItems.length > 0
+                  ? ` to the ${dasDeviceItems.length} DAS device${
+                      dasDeviceItems.length === 1 ? '' : 's'
+                    } already synced for this site.`
+                  : '.'}
               </Alert>
             ) : (
               <TableContainer component={Paper} sx={{ maxHeight: 400 }}>

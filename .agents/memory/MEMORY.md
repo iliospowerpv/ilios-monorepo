@@ -1,2 +1,2 @@
-- [Telemetry wizard GCP dependency](telemetry-wizard-gcp-dependency.md) — v1 telemetry needs live GCP, V2 is DB-backed (shared das_connections); wizard site-mapping now fully V2, device-mapping still v1.
+- [Telemetry wizard GCP dependency](telemetry-wizard-gcp-dependency.md) — v1 telemetry needs live GCP, V2 is DB-backed (shared das_connections); wizard site+device mapping now fully V2; "empty device list" usually = project has 0 eligible devices, not a sync failure.
 - [Telemetry V2 credential durability](telemetry-credential-durability.md) — "durable" status is type-based not live; a typo'd gcp_project_id (prod vs production) 403s CONSUMER_INVALID while still reporting durable; in-memory creds vanish on restart.

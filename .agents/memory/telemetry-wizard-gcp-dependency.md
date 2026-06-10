@@ -27,16 +27,27 @@ There are two coexisting telemetry stacks that share the **same `das_connections
   (`company_id`, `provider_account_id`/`connection_id`, `created_by_user_id`, timestamps) is
   stamped. The legacy v1 save (SQL-then-Firestore, rollback-on-Firestore-failure) still exists but
   the wizard no longer calls it.
-- **Device Mapping (step 2) is still v1/GCP** (list + bulk save) — intentionally unchanged.
+- **Device Mapping (step 2) is now fully V2 DB-backed.** The cache read
+  (`GET /v2/provider-accounts/{id}/external-sites/{ext_site}/devices`), the explicit
+  `sync-devices` (single live provider call, never wipes cache on failure), and the bulk
+  device-mapping save (`POST /v2/sites/{id}/device-mappings`) all go through the V2 path. The
+  wizard maps *iliOS* devices (from `/sites/{id}/eligible-devices`, i.e. `site.devices` with
+  category inverter/module/weather_station) onto synced DAS devices; the DAS devices only render
+  as a dropdown *inside* each eligible-device row. **Gotcha:** a project with zero
+  telemetry-eligible devices shows a blank mapping step even when DAS devices synced fine — there
+  is no DAS→iliOS device import, so devices must be created in the project first. Step 2 has an
+  explicit empty-state for this case.
 
 **Why it matters / how to apply:**
 - If telemetry mapping "spins and shows nothing," suspect the v1 live-fetch hitting missing GCP
   ADC; the DB-backed V2 path is the fix for *reads*.
 - Always surface React Query `isError`/`error` in multi-step wizards — the original silent
   failure was a query whose error was never read (default retry:3 → ~7s spinner → blank).
-- The wizard's site-mapping *save* was made GCP-free by building a V2 DB-only upsert endpoint
-  (chosen over best-effort Firestore or configuring GCP creds). Device Mapping save is the next
-  candidate if it must also work without GCP.
+- The wizard's site-mapping *save* and the whole device-mapping flow were made GCP-free by building
+  V2 DB-only endpoints (chosen over best-effort Firestore or configuring GCP creds).
+- "Empty device list" on the mapping step is usually NOT a sync failure — check
+  `telemetry_external_devices` (DAS cache) AND the project's `devices` rows separately; a populated
+  cache + zero eligible project devices is the common cause.
 - A uvicorn `--reload` master keeps the env it booted with; only a fresh boot/deploy re-reads env
   vars. A `Settings` field whose type mismatches its env value (here `gcp_project_id: int` vs the
   string `"ilios-prod-telemetry"`) won't crash the already-running reloader but fails *every*
