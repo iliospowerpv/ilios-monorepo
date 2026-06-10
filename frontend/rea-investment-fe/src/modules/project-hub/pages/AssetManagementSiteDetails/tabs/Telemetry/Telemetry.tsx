@@ -19,9 +19,11 @@ import type {
   TelemetryReadinessResponse,
   TelemetryHealthResponse
 } from '../../../../../../api/connections';
+import { useTelemetryAdminPermission } from '../../../../../../hooks/useTelemetryAdminPermission';
 import { AssetManagementSiteDetailsTabProps } from '../types';
 import { TelemetryWizard } from './TelemetryWizard';
 import { RefreshTelemetryButton } from './RefreshTelemetryButton';
+import { SchedulerAdminCard } from './SchedulerAdminCard';
 
 const getStatusColor = (status: TelemetryHealthStatus): 'success' | 'warning' | 'error' | 'default' => {
   switch (status) {
@@ -197,6 +199,8 @@ export const Telemetry: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDe
     enabled: !!siteDetails.id
   });
 
+  const isTelemetryAdmin = useTelemetryAdminPermission();
+
   const handleWizardClose = () => {
     setWizardOpen(false);
     refetchReadiness();
@@ -252,6 +256,12 @@ export const Telemetry: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDe
       {readiness && <ReadinessStrip readiness={readiness} />}
 
       {health && <HealthStrip health={health} />}
+
+      {isConfigured && isTelemetryAdmin && (
+        <Box sx={{ mt: 2 }}>
+          <SchedulerAdminCard siteId={siteDetails.id} />
+        </Box>
+      )}
 
       {!isConfigured && (
         <Alert severity="info" sx={{ mt: 2 }}>

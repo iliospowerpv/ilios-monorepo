@@ -7,8 +7,8 @@ import Snackbar from '@mui/material/Snackbar';
 import Typography from '@mui/material/Typography';
 import SensorsIcon from '@mui/icons-material/Sensors';
 
-import { useAuth } from '../../../../../contexts/auth/auth';
 import { useLicensedProviders, useTelemetryAdminMutations } from '../../../../../hooks/telemetryV2';
+import { useTelemetryAdminPermission } from '../../../../../hooks/useTelemetryAdminPermission';
 import type { ProviderAccount } from '../../../../../types/telemetryV2';
 import { AddLicensedProviderDialog } from './AddLicensedProviderDialog';
 import { AddProviderAccountDialog } from './AddProviderAccountDialog';
@@ -20,20 +20,6 @@ import { RotateCredentialsDialog } from './RotateCredentialsDialog';
 interface TelemetryAdminSectionProps {
   companyId: number;
 }
-
-const useTelemetryAdminPermission = (): boolean => {
-  const { user } = useAuth();
-  if (!user) return false;
-  if (user.is_system_user) return true;
-  const perms = user.role?.permissions ?? {};
-  // Backend telemetry_admin_required permits the new Telemetry.admin key
-  // and falls back to Settings Page.edit. Mirror that gating in the UI so
-  // existing settings administrators don't silently lose write access.
-  const telemetryAdmin = (perms as Record<string, { admin?: boolean }>)['Telemetry']?.admin;
-  if (telemetryAdmin) return true;
-  const settingsEdit = (perms as Record<string, { edit?: boolean }>)['Settings Page']?.edit;
-  return Boolean(settingsEdit);
-};
 
 type Snack = { severity: 'success' | 'error' | 'info' | 'warning'; message: string } | null;
 

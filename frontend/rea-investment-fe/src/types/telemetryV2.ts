@@ -354,3 +354,95 @@ export interface TelemetrySeriesQuery {
 export interface TelemetryDeviceSeriesQuery extends TelemetrySeriesQuery {
   deviceId?: number;
 }
+
+/**
+ * Whitelisted automatic-refresh cadences (ISO-8601 durations). Mirrors the
+ * server-side `ALLOWED_CADENCES`; the PUT endpoint rejects anything else with
+ * 422.
+ */
+export type TelemetryCadence = 'PT15M' | 'PT30M' | 'PT1H' | 'PT6H' | 'PT24H';
+
+/**
+ * Current automation state for one mapped site's telemetry scheduler. Returned
+ * even when no scheduler row exists yet (synthesized defaults: `enabled=false`,
+ * default cadence). Timestamps are naive UTC ISO strings (no timezone suffix);
+ * parse them as UTC before comparing/formatting. No credentials/tokens appear
+ * in this payload.
+ */
+export interface SchedulerState {
+  site_id: number;
+  provider_account_id: number | null;
+  company_id: number | null;
+  enabled: boolean;
+  cadence: TelemetryCadence;
+  next_due_at: string | null;
+  last_run_at: string | null;
+  last_status: string | null;
+  last_error: string | null;
+  last_successful_pull_at: string | null;
+  last_sync_job_id: number | null;
+  locked_until: string | null;
+}
+
+/**
+ * Enable/disable or change cadence for one site's scheduler. Both fields are
+ * optional so a caller can change just one; cadence is validated server-side.
+ */
+export interface SchedulerUpdatePayload {
+  enabled?: boolean;
+  cadence?: TelemetryCadence;
+}
+
+/** Per-site scheduler status across a company's mapped telemetry sites. */
+export interface CompanySchedulerStatusList {
+  company_id: number;
+  items: SchedulerState[];
+}
+
+/** Convenience backfill windows offered as one-click presets. */
+export type BackfillPreset = '7d' | '30d';
+
+/**
+ * Body for a bounded historical backfill. Provide either a `preset` or an
+ * explicit window; the total span is capped at 30 days server-side (inverted or
+ * oversized windows are rejected with 422). Timestamps are ISO-8601 (UTC).
+ */
+export interface BackfillReadingsPayload {
+  preset?: BackfillPreset;
+  window_start?: string;
+  window_end?: string;
+}
+
+/** Outcome of one 24h backfill chunk. */
+export interface BackfillChunkResult {
+  window_start: string;
+  window_end: string;
+  sync_job_id: number | null;
+  status: string;
+  readings_received: number;
+  readings_written: number;
+  rollup_status: string | null;
+  error: string | null;
+}
+
+export type BackfillStatus = 'succeeded' | 'partial' | 'failed';
+
+/**
+ * Aggregate outcome of a bounded backfill. The backfill processes 24h chunks
+ * oldest->newest and stops on the first failed chunk, returning every chunk
+ * attempted. It never advances the scheduled cursor and never wipes data.
+ */
+export interface BackfillReadingsResponse {
+  site_id: number;
+  company_id: number | null;
+  status: BackfillStatus;
+  requested_window_start: string;
+  requested_window_end: string;
+  chunks_total: number;
+  chunks_succeeded: number;
+  chunks_failed: number;
+  readings_received: number;
+  readings_written: number;
+  chunks: BackfillChunkResult[];
+  error: string | null;
+}

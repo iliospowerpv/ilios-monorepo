@@ -3,6 +3,8 @@ import type { UseMutationOptions, UseQueryOptions } from '@tanstack/react-query'
 
 import { ApiClient } from '../api';
 import type {
+  BackfillReadingsPayload,
+  BackfillReadingsResponse,
   DeviceMappingBulkPayload,
   DeviceMappingBulkResponse,
   ExternalDeviceListResponse,
@@ -17,6 +19,8 @@ import type {
   ProviderCatalogList,
   RefreshReadingsPayload,
   RefreshReadingsResponse,
+  SchedulerState,
+  SchedulerUpdatePayload,
   SyncDevicesResponse,
   SyncSitesResponse,
   TelemetryLatestResponse,
@@ -34,7 +38,8 @@ export const telemetryV2Keys = {
   externalSites: (accountId: number) => [...telemetryV2Keys.all, 'externalSites', accountId] as const,
   externalDevices: (accountId: number, externalSiteId: string) =>
     [...telemetryV2Keys.all, 'externalDevices', accountId, externalSiteId] as const,
-  siteLatest: (siteId: number) => [...telemetryV2Keys.all, 'siteLatest', siteId] as const
+  siteLatest: (siteId: number) => [...telemetryV2Keys.all, 'siteLatest', siteId] as const,
+  siteScheduler: (siteId: number) => [...telemetryV2Keys.all, 'siteScheduler', siteId] as const
 };
 
 const STALE_LIST = 30 * 1000;
@@ -285,6 +290,74 @@ export const useRefreshSiteReadings = (
       queryClient.invalidateQueries({ queryKey: ['telemetry-readiness', siteId] });
       queryClient.invalidateQueries({ queryKey: ['telemetry-health', siteId] });
       onSuccess?.(data, variables, context);
+    }
+  });
+};
+
+/**
+ * Read one mapped site's native telemetry scheduler state. The underlying
+ * endpoint is admin-gated, so callers MUST pass `enabled: isAdmin` for
+ * non-admin users to avoid generating 403 noise. Pass a `refetchInterval` while
+ * a run is active to observe the per-site lock clearing.
+ */
+export const useSiteScheduler = (
+  siteId: number,
+  options?: Omit<UseQueryOptions<SchedulerState>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery({
+    queryKey: telemetryV2Keys.siteScheduler(siteId),
+    queryFn: () => ApiClient.telemetryV2.getSiteScheduler(siteId),
+    enabled: Number.isFinite(siteId) && siteId > 0,
+    staleTime: STALE_LIST,
+    ...options
+  });
+
+/**
+ * Enable/disable or change cadence for a site's scheduler. Writes config only —
+ * it never claims the per-site lease lock, so it is safe even while a run is in
+ * progress. On success the freshly returned state is written straight into the
+ * scheduler cache so the control reflects the change immediately.
+ */
+export const useUpdateSiteScheduler = (
+  siteId: number,
+  options?: Omit<UseMutationOptions<SchedulerState, Error, SchedulerUpdatePayload>, 'mutationFn'>
+) => {
+  const queryClient = useQueryClient();
+  const { onSuccess, ...rest } = options ?? {};
+
+  return useMutation<SchedulerState, Error, SchedulerUpdatePayload>({
+    mutationFn: payload => ApiClient.telemetryV2.updateSiteScheduler(siteId, payload),
+    ...rest,
+    onSuccess: (data, variables, context) => {
+      queryClient.setQueryData(telemetryV2Keys.siteScheduler(siteId), data);
+      onSuccess?.(data, variables, context);
+    }
+  });
+};
+
+/**
+ * Run a bounded historical backfill for one mapped site. Regardless of outcome
+ * (success / partial / failure / 409 lock-held) it refreshes the scheduler row
+ * (lock + last-run), the O&M readiness/health panels, and the latest-telemetry
+ * snapshot so the UI reflects newly written data and the released lock. The
+ * endpoint never wipes existing data and never advances the scheduled cursor.
+ */
+export const useBackfillSiteReadings = (
+  siteId: number,
+  options?: Omit<UseMutationOptions<BackfillReadingsResponse, Error, BackfillReadingsPayload>, 'mutationFn'>
+) => {
+  const queryClient = useQueryClient();
+  const { onSettled, ...rest } = options ?? {};
+
+  return useMutation<BackfillReadingsResponse, Error, BackfillReadingsPayload>({
+    mutationFn: payload => ApiClient.telemetryV2.backfillSiteReadings(siteId, payload),
+    ...rest,
+    onSettled: (data, error, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: telemetryV2Keys.siteScheduler(siteId) });
+      queryClient.invalidateQueries({ queryKey: ['telemetry-readiness', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['telemetry-health', siteId] });
+      queryClient.invalidateQueries({ queryKey: telemetryV2Keys.siteLatest(siteId) });
+      onSettled?.(data, error, variables, context);
     }
   });
 };

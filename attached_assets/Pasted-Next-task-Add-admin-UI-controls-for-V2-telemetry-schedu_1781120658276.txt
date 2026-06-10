@@ -1,0 +1,105 @@
+Next task: Add admin UI controls for V2 telemetry scheduler and bounded historical catch-up.
+
+Context:
+V2 telemetry is now working through the core operational path:
+- durable company-level credentials in GCP Secret Manager
+- site sync
+- device sync
+- site mapping
+- device mapping
+- manual Refresh Telemetry
+- raw readings in PostgreSQL
+- site/device rollups
+- boundary-hour fix
+- O&M actual telemetry display
+- honest no-baseline UI states
+- V2 inverter actual values
+- V2 not-responding recency
+
+The backend scheduler/backfill foundation already exists:
+- telemetry_scheduler_state
+- GET /api/telemetry/v2/sites/{site_id}/scheduler
+- PUT /api/telemetry/v2/sites/{site_id}/scheduler
+- GET /api/telemetry/v2/companies/{company_id}/scheduler/status
+- POST /api/telemetry/v2/sites/{site_id}/backfill-readings
+- cadence whitelist: PT15M, PT30M, PT1H, PT6H, PT24H
+- per-site lease lock
+- sync-job observability
+- 30-day backfill cap
+- scheduler gated off by telemetry_scheduler_enabled + telemetry_v2_enabled + durable credential store
+
+Objective:
+Expose safe admin controls in the app so admins can:
+1. enable or disable automatic telemetry refresh per mapped site
+2. select refresh cadence
+3. view scheduler status
+4. run bounded historical catch-up
+5. view last run, next due, last successful pull, last error, and current lock/running state
+
+Scope:
+- Frontend/admin UI first.
+- Use existing backend endpoints where possible.
+- Make only narrow backend changes if the existing responses are insufficient for safe UI behavior.
+- Do not change ingestion logic.
+- Do not change rollup calculation.
+- Do not change credentials, mappings, provider adapters, Secret Manager, BigQuery fallback, expected-baseline handling, or O&M chart logic.
+- Do not add unbounded backfill.
+- Do not auto-enable scheduler globally.
+
+Placement:
+Add controls in a telemetry administration/settings area where an admin managing a mapped site can find them. If there is already a Portfolio Admin / Telemetry Admin section, use that. Otherwise propose the least invasive location before coding.
+
+UI requirements:
+1. Show whether scheduler is enabled for the site.
+2. Show cadence selector:
+   - 15 minutes
+   - 30 minutes
+   - 1 hour
+   - 6 hours
+   - 24 hours
+3. Show:
+   - last status
+   - last successful pull
+   - last attempted pull
+   - next due
+   - last error
+   - whether a sync/backfill is currently running or locked
+4. Add a Backfill / Historical Catch-up action:
+   - 7-day preset
+   - 30-day preset
+   - custom date range capped at 30 days
+5. Require confirmation before starting backfill.
+6. Warn that historical catch-up can take time and uses provider API calls.
+7. Handle 409 lock-held response clearly:
+   “Telemetry sync is already running for this site.”
+8. Handle partial backfill clearly.
+9. Disable overlapping actions while a run is active.
+10. Provide success/failure feedback without exposing credentials or provider tokens.
+
+Permission requirements:
+- Admin-only or telemetry-admin only.
+- Non-admin users should not see or should not be able to use scheduler/backfill controls.
+- Backend permissions remain authoritative.
+
+Validation:
+1. Admin can view scheduler state for 110 Shawmut.
+2. Admin can enable scheduler.
+3. Admin can change cadence.
+4. Status endpoint reflects enabled/cadence/next due.
+5. Admin can run a 7-day backfill.
+6. UI handles success.
+7. UI handles partial failure.
+8. UI handles 409 lock-held.
+9. UI handles disabled/gated scheduler state.
+10. Non-admin user cannot use controls.
+11. O&M chart can display updated V2 data after refresh/backfill.
+12. Non-V2/BigQuery-only sites remain unchanged.
+13. No secrets/tokens are displayed or logged.
+
+Return:
+- UI placement
+- files changed
+- backend gaps found, if any
+- permission behavior
+- validation results
+- known remaining gaps

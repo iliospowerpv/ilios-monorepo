@@ -1,6 +1,9 @@
 import type { AxiosInstance } from 'axios';
 
 import type {
+  BackfillReadingsPayload,
+  BackfillReadingsResponse,
+  CompanySchedulerStatusList,
   DeviceMappingBulkPayload,
   DeviceMappingBulkResponse,
   ExternalDeviceListResponse,
@@ -15,6 +18,8 @@ import type {
   ProviderCatalogList,
   RefreshReadingsPayload,
   RefreshReadingsResponse,
+  SchedulerState,
+  SchedulerUpdatePayload,
   SiteMappingResponse,
   SiteMappingSavePayload,
   SyncDevicesResponse,
@@ -29,6 +34,13 @@ import type {
 } from '../types/telemetryV2';
 
 const V2 = '/api/telemetry/v2';
+
+// A bounded historical backfill runs up to thirty sequential 24h provider pulls
+// in one request, which easily exceeds the default 30s axios timeout. Give this
+// one call a generous per-request override so the client waits for the server
+// instead of aborting mid-run (which would strand the lease and show a false
+// error while the server keeps working).
+const BACKFILL_TIMEOUT_MS = 10 * 60 * 1000;
 
 export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
   const getCatalog = async (): Promise<ProviderCatalogList> => {
@@ -196,17 +208,12 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
    * never triggers a provider/credential call or BigQuery query. Returns an
    * empty `points` list (still HTTP 200) when the site has no matching rollups.
    */
-  const getSiteRollupSeries = async (
-    siteId: number,
-    query: TelemetrySeriesQuery
-  ): Promise<TelemetrySeriesResponse> => {
+  const getSiteRollupSeries = async (siteId: number, query: TelemetrySeriesQuery): Promise<TelemetrySeriesResponse> => {
     const params = new URLSearchParams({ metric: query.metric });
     if (query.bucketSize) params.set('bucket_size', query.bucketSize);
     if (query.from) params.set('from', query.from);
     if (query.to) params.set('to', query.to);
-    const { data } = await httpClient.get<TelemetrySeriesResponse>(
-      `${V2}/sites/${siteId}/series?${params.toString()}`
-    );
+    const { data } = await httpClient.get<TelemetrySeriesResponse>(`${V2}/sites/${siteId}/series?${params.toString()}`);
     return data;
   };
 
@@ -244,6 +251,52 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     return data;
   };
 
+  /**
+   * Read the native telemetry scheduler state for one mapped site. Returns
+   * synthesized disabled defaults (HTTP 200) when no scheduler row exists yet,
+   * so the admin control can render without a separate "configured?" probe.
+   * Admin-gated server-side (telemetry_admin_required).
+   */
+  const getSiteScheduler = async (siteId: number): Promise<SchedulerState> => {
+    const { data } = await httpClient.get<SchedulerState>(`${V2}/sites/${siteId}/scheduler`);
+    return data;
+  };
+
+  /**
+   * Enable/disable or change cadence for one site's scheduler. Either field may
+   * be sent alone. Cadence is validated against the server whitelist (422 on an
+   * unknown value); a 400 is returned when the site is not yet mapped.
+   */
+  const updateSiteScheduler = async (siteId: number, payload: SchedulerUpdatePayload): Promise<SchedulerState> => {
+    const { data } = await httpClient.put<SchedulerState>(`${V2}/sites/${siteId}/scheduler`, payload);
+    return data;
+  };
+
+  /** List per-site scheduler status across a company's mapped telemetry sites. */
+  const getCompanySchedulerStatus = async (companyId: number): Promise<CompanySchedulerStatusList> => {
+    const { data } = await httpClient.get<CompanySchedulerStatusList>(`${V2}/companies/${companyId}/scheduler/status`);
+    return data;
+  };
+
+  /**
+   * Run a bounded historical backfill for one mapped site (preset or explicit
+   * window, capped at 30 days). Claims the same per-site lease lock as the
+   * scheduler, so a concurrent run returns HTTP 409. Never wipes existing data
+   * and never advances the live scheduled cursor. Uses an extended per-request
+   * timeout because the run is synchronous and chunked.
+   */
+  const backfillSiteReadings = async (
+    siteId: number,
+    payload: BackfillReadingsPayload
+  ): Promise<BackfillReadingsResponse> => {
+    const { data } = await httpClient.post<BackfillReadingsResponse>(
+      `${V2}/sites/${siteId}/backfill-readings`,
+      payload,
+      { timeout: BACKFILL_TIMEOUT_MS }
+    );
+    return data;
+  };
+
   return {
     getCatalog,
     listLicensedProviders,
@@ -265,7 +318,11 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     getSiteRollupSeries,
     getSiteDeviceRollupSeries,
     getSiteLatestTelemetry,
-    listSiteSyncJobs
+    listSiteSyncJobs,
+    getSiteScheduler,
+    updateSiteScheduler,
+    getCompanySchedulerStatus,
+    backfillSiteReadings
   };
 };
 
