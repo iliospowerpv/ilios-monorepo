@@ -411,6 +411,102 @@ Add the minimum set of additive guardrails so the production deployment is safe 
 
 ---
 
+## 11. Roadmap Item: Telemetry Device Eligibility Expansion — Meters and Loggers
+
+> **Status: Not scheduled — evaluation only. Do not implement yet.** This is a
+> product-rule + data-model decision, **not** a one-off data-entry fix for a
+> single device. Capturing it here so the decision is made deliberately before
+> any code or mapping change.
+
+### 11.1 Problem statement
+Telemetry **device-mapping eligibility** is currently restricted to three device
+categories. Several categories that carry meaningful telemetry — production
+meters, data loggers, and gateways — cannot be mapped today, even though they
+are part of the telemetry chain and, in some cases, report the most authoritative
+production data on a site.
+
+Concrete trigger: the **Elkor Production Meter at 110 Shawmut** (site 4) reports
+meaningful production data but is not mappable, because `Meter` is not an
+eligible category. It should likely become mappable in the future. Logger/gateway
+devices may also need eligibility because they act as parent/source devices in
+the telemetry chain.
+
+### 11.2 Current state (code-grounded)
+- **Eligibility gate:** `TELEMETRY_ELIGIBLE_CATEGORIES = [DeviceCategories.inverter,
+  DeviceCategories.module, DeviceCategories.weather_station]`
+  (`backend/ilios-server/app/routers/telemetry/telemetry.py:65`). It is the single
+  source of truth: imported by the V2 router (`app/routers/telemetry/v2.py:1520`)
+  and enforced in device-eligibility / mapping / refresh paths
+  (`telemetry.py:591,684,761,836`; `v2.py:1559`).
+- **Categories already defined** (`app/models/device.py:20`, `DeviceCategories`
+  enum): `inverter`, `rack_mount`, `battery`, `camera`, `combiner_box`,
+  `mbod_gateway`, `meter`, `modem`, `module`, `network_connection`,
+  `network_gateway`, `transformer`, `weather_station`. So `meter`, `mbod_gateway`,
+  and `network_gateway` **already exist as categories** — they are simply not in
+  the eligibility list. Expanding eligibility is primarily a *rule* change, not a
+  new-enum-value change (though "Power Meter" / "Production Meter" / "Data Logger"
+  may warrant finer-grained sub-types/types).
+- **Normalization dependency:** the V2 ingestion only persists fields it can map
+  via `telemetry_metric_catalog` (per `provider_key` + provider field →
+  `normalized_metric`/unit). Making a category eligible is necessary but **not
+  sufficient**: the meter/logger provider fields must also have catalog rows, or
+  their readings will be pulled-but-dropped.
+- **Display dependency:** even once ingested, meter/site-aggregate readings will
+  not surface in the existing performance charts, which still read from BigQuery
+  (see §5 and the telemetry-display gap). Any "meter vs inverter vs site
+  aggregate" UX work depends on first wiring dashboards to the V2 rollup tables.
+
+### 11.3 Open questions to resolve (product + data model)
+1. **Which categories become telemetry-eligible?** Candidates: `meter` (Power /
+   Production Meter), `mbod_gateway` + `network_gateway` (data loggers/gateways),
+   and possibly others. Decide the exact allow-list and whether it is a flat list
+   or driven by a per-category capability flag.
+2. **Are meters operational assets, telemetry-only devices, or both?** This
+   affects whether they appear in asset inventory, O&M, and reporting — or only
+   as a telemetry source.
+3. **Should loggers/gateways be mappable even when they don't represent
+   production directly?** They may need to be modeled as a *parent/source* device
+   (telemetry chain) rather than a producing asset, implying a
+   parent/child or "source-of" relationship in the data model.
+4. **How are site-level aggregate streams represented?** The readings model
+   already supports site-level points (`device_id IS NULL`, `dedupe_key='__site__'`).
+   Decide whether meter-derived site totals map to that site-level stream, a
+   dedicated "meter" series, or both.
+5. **Should meter readings override or validate inverter-summed readings?** i.e.
+   is the meter the authoritative production figure, a cross-check against the sum
+   of inverters, or a selectable preference per site? This is a reporting-truth
+   decision with downstream effects on every production number.
+6. **How do dashboards distinguish inverter production, meter production, and site
+   aggregate production?** Requires a labeled "stream/source" concept in the V2
+   read layer and chart UX (depends on the §5 dashboard-to-V2 rewiring).
+7. **How do these device types roll up to site / company / portfolio reporting?**
+   Define the aggregation rule so meter, inverter-sum, and site-aggregate streams
+   compose correctly (and don't double-count) at each level.
+
+### 11.4 Suggested evaluation approach (when picked up)
+- Treat as a **product decision first**: answer §11.3 (especially Q5 — the
+  authoritative-production-source rule) before any code.
+- **Data model:** decide flat allow-list vs. capability flag; decide whether a
+  parent/source relationship is needed for loggers/gateways; decide the
+  representation of site-aggregate vs. meter vs. inverter-sum streams (likely a
+  normalized "stream/source" dimension on rollups so dashboards can distinguish
+  them without double-counting).
+- **Catalog:** add `telemetry_metric_catalog` rows for the new device types'
+  provider fields (e.g. Elkor production-meter metrics) so eligible readings are
+  actually normalized and persisted.
+- **Backward-compatible & additive:** eligibility expansion must not retroactively
+  re-key or wipe existing inverter/module/weather mappings or readings.
+
+### 11.5 Dependencies & sequencing
+- **Depends on / pairs with** the dashboard-to-V2 rewiring (§5 telemetry-display
+  gap): meter/aggregate distinction is only *visible* once charts read V2 rollups.
+- **Independent of** the scheduler/backfill work (already shipped) and the manual
+  refresh boundary-hour floor fix.
+- **Not** a prerequisite for any current Phase 0–5 item; slot for a future
+  telemetry-data-quality / reporting phase.
+
+---
+
 ## Executive Summary
 
 | Question | Answer |
