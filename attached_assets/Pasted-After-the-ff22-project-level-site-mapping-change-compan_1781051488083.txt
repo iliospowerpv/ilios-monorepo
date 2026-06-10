@@ -1,0 +1,222 @@
+After the ff22 project-level site mapping change, company-level telemetry credentials appear missing and company-level sync failed.
+
+We need to determine whether this is a real regression, a lost in-memory credential after restart, a GCP Secret Manager configuration issue, or a provider-account/secret linkage issue.
+
+Do not implement new features.
+Do not continue Device Mapping.
+Do not touch QuickBooks.
+Do not change auth.
+Do not refactor telemetry broadly.
+Do not expose credential values.
+Do not print secrets.
+Do not delete provider accounts or mappings.
+
+Current context
+
+Recent changes:
+
+Native AlsoEnergy V2 adapter works in dev/control testing.
+Real user successfully tested AlsoEnergy credentials and got Verified.
+Production GCP Secret Manager setup was started using new GCP project.
+Replit production secrets were added:
+gcp_project_id
+GOOGLE_APPLICATION_CREDENTIALS_JSON
+telemetry_v2_enabled=true
+ff22 added V2 DB-backed site mapping save:
+nullable company_id
+nullable created_by_user_id
+new PUT /api/telemetry/v2/sites/{site_id}/mapping
+Replit noted a boot bug:
+settings.gcp_project_id was typed as int
+production value is string ilios-prod-telemetry
+changed to optional string
+Replit also flagged plaintext production secrets committed in .replit.
+
+Observed problem:
+
+Company-level provider credentials appear missing.
+Sync failed.
+Need to know whether credentials were lost due to previous in-memory backend or broken due to ff22/env changes.
+Objective
+
+Produce a precise root-cause report and, only if safe, restore company-level telemetry credential Save/Test/Sync behavior.
+
+Required Tasks
+1. Confirm current production/runtime telemetry settings
+
+Inspect current runtime settings without printing secret values.
+
+Report:
+
+environment_name
+telemetry_v2_enabled
+active telemetry credential backend
+gcp_project_id presence and type
+whether GOOGLE_APPLICATION_CREDENTIALS_JSON is present
+whether GCP Secret Manager client initializes successfully
+whether any in-memory fallback is occurring
+
+Expected production-safe state:
+
+environment_name=production
+telemetry_v2_enabled=true
+credential backend is GCP Secret Manager, not in-memory
+gcp_project_id is a string project ID
+no fallback to in-memory
+
+Do not print JSON or secret values.
+
+2. Verify GCP Secret Manager access
+
+Using the configured service account, run a safe non-provider test of Secret Manager.
+
+Do not use real provider credentials for this test.
+
+Verify that the app can:
+
+create a test secret under the expected prefix
+add a secret version
+access the latest version
+delete or clean up the test secret if cleanup is supported
+
+Use a harmless value such as healthcheck.
+
+Report:
+
+create success/failure
+add version success/failure
+access success/failure
+cleanup success/failure
+exact permission error if any, redacted
+
+This determines whether GCP Secret Manager is actually working.
+
+3. Inspect the affected provider account record
+
+For the affected AlsoEnergy provider account, inspect DB metadata only.
+
+Do not print credential values.
+
+Report:
+
+provider account ID
+company ID
+provider key
+status
+credential_status
+last_sync_status
+last_error_message
+secret token/name field
+credential fingerprint field, if present
+created/updated timestamps
+
+Determine:
+
+Does the provider account reference a secret name?
+Does that secret exist in GCP Secret Manager?
+Does the latest secret version exist?
+Can the app access the secret?
+Is the DB pointing to an old in-memory-only credential reference?
+4. Determine whether credentials were lost or misread
+
+Classify the issue as one of:
+
+Expected loss: credentials were saved while backend was in-memory and disappeared after restart.
+GCP backend misconfigured: durable backend is not active or cannot access Secret Manager.
+Secret linkage broken: DB points to a missing or wrong secret name.
+Adapter regression: credentials exist but native adapter cannot read/use them.
+ff22 regression: mapping changes accidentally impacted provider account or external site sync behavior.
+
+Provide evidence for the classification.
+
+5. Restore safe credential flow
+
+If credentials were lost because they were previously stored in memory:
+
+Do not attempt to recover them.
+Mark/report the provider account as requiring credential re-entry.
+Have operator re-enter credentials through the UI after GCP Secret Manager is confirmed active.
+Save to GCP Secret Manager.
+Test credentials.
+Confirm Verified.
+Redeploy/restart.
+Test again without re-entering.
+
+If GCP backend is misconfigured:
+
+Stop.
+Report exact missing env/IAM/config.
+Do not accept provider credentials until durable backend works.
+
+If secret linkage is broken:
+
+Do not overwrite blindly.
+Explain the mismatch and recommend whether to re-enter credentials or repair the secret reference.
+6. Verify external site sync
+
+After credential storage is confirmed durable and credentials are re-entered/tested:
+
+Run AlsoEnergy external site sync.
+Confirm external sites cache count.
+Confirm no mappings are wiped on sync failure.
+Confirm previous 71-site sync behavior can be reproduced or explain why not.
+
+Do not move to Device Mapping.
+
+7. Verify ff22 mapping behavior separately
+
+Only after company-level credential/sync is healthy:
+
+Confirm external sites already in cache can be mapped to Ilios sites/projects.
+Confirm mapping saves through the new V2 DB-backed endpoint.
+Confirm no live provider call is required for mapping save.
+Confirm mapping survives page reload.
+Confirm mapping survives redeploy/restart.
+
+This is separate from credential/sync health.
+
+8. Plaintext production secrets in .replit
+
+Inspect .replit for plaintext production secrets.
+
+Do not print secret values.
+
+Classify each value under [userenv.production] as:
+
+safe non-secret config
+secret/sensitive
+placeholder/dev value
+unknown
+
+If secrets are present:
+
+move them to Replit Secrets if not already there
+remove plaintext values from .replit
+recommend rotation for any committed secret
+do not rotate without operator approval unless it is clearly a placeholder and safe
+
+Given no real data/users yet, recommend immediate rotation of exposed production secrets.
+
+Validation Required
+
+Return:
+
+Current telemetry backend state
+GCP Secret Manager healthcheck result
+Affected provider account metadata, redacted
+Root cause classification
+Whether credentials were lost due to in-memory storage
+Whether operator must re-enter credentials
+External site sync result
+ff22 mapping endpoint result
+.replit secret exposure assessment
+Exact recommended next actions
+Whether internal users can continue telemetry testing
+Explicitly out of scope
+Device Mapping
+KMC native adapter
+Sync Sites customer enablement beyond restoring existing external site cache sync
+QuickBooks
+JWT/cookie migration
+Sentry
+External customer onboarding

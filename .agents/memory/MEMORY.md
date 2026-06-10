@@ -1,1 +1,2 @@
 - [Telemetry wizard GCP dependency](telemetry-wizard-gcp-dependency.md) — v1 telemetry needs live GCP, V2 is DB-backed (shared das_connections); wizard site-mapping now fully V2, device-mapping still v1.
+- [Telemetry V2 credential durability](telemetry-credential-durability.md) — "durable" status is type-based not live; a wrong-project SA passes the boot guard but 403s silently; in-memory creds vanish on restart.
