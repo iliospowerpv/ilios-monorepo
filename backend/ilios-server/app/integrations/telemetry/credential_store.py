@@ -40,6 +40,8 @@ import secrets
 from threading import Lock
 from typing import Optional, Protocol, runtime_checkable
 
+from fastapi import HTTPException
+
 logger = logging.getLogger(__name__)
 
 # Prefix used for every v2-managed GCP secret resource. Keeping a stable
@@ -211,7 +213,39 @@ class GCPSecretManagerCredentialStore:
 
     def rotate(self, secret_name: str, fields: dict[str, str]) -> None:
         payload = json.dumps(fields, separators=(",", ":"))
-        self.manager.add_secret_version(secret_name, payload)
+        try:
+            self.manager.add_secret_version(secret_name, payload)
+        except HTTPException as exc:
+            # Self-heal a dangling pointer. The DB row may reference a
+            # V2-prefixed secret that no longer exists in GCP: e.g. the
+            # account was created under the pre-durable in-memory backend
+            # (which minted V2-style names but never wrote them to GCP), or
+            # the secret was deleted out of band. ``add_secret_version`` on a
+            # missing resource surfaces as a 404 via
+            # ``GCPSecretsManager.handle_response_error``. Recreate the
+            # resource and write the first version so the operator's
+            # rotation succeeds instead of dead-ending on a 404. This mirrors
+            # the tolerant ``InMemoryCredentialStore.rotate`` behaviour and
+            # keeps ``secret_token_name`` stable (no DB churn). Any non-404
+            # failure is a real error and is re-raised unchanged.
+            if exc.status_code != 404:
+                raise
+            logger.warning(
+                "telemetry_v2_credential_rotate_missing_secret secret_name=%s "
+                "(recreating resource and writing first version)",
+                secret_name,
+            )
+            try:
+                self.manager.create_secret(secret_name)
+            except HTTPException as create_exc:
+                # A concurrent rotation (or a prior heal that created the
+                # resource but failed before writing a version) may have
+                # already recreated it -> AlreadyExists surfaces as 409.
+                # That's fine: fall through and add our version to it. Any
+                # other failure is real and is re-raised unchanged.
+                if create_exc.status_code != 409:
+                    raise
+            self.manager.add_secret_version(secret_name, payload)
         logger.info(
             "telemetry_v2_credential_rotated secret_name=%s field_count=%s",
             secret_name,
