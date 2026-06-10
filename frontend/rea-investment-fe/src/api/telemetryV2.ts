@@ -1,6 +1,9 @@
 import type { AxiosInstance } from 'axios';
 
 import type {
+  DeviceMappingBulkPayload,
+  DeviceMappingBulkResponse,
+  ExternalDeviceListResponse,
   ExternalSiteListResponse,
   LicenseCreatePayload,
   LicensedProvider,
@@ -12,6 +15,7 @@ import type {
   ProviderCatalogList,
   SiteMappingResponse,
   SiteMappingSavePayload,
+  SyncDevicesResponse,
   SyncSitesResponse,
   TestAccountResponse
 } from '../types/telemetryV2';
@@ -123,6 +127,48 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     return data;
   };
 
+  /**
+   * Read the synced device cache for one external site. This is cache-only: it
+   * never triggers a live provider call, so opening Device Mapping is safe even
+   * when the provider is unreachable.
+   */
+  const listExternalDevices = async (
+    accountId: number,
+    externalSiteId: string
+  ): Promise<ExternalDeviceListResponse> => {
+    const { data } = await httpClient.get<ExternalDeviceListResponse>(
+      `${V2}/provider-accounts/${accountId}/external-sites/${encodeURIComponent(externalSiteId)}/devices`
+    );
+    return data;
+  };
+
+  /**
+   * Explicitly refresh the device cache for one external site by calling the
+   * provider once. Never wipes existing cache/mappings on failure.
+   */
+  const syncProviderAccountDevices = async (
+    accountId: number,
+    externalSiteId: string
+  ): Promise<SyncDevicesResponse> => {
+    const { data } = await httpClient.post<SyncDevicesResponse>(
+      `${V2}/provider-accounts/${accountId}/external-sites/${encodeURIComponent(externalSiteId)}/sync-devices`
+    );
+    return data;
+  };
+
+  /**
+   * Persist iliOS device -> external device mappings in the iliOS DB. V2
+   * (DB-only) path: no live provider call, no GCP/Firestore sync. Each external
+   * device must already exist in the synced device cache.
+   */
+  const saveDeviceMappings = async (
+    siteId: number,
+    payload: DeviceMappingBulkPayload
+  ): Promise<DeviceMappingBulkResponse> => {
+    const { data } = await httpClient.post<DeviceMappingBulkResponse>(`${V2}/sites/${siteId}/device-mappings`, payload);
+    return data;
+  };
+
   return {
     getCatalog,
     listLicensedProviders,
@@ -136,7 +182,10 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     testProviderAccount,
     syncProviderAccountSites,
     listExternalSites,
-    saveSiteMapping
+    saveSiteMapping,
+    listExternalDevices,
+    syncProviderAccountDevices,
+    saveDeviceMappings
   };
 };
 

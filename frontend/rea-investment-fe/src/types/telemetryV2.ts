@@ -154,3 +154,64 @@ export interface SiteMappingResponse {
   created_at: string | null;
   updated_at: string | null;
 }
+
+/**
+ * A single external (provider-side) device cached in the iliOS DB. Populated by
+ * the V2 `sync-devices` call and read cache-only when opening Device Mapping.
+ */
+export interface ExternalDevice {
+  id: number;
+  provider_account_id: number;
+  external_site_id: string;
+  external_device_id: string;
+  external_device_name: string | null;
+  sync_status: ExternalSiteSyncStatus;
+  first_seen_at: string;
+  last_seen_at: string;
+  last_synced_at: string;
+  last_sync_run_id: string | null;
+  last_sync_error: string | null;
+}
+
+export interface ExternalDeviceListResponse {
+  items: ExternalDevice[];
+  last_sync_run_id: string | null;
+  last_sync_status: LastSyncStatus;
+  last_success_at: string | null;
+}
+
+export interface SyncDevicesResponse {
+  sync_run_id: string;
+  last_sync_status: LastSyncStatus;
+  seen_count: number;
+  new_count: number;
+  missing_count: number;
+  error: string | null;
+}
+
+/**
+ * A single iliOS device -> external device pairing. The display name is resolved
+ * server-side from the synced device cache, so it is not sent here.
+ */
+export interface DeviceMappingItem {
+  device_id: number;
+  external_device_id: string;
+  device_role?: string;
+}
+
+/**
+ * Payload for the V2 (DB-only) bulk device mapping save. Mappings are keyed on
+ * `{provider_account_id, external_site_id}`; each external device must already
+ * exist in the synced device cache so no live provider call is required.
+ */
+export interface DeviceMappingBulkPayload {
+  provider_account_id: number;
+  external_site_id: string;
+  mappings: DeviceMappingItem[];
+}
+
+export interface DeviceMappingBulkResponse {
+  successful_count: number;
+  failed_count: number;
+  errors: string[] | null;
+}

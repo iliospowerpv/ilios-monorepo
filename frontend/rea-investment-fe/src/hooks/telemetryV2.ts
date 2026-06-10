@@ -3,6 +3,9 @@ import type { UseMutationOptions, UseQueryOptions } from '@tanstack/react-query'
 
 import { ApiClient } from '../api';
 import type {
+  DeviceMappingBulkPayload,
+  DeviceMappingBulkResponse,
+  ExternalDeviceListResponse,
   ExternalSiteListResponse,
   LicenseCreatePayload,
   LicensedProvider,
@@ -12,6 +15,7 @@ import type {
   ProviderAccountList,
   ProviderAccountUpdatePayload,
   ProviderCatalogList,
+  SyncDevicesResponse,
   SyncSitesResponse,
   TestAccountResponse
 } from '../types/telemetryV2';
@@ -24,7 +28,9 @@ export const telemetryV2Keys = {
     [...telemetryV2Keys.all, 'providerAccounts', companyId, { includeArchived }] as const,
   providerAccount: (companyId: number, accountId: number) =>
     [...telemetryV2Keys.all, 'providerAccount', companyId, accountId] as const,
-  externalSites: (accountId: number) => [...telemetryV2Keys.all, 'externalSites', accountId] as const
+  externalSites: (accountId: number) => [...telemetryV2Keys.all, 'externalSites', accountId] as const,
+  externalDevices: (accountId: number, externalSiteId: string) =>
+    [...telemetryV2Keys.all, 'externalDevices', accountId, externalSiteId] as const
 };
 
 const STALE_LIST = 30 * 1000;
@@ -86,6 +92,24 @@ export const useExternalSites = (
     queryKey: telemetryV2Keys.externalSites(accountId ?? -1),
     queryFn: () => ApiClient.telemetryV2.listExternalSites(accountId as number),
     enabled: !!accountId && accountId > 0,
+    staleTime: STALE_LIST,
+    ...options
+  });
+
+/**
+ * Cache-only read of the synced device list for one external site. Opening the
+ * Device Mapping step calls this; it never triggers a live provider call, so it
+ * succeeds even when the provider is unreachable as long as a sync ran before.
+ */
+export const useExternalDevices = (
+  accountId: number | null,
+  externalSiteId: string | null,
+  options?: Omit<UseQueryOptions<ExternalDeviceListResponse>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery({
+    queryKey: telemetryV2Keys.externalDevices(accountId ?? -1, externalSiteId ?? ''),
+    queryFn: () => ApiClient.telemetryV2.listExternalDevices(accountId as number, externalSiteId as string),
+    enabled: !!accountId && accountId > 0 && !!externalSiteId,
     staleTime: STALE_LIST,
     ...options
   });
@@ -183,6 +207,24 @@ export const useTelemetryAdminMutations = (companyId: number) => {
     }
   });
 
+  const syncDevices = useMutation<SyncDevicesResponse, Error, { accountId: number; externalSiteId: string }>({
+    mutationFn: ({ accountId, externalSiteId }) =>
+      ApiClient.telemetryV2.syncProviderAccountDevices(accountId, externalSiteId),
+    onSuccess: (_data, { accountId, externalSiteId }) => {
+      queryClient.invalidateQueries({
+        queryKey: telemetryV2Keys.externalDevices(accountId, externalSiteId)
+      });
+    }
+  });
+
+  const saveDeviceMappings = useMutation<
+    DeviceMappingBulkResponse,
+    Error,
+    { siteId: number; payload: DeviceMappingBulkPayload }
+  >({
+    mutationFn: ({ siteId, payload }) => ApiClient.telemetryV2.saveDeviceMappings(siteId, payload)
+  });
+
   return {
     grantLicense,
     revokeLicense,
@@ -191,6 +233,8 @@ export const useTelemetryAdminMutations = (companyId: number) => {
     archiveAccount,
     testAccount,
     syncSites,
+    syncDevices,
+    saveDeviceMappings,
     invalidateAll
   };
 };

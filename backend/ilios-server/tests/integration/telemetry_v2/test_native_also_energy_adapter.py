@@ -19,6 +19,8 @@ import requests
 
 from app.integrations.telemetry.base import (
     CredentialError,
+    DeviceListingAdapter,
+    MappingError,
     ProviderUnavailable,
     RateLimited,
 )
@@ -247,6 +249,126 @@ def test_test_credentials_rejected_on_401_403(status):
     result = adapter.test_credentials({"username": "u", "password": "p"})
     assert result.success is False
     assert "rejected" in result.message.lower()
+
+
+# ---------------------------------------------------------------------------
+# list_devices
+# ---------------------------------------------------------------------------
+
+
+def test_list_devices_happy_path():
+    adapter = _make(
+        [
+            _FakeResponse(HTTPStatus.OK, json_body={"access_token": "tok"}),
+            _FakeResponse(
+                HTTPStatus.OK,
+                json_body={
+                    "hardware": [
+                        {"id": 11, "name": "Inverter A", "extra": "x"},
+                        {"id": 22, "name": "Meter B"},
+                    ]
+                },
+            ),
+        ]
+    )
+    devices = adapter.list_devices({"username": "u", "password": "p"}, "4")
+    assert [d.external_device_id for d in devices] == ["11", "22"]
+    assert [d.external_device_name for d in devices] == ["Inverter A", "Meter B"]
+    assert devices[0].raw_metadata == {"extra": "x"}
+
+
+def test_list_devices_hits_site_scoped_hardware_path():
+    session = _FakeSession(
+        [
+            _FakeResponse(HTTPStatus.OK, json_body={"access_token": "tok"}),
+            _FakeResponse(HTTPStatus.OK, json_body={"hardware": []}),
+        ]
+    )
+    adapter = NativeAlsoEnergyAdapter(http_session=session, max_retries=0, timeout_seconds=1)
+    adapter.list_devices({"username": "u", "password": "p"}, "4")
+    # The second call must be the site-scoped hardware GET.
+    get_calls = [c for c in session.calls if c[0] == "GET"]
+    assert get_calls and get_calls[-1][1].endswith("/Sites/4/Hardware")
+
+
+def test_list_devices_no_content_returns_empty():
+    adapter = _make(
+        [
+            _FakeResponse(HTTPStatus.OK, json_body={"access_token": "tok"}),
+            _FakeResponse(HTTPStatus.NO_CONTENT, json_body=None),
+        ]
+    )
+    devices = adapter.list_devices({"username": "u", "password": "p"}, "4")
+    assert devices == ()
+
+
+def test_list_devices_404_is_mapping_error():
+    adapter = _make(
+        [
+            _FakeResponse(HTTPStatus.OK, json_body={"access_token": "tok"}),
+            _FakeResponse(HTTPStatus.NOT_FOUND, json_body=None),
+        ]
+    )
+    with pytest.raises(MappingError):
+        adapter.list_devices({"username": "u", "password": "p"}, "4")
+
+
+def test_list_devices_blank_site_id_is_mapping_error():
+    adapter = _make([])  # token endpoint never reached
+    with pytest.raises(MappingError):
+        adapter.list_devices({"username": "u", "password": "p"}, "  ")
+
+
+def test_list_devices_credential_error_propagates():
+    adapter = _make([_FakeResponse(HTTPStatus.BAD_REQUEST, json_body={})])
+    with pytest.raises(CredentialError):
+        adapter.list_devices({"username": "u", "password": "p"}, "4")
+
+
+def test_list_devices_5xx_after_token_is_unavailable():
+    adapter = _make(
+        [
+            _FakeResponse(HTTPStatus.OK, json_body={"access_token": "tok"}),
+            _FakeResponse(HTTPStatus.BAD_GATEWAY, json_body=None),
+        ]
+    )
+    with pytest.raises(ProviderUnavailable):
+        adapter.list_devices({"username": "u", "password": "p"}, "4")
+
+
+@pytest.mark.parametrize(
+    "status",
+    [HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN, HTTPStatus.BAD_REQUEST],
+)
+def test_list_devices_4xx_after_token_is_credential_error(status):
+    adapter = _make(
+        [
+            _FakeResponse(HTTPStatus.OK, json_body={"access_token": "tok"}),
+            _FakeResponse(status, json_body=None),
+        ]
+    )
+    with pytest.raises(CredentialError):
+        adapter.list_devices({"username": "u", "password": "p"}, "4")
+
+
+def test_list_devices_429_after_token_is_rate_limited():
+    adapter = _make(
+        [
+            _FakeResponse(HTTPStatus.OK, json_body={"access_token": "tok"}),
+            _FakeResponse(
+                HTTPStatus.TOO_MANY_REQUESTS,
+                json_body=None,
+                headers={"Retry-After": "9"},
+            ),
+        ]
+    )
+    with pytest.raises(RateLimited) as ei:
+        adapter.list_devices({"username": "u", "password": "p"}, "4")
+    assert ei.value.retry_after == 9
+
+
+def test_adapter_implements_device_listing_protocol():
+    assert isinstance(NativeAlsoEnergyAdapter(), DeviceListingAdapter)
 
 
 # ---------------------------------------------------------------------------

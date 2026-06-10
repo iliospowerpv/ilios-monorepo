@@ -6,6 +6,7 @@ services depend on the abstract :class:`ProviderAdapter` Protocol from
 """
 from .base import (
     CredentialError,
+    DeviceListingAdapter,
     MappingError,
     NoData,
     ProviderAdapter,
@@ -13,17 +14,19 @@ from .base import (
     ProviderUnavailable,
     RateLimited,
 )
-from .models import ExternalSiteRecord, TestResult
+from .models import ExternalDeviceRecord, ExternalSiteRecord, TestResult
 from .registry import clear_registry_cache, get_adapter
 
 __all__ = [
     "CredentialError",
+    "DeviceListingAdapter",
     "MappingError",
     "NoData",
     "ProviderAdapter",
     "ProviderError",
     "ProviderUnavailable",
     "RateLimited",
+    "ExternalDeviceRecord",
     "ExternalSiteRecord",
     "TestResult",
     "clear_registry_cache",

@@ -27,6 +27,7 @@ from app.helpers.authorization.project_access import (
 )
 from app.integrations.telemetry import (
     CredentialError,
+    DeviceListingAdapter,
     MappingError,
     NoData,
     ProviderUnavailable,
@@ -49,6 +50,8 @@ from app.models.telemetry import (
     ExternalSiteSyncStatus,
     LastSyncStatus,
     ProviderAccountStatus,
+    TelemetryDeviceMapping,
+    TelemetryExternalDevice,
     TelemetryExternalSite,
     TelemetryProviderCatalog,
     TelemetrySiteMapping,
@@ -56,6 +59,10 @@ from app.models.telemetry import (
 from app.models.site import Site
 from app.static import PermissionsActions
 from app.schema.telemetry_v2 import (
+    DeviceMappingBulkRequest,
+    DeviceMappingBulkResponse,
+    ExternalDeviceList,
+    ExternalDeviceResponse,
     ExternalSiteList,
     ExternalSiteResponse,
     LicenseCreateRequest,
@@ -69,6 +76,7 @@ from app.schema.telemetry_v2 import (
     ProviderCatalogList,
     SiteMappingCreateRequest,
     SiteMappingResponse,
+    SyncDevicesResponse,
     SyncSitesResponse,
     TestAccountResponse,
 )
@@ -1251,3 +1259,355 @@ def upsert_site_mapping(
         logger.warning("telemetry_v2_site_mapping_audit_failed site_id=%s", site.id)
 
     return SiteMappingResponse.model_validate(mapping)
+
+
+# ---------------------------------------------------------------------------
+# External devices (per-site hardware sync cache) -- DB-backed, V2
+# ---------------------------------------------------------------------------
+
+
+def _require_external_site(
+    db: Session, account: DASConnection, external_site_id: str
+) -> TelemetryExternalSite:
+    """Return the synced external-site row or raise 404.
+
+    Device sync/listing is always scoped to an already-synced site; if the site
+    has never been synced for this account we 404 rather than make a live call.
+    """
+    row = (
+        db.query(TelemetryExternalSite)
+        .filter(
+            TelemetryExternalSite.provider_account_id == account.id,
+            TelemetryExternalSite.external_site_id == external_site_id,
+        )
+        .first()
+    )
+    if row is None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            "Selected site is not in the synced site cache for this connection. "
+            "Sync sites for the connection and try again.",
+        )
+    return row
+
+
+@telemetry_v2_router.get(
+    "/v2/provider-accounts/{account_id}/external-sites/{external_site_id}/devices",
+    response_model=ExternalDeviceList,
+    summary="List synced external devices for one site (cache-only, no live call)",
+)
+def list_external_devices(
+    account_id: int,
+    external_site_id: str,
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> ExternalDeviceList:
+    """Return the cached device list for ``external_site_id``.
+
+    This is intentionally **cache-only**: opening the Device Mapping step never
+    makes a live provider call. If the cache is empty the caller should trigger
+    an explicit ``sync-devices``. The site must already be in the synced site
+    cache for this account.
+    """
+    account, _ = _require_account(db, account_id, current_user)
+    _require_external_site(db, account, external_site_id)
+
+    rows = (
+        db.query(TelemetryExternalDevice)
+        .filter(
+            TelemetryExternalDevice.provider_account_id == account.id,
+            TelemetryExternalDevice.external_site_id == external_site_id,
+        )
+        .order_by(
+            TelemetryExternalDevice.external_device_name.asc().nullslast(),
+            TelemetryExternalDevice.external_device_id.asc(),
+        )
+        .all()
+    )
+    return ExternalDeviceList(
+        items=[ExternalDeviceResponse.model_validate(row) for row in rows],
+        last_sync_run_id=rows[0].last_sync_run_id if rows else None,
+        last_sync_status=account.last_sync_status,
+        last_success_at=account.last_success_at,
+    )
+
+
+@telemetry_v2_router.post(
+    "/v2/provider-accounts/{account_id}/external-sites/{external_site_id}/sync-devices",
+    response_model=SyncDevicesResponse,
+    summary="Pull the device list for one site and update the device cache",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def sync_provider_account_devices(
+    account_id: int,
+    external_site_id: str,
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    credential_store: Annotated[CredentialStore, Depends(get_credential_store)],
+) -> SyncDevicesResponse:
+    """Refresh the cached device list for a single external site.
+
+    Mirrors ``sync-sites`` one level down. It makes a live provider call (only
+    when explicitly invoked), upserts ``telemetry_external_devices`` keyed on
+    ``{provider_account_id, external_site_id, external_device_id}`` and marks
+    rows no longer reported as ``missing``. Existing rows and mappings are
+    **never** wiped on a provider/sync failure — failures return early with an
+    error and the cache is left untouched.
+    """
+    account, catalog = _require_account(db, account_id, current_user)
+    if catalog is None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Provider account has no catalog mapping")
+    _require_external_site(db, account, external_site_id)
+
+    # Same rationale as sync_sites: device sync must retrieve and re-present
+    # credentials to the provider, so block on a non-durable store in prod.
+    _block_if_storage_not_durable(credential_store, operation="sync_devices")
+
+    adapter = get_adapter(db, catalog.provider_key, catalog=catalog)
+    if not isinstance(adapter, DeviceListingAdapter):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Provider '{catalog.provider_key}' does not support device listing.",
+        )
+
+    creds = credential_store.retrieve(account.secret_token_name)
+    run_id = _new_run_id()
+    now = _utcnow()
+
+    try:
+        records = list(adapter.list_devices(creds, external_site_id))
+    except CredentialError as exc:
+        account.credential_status = CredentialStatus.invalid
+        account.last_error_at = now
+        account.last_error_message = str(exc)
+        db.commit()
+        return SyncDevicesResponse(
+            sync_run_id=run_id,
+            last_sync_status=LastSyncStatus.failed,
+            seen_count=0,
+            new_count=0,
+            missing_count=0,
+            error=str(exc) or "Invalid credentials",
+        )
+    except (NoData, ProviderUnavailable, RateLimited, MappingError) as exc:
+        # Do not flip account credential status (these are not auth failures)
+        # and do not touch the cache. Surface the error to the caller only.
+        return SyncDevicesResponse(
+            sync_run_id=run_id,
+            last_sync_status=LastSyncStatus.failed,
+            seen_count=0,
+            new_count=0,
+            missing_count=0,
+            error=str(exc) or "Provider error",
+        )
+
+    existing = {
+        row.external_device_id: row
+        for row in db.query(TelemetryExternalDevice)
+        .filter(
+            TelemetryExternalDevice.provider_account_id == account.id,
+            TelemetryExternalDevice.external_site_id == external_site_id,
+        )
+        .all()
+    }
+    seen_ids: set[str] = set()
+    new_count = 0
+    for record in records:
+        ext_id = str(record.external_device_id)
+        seen_ids.add(ext_id)
+        if ext_id in existing:
+            row = existing[ext_id]
+            row.external_device_name = record.external_device_name or row.external_device_name
+            row.raw_metadata = record.raw_metadata or row.raw_metadata
+            row.last_seen_at = now
+            row.last_synced_at = now
+            row.last_sync_run_id = run_id
+            row.sync_status = ExternalSiteSyncStatus.seen
+            row.last_sync_error = None
+        else:
+            db.add(
+                TelemetryExternalDevice(
+                    provider_account_id=account.id,
+                    external_site_id=external_site_id,
+                    external_device_id=ext_id,
+                    external_device_name=record.external_device_name,
+                    raw_metadata=record.raw_metadata or None,
+                    first_seen_at=now,
+                    last_seen_at=now,
+                    last_synced_at=now,
+                    last_sync_run_id=run_id,
+                    sync_status=ExternalSiteSyncStatus.seen,
+                )
+            )
+            new_count += 1
+
+    missing_count = 0
+    for ext_id, row in existing.items():
+        if ext_id not in seen_ids:
+            row.sync_status = ExternalSiteSyncStatus.missing
+            row.last_synced_at = now
+            row.last_sync_run_id = run_id
+            missing_count += 1
+
+    db.commit()
+
+    return SyncDevicesResponse(
+        sync_run_id=run_id,
+        last_sync_status=(
+            LastSyncStatus.partial if missing_count else LastSyncStatus.success
+        ),
+        seen_count=len(seen_ids),
+        new_count=new_count,
+        missing_count=missing_count,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Device mapping (project device <-> external device) -- DB-only
+# ---------------------------------------------------------------------------
+
+
+@telemetry_v2_router.post(
+    "/v2/sites/{site_id}/device-mappings",
+    response_model=DeviceMappingBulkResponse,
+    summary="Bulk map project devices to external devices (V2, DB-only)",
+    dependencies=[Depends(AuthorizedUser(SettingsPermissions(PermissionsActions.edit)))],
+)
+def bulk_upsert_device_mappings(
+    payload: DeviceMappingBulkRequest,
+    request: Request,
+    site: Annotated[Site, Depends(get_authorized_site_with_company_admin)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> DeviceMappingBulkResponse:
+    """Persist iliOS device -> external device mappings directly in iliOS.
+
+    This is the V2 (DB-backed) device save path. Like the site-mapping save it
+    deliberately does **not** call the provider and does **not** touch any GCP /
+    Firestore pipeline:
+
+    - Each external device must already exist in the iliOS device cache
+      (``telemetry_external_devices``); the display name is read from there
+      because ``telemetry_devices_mapping.telemetry_device_name`` is NOT NULL.
+    - Each iliOS device must belong to this project/site and be
+      telemetry-eligible.
+    - Mappings are upserted on ``device_id`` (unique). Per-row failures are
+      collected and reported; nothing is wiped because no provider call is made.
+    """
+    # Single source of truth for eligibility lives in the v1 router module.
+    from app.routers.telemetry.telemetry import (
+        TELEMETRY_ELIGIBLE_CATEGORIES,
+        _create_audit_log,
+    )
+
+    # 1. Resolve + authorize the provider account (scoped to caller's companies).
+    account, _ = _require_account(db, payload.provider_account_id, current_user)
+
+    # 2. The provider account must belong to the same company as the site.
+    if account.company_id != site.company_id:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Provider account does not belong to this project's company.",
+        )
+
+    # 3. The external site must already be in the synced site cache.
+    _require_external_site(db, account, payload.external_site_id)
+
+    site_device_ids = {device.id for device in site.devices}
+    # Cache lookup for the device names (NOT NULL on the mapping row).
+    device_cache = {
+        row.external_device_id: row
+        for row in db.query(TelemetryExternalDevice)
+        .filter(
+            TelemetryExternalDevice.provider_account_id == account.id,
+            TelemetryExternalDevice.external_site_id == payload.external_site_id,
+        )
+        .all()
+    }
+
+    successful = 0
+    failed = 0
+    errors: list[str] = []
+
+    for item in payload.mappings:
+        device = next((d for d in site.devices if d.id == item.device_id), None)
+        if item.device_id not in site_device_ids or device is None:
+            errors.append(f"Device {item.device_id} does not belong to this project")
+            failed += 1
+            continue
+        if device.category not in TELEMETRY_ELIGIBLE_CATEGORIES:
+            errors.append(
+                f"Device {item.device_id} is not telemetry-eligible "
+                f"(category: {device.category.value if device.category else None})"
+            )
+            failed += 1
+            continue
+
+        cache_row = device_cache.get(item.external_device_id)
+        if cache_row is None:
+            errors.append(
+                f"Device {item.device_id}: external device {item.external_device_id} "
+                "is not in the synced device cache. Sync devices and try again."
+            )
+            failed += 1
+            continue
+
+        device_name = cache_row.external_device_name or cache_row.external_device_id
+        device_role = (item.device_role or "primary").strip() or "primary"
+
+        mapping = (
+            db.query(TelemetryDeviceMapping)
+            .filter(TelemetryDeviceMapping.device_id == item.device_id)
+            .first()
+        )
+        if mapping is None:
+            mapping = TelemetryDeviceMapping(
+                device_id=item.device_id,
+                telemetry_device_id=item.external_device_id,
+                telemetry_device_name=device_name,
+                provider_account_id=account.id,
+                device_role=device_role,
+                is_active=True,
+            )
+            db.add(mapping)
+        else:
+            mapping.telemetry_device_id = item.external_device_id
+            mapping.telemetry_device_name = device_name
+            mapping.provider_account_id = account.id
+            mapping.device_role = device_role
+            mapping.is_active = True
+            mapping.updated_at = _utcnow()
+        successful += 1
+
+    db.commit()
+
+    logger.info(
+        "telemetry_v2_device_mappings_saved site_id=%s account_id=%s external_site_id=%s successful=%s failed=%s",
+        site.id,
+        account.id,
+        payload.external_site_id,
+        successful,
+        failed,
+    )
+
+    # Best-effort audit trail; never blocks or rolls back the saved mappings.
+    try:
+        _create_audit_log(
+            request,
+            db,
+            "telemetry_v2_device_mappings_saved",
+            (
+                f"Bulk-mapped {successful} device(s) on project/site {site.id} to "
+                f"external site {payload.external_site_id} via provider account {account.id} "
+                f"({failed} failed)"
+            ),
+            is_success=(failed == 0),
+        )
+    except Exception:  # noqa: BLE001
+        logger.warning("telemetry_v2_device_mappings_audit_failed site_id=%s", site.id)
+
+    return DeviceMappingBulkResponse(
+        successful_count=successful,
+        failed_count=failed,
+        errors=errors if errors else None,
+    )

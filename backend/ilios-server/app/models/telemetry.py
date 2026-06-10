@@ -197,6 +197,12 @@ class DASConnection(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    external_devices = relationship(
+        "TelemetryExternalDevice",
+        back_populates="provider_account",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -237,6 +243,58 @@ class TelemetryExternalSite(Base):
     last_sync_error = Column(String(1000), nullable=True)
 
     provider_account = relationship("DASConnection", back_populates="external_sites")
+
+
+# ---------------------------------------------------------------------------
+# Synced external devices (per-site hardware cache for sync runs)
+# ---------------------------------------------------------------------------
+
+
+class TelemetryExternalDevice(Base):
+    """DB-backed cache of the devices a provider reports for one external site.
+
+    This mirrors :class:`TelemetryExternalSite` one level down: a device row is
+    uniquely identified by ``{provider_account_id, external_site_id,
+    external_device_id}``. The V2 Device Mapping step reads from this cache so
+    opening the step never requires a live provider call when the account has
+    already been synced. Rows are upserted by the explicit ``sync-devices``
+    route and are never wiped on a provider/sync failure.
+    """
+
+    __tablename__ = "telemetry_external_devices"
+    __table_args__ = (
+        UniqueConstraint(
+            "provider_account_id",
+            "external_site_id",
+            "external_device_id",
+            name="uq_telemetry_external_devices_account_site_device",
+        ),
+    )
+
+    id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
+    provider_account_id = Column(
+        Integer,
+        ForeignKey("das_connections.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    external_site_id = Column(String(255), nullable=False)
+    external_device_id = Column(String(255), nullable=False)
+    external_device_name = Column(String(512), nullable=True)
+    raw_metadata = Column(JSONB, nullable=True)
+
+    first_seen_at = Column(DateTime, nullable=False, server_default=utcnow())
+    last_seen_at = Column(DateTime, nullable=False, server_default=utcnow())
+    last_synced_at = Column(DateTime, nullable=False, server_default=utcnow())
+    last_sync_run_id = Column(String(64), nullable=True)
+    sync_status = Column(
+        Enum(ExternalSiteSyncStatus, name="external_site_sync_status_enum"),
+        nullable=False,
+        default=ExternalSiteSyncStatus.seen,
+        server_default=ExternalSiteSyncStatus.seen.value,
+    )
+    last_sync_error = Column(String(1000), nullable=True)
+
+    provider_account = relationship("DASConnection", back_populates="external_devices")
 
 
 # ---------------------------------------------------------------------------

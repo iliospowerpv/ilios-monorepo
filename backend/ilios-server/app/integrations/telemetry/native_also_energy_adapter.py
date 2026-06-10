@@ -30,16 +30,18 @@ from app.security.redaction import fingerprint
 
 from .base import (
     CredentialError,
+    MappingError,
     ProviderUnavailable,
     RateLimited,
 )
-from .models import ExternalSiteRecord, TestResult
+from .models import ExternalDeviceRecord, ExternalSiteRecord, TestResult
 
 logger = logging.getLogger(__name__)
 
 ALSO_ENERGY_API_BASE = "https://api.alsoenergy.com"
 TOKEN_PATH = "/Auth/token"
 SITES_PATH = "/Sites"
+HARDWARE_PATH_TEMPLATE = "/Sites/{site_id}/Hardware"
 
 DEFAULT_TIMEOUT_SECONDS = 15
 DEFAULT_RETRIES = 2
@@ -145,6 +147,85 @@ class NativeAlsoEnergyAdapter:
             if item.get("siteId") is not None
         )
 
+    def list_devices(
+        self, credentials: Mapping[str, str], external_site_id: str
+    ) -> Sequence[ExternalDeviceRecord]:
+        """Return the hardware devices AlsoEnergy reports for one site.
+
+        Mirrors :meth:`list_sites`: it mints a fresh token then performs
+        ``GET /Sites/{site_id}/Hardware``. Per the legacy ``rea-telemetry``
+        reference, devices are returned under the ``hardware`` key with ``id``
+        and ``name`` fields. An unknown site yields HTTP 404 which is surfaced
+        as :class:`MappingError` (the configured site no longer resolves);
+        HTTP 204 means the site simply has no hardware yet.
+        """
+        site_ref = str(external_site_id).strip()
+        if not site_ref:
+            raise MappingError(
+                "No external site id supplied for device listing",
+                provider_key=self.provider_key,
+            )
+        creds = self._validate_required_fields(credentials)
+        access_token = self._fetch_access_token(creds["username"], creds["password"])
+        response = self._hardware_request(access_token, site_ref)
+        status_code = response.status_code
+
+        if status_code == HTTPStatus.NO_CONTENT:
+            return ()
+        if status_code == HTTPStatus.NOT_FOUND:
+            raise MappingError(
+                "Provider does not recognise the configured site for this account",
+                provider_key=self.provider_key,
+            )
+        if status_code in (
+            HTTPStatus.BAD_REQUEST,
+            HTTPStatus.UNAUTHORIZED,
+            HTTPStatus.FORBIDDEN,
+        ):
+            # Token was minted moments ago, so a 4xx here usually means the
+            # account lost provider-side authorization to enumerate hardware.
+            raise CredentialError(
+                f"Provider rejected the device listing request (HTTP {status_code})",
+                provider_key=self.provider_key,
+            )
+        if status_code == HTTPStatus.TOO_MANY_REQUESTS:
+            retry_after = self._parse_retry_after(response.headers)
+            raise RateLimited(
+                "Provider rate-limited the device listing request",
+                retry_after=retry_after,
+                provider_key=self.provider_key,
+            )
+        if 500 <= status_code < 600:
+            raise ProviderUnavailable(
+                f"Provider responded with HTTP {status_code} on device listing",
+                provider_key=self.provider_key,
+            )
+        if not (200 <= status_code < 300):
+            raise ProviderUnavailable(
+                f"Unexpected provider response (HTTP {status_code}) on device listing",
+                provider_key=self.provider_key,
+            )
+
+        try:
+            payload = response.json() or {}
+        except ValueError as exc:
+            raise ProviderUnavailable(
+                "Provider returned an unparseable device list",
+                provider_key=self.provider_key,
+            ) from exc
+        items = payload.get("hardware") or []
+        return tuple(
+            ExternalDeviceRecord(
+                external_device_id=str(item.get("id")),
+                external_device_name=item.get("name"),
+                raw_metadata={
+                    k: v for k, v in item.items() if k not in {"id", "name"}
+                },
+            )
+            for item in items
+            if item.get("id") is not None
+        )
+
     # ------------------------------------------------------------------
     # Internals
     # ------------------------------------------------------------------
@@ -243,6 +324,13 @@ class NativeAlsoEnergyAdapter:
 
     def _sites_request(self, access_token: str) -> requests.Response:
         url = f"{self._base_url}{SITES_PATH}"
+        return self._get_with_retry(
+            url,
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+    def _hardware_request(self, access_token: str, site_id: str) -> requests.Response:
+        url = f"{self._base_url}{HARDWARE_PATH_TEMPLATE.format(site_id=site_id)}"
         return self._get_with_retry(
             url,
             headers={"Authorization": f"Bearer {access_token}"},

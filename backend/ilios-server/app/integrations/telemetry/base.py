@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Protocol, Sequence, runtime_checkable
 
-from .models import ExternalSiteRecord, TestResult
+from .models import ExternalDeviceRecord, ExternalSiteRecord, TestResult
 
 
 # ---------------------------------------------------------------------------
@@ -69,4 +69,33 @@ class ProviderAdapter(Protocol):
         Implementations should map provider-specific HTTP errors onto the
         structured exceptions in this module so callers never need to inspect
         provider-specific status codes.
+        """
+
+
+@runtime_checkable
+class DeviceListingAdapter(Protocol):
+    """Optional capability: enumerate the devices under one external site.
+
+    This is intentionally a *separate* Protocol from :class:`ProviderAdapter`.
+    Not every vendor adapter exposes per-site device listing, and adding the
+    method to the base Protocol would silently break ``isinstance`` checks for
+    adapters that only implement credential/site listing. Callers should guard
+    with ``isinstance(adapter, DeviceListingAdapter)`` before invoking.
+    """
+
+    provider_key: str
+
+    def list_devices(
+        self, credentials: dict[str, str], external_site_id: str
+    ) -> Sequence[ExternalDeviceRecord]:
+        """Return the devices the provider reports for ``external_site_id``.
+
+        Implementations should map provider-specific HTTP errors onto the
+        structured exceptions in this module:
+
+        - the site is unknown to the provider -> :class:`MappingError`,
+        - the provider returns an empty body -> an empty sequence,
+        - auth failure -> :class:`CredentialError`,
+        - rate limiting -> :class:`RateLimited`,
+        - 5xx / transport failure -> :class:`ProviderUnavailable`.
         """

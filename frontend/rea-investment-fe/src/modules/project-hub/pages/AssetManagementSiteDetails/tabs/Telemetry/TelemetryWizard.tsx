@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
@@ -32,17 +32,13 @@ import Tooltip from '@mui/material/Tooltip';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 import { ApiClient } from '../../../../../../api';
 import type { SiteDetailedInfo } from '../../../../../../api';
-import { useExternalSites } from '../../../../../../hooks/telemetryV2';
-import type {
-  TelemetryReadinessResponse,
-  Connection,
-  TelemetryDevice,
-  DeviceMapping
-} from '../../../../../../api/connections';
-import type { SiteMappingSavePayload } from '../../../../../../types/telemetryV2';
+import { useExternalSites, useExternalDevices } from '../../../../../../hooks/telemetryV2';
+import type { TelemetryReadinessResponse, Connection } from '../../../../../../api/connections';
+import type { SiteMappingSavePayload, DeviceMappingBulkPayload } from '../../../../../../types/telemetryV2';
 import { ConfirmationModal } from '../../../../../../components/modals/ConfirmationModal/ConfirmationModal';
 import { EditConnectionDialog, ConnectionToEdit } from './EditConnectionDialog';
 
@@ -91,6 +87,11 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
   const [editingConnection, setEditingConnection] = useState<ConnectionToEdit | null>(null);
   const [deletingConnection, setDeletingConnection] = useState<ConnectionToEdit | null>(null);
 
+  // Tracks which (connection, site) pairs we have already auto-synced devices
+  // for this session, so an empty cache triggers at most one automatic live
+  // sync. Manual "Refresh" is always allowed.
+  const autoSyncedDevicesRef = useRef<Set<string>>(new Set());
+
   const companyId = siteDetails.company?.id;
 
   useEffect(() => {
@@ -117,6 +118,7 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
       setSelectedDevices(new Set());
       setEditingConnection(null);
       setDeletingConnection(null);
+      autoSyncedDevicesRef.current = new Set();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -171,15 +173,19 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
     retry: 1
   });
 
+  // V2 (DB-backed) device cache read. This is cache-only: opening the Device
+  // Mapping step never makes a live provider call, so it cannot raise the
+  // "Network Error" the legacy v1 GET .../devices produced. A live refresh is
+  // performed only via an explicit/auto sync (see syncDevicesMutation below).
   const {
     data: dasDevices,
     isLoading: isLoadingDasDevices,
+    isFetching: isFetchingDasDevices,
     isError: isDasDevicesError,
-    error: dasDevicesError
-  } = useQuery({
-    queryKey: ['das-devices', siteDetails.id],
-    queryFn: () => ApiClient.connections.getTelemetryDevices(siteDetails.id),
-    enabled: !!siteDetails.id && !!selectedDasSite && activeStep >= 2,
+    error: dasDevicesError,
+    refetch: refetchDasDevices
+  } = useExternalDevices(selectedConnectionId, selectedDasSite?.id ?? null, {
+    enabled: !!selectedConnectionId && !!selectedDasSite && activeStep >= 2,
     retry: 1
   });
 
@@ -240,10 +246,54 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
     }
   });
 
-  const bulkMapDevicesMutation = useMutation({
-    mutationFn: (payload: { mappings: DeviceMapping[] }) =>
-      ApiClient.connections.bulkMapDevices(siteDetails.id, payload)
+  // V2 explicit device sync. Makes a single live provider call and refreshes
+  // the DB-backed device cache. On failure the backend never wipes the existing
+  // cache or mappings; we simply surface the error and re-read the cache.
+  const syncDevicesMutation = useMutation({
+    mutationFn: () => {
+      if (!selectedConnectionId || !selectedDasSite) {
+        return Promise.reject(new Error('Select a connection and DAS site first'));
+      }
+      return ApiClient.telemetryV2.syncProviderAccountDevices(selectedConnectionId, selectedDasSite.id);
+    },
+    onSuccess: () => {
+      refetchDasDevices();
+    }
   });
+
+  // V2 (DB-only) device mapping save. Persists iliOS device -> external device
+  // pairings directly in the iliOS DB; no live provider call, no GCP/Firestore.
+  const saveDeviceMappingsMutation = useMutation({
+    mutationFn: (payload: DeviceMappingBulkPayload) =>
+      ApiClient.telemetryV2.saveDeviceMappings(siteDetails.id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['eligible-devices', siteDetails.id] });
+      queryClient.invalidateQueries({ queryKey: ['telemetry-readiness', siteDetails.id] });
+    }
+  });
+
+  // Auto-trigger a single live sync only when the device cache is empty for the
+  // selected (connection, site). If cached devices already exist, opening the
+  // step never makes a live call.
+  useEffect(() => {
+    if (activeStep < 2 || !selectedConnectionId || !selectedDasSite) return;
+    if (isLoadingDasDevices || isFetchingDasDevices) return;
+    if (isDasDevicesError || !dasDevices) return;
+    const key = `${selectedConnectionId}:${selectedDasSite.id}`;
+    if (dasDevices.items.length === 0 && !autoSyncedDevicesRef.current.has(key) && !syncDevicesMutation.isPending) {
+      autoSyncedDevicesRef.current.add(key);
+      syncDevicesMutation.mutate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    activeStep,
+    selectedConnectionId,
+    selectedDasSite,
+    dasDevices,
+    isLoadingDasDevices,
+    isFetchingDasDevices,
+    isDasDevicesError
+  ]);
 
   const handleTestConnection = () => {
     const provider = newConnectionForm.provider;
@@ -322,15 +372,32 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
         .filter(deviceId => deviceMappings[deviceId])
         .map(deviceId => ({
           device_id: deviceId,
-          telemetry_device_id: deviceMappings[deviceId].telemetry_device_id,
-          telemetry_device_name: deviceMappings[deviceId].telemetry_device_name
+          external_device_id: deviceMappings[deviceId].telemetry_device_id
         }));
 
       if (mappingsToCreate.length > 0) {
+        if (!selectedConnectionId || !selectedDasSite) {
+          setError('Please select a connection and DAS site before mapping devices');
+          return;
+        }
         try {
-          await bulkMapDevicesMutation.mutateAsync({ mappings: mappingsToCreate });
+          // V2 (DB-only) save. Names are resolved server-side from the synced
+          // device cache, so only the device id pairs are sent.
+          const result = await saveDeviceMappingsMutation.mutateAsync({
+            provider_account_id: selectedConnectionId,
+            external_site_id: selectedDasSite.id,
+            mappings: mappingsToCreate
+          });
+          if (result.failed_count > 0) {
+            setError(
+              result.errors?.length
+                ? result.errors.join('; ')
+                : `${result.failed_count} device mapping(s) could not be saved.`
+            );
+            return;
+          }
         } catch (err: unknown) {
-          setError((err as Error).message || 'Failed to map devices');
+          setError(getApiErrorMessage(err, 'Failed to map devices'));
           return;
         }
       }
@@ -355,13 +422,13 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
     });
   };
 
-  const handleDeviceMappingChange = (deviceId: number, telemetryDevice: TelemetryDevice | null) => {
-    if (telemetryDevice) {
+  const handleDeviceMappingChange = (deviceId: number, selection: { id: string; name: string } | null) => {
+    if (selection) {
       setDeviceMappings(prev => ({
         ...prev,
         [deviceId]: {
-          telemetry_device_id: telemetryDevice.id,
-          telemetry_device_name: telemetryDevice.name
+          telemetry_device_id: selection.id,
+          telemetry_device_name: selection.name
         }
       }));
     } else {
@@ -666,21 +733,67 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
 
       case 2: {
         const unmappedDevices = eligibleDevices?.items.filter(d => !d.is_mapped) || [];
+        const dasDeviceItems = dasDevices?.items || [];
+        const isSyncingDevices = syncDevicesMutation.isPending;
+        const devicesLoading = isLoadingEligibleDevices || isLoadingDasDevices || isSyncingDevices;
+        // The cache read is 200 even when the provider is down; a failed *sync*
+        // is reported either as a thrown error or as a 200 with an error field.
+        const syncErrorMessage =
+          (syncDevicesMutation.isError ? getApiErrorMessage(syncDevicesMutation.error, 'Device sync failed') : null) ||
+          syncDevicesMutation.data?.error ||
+          null;
 
         return (
           <Box>
-            <Typography variant="body1" gutterBottom>
-              Map your devices to their DAS counterparts. Devices already mapped are shown below.
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+              <Typography variant="body1" gutterBottom>
+                Map your devices to their DAS counterparts. Devices already mapped are shown below.
+              </Typography>
+              <Tooltip title="Refresh the device list from the provider">
+                <span>
+                  <Button
+                    size="small"
+                    startIcon={isSyncingDevices ? <CircularProgress size={16} /> : <RefreshIcon />}
+                    onClick={() => syncDevicesMutation.mutate()}
+                    disabled={isSyncingDevices || !selectedConnectionId || !selectedDasSite}
+                  >
+                    {isSyncingDevices ? 'Refreshing…' : 'Refresh'}
+                  </Button>
+                </span>
+              </Tooltip>
+            </Box>
 
-            {isLoadingEligibleDevices || isLoadingDasDevices ? (
-              <CircularProgress />
-            ) : isDasDevicesError ? (
+            {/* A failed cache read (e.g. site no longer synced) -- still never wipes cache. */}
+            {isDasDevicesError && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {getApiErrorMessage(
                   dasDevicesError,
-                  'Unable to fetch devices from the DAS provider. Check the connection credentials and try again.'
+                  'Unable to read the synced device cache. Try Refresh to sync devices from the provider.'
                 )}
+              </Alert>
+            )}
+
+            {/* A failed live sync is non-fatal: any previously cached devices remain usable. */}
+            {syncErrorMessage && (
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                {`Could not refresh devices from the provider: ${syncErrorMessage}. `}
+                {dasDeviceItems.length > 0
+                  ? 'Showing the last synced devices.'
+                  : 'No previously synced devices are available.'}
+              </Alert>
+            )}
+
+            {devicesLoading ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 3 }}>
+                <CircularProgress size={24} />
+                <Typography variant="body2" color="text.secondary">
+                  {isSyncingDevices ? 'Syncing devices from the provider…' : 'Loading devices…'}
+                </Typography>
+              </Box>
+            ) : !isDasDevicesError && dasDeviceItems.length === 0 ? (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                No devices are available for this DAS site yet. Use Refresh to pull the latest device list from the
+                provider.
               </Alert>
             ) : (
               <TableContainer component={Paper} sx={{ maxHeight: 400 }}>
@@ -736,14 +849,22 @@ export const TelemetryWizard: React.FC<TelemetryWizardProps> = ({ open, onClose,
                             <Typography variant="body2">{device.telemetry_device_name}</Typography>
                           ) : (
                             <SearchableSelect
-                              options={(dasDevices?.items || []).map(dasDevice => ({
-                                label: dasDevice.name,
-                                value: dasDevice.id
+                              options={dasDeviceItems.map(dasDevice => ({
+                                label: dasDevice.external_device_name || dasDevice.external_device_id,
+                                value: dasDevice.external_device_id
                               }))}
                               value={deviceMappings[device.id]?.telemetry_device_id || null}
                               onChange={val => {
-                                const dasDevice = dasDevices?.items.find(d => d.id === val);
-                                handleDeviceMappingChange(device.id, dasDevice || null);
+                                const dasDevice = dasDeviceItems.find(d => d.external_device_id === val);
+                                handleDeviceMappingChange(
+                                  device.id,
+                                  dasDevice
+                                    ? {
+                                        id: dasDevice.external_device_id,
+                                        name: dasDevice.external_device_name || dasDevice.external_device_id
+                                      }
+                                    : null
+                                );
                               }}
                               placeholder="Select DAS Device"
                               size="small"

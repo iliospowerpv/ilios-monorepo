@@ -242,3 +242,77 @@ class SiteMappingResponse(BaseModel):
 
 class SiteMappingList(BaseModel):
     items: list[SiteMappingResponse]
+
+
+# ---------------------------------------------------------------------------
+# External devices (per-site hardware sync cache)
+# ---------------------------------------------------------------------------
+
+
+class ExternalDeviceResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    provider_account_id: int
+    external_site_id: str
+    external_device_id: str
+    external_device_name: Optional[str] = None
+    sync_status: ExternalSiteSyncStatus
+    first_seen_at: datetime
+    last_seen_at: datetime
+    last_synced_at: datetime
+    last_sync_run_id: Optional[str] = None
+    last_sync_error: Optional[str] = None
+
+
+class ExternalDeviceList(BaseModel):
+    items: list[ExternalDeviceResponse]
+    last_sync_run_id: Optional[str] = None
+    last_sync_status: LastSyncStatus
+    last_success_at: Optional[datetime] = None
+
+
+class SyncDevicesResponse(BaseModel):
+    sync_run_id: str
+    last_sync_status: LastSyncStatus
+    seen_count: int
+    new_count: int
+    missing_count: int
+    error: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Device mappings (project device <-> external device) -- DB-only
+# ---------------------------------------------------------------------------
+
+
+class DeviceMappingItem(BaseModel):
+    """A single iliOS device -> external device pairing.
+
+    ``device_id`` is the iliOS ``Device`` primary key; ``external_device_id`` is
+    the provider's device identifier. The display name is resolved server-side
+    from the synced device cache, so it is not accepted here.
+    """
+
+    device_id: int
+    external_device_id: str = Field(min_length=1, max_length=255)
+    device_role: str = Field(default="primary", max_length=32)
+
+
+class DeviceMappingBulkRequest(BaseModel):
+    """Body for the V2 (DB-only) bulk device mapping save.
+
+    Mappings are keyed on ``{provider_account_id, external_site_id}``; each
+    external device must already exist in the iliOS device sync cache so no live
+    provider call is needed to save.
+    """
+
+    provider_account_id: int
+    external_site_id: str = Field(min_length=1, max_length=255)
+    mappings: list[DeviceMappingItem] = Field(default_factory=list)
+
+
+class DeviceMappingBulkResponse(BaseModel):
+    successful_count: int
+    failed_count: int
+    errors: Optional[list[str]] = None
