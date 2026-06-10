@@ -20,13 +20,17 @@ description: How to actually run the FastAPI backend pytest suite and the gotcha
 
 # Auth gotchas in tests
 
-- `PermissionType` (app/static/permissions.py) is a **plain class, not an enum**.
-  `project_access._log_access_decision` does `self.permission_type.value`, which
-  raises `AttributeError: 'str' object has no attribute 'value'` on the ALLOW
-  path. So any **company-member-authorized GET** through `get_authorized_site` /
-  `get_authorized_company` crashes in that logging line.
-  **Workaround in tests:** use `system_user_auth_header` — system users have
-  `has_platform_bypass` and return before that logging runs.
+- `PermissionType` (app/static/permissions.py) is a **plain class, not an enum** —
+  `PermissionType.site`/`.company` ARE already the strings `"site"`/`"company"`, and
+  it's used that way everywhere (`==` comparisons + dict keys). Never call `.value`
+  on `permission_type` — it raises `AttributeError` on a str. (Contrast
+  `AccessDecision`/`AccessDeniedReason` in access_resolver.py, which ARE real enums,
+  so their `.value` calls there are correct.)
+  Doing `.value` here used to 500 every **non-bypass (company-member) GET** through
+  `get_authorized_site`/`get_authorized_company` (the access-decision logger runs on
+  ALLOW *and* DENY), while platform-bypass/system users were unaffected (they return
+  before logging). This is now FIXED — company-member auth headers work end-to-end;
+  you no longer need `system_user_auth_header` just to dodge this crash.
 - The shared `das_connection` fixture (tests/fixtures/connections.py) creates a
   connection via CRUD, which now **requires the provider be licensed to the
   company** (`CompanyDASProviderCRUD.has_provider`). Nothing assigns it, so the

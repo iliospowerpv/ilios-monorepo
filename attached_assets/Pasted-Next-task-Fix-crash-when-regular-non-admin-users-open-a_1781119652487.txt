@@ -1,0 +1,49 @@
+Next task: Fix crash when regular non-admin users open access-controlled project pages.
+
+Context:
+We have completed the current V2 telemetry/O&M dashboard work. Do not continue telemetry feature development right now.
+
+Objective:
+Regular non-admin users should be able to open access-controlled project pages they are authorized to view without the app crashing.
+
+Scope:
+- Triage and fix only the non-admin access-controlled project page crash.
+- Do not weaken authorization.
+- Do not grant broader access than intended.
+- Do not bypass project/company permission checks.
+- Do not modify telemetry ingestion, scheduler, credentials, mappings, provider adapters, GCP Secret Manager, BigQuery fallback, or O&M chart logic unless the crash is directly caused by a shared access wrapper.
+- Preserve admin behavior.
+
+Please investigate:
+1. Which route/page crashes.
+2. Which user role triggers the crash.
+3. Whether the crash is frontend-only, backend 403/404 handling, or a permissions-data shape issue.
+4. Whether the page assumes admin-only fields/actions are present.
+5. Whether the app fails to distinguish:
+   - authorized read-only access
+   - unauthorized access
+   - admin-only actions hidden/disabled
+6. Whether the access-controlled wrapper incorrectly treats a valid non-admin as unauthorized.
+
+Expected behavior:
+- Authorized non-admin users can open project pages they have access to.
+- Admin-only controls are hidden or disabled.
+- Unauthorized users see a clean access-denied state, not a crash.
+- Backend still enforces authorization.
+- Frontend handles 403/404 responses gracefully.
+
+Validation:
+1. Admin user can still open the project page.
+2. Authorized non-admin user can open the same project page without crash.
+3. Unauthorized user gets clean access-denied state.
+4. Admin-only actions are not shown to non-admin users.
+5. No console crash.
+6. No authorization regression.
+7. Existing telemetry/O&M page still loads for authorized users.
+
+Return:
+- root cause
+- files changed
+- permission behavior before/after
+- validation results by role
+- any follow-up recommendation

@@ -128,7 +128,7 @@ class GetAuthorizedEntity:
         except Exception as e:
             logger.error(
                 f"RESOLVER_SYSTEM_ERROR: user_id={self.current_user.id} "
-                f"entity_type={self.permission_type.value} entity_id={self.id} "
+                f"entity_type={self.permission_type} entity_id={self.id} "
                 f"exception={type(e).__name__}: {e}",
                 exc_info=True
             )
@@ -143,13 +143,13 @@ class GetAuthorizedEntity:
             grant_summary = [f"{gs.level}:{gs.role}" for gs in result.grant_sources]
             logger.debug(
                 f"ACCESS_GRANTED: user_id={self.current_user.id} "
-                f"entity_type={self.permission_type.value} entity_id={self.id} "
+                f"entity_type={self.permission_type} entity_id={self.id} "
                 f"effective_role={result.effective_base_role} sources={grant_summary}"
             )
         else:
             logger.warning(
                 f"ACCESS_DENIED: user_id={self.current_user.id} "
-                f"entity_type={self.permission_type.value} entity_id={self.id} "
+                f"entity_type={self.permission_type} entity_id={self.id} "
                 f"reason_code={result.reason_code} "
                 f"sources={[gs.level for gs in result.grant_sources]}"
             )
