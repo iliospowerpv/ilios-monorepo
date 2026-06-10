@@ -4,3 +4,4 @@
 - [Telemetry V2 scheduler + backfill](telemetry-scheduler-backfill.md) — scheduled/backfill are new triggers over existing ingestion+rollup; hour-floor rollups at the trigger; cursor advances only on full success.
 - [Telemetry rollup completeness](telemetry-rollup-completeness.md) — completeness needs PER-SERIES cadence inference; merging timestamps across devices collapses cadence to ~1s and ruins the ratio.
 - [Telemetry ingestion & demo mode](telemetry-ingestion-and-demo-mode.md) — real pull is external GCP pipeline (no in-app trigger); DEMO_TELEMETRY bypasses BigQuery & only fabricates data for is_demo companies; V2 wizard mappings never reach Firestore (puller's config source).
+- [Backend test harness](backend-test-harness.md) — ilios-server pytest needs `test_db_name` env + own DB; override coverage `addopts`; no pytest-mock (use monkeypatch); company-member authorized GETs crash on PermissionType.value, so use system_user_auth_header.
