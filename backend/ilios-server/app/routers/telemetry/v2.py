@@ -101,6 +101,7 @@ from app.services.telemetry.rollup_service import run_rollups_for_window
 from app.services.telemetry.scheduler_runner import (
     ALLOWED_CADENCES,
     DEFAULT_CADENCE,
+    floor_to_hour,
     run_ingestion_with_rollup,
 )
 
@@ -1728,11 +1729,14 @@ def refresh_site_readings(
 
     # Derived rollups run after the readings commit and are failure-isolated:
     # a rollup error never undoes committed readings nor fails the refresh.
+    # The rollup window_start is floored to the top of the hour (mirroring the
+    # scheduler/backfill path) so the boundary bucket is recomputed from the full
+    # hour of persisted readings rather than only the partial requested slice.
     rollup = run_rollups_for_window(
         db,
         site_id=site.id,
         company_id=summary.company_id,
-        window_start=window_start,
+        window_start=floor_to_hour(window_start),
         window_end=window_end,
         bucket_sizes=("1h",),
         sync_job_id=summary.sync_job_id,

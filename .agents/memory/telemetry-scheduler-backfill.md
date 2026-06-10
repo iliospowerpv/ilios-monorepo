@@ -18,10 +18,14 @@ bucket.
 it does not widen to bucket edges itself.
 **How to apply:** any new trigger must call rollups with
 `rollup_start = floor_to_hour(window_start)` and `bucket_sizes` including the
-largest requested bucket (`1h`). This flooring belongs in the trigger helper
-(`run_ingestion_with_rollup`), NOT inside the rollup service. The pre-existing
-manual-refresh endpoint still passes an un-floored start — known gap, left as-is
-unless that endpoint is refactored to use `run_ingestion_with_rollup`.
+largest requested bucket (`1h`). This flooring belongs in the trigger, NOT inside
+the rollup service. All three triggers now floor: the scheduler/backfill via
+`run_ingestion_with_rollup`, and the manual-refresh endpoint (`refresh_site_readings`
+in `app/routers/telemetry/v2.py`) which floors its own direct `run_rollups_for_window`
+call. Note a symmetric, still-open end-boundary gap: `window_end` is NOT ceiled, so
+an explicit historical window ending mid-hour recomputes the trailing 1h bucket from
+a partial slice (self-heals on any later overlapping run; default "now"-ending
+refreshes are inherently partial at the tail anyway).
 
 ## Lock release after an error must use a FRESH session
 The DB row lock (`lock_token`/`locked_until`, claimed via one atomic conditional
