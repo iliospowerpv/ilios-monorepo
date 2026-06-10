@@ -1,0 +1,70 @@
+Please provide a complete summary of the telemetry ingestion work that was just delivered.
+
+Include:
+
+1. Code audit findings:
+   - old BigQuery / legacy references found
+   - what was reused
+   - what was bypassed or left untouched
+
+2. Database changes:
+   - migrations created/applied
+   - new tables
+   - important columns
+   - unique constraints / idempotency protections
+   - rollup tables or rollup service boundaries
+
+3. Backend changes:
+   - new endpoints
+   - service functions
+   - adapter methods
+   - manual Refresh Telemetry flow
+   - sync job tracking
+   - scheduler/backfill state, if any
+
+4. Frontend changes:
+   - where the Refresh Telemetry button was added
+   - what state it displays
+   - what it does on success/failure
+   - whether any dashboards/graphs were rewired to the new V2 telemetry tables
+
+5. Validation results:
+   - provider account used
+   - mapped site used
+   - time window pulled
+   - raw provider records received
+   - normalized readings written
+   - rollups calculated
+   - sync job rows created
+   - whether restart was tested
+   - whether repeated refresh is idempotent
+   - whether unmapped device readings are retained
+
+6. Current known gaps:
+   - why the refreshed records are not displaying in the existing graphs/UI
+   - whether the existing graphing UI still expects old legacy telemetry models
+   - what endpoint the existing graphs currently read from
+   - what needs to be rewired for V2 telemetry display
+
+7. Specific explanation of the suggested task:
+   “Fix a data accuracy gap so manual telemetry refresh doesn't corrupt the boundary hour's totals”
+   Please explain:
+   - what boundary-hour corruption means
+   - which table/rollup is affected
+   - how double counting or partial-hour overwrite can happen
+   - whether current test data may already be affected
+   - recommended fix
+   - whether this should be fixed before scheduler/backfill
+
+8. Specific explanation of the suggested task:
+   “Let admins turn on automatic telemetry refresh and run historical catch-ups from the app”
+   Please explain:
+   - proposed admin controls
+   - scheduler cadence
+   - backfill range limits
+   - safety limits / rate limits
+   - retry behavior
+   - observability
+   - whether this depends on the boundary-hour fix
+
+Do not start either suggested task yet. Return the summary and recommendation first.
