@@ -17,6 +17,7 @@ from app.helpers.authorization.project_access import (
 from app.models.company import Company
 from app.helpers.telemetry.bigquery.device import TelemetryDeviceBigQuery
 from app.helpers.telemetry.secrets_manager import GCPSecretsManager
+from app.helpers.telemetry.v2_chart_data import site_has_v2_rollups
 from app.helpers.telemetry.telemetry_cloud_function_client import TelemetryFuncHTTPClient
 from app.helpers.telemetry.telemetry_helper import (
     create_device_mapping_for_telemetry,
@@ -699,6 +700,14 @@ async def get_site_telemetry_readiness(
                 is_data_flowing = True
         except Exception as e:
             logger.warning(f"Failed to check data flow: {e}")
+        # V2-aware fallback: native ingestion writes readings/rollups straight to
+        # PostgreSQL (no BigQuery), so a V2-backed site has no BigQuery
+        # last-report signal and would otherwise read as "not flowing". Reuse the
+        # exact same predicate the O&M charts use for V2-vs-BigQuery precedence so
+        # this gate can never disagree with what the charts actually render. This
+        # only ever flips False -> True; it never overrides a BigQuery-true result.
+        if not is_data_flowing and site_has_v2_rollups(db_session, site.id):
+            is_data_flowing = True
 
     return TelemetryReadinessResponse(
         is_connected=is_connected,
