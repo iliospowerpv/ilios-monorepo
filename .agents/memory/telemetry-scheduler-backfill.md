@@ -44,11 +44,17 @@ omits cursor + next_due on `finish_run` (via the `_UNSET` sentinel) so historica
 pulls can never move the live scheduled cursor.
 
 ## Gating
-Runner only starts when `telemetry_scheduler_enabled` (new, default False) AND
-`telemetry_v2_enabled` AND (non-prod OR durable credential store). Default-off, so
-boot logs "Telemetry scheduler not started: telemetry_scheduler_enabled is false"
-in dev. Cadence is a fixed whitelist {PT15M,PT30M,PT1H,PT6H,PT24H} validated at the
-PUT endpoint — no ISO-8601 duration parser.
+Runner only starts when `telemetry_scheduler_enabled` AND `telemetry_v2_enabled`
+AND (non-prod OR durable credential store). The code default for
+`telemetry_scheduler_enabled` is still `False`; it is turned ON via a feature flag
+in `.replit` `[userenv.shared]` (`telemetry_scheduler_enabled = "true"`, set with
+`setEnvVars`), NOT by changing the code default. So the runner is live in dev (boot
+logs `telemetry_scheduler_started`) and in prod only when the credential store is
+durable. To pause it everywhere, flip/remove that shared env flag — do not edit the
+code default. Cadence is a fixed whitelist {PT15M,PT30M,PT1H,PT6H,PT24H} validated
+at the PUT endpoint — no ISO-8601 duration parser.
+**Why:** keeping the code default off preserves the opt-in safety design while the
+shared env flag makes enablement config-driven and reversible without a code change.
 
 ## Admin-UI lock model + timestamp parsing (frontend)
 Only **backfill and the scheduler** claim the per-site lease lock; the manual
