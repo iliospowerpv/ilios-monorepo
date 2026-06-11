@@ -33,6 +33,12 @@ Fix: in `get_site_telemetry_readiness` add a V2 fallback that sets `is_data_flow
 **Why:** if the readiness gate and the chart precedence switch use different conditions, the gate can hide charts that would actually render (or vice versa). Tying both to `site_has_v2_rollups` makes them provably consistent. `has_rollups` (any rollup ever) is the right choice, not a recency bound: the legacy BigQuery check treats ANY last-report as "flowing" (no recency bound), so V2 is at parity; freshness is surfaced separately via the health strip + "Data as of" captions.
 **How to apply:** any new render/visibility gate keyed on telemetry data existence must reuse `site_has_v2_rollups`, not invent its own check, or it will desync from the charts for V2 sites.
 
+## "Data Health" last-data must also read V2 readings (not BigQuery-only)
+`get_site_telemetry_health` originally computed `last_data_at`/status ONLY from BigQuery `get_device_last_reported`, so V2/demo sites (readings in PostgreSQL, BigQuery bypassed) showed "No Data Yet / Last data: Never" even while the scheduler was actively writing readings.
+Fix: read the newest native reading first via `TelemetryReadingCRUD.latest_metric_ts(site_id)` (naive-UTC → coerce to UTC), then merge BigQuery so BQ can only make it FRESHER; a BigQuery failure no longer blanks a V2-backed card (surface the error only when there is no native signal).
+**Why:** health was the last BigQuery-only read surface — the charts and the readiness gate were already V2-aware, so the Data Health card disagreed with the charts (card said "Never" while charts rendered live data).
+**How to apply:** treat health like the charts/readiness — V2-first then BigQuery; never let a BigQuery-only path decide "has data" for a native/demo site. Note the card's "Expected interval: 15 min" is a hardcoded label, NOT derived from the scheduler cadence.
+
 ## Telemetry read endpoints must coerce tz-aware timestamps
 Any V2 telemetry read endpoint accepting `from`/`to` query datetimes must normalize them to UTC-naive (the storage convention) before comparing against `datetime.utcnow()` or the naive `bucket_start` column.
 **Why:** storage is UTC-naive; a client passing standard ISO "...Z" (tz-aware) compared against a naive datetime raises TypeError → HTTP 500, and aware values can mis-window. The refresh/backfill endpoints already coerce; new series endpoints initially forgot and 500'd on ISO-Z input.

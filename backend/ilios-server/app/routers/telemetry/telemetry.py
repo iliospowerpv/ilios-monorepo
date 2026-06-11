@@ -6,6 +6,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.crud.audit_log import AuditLogCRUD
+from app.crud.telemetry_native import TelemetryReadingCRUD
 from app.db.session import get_session
 from app.helpers.authorization import AssetPermissions, AuthorizedUser, SettingsPermissions
 from app.helpers.authorization.project_access import (
@@ -570,7 +571,8 @@ async def get_site_telemetry_health(
     site: Site = Depends(get_authorized_site),
     db_session: Session = Depends(get_session),
 ):
-    """Get telemetry health derived from BigQuery device_last_report_ts"""
+    """Get telemetry health from the freshest signal across native V2 readings
+    (PostgreSQL) and legacy BigQuery device_last_report_ts."""
     is_connected = site.das_connection is not None
     is_site_mapped = site.telemetry_mapping is not None
 
@@ -605,66 +607,74 @@ async def get_site_telemetry_health(
             is_site_mapped=is_site_mapped,
         )
 
-    # Query BigQuery for last reported timestamps
+    # Resolve "last data at" from the freshest signal available.
+    #
+    # Native V2 ingestion (manual refresh + scheduler) writes readings straight
+    # to PostgreSQL and demo-mode sites bypass BigQuery entirely, so the legacy
+    # BigQuery-only lookup reports "No Data Yet" even while the scheduler is
+    # actively writing readings. Read the newest native reading first, then merge
+    # BigQuery for legacy/non-V2 sites; BigQuery can only ever make last_data_at
+    # FRESHER, never staler. All timestamps are normalized to UTC for comparison
+    # (native readings are stored naive-UTC).
+    last_data_at: datetime | None = None
+
+    v2_last_ts = TelemetryReadingCRUD(db_session).latest_metric_ts(site.id)
+    if v2_last_ts is not None:
+        if v2_last_ts.tzinfo is None:
+            v2_last_ts = v2_last_ts.replace(tzinfo=timezone.utc)
+        last_data_at = v2_last_ts
+
+    # Query BigQuery for last reported timestamps (legacy sites). A BigQuery
+    # failure must NOT blank out a V2-backed health card, so it is caught and
+    # only surfaced when there is no native signal to fall back on.
+    bq_error: str | None = None
     device_ids = [device.id for device in mapped_devices]
     try:
         bq_client = TelemetryDeviceBigQuery()
         site_tz = getattr(site, "timezone", None) or "UTC"
         last_reported_data = bq_client.get_device_last_reported(device_ids, site_tz)
-
-        # Find the most recent data timestamp
-        last_data_at = None
         if last_reported_data:
             for device_data in last_reported_data:
                 if device_data and device_data.get("last_report_ts"):
                     ts = device_data["last_report_ts"]
                     if isinstance(ts, str):
                         ts = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                    if ts.tzinfo is None:
+                        ts = ts.replace(tzinfo=timezone.utc)
                     if last_data_at is None or ts > last_data_at:
                         last_data_at = ts
-
-        # Calculate health status
-        now = datetime.now(timezone.utc)
-        data_delay_minutes = None
-        if last_data_at:
-            if last_data_at.tzinfo is None:
-                last_data_at = last_data_at.replace(tzinfo=timezone.utc)
-            data_delay = now - last_data_at
-            data_delay_minutes = int(data_delay.total_seconds() / 60)
-
-            # Status thresholds
-            if data_delay_minutes <= 30:
-                health_status = TelemetryHealthStatus.healthy
-            elif data_delay_minutes <= 120:
-                health_status = TelemetryHealthStatus.warn
-            else:
-                health_status = TelemetryHealthStatus.error
-        else:
-            health_status = TelemetryHealthStatus.no_data
-
-        return TelemetryHealthResponse(
-            status=health_status,
-            last_data_at=last_data_at,
-            data_delay_minutes=data_delay_minutes,
-            last_error=None,
-            mapped_device_count=mapped_device_count,
-            expected_interval_minutes=15,
-            is_connected=is_connected,
-            is_site_mapped=is_site_mapped,
-        )
-
     except Exception as e:
-        logger.exception(f"Failed to fetch telemetry health: {e}")
-        return TelemetryHealthResponse(
-            status=TelemetryHealthStatus.error,
-            last_data_at=None,
-            data_delay_minutes=None,
-            last_error=str(e),
-            mapped_device_count=mapped_device_count,
-            expected_interval_minutes=15,
-            is_connected=is_connected,
-            is_site_mapped=is_site_mapped,
-        )
+        bq_error = str(e)
+        logger.warning(f"Telemetry health: BigQuery last-report lookup failed: {e}")
+
+    # Calculate health status from the resolved timestamp.
+    now = datetime.now(timezone.utc)
+    data_delay_minutes = None
+    if last_data_at is not None:
+        data_delay = now - last_data_at
+        data_delay_minutes = int(data_delay.total_seconds() / 60)
+        if data_delay_minutes <= 30:
+            health_status = TelemetryHealthStatus.healthy
+        elif data_delay_minutes <= 120:
+            health_status = TelemetryHealthStatus.warn
+        else:
+            health_status = TelemetryHealthStatus.error
+    elif bq_error is not None:
+        # No native readings AND BigQuery errored: surface the failure.
+        health_status = TelemetryHealthStatus.error
+    else:
+        health_status = TelemetryHealthStatus.no_data
+
+    return TelemetryHealthResponse(
+        status=health_status,
+        last_data_at=last_data_at,
+        data_delay_minutes=data_delay_minutes,
+        last_error=bq_error if last_data_at is None else None,
+        mapped_device_count=mapped_device_count,
+        expected_interval_minutes=15,
+        is_connected=is_connected,
+        is_site_mapped=is_site_mapped,
+    )
 
 
 @telemetry_router.get(
