@@ -7,6 +7,7 @@ import { AgChartOptions } from 'ag-charts-community';
 import { WidgetWrapper } from '../../Overview.style';
 import { useQuery } from '@tanstack/react-query';
 import { ApiClient } from '../../../../../../../../api';
+import { formatFloatValue } from '../../../../../../../../utils/formatters/formatFloatValue';
 
 interface LossesProps {
   companyId: number;
@@ -19,6 +20,10 @@ const Losses: React.FC<LossesProps> = ({ companyId }) => {
     refetchInterval: 15 * 60 * 1000
   });
 
+  // V2 companies report actual cumulative energy only; expected/loss are null
+  // because there is no baseline, so we show the cumulative figure plus a note
+  // instead of a stacked expected/loss chart with fabricated zeros.
+  const baselineAvailable = data?.expected_baseline_available ?? true;
   const { cumulative = 0, expected = 0, loss = 0 } = data || {};
 
   const options: AgChartOptions = {
@@ -124,6 +129,18 @@ const Losses: React.FC<LossesProps> = ({ companyId }) => {
               >
                 No Losses Today
               </Typography>
+            ) : !baselineAvailable ? (
+              <Box textAlign="center" marginY="50px">
+                <Typography variant="h6" fontWeight={700} fontSize={28} lineHeight="40px">
+                  {formatFloatValue(cumulative ?? 0)}
+                </Typography>
+                <Typography variant="caption" color={theme => theme.palette.text.secondary}>
+                  Cumulative actual production today (kWh)
+                </Typography>
+                <Typography variant="body2" marginTop="16px" color={theme => theme.palette.text.secondary}>
+                  Baseline not available — expected production and loss cannot be calculated for this company yet.
+                </Typography>
+              </Box>
             ) : (
               <AgChartsReact options={options} />
             )}

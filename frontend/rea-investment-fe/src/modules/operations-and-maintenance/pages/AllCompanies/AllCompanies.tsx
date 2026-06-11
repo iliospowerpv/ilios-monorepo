@@ -60,13 +60,17 @@ const columns: ColDef[] = [
       const { data } = params;
       const actualProduction = data?.total_actual_kw;
       const actualVsExpected = data?.actual_vs_expected;
+      // V2 companies have actuals but no expected baseline; still render the
+      // actual figure with a neutral marker instead of dropping the cell.
+      const baselineAvailable = data?.expected_baseline_available ?? true;
 
-      if (typeof actualProduction !== 'number' || typeof actualVsExpected !== 'number') return null;
+      if (typeof actualProduction !== 'number') return null;
 
       return (
         <PowerProductionIndicator
           actualPerformance={actualProduction}
-          actualVsExpected={actualVsExpected}
+          actualVsExpected={typeof actualVsExpected === 'number' ? actualVsExpected : 0}
+          baselineAvailable={baselineAvailable}
           formatter={formatFloatValue}
         />
       );

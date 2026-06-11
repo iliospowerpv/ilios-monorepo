@@ -26,7 +26,7 @@ from app.helpers.company_helper import (
 )
 from app.helpers.pagination import pagination_details
 from app.helpers.query_params_validator import validate_query_params, validate_skip_and_limit
-from app.helpers.telemetry.bigquery import TelemetryCompanyBigQuery
+from app.helpers.telemetry.v2_company_data import aggregate_company_actuals, get_sites_latest_power
 from app.models.company import Company
 from app.schema.company import CompaniesOrderByFieldEnum
 from app.schema.om_company import (
@@ -76,19 +76,15 @@ async def get_companies_list(
     # for response companies, get their alerts overview
     # return alerts only for sites user has access to
     companies_alerts = alert_crud.get_company_alerts_overview({company.id for company in companies}, site_ids_to_limit)
-    # get sites telemetry data
-    sites_actual_production = TelemetryCompanyBigQuery().get_companies_list_actual_production(site_ids_to_limit)
+    # get sites actual production from V2 PostgreSQL rollups (no BigQuery). Sites
+    # without V2 rollups simply contribute 0; there is no V2 expected baseline.
+    power_by_site = get_sites_latest_power(db_session, site_ids_to_limit)
 
     # extend companies with details from other sources
     response = []
     for company in companies:
-        # get sites actual production for this company
-        company_actual_kw = sum(
-            [site["actual_kw"] for site in sites_actual_production if site["site_id"] in company.sites_ids]
-        )
-        company_expected_kw = sum(
-            [site["expected_kw"] for site in sites_actual_production if site["site_id"] in company.sites_ids]
-        )
+        # get sites actual production for this company (V2 actuals only)
+        company_actual_kw = sum(power_by_site.get(site_id, 0.0) for site_id in company.sites_ids)
         # extend companies with the alerts info
         company_alerts_overview = get_alerts_overview(company.id, companies_alerts, AssetType.company)
 
@@ -97,7 +93,8 @@ async def get_companies_list(
         company_dict.update(
             {
                 "total_actual_kw": company_actual_kw,
-                "total_expected_kw": company_expected_kw,
+                "total_expected_kw": None,
+                "expected_baseline_available": False,
                 "alerts_overview": company_alerts_overview,
             }
         )
@@ -184,9 +181,17 @@ async def get_actual_production_chart(
 async def get_actual_vs_expected_production_chart(
     current_user: Annotated[CurrentUserSchema, Depends(AuthorizedUser(OnMPermissions(PermissionsActions.view)))],
     company: Company = Depends(get_authorized_company),
+    db_session: Session = Depends(get_session),
 ):
     site_ids_to_limit = current_user.get_limited_sites_ids()
-    return {"items": get_company_actual_vs_expected_production_section_with_telemetry(company, site_ids_to_limit)}
+    # V2 carries actuals only; per-site expected is null and the section is flagged
+    # so the frontend renders the actual-only bubble chart with a no-baseline note.
+    return {
+        "items": get_company_actual_vs_expected_production_section_with_telemetry(
+            company, site_ids_to_limit, db_session
+        ),
+        "expected_baseline_available": False,
+    }
 
 
 @om_companies_router.get(
@@ -198,5 +203,17 @@ async def get_actual_vs_expected_production_chart(
 async def get_loses_for_a_day_chart(
     current_user: Annotated[CurrentUserSchema, Depends(AuthorizedUser(OnMPermissions(PermissionsActions.view)))],
     company: Company = Depends(get_authorized_company),
+    db_session: Session = Depends(get_session),
 ):
-    return TelemetryCompanyBigQuery().get_company_loses(get_company_site_ids_to_limit(company, current_user))
+    # Cumulative = today's actual energy from V2 rollups (per-site local day,
+    # summed across the company). There is no V2 expected baseline, so expected
+    # and loss are null and the frontend shows "Baseline not available".
+    allowed_site_ids = set(get_company_site_ids_to_limit(company, current_user))
+    sites = [site for site in company.sites if site.id in allowed_site_ids]
+    actuals = aggregate_company_actuals(db_session, sites)
+    return {
+        "cumulative": actuals["cumulative_actual_kw"],
+        "expected": None,
+        "loss": None,
+        "expected_baseline_available": False,
+    }

@@ -1,4 +1,6 @@
 import React from 'react';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 import { AgChartOptions } from 'ag-charts-community';
 import { AgChartsReact } from 'ag-charts-react';
 import { useQuery } from '@tanstack/react-query';
@@ -15,6 +17,11 @@ const ActualProductionVsProjected: React.FC<InfoBoxProps> = ({ companyId }) => {
     queryKey: ['companies', 'actual-vs-expected-production-data', { companyId }],
     refetchInterval: 15 * 60 * 1000
   });
+
+  // V2 companies have no expected baseline, so an actual-vs-expected bubble chart
+  // is not meaningful; show a "Baseline not available" note instead of plotting
+  // every site at expected = 0 (which would be misleading).
+  const baselineAvailable = data?.expected_baseline_available ?? true;
 
   const options: AgChartOptions = {
     autoSize: true,
@@ -85,7 +92,15 @@ const ActualProductionVsProjected: React.FC<InfoBoxProps> = ({ companyId }) => {
       error={!!error}
       errorMsg={error?.message}
     >
-      <AgChartsReact options={options} />
+      {data && !baselineAvailable ? (
+        <Box display="flex" alignItems="center" justifyContent="center" minHeight={350}>
+          <Typography variant="body1" textAlign="center" width="70%" color={theme => theme.palette.text.secondary}>
+            Baseline not available — projected production has not been configured for this company yet.
+          </Typography>
+        </Box>
+      ) : (
+        <AgChartsReact options={options} />
+      )}
     </WidgetWrapper>
   );
 };

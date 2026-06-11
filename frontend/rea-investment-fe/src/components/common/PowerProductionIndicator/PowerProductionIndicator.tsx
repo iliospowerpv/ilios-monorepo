@@ -5,12 +5,16 @@ import Box from '@mui/material/Box';
 interface PowerProductionIndicatorProps {
   actualPerformance: number;
   actualVsExpected: number;
+  // False for V2-telemetry companies: there is no expected baseline, so the
+  // efficiency marker renders neutral (grey) instead of a misleading red 0%.
+  baselineAvailable?: boolean;
   formatter?: (value: number) => string;
 }
 
 export const PowerProductionIndicator: React.FC<PowerProductionIndicatorProps> = ({
   actualPerformance,
   actualVsExpected,
+  baselineAvailable = true,
   formatter
 }) => {
   const { efficiencyColors } = useTheme();
@@ -32,10 +36,11 @@ export const PowerProductionIndicator: React.FC<PowerProductionIndicatorProps> =
     [efficiencyColors]
   );
 
-  const markerColor = deriveMarkerColorFromEfficiency(actualVsExpected);
+  const markerColor = baselineAvailable ? deriveMarkerColorFromEfficiency(actualVsExpected) : '#C4C4C4';
 
   return (
     <Box
+      title={baselineAvailable ? undefined : 'Baseline not available'}
       sx={{
         display: 'inline-flex',
         flexWrap: 'nowrap',

@@ -11,7 +11,7 @@ from app.helpers.authorization import AuthorizedUser, InvestorDashboardPermissio
 from app.helpers.company_helper import get_company_actual_production_section_with_telemetry
 from app.helpers.pagination import pagination_details
 from app.helpers.query_params_validator import validate_query_params
-from app.helpers.telemetry.bigquery import TelemetryCompanyBigQuery
+from app.helpers.telemetry.v2_company_data import get_sites_latest_power
 from app.models.company import Company
 from app.schema.company import CompaniesOrderByFieldEnum
 from app.schema.om_company import CompanyDashboardActualProductionSection, InvestorDashboardCompaniesPaginator
@@ -50,26 +50,23 @@ async def get_companies_list(
         order_direction,
         site_ids_to_limit=site_ids_to_limit,
     )
-    # get sites telemetry data
-    sites_actual_production = TelemetryCompanyBigQuery().get_companies_list_actual_production(site_ids_to_limit)
+    # get sites actual production from V2 PostgreSQL rollups (no BigQuery). Sites
+    # without V2 rollups simply contribute 0; there is no V2 expected baseline.
+    power_by_site = get_sites_latest_power(db_session, site_ids_to_limit)
 
     # extend companies with details from other sources
     response = []
     for company in companies:
-        # get sites actual production for this company
-        company_actual_kw = sum(
-            [site["actual_kw"] for site in sites_actual_production if site["site_id"] in company.sites_ids]
-        )
-        company_expected_kw = sum(
-            [site["expected_kw"] for site in sites_actual_production if site["site_id"] in company.sites_ids]
-        )
+        # get sites actual production for this company (V2 actuals only)
+        company_actual_kw = sum(power_by_site.get(site_id, 0.0) for site_id in company.sites_ids)
 
         # update response object
         company_dict = company._asdict()
         company_dict.update(
             {
                 "total_actual_kw": company_actual_kw,
-                "total_expected_kw": company_expected_kw,
+                "total_expected_kw": None,
+                "expected_baseline_available": False,
             }
         )
         response.append(company_dict)

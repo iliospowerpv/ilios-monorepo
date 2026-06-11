@@ -81,13 +81,15 @@ interface ActualProductionOMScopeProps extends ActualProductionCommonProps {
   data?: {
     actual_vs_expected: number;
     total_actual_kw: number;
-    total_expected_kw: number;
+    total_expected_kw: number | null;
     total_sites: number;
     total_system_size_ac: number;
     total_system_size_dc: number;
     cumulative_actual_kw: number;
-    cumulative_expected_kw: number;
+    cumulative_expected_kw: number | null;
     cumulative_actual_vs_expected: number | null;
+    // False for V2 companies (actuals only, no projected baseline yet).
+    expected_baseline_available?: boolean;
   };
   isFetchingCompanyData?: boolean | null;
   errorLoadingCompanyData?: Error | null;
@@ -100,13 +102,15 @@ interface ActualProductionInvestorDashboardScopeProps extends ActualProductionCo
     id: number;
     total_sites: number;
     total_actual_kw: number;
-    total_expected_kw: number;
+    total_expected_kw: number | null;
     total_system_size_ac: number;
     total_system_size_dc: number;
     actual_vs_expected: number | null;
     cumulative_actual_kw: number;
-    cumulative_expected_kw: number;
+    cumulative_expected_kw: number | null;
     cumulative_actual_vs_expected: number | null;
+    // False for V2 companies (actuals only, no projected baseline yet).
+    expected_baseline_available?: boolean;
   };
   isFetchingCompanyData?: boolean | null;
   errorLoadingCompanyData?: Error | null;
@@ -145,6 +149,11 @@ const ActualProduction: React.FC<ActualProductionProps> = ({
   const actual_vs_expected =
     alignment === 'current' ? (data?.actual_vs_expected ?? 0) : (data?.cumulative_actual_vs_expected ?? 0);
 
+  // V2 companies carry actuals only; there is no projected/"expected" baseline,
+  // so the percent ring + expected figures render as "N/A" / "Baseline not
+  // available" instead of a misleading 0% / 0 kW.
+  const baselineAvailable = data?.expected_baseline_available ?? true;
+
   const actualVsExpected =
     typeof actual_vs_expected === 'number' ? (actual_vs_expected > 100 ? 100 : actual_vs_expected) : 0;
   const actualVsExpectedRest = 100 - actualVsExpected ?? 0;
@@ -159,8 +168,10 @@ const ActualProduction: React.FC<ActualProductionProps> = ({
   const chartData = {
     datasets: [
       {
-        data: [actualVsExpected, actualVsExpectedRest],
-        backgroundColor: [deriveProductionColorFromValue(actual_vs_expected ?? 0), '#F3F4F8'],
+        data: baselineAvailable ? [actualVsExpected, actualVsExpectedRest] : [0, 100],
+        backgroundColor: baselineAvailable
+          ? [deriveProductionColorFromValue(actual_vs_expected ?? 0), '#F3F4F8']
+          : ['#E0E0E0', '#F3F4F8'],
         cutout: '75%'
       }
     ]
@@ -231,18 +242,31 @@ const ActualProduction: React.FC<ActualProductionProps> = ({
                     textAlign: 'center'
                   }}
                 >
-                  {actual_vs_expected}{' '}
-                  <Typography
-                    variant="body2"
-                    display="inline-block"
-                    fontSize={12}
-                    color={theme => theme.palette.text.secondary}
-                  >
-                    %
-                  </Typography>
-                  <Typography variant="body2" fontSize={12} color={theme => theme.palette.text.secondary}>
-                    from Expected
-                  </Typography>
+                  {baselineAvailable ? (
+                    <>
+                      {actual_vs_expected}{' '}
+                      <Typography
+                        variant="body2"
+                        display="inline-block"
+                        fontSize={12}
+                        color={theme => theme.palette.text.secondary}
+                      >
+                        %
+                      </Typography>
+                      <Typography variant="body2" fontSize={12} color={theme => theme.palette.text.secondary}>
+                        from Expected
+                      </Typography>
+                    </>
+                  ) : (
+                    <>
+                      <Typography variant="body2" fontSize={16}>
+                        N/A
+                      </Typography>
+                      <Typography variant="body2" fontSize={11} color={theme => theme.palette.text.secondary}>
+                        Baseline not available
+                      </Typography>
+                    </>
+                  )}
                 </Box>
                 <Box
                   sx={{
@@ -257,7 +281,7 @@ const ActualProduction: React.FC<ActualProductionProps> = ({
                     0
                   </Typography>
                   <Typography variant="body2" fontSize={12} color={theme => theme.palette.text.secondary}>
-                    {formatFloatValue(total_expected_kw ?? 0)}
+                    {baselineAvailable ? formatFloatValue(total_expected_kw ?? 0) : 'N/A'}
                   </Typography>
                 </Box>
               </Grid>
@@ -323,7 +347,7 @@ const ActualProduction: React.FC<ActualProductionProps> = ({
                     sx={scope !== 'investor-dashboard' ? { '&.MuiGrid-item': { marginRight: '16px' } } : undefined}
                   >
                     <Typography variant="h6" fontWeight={700} fontSize={20} lineHeight="32px">
-                      {formatFloatValue(total_expected_kw ?? 0)}
+                      {baselineAvailable ? formatFloatValue(total_expected_kw ?? 0) : 'N/A'}
                     </Typography>
                     <Typography variant="caption" color={theme => theme.palette.text.secondary}>
                       {alignment === 'current' ? `Expected (kW)` : `Expected (kWh)`}

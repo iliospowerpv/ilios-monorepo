@@ -1,8 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor
 
 from app.crud.company import CompanyCRUD
-from app.helpers.telemetry.bigquery import TelemetryCompanyBigQuery, TelemetrySiteBigQuery
-from app.helpers.telemetry.sites_helper import get_production_chart_data_per_company_sites
+from app.helpers.telemetry.bigquery import TelemetrySiteBigQuery
+from app.helpers.telemetry.v2_company_data import aggregate_company_actuals, get_sites_latest_power
 from app.models.site import Site
 
 
@@ -17,55 +17,68 @@ def get_company_site_ids_to_limit(company, current_user):
     return [site.id for site in company.sites if site.id in current_user.get_limited_sites_ids()]
 
 
+def _company_sites_within_access(company, site_ids_to_limit):
+    """Site ORM objects of a company the caller may see (timezone-bearing).
+
+    An empty/falsy ``site_ids_to_limit`` means "no per-site restriction" (e.g. a
+    platform-bypass caller), matching the previous BigQuery helper behavior.
+    """
+    if site_ids_to_limit:
+        return [site for site in company.sites if site.id in site_ids_to_limit]
+    return list(company.sites)
+
+
 def get_company_actual_production_section_with_telemetry(company, site_ids_to_limit, db_session):
+    """Company actual-production section, aggregated from V2 PostgreSQL rollups.
+
+    Actual power/energy come from ``telemetry_site_interval_rollups`` (no
+    BigQuery). There is no V2 projected/"expected" baseline yet, so expected
+    fields are ``None`` and ``expected_baseline_available`` is ``False`` — the
+    frontend renders "N/A" / "Baseline not available".
+    """
     # retrieve details for actual production section
     company_overview = CompanyCRUD(db_session).get_company_with_sites_overview(company.id, site_ids_to_limit)
 
-    # filter out limited user site ids for telemetry
-    if site_ids_to_limit:
-        site_ids = [site.id for site in company.sites if site.id in site_ids_to_limit]
-    else:
-        site_ids = [site.id for site in company.sites]
-
-    telemetry_details = get_production_chart_data_per_company_sites(site_ids)
+    sites = _company_sites_within_access(company, site_ids_to_limit)
+    actuals = aggregate_company_actuals(db_session, sites)
 
     actual_production_section = {
         "id": company.id,
         "total_sites": company_overview.total_sites,
-        "total_actual_kw": telemetry_details.actual_kw,
-        "cumulative_actual_kw": telemetry_details.cumulative_actual_kw,
-        "cumulative_expected_kw": telemetry_details.cumulative_expected_kw,
-        "total_expected_kw": telemetry_details.expected_kw,
+        "total_actual_kw": actuals["total_actual_kw"],
+        "cumulative_actual_kw": actuals["cumulative_actual_kw"],
+        "cumulative_expected_kw": actuals["cumulative_expected_kw"],
+        "total_expected_kw": actuals["total_expected_kw"],
         "total_system_size_ac": company_overview.total_system_size_ac,
         "total_system_size_dc": company_overview.total_system_size_dc,
+        "expected_baseline_available": actuals["expected_baseline_available"],
     }
     return actual_production_section
 
 
-def get_company_actual_vs_expected_production_section_with_telemetry(company, site_ids_to_limit):
-    # filter out limited user sites for telemetry
-    if site_ids_to_limit:
-        company_sites = {site.id: site for site in company.sites if site.id in site_ids_to_limit}
-    else:
-        company_sites = {site.id: site for site in company.sites}
+def get_company_actual_vs_expected_production_section_with_telemetry(company, site_ids_to_limit, db_session):
+    """Per-site actual production for the company bubble chart, from V2 rollups.
 
-    sites_actual_production = TelemetryCompanyBigQuery().get_companies_list_actual_production(list(company_sites.keys()))
-    company_sites_with_telemetry = []
-    for telemetry_site in sites_actual_production:
-        if company_sites.get(telemetry_site["site_id"]):
-            site = company_sites.pop(telemetry_site["site_id"])
-            site.actual_kw, site.expected_kw = telemetry_site["actual_kw"], telemetry_site["expected_kw"]
-            company_sites_with_telemetry.append(site)
-
-    # update sites not found in telemetry with zero values
-    for site in company_sites.values():
-        site.actual_kw, site.expected_kw = 0, 0
-        company_sites_with_telemetry.append(site)
-    return company_sites_with_telemetry
+    Each site's ``actual_kw`` is its latest V2 power bucket (0.0 when the site
+    has no V2 data); ``expected_kw`` is ``None`` (no V2 baseline). The section is
+    flagged ``expected_baseline_available=False`` by the caller.
+    """
+    company_sites = _company_sites_within_access(company, site_ids_to_limit)
+    latest_power = get_sites_latest_power(db_session, [site.id for site in company_sites])
+    for site in company_sites:
+        site.actual_kw = latest_power.get(site.id, 0.0)
+        site.expected_kw = None
+    return company_sites
 
 
 def extend_company_sites_with_energy_attributes(sites: list[Site]):
-    """Extend site object with energy data fetched from telemetry"""
+    """Extend site object with energy data fetched from telemetry.
+
+    NOTE: This still reads BigQuery and is intentionally OUT OF SCOPE for the
+    Phase-2 V2 company/portfolio actuals migration (it backs the company
+    ``/{company_id}/sites`` table, not the company/investor dashboards). It is
+    deferred to a later phase rather than partially migrated here.
+    """
     if sites:
         user_site_ids = {site.id for site in sites}
         telemetry_bq = TelemetrySiteBigQuery()

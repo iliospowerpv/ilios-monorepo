@@ -1,0 +1,67 @@
+Proceed with Phase 2 of Telemetry V2 Production Hardening: Company and Portfolio Actuals from PostgreSQL V2.
+
+Strategic decisions remain:
+- PostgreSQL V2 telemetry is the app-native source of truth.
+- BigQuery is not an operational app dependency.
+- Power BI / warehouse reporting may be rebuilt later as a downstream export/reporting layer.
+- Expected/projected baseline will be rebuilt in a future V2 baseline sprint from due diligence / AI-parsed PVsyst design documents.
+- Until V2 baseline exists, expected/loss/performance comparison fields should show N/A / Baseline not available.
+- Do not fabricate expected values.
+- Do not derive expected from actual telemetry.
+- Do not write V2 telemetry into BigQuery.
+
+Objective:
+Replace company/investor/portfolio actual-production aggregations that still rely on BigQuery with PostgreSQL V2 rollup aggregation.
+
+Scope:
+1. Build PostgreSQL V2 aggregation helpers for company/site/portfolio actuals.
+2. Replace BigQuery actual-production paths in:
+   - operations_and_maintenance/companies.py
+   - investor_dashboard/companies.py
+   - any related company/portfolio actual-production endpoint identified in the audit
+3. Actual power should aggregate from telemetry_site_interval_rollups.
+4. Actual energy should be calculated as Σ(avg_kw × bucket_hours), using bucket duration.
+5. Respect site-local day boundaries where applicable.
+6. Expected/loss fields should return null/N/A/baseline-not-available until the V2 baseline model exists.
+7. Preserve clear empty states where no V2 rollups exist.
+8. Do not query BigQuery for V2 company/portfolio actuals.
+
+Do not:
+- Build expected baseline in this task.
+- Re-enable legacy BigQuery expected/losses for V2.
+- Remove BigQuery globally yet.
+- Delete v1/legacy telemetry code yet.
+- Change ingestion, scheduler, provider adapters, credentials, mappings, Secret Manager, or rollup calculations.
+- Touch due diligence / PVsyst parsing yet.
+- Touch plaintext-secret migration.
+
+Design requirements:
+- Support more than one company and more than one site.
+- Do not hardcode site 4 or company 6.
+- Use company_id already present on telemetry_site_interval_rollups where possible.
+- If portfolio is not a formal entity yet, document how current investor/portfolio aggregation is represented and implement the least invasive PostgreSQL replacement.
+- Preserve authorization behavior.
+- Preserve non-telemetry company/project behavior.
+
+Validation:
+1. Seed or identify test data covering at least 2 companies × 2 sites with V2 rollups.
+2. Verify company actual power sums correctly from site rollups.
+3. Verify company actual energy equals hand-computed Σ(avg_kw × bucket_hours).
+4. Verify site-local day boundaries are respected.
+5. Verify investor/portfolio actuals aggregate from V2 PostgreSQL rollups.
+6. Verify expected/loss values show N/A / baseline-not-available, not zero.
+7. Verify no BigQuery calls occur for V2 company/portfolio actual endpoints.
+8. Verify site 4 / 110 Shawmut still renders correctly.
+9. Verify empty/no-data companies render cleanly.
+10. Verify TypeScript/backend tests or equivalent validation pass.
+
+Return:
+- files changed
+- endpoints changed
+- new aggregation helper details
+- how actual power is computed
+- how actual energy is computed
+- how timezone/local-day boundaries are handled
+- validation counts
+- remaining BigQuery references intentionally left untouched
+- risks and follow-up items

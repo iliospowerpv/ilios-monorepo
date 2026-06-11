@@ -31,7 +31,11 @@ interface OMCompanyInfo {
   total_sites: number;
   total_capacity: number;
   total_actual_kw: number;
-  total_expected_kw: number;
+  // null for V2-telemetry companies (actuals only, no projected baseline yet).
+  total_expected_kw: number | null;
+  actual_vs_expected: number | null;
+  // False for V2 companies: the UI shows "N/A" instead of a misleading 0%.
+  expected_baseline_available: boolean;
   alerts_overview: AlertsOverview | null;
 }
 
@@ -267,12 +271,15 @@ interface OMCompanyDashboardProductionResponse {
   id: number;
   total_sites: number;
   total_actual_kw: number;
-  total_expected_kw: number;
+  // null for V2-telemetry companies (actuals only, no projected baseline yet).
+  total_expected_kw: number | null;
   total_system_size_ac: number;
   total_system_size_dc: number;
   actual_vs_expected: number;
+  // False for V2 companies; the chart shows "N/A" / "Baseline not available".
+  expected_baseline_available: boolean;
   cumulative_actual_kw: number;
-  cumulative_expected_kw: number;
+  cumulative_expected_kw: number | null;
   cumulative_actual_vs_expected: number;
 }
 
@@ -309,12 +316,18 @@ interface OMCompanyActualVsExpectedProductionEntry {
 
 interface OMCompanyActualVsExpectedProductionResponse {
   items: OMCompanyActualVsExpectedProductionEntry[];
+  // False for V2 companies: per-site expected is null, so the bubble chart shows
+  // a "Baseline not available" note instead of misleading zero-expected points.
+  expected_baseline_available: boolean;
 }
 
 interface OMCompanyDayLosesEntryResponse {
   cumulative: number;
-  expected: number;
-  loss: number;
+  // null for V2-telemetry companies: no expected baseline, so loss cannot be
+  // computed and is returned as null rather than a misleading 0.
+  expected: number | null;
+  loss: number | null;
+  expected_baseline_available: boolean;
 }
 
 interface OMSiteInvertersPerformanceEntry {
