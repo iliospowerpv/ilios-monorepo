@@ -1,0 +1,113 @@
+Start the next controlled sprint: Due Diligence V2 Upgrade — Current Flow Audit and New Data Model Alignment.
+
+This is an audit/design task first. Do not implement changes yet unless you find a narrow, clearly safe bug.
+
+Strategic context:
+The V2 telemetry and expected-performance path is now established:
+- PostgreSQL V2 actuals
+- V2 expected baseline storage
+- V2 weather-adjusted expected calculation
+- expected_state-driven UI behavior
+- no BigQuery/Firestore in V2 operational paths
+- legacy telemetry gated behind off-by-default legacy_telemetry_enabled
+
+Next goal:
+Upgrade the due diligence and AI parsing workflow so uploaded documents, parsed project facts, PVsyst/design information, and review/sign-off feed the new V2 project truth and expected-baseline model instead of old/legacy data models.
+
+Audit objectives:
+
+1. Current due diligence upload flow
+- Identify all routes/components for due diligence document upload.
+- Identify supported document categories/types.
+- Identify where files are stored.
+- Identify parsing trigger points.
+- Identify async/sync behavior.
+- Identify current failure behavior.
+- Identify permissions.
+
+2. AI parsing flow
+- Identify AI parsing service(s), prompts, schemas, parsers, and output structures.
+- Identify how parsed values become document_keys, project_facts, site facts, device facts, or other records.
+- Identify whether confidence scores, source document references, page/section references, and human review status are stored.
+- Identify any path that still writes directly to legacy telemetry, BigQuery, Firestore, or obsolete models.
+
+3. PVsyst/design/baseline flow
+- Identify where PVsyst/design estimates are parsed today.
+- Identify fields extracted:
+  - AC/DC capacity
+  - module wattage
+  - inverter details
+  - loss coefficients
+  - degradation assumptions
+  - monthly expected production
+  - annual expected production
+  - 8760/hourly data, if any
+  - PTO/effective operating date
+  - weather assumptions
+- Identify how those fields should map to:
+  - project/site/device truth model
+  - telemetry_expected_baselines
+  - telemetry_expected_baseline_points
+  - model_parameters_json
+  - loss_assumptions_json
+  - source/provenance fields
+
+4. Project truth and reconciliation model
+- Identify existing data structures for intended/design/legal state versus telemetry-discovered reality.
+- Identify how uploaded documents should create candidate facts, not automatically approved truth.
+- Identify how a user reviews, accepts, rejects, or overrides parsed facts.
+- Identify how accepted facts update project/site/device records or create baseline drafts.
+- Identify gaps in current workflow.
+
+5. Legacy model dependency audit
+- Identify old data models still used by due diligence parsing.
+- Identify any references to old telemetry fields, BigQuery characteristics, Firestore mappings, or legacy expected/loss models.
+- Classify each:
+  - replace with V2 model
+  - keep temporarily
+  - remove later
+  - unknown
+
+6. Proposed V2 due diligence model/workflow
+Design the target workflow:
+- upload document
+- classify document type
+- AI parse
+- extract candidate facts
+- store with provenance/confidence
+- user review/sign-off
+- promote accepted facts into project/site/device truth
+- create draft expected baseline where relevant
+- approve/activate baseline separately
+- retain audit trail
+
+7. Usability / Path B companion work
+Identify where help/FAQ/embedded definitions/tooltips are needed:
+- document upload
+- document type selection
+- AI extraction confidence
+- candidate fact review
+- accepted/rejected facts
+- project truth versus parsed data
+- design estimate versus weather-adjusted expected
+- baseline approval
+- missing fields
+- unsupported document types
+
+Return:
+1. current due diligence data flow diagram in text
+2. current AI parsing flow
+3. current PVsyst/design extraction flow
+4. current data models used
+5. V2 target workflow
+6. field mapping from parsed facts to V2 tables/models
+7. legacy dependencies to remove/replace
+8. proposed implementation phases
+9. risks
+10. Path B work suitable for the new resource
+11. what not to change until reviewed
+
+Do not remove legacy telemetry code in this task.
+Do not build new document types yet.
+Do not change baseline calculation logic.
+Do not touch plaintext-secret migration.

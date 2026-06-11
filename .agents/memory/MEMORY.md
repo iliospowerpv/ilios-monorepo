@@ -10,3 +10,4 @@
 - [Backend test harness](backend-test-harness.md) — ilios-server pytest needs `test_db_name` env + own DB; override coverage addopts; no pytest-mock (use monkeypatch); PermissionType is a plain str (no `.value`).
 - [Site timezone scope](site-timezone-scope.md) — site.timezone drives site-local telemetry day-boundary only, never display (display = browser-local); convert local midnight → naive-UTC for rollups.
 - [Telemetry legacy isolation](telemetry-legacy-isolation.md) — gated behind lowercase `legacy_telemetry_enabled` (off=honest N/A never 0); wizard HYBRID still needs legacy router + discovery services.
+- [DD ↔ baseline truth-store disconnect](dd-baseline-truth-stores.md) — DD facts go to project_facts + a live BQ characteristics write, but baseline create_draft reads site_additional_fields (not facts); diligence_ai_parse/provenance/baseline_points modeled but zero producers; ilios-DocAI offline.
