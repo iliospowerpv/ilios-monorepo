@@ -1,0 +1,75 @@
+Strategic update after the telemetry scheduler and BigQuery audit:
+
+There are no legacy production telemetry sites that need BigQuery compatibility. The desired production target is V2-only telemetry.
+
+Please perform a follow-up removal/replacement plan based on this updated premise. Do not remove code yet. Return the plan first.
+
+Target state:
+
+* PostgreSQL V2 telemetry_readings and rollups are the app-native source of truth.
+* BigQuery should not be required for telemetry health, readiness, O&M charts, device health, scheduler status, site dashboards, company dashboards, or portfolio dashboards.
+* BigQuery may remain only if it has a clearly separate warehouse/reporting purpose.
+* Legacy Cloud Function, Firestore, and project-level DAS paths should not remain active for telemetry unless a specific non-telemetry dependency is identified.
+
+Please reclassify all BigQuery and legacy telemetry references as:
+
+1. Remove now — V2 equivalent exists and code is no longer needed.
+2. Replace first — V2 equivalent is needed before removal.
+3. Keep temporarily — specific reason required.
+4. Keep as non-telemetry warehouse/export — specific consumer required.
+5. Unknown — requires owner decision.
+
+Specific areas to review:
+
+A. V2-facing health/readiness:
+
+* /telemetry/health
+* /telemetry/readiness
+* Remove or skip BigQuery for V2-backed sites.
+* Derive Expected Interval from actual scheduler cadence rather than hardcoding 15 minutes.
+
+B. O&M site charts:
+
+* Confirm all V2-backed site chart paths use PostgreSQL V2 rollups only.
+* Remove BigQuery fallback for V2-backed sites.
+* Preserve clear empty states instead of fallback masking.
+
+C. Company / investor / portfolio dashboards:
+
+* Identify every BigQuery aggregation still used.
+* Propose PostgreSQL-first company and portfolio rollup replacements.
+* Do not route V2 sites through BigQuery.
+
+D. Metadata syncs:
+
+* Inventory site_characteristics, device_characteristics, and related PG-to-BigQuery writes.
+* Identify whether anything current still consumes them.
+* Recommend retire, keep as warehouse export, or replace.
+
+E. Legacy telemetry infrastructure:
+
+* Inventory legacy Cloud Function, Firestore, v1 telemetry, and project-level DAS credential references.
+* Identify which are still active in app flows.
+* Recommend removal or isolation behind a disabled legacy module.
+
+Production scheduler readiness:
+
+* Confirm deployment requirement: scheduler must run on an always-on Reserved VM, not Autoscale.
+* Confirm required env flags:
+
+  * telemetry_v2_enabled=true
+  * telemetry_scheduler_enabled=true
+  * durable credential store active
+* Recommend startup assertions/warnings if scheduler is enabled in an unsuitable deployment topology.
+
+Return:
+
+1. updated BigQuery/legacy dependency map under the V2-only premise
+2. remove/replace/keep classification
+3. proposed removal sequence
+4. high-risk areas
+5. tests needed before removal
+6. quick fixes that can be safely implemented immediately
+7. production deployment requirements for scheduler reliability
+
+Do not remove anything yet.
