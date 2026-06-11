@@ -72,6 +72,7 @@ chatbot_session_token_function_url = "https://placeholder-function.com/chatbot-t
 ml_api_key = "placeholder-ml-api-key"
 rombus_api_key = "PBmx89YNThy2dbY1NzF4DA"
 REPLIT_SKIP_NPM_INSTALL = "1"
+telemetry_scheduler_enabled = "true"
 
 [userenv.development]
 db_host = "helium"
