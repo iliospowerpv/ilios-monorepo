@@ -1,5 +1,7 @@
 import { AxiosInstance } from 'axios';
 
+import type { ExpectedState } from '../utils/telemetry/expectedState';
+
 enum Ordering {
   ID = 'id',
   Name = 'name',
@@ -36,6 +38,8 @@ interface OMCompanyInfo {
   actual_vs_expected: number | null;
   // False for V2 companies: the UI shows "N/A" instead of a misleading 0%.
   expected_baseline_available: boolean;
+  // Additive V2 metadata; absent on legacy responses (see resolveExpectedState).
+  expected_state?: ExpectedState;
   alerts_overview: AlertsOverview | null;
 }
 
@@ -278,6 +282,8 @@ interface OMCompanyDashboardProductionResponse {
   actual_vs_expected: number;
   // False for V2 companies; the chart shows "N/A" / "Baseline not available".
   expected_baseline_available: boolean;
+  // Additive V2 metadata; absent on legacy responses (see resolveExpectedState).
+  expected_state?: ExpectedState;
   cumulative_actual_kw: number;
   cumulative_expected_kw: number | null;
   cumulative_actual_vs_expected: number;
@@ -304,6 +310,8 @@ interface OMSiteDashboardProductionResponse {
   // actual-only V2 telemetry sites, where the UI shows "N/A" / "Baseline not
   // available" instead of a misleading 0% / 0 kW.
   expected_baseline_available: boolean;
+  // Additive V2 metadata; absent on legacy responses (see resolveExpectedState).
+  expected_state?: ExpectedState;
 }
 
 interface OMCompanyActualVsExpectedProductionEntry {
@@ -319,6 +327,8 @@ interface OMCompanyActualVsExpectedProductionResponse {
   // False for V2 companies: per-site expected is null, so the bubble chart shows
   // a "Baseline not available" note instead of misleading zero-expected points.
   expected_baseline_available: boolean;
+  // Additive V2 metadata; absent on legacy responses (see resolveExpectedState).
+  expected_state?: ExpectedState;
 }
 
 interface OMCompanyDayLosesEntryResponse {
@@ -328,6 +338,8 @@ interface OMCompanyDayLosesEntryResponse {
   expected: number | null;
   loss: number | null;
   expected_baseline_available: boolean;
+  // Additive V2 metadata; absent on legacy responses (see resolveExpectedState).
+  expected_state?: ExpectedState;
 }
 
 interface OMSiteInvertersPerformanceEntry {
@@ -345,6 +357,8 @@ interface OMSitePastPerformanceResponse {
   // False for V2 sites: daily past-performance is an actual-vs-expected ratio,
   // and V2 carries no expected baseline, so the widget shows a no-baseline note.
   expected_baseline_available: boolean;
+  // Additive V2 metadata; absent on legacy responses (see resolveExpectedState).
+  expected_state?: ExpectedState;
 }
 
 interface OMSiteActualVsExpectedProductionEntry {
@@ -360,6 +374,8 @@ interface OMSiteActualVsExpectedProductionResponse {
   data: OMSiteActualVsExpectedProductionEntry[];
   // False for V2 sites; the chart then shows the Actual line only plus a note.
   expected_baseline_available: boolean;
+  // Additive V2 metadata; absent on legacy responses (see resolveExpectedState).
+  expected_state?: ExpectedState;
 }
 
 interface OMSiteDevicesOverviewEntry {

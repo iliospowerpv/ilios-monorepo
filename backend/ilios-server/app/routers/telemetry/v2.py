@@ -41,6 +41,7 @@ from app.integrations.telemetry.credential_store import (
     get_credential_store,
     is_credential_store_durable,
 )
+from app.helpers.telemetry.audit import create_audit_log as _create_audit_log
 from app.settings import settings
 from app.models.telemetry import (
     CompanyDASProvider,
@@ -1300,8 +1301,6 @@ def upsert_site_mapping(
 
     # Best-effort audit trail; never blocks or rolls back the saved mapping.
     try:
-        from app.routers.telemetry.telemetry import _create_audit_log
-
         _create_audit_log(
             request,
             db,
@@ -1553,7 +1552,6 @@ def bulk_upsert_device_mappings(
     # Single source of truth for eligibility lives in the v1 router module.
     from app.routers.telemetry.telemetry import (
         TELEMETRY_ELIGIBLE_CATEGORIES,
-        _create_audit_log,
     )
 
     # 1. Resolve + authorize the provider account (scoped to caller's companies).
@@ -1858,8 +1856,6 @@ def refresh_site_readings(
 
     # Best-effort audit trail; never blocks or rolls back the refresh.
     try:
-        from app.routers.telemetry.telemetry import _create_audit_log
-
         _create_audit_log(
             request,
             db,
@@ -2034,8 +2030,6 @@ def update_site_scheduler(
     state = TelemetrySchedulerStateCRUD(db).upsert_config(**kwargs)
 
     try:
-        from app.routers.telemetry.telemetry import _create_audit_log
-
         _create_audit_log(
             request,
             db,
@@ -2337,8 +2331,6 @@ def backfill_site_readings(
     )
 
     try:
-        from app.routers.telemetry.telemetry import _create_audit_log
-
         _create_audit_log(
             request,
             db,

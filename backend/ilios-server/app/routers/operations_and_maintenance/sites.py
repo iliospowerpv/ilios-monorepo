@@ -17,6 +17,7 @@ from app.helpers.device_helper import TELEMETRY_DEVICES_CATEGORIES, get_devices_
 from app.helpers.pagination import pagination_details
 from app.helpers.query_params_validator import validate_skip_and_limit
 from app.helpers.telemetry.bigquery import TelemetryDeviceBigQuery, TelemetrySiteBigQuery
+from app.helpers.telemetry.legacy_flag import legacy_telemetry_enabled
 from app.helpers.telemetry.sites_helper import get_production_chart_data_per_site
 from app.helpers.telemetry.v2_chart_data import (
     apply_v2_actual_production,
@@ -118,6 +119,16 @@ async def get_actual_production_chart(
     if site_has_v2_rollups(db_session, site.id):
         apply_v2_actual_production(db_session, site)
         return site
+    # Legacy (non-V2) site. The actual+expected series comes only from BigQuery;
+    # gated behind the legacy flag (off by default). When off, report an honest
+    # no-baseline/no-data section (None, never a fabricated 0).
+    if not legacy_telemetry_enabled():
+        site.expected_baseline_available = False
+        site.actual_kw = None
+        site.expected_kw = None
+        site.cumulative_actual_kw = None
+        site.cumulative_expected_kw = None
+        return site
     # Legacy BigQuery path: it supplies an expected baseline, so keep the flag
     # True. Wrapped so BQ unavailability yields an empty chart instead of a 500.
     site.expected_baseline_available = True
@@ -154,12 +165,14 @@ async def get_inverters_performance_chart(
     # with a neutral status (no per-device baseline). Never touch BigQuery.
     if site_has_v2_rollups(db_session, site.id):
         return {"data": build_v2_inverter_tiles(db_session, site_inverters)}
+    # Legacy (non-V2) site. Inverter-level performance has no V2 equivalent (no
+    # per-device projection) and comes only from BigQuery; gated behind the legacy
+    # flag (off by default). When off, every inverter degrades to honest "N/A".
+    legacy_enabled = legacy_telemetry_enabled()
     # make calls only for mapped inverters with active connection to reduce BQ interactions
     mapped_inverters_ids = [device.id for device in site_inverters if device.das_connection_active]
-    # Inverter-level performance has no V2 equivalent (no per-device projection),
-    # so it stays on BigQuery; wrap so BQ unavailability degrades to "N/A" rows.
     telemetry_devices_data = None
-    if mapped_inverters_ids:
+    if legacy_enabled and mapped_inverters_ids:
         try:
             telemetry_devices_data = TelemetryDeviceBigQuery().get_devices_performance(mapped_inverters_ids)
         except Exception:  # noqa: BLE001
@@ -171,8 +184,9 @@ async def get_inverters_performance_chart(
         # create default response object, with 0 performance
         device_response_obj = {"name": device.name, "performance": 0}
         response.append(device_response_obj)
-        # return performance as N/A if device isn't mapped
-        if not device.das_connection_active:
+        # return performance as N/A if device isn't mapped, or when legacy
+        # telemetry is disabled (no V2 inverter-level source exists)
+        if not device.das_connection_active or not legacy_enabled:
             device_response_obj["performance"] = "N/A"
             device_response_obj["actual"] = "N/A"
             device_response_obj["expected"] = "N/A"
@@ -206,6 +220,10 @@ async def get_site_past_performance_chart(
     # has no active baseline). Never falls back to stale BigQuery.
     if site_has_v2_rollups(db_session, site.id):
         return build_past_performance_section(db_session, site)
+    # Legacy (non-V2) site: past performance comes only from BigQuery; gated
+    # behind the legacy flag (off by default). When off, honest empty + no baseline.
+    if not legacy_telemetry_enabled():
+        return {"data": {}, "expected_baseline_available": False}
     # Legacy BigQuery path (supplies an expected baseline); wrap so BQ
     # unavailability yields an empty chart instead of a 500.
     try:
@@ -234,6 +252,10 @@ async def get_site_actual_vs_expected_chart(
     # no-baseline). Never falls back to stale BigQuery.
     if site_has_v2_rollups(db_session, site.id):
         return build_actual_vs_expected_section(db_session, site)
+    # Legacy (non-V2) site: the actual-vs-expected series comes only from BigQuery;
+    # gated behind the legacy flag (off by default). When off, honest empty + no baseline.
+    if not legacy_telemetry_enabled():
+        return {"data": [], "expected_baseline_available": False}
     # Legacy BigQuery path (supplies an expected series); wrap so BQ
     # unavailability yields an empty chart.
     try:

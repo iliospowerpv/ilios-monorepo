@@ -124,6 +124,12 @@ class Settings(BaseSettings):
     # is non-prod OR the credential store is durable). Backfill/control endpoints
     # work regardless of this flag — it gates only the background poll loop.
     telemetry_scheduler_enabled: bool = False
+    # Legacy DAS telemetry side effects (Firestore mapping sync, BigQuery chart/
+    # health fallbacks, the external rea-telemetry pipeline). Default OFF — these
+    # paths are being decommissioned in favor of Telemetry V2. When False the side
+    # effects are inert (no Firestore writes; honest N/A instead of BigQuery
+    # fallbacks) while DB writes still persist. case_sensitive=True → lowercase key.
+    legacy_telemetry_enabled: bool = False
     telemetry_token_function_url: str
     telemetry_sites_function_url: str
     telemetry_devices_function_url: str

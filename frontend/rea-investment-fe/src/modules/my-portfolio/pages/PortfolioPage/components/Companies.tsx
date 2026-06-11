@@ -4,6 +4,7 @@ import { ColDef, GridApi } from 'ag-grid-community';
 import { ApiClient } from '../../../../../api';
 import formatFloatValue from '../../../../../utils/formatters/formatFloatValue';
 import PowerProductionIndicator from '../../../../../components/common/PowerProductionIndicator/PowerProductionIndicator';
+import { resolveExpectedState } from '../../../../../utils/telemetry/expectedState';
 
 const columns = [
   {
@@ -35,7 +36,9 @@ const columns = [
       const actualVsExpected = data?.actual_vs_expected;
       // V2 companies have actuals but no expected baseline; still render the
       // actual figure with a neutral marker instead of dropping the cell.
-      const baselineAvailable = data?.expected_baseline_available ?? true;
+      // Resolve expected_state (or the legacy boolean) so partial companies also
+      // surface their % ring; the N/A states keep the neutral indicator.
+      const baselineAvailable = resolveExpectedState(data).showExpected;
 
       if (typeof actualProduction !== 'number') return null;
 

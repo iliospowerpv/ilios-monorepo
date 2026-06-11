@@ -9,3 +9,4 @@
 - [Telemetry ingestion & demo mode](telemetry-ingestion-and-demo-mode.md) — real pull is external GCP pipeline (no in-app trigger); DEMO_TELEMETRY bypasses BigQuery & only fabricates data for is_demo companies; V2 wizard mappings never reach Firestore (puller's config source).
 - [Backend test harness](backend-test-harness.md) — ilios-server pytest needs `test_db_name` env + own DB; override coverage addopts; no pytest-mock (use monkeypatch); PermissionType is a plain str (no `.value`).
 - [Site timezone scope](site-timezone-scope.md) — site.timezone drives site-local telemetry day-boundary only, never display (display = browser-local); convert local midnight → naive-UTC for rollups.
+- [Telemetry legacy isolation](telemetry-legacy-isolation.md) — gated behind lowercase `legacy_telemetry_enabled` (off=honest N/A never 0); wizard HYBRID still needs legacy router + discovery services.

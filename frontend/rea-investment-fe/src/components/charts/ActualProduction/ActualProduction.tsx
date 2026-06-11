@@ -13,6 +13,8 @@ import 'chart.js/auto';
 import { formatFloatValue } from '../../../utils/formatters/formatFloatValue';
 import { CircularProgress } from '@mui/material';
 import ToggleGroup from '../../../components/common/ToogleGroup/ToggleGroup';
+import { resolveExpectedState } from '../../../utils/telemetry/expectedState';
+import type { ExpectedState } from '../../../utils/telemetry/expectedState';
 
 interface WidgetContainerScoped extends BoxProps {
   scope?: 'O&M' | 'investor-dashboard';
@@ -90,6 +92,8 @@ interface ActualProductionOMScopeProps extends ActualProductionCommonProps {
     cumulative_actual_vs_expected: number | null;
     // False for V2 companies (actuals only, no projected baseline yet).
     expected_baseline_available?: boolean;
+    // Additive V2 metadata; absent on legacy responses (see resolveExpectedState).
+    expected_state?: ExpectedState;
   };
   isFetchingCompanyData?: boolean | null;
   errorLoadingCompanyData?: Error | null;
@@ -111,6 +115,8 @@ interface ActualProductionInvestorDashboardScopeProps extends ActualProductionCo
     cumulative_actual_vs_expected: number | null;
     // False for V2 companies (actuals only, no projected baseline yet).
     expected_baseline_available?: boolean;
+    // Additive V2 metadata; absent on legacy responses (see resolveExpectedState).
+    expected_state?: ExpectedState;
   };
   isFetchingCompanyData?: boolean | null;
   errorLoadingCompanyData?: Error | null;
@@ -144,15 +150,17 @@ const ActualProduction: React.FC<ActualProductionProps> = ({
 
   const { total_sites = 0, total_system_size_ac = 0, total_system_size_dc = 0 } = data || {};
   const total_actual_kw = alignment === 'current' ? (data?.total_actual_kw ?? 0) : (data?.cumulative_actual_kw ?? 0);
-  const total_expected_kw =
-    alignment === 'current' ? (data?.total_expected_kw ?? 0) : (data?.cumulative_expected_kw ?? 0);
   const actual_vs_expected =
     alignment === 'current' ? (data?.actual_vs_expected ?? 0) : (data?.cumulative_actual_vs_expected ?? 0);
 
   // V2 companies carry actuals only; there is no projected/"expected" baseline,
-  // so the percent ring + expected figures render as "N/A" / "Baseline not
-  // available" instead of a misleading 0% / 0 kW.
-  const baselineAvailable = data?.expected_baseline_available ?? true;
+  // so the percent ring + expected figures render as "N/A" + a state-specific
+  // term (via the resolver) instead of a misleading 0% / 0 kW.
+  const expectedState = resolveExpectedState(data);
+  // Guard the kW figures against a fabricated 0: only show a number when the raw
+  // (non-defaulted) expected value is present for the active alignment.
+  const rawExpectedTotal = alignment === 'current' ? data?.total_expected_kw : data?.cumulative_expected_kw;
+  const showExpectedValue = expectedState.showExpected && typeof rawExpectedTotal === 'number';
 
   const actualVsExpected =
     typeof actual_vs_expected === 'number' ? (actual_vs_expected > 100 ? 100 : actual_vs_expected) : 0;
@@ -168,8 +176,8 @@ const ActualProduction: React.FC<ActualProductionProps> = ({
   const chartData = {
     datasets: [
       {
-        data: baselineAvailable ? [actualVsExpected, actualVsExpectedRest] : [0, 100],
-        backgroundColor: baselineAvailable
+        data: expectedState.showExpected ? [actualVsExpected, actualVsExpectedRest] : [0, 100],
+        backgroundColor: expectedState.showExpected
           ? [deriveProductionColorFromValue(actual_vs_expected ?? 0), '#F3F4F8']
           : ['#E0E0E0', '#F3F4F8'],
         cutout: '75%'
@@ -242,7 +250,7 @@ const ActualProduction: React.FC<ActualProductionProps> = ({
                     textAlign: 'center'
                   }}
                 >
-                  {baselineAvailable ? (
+                  {expectedState.showExpected ? (
                     <>
                       {actual_vs_expected}{' '}
                       <Typography
@@ -254,7 +262,7 @@ const ActualProduction: React.FC<ActualProductionProps> = ({
                         %
                       </Typography>
                       <Typography variant="body2" fontSize={12} color={theme => theme.palette.text.secondary}>
-                        from Expected
+                        {expectedState.isPartial ? 'from Expected (partial)' : 'from Expected'}
                       </Typography>
                     </>
                   ) : (
@@ -263,7 +271,7 @@ const ActualProduction: React.FC<ActualProductionProps> = ({
                         N/A
                       </Typography>
                       <Typography variant="body2" fontSize={11} color={theme => theme.palette.text.secondary}>
-                        Baseline not available
+                        {expectedState.term}
                       </Typography>
                     </>
                   )}
@@ -281,7 +289,7 @@ const ActualProduction: React.FC<ActualProductionProps> = ({
                     0
                   </Typography>
                   <Typography variant="body2" fontSize={12} color={theme => theme.palette.text.secondary}>
-                    {baselineAvailable ? formatFloatValue(total_expected_kw ?? 0) : 'N/A'}
+                    {showExpectedValue ? formatFloatValue(rawExpectedTotal) : 'N/A'}
                   </Typography>
                 </Box>
               </Grid>
@@ -347,7 +355,7 @@ const ActualProduction: React.FC<ActualProductionProps> = ({
                     sx={scope !== 'investor-dashboard' ? { '&.MuiGrid-item': { marginRight: '16px' } } : undefined}
                   >
                     <Typography variant="h6" fontWeight={700} fontSize={20} lineHeight="32px">
-                      {baselineAvailable ? formatFloatValue(total_expected_kw ?? 0) : 'N/A'}
+                      {showExpectedValue ? formatFloatValue(rawExpectedTotal) : 'N/A'}
                     </Typography>
                     <Typography variant="caption" color={theme => theme.palette.text.secondary}>
                       {alignment === 'current' ? `Expected (kW)` : `Expected (kWh)`}

@@ -1,3 +1,12 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# ⚠️ LEGACY / DECOMMISSIONING — DO NOT EXTEND.
+# Part of the external GCP telemetry ingestion pipeline (BigQuery + Firestore),
+# SUPERSEDED by in-process Native Telemetry Ingestion V2 in backend/ilios-server
+# (PostgreSQL). No longer the source of truth for app-facing telemetry; app-facing
+# consumers are gated OFF by default behind `legacy_telemetry_enabled`. Do not add
+# new callers or re-point V2 code here. See ../../../README.md for the decommission
+# plan. Hard deletion is a separate, later sprint.
+# ─────────────────────────────────────────────────────────────────────────────
 import functions_framework
 import orjson
 from flask import Request, Response

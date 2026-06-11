@@ -19,6 +19,7 @@ import { useSiteLatestTelemetry } from '../../../../../../../../hooks/telemetryV
 import WeatherIndicator from '../../../../../../../../components/common/WeatherIndicator/WeatherIndicator';
 import ToggleGroup from '../../../../../../../../components/common/ToogleGroup/ToggleGroup';
 import { parseUtc } from '../../../../../../../../utils/time/utcTime';
+import { resolveExpectedState } from '../../../../../../../../utils/telemetry/expectedState';
 
 interface ActualProductionProps {
   siteId: number;
@@ -102,18 +103,20 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
 
   const { system_size_ac = 0, system_size_dc = 0, weather = 'Sunny' } = data || {};
   const actual_kw = alignment === 'current' ? (data?.actual_kw ?? 0) : (data?.cumulative_actual_kw ?? 0);
-  const expected_kw = alignment === 'current' ? (data?.expected_kw ?? 0) : (data?.cumulative_expected_kw ?? 0);
   const actual_vs_expected =
     alignment === 'current' ? (data?.actual_vs_expected ?? 0) : (data?.cumulative_actual_vs_expected ?? 0);
 
   const actualVsExpected = actual_vs_expected > 100 ? 100 : (actual_vs_expected ?? 0);
   const actualVsExpectedRest = 100 - actualVsExpected ?? 0;
 
-  // V2 telemetry sites carry actual-only data (no projected baseline). When the
-  // baseline is unavailable, render an honest neutral ring and "N/A" /
-  // "Baseline not available" instead of a misleading red 0% / 0 kW.
-  const baselineAvailable = data?.expected_baseline_available ?? true;
-  const expectedDisplay = baselineAvailable ? formatFloatValue(expected_kw ?? 0) : 'N/A';
+  // V2 telemetry sites carry actual-only data (no projected baseline). The
+  // resolver maps expected_state (or the legacy boolean) to a display mode:
+  // available/partial -> show expected; missing_inputs/pre_pto/
+  // baseline_not_available -> honest "N/A" + reason, never a fabricated 0.
+  const expectedState = resolveExpectedState(data);
+  const rawExpected = alignment === 'current' ? data?.expected_kw : data?.cumulative_expected_kw;
+  const expectedDisplay =
+    expectedState.showExpected && typeof rawExpected === 'number' ? formatFloatValue(rawExpected) : 'N/A';
 
   const deriveProductionColorFromValue = (progress: number): string => {
     if (progress < 51) return theme.efficiencyColors.low;
@@ -126,9 +129,9 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
     datasets: [
       {
         // No baseline -> fully neutral ring (0 filled) so it reads as "no data".
-        data: baselineAvailable ? [actualVsExpected, actualVsExpectedRest] : [0, 100],
+        data: expectedState.showExpected ? [actualVsExpected, actualVsExpectedRest] : [0, 100],
         backgroundColor: [
-          baselineAvailable ? deriveProductionColorFromValue(actual_vs_expected) : theme.efficiencyColors.none,
+          expectedState.showExpected ? deriveProductionColorFromValue(actual_vs_expected) : theme.efficiencyColors.none,
           '#F3F4F8'
         ],
         cutout: '75%'
@@ -201,7 +204,7 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
                     textAlign: 'center'
                   }}
                 >
-                  {baselineAvailable ? (
+                  {expectedState.showExpected ? (
                     <>
                       {actual_vs_expected ?? 0}{' '}
                       <Typography
@@ -213,14 +216,14 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
                         %
                       </Typography>
                       <Typography variant="body2" fontSize={12} color={theme => theme.palette.text.secondary}>
-                        from Expected
+                        {expectedState.isPartial ? 'from Expected (partial)' : 'from Expected'}
                       </Typography>
                     </>
                   ) : (
                     <>
                       N/A
                       <Typography variant="body2" fontSize={12} color={theme => theme.palette.text.secondary}>
-                        Baseline not available
+                        {expectedState.term}
                       </Typography>
                     </>
                   )}

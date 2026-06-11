@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.crud.audit_log import AuditLogCRUD
 from app.crud.telemetry_native import TelemetryReadingCRUD, TelemetrySchedulerStateCRUD
 from app.db.session import get_session
 from app.helpers.authorization import AssetPermissions, AuthorizedUser, SettingsPermissions
@@ -16,8 +15,10 @@ from app.helpers.authorization.project_access import (
     get_authorized_site_with_company_admin,
 )
 from app.models.company import Company
+from app.helpers.telemetry.audit import create_audit_log as _create_audit_log
 from app.helpers.telemetry.bigquery.device import TelemetryDeviceBigQuery
 from app.helpers.telemetry.secrets_manager import GCPSecretsManager
+from app.helpers.telemetry.legacy_flag import legacy_telemetry_enabled
 from app.helpers.telemetry.v2_chart_data import site_has_v2_rollups
 from app.helpers.telemetry.telemetry_cloud_function_client import TelemetryFuncHTTPClient
 from app.helpers.telemetry.telemetry_helper import (
@@ -65,21 +66,6 @@ logger = logging.getLogger(__name__)
 telemetry_router = APIRouter()
 
 TELEMETRY_ELIGIBLE_CATEGORIES = [DeviceCategories.inverter, DeviceCategories.module, DeviceCategories.weather_station]
-
-
-def _create_audit_log(request: Request, db_session: Session, action: str, details: str, is_success: bool = True):
-    """Create an audit log entry for telemetry operations"""
-    try:
-        user_id = getattr(request.state, "current_user_id", None)
-        AuditLogCRUD(db_session).create_item({
-            "source": "telemetry",
-            "action": action,
-            "details": details,
-            "is_success": is_success,
-            "user_id": user_id,
-        })
-    except Exception as e:
-        logger.warning(f"Failed to create audit log: {e}")
 
 
 @telemetry_router.post(
@@ -672,10 +658,12 @@ async def get_site_telemetry_health(
 
     if is_v2_backed:
         last_data_at = v2_last_ts
-    else:
+    elif legacy_telemetry_enabled():
         # Legacy (non-V2) site: fall back to BigQuery's last-report timestamp. A
         # BigQuery failure is caught and surfaced only because there is no native
-        # signal to rely on for this site.
+        # signal to rely on for this site. Gated behind the legacy flag (off by
+        # default) so a decommissioned BigQuery is never queried; when off, a
+        # non-V2 site reports an honest no_data state below instead of an error.
         device_ids = [device.id for device in mapped_devices]
         try:
             bq_client = TelemetryDeviceBigQuery()
@@ -761,7 +749,7 @@ async def get_site_telemetry_readiness(
         is_v2_backed = v2_last_ts is not None or site_has_v2_rollups(db_session, site.id)
         if is_v2_backed:
             is_data_flowing = True
-        else:
+        elif legacy_telemetry_enabled():
             try:
                 device_ids = [d.id for d in mapped_devices]
                 bq_client = TelemetryDeviceBigQuery()

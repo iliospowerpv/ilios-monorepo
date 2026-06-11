@@ -1,5 +1,7 @@
 import { AxiosInstance } from 'axios';
 
+import type { ExpectedState } from '../utils/telemetry/expectedState';
+
 interface InvestorDashboardCompaniesQueryParams {
   skip: number;
   limit: number;
@@ -18,6 +20,8 @@ interface InvestorDashboardCompany {
   actual_vs_expected: number | null;
   // False for V2 companies: the UI shows "N/A" instead of a misleading 0%.
   expected_baseline_available: boolean;
+  // Additive V2 metadata; absent on legacy responses (see resolveExpectedState).
+  expected_state?: ExpectedState;
 }
 
 interface InvestorDashboardCompaniesQueryResponse {
@@ -41,6 +45,8 @@ interface InvestorDashboardCompanyAggregatedPerformanceQueryResponse {
   cumulative_actual_vs_expected: number;
   // False for V2 companies; the chart shows "N/A" / "Baseline not available".
   expected_baseline_available: boolean;
+  // Additive V2 metadata; absent on legacy responses (see resolveExpectedState).
+  expected_state?: ExpectedState;
 }
 
 interface InvestorDashboardSitesQueryParams {

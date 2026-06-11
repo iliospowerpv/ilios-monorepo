@@ -7,6 +7,7 @@ from fastapi import HTTPException, status
 from app.crud.alert import AlertCRUD
 from app.crud.telemetry_native import TelemetryReadingCRUD
 from app.helpers.telemetry.bigquery import TelemetryDeviceBigQuery
+from app.helpers.telemetry.legacy_flag import legacy_telemetry_enabled
 from app.helpers.telemetry.v2_chart_data import site_has_v2_rollups
 from app.models.device import Device, DeviceCategories, DeviceManufacturers, DeviceStatuses, DeviceTypes
 from app.settings import settings
@@ -297,7 +298,15 @@ def set_device_default_fields(device_payload):
 
 
 def get_devices_last_reported(devices: Optional[List[Device]]):
-    """Retrieve telemetry data about device last reported time"""
+    """Retrieve telemetry data about device last reported time.
+
+    Legacy BigQuery-backed liveness lookup. Gated behind ``legacy_telemetry_enabled``
+    (off by default): when off we return an empty list (honest "no legacy signal")
+    rather than querying a decommissioned BigQuery. V2 sites never reach this — their
+    callers branch to native-reading recency first.
+    """
+    if not legacy_telemetry_enabled():
+        return []
     # get IDs of mapped devices which supports telemetry
     mapped_telemetry_devices_ids = [
         device.id
@@ -361,6 +370,10 @@ def get_availability_metrics(device: Device):
     if device.category not in TELEMETRY_DEVICES_CATEGORIES:
         return {"mtbf": "N/A", "mttr": "N/A"}
     if not device.telemetry_mapping:
+        return response
+    # MTBF/MTTR are sourced only from legacy BigQuery; when the legacy flag is off
+    # (default) report honest None rather than querying a decommissioned BigQuery.
+    if not legacy_telemetry_enabled():
         return response
     telemetry_devices_data = TelemetryDeviceBigQuery().get_device_availability_metrics(
         [device.id], get_availability_metrics_start_time(device)

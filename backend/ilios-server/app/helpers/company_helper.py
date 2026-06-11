@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from app.crud.company import CompanyCRUD
 from app.helpers.telemetry.bigquery import TelemetrySiteBigQuery
+from app.helpers.telemetry.legacy_flag import legacy_telemetry_enabled
 from app.helpers.telemetry.v2_company_data import aggregate_company_actuals, get_sites_latest_power
 from app.models.site import Site
 
@@ -85,19 +86,32 @@ def extend_company_sites_with_energy_attributes(sites: list[Site]):
     ``/{company_id}/sites`` table, not the company/investor dashboards). It is
     deferred to a later phase rather than partially migrated here.
     """
-    if sites:
-        user_site_ids = {site.id for site in sites}
-        telemetry_bq = TelemetrySiteBigQuery()
-        # execute BigQuery calls in threads to speedup almost x2
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            actual_expected_performance_task = executor.submit(
-                telemetry_bq.get_site_actual_expected_performance, user_site_ids
-            )
-            cumulative_energy_task = executor.submit(telemetry_bq.get_site_cumulative_energy, user_site_ids)
-        telemetry_sites_actual_expected = actual_expected_performance_task.result()
-        telemetry_sites_cumulative = cumulative_energy_task.result()
+    if not sites:
+        return
+    # Legacy BigQuery-backed energy attributes. Gated behind the legacy flag (off
+    # by default): when off, surface honest N/A (None) for every site instead of
+    # querying a decommissioned BigQuery. The dedicated V2 company/investor
+    # dashboards are computed elsewhere and are unaffected by this fallback.
+    if not legacy_telemetry_enabled():
         for site in sites:
-            site.actual_kw, site.expected_kw = telemetry_sites_actual_expected.get(site.id)
-            site.cumulative_vs_expected, site.cumulative_7_days_vs_expected, site.cumulative_30_days_vs_expected = (
-                telemetry_sites_cumulative.get(site.id)
-            )
+            site.actual_kw = None
+            site.expected_kw = None
+            site.cumulative_vs_expected = None
+            site.cumulative_7_days_vs_expected = None
+            site.cumulative_30_days_vs_expected = None
+        return
+    user_site_ids = {site.id for site in sites}
+    telemetry_bq = TelemetrySiteBigQuery()
+    # execute BigQuery calls in threads to speedup almost x2
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        actual_expected_performance_task = executor.submit(
+            telemetry_bq.get_site_actual_expected_performance, user_site_ids
+        )
+        cumulative_energy_task = executor.submit(telemetry_bq.get_site_cumulative_energy, user_site_ids)
+    telemetry_sites_actual_expected = actual_expected_performance_task.result()
+    telemetry_sites_cumulative = cumulative_energy_task.result()
+    for site in sites:
+        site.actual_kw, site.expected_kw = telemetry_sites_actual_expected.get(site.id)
+        site.cumulative_vs_expected, site.cumulative_7_days_vs_expected, site.cumulative_30_days_vs_expected = (
+            telemetry_sites_cumulative.get(site.id)
+        )

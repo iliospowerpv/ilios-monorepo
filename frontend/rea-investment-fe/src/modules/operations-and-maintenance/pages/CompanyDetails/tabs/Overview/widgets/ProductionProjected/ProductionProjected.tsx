@@ -7,6 +7,8 @@ import { useQuery } from '@tanstack/react-query';
 import { WidgetWrapper } from '../../Overview.style';
 import { formatFloatValue } from '../../../../../../../../utils/formatters/formatFloatValue';
 import { ApiClient } from '../../../../../../../../api';
+import { resolveExpectedState } from '../../../../../../../../utils/telemetry/expectedState';
+
 interface InfoBoxProps {
   companyId: number;
 }
@@ -19,9 +21,10 @@ const ActualProductionVsProjected: React.FC<InfoBoxProps> = ({ companyId }) => {
   });
 
   // V2 companies have no expected baseline, so an actual-vs-expected bubble chart
-  // is not meaningful; show a "Baseline not available" note instead of plotting
-  // every site at expected = 0 (which would be misleading).
-  const baselineAvailable = data?.expected_baseline_available ?? true;
+  // is not meaningful; show a reason note instead of plotting every site at
+  // expected = 0. Partial rollups also carry null per-site expected, so the
+  // bubble chart is only plotted when the state is fully `available`.
+  const expectedState = resolveExpectedState(data);
 
   const options: AgChartOptions = {
     autoSize: true,
@@ -92,10 +95,10 @@ const ActualProductionVsProjected: React.FC<InfoBoxProps> = ({ companyId }) => {
       error={!!error}
       errorMsg={error?.message}
     >
-      {data && !baselineAvailable ? (
+      {data && expectedState.state !== 'available' ? (
         <Box display="flex" alignItems="center" justifyContent="center" minHeight={350}>
           <Typography variant="body1" textAlign="center" width="70%" color={theme => theme.palette.text.secondary}>
-            Baseline not available — projected production has not been configured for this company yet.
+            {expectedState.reason || 'Projected production has not been configured for this company yet.'}
           </Typography>
         </Box>
       ) : (

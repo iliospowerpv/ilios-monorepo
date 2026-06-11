@@ -9,6 +9,7 @@ import { WidgetWrapper } from '../../Overview.style';
 import { formatFloatValue } from '../../../../../../../../utils/formatters/formatFloatValue';
 import { ApiClient } from '../../../../../../../../api';
 import { useSiteLatestTelemetry } from '../../../../../../../../hooks/telemetryV2';
+import { resolveExpectedState } from '../../../../../../../../utils/telemetry/expectedState';
 
 interface ActualProjectedPowerProps {
   siteId: number;
@@ -44,8 +45,9 @@ const ActualProjectedPower: React.FC<ActualProjectedPowerProps> = ({ siteId }) =
   }));
 
   // V2 sites carry actual-only data: hide the Expected line + legend entry and
-  // show an explanatory caption instead of a phantom empty series.
-  const baselineAvailable = data?.expected_baseline_available ?? true;
+  // show an explanatory caption instead of a phantom empty series. The resolver
+  // also covers partial/missing_inputs/pre_pto states via expected_state.
+  const expectedState = resolveExpectedState(data);
 
   const options: AgChartOptions = {
     autoSize: true,
@@ -82,8 +84,8 @@ const ActualProjectedPower: React.FC<ActualProjectedPowerProps> = ({ siteId }) =
         xKey: 'period',
         yKey: 'expected',
         yName: 'Expected',
-        visible: baselineAvailable,
-        showInLegend: baselineAvailable,
+        visible: expectedState.showExpected,
+        showInLegend: expectedState.showExpected,
         stroke: '#E26D69',
         strokeWidth: 2,
         marker: {
@@ -135,13 +137,13 @@ const ActualProjectedPower: React.FC<ActualProjectedPowerProps> = ({ siteId }) =
       onClickRefetch={refetch}
     >
       <AgChartsReact options={options} />
-      {!baselineAvailable && (
+      {expectedState.reason && (
         <Typography
           variant="caption"
           color={theme => theme.palette.text.secondary}
           sx={{ display: 'block', mt: '4px' }}
         >
-          Expected baseline not available for this site; showing actual production only.
+          {expectedState.reason}
         </Typography>
       )}
       {dataAsOf && (

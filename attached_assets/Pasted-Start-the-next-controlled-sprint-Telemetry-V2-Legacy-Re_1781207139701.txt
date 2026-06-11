@@ -1,0 +1,124 @@
+Start the next controlled sprint: Telemetry V2 Legacy Removal — BigQuery / Firestore / rea-telemetry Decommission Plan and First Removals.
+
+Context:
+The V2 telemetry path is now production-oriented:
+- V2 actuals from PostgreSQL rollups
+- V2 health/readiness without BigQuery
+- V2 site O&M actuals
+- V2 company/investor/portfolio actuals
+- V2 expected baseline storage
+- V2 weather-adjusted expected calculation
+- V2 expected_state wiring into O&M/company/portfolio surfaces
+- O&M glossary endpoint
+- No BigQuery/Firestore in validated V2 paths
+
+Strategic decisions:
+- BigQuery is not an operational app dependency.
+- Firestore is not part of the V2 telemetry architecture.
+- backend/rea-telemetry legacy jobs should not drive app-facing telemetry.
+- Power BI/reporting warehouse can be rebuilt later as downstream export if needed.
+- Do not preserve legacy telemetry paths for nonexistent production legacy sites.
+- Do not remove anything that is still required by V2 onboarding until the replacement is verified.
+
+Objective:
+Begin removing or isolating legacy telemetry infrastructure now that V2 actuals and expected-performance paths are in place.
+
+This sprint should be careful and phased:
+1. Map active references.
+2. Remove dead code where clearly unused.
+3. Replace remaining dependencies where needed.
+4. Isolate uncertain legacy paths behind a disabled legacy_telemetry flag rather than leaving them active.
+
+Scope:
+
+A. BigQuery operational dependency cleanup
+- Re-scan all BigQuery imports/usages.
+- Confirm no V2 operational app path imports or calls BigQuery.
+- Remove BigQuery branches from V2-facing telemetry/O&M/company/investor paths if any remain.
+- If a BigQuery path only supports legacy/nonexistent sites, remove it or disable it behind a clearly off-by-default legacy_telemetry flag.
+- Do not remove generic BigQuery client code if non-telemetry modules still import it until those imports are classified.
+
+B. Firestore telemetry cleanup
+- Re-scan Firestore telemetry mapping/sync usage.
+- Confirm V2 scheduler, site sync, device sync, mapping, expected calculation, and charts do not require Firestore.
+- Remove or disable telemetry Firestore sync side effects if no V2 path depends on them.
+- If uncertain, isolate behind disabled legacy_telemetry flag and document.
+
+C. backend/rea-telemetry legacy pipeline
+- Identify whether it is imported or invoked by the app runtime.
+- If not used by app runtime, mark as legacy/decommissioned and prevent accidental operational use.
+- Do not delete large directories blindly if tooling or deployment scripts reference them; first remove runtime hooks and document removal plan.
+- Confirm no scheduler/job/deploy config still launches it.
+
+D. Cloud Function telemetry client
+- Identify remaining references to TelemetryFuncHTTPClient or legacy Cloud Function telemetry endpoints.
+- Replace with V2 adapter/service where a V2 replacement already exists.
+- If a route is unused, remove or disable it.
+- If a route is still used by V2 onboarding, document exactly why and do not remove until replacement exists.
+
+E. Legacy secret paths
+- Identify ilios-das-* legacy secret creation and usage.
+- Confirm V2 credential path uses ilios-telemetry-v2-* / GCP Secret Manager credential store.
+- Do not remove secret-manager code itself.
+- Remove or disable legacy secret creation only if V2 onboarding does not use it.
+
+F. Frontend callsite sweep
+- Enumerate frontend calls to legacy telemetry/config endpoints, especially connections.ts and portfolio/admin telemetry areas.
+- Classify each call:
+  - V2 required
+  - legacy removable
+  - needs replacement
+  - unknown
+- Do not break V2 connection onboarding.
+
+G. Expected-state UI contract
+- Confirm frontend branches on expected_state, not only expected_baseline_available.
+- Add or verify UI handling for:
+  - baseline_not_available
+  - missing_inputs
+  - pre_pto
+  - partial
+  - available
+- This is not a design polish sprint, but prevent incorrect display logic now.
+
+Do not:
+- Remove GCP Secret Manager credential storage.
+- Remove V2 telemetry tables.
+- Remove expected baseline tables or endpoints.
+- Remove scheduler/backfill admin UI.
+- Remove due diligence parsing code.
+- Remove project_facts/document_keys promotion chain.
+- Remove code needed for V2 onboarding.
+- Rebuild Power BI/reporting in this sprint.
+- Touch plaintext-secret migration in this sprint.
+
+Validation:
+1. Backend starts cleanly.
+2. Frontend builds cleanly.
+3. V2 provider credentials still work.
+4. Site sync still works.
+5. Device sync still works.
+6. Site mapping still works.
+7. Device mapping still works.
+8. Manual refresh still works.
+9. Scheduler still works.
+10. Health/readiness still V2-only.
+11. Site O&M actual/expected views still work.
+12. Company/investor/portfolio actual/expected views still work.
+13. Expected_state behavior is correct.
+14. No BigQuery/Firestore calls occur in V2 operational paths.
+15. No frontend call points to a removed endpoint.
+16. Architect review passes.
+
+Return:
+- files changed
+- BigQuery references removed
+- Firestore references removed
+- legacy paths disabled or isolated
+- remaining BigQuery references and why
+- remaining Firestore references and why
+- remaining Cloud Function references and why
+- frontend legacy callsite map
+- validation results
+- risks
+- recommended next task

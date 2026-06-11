@@ -11,6 +11,7 @@ import AlertsIndicator from '../../components/AlertsIndicator';
 import PowerProductionIndicator from '../../../../components/common/PowerProductionIndicator/PowerProductionIndicator';
 import { useNavigate } from 'react-router-dom';
 import { formatFloatValue } from '../../../../utils/formatters/formatFloatValue';
+import { resolveExpectedState } from '../../../../utils/telemetry/expectedState';
 
 const columns: ColDef[] = [
   {
@@ -62,7 +63,9 @@ const columns: ColDef[] = [
       const actualVsExpected = data?.actual_vs_expected;
       // V2 companies have actuals but no expected baseline; still render the
       // actual figure with a neutral marker instead of dropping the cell.
-      const baselineAvailable = data?.expected_baseline_available ?? true;
+      // Resolve expected_state (or the legacy boolean) so partial companies also
+      // surface their % ring; the N/A states keep the neutral indicator.
+      const baselineAvailable = resolveExpectedState(data).showExpected;
 
       if (typeof actualProduction !== 'number') return null;
 
