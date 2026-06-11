@@ -1,0 +1,265 @@
+Start the next controlled sprint: Due Diligence V2 Upgrade — Auditability, Document-Type Parsing Coverage, and Source-Backed Project Facts.
+
+Strategic context:
+The V2 telemetry and expected-performance foundation is now established:
+
+* PostgreSQL V2 actuals
+* V2 expected baseline storage
+* V2 weather-adjusted expected calculation
+* expected_state-driven UI behavior
+* company/investor/portfolio V2 aggregation
+* health/readiness V2-only
+* legacy telemetry gated behind off-by-default legacy_telemetry_enabled
+
+Now we need to upgrade the due diligence and AI parsing workflow so it becomes the controlled source of project truth and baseline-driving assumptions.
+
+Core product principles:
+
+1. AI-parsed data is not truth.
+2. Accepted document terms are not automatically active project truth.
+3. Promoted project_facts represent current approved assumptions.
+4. Contracted/design/baseline facts must remain source-backed and auditable.
+5. Baseline-driving assumptions should not be changed through casual manual override.
+6. New or changed baseline-driving assumptions should require a new uploaded document or a formal audited review record.
+7. Historical facts and baselines must not be overwritten.
+8. Changes must support effective dates, supersession, and audit history.
+9. A site may be upgraded, repowered, expanded, or have a second-phase buildout; this must create new effective facts/baselines, not rewrite history.
+10. Every due diligence document type should be eligible for AI-assisted parsing through the extraction registry, even if some schemas start minimal.
+11. Do not re-enable BigQuery, Firestore, ilios-DocAI, or legacy telemetry paths.
+12. Do not auto-promote AI output.
+13. Do not auto-activate expected baselines.
+
+Target workflow:
+Document upload
+→ document type classification / selection
+→ AI parse using document-specific schema
+→ extracted candidate terms/facts with evidence
+→ human review
+→ accepted / rejected / overridden terms
+→ promotion into source-backed project_facts
+→ downstream action depending on fact type:
+
+* create expected baseline draft
+* update legal/commercial assumptions
+* update equipment schedule
+* update warranty/permit/insurance data
+* flag discrepancy against telemetry-discovered devices
+* create follow-up task / missing-data item
+  → separate approval/activation where required
+  → immutable audit history
+
+Scope for this sprint:
+Implement Phase 1 only: provenance/audit strengthening and document-type parsing coverage foundation.
+
+Do not build the full baseline draft bridge yet. Do not remove legacy DD → BigQuery write yet unless it is already fully gated and safe. Do not change baseline calculation logic.
+
+Phase 1A — Strengthen project_facts provenance and auditability
+
+Audit and, where needed, add additive fields or persistence logic so project_facts can reliably carry:
+
+* source_file_id
+* source_run_id
+* source_document_key_id if available
+* canonical_field_id or canonical field key
+* evidence page
+* evidence snippet
+* evidence anchor text
+* AI confidence / confidence metadata
+* accepted_by
+* accepted_at
+* overridden_by
+* overridden_at
+* promoted_by
+* promoted_at
+* effective_from
+* effective_to
+* supersedes_fact_id
+* superseded_by_fact_id where appropriate
+* source_document_type
+* review_status / lifecycle status
+* notes / rationale for override or promotion where available
+
+Use existing fields where they already exist. Add only what is necessary and additive.
+
+Requirements:
+
+* No existing due diligence records should break if provenance fields are null.
+* Existing promotion behavior must continue to work.
+* Existing candidate/active/retired fact behavior must continue to work.
+* Do not overwrite historical facts.
+* Promotion should retire/supersede prior active facts rather than mutate them.
+* If a value is overridden by a human reviewer, retain both the AI-extracted value and the human-approved value if the current model supports it; otherwise propose the smallest additive change to support it.
+* Evidence should remain linked back to the source document wherever possible.
+
+Phase 1B — Generalize AI parsing eligibility across due diligence document types
+
+Audit the extraction_registry and due diligence document type enum/list.
+
+Objective:
+Every due diligence document type should be eligible for AI-assisted parsing through the registry.
+
+Implementation requirements:
+
+* Identify all due diligence document types currently uploadable.
+* Identify which are currently parsable.
+* For document types without specialized schemas, add a minimal generic schema/prompt template that extracts:
+
+  * document title/name
+  * parties/entities
+  * project/site reference
+  * effective date / execution date if present
+  * expiration date if present
+  * key obligations
+  * key numeric values
+  * equipment references
+  * production/performance references
+  * warranty/term references
+  * permit/interconnection references
+  * insurance references
+  * evidence page/snippet for each extracted field
+* For specialized document types, preserve or improve the document-specific schema.
+* Do not degrade existing parsers.
+* Do not fallback to ai_parsing_config.json unless explicitly enabled by existing settings.
+* Do not rewire backend/ilios-DocAI.
+
+Phase 1C — PVsyst/design document specialized schema
+
+Wire the existing PVsyst/design document type into the extraction_registry as the first high-value specialized schema.
+
+Do not add a new upload document type unless one is truly missing. Use the existing PVsyst/as-built/design document type identified in the audit.
+
+Extract baseline-driving fields where present:
+
+* system_size_dc
+* system_size_ac
+* module_manufacturer
+* module_model
+* module_wattage
+* module_quantity
+* inverter_manufacturer
+* inverter_model
+* inverter_wattage
+* inverter_quantity
+* cec_efficiency_pct
+* dc_loss_pct
+* ac_loss_pct
+* medium_voltage_loss_pct
+* mv_line_loss_pct
+* soiling_factor
+* thermal_coefficient_pct
+* power_tolerance_min_pct
+* year_1_degradation_pct
+* annual_degradation_pct
+* permission_to_operate / effective operating date
+* monthly_expected_production
+* annual_expected_production
+* monthly_irradiance / GHI if present
+* P50/P90 if present
+* weather assumptions if present
+* evidence page/snippet for each field
+
+Important:
+
+* PVsyst/design estimates are design estimates.
+* They are not automatically the live weather-adjusted expected line.
+* They may seed draft baseline assumptions after review/promotion in a later phase.
+* Do not create or activate baselines in this sprint.
+
+Phase 1D — Guardrails against easy overrides
+
+Review current UI/API flows for accepting, overriding, and promoting document facts.
+
+Implement only minimal guardrails needed to prevent casual or unaudited changes to baseline-driving assumptions.
+
+Requirements:
+
+* Do not allow baseline-driving fact overrides without a reviewer identity and rationale/notes if current model can support it.
+* If rationale is not currently supported, add a proposed additive field or return a recommendation before implementing broad UI changes.
+* Do not create a generic “edit active baseline assumptions” shortcut.
+* Do not allow accepted/active facts to be silently changed in place.
+* Changes to active facts should create new candidate facts and then go through promotion/supersession.
+
+Phase 1E — Legacy DD → BigQuery behavior
+
+Current direction:
+
+* BigQuery is not a production app dependency.
+* Current data is test data.
+* We are not building a long-term legacy bridge.
+
+For this sprint:
+
+* Do not invest in dual-write logic.
+* Identify the current DD → BigQuery characteristics write and ensure it is either:
+
+  * clearly gated behind legacy_telemetry_enabled, or
+  * documented as a Phase 2 removal target after the V2 baseline draft bridge exists.
+* Do not allow DD → BigQuery failure to block due diligence review/promotion.
+* Do not remove it yet unless architecturally safe and all tests prove no app-facing dependency remains.
+
+Phase 1F — Usability / Path B hooks
+
+Add or prepare help/glossary hooks for later Path B work.
+
+At minimum, identify insertion points for:
+
+* AI extraction confidence
+* legal term vs accepted value
+* accepted vs promoted
+* candidate fact vs active fact
+* superseded fact
+* project truth / current assumptions
+* source-backed fact
+* baseline-driving assumption
+* design estimate
+* weather-adjusted expected
+* document type definitions
+* unsupported or minimally supported document types
+
+Do not overbuild full help center content in this sprint. Return the Path B list clearly.
+
+Validation:
+
+1. Existing due diligence upload still works.
+2. Existing manual parse trigger still works.
+3. Existing parse status/result polling still works.
+4. Existing document review modal still works.
+5. Existing bulk accept still works.
+6. Existing per-key override still works and records provenance/rationale where supported.
+7. Existing promotion to current assumptions still works.
+8. Existing assumptions promotion audit still works.
+9. project_facts created from accepted document keys include source_file_id/source_run_id/evidence/confidence where available.
+10. Existing records with null provenance fields do not crash.
+11. PVsyst/design document type is parsable through extraction_registry.
+12. At least one non-PVsyst document type without a specialized schema can use the generic extraction path.
+13. No BigQuery, Firestore, ilios-DocAI, or legacy telemetry dependency is added.
+14. No baselines are automatically created or activated.
+15. Backend starts cleanly.
+16. Frontend builds cleanly.
+17. Tests/typecheck/lint pass.
+18. Architect review passes.
+
+Return:
+
+* files changed
+* migrations added, if any
+* document types audited
+* document types made parsable
+* PVsyst/design extraction fields added
+* project_facts provenance behavior
+* override/promotion audit behavior
+* DD → BigQuery current status and next removal step
+* validation results
+* risks
+* Path B usability/help tasks for the new resource
+* recommended Phase 2 implementation plan
+
+Do not touch:
+
+* telemetry expected calculation logic
+* scheduler/refresh logic
+* GCP Secret Manager credential storage
+* plaintext-secret migration
+* O&M chart logic
+* company/portfolio aggregation logic
+* device eligibility logic

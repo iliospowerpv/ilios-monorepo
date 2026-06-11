@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import Column, DateTime, ForeignKey, Identity, Integer, String, Text, Boolean, Index
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Identity, Integer, String, Text, Boolean, Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
@@ -49,6 +49,26 @@ class ProjectFact(Base):
     promoted_at = Column(DateTime, nullable=True)
     promotion_notes = Column(Text, nullable=True)
     supersedes_fact_id = Column(Integer, ForeignKey("project_facts.id", ondelete="SET NULL"), nullable=True)
+    # Forward-semantics reverse pointer added in DD V2 Phase 1A: the retired fact
+    # points at the new fact that superseded it. (``supersedes_fact_id`` is left
+    # untouched for backward compatibility with summary_stats.py.)
+    superseded_by_fact_id = Column(Integer, ForeignKey("project_facts.id", ondelete="SET NULL"), nullable=True)
+
+    # --- DD V2 Phase 1A: additive provenance / audit columns (all nullable) ---
+    # ``evidence`` mirrors the parsed_result evidence shape: {page, snippet, anchor_text}
+    evidence = Column(JSONB, nullable=True)
+    ai_confidence = Column(Float, nullable=True)
+    # The raw AI-extracted value, retained alongside the (possibly human-overridden)
+    # ``value`` so an override never loses the original model output.
+    ai_extracted_value = Column(JSONB, nullable=True)
+    accepted_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    accepted_at = Column(DateTime, nullable=True)
+    overridden_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    overridden_at = Column(DateTime, nullable=True)
+    override_notes = Column(Text, nullable=True)
+    effective_from = Column(DateTime, nullable=True)
+    effective_to = Column(DateTime, nullable=True)
+    source_document_type = Column(String(255), nullable=True)
 
     created_at = Column(DateTime, server_default=utcnow())
     updated_at = Column(DateTime, server_default=utcnow())
@@ -60,6 +80,9 @@ class ProjectFact(Base):
     source_document_key = relationship("DocumentKey", back_populates="project_facts")
     promoted_by = relationship("User", foreign_keys=[promoted_by_id])
     supersedes_fact = relationship("ProjectFact", remote_side=[id], foreign_keys=[supersedes_fact_id])
+    superseded_by_fact = relationship("ProjectFact", remote_side=[id], foreign_keys=[superseded_by_fact_id])
+    accepted_by = relationship("User", foreign_keys=[accepted_by_id])
+    overridden_by = relationship("User", foreign_keys=[overridden_by_id])
 
     __table_args__ = (
         Index("ix_project_facts_site_field", "site_id", "canonical_field_id"),

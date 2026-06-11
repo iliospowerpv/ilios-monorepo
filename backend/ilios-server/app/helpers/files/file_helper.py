@@ -7,6 +7,7 @@ from app.models.document import Document
 from app.models.file import File as FileModel
 from app.models.file import FileParsingStatuses
 from app.schema.file import FileKeySchema
+from app.static.baseline_driving_fields import is_baseline_driving_field
 
 
 def combine_user_ai_parsing_results(
@@ -106,5 +107,9 @@ def combine_user_ai_parsing_results(
             available_key["is_poison_pill"] = user_data["is_poison_pill"]
             if user_data.get("poison_pill_detailed") is not None:
                 available_key["poison_pill_detailed"] = user_data["poison_pill_detailed"]
+
+        # DD V2 Phase 1D: surface whether this field feeds the production baseline so the
+        # UI can require an override rationale (the server-side guardrail enforces it).
+        available_key["is_baseline_driving"] = is_baseline_driving_field(display_name)
 
     return document_available_keys

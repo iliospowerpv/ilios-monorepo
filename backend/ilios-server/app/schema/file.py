@@ -118,6 +118,13 @@ class FileKeySchema(BaseModel):
     legal_term: Optional[str] = Field(None, examples=["Commercial Operation Date"])
     comments: Optional[list[CommentsPageSchema]] = Field(None)
     evidence: Optional[FileParsingEvidence] = Field(None, description="Source evidence from the parsed document")
+    is_baseline_driving: bool = Field(
+        False,
+        description=(
+            "True if this field feeds the energy-production baseline; overriding it requires a "
+            "documented rationale (DD V2 Phase 1D)."
+        ),
+    )
 
 
 class FileKeysList(BaseModel):

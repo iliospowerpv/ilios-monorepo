@@ -736,7 +736,14 @@ async def bulk_accept_ai_values(
             if document_key and document_key.status == "accepted":
                 try:
                     facts_service = ProjectFactsService(db_session)
-                    facts_service.create_candidate_from_document_key(document_key, document.site_id)
+                    # Bulk-accept holds the validated parse run, so attach its per-field
+                    # AI evidence/confidence/raw value to the candidate fact provenance.
+                    facts_service.create_candidate_from_document_key(
+                        document_key,
+                        document.site_id,
+                        run=run,
+                        source_document_type=document.name.value,
+                    )
                 except Exception as e:
                     logger.warning(f"Failed to create candidate fact for key '{field.field_name}': {str(e)}")
 

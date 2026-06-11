@@ -107,6 +107,11 @@ class DocumentKeyUpdateSchema(BaseModel):
     file_id: Optional[int] = Field(default=None, examples=[123], description="File version ID for version-scoped keys")
     status: Optional[str] = Field(default="accepted", examples=["accepted", "overridden", "proposed"])
     override_value: Optional[str] = Field(default=None, max_length=2000)
+    override_notes: Optional[str] = Field(
+        default=None,
+        max_length=2000,
+        description="Reviewer rationale. Required when overriding a baseline-driving field (DD V2 Phase 1D).",
+    )
 
 
 class DocumentKeyUpdateSuccess(Success):

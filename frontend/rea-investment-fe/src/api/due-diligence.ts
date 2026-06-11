@@ -158,6 +158,9 @@ interface SetDocumentKeyValueArgs {
   params: {
     name: string;
     value: string;
+    status?: 'accepted' | 'overridden' | 'proposed';
+    override_value?: string;
+    override_notes?: string;
   };
 }
 
@@ -270,6 +273,7 @@ interface FileParsingTermKeyResult {
   legal_term: string | null;
   comments: FileParsingTermComment[] | null;
   evidence?: FileParsingEvidence | null;
+  is_baseline_driving?: boolean;
 }
 
 interface GetFileParsingResultQueryResponse {

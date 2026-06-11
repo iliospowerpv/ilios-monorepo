@@ -100,6 +100,7 @@ interface CollapsibleDocumentTermRenderer {
   fileId: number;
   taskId: number;
   evidence?: FileParsingEvidence | null;
+  isBaselineDriving?: boolean;
   onViewInDocument?: (page: number, snippet?: string | null, anchorText?: string | null) => void;
 }
 
@@ -119,6 +120,7 @@ const CollapsibleDocumentTermRenderer: React.FC<CollapsibleDocumentTermRenderer>
     fileId,
     taskId,
     evidence,
+    isBaselineDriving = false,
     onViewInDocument
   } = props;
   const userInputFormRef = React.useRef<DocumentTermUserInputFieldRef | null>(null);
@@ -254,6 +256,8 @@ const CollapsibleDocumentTermRenderer: React.FC<CollapsibleDocumentTermRenderer>
             siteId={siteId}
             termKey={termName}
             text={userValue}
+            isBaselineDriving={isBaselineDriving}
+            aiValue={aiValue}
           />
           <DocumentModalComments
             termId={id}
@@ -866,7 +870,8 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                                 poison_pill_detailed,
                                 legal_term,
                                 comments,
-                                evidence
+                                evidence,
+                                is_baseline_driving
                               }) => (
                                 <CollapsibleDocumentTermRenderer
                                   key={name}
@@ -884,6 +889,7 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                                   fileId={fileId}
                                   taskId={taskId}
                                   evidence={evidence}
+                                  isBaselineDriving={!!is_baseline_driving}
                                   onViewInDocument={handleViewInDocument}
                                 />
                               )

@@ -17,6 +17,7 @@ from app.helpers.permission_guards import require_module_permission
 from app.helpers.bq_data_sync_helper import SiteDDCharacteristicsHandler
 from app.helpers.configs.ai_parsing_helper import AIParsingHandler
 from app.helpers.configs.co_terminus_helper import CoTerminusHandler
+from app.helpers.telemetry.legacy_flag import legacy_telemetry_enabled
 from app.helpers.due_diligence.document_key_sync_helper import prepare_keys_sync_payload
 from app.helpers.due_diligence.document_sections_handler import DocumentSectionsHandler
 from app.helpers.due_diligence.due_diligence_helper import validate_document_section
@@ -43,6 +44,7 @@ from app.schema.documents import (
 )
 from app.schema.user import CurrentUserSchema
 from app.static import HTTP_403_RESPONSE, HTTP_404_RESPONSE, DocumentMessages
+from app.static.baseline_driving_fields import is_baseline_driving_field
 from app.static.default_site_documents_enum import SiteDocumentsEnum
 from app.static.due_diligence_bq_keys import DueDiligenceBQKeys
 
@@ -375,6 +377,18 @@ async def set_key(
             f"Key '{key.name}' is not allowed for the '{document.name.value}' document",
         )
 
+    # DD V2 Phase 1D guardrail: overriding a baseline-driving field requires a documented
+    # rationale. A wrong value on these fields silently propagates into expected-production
+    # / loss baselines, so we refuse the override unless override_notes is provided.
+    # (Reviewer identity is always known from the authenticated user.)
+    if key.status == "overridden" and is_baseline_driving_field(key.name):
+        if not (key.override_notes and key.override_notes.strip()):
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                f"Overriding the baseline-driving field '{key.name}' requires a non-empty "
+                f"'override_notes' rationale.",
+            )
+
     payload = {
         "value": key.value,
         "editor_id": current_user.id,
@@ -388,6 +402,8 @@ async def set_key(
         payload["override_value"] = key.override_value
         payload["overridden_by_id"] = current_user.id
         payload["overridden_at"] = datetime.now(timezone.utc)
+        if key.override_notes is not None:
+            payload["override_notes"] = key.override_notes
 
     document_key_crud = DocumentKeyCRUD(db_session)
     existing_key = document_key_crud.get_document_key(
@@ -431,19 +447,37 @@ async def set_key(
             db_session.commit()
 
     # additional functionality is applied for specific keys of the As-build PV Syst doc:
-    # if they were changed need to sync them into BQ
+    # if they were changed need to sync them into BQ.
+    #
+    # This DD -> BigQuery write is a LEGACY side effect of the decommissioned BigQuery
+    # pipeline. It is gated behind ``legacy_telemetry_enabled`` (default False) so it is
+    # inert unless explicitly re-enabled, and wrapped so a BigQuery failure can NEVER
+    # block DD review/promotion. Slated for removal in DD V2 Phase 2.
     if (
-        document.name == SiteDocumentsEnum.as_built_pv_syst_with_full_data_package
+        legacy_telemetry_enabled()
+        and document.name == SiteDocumentsEnum.as_built_pv_syst_with_full_data_package
         and key.name in DueDiligenceBQKeys.list()
         and key_change_detected
     ):
-        sync_payload = prepare_keys_sync_payload(document_key_crud, document, key)
-        SiteDDCharacteristicsHandler(document.site).sync_to_bq(old_record={}, new_record=sync_payload)
+        try:
+            sync_payload = prepare_keys_sync_payload(document_key_crud, document, key)
+            SiteDDCharacteristicsHandler(document.site).sync_to_bq(old_record={}, new_record=sync_payload)
+        except Exception as exc:
+            logger.warning(
+                f"Legacy DD->BigQuery sync failed for key '{key.name}' on document "
+                f"{document.id} (non-blocking, DD review/promotion unaffected): {exc}"
+            )
 
     if document_key and document_key.file_id and document_key.status in ("accepted", "overridden"):
         try:
             facts_service = ProjectFactsService(db_session)
-            facts_service.create_candidate_from_document_key(document_key, document.site_id)
+            # Manual single-key path: no parse run is available here, so no AI evidence
+            # is attached. Reviewer identity/rationale come from the document key.
+            facts_service.create_candidate_from_document_key(
+                document_key,
+                document.site_id,
+                source_document_type=document.name.value,
+            )
             logger.info(f"Created candidate fact for key '{key.name}' file '{key.file_id}'")
         except Exception as e:
             logger.warning(f"Failed to create candidate fact for key '{key.name}': {str(e)}")

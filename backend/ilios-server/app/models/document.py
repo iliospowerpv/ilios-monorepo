@@ -97,6 +97,8 @@ class DocumentKey(HasComments, Base):
     canonical_field = Column(String(100), nullable=True)
     is_poison_pill = Column(Boolean, nullable=False, default=False, server_default=expression.false())
     poison_pill_notes = Column(String, nullable=True)
+    # DD V2 Phase 1D: reviewer rationale captured when a baseline-driving key is overridden.
+    override_notes = Column(String, nullable=True)
 
     document = relationship("Document", back_populates="keys")
     file = relationship("File", back_populates="document_keys")
