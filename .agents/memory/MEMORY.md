@@ -1,5 +1,6 @@
 - [Telemetry wizard GCP dependency](telemetry-wizard-gcp-dependency.md) — v1 needs live GCP, V2 is DB-backed; "empty device list" usually = 0 eligible project devices, not a sync failure.
 - [Telemetry V2 credential durability](telemetry-credential-durability.md) — "durable" status is type-based not live; a typo'd gcp_project_id (prod vs production) 403s CONSUMER_INVALID while still reporting durable; in-memory creds vanish on restart.
+- [Telemetry expected baseline design](telemetry-expected-baseline-design.md) — two "expected" notions (PVsyst design estimate vs weather-adjusted BQ physics); charts used the physics one; V2 already ingests its inputs so it's reproducible in PG; no 8760 parser; baseline-build rules.
 - [Telemetry V2 scheduler flag](telemetry-scheduler-flag.md) — scheduled pulls gated by opt-in lowercase `telemetry_scheduler_enabled` (default off); off looks "enabled" in UI but runs zero jobs.
 - [CORS expose_headers](cors-expose-headers.md) — FE is cross-origin; any non-safelisted response header it must read (e.g. Retry-After on 429) must be in CORSMiddleware expose_headers in main.py or the browser silently strips it.
 - [Telemetry V2 read-path precedence](telemetry-v2-chart-precedence.md) — app-facing telemetry (charts/health/readiness + company/investor/portfolio aggregation) is V2-only; expected/loss = honest N/A, never fabricated zero.

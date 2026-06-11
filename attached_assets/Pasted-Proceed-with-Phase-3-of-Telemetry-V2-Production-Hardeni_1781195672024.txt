@@ -1,0 +1,117 @@
+Proceed with Phase 3 of Telemetry V2 Production Hardening: Due Diligence / PVsyst Baseline Preservation Plan.
+
+This is an audit/design task only. Do not implement the new expected baseline model yet.
+
+Strategic decisions:
+- PostgreSQL V2 telemetry is the app-native source of truth for actuals.
+- BigQuery is not an operational app dependency.
+- Expected/projected baseline is not being abandoned.
+- Expected/projected baseline will be rebuilt into the V2 PostgreSQL model from the due diligence / AI parsing / PVsyst design document workflow.
+- Until that V2 baseline exists, expected/loss/performance comparison fields remain N/A / Baseline not available.
+- Do not fabricate expected values from actual telemetry.
+- Do not route V2 expected/loss views through BigQuery.
+
+Objective:
+Map the existing due diligence / AI parsing / PVsyst design-document workflow and determine how expected/projected performance should be preserved and rebuilt into the V2 data model.
+
+Audit areas:
+
+1. Due diligence document ingestion
+- Where are due diligence documents uploaded?
+- Which routes/services handle upload?
+- Which document types are supported?
+- Which parsing services/functions are called?
+- Where are parsed results stored today?
+- Which parsed results are project-level, site-level, device-level, or document-level?
+
+2. PVsyst / 8760 / design document parsing
+- Identify any code that parses PVsyst, 8760 files, site design documents, production models, or expected performance data.
+- Identify expected-production fields currently extracted.
+- Identify whether hourly/daily expected production is parsed or only summary values.
+- Identify whether module wattage, loss coefficients, degradation, weather assumptions, or nameplate values are extracted.
+- Identify whether parsed results currently write to PostgreSQL, BigQuery, Firestore, or another structure.
+
+3. Legacy expected/loss pipeline
+- Map backend/rea-telemetry expected/loss logic.
+- Identify which Firestore config it reads.
+- Identify which BigQuery tables it depends on:
+  - site_characteristics
+  - device_characteristics
+  - expected production tables
+  - actual-vs-expected tables
+  - losses tables
+- Identify which values are generated dynamically versus stored.
+- Identify which pieces must be rebuilt in V2.
+
+4. Current PostgreSQL model fit
+- Identify existing PostgreSQL models/tables that could hold baseline data.
+- Identify schema gaps.
+- Identify whether the current project/site/device models support:
+  - nameplate AC/DC capacity
+  - device capacity
+  - PVsyst source file
+  - expected hourly curve
+  - expected daily/monthly/yearly energy
+  - device-level expected output
+  - baseline versioning
+  - source document provenance
+  - AI confidence
+  - human review/sign-off
+
+5. Proposed V2 expected baseline model
+Propose tables or model changes for:
+- telemetry_expected_baselines
+- telemetry_expected_baseline_points
+- baseline source documents / provenance
+- baseline versioning
+- approval/sign-off status
+- site-level expected production
+- device-level expected production, if supported
+- degradation assumptions
+- loss assumptions
+- timezone handling
+- effective dates
+
+The design should support:
+- hourly expected kW
+- daily expected kWh
+- site-level baseline
+- optional device-level baseline
+- actual-vs-expected comparison
+- past performance %
+- losses
+- inverter color thresholds
+- company rollups
+- portfolio rollups
+- auditability and review/sign-off
+
+6. AI parsing and review workflow
+Design how parsed PVsyst/design/diligence data should move through:
+- uploaded
+- parsed
+- extracted
+- reviewed
+- approved
+- active baseline
+- superseded baseline
+
+Do not automatically promote AI-parsed data to approved baseline without user review/sign-off.
+
+7. Migration / retirement path
+Recommend how to retire the legacy expected/loss pipeline once V2 baseline exists:
+- what can be removed
+- what must be replaced first
+- what should remain only as historical reference
+- how to avoid losing useful parsing logic
+
+Return:
+1. full audit of existing parsing/baseline/loss code
+2. current data flow diagram in text
+3. proposed V2 baseline data model
+4. proposed review/sign-off workflow
+5. mapping from legacy BigQuery/Firestore fields to V2 PostgreSQL fields
+6. risks
+7. recommended implementation phases
+8. what should not be removed until baseline is implemented
+
+Do not change code in this task unless the code inspection requires adding comments only. Return the design first.
