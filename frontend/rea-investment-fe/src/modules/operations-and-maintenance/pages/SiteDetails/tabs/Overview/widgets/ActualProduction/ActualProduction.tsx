@@ -18,6 +18,7 @@ import { ApiClient } from '../../../../../../../../api';
 import { useSiteLatestTelemetry } from '../../../../../../../../hooks/telemetryV2';
 import WeatherIndicator from '../../../../../../../../components/common/WeatherIndicator/WeatherIndicator';
 import ToggleGroup from '../../../../../../../../components/common/ToogleGroup/ToggleGroup';
+import { parseUtc } from '../../../../../../../../utils/time/utcTime';
 
 interface ActualProductionProps {
   siteId: number;
@@ -26,9 +27,10 @@ interface ActualProductionProps {
 // Render an absolute timestamp from the V2 /latest snapshot. Returns '' for a
 // missing/invalid value so the caption can be hidden for non-V2 sites.
 const formatWhen = (iso: string | null | undefined): string => {
-  if (!iso) return '';
-  const when = new Date(iso);
-  return Number.isNaN(when.getTime()) ? '' : when.toLocaleString();
+  // Backend serializes naive-UTC timestamps; parse as UTC then render in the
+  // viewer's browser timezone (matching the rest of the app).
+  const when = parseUtc(iso);
+  return when ? when.toLocaleString() : '';
 };
 
 const Loading: React.FC = () => (

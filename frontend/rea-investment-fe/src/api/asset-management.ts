@@ -51,6 +51,7 @@ interface CreateSiteAttributes {
   system_size_dc: number;
   lon_lat_url: string;
   cameras_uuids?: string[];
+  timezone?: string;
 }
 
 interface CreateSiteResponse {
@@ -152,6 +153,7 @@ interface SiteDetailedInfo {
     | 'Sunny Portal';
   lon_lat_url: string;
   cameras_uuids: string[];
+  timezone: string;
   id: number;
   company: {
     name: string;

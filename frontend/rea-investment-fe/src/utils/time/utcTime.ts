@@ -1,9 +1,9 @@
 /**
- * The telemetry backend stores and serializes naive UTC timestamps (no timezone
- * designator, e.g. "2026-06-10T14:30:00"). `new Date(...)` would interpret those
- * as LOCAL time, throwing off "is the lock still held?" and "next due" math by
- * the browser's UTC offset. These helpers normalize a missing designator to `Z`
- * so the value is always parsed as UTC.
+ * The API serializes naive UTC timestamps (no timezone designator, e.g.
+ * "2026-06-10T14:30:00"). `new Date(...)` would interpret those as LOCAL time,
+ * shifting values by the browser's UTC offset. These helpers normalize a missing
+ * designator to `Z` so the value is always parsed as UTC; formatting then renders
+ * it in the viewer's browser timezone (the app-wide display convention).
  */
 
 const hasTimezone = (iso: string): boolean => /([zZ])$|([+-]\d{2}:?\d{2})$/.test(iso.trim());

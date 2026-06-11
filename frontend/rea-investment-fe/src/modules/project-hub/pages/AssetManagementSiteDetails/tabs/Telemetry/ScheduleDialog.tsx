@@ -34,7 +34,7 @@ import type {
   TelemetryCadence
 } from '../../../../../../types/telemetryV2';
 import { BackfillDialog } from './BackfillDialog';
-import { formatUtc, isLockActive } from './telemetryTime';
+import { formatUtc, isLockActive } from '../../../../../../utils/time/utcTime';
 
 interface ScheduleDialogProps {
   siteId: number;

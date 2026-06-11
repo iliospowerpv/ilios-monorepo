@@ -53,6 +53,7 @@ from app.schema.site import (
     SiteCreationResponse,
     SiteOrderByFieldEnum,
     SiteUpdateSuccess,
+    UpdateSiteSchema,
 )
 from app.schema.site_details import SiteFullDetailsSchema
 from app.schema.user import CurrentUserSchema
@@ -248,6 +249,43 @@ async def get_site_details(
     response["entity_assignments"] = entity_assignments
 
     return response
+
+
+@sites_router.put(
+    "/{site_id}",
+    response_model=SiteCreationResponse,
+    status_code=status.HTTP_200_OK,
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
+    description=(
+        "Update a site's core attributes (name, address, system sizes, timezone, etc.). "
+        "Full-replace semantics: the request body is applied as-is, so omitting an optional "
+        "field (e.g. timezone, cameras_uuids) resets it to its schema default. Always send the "
+        "complete current values. ``company_id`` is accepted but ignored (a site is never re-parented)."
+    ),
+)
+async def update_site(
+    data: UpdateSiteSchema,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    site: Site = Depends(get_authorized_site),
+    db_session: Session = Depends(get_session),
+) -> dict:
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=site.company_id,
+        db_session=db_session,
+        module_key=PermissionsModules.assets_management.value,
+        action="edit",
+        project_id=site.id,
+    )
+    # ``company_id`` may be echoed back by the edit form; ignore it so the site
+    # is never re-parented to a different company.
+    update_payload = data.model_dump(exclude={"company_id"})
+    SiteCRUD(db_session).update_by_id(site.id, update_payload)
+    return {
+        "id": site.id,
+        "code": status.HTTP_200_OK,
+        "message": SiteMessages.site_update_success,
+    }
 
 
 @sites_router.put(

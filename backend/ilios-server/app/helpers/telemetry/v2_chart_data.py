@@ -14,11 +14,15 @@ have no V2 equivalent and stay on BigQuery.
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+import logging
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
 from app.crud.telemetry_native import TelemetryDeviceRollupCRUD, TelemetrySiteRollupCRUD
+
+logger = logging.getLogger(__name__)
 
 # Normalized metric keys (see TelemetryMetricCatalog) read by the O&M charts.
 SITE_POWER_METRIC = "site_power_ac_kw"
@@ -79,6 +83,29 @@ def build_actual_vs_expected_series(db_session: Session, site_id: int) -> list[d
     ]
 
 
+def _site_local_day_start_utc(site) -> datetime:
+    """Naive-UTC instant of the site's most recent local midnight.
+
+    Telemetry readings/rollups are stored naive-UTC, so "today" is computed
+    against the site's local calendar day (its stored IANA ``timezone``) and the
+    day's start is expressed as a naive-UTC datetime for the rollup query. Falls
+    back to UTC (with a warning) when the site has no timezone or an unknown one,
+    so a bad value can never break the dashboard.
+    """
+    tz_name = getattr(site, "timezone", None) or "UTC"
+    try:
+        tz = ZoneInfo(tz_name)
+    except Exception:
+        logger.warning(
+            "v2_today_invalid_site_timezone site_id=%s tz=%r falling_back=UTC",
+            getattr(site, "id", None),
+            tz_name,
+        )
+        tz = timezone.utc
+    local_midnight = datetime.now(tz).replace(hour=0, minute=0, second=0, microsecond=0)
+    return local_midnight.astimezone(timezone.utc).replace(tzinfo=None)
+
+
 def apply_v2_actual_production(db_session: Session, site) -> None:
     """Populate a Site ORM's actual-production attributes from V2 rollups.
 
@@ -90,12 +117,13 @@ def apply_v2_actual_production(db_session: Session, site) -> None:
       baseline). ``expected_baseline_available`` is set False so the frontend
       renders "N/A"/"Baseline not available" instead of a misleading 0% / 0 kW.
 
-    "Today" is defined in UTC (matching how readings/rollups are stored), not the
-    site's local day — a known approximation.
+    "Today" is the SITE's local day (its stored IANA ``timezone``), converted to
+    UTC for the rollup query since readings/rollups are stored naive-UTC. Falls
+    back to UTC when the site has no/invalid timezone.
     """
     crud = TelemetrySiteRollupCRUD(db_session)
     now = datetime.utcnow()
-    day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    day_start = _site_local_day_start_utc(site)
     today_rows = crud.get_series(
         site_id=site.id,
         normalized_metric=SITE_POWER_METRIC,

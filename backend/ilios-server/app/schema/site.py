@@ -2,6 +2,7 @@
 
 from datetime import date
 from enum import Enum
+from zoneinfo import available_timezones
 from typing import ClassVar, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -27,6 +28,7 @@ class BaseSiteSchema(BaseModel):
     system_size_dc: float
     lon_lat_url: str = Field(examples=["41° 56’ 54.3732"])
     cameras_uuids: Optional[list] = Field([], examples=[["ADDA12", "VDSDVS45"]])
+    timezone: str = Field(default="UTC", examples=["America/New_York"])
 
     _round_system_sizes_to_scale_2 = field_validator("system_size_ac", "system_size_dc")(round_to_scale_2)
 
@@ -38,6 +40,17 @@ class BaseSiteSchema(BaseModel):
             raise ValueError("zip code must be no longer than 5 digits.")
         return zip_code
 
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, timezone_value):
+        """Validate that the value is a known IANA timezone (e.g. 'America/New_York')."""
+        if timezone_value not in available_timezones():
+            raise ValueError(
+                f"Invalid IANA timezone: {timezone_value!r}. "
+                "Expected a value like 'America/New_York' or 'UTC'."
+            )
+        return timezone_value
+
 
 class CreateSiteSchema(BaseSiteSchema):
     company_id: int = Field(examples=[1])
@@ -45,6 +58,10 @@ class CreateSiteSchema(BaseSiteSchema):
 
 
 class UpdateSiteSchema(BaseSiteSchema):
+    # The site-edit form may echo back ``company_id``; accept it so the request
+    # is not rejected by ``extra="forbid"``, but the update endpoint ignores it
+    # and never re-parents the site to a different company.
+    company_id: Optional[int] = Field(default=None)
     model_config = ConfigDict(extra="forbid")
 
 

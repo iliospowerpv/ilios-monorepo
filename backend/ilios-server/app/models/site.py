@@ -118,6 +118,10 @@ class Site(RelatedBoards, Base):
     system_size_ac = Column(Float, nullable=False)
     system_size_dc = Column(Float, nullable=False)
     lon_lat_url = Column(VARCHAR, nullable=False)
+    # IANA timezone for the site (e.g. "America/New_York"), used for site-local
+    # telemetry computations (the daily/"today" production boundary, reporting).
+    # General app UI timestamps still render in the viewer's browser timezone.
+    timezone = Column(VARCHAR, nullable=False, server_default="UTC")
 
     constructed_name = Column(VARCHAR(255), nullable=True)
     name_override = Column(VARCHAR(255), nullable=True)

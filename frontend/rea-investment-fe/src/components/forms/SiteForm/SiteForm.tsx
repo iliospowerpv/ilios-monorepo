@@ -47,6 +47,7 @@ type SiteFormFields = {
   telemetry_site_name: string;
   lon_lat_url: string;
   cameras_uuids: string[];
+  timezone: string;
 };
 
 type SiteFormProps =
@@ -57,6 +58,36 @@ const stateOptions: SearchableSelectOption[] = Object.entries(State).map(([key, 
   label: value,
   value: key
 }));
+
+// IANA timezone options for the per-site timezone selector. Prefer the browser's
+// full IANA list (Intl.supportedValuesOf); fall back to common US zones + UTC
+// when the runtime doesn't support it. The stored value drives site-local
+// telemetry/reporting math; app timestamps still render in the viewer's timezone.
+const TIMEZONE_FALLBACK = [
+  'UTC',
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Phoenix',
+  'America/Los_Angeles',
+  'America/Anchorage',
+  'Pacific/Honolulu'
+];
+
+const getTimezoneOptions = (): SearchableSelectOption[] => {
+  let zones: string[] = TIMEZONE_FALLBACK;
+  try {
+    const supported = (
+      Intl as unknown as { supportedValuesOf?: (key: string) => string[] }
+    ).supportedValuesOf?.('timeZone');
+    if (Array.isArray(supported) && supported.length) zones = supported;
+  } catch {
+    // keep fallback
+  }
+  return Array.from(new Set(['UTC', ...zones])).map(zone => ({ label: zone, value: zone }));
+};
+
+const timezoneOptions: SearchableSelectOption[] = getTimezoneOptions();
 
 export const SiteForm: React.FC<SiteFormProps> = props => {
   const { companyId, siteId, mode, siteData } = props;
@@ -145,7 +176,8 @@ export const SiteForm: React.FC<SiteFormProps> = props => {
             das_connection_name: siteData.das_connection_name,
             telemetry_site_name: siteData.telemetry_site_name,
             lon_lat_url: siteData.lon_lat_url,
-            cameras_uuids: siteData.cameras_uuids
+            cameras_uuids: siteData.cameras_uuids,
+            timezone: siteData.timezone || 'UTC'
           }
         : {
             company_id: companyId,
@@ -160,7 +192,8 @@ export const SiteForm: React.FC<SiteFormProps> = props => {
             das_connection_name: undefined,
             telemetry_site_name: undefined,
             lon_lat_url: undefined,
-            cameras_uuids: undefined
+            cameras_uuids: undefined,
+            timezone: 'UTC'
           })
     }
   });
@@ -181,7 +214,8 @@ export const SiteForm: React.FC<SiteFormProps> = props => {
         system_size_ac: Number.parseFloat(data.system_size_ac.replaceAll(',', '')),
         system_size_dc: Number.parseFloat(data.system_size_dc.replaceAll(',', '')),
         lon_lat_url: data.lon_lat_url,
-        cameras_uuids: data.cameras_uuids
+        cameras_uuids: data.cameras_uuids,
+        timezone: data.timezone
       });
 
       if (dirtyFields.das_connection_name && data.das_connection_name) {
@@ -411,6 +445,29 @@ export const SiteForm: React.FC<SiteFormProps> = props => {
             return true;
           }
         })}
+      />
+      <Controller
+        name="timezone"
+        control={control}
+        rules={{ required: 'Site Timezone is required field.' }}
+        render={({ field }) => (
+          <SearchableSelect
+            options={timezoneOptions}
+            value={field.value ?? null}
+            onChange={val => field.onChange(val)}
+            onBlur={field.onBlur}
+            inputRef={field.ref}
+            label="Site Timezone"
+            required
+            error={!!errors.timezone}
+            helperText={
+              errors.timezone?.message ||
+              "Site's local timezone. Drives site-local performance/reporting (e.g. daily totals); app times still show in your browser's timezone."
+            }
+            variant="filled"
+            formControlSx={noBottomLineStyles}
+          />
+        )}
       />
       <Typography variant="h6" marginTop="24px" gutterBottom>
         Telemetry
