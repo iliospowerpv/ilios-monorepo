@@ -98,6 +98,21 @@ class OverallStatus(str, Enum):
     baseline_not_available = "baseline_not_available"
 
 
+class ExpectedState(str, Enum):
+    """User-facing summary of an expected-calc result over a window.
+
+    Additive metadata the O&M/company views expose alongside (not instead of)
+    the existing ``expected_baseline_available`` boolean, so the frontend can
+    tell apart fully-available, partial, and the distinct missing reasons.
+    """
+
+    available = "available"  # a baseline exists and every bucket computed (all ``ok``)
+    partial = "partial"  # a baseline exists but only some buckets computed
+    missing_inputs = "missing_inputs"  # baseline exists, no ``ok`` bucket; inputs absent
+    pre_pto = "pre_pto"  # baseline exists, no ``ok`` bucket; window is before PTO
+    baseline_not_available = "baseline_not_available"  # no approved/active baseline
+
+
 @dataclass(frozen=True)
 class BaselineParams:
     """Immutable physics snapshot consumed by the pure calc core.
@@ -468,3 +483,30 @@ def compute_site_expected(
             1 for b in buckets if b.status == BucketStatus.pre_pto
         ),
     )
+
+
+def derive_expected_state(result: ExpectedResult) -> ExpectedState:
+    """Summarize an :class:`ExpectedResult` into a user-facing ``ExpectedState``.
+
+    Never fabricates: a result with no approved baseline is
+    ``baseline_not_available``; a baseline present but no telemetry buckets in the
+    window (so nothing could be computed) is ``missing_inputs``; all buckets
+    computed is ``available``; a mix is ``partial``; and when nothing computed but
+    buckets exist, the dominant failure reason (missing inputs vs pre-PTO) wins.
+    """
+    if result.overall_status == OverallStatus.baseline_not_available:
+        return ExpectedState.baseline_not_available
+    total = len(result.buckets)
+    if total == 0:
+        # Baseline exists but the window has no rollup buckets at all (e.g. night
+        # or no telemetry yet): expected could not be computed for lack of inputs.
+        return ExpectedState.missing_inputs
+    if result.ok_bucket_count == total:
+        return ExpectedState.available
+    if result.ok_bucket_count > 0:
+        return ExpectedState.partial
+    # No bucket computed: surface the dominant reason so the UI shows the right
+    # honest N/A ("Missing inputs" vs "Pre-PTO") rather than a generic blank.
+    if result.missing_inputs_bucket_count >= result.pre_pto_bucket_count:
+        return ExpectedState.missing_inputs
+    return ExpectedState.pre_pto

@@ -31,17 +31,29 @@ by the *weather-adjusted physics* expected, NOT the PVsyst design estimate. Trea
 PostgreSQL/Python with NO BigQuery. (A) stays monthly/annual only until an 8760
 parser is built — never synthesize hourly from monthly (that is fabrication).
 
-# Phase P3.1+P3.2 status — foundation BUILT (backend only, no UI yet)
-- The native baseline foundation now EXISTS: two PG tables
-  (`telemetry_expected_baselines` typed-physics header + `_baseline_points`),
-  a pure+DB calc service that ports the (B) jinja physics EXACTLY (verified
-  line-by-line), and admin/preview endpoints. **interval_rollups table was DEFERRED
-  on purpose** — weather-adjusted expected is computed on read from V2 rollups, not
-  materialized. **Why:** the inputs are already ingested, so materializing adds
-  cache-invalidation burden with no current consumer.
-- Never-fabricate state machine is the contract: no approved baseline ⇒
+# Native baseline foundation (compute-on-read)
+- The native baseline lives in two PG tables (`telemetry_expected_baselines`
+  typed-physics header + `_baseline_points`) plus a pure+DB calc service that ports
+  the (B) jinja physics EXACTLY (verified line-by-line), with admin/preview endpoints.
+  Weather-adjusted expected is **computed on read** from V2 rollups, NOT materialized
+  into an interval-rollups table. **Why:** the inputs are already ingested, so
+  materializing adds cache-invalidation burden with no extra consumer.
+- Never-fabricate state machine is the contract: no active baseline ⇒
   `baseline_not_available`; bucket missing irradiance/cell-temp ⇒ `missing_inputs`;
   PTO null/before bucket ⇒ `pre_pto`; all of these mean expected = NULL, never 0.
+  Only an active `weather_adjusted_model` baseline drives live expected (design
+  estimate is NOT live).
+- **`expected_baseline_available` boolean semantics diverge by level — gate on
+  `expected_state`, not the bool.** Site-level sets the flag True whenever an active
+  baseline exists, even when state is `missing_inputs`/`pre_pto` and every expected
+  value is None; company-level sets it True only when state == `available`. So a True
+  site flag does NOT guarantee any non-null expected — the FE must branch on
+  `expected_state`. Per-site states: {available, partial, missing_inputs, pre_pto,
+  baseline_not_available}; company states: {available, partial, baseline_not_available}
+  + counts (sites_with_telemetry, sites_with_active_baseline, sites_missing_baseline).
+- Company expected is honest-or-null: a real sum ONLY when EVERY telemetry-backed site
+  is `available`; otherwise expected/loss = None (never 0). Do not infer device expected
+  from site; inverter tiles stay neutral/N/A (no device-level expected).
 - One-active per (site, baseline_type) enforced by a partial unique index
   `WHERE status='active'` PLUS a FOR UPDATE supersede in the activate tx. **Edge:** a
   true concurrent activation race surfaces as an IntegrityError 500 (not a clean 409)
@@ -50,7 +62,7 @@ parser is built — never synthesize hourly from monthly (that is fabrication).
   loss% is abs()-normalized and snapshotted (with PTO + site tz) onto the immutable
   baseline at creation; age is anchored on PTO via the baseline's snapshot tz.
 
-# Baseline-build rules (Phase 3 design)
+# Baseline-build rules
 - Postgres V2 = source of truth for actuals; BQ is not an app dep; do not route V2
   expected/loss through BQ; do not derive expected from actual.
 - Human sign-off mandatory: reuse the DD chain (document_keys → project_facts
@@ -65,10 +77,13 @@ parser is built — never synthesize hourly from monthly (that is fabrication).
   as negative percentages in `site_details` examples but the BQ formula expects
   positive `%` subtracted `/100` — normalize sign+magnitude on import or expected is
   silently wrong.
-- Do NOT remove the legacy layer yet: the baseline foundation exists but NOTHING
-  consumes it for charts (UI/chart rewiring intentionally out of P3.1+P3.2 scope).
-  Keep until the charts are actually rewired to the native model: BQ read layer + the
-  4 `/api/om/.../-chart` fallbacks, rea-telemetry jinja templates (still the
-  formula-of-record to diff against), Firestore config models, DocAI PVsyst pipeline +
-  mapper + extraction registry, parameter source columns, and the
-  `expected_baseline_available` flag contract.
+- Charts + company/investor/portfolio aggregation now consume the native baseline for
+  V2 sites (only the `site_has_v2_rollups` branches were rewired). The legacy layer is
+  retained as the non-V2 fallback — do NOT remove it: BQ read layer + the `/api/om/...`
+  chart fallbacks, rea-telemetry jinja templates (still the formula-of-record to diff
+  against), Firestore config models, DocAI PVsyst pipeline + mapper + extraction
+  registry, and parameter source columns all still back non-V2 sites.
+- Shared validators (`calculate_actual_vs_expected`, performance-index, round) are
+  None-safe and used by BOTH V2 and legacy paths, so legacy now also emits None
+  (instead of 0/None÷100) for missing/undefined expected — an intentional honesty
+  improvement; every consuming schema field is already Optional so no 500 risk.

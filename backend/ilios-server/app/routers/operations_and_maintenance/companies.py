@@ -206,14 +206,19 @@ async def get_loses_for_a_day_chart(
     db_session: Session = Depends(get_session),
 ):
     # Cumulative = today's actual energy from V2 rollups (per-site local day,
-    # summed across the company). There is no V2 expected baseline, so expected
-    # and loss are null and the frontend shows "Baseline not available".
+    # summed across the company). Expected/loss are honest-or-null: a real number
+    # only when every telemetry-backed site has an active baseline that fully
+    # computes today; otherwise null with ``expected_state`` explaining why.
     allowed_site_ids = set(get_company_site_ids_to_limit(company, current_user))
     sites = [site for site in company.sites if site.id in allowed_site_ids]
     actuals = aggregate_company_actuals(db_session, sites)
     return {
         "cumulative": actuals["cumulative_actual_kw"],
-        "expected": None,
-        "loss": None,
-        "expected_baseline_available": False,
+        "expected": actuals["cumulative_expected_kw"],
+        "loss": actuals["loss"],
+        "expected_baseline_available": actuals["expected_baseline_available"],
+        "expected_state": actuals["expected_state"],
+        "sites_with_telemetry": actuals["sites_with_telemetry"],
+        "sites_with_active_baseline": actuals["sites_with_active_baseline"],
+        "sites_missing_baseline": actuals["sites_missing_baseline"],
     }

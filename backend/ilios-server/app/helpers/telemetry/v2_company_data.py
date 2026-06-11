@@ -8,11 +8,16 @@ here we aggregate the same per-site *actual* values across all the sites of a
 company (and, by extension, an investor "portfolio", which the platform models
 as a per-company aggregation — there is no formal Portfolio entity yet).
 
-V2 carries *actual* telemetry only (AC power). There is no projected/"expected"
-baseline metric, so every company/portfolio aggregate intentionally leaves
-``expected``/``loss`` ``None`` and reports ``expected_baseline_available=False``;
-the frontend renders "N/A" / "Baseline not available" instead of a misleading
-0% / 0 kW. Expected/loss will be rebuilt in a future V2 baseline sprint.
+Expected aggregation is HONEST-OR-NULL. A company-level expected is reported only
+when EVERY telemetry-backed site (a site with V2 rollups) has an active
+``weather_adjusted_model`` baseline AND that baseline computes a full day with no
+missing inputs — i.e. when the company ``expected_state`` is ``available``. In any
+other case (some sites lack a baseline, or a site's inputs are missing/pre-PTO)
+the aggregate expected is ``None`` so the frontend never shows a misleading
+partial-coverage sum; the additive ``expected_state`` (+ the
+``sites_with_telemetry`` / ``sites_with_active_baseline`` / ``sites_missing_baseline``
+counts) explains exactly why. ``expected_baseline_available`` stays ``True`` only
+when a real aggregate is present.
 
 Semantics mirror ``apply_v2_actual_production`` so a company total equals the sum
 of its site cards:
@@ -31,16 +36,32 @@ state for companies that are not yet V2-backed.
 from __future__ import annotations
 
 import logging
+from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy.orm import Session
 
+from app.crud.telemetry_expected import TelemetryExpectedBaselineCRUD
 from app.helpers.telemetry.v2_chart_data import (
     CHART_BUCKET_SIZE,
     SITE_POWER_METRIC,
     _site_local_day_start_utc,
 )
 from app.models.telemetry import TelemetrySiteIntervalRollup
+from app.services.telemetry.expected_service import (
+    CELL_TEMPERATURE_METRIC,
+    IRRADIANCE_METRIC,
+    BaselineParams,
+    BucketInput,
+    BucketStatus,
+    ExpectedResult,
+    ExpectedState,
+    OverallStatus,
+    compute_expected_buckets,
+    derive_expected_state,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -127,29 +148,252 @@ def get_sites_today_energy(
     return energy
 
 
+@dataclass(frozen=True)
+class SiteExpectedToday:
+    """Per-site today expected summary fed into the company aggregate.
+
+    * ``state`` — the per-site :class:`ExpectedState` over today's site-local day.
+    * ``expected_energy_kwh`` — Σ of the ``ok`` buckets' expected energy (``None``
+      when no bucket could be computed). Never zero-filled for missing buckets.
+    * ``expected_power_latest_kw`` — expected power at the latest bucket, but only
+      when that bucket is ``ok`` (strict, no cross-bucket borrowing); else ``None``.
+    """
+
+    state: ExpectedState
+    expected_energy_kwh: Optional[float]
+    expected_power_latest_kw: Optional[float]
+
+
+def get_active_baselines(db_session: Session, site_ids) -> dict:
+    """Batched ``{site_id: active weather_adjusted_model baseline}`` (one query)."""
+    return TelemetryExpectedBaselineCRUD(db_session).get_active_for_sites(list(site_ids))
+
+
+def compute_sites_expected_today(
+    db_session: Session, sites, baselines_by_site: dict, *, bucket_size: str = CHART_BUCKET_SIZE
+) -> dict:
+    """Per-site today expected for every site that has an active baseline.
+
+    Pulls power + irradiance + cell-temperature rollups for ALL the sites in ONE
+    windowed query (no N×3 per-site ``get_series``), attributes each bucket to its
+    site's OWN local day, then runs the pure ``compute_expected_buckets`` core per
+    site. Only sites present in ``baselines_by_site`` are computed; the returned
+    mapping always has an entry for each such site (a baseline with no buckets / no
+    inputs today yields ``missing_inputs`` and ``None`` energy — never a fabricated
+    value). Returns ``{site_id: SiteExpectedToday}``.
+    """
+    sites = [site for site in sites if site.id in baselines_by_site]
+    if not sites:
+        return {}
+    now = datetime.utcnow()
+    hours = _bucket_hours(bucket_size)
+    metrics = (SITE_POWER_METRIC, IRRADIANCE_METRIC, CELL_TEMPERATURE_METRIC)
+    day_start_by_site = {site.id: _site_local_day_start_utc(site) for site in sites}
+    window_start = min(day_start_by_site.values())
+
+    rows = (
+        db_session.query(TelemetrySiteIntervalRollup)
+        .filter(
+            TelemetrySiteIntervalRollup.site_id.in_(list(day_start_by_site.keys())),
+            TelemetrySiteIntervalRollup.normalized_metric.in_(metrics),
+            TelemetrySiteIntervalRollup.bucket_size == bucket_size,
+            TelemetrySiteIntervalRollup.bucket_start >= window_start,
+            TelemetrySiteIntervalRollup.bucket_start <= now,
+        )
+        .all()
+    )
+
+    # {site_id: {metric: {bucket_start: value}}}, only buckets inside each site's
+    # own local day (a single company-wide boundary would be wrong across tzs).
+    by_site: dict = defaultdict(lambda: {m: {} for m in metrics})
+    for row in rows:
+        site_day_start = day_start_by_site.get(row.site_id)
+        if site_day_start is None or row.bucket_start < site_day_start:
+            continue
+        metric_map = by_site[row.site_id].get(row.normalized_metric)
+        if metric_map is not None:
+            metric_map[row.bucket_start] = float(row.value)
+
+    out: dict = {}
+    for site in sites:
+        out[site.id] = _summarize_site_expected(
+            site_id=site.id,
+            baseline=baselines_by_site[site.id],
+            metric_maps=by_site.get(site.id),
+            bucket_hours=hours,
+            bucket_size=bucket_size,
+            window_start=window_start,
+            window_end=now,
+        )
+    return out
+
+
+def _summarize_site_expected(
+    *, site_id, baseline, metric_maps, bucket_hours, bucket_size, window_start, window_end
+) -> SiteExpectedToday:
+    """Compute one site's today expected summary from its aligned metric maps."""
+    missing = SiteExpectedToday(
+        state=ExpectedState.missing_inputs,
+        expected_energy_kwh=None,
+        expected_power_latest_kw=None,
+    )
+    try:
+        params = BaselineParams.from_baseline(baseline)
+    except ValueError:
+        # Active baseline exists but its physics are incomplete: cannot compute,
+        # so surface missing_inputs rather than fabricate an expected.
+        logger.warning("company_expected_baseline_incomplete site_id=%s", site_id)
+        return missing
+    if not metric_maps:
+        return missing
+
+    power_map = metric_maps[SITE_POWER_METRIC]
+    irradiance_map = metric_maps[IRRADIANCE_METRIC]
+    cell_temp_map = metric_maps[CELL_TEMPERATURE_METRIC]
+    bucket_starts = sorted(set(power_map) | set(irradiance_map) | set(cell_temp_map))
+    bucket_inputs = [
+        BucketInput(
+            bucket_start=bs,
+            irradiance_wm2=irradiance_map.get(bs),
+            cell_temperature_f=cell_temp_map.get(bs),
+            actual_power_kw=power_map.get(bs),
+        )
+        for bs in bucket_starts
+    ]
+    buckets = compute_expected_buckets(params, bucket_inputs, bucket_hours)
+    ok_buckets = [b for b in buckets if b.status == BucketStatus.ok]
+    expected_energy = sum(b.expected_energy_kwh for b in ok_buckets) if ok_buckets else None
+    latest = buckets[-1] if buckets else None
+    expected_power_latest = (
+        latest.expected_power_kw if latest is not None and latest.status == BucketStatus.ok else None
+    )
+
+    result = ExpectedResult(
+        overall_status=OverallStatus.ok,
+        baseline_id=getattr(baseline, "id", None),
+        baseline_type=None,
+        bucket_size=bucket_size,
+        window_start=window_start,
+        window_end=window_end,
+        buckets=buckets,
+        expected_energy_kwh=expected_energy,
+        actual_energy_kwh=None,
+        ok_bucket_count=len(ok_buckets),
+        missing_inputs_bucket_count=sum(
+            1 for b in buckets if b.status == BucketStatus.missing_inputs
+        ),
+        pre_pto_bucket_count=sum(1 for b in buckets if b.status == BucketStatus.pre_pto),
+    )
+    return SiteExpectedToday(
+        state=derive_expected_state(result),
+        expected_energy_kwh=expected_energy,
+        expected_power_latest_kw=expected_power_latest,
+    )
+
+
+def aggregate_company_expected(
+    company_sites, telemetry_site_ids, baselines_by_site: dict, expected_by_site: dict
+) -> dict:
+    """Pure honest roll-up of company expected from precomputed per-site data.
+
+    ``telemetry_site_ids`` is the set of site ids that have V2 rollups (the
+    company's "telemetry-backed" sites). The aggregate expected is a real number
+    ONLY when every telemetry-backed site is fully computable (``available``);
+    otherwise it is ``None`` and ``expected_state`` explains the gap. This never
+    fabricates and never converts a missing expected into 0.
+    """
+    company_site_ids = {site.id for site in company_sites}
+    telemetry = company_site_ids & set(telemetry_site_ids)
+    sites_with_telemetry = len(telemetry)
+    sites_with_active_baseline = len(telemetry & set(baselines_by_site))
+    sites_missing_baseline = sites_with_telemetry - sites_with_active_baseline
+
+    states = [
+        expected_by_site[sid].state
+        if sid in baselines_by_site and sid in expected_by_site
+        else ExpectedState.baseline_not_available
+        for sid in telemetry
+    ]
+
+    if sites_with_telemetry == 0:
+        company_state = ExpectedState.baseline_not_available
+    elif all(state == ExpectedState.available for state in states):
+        company_state = ExpectedState.available
+    elif all(state == ExpectedState.baseline_not_available for state in states):
+        company_state = ExpectedState.baseline_not_available
+    else:
+        company_state = ExpectedState.partial
+
+    total_expected_kw = None
+    cumulative_expected_kw = None
+    if company_state == ExpectedState.available:
+        # Every telemetry site fully computed -> a real, comparable aggregate.
+        cumulative_expected_kw = float(
+            sum(expected_by_site[sid].expected_energy_kwh for sid in telemetry)
+        )
+        powers = [expected_by_site[sid].expected_power_latest_kw for sid in telemetry]
+        if all(power is not None for power in powers):
+            total_expected_kw = float(sum(powers))
+
+    return {
+        "total_expected_kw": total_expected_kw,
+        "cumulative_expected_kw": cumulative_expected_kw,
+        "expected_baseline_available": company_state == ExpectedState.available,
+        "expected_state": company_state.value,
+        "sites_with_telemetry": sites_with_telemetry,
+        "sites_with_active_baseline": sites_with_active_baseline,
+        "sites_missing_baseline": sites_missing_baseline,
+    }
+
+
 def aggregate_company_actuals(
     db_session: Session, sites, *, bucket_size: str = CHART_BUCKET_SIZE
 ) -> dict:
-    """Aggregate the *actual* production of a company's sites from V2 rollups.
+    """Aggregate the *actual* and *expected* production of a company's sites (V2).
 
     ``sites`` are the (already access-filtered) Site ORM objects to include.
-    Returns the shape the company/investor dashboard sections need. Expected and
-    loss are ``None`` and ``expected_baseline_available`` is ``False`` (no V2
-    baseline yet). ``sites_with_telemetry`` lets a caller distinguish "no V2 data
-    at all" from "V2 data exists but production is 0 right now".
+    Actuals always come from ``telemetry_site_interval_rollups``. Expected is
+    honest-or-null: it is a real sum only when every telemetry-backed site has an
+    active baseline that fully computes today (``expected_state == 'available'``);
+    otherwise expected/loss are ``None`` and the counts + ``expected_state``
+    explain why. ``sites_with_telemetry`` distinguishes "no V2 data at all" from
+    "V2 data exists but production is 0 right now".
     """
     sites = list(sites)
     site_ids = [site.id for site in sites]
     latest_power = get_sites_latest_power(db_session, site_ids, bucket_size=bucket_size)
     today_energy = get_sites_today_energy(db_session, sites, bucket_size=bucket_size)
 
+    telemetry_site_ids = set(latest_power)
+    baselines_by_site = get_active_baselines(db_session, site_ids)
+    sites_to_compute = [
+        site for site in sites if site.id in telemetry_site_ids and site.id in baselines_by_site
+    ]
+    expected_by_site = compute_sites_expected_today(
+        db_session, sites_to_compute, baselines_by_site, bucket_size=bucket_size
+    )
+    expected = aggregate_company_expected(
+        sites, telemetry_site_ids, baselines_by_site, expected_by_site
+    )
+
+    cumulative_actual_kw = float(sum(today_energy.values()))
+    cumulative_expected_kw = expected["cumulative_expected_kw"]
+    loss = (
+        max(cumulative_expected_kw - cumulative_actual_kw, 0.0)
+        if cumulative_expected_kw is not None
+        else None
+    )
+
     return {
         "total_actual_kw": float(sum(latest_power.values())),
-        "cumulative_actual_kw": float(sum(today_energy.values())),
-        "total_expected_kw": None,
-        "cumulative_expected_kw": None,
-        "loss": None,
-        "expected_baseline_available": False,
-        "sites_with_telemetry": len(latest_power),
+        "cumulative_actual_kw": cumulative_actual_kw,
+        "total_expected_kw": expected["total_expected_kw"],
+        "cumulative_expected_kw": cumulative_expected_kw,
+        "loss": loss,
+        "expected_baseline_available": expected["expected_baseline_available"],
+        "expected_state": expected["expected_state"],
+        "sites_with_telemetry": expected["sites_with_telemetry"],
+        "sites_with_active_baseline": expected["sites_with_active_baseline"],
+        "sites_missing_baseline": expected["sites_missing_baseline"],
         "per_site_actual_kw": latest_power,
     }

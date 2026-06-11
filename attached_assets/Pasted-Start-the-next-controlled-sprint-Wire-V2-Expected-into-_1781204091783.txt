@@ -1,0 +1,129 @@
+Start the next controlled sprint: Wire V2 Expected into O&M Charts and Performance Views.
+
+Context:
+The V2 expected-performance foundation is now built:
+- telemetry_expected_baselines
+- telemetry_expected_baseline_points
+- native weather-adjusted expected calculation in expected_service.py
+- lifecycle endpoints for create / approve / activate / supersede / preview
+- approved/active baseline requirement
+- never-fabricate states:
+  - baseline_not_available
+  - missing_inputs
+  - pre_pto
+- no BigQuery or Firestore imports
+- 16 golden unit tests
+- end-to-end lifecycle validated against site 4
+
+Strategic rules:
+- PostgreSQL V2 telemetry is the app-native source of truth.
+- BigQuery is not an operational dependency.
+- Do not query BigQuery.
+- Do not query Firestore.
+- Do not fabricate expected values.
+- Do not convert missing expected to 0.
+- Only approved/active baselines may drive live expected/performance views.
+- Preserve design estimate vs weather-adjusted expected distinction.
+- Preserve honest N/A states when baseline or required weather inputs are missing.
+
+Objective:
+Wire the new V2 expected calculation into the user-facing O&M and company/portfolio performance views.
+
+Phase 1 — Site O&M charts
+
+Update V2-backed site chart paths to use native expected calculation when an approved/active baseline exists.
+
+Targets:
+1. Actual Production summary
+2. Actual vs Expected chart
+3. Past Performance chart
+4. Inverter Actual Production / inverter performance tiles, where device-level expected is available or clearly not available
+5. Losses / performance percentage surfaces, if present at site level
+
+Requirements:
+- Actuals remain sourced from V2 rollups.
+- Expected comes from the new native expected calculation.
+- Use weather-adjusted expected for operational actual-vs-expected views.
+- Do not use PVsyst/design estimate as the live expected line unless it is represented by an approved baseline and calculation method.
+- If no active baseline exists, show Baseline not available.
+- If irradiance/cell-temperature inputs are missing, show Missing inputs.
+- If timestamp is pre-PTO, show Pre-PTO / N/A.
+- Expected values should be nullable.
+- Performance percentages should be nullable when expected is missing.
+- Losses should be nullable when expected is missing.
+- Do not display 0% unless the real calculation result is actually zero and distinguishable from missing baseline.
+- Preserve existing no-baseline UI patterns where applicable.
+
+Phase 2 — Company / investor / portfolio expected rollups
+
+Extend company/investor/portfolio aggregation to include expected and performance when active baselines exist.
+
+Requirements:
+- Actual power/energy remains PostgreSQL V2 rollup based.
+- Expected should aggregate from native expected calculation outputs.
+- Expected energy should aggregate consistently across site-local time boundaries.
+- Company and portfolio expected should be nullable when any relevant site has no approved/active baseline or missing inputs.
+- Return enough metadata to distinguish:
+  - fully available expected
+  - partially available expected
+  - baseline missing
+  - input missing
+- Do not silently exclude missing sites in a way that makes portfolio performance look better or worse.
+- If partial expected exists, surface partial_expected_available or equivalent metadata.
+
+Phase 3 — Inverter thresholds
+
+Re-enable color thresholds only where an expected comparison is valid.
+
+Requirements:
+- Green/yellow/red inverter performance thresholds require expected value.
+- If device-level expected is not available, do not infer from site-level expected unless a defensible allocation rule is explicitly implemented and documented.
+- Otherwise show neutral/N/A state.
+- Do not paint tiles red because baseline is missing.
+- Keep actual kW visible.
+
+Phase 4 — Help/definitions hooks
+
+Add or prepare help/definition metadata for:
+- Actual
+- Design estimate
+- PVsyst estimate
+- Weather-adjusted expected
+- Baseline
+- Active baseline
+- Missing inputs
+- Pre-PTO
+- Losses
+- Past Performance %
+- Inverter performance %
+
+This can be minimal in this sprint, but note where tooltips/help text should appear for the usability sprint.
+
+Validation:
+1. Site 4 with no active baseline still shows Baseline not available.
+2. Site 4 with active approved baseline shows expected values in preview and chart endpoints.
+3. Missing irradiance/cell temp returns Missing inputs, not 0.
+4. Pre-PTO buckets return N/A, not 0.
+5. Actual vs Expected chart shows both series only when expected is available.
+6. Past Performance % computes only when expected is available.
+7. Losses compute only when expected is available.
+8. Inverter tiles remain neutral unless device-level expected is available or a documented allocation exists.
+9. Company actuals still aggregate from V2 rollups.
+10. Company expected/performance returns correct nullable/partial states.
+11. Portfolio expected/performance returns correct nullable/partial states.
+12. No BigQuery imports or calls.
+13. No Firestore imports or calls.
+14. Existing manual refresh, scheduler, health/readiness, and actual-only charts continue to work.
+15. Typecheck/lint/tests pass.
+16. Architect review passes.
+
+Return:
+- files changed
+- endpoints changed
+- how expected values are calculated and surfaced
+- nullable/missing-state behavior
+- company/portfolio partial-baseline behavior
+- inverter threshold behavior
+- validation results
+- remaining usability/help notes
+- risks and follow-up items

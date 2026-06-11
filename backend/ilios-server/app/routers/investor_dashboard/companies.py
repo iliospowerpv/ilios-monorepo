@@ -11,8 +11,14 @@ from app.helpers.authorization import AuthorizedUser, InvestorDashboardPermissio
 from app.helpers.company_helper import get_company_actual_production_section_with_telemetry
 from app.helpers.pagination import pagination_details
 from app.helpers.query_params_validator import validate_query_params
-from app.helpers.telemetry.v2_company_data import get_sites_latest_power
+from app.helpers.telemetry.v2_company_data import (
+    aggregate_company_expected,
+    compute_sites_expected_today,
+    get_active_baselines,
+    get_sites_latest_power,
+)
 from app.models.company import Company
+from app.models.site import Site
 from app.schema.company import CompaniesOrderByFieldEnum
 from app.schema.om_company import CompanyDashboardActualProductionSection, InvestorDashboardCompaniesPaginator
 from app.schema.user import CurrentUserSchema
@@ -51,22 +57,55 @@ async def get_companies_list(
         site_ids_to_limit=site_ids_to_limit,
     )
     # get sites actual production from V2 PostgreSQL rollups (no BigQuery). Sites
-    # without V2 rollups simply contribute 0; there is no V2 expected baseline.
+    # without V2 rollups simply contribute 0 to actual.
     power_by_site = get_sites_latest_power(db_session, site_ids_to_limit)
+
+    # Expected is honest-or-null per company. Compute it once for just the sites
+    # on this page (intersected with access): load Site ORM objects (timezone
+    # needed for per-site local-day attribution), batch the active baselines, and
+    # compute today's expected per site via the pure V2 core. A company's expected
+    # is a real number only when every telemetry-backed site is fully computable;
+    # otherwise it is None with metadata explaining the gap (never fabricated).
+    site_ids_to_limit_set = set(site_ids_to_limit)
+    page_site_ids = set()
+    for company in companies:
+        page_site_ids |= set(company.sites_ids) & site_ids_to_limit_set
+    sites_by_id = (
+        {site.id: site for site in db_session.query(Site).filter(Site.id.in_(page_site_ids)).all()}
+        if page_site_ids
+        else {}
+    )
+    telemetry_site_ids = set(power_by_site)
+    baselines_by_site = get_active_baselines(db_session, page_site_ids)
+    computable_sites = [
+        sites_by_id[sid]
+        for sid in (telemetry_site_ids & set(baselines_by_site))
+        if sid in sites_by_id
+    ]
+    expected_by_site = compute_sites_expected_today(db_session, computable_sites, baselines_by_site)
 
     # extend companies with details from other sources
     response = []
     for company in companies:
         # get sites actual production for this company (V2 actuals only)
         company_actual_kw = sum(power_by_site.get(site_id, 0.0) for site_id in company.sites_ids)
+        company_site_ids = set(company.sites_ids) & site_ids_to_limit_set
+        company_sites = [sites_by_id[sid] for sid in company_site_ids if sid in sites_by_id]
+        expected = aggregate_company_expected(
+            company_sites, telemetry_site_ids, baselines_by_site, expected_by_site
+        )
 
         # update response object
         company_dict = company._asdict()
         company_dict.update(
             {
                 "total_actual_kw": company_actual_kw,
-                "total_expected_kw": None,
-                "expected_baseline_available": False,
+                "total_expected_kw": expected["total_expected_kw"],
+                "expected_baseline_available": expected["expected_baseline_available"],
+                "expected_state": expected["expected_state"],
+                "sites_with_telemetry": expected["sites_with_telemetry"],
+                "sites_with_active_baseline": expected["sites_with_active_baseline"],
+                "sites_missing_baseline": expected["sites_missing_baseline"],
             }
         )
         response.append(company_dict)

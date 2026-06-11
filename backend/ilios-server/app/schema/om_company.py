@@ -22,6 +22,13 @@ class OMCompaniesPageSchema(CompaniesPageSchema):
     # Defaults True so any remaining BigQuery path is unchanged; set False by the
     # V2 aggregation path.
     expected_baseline_available: bool = True
+    # Additive V2 metadata (None on legacy/BigQuery paths). ``expected_state`` is
+    # one of {available, partial, baseline_not_available}; the counts explain
+    # partial coverage so the UI can caption why expected is N/A.
+    expected_state: Optional[str] = None
+    sites_with_telemetry: Optional[int] = None
+    sites_with_active_baseline: Optional[int] = None
+    sites_missing_baseline: Optional[int] = None
 
     alerts_overview: Optional[Union[AlertOverviewSchema, dict]] = Field(default={"total": 0, "severity": None})
 
@@ -53,6 +60,13 @@ class CompanyDashboardActualProductionSection(CumulativeProductionDetailsBaseSch
     # Defaults True (BigQuery path); the V2 aggregation path sets it False so the
     # frontend shows "N/A" / "Baseline not available" for expected fields.
     expected_baseline_available: bool = True
+    # Additive V2 metadata (None on legacy/BigQuery paths). ``expected_state`` is
+    # one of {available, partial, baseline_not_available}; the counts explain
+    # partial coverage so the UI can caption why expected is N/A.
+    expected_state: Optional[str] = None
+    sites_with_telemetry: Optional[int] = None
+    sites_with_active_baseline: Optional[int] = None
+    sites_missing_baseline: Optional[int] = None
 
     _round_capacities_to_scale_2 = field_validator(
         "total_actual_kw", "total_expected_kw", "total_system_size_ac", "total_system_size_dc"
@@ -95,6 +109,13 @@ class CompanyLosesForADaySchema(BaseModel):
     # Defaults True (BigQuery path); the V2 path sets it False so the frontend
     # shows "N/A" / "Baseline not available" for expected and loss.
     expected_baseline_available: bool = True
+    # Additive V2 metadata (None on legacy/BigQuery paths). ``expected_state`` is
+    # one of {available, partial, baseline_not_available}; the counts explain
+    # partial coverage so the UI can caption why expected is N/A.
+    expected_state: Optional[str] = None
+    sites_with_telemetry: Optional[int] = None
+    sites_with_active_baseline: Optional[int] = None
+    sites_missing_baseline: Optional[int] = None
 
     _round_capacities_to_scale_2 = field_validator("cumulative", "expected", "loss")(round_to_scale_2)
 
@@ -109,6 +130,13 @@ class InvestorDashboardCompanySchema(CompaniesPageSchema):
     actual_vs_expected: Optional[int] = Field(None, validate_default=True, examples=[22])
     # Defaults True (BigQuery path); the V2 aggregation path sets it False.
     expected_baseline_available: bool = True
+    # Additive V2 metadata (None on legacy/BigQuery paths). ``expected_state`` is
+    # one of {available, partial, baseline_not_available}; the counts explain
+    # partial coverage so the UI can caption why expected is N/A.
+    expected_state: Optional[str] = None
+    sites_with_telemetry: Optional[int] = None
+    sites_with_active_baseline: Optional[int] = None
+    sites_missing_baseline: Optional[int] = None
 
     _round_capacities_to_scale_2 = field_validator("total_actual_kw", "total_expected_kw")(round_to_scale_2)
 

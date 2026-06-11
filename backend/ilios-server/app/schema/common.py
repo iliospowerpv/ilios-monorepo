@@ -29,10 +29,22 @@ def round_to_scale_2(value: Optional[float]):
     return round(value, 2)
 
 
-def calculate_actual_vs_expected(actual, expected) -> int | float:
-    """Calculate actual/expected ratio"""
-    if any((actual == 0, expected == 0, actual is None, expected is None)):
-        return 0
+def calculate_actual_vs_expected(actual, expected) -> Optional[int]:
+    """Actual/expected ratio as an integer percent, or ``None`` when undefined.
+
+    Honesty contract (never fabricate a 0%):
+
+    * ``actual`` or ``expected`` is ``None`` (no baseline / missing inputs / pre-PTO)
+      -> ``None``. The frontend renders "N/A", not "0%".
+    * ``expected == 0`` -> ``None`` (ratio undefined / division by zero), not a
+      misleading 0%.
+    * ``actual == 0`` against a genuine positive ``expected`` -> ``0`` (a real,
+      distinguishable 0% — e.g. a site producing nothing in daylight).
+    """
+    if actual is None or expected is None:
+        return None
+    if expected == 0:
+        return None
     return int((Decimal(actual) / Decimal(expected) * 100).to_integral_value(rounding=ROUND_HALF_UP))
 
 

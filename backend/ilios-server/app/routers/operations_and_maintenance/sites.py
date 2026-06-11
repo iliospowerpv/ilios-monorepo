@@ -20,7 +20,8 @@ from app.helpers.telemetry.bigquery import TelemetryDeviceBigQuery, TelemetrySit
 from app.helpers.telemetry.sites_helper import get_production_chart_data_per_site
 from app.helpers.telemetry.v2_chart_data import (
     apply_v2_actual_production,
-    build_actual_vs_expected_series,
+    build_actual_vs_expected_section,
+    build_past_performance_section,
     build_v2_inverter_tiles,
     site_has_v2_rollups,
 )
@@ -201,11 +202,10 @@ async def get_site_past_performance_chart(
     db_session: Session = Depends(get_session),
 ):
     # V2-first precedence: daily past-performance is an actual-vs-expected ratio
-    # and V2 has no expected baseline, so return an empty series flagged as
-    # no-baseline (the frontend shows a message) rather than falling back to
-    # stale BigQuery.
+    # built from the native baseline calc (empty + no-baseline flag when the site
+    # has no active baseline). Never falls back to stale BigQuery.
     if site_has_v2_rollups(db_session, site.id):
-        return {"data": {}, "expected_baseline_available": False}
+        return build_past_performance_section(db_session, site)
     # Legacy BigQuery path (supplies an expected baseline); wrap so BQ
     # unavailability yields an empty chart instead of a 500.
     try:
@@ -229,13 +229,11 @@ async def get_site_actual_vs_expected_chart(
     db_session: Session = Depends(get_session),
 ):
     # V2-first precedence: render actual power + irradiance from PostgreSQL
-    # rollups (expected is left null — no V2 projection baseline), flagged so the
-    # frontend shows an actual-only chart with a no-baseline caption.
+    # rollups, overlaying the expected line from the native baseline calc when an
+    # active baseline exists (else expected is null and the section is flagged
+    # no-baseline). Never falls back to stale BigQuery.
     if site_has_v2_rollups(db_session, site.id):
-        return {
-            "data": build_actual_vs_expected_series(db_session, site.id),
-            "expected_baseline_available": False,
-        }
+        return build_actual_vs_expected_section(db_session, site)
     # Legacy BigQuery path (supplies an expected series); wrap so BQ
     # unavailability yields an empty chart.
     try:

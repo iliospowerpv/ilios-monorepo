@@ -106,6 +106,33 @@ class TelemetryExpectedBaselineCRUD(BaseCRUD):
             .one_or_none()
         )
 
+    def get_active_for_sites(
+        self,
+        site_ids,
+        baseline_type: TelemetryBaselineType = TelemetryBaselineType.weather_adjusted_model,
+    ) -> dict[int, TelemetryExpectedBaseline]:
+        """Active baselines for many sites in ONE query (no N+1).
+
+        Returns ``{site_id: baseline}`` only for sites that have an active
+        baseline of ``baseline_type``; sites without one are simply absent (so a
+        caller can treat a missing site as "no live expected"). The active
+        partial-unique index guarantees at most one active baseline per
+        (site, type), so the mapping is unambiguous.
+        """
+        site_ids = list(site_ids)
+        if not site_ids:
+            return {}
+        rows = (
+            self.db_session.query(TelemetryExpectedBaseline)
+            .filter(
+                TelemetryExpectedBaseline.site_id.in_(site_ids),
+                TelemetryExpectedBaseline.baseline_type == baseline_type,
+                TelemetryExpectedBaseline.status == TelemetryBaselineStatus.active,
+            )
+            .all()
+        )
+        return {row.site_id: row for row in rows}
+
     # ------------------------------------------------------------------
     # Writes / lifecycle
     # ------------------------------------------------------------------

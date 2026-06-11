@@ -32,9 +32,11 @@ def get_company_actual_production_section_with_telemetry(company, site_ids_to_li
     """Company actual-production section, aggregated from V2 PostgreSQL rollups.
 
     Actual power/energy come from ``telemetry_site_interval_rollups`` (no
-    BigQuery). There is no V2 projected/"expected" baseline yet, so expected
-    fields are ``None`` and ``expected_baseline_available`` is ``False`` — the
-    frontend renders "N/A" / "Baseline not available".
+    BigQuery). Expected is honest-or-null: it is a real sum only when every
+    telemetry-backed site has an active baseline that fully computes today
+    (``expected_state == 'available'``); otherwise expected is ``None`` and the
+    additive ``expected_state`` / coverage counts explain why the frontend should
+    render "N/A" / "Baseline not available".
     """
     # retrieve details for actual production section
     company_overview = CompanyCRUD(db_session).get_company_with_sites_overview(company.id, site_ids_to_limit)
@@ -52,6 +54,10 @@ def get_company_actual_production_section_with_telemetry(company, site_ids_to_li
         "total_system_size_ac": company_overview.total_system_size_ac,
         "total_system_size_dc": company_overview.total_system_size_dc,
         "expected_baseline_available": actuals["expected_baseline_available"],
+        "expected_state": actuals["expected_state"],
+        "sites_with_telemetry": actuals["sites_with_telemetry"],
+        "sites_with_active_baseline": actuals["sites_with_active_baseline"],
+        "sites_missing_baseline": actuals["sites_missing_baseline"],
     }
     return actual_production_section
 

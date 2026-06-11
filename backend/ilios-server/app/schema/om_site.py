@@ -37,7 +37,11 @@ class CumulativeProductionDetailsBaseSchema(BaseModel):
     @field_validator("cumulative_performance_index")
     @classmethod
     def calculate_cumulative_performance_index(cls, cumulative_performance_index, info):  # noqa: U100
-        return info.data.get("cumulative_actual_vs_expected", 0) / 100
+        # None-safe: ``cumulative_actual_vs_expected`` is now None when expected is
+        # missing (no baseline / missing inputs / pre-PTO). ``None / 100`` would be
+        # a 500, and a fabricated 0 would read as "0% performance"; keep it None.
+        ratio = info.data.get("cumulative_actual_vs_expected")
+        return None if ratio is None else ratio / 100
 
 
 class WeatherSchema(BaseModel):
@@ -127,27 +131,44 @@ class SiteDashboardActualProductionSection(OMSitesBaseExtendedSchema, Cumulative
     system_size_ac: float
     system_size_dc: float
     performance_index: Optional[float] = Field(None, validate_default=True, examples=[2.0])
-    # False for V2-telemetry sites, which carry actuals only and have no
-    # projected/"expected" baseline. The frontend uses this (not the numeric
-    # percent, which collapses to 0) to render "N/A"/"Baseline not available".
-    # Defaults True so the BigQuery path is unchanged.
+    # False for V2-telemetry sites without an active baseline, which carry actuals
+    # only. The frontend uses this (not the numeric percent, which collapses to
+    # 0) to render "N/A"/"Baseline not available". Defaults True so the BigQuery
+    # path is unchanged.
     expected_baseline_available: bool = True
+    # Additive V2 metadata (None on the legacy BigQuery path). Distinguishes
+    # fully-available vs partial vs the specific missing reason — see
+    # ``ExpectedState``. ``baseline_id`` identifies the active baseline used.
+    expected_state: Optional[str] = None
+    baseline_id: Optional[int] = None
 
     _round_system_sizes_to_scale_2 = field_validator("system_size_ac", "system_size_dc")(round_to_scale_2)
 
     @field_validator("performance_index")
     @classmethod
     def generate_performance_index(cls, performance_index, info):  # noqa: U100
-        """Calculate performance_index based on actual_vs_expected generated in the parent schema"""
-        return info.data.get("actual_vs_expected", 0) / 100
+        """Calculate performance_index based on actual_vs_expected generated in the parent schema.
+
+        None-safe: ``actual_vs_expected`` is None when expected is missing (no
+        baseline / missing inputs / pre-PTO). ``None / 100`` would 500 and a
+        fabricated 0 would read as "0% performance"; keep it None instead.
+        """
+        ratio = info.data.get("actual_vs_expected")
+        return None if ratio is None else ratio / 100
 
 
 class OMSitePastPerformanceSchema(BaseModel):
-    data: dict[datetime, int]
-    # False for V2-telemetry sites: daily past-performance is an actual-vs-expected
-    # ratio and V2 has no expected baseline, so ``data`` is empty and the frontend
-    # shows a no-baseline message instead of empty bars. True on the BigQuery path.
+    # Per-day actual-vs-expected percent. The value is Optional: on the V2 path a
+    # day with no computable expected (no ``ok`` buckets) is ``None`` so the
+    # frontend shows a gap, never a fabricated 0%. (Loosened from ``int``; the
+    # legacy BigQuery path still supplies ints, which remain valid.)
+    data: dict[datetime, Optional[int]]
+    # False for V2-telemetry sites without an active baseline: daily
+    # past-performance is an actual-vs-expected ratio, so ``data`` is empty and
+    # the frontend shows a no-baseline message. True on the BigQuery path.
     expected_baseline_available: bool = True
+    # Additive V2 metadata (None on the legacy BigQuery path) — see ``ExpectedState``.
+    expected_state: Optional[str] = None
 
 
 class SiteActualVSExpectedPerformance(BaseModel):
@@ -161,10 +182,12 @@ class SiteActualVSExpectedPerformance(BaseModel):
 
 class SiteActualVSExpectedPerformanceListSchema(BaseModel):
     data: list[SiteActualVSExpectedPerformance]
-    # False for V2-telemetry sites: per-point ``expected`` is null (no V2
-    # baseline) so the frontend shows an actual-only chart with a caption note.
-    # True on the BigQuery path, which supplies an expected series.
+    # False for V2-telemetry sites without an active baseline: per-point
+    # ``expected`` is null so the frontend shows an actual-only chart with a
+    # caption note. True on the BigQuery path, which supplies an expected series.
     expected_baseline_available: bool = True
+    # Additive V2 metadata (None on the legacy BigQuery path) — see ``ExpectedState``.
+    expected_state: Optional[str] = None
 
 
 class OMSiteSchema(BaseModel):
