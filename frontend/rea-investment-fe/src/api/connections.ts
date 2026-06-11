@@ -77,7 +77,8 @@ interface TelemetryHealthResponse {
   data_delay_minutes: number | null;
   last_error: string | null;
   mapped_device_count: number;
-  expected_interval_minutes: number;
+  expected_interval_minutes: number | null;
+  expected_interval_label: string;
   is_connected: boolean;
   is_site_mapped: boolean;
 }

@@ -235,7 +235,15 @@ async def lifespan(app: FastAPI):  # noqa: U100
         from app.services.telemetry.scheduler_runner import (
             TelemetrySchedulerRunner,
             scheduler_should_run,
+            scheduler_topology_warnings,
         )
+
+        # Surface production-topology advisories (Reserved VM requirement, prod
+        # without a durable store) whenever the scheduler is enabled, regardless
+        # of whether it actually starts. Logged at WARNING so ops notice; never
+        # blocks startup.
+        for warning in scheduler_topology_warnings():
+            logger.warning("Telemetry scheduler topology: %s", warning)
 
         should_run, reason = scheduler_should_run()
         if should_run:

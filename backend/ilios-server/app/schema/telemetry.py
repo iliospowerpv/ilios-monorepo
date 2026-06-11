@@ -174,7 +174,20 @@ class TelemetryHealthResponse(BaseModel):
     data_delay_minutes: Optional[int] = Field(None, description="Minutes since last data received")
     last_error: Optional[str] = Field(None, description="Last error message if any")
     mapped_device_count: int = Field(0, description="Number of devices with telemetry mapping")
-    expected_interval_minutes: int = Field(15, description="Expected data interval in minutes")
+    expected_interval_minutes: Optional[int] = Field(
+        None,
+        description=(
+            "Expected data interval in minutes, derived from the site's scheduler "
+            "cadence; None when the scheduler is disabled or not configured"
+        ),
+    )
+    expected_interval_label: str = Field(
+        "Not scheduled",
+        description=(
+            "Human-readable expected interval derived from scheduler cadence "
+            "(e.g. '15 min', 'Manual refresh only', 'Not scheduled')"
+        ),
+    )
     is_connected: bool = Field(False, description="Whether site has a DAS connection")
     is_site_mapped: bool = Field(False, description="Whether site is mapped to a DAS site")
 

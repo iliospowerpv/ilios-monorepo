@@ -195,6 +195,43 @@ def scheduler_should_run() -> tuple[bool, str]:
     return True, "enabled"
 
 
+def scheduler_topology_warnings() -> list[str]:
+    """Advisory production-readiness warnings for the scheduler.
+
+    The scheduler is an in-process daemon thread, so scheduled pulls only happen
+    while a server process is alive. On a sleeping/Autoscale deployment the
+    process is suspended between requests and scheduled runs are silently missed;
+    a durable, always-on topology (Reserved VM) is required. The deployment
+    topology cannot be reliably detected from inside the process, so whenever the
+    scheduler is enabled we surface the requirement rather than trying to guess.
+
+    Returns a list of human-readable warning strings (empty when the scheduler is
+    disabled). Callers log these; they never block startup.
+    """
+    warnings: list[str] = []
+    if not getattr(settings, "telemetry_scheduler_enabled", False):
+        return warnings
+
+    warnings.append(
+        "Telemetry scheduler is ENABLED: scheduled telemetry requires an "
+        "always-on Reserved VM deployment. On Autoscale/sleeping deployments the "
+        "server process is suspended between requests and scheduled runs may be "
+        "missed."
+    )
+
+    env = (settings.environment_name or "").strip().lower()
+    if env in _PROD_LIKE_ENV_NAMES and not is_credential_store_durable(
+        get_credential_store()
+    ):
+        warnings.append(
+            "Telemetry scheduler is enabled in a production-like environment "
+            f"('{env}') WITHOUT a durable credential store; scheduled runs will "
+            "NOT start until a durable store (e.g. GCP Secret Manager) is "
+            "configured."
+        )
+    return warnings
+
+
 def resolve_current_account(session: Session, site_id: int) -> Optional[int]:
     """Resolve a site's CURRENT mapped provider account.
 

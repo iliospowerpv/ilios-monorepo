@@ -1,0 +1,203 @@
+Start a new controlled sprint: Telemetry V2 Production Hardening — BigQuery Removal and V2 Source-of-Truth Cutover.
+
+Strategic decisions:
+
+1. BigQuery is not part of the new Ilios app-native telemetry architecture.
+2. There are no legacy production telemetry sites that need BigQuery compatibility.
+3. PostgreSQL V2 telemetry tables are the application source of truth:
+
+   * telemetry_readings
+   * telemetry_site_interval_rollups
+   * telemetry_device_interval_rollups
+   * telemetry_sync_jobs
+   * telemetry_scheduler_state
+   * telemetry_metric_catalog
+4. Power BI / warehouse reporting can be rebuilt later as a downstream export/reporting layer. Do not preserve BigQuery as an app dependency for that reason.
+5. Expected/projected baselines are not being removed permanently. They will be rebuilt into the new V2 data model from the due diligence / AI parsing / PVsyst design document workflow.
+6. Until the V2 expected baseline model exists, all expected/loss/performance comparison views should show honest “Baseline not available” / “N/A” states. Do not fabricate expected values.
+7. Do not keep the old BigQuery/Firestore/rea-telemetry pipeline alive merely to supply expected/losses for V2 sites.
+
+Objective:
+
+Remove BigQuery dependency from the operational Ilios application telemetry path and move all current app-facing telemetry, health, readiness, O&M actuals, device actuals, company actuals, and portfolio actuals to PostgreSQL V2.
+
+Do this in safe, independently shippable phases. Do not perform a broad deletion sweep. Replace first, verify, then remove.
+
+Scope boundaries:
+
+Do:
+
+* Remove BigQuery use from V2-facing telemetry health/readiness.
+* Remove BigQuery fallback from V2-backed site actual-production and inverter actual-production paths.
+* Replace company/investor actual-production aggregation with PostgreSQL V2 rollups.
+* Replace company actual energy calculation with PostgreSQL V2 rollups using bucket duration.
+* Convert expected/loss outputs to explicit N/A / baseline-not-available where the V2 baseline does not exist.
+* Add warnings/assertions for scheduler production topology.
+* Derive expected interval from scheduler cadence.
+* Make any remaining BigQuery metadata export paths non-blocking before removal.
+* Identify legacy v1/Cloud Function/Firestore paths still used by the V2 wizard before deleting anything.
+* Preserve GCP Secret Manager credential storage.
+
+Do not:
+
+* Build the V2 expected baseline model in this sprint.
+* Rebuild due diligence / AI PVsyst parsing in this sprint.
+* Invent expected values from actual telemetry.
+* Write V2 telemetry into BigQuery.
+* Preserve BigQuery as fallback for V2 app behavior.
+* Delete v1 endpoints until every frontend callsite is mapped.
+* Remove GCP Secret Manager.
+* Change the provider adapter, credential storage, scheduler ingestion logic, rollup math, site/device mappings, or telemetry readings schema unless a narrow replacement requires it.
+* Touch plaintext-secret migration in this sprint.
+
+Phase 1 — App-facing V2-only telemetry surfaces
+
+Implement these first:
+
+A. Health and readiness
+
+* Remove/skip BigQuery for V2-backed sites in:
+
+  * /api/telemetry/sites/{site_id}/health
+  * /api/telemetry/sites/{site_id}/readiness
+* Use PostgreSQL V2 latest_metric_ts, site_has_v2_rollups, mapped-device count, and scheduler state only.
+* If no V2 data exists, return a clear no-data state.
+* BigQuery should not make a V2 site appear healthier, staler, or broken.
+
+B. Data Health expected interval
+
+* Replace hardcoded “Expected interval: 15 min” with the actual scheduler cadence from telemetry_scheduler_state.
+* If scheduler is disabled or missing, show “Manual refresh only” or “Not scheduled.”
+* Cadence changes should reflect without code change.
+
+C. Site actual-production and inverter actual-production
+
+* Remove BigQuery fallback for V2-backed site actual-production and inverter-performance chart paths where V2 equivalents already exist.
+* Continue to show actual V2 values.
+* Continue to show expected/performance comparison as N/A where baseline is missing.
+* Preserve explicit empty states when V2 has no rollups.
+
+D. Scheduler production-readiness warnings
+
+* At startup, warn clearly if telemetry_scheduler_enabled=true but the deployment topology is not known to be always-on.
+* In production-like environments, assert/warn if scheduler is enabled without durable credential storage.
+* Warning should state: scheduled telemetry requires an always-on Reserved VM; Autoscale/sleeping deployments may miss runs.
+* Do not block dev unnecessarily.
+
+Validation for Phase 1:
+
+1. Health works for site 4 using V2 PostgreSQL only.
+2. Readiness works for site 4 using V2 PostgreSQL only.
+3. BigQuery unavailable does not affect V2 health/readiness.
+4. Expected interval label reflects PT15M, then updates if cadence changes to PT1H.
+5. Actual production and inverter actual production still render for site 4.
+6. Expected/performance comparison remains N/A / baseline-not-available.
+7. No BigQuery calls are made for V2-backed site health/readiness/site actual/inverter actual paths.
+8. Sites with no V2 data show clear no-data states, not hidden fallback.
+9. Scheduler still runs and manual refresh still works.
+
+Phase 2 — Company and portfolio actuals from PostgreSQL V2
+
+Build the PostgreSQL aggregation replacement before removing company/investor BigQuery paths.
+
+Requirements:
+
+* Build V2 company actual aggregation from telemetry_site_interval_rollups.
+* Build V2 company energy calculation as Σ(avg_kw × bucket_hours), respecting site-local day boundaries.
+* Build portfolio/investor actual aggregation from the same V2 rollup source.
+* Support multiple companies and multiple sites, not just site 4.
+* Expected/loss values should return N/A / baseline-not-available until the V2 expected baseline model exists.
+* Do not query BigQuery for V2 company/portfolio actuals.
+
+Validation:
+
+1. Seed or use at least 2 companies × 2 sites of V2 rollups.
+2. Verify company actual power sums correctly.
+3. Verify company actual energy equals hand-computed Σ(avg_kw × bucket_hours).
+4. Verify site-local timezone boundaries are respected.
+5. Verify investor/portfolio actuals aggregate from company/site V2 rollups.
+6. Verify expected/losses are clearly N/A, not zero.
+7. Verify no BigQuery calls occur for V2 company/portfolio actuals.
+
+Phase 3 — Due diligence / PVsyst baseline preservation plan
+
+Do not implement the new baseline yet, but map the existing flow so we can rebuild it correctly.
+
+Audit:
+
+* Where AI-parsed PVsyst/design/due diligence actual expected-production inputs currently land.
+* Which code writes module wattage, loss coefficients, 8760/PVSyst, site characteristics, and device characteristics.
+* Which pieces currently write to BigQuery only.
+* Which PostgreSQL models already exist and can hold this information.
+* What new V2 baseline tables/metrics are required.
+
+Return a design for a future sprint:
+Expected Performance Baseline Sprint — Due Diligence / AI PVsyst to V2 PostgreSQL.
+
+The future design should support:
+
+* expected hourly production curve
+* expected daily production
+* device-level expected baseline, where available
+* site-level expected baseline
+* versioning
+* provenance
+* AI extraction confidence
+* human review/sign-off
+* comparison against actual telemetry
+* company/portfolio baseline rollups
+
+Do not build this in the current BigQuery cleanup sprint.
+
+Phase 4 — Legacy path removal planning
+
+Before deleting v1/legacy paths, map every active frontend/backend call.
+
+Audit and plan removal for:
+
+* BigQuery read engine usage
+* BigQuery write/metadata syncs
+* SiteCharacteristicsHandler → BigQuery
+* DeviceCharacteristicsHandler → BigQuery
+* SiteDDCharacteristicsHandler → BigQuery
+* bq_data_sync_helper.py
+* backend/rea-telemetry
+* Firestore mapping sync
+* Cloud Function telemetry client
+* legacy ilios-das-* secret creation
+* v1 telemetry_router config/mapping endpoints
+* frontend connections.ts references
+
+Rules:
+
+* If a V2 replacement exists and is validated, remove the legacy dependency.
+* If a V2 replacement does not exist, create a replacement task before removal.
+* If a path is no longer used, remove it.
+* If uncertain, isolate it behind a disabled legacy_telemetry flag and document the owner decision needed.
+
+Validation before any removal:
+
+* V2 onboarding still works.
+* Company-level provider credentials still store in GCP Secret Manager.
+* Site sync still works.
+* Device sync still works.
+* Site mapping still works.
+* Device mapping still works.
+* Manual refresh still works.
+* Scheduler still works.
+* O&M dashboard still works.
+* No frontend call points to a removed endpoint.
+* No app-facing telemetry path requires BigQuery.
+
+Required output for this task:
+
+1. Files changed.
+2. BigQuery calls removed from V2-facing paths.
+3. New PostgreSQL aggregation helpers added, if any.
+4. Remaining BigQuery references and why they remain.
+5. Remaining legacy v1/Cloud Function/Firestore references and why they remain.
+6. Validation results.
+7. Risks.
+8. Recommended next task.
+
+Start with Phase 1 only unless Phase 2 changes are clearly required to keep current dashboards working.

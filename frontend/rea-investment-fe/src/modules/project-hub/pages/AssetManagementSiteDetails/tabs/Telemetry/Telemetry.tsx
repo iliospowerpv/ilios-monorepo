@@ -172,7 +172,7 @@ const HealthStrip: React.FC<HealthStripProps> = ({ health }) => {
         </Alert>
       )}
       <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-        {health.mapped_device_count} device(s) mapped | Expected interval: {health.expected_interval_minutes} min
+        {health.mapped_device_count} device(s) mapped | Expected interval: {health.expected_interval_label}
       </Typography>
     </Paper>
   );
