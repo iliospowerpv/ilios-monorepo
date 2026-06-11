@@ -1,0 +1,136 @@
+Please perform a focused V2 telemetry scheduler reliability and BigQuery dependency audit.
+
+Do not change code yet unless you find a narrow display bug that is clearly safe. Return findings first.
+
+Context:
+The latest summary says scheduled pulls are working and the Telemetry Data Health card was fixed to read V2 PostgreSQL readings before BigQuery. However, we need to prove the scheduler is reliably recurring, especially given prior experience with AlsoEnergy recurring connections and refresh-token/token-expiration behavior.
+
+Current V2 architecture:
+
+* Company-level provider credentials are stored in GCP Secret Manager.
+* Native V2 ingestion writes to PostgreSQL telemetry_readings and rollup tables.
+* Manual refresh works.
+* O&M actual charts and health now read V2 data.
+* BigQuery should not be canonical for V2 telemetry ingestion or V2 health.
+
+Audit Track 1 — Scheduler recurrence
+
+For site 4 / 110 Shawmut, inspect telemetry_sync_jobs and telemetry_scheduler_state.
+
+Return:
+
+1. scheduler enabled flag
+2. configured cadence
+3. next_due_at
+4. last_attempted_pull_at
+5. last_successful_pull_at
+6. last_status
+7. last_error
+8. lock_token / locked_until state
+9. the last 20 sync jobs for this site, including:
+
+   * job id
+   * trigger type: manual / scheduled / backfill
+   * status
+   * window_start
+   * window_end
+   * started_at
+   * completed_at
+   * records_requested
+   * records_received
+   * records_written
+   * error, redacted
+
+Important:
+Clearly distinguish manual refresh jobs from scheduled jobs. Do not infer scheduler health from manual refresh jobs.
+
+Confirm:
+
+* scheduled jobs are being created at the configured cadence
+* no scheduler jobs are stuck running
+* next_due_at advances correctly
+* last_successful_pull_at advances only after successful scheduled pulls
+* 15-minute cadence is actually reflected in job spacing after it was changed from PT1H to PT15M
+
+Audit Track 2 — AlsoEnergy token/session behavior
+
+We need to understand whether recurring pulls are vulnerable to token expiration.
+
+Please inspect NativeAlsoEnergyAdapter and the V2 scheduler ingestion path.
+
+Return:
+
+1. Does each scheduled job obtain a fresh provider token?
+2. Does the adapter store/reuse an access token between jobs?
+3. Does AlsoEnergy provide a refresh token in this flow?
+4. If yes, is it stored anywhere?
+5. If no, does each run re-authenticate with username/password from GCP Secret Manager?
+6. What happens on 401/403/token expired during a scheduled pull?
+7. Is credential_status updated correctly on auth failure?
+8. Is the sync job marked failed/partial with a clear error?
+9. Does the scheduler retry on the next cadence without corrupting cursor state?
+10. Are tokens, passwords, or auth headers ever logged? They must not be.
+
+We specifically want to avoid the old recurring-connection failure mode where an expired provider token silently breaks scheduled pulls.
+
+Audit Track 3 — Production versus dev
+
+Confirm whether the scheduler is enabled and running in the intended environment.
+
+Return:
+
+1. environment_name
+2. telemetry_v2_enabled
+3. telemetry_scheduler_enabled
+4. durable credential store status
+5. whether the scheduler daemon/thread starts in this environment
+6. whether production needs a redeploy/restart for current scheduler settings
+7. whether the observed jobs are from dev, production, or both
+
+Audit Track 4 — BigQuery dependency inventory
+
+We are seeing many BigQuery references. With the V2 telemetry buildout, BigQuery should no longer be canonical for native V2 ingestion, health, or actual telemetry display.
+
+Please inventory BigQuery references and classify each as:
+
+A. Still required for legacy/non-V2 sites
+B. Fallback for non-V2 or missing V2 data
+C. Still used by V2 display or health and should be replaced
+D. Old artifact / candidate for future removal
+E. External reporting/warehouse use that should remain separate from app-native telemetry
+
+For each BigQuery reference, return:
+
+* file/function
+* endpoint or component using it
+* whether it affects V2 sites
+* whether V2 PostgreSQL equivalent exists
+* recommended action: keep, fallback only, replace, retire later
+
+Important:
+Do not remove BigQuery code in this task. We only want a dependency map and recommendation.
+
+Audit Track 5 — Timezone correctness
+
+The timeframes were recently corrected. Please verify the scheduler, manual refresh, health card, charts, and latest-reading logic all use consistent timestamp handling.
+
+Return:
+
+1. whether DB timestamps are UTC-naive or timezone-aware
+2. how incoming provider timestamps are normalized
+3. how scheduler windows are generated
+4. how frontend displays local/user time
+5. whether next_due_at / last_successful_pull_at / latest reading align correctly
+6. whether any endpoint still mixes local time, UTC-naive, or ISO-Z incorrectly
+
+Required output:
+
+1. scheduler recurrence verdict
+2. token/session management verdict
+3. dev/prod scheduler status
+4. BigQuery dependency map
+5. timezone consistency verdict
+6. any immediate bug fixes recommended
+7. any roadmap items recommended
+
+Do not print credentials, tokens, passwords, auth headers, or secret values.
