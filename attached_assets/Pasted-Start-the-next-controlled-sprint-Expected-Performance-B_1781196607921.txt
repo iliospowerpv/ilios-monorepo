@@ -1,0 +1,202 @@
+Start the next controlled sprint: Expected Performance Baseline Sprint — V2 Weather-Adjusted Expected Model.
+
+Strategic context:
+We are removing BigQuery as an operational app dependency. PostgreSQL V2 telemetry is the application source of truth for actuals. Power BI / warehouse reporting may be rebuilt later as a downstream export layer.
+
+Important product distinction:
+Do not collapse these concepts:
+
+1. Actual
+
+* Measured production from V2 telemetry.
+* Source: AlsoEnergy native V2 readings and PostgreSQL rollups.
+* Examples: site_power_ac_kw, device_power_ac_kw.
+
+2. Design estimate / PVsyst estimate
+
+* The modeled design expectation from diligence/design/PVsyst documents.
+* Source: due diligence document upload, AI parsing, project_facts, PVsyst/design documents.
+* This may be monthly/annual until an 8760 parser exists.
+* This is not the live operational expected line unless it has been converted into an approved baseline model.
+
+3. Weather-adjusted expected
+
+* The operational expected production under actual observed field conditions.
+* Source: approved baseline assumptions plus V2 actual irradiance and cell temperature.
+* This is what live actual-vs-expected charts previously used through the legacy BigQuery physics model.
+* This should be rebuilt natively in PostgreSQL without BigQuery.
+
+Objective:
+Rebuild the expected-performance foundation in V2 PostgreSQL so Ilios can restore:
+
+* Actual vs Expected
+* Past Performance %
+* Losses
+* Inverter performance color thresholds
+* Company/portfolio expected rollups
+  without BigQuery, Firestore, or the legacy rea-telemetry pipeline.
+
+This sprint should be implemented in safe phases. Start with the schema/model and calculation foundation. Do not overbuild the full UI until the data model and calculation are validated.
+
+Scope for this task:
+Implement Phase P3.1 / P3.2 foundation only unless otherwise approved.
+
+Phase P3.1 — V2 expected baseline storage
+
+Add PostgreSQL-backed model/tables for versioned expected baselines.
+
+Recommended tables, adjust as appropriate to existing conventions:
+
+1. telemetry_expected_baselines
+   Purpose: versioned approved baseline header.
+
+Suggested fields:
+
+* id
+* company_id
+* project_id
+* site_id
+* baseline_name
+* baseline_type: design_estimate, weather_adjusted_model, imported_8760, manual
+* status: draft, parsed, review_required, approved, active, superseded, rejected
+* source_type: pvsyst, design_document, diligence_ai_parse, manual_entry, imported_8760, legacy_formula
+* source_document_id / document_key reference where available
+* source_project_fact_id where available
+* timezone
+* system_size_ac_kw
+* system_size_dc_kw
+* module_wattage
+* degradation_rate
+* loss_assumptions_json
+* model_parameters_json
+* ai_confidence_json
+* reviewed_by
+* reviewed_at
+* approved_by
+* approved_at
+* active_from
+* active_to
+* version
+* created_at / updated_at
+
+2. telemetry_expected_baseline_points
+   Purpose: expected curve / point data.
+
+Suggested fields:
+
+* id
+* baseline_id
+* site_id
+* device_id nullable
+* point_ts
+* interval_minutes
+* expected_power_kw nullable
+* expected_energy_kwh nullable
+* irradiance_wm2 nullable
+* cell_temperature_f nullable
+* ambient_temperature_f nullable
+* source_granularity: hourly, daily, monthly, annual, interval
+* calculation_method
+* created_at
+
+3. Optional calculation output table if needed:
+   telemetry_expected_interval_rollups
+   Purpose: weather-adjusted expected outputs aligned with actual rollup buckets.
+
+Suggested fields:
+
+* id
+* company_id
+* project_id
+* site_id
+* device_id nullable
+* bucket_start
+* bucket_size
+* expected_power_kw
+* expected_energy_kwh
+* actual_power_kw nullable
+* actual_energy_kwh nullable
+* irradiance_wm2 nullable
+* cell_temperature_f nullable
+* baseline_id
+* calculation_method
+* created_at / updated_at
+
+Use existing naming/migration conventions.
+
+Phase P3.2 — Native weather-adjusted expected calculation
+
+Port the legacy BigQuery expected/loss physics formula into a native Python/PostgreSQL calculation service.
+
+Requirements:
+
+1. Locate the exact legacy formula from backend/rea-telemetry and port it transparently.
+2. Do not change the physics/math unless required for correctness.
+3. Use V2 rollup inputs already available:
+
+   * site_power_ac_kw or device_power_ac_kw for actuals
+   * irradiance_wm2
+   * cell_temperature_f
+4. Use approved baseline/model assumptions from telemetry_expected_baselines.
+5. Calculate weather-adjusted expected for the same bucket boundaries used by telemetry_site_interval_rollups.
+6. Store or return expected outputs in a way that O&M charts can consume later.
+7. Preserve provenance:
+
+   * baseline_id
+   * calculation_method
+   * source assumptions
+8. If required inputs are missing, return a clear missing-input state, not zero.
+9. Do not fabricate values.
+10. Do not query BigQuery.
+11. Do not rely on Firestore.
+12. Do not re-enable the legacy rea-telemetry pipeline.
+
+Important:
+The PVsyst/design estimate is not the same as weather-adjusted expected. PVsyst/design estimates may seed baseline assumptions, monthly estimates, or future 8760 curves, but the operational expected line should be the weather-adjusted expected calculation using actual irradiance/cell temperature where available.
+
+Review/sign-off workflow:
+
+* AI-parsed PVsyst/design data may create a draft or review_required baseline.
+* It must not become active automatically.
+* Only reviewed/approved baseline records can drive live expected calculations.
+* There should be one active baseline per site for a given effective period.
+* Superseded baselines must remain auditable.
+
+Initial UI scope:
+Do not build full UI in this task unless already trivial.
+If needed, expose only minimal admin/dev endpoints for:
+
+* listing baselines for a site
+* showing active baseline
+* previewing calculation for a site/window
+* activating an approved baseline
+  But do not bypass approval logic.
+
+Validation:
+
+1. Migration applies cleanly.
+2. Models/schemas serialize correctly.
+3. An approved baseline can be created for site 4 using known existing design/model parameters.
+4. Weather-adjusted expected calculation can run for a small site 4 window using V2 irradiance/cell temperature inputs.
+5. Missing baseline returns baseline_not_available.
+6. Missing irradiance or temperature returns missing_inputs, not zero.
+7. Calculation does not query BigQuery.
+8. Calculation does not query Firestore.
+9. Existing V2 actuals, scheduler, health/readiness, site O&M actuals, company actuals, and portfolio actuals continue to work.
+10. Typecheck/lint/tests pass.
+11. Architect review passes.
+
+Return:
+
+* files changed
+* new tables/models/schemas
+* exact legacy formula location and how it was ported
+* calculation inputs
+* calculation outputs
+* how design estimate vs weather-adjusted expected is represented
+* approval/sign-off behavior
+* validation results
+* remaining work for charts/UI
+* risks and open questions
+
+Do not remove legacy expected/loss code yet in this task. We will remove it after the V2 expected calculation is validated and charts are rewired.

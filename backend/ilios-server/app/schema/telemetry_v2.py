@@ -7,7 +7,7 @@ account responses without ever leaking credential values.
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -21,6 +21,11 @@ from app.models.telemetry import (
     TelemetrySyncScope,
     TelemetrySyncStatus,
     TelemetrySyncTrigger,
+)
+from app.models.telemetry_expected import (
+    TelemetryBaselineSource,
+    TelemetryBaselineStatus,
+    TelemetryBaselineType,
 )
 
 
@@ -584,3 +589,151 @@ class TelemetrySyncJobListResponse(BaseModel):
 
     site_id: int
     jobs: list[TelemetrySyncJobSummary] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Expected-performance baselines (P3.1 / P3.2)
+# ---------------------------------------------------------------------------
+
+
+class ExpectedBaselineCreateRequest(BaseModel):
+    """Create a draft expected baseline.
+
+    Physics parameters are NOT in the V2 schema (they lived in the legacy
+    BigQuery characteristics tables), so they are supplied here and snapshot onto
+    the immutable baseline. Loss %, PTO date and timezone are optional — when
+    omitted they are snapshot from the site (losses abs()-normalized).
+
+    Percent-valued fields are PERCENT (e.g. ``98.5`` for 98.5 %).
+    """
+
+    model_config = ConfigDict(protected_namespaces=())
+
+    baseline_name: str = Field(min_length=1, max_length=255)
+    baseline_type: TelemetryBaselineType = TelemetryBaselineType.weather_adjusted_model
+    source_type: Optional[TelemetryBaselineSource] = None
+    source_document_id: Optional[int] = None
+    source_project_fact_id: Optional[int] = None
+
+    timezone: Optional[str] = Field(default=None, max_length=64)
+    system_size_ac_kw: Optional[float] = None
+    system_size_dc_kw: Optional[float] = None
+    degradation_rate: Optional[float] = None
+
+    module_wattage: Optional[float] = None
+    module_quantity: Optional[float] = None
+    inverter_wattage: Optional[float] = None
+    inverter_quantity: Optional[float] = None
+    thermal_coefficient_pct: Optional[float] = None
+    power_tolerance_min_pct: Optional[float] = None
+    year_1_degradation_pct: Optional[float] = None
+    annual_degradation_pct: Optional[float] = None
+    cec_efficiency_pct: Optional[float] = None
+    soiling_factor: Optional[float] = None
+    dc_loss_pct: Optional[float] = None
+    ac_loss_pct: Optional[float] = None
+    medium_voltage_loss_pct: Optional[float] = None
+    mv_line_loss_pct: Optional[float] = None
+    pto_date: Optional[date] = None
+
+    loss_assumptions_json: Optional[dict[str, Any]] = None
+    model_parameters_json: Optional[dict[str, Any]] = None
+    ai_confidence_json: Optional[dict[str, Any]] = None
+    notes: Optional[str] = None
+
+
+class ExpectedBaselineResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
+
+    id: int
+    company_id: int
+    site_id: int
+    baseline_name: str
+    baseline_type: TelemetryBaselineType
+    status: TelemetryBaselineStatus
+    source_type: Optional[TelemetryBaselineSource] = None
+    source_document_id: Optional[int] = None
+    source_project_fact_id: Optional[int] = None
+
+    timezone: Optional[str] = None
+    system_size_ac_kw: Optional[float] = None
+    system_size_dc_kw: Optional[float] = None
+    degradation_rate: Optional[float] = None
+
+    module_wattage: Optional[float] = None
+    module_quantity: Optional[float] = None
+    inverter_wattage: Optional[float] = None
+    inverter_quantity: Optional[float] = None
+    thermal_coefficient_pct: Optional[float] = None
+    power_tolerance_min_pct: Optional[float] = None
+    year_1_degradation_pct: Optional[float] = None
+    annual_degradation_pct: Optional[float] = None
+    cec_efficiency_pct: Optional[float] = None
+    soiling_factor: Optional[float] = None
+    dc_loss_pct: Optional[float] = None
+    ac_loss_pct: Optional[float] = None
+    medium_voltage_loss_pct: Optional[float] = None
+    mv_line_loss_pct: Optional[float] = None
+    pto_date: Optional[date] = None
+
+    loss_assumptions_json: Optional[dict[str, Any]] = None
+    model_parameters_json: Optional[dict[str, Any]] = None
+    ai_confidence_json: Optional[dict[str, Any]] = None
+
+    version: int
+    reviewed_by: Optional[int] = None
+    reviewed_at: Optional[datetime] = None
+    approved_by: Optional[int] = None
+    approved_at: Optional[datetime] = None
+    active_from: Optional[datetime] = None
+    active_to: Optional[datetime] = None
+    supersedes_baseline_id: Optional[int] = None
+    created_by_user_id: Optional[int] = None
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+class ExpectedBaselineListResponse(BaseModel):
+    site_id: int
+    baselines: list[ExpectedBaselineResponse] = Field(default_factory=list)
+
+
+class ExpectedPreviewBucket(BaseModel):
+    """One bucket of an expected-vs-actual preview.
+
+    ``status`` is ``ok`` | ``missing_inputs`` | ``pre_pto``. Expected fields are
+    ``null`` (never 0) on non-``ok`` buckets.
+    """
+
+    bucket_start: datetime
+    status: str
+    expected_power_kw: Optional[float] = None
+    expected_energy_kwh: Optional[float] = None
+    actual_power_kw: Optional[float] = None
+    irradiance_wm2: Optional[float] = None
+    cell_temperature_f: Optional[float] = None
+    age_years: Optional[int] = None
+
+
+class ExpectedPreviewResponse(BaseModel):
+    """Weather-adjusted expected vs. actual for a site + window.
+
+    ``overall_status`` is ``ok`` when a baseline drove the calc, or
+    ``baseline_not_available`` when no usable baseline exists (then ``buckets``
+    is empty — the calc never fabricates an expected line).
+    """
+
+    site_id: int
+    overall_status: str
+    baseline_id: Optional[int] = None
+    baseline_type: Optional[str] = None
+    bucket_size: str
+    window_start: datetime
+    window_end: datetime
+    expected_energy_kwh: Optional[float] = None
+    actual_energy_kwh: Optional[float] = None
+    ok_bucket_count: int = 0
+    missing_inputs_bucket_count: int = 0
+    pre_pto_bucket_count: int = 0
+    buckets: list[ExpectedPreviewBucket] = Field(default_factory=list)

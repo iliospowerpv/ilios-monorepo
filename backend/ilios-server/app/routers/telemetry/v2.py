@@ -60,11 +60,20 @@ from app.models.telemetry import (
     TelemetrySyncStatus,
     TelemetrySyncTrigger,
 )
-from app.models.site import Site
+from app.models.site import Site, SiteAdditionalFieldList
+from app.models.telemetry_expected import (
+    TelemetryBaselineStatus,
+    TelemetryBaselineType,
+)
 from app.static import PermissionsActions
 from app.schema.telemetry_v2 import (
     DeviceMappingBulkRequest,
     DeviceMappingBulkResponse,
+    ExpectedBaselineCreateRequest,
+    ExpectedBaselineListResponse,
+    ExpectedBaselineResponse,
+    ExpectedPreviewBucket,
+    ExpectedPreviewResponse,
     ExternalDeviceList,
     ExternalDeviceResponse,
     ExternalSiteList,
@@ -108,6 +117,14 @@ from app.crud.telemetry_native import (
     TelemetrySchedulerStateCRUD,
     TelemetrySiteRollupCRUD,
     TelemetrySyncJobCRUD,
+)
+from app.crud.telemetry_expected import (
+    BaselineActivationError,
+    TelemetryExpectedBaselineCRUD,
+)
+from app.services.telemetry.expected_service import (
+    BUCKET_SIZE_TO_HOURS,
+    compute_site_expected,
 )
 from app.models.device import Device
 from app.services.telemetry.ingestion_service import (
@@ -2557,4 +2574,270 @@ def get_site_sync_jobs(
     return TelemetrySyncJobListResponse(
         site_id=site.id,
         jobs=[TelemetrySyncJobSummary.model_validate(j) for j in jobs],
+    )
+
+
+# ---------------------------------------------------------------------------
+# Expected-performance baselines (P3.1 / P3.2)
+#
+# Minimal admin/dev surface for the native weather-adjusted expected model.
+# No chart rewiring, no legacy expected/loss code touched. Reads/writes only the
+# new ``telemetry_expected_baselines`` table + V2 Postgres rollups.
+# ---------------------------------------------------------------------------
+
+# Preview windows are bounded so a single request can never trigger an unbounded
+# rollup scan; allowed bucket sizes mirror the calc service.
+_MAX_PREVIEW_WINDOW = timedelta(days=31)
+_DEFAULT_PREVIEW_WINDOW = timedelta(hours=24)
+_PREVIEW_BUCKET_SIZES = set(BUCKET_SIZE_TO_HOURS)
+# Statuses that have passed human approval at some point. An explicitly
+# requested baseline must be one of these so the read-gated preview endpoint
+# can never be used to render a never-approved (draft/in_review/rejected)
+# baseline. Superseded baselines remain previewable for historical audit.
+_PREVIEWABLE_BASELINE_STATUSES = frozenset(
+    {
+        TelemetryBaselineStatus.approved,
+        TelemetryBaselineStatus.active,
+        TelemetryBaselineStatus.superseded,
+    }
+)
+
+
+@telemetry_v2_router.get(
+    "/v2/sites/{site_id}/expected-baselines",
+    response_model=ExpectedBaselineListResponse,
+    summary="List expected-performance baselines for a site (newest first)",
+)
+def list_expected_baselines(
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db: Annotated[Session, Depends(get_session)],
+) -> ExpectedBaselineListResponse:
+    """All baselines (any status) for a site, most-recently-created first."""
+    rows = TelemetryExpectedBaselineCRUD(db).list_for_site(site.id)
+    return ExpectedBaselineListResponse(
+        site_id=site.id,
+        baselines=[ExpectedBaselineResponse.model_validate(r) for r in rows],
+    )
+
+
+@telemetry_v2_router.get(
+    "/v2/sites/{site_id}/expected-baselines/active",
+    response_model=Optional[ExpectedBaselineResponse],
+    summary="Active baseline for a site (defaults to weather_adjusted_model)",
+)
+def get_active_expected_baseline(
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db: Annotated[Session, Depends(get_session)],
+    baseline_type: TelemetryBaselineType = TelemetryBaselineType.weather_adjusted_model,
+) -> Optional[ExpectedBaselineResponse]:
+    """The single active baseline of the given type, or ``null`` if none."""
+    row = TelemetryExpectedBaselineCRUD(db).get_active(site.id, baseline_type)
+    return None if row is None else ExpectedBaselineResponse.model_validate(row)
+
+
+@telemetry_v2_router.post(
+    "/v2/sites/{site_id}/expected-baselines",
+    response_model=ExpectedBaselineResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a draft expected baseline (snapshots site loss%/PTO/timezone)",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def create_expected_baseline(
+    payload: ExpectedBaselineCreateRequest,
+    site: Annotated[Site, Depends(get_authorized_site_with_company_admin)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> ExpectedBaselineResponse:
+    """Create a ``draft`` baseline. Loss %, PTO date and timezone are snapshot
+    from the site when not supplied (losses abs()-normalized). The baseline is
+    immutable once approved; AI-parsed baselines still pass through approval.
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+    site_additional = (
+        db.query(SiteAdditionalFieldList)
+        .filter(SiteAdditionalFieldList.site_id == site.id)
+        .one_or_none()
+    )
+    baseline = TelemetryExpectedBaselineCRUD(db).create_draft(
+        company_id=site.company_id,
+        site_id=site.id,
+        payload=payload.model_dump(),
+        site_additional=site_additional,
+        site_timezone=getattr(site, "timezone", None),
+        created_by_user_id=getattr(current_user, "id", None),
+    )
+    logger.info(
+        "telemetry_v2_expected_baseline_created site_id=%s baseline_id=%s type=%s",
+        site.id,
+        baseline.id,
+        baseline.baseline_type.value,
+    )
+    return ExpectedBaselineResponse.model_validate(baseline)
+
+
+@telemetry_v2_router.post(
+    "/v2/expected-baselines/{baseline_id}/approve",
+    response_model=ExpectedBaselineResponse,
+    summary="Approve a draft/in-review expected baseline",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def approve_expected_baseline(
+    baseline_id: int,
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> ExpectedBaselineResponse:
+    """Stamp reviewer + approver and move the baseline to ``approved``.
+
+    Activation is a separate, explicit step.
+    """
+    crud = TelemetryExpectedBaselineCRUD(db)
+    baseline = crud.get(baseline_id)
+    if baseline is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Baseline not found")
+    # Enforce access to the owning site (company-admin scope) + visibility.
+    get_authorized_site_with_company_admin(baseline.site_id, current_user, db)
+    _enforce_company_visibility(current_user, baseline.company_id)
+    try:
+        updated = crud.approve(baseline, user_id=getattr(current_user, "id", None))
+    except BaselineActivationError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
+    logger.info(
+        "telemetry_v2_expected_baseline_approved site_id=%s baseline_id=%s",
+        baseline.site_id,
+        baseline.id,
+    )
+    return ExpectedBaselineResponse.model_validate(updated)
+
+
+@telemetry_v2_router.post(
+    "/v2/expected-baselines/{baseline_id}/activate",
+    response_model=ExpectedBaselineResponse,
+    summary="Activate an approved baseline (supersedes the prior active one)",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def activate_expected_baseline(
+    baseline_id: int,
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> ExpectedBaselineResponse:
+    """Make an ``approved`` baseline the single ``active`` one for its
+    site+type. The prior active baseline is superseded (kept for audit).
+    Returns 409 if the baseline is not in ``approved`` status.
+    """
+    crud = TelemetryExpectedBaselineCRUD(db)
+    baseline = crud.get(baseline_id)
+    if baseline is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Baseline not found")
+    get_authorized_site_with_company_admin(baseline.site_id, current_user, db)
+    _enforce_company_visibility(current_user, baseline.company_id)
+    try:
+        updated = crud.activate(baseline, user_id=getattr(current_user, "id", None))
+    except BaselineActivationError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
+    logger.info(
+        "telemetry_v2_expected_baseline_activated site_id=%s baseline_id=%s "
+        "supersedes=%s",
+        baseline.site_id,
+        baseline.id,
+        baseline.supersedes_baseline_id,
+    )
+    return ExpectedBaselineResponse.model_validate(updated)
+
+
+@telemetry_v2_router.get(
+    "/v2/sites/{site_id}/expected-preview",
+    response_model=ExpectedPreviewResponse,
+    summary="Preview weather-adjusted expected vs. actual for a window",
+)
+def get_expected_preview(
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db: Annotated[Session, Depends(get_session)],
+    start: Optional[datetime] = None,
+    end: Optional[datetime] = None,
+    bucket_size: str = "1h",
+    baseline_id: Optional[int] = None,
+) -> ExpectedPreviewResponse:
+    """Compute the native expected model over a bounded window.
+
+    Uses the requested baseline (must belong to the site) or, by default, the
+    active ``weather_adjusted_model`` baseline. Returns ``baseline_not_available``
+    (with no buckets) when no usable baseline exists; per-bucket ``missing_inputs``
+    / ``pre_pto`` states are reported with NULL expected (never fabricated zeros).
+    """
+    if bucket_size not in _PREVIEW_BUCKET_SIZES:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            f"bucket_size must be one of {sorted(_PREVIEW_BUCKET_SIZES)}.",
+        )
+    window_end = _coerce_naive_utc(end) if end else _utcnow()
+    window_start = (
+        _coerce_naive_utc(start) if start else window_end - _DEFAULT_PREVIEW_WINDOW
+    )
+    if window_end <= window_start:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "end must be after start."
+        )
+    if window_end - window_start > _MAX_PREVIEW_WINDOW:
+        window_start = window_end - _MAX_PREVIEW_WINDOW
+
+    crud = TelemetryExpectedBaselineCRUD(db)
+    if baseline_id is not None:
+        baseline = crud.get(baseline_id)
+        if baseline is None or baseline.site_id != site.id:
+            raise HTTPException(
+                status.HTTP_404_NOT_FOUND, "Baseline not found for this site"
+            )
+        # Never render a baseline that has not passed human approval through this
+        # read-gated endpoint — that would bypass the approval workflow.
+        if baseline.status not in _PREVIEWABLE_BASELINE_STATUSES:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                "Baseline must be approved before it can be previewed.",
+            )
+    else:
+        baseline = crud.get_active(
+            site.id, TelemetryBaselineType.weather_adjusted_model
+        )
+
+    try:
+        result = compute_site_expected(
+            db,
+            site=site,
+            baseline=baseline,
+            start=window_start,
+            end=window_end,
+            bucket_size=bucket_size,
+        )
+    except ValueError as exc:
+        # An approved baseline missing required physics parameters cannot compute
+        # the weather-adjusted model; surface a clear 422 rather than a 500.
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)
+        ) from exc
+    return ExpectedPreviewResponse(
+        site_id=site.id,
+        overall_status=result.overall_status.value,
+        baseline_id=result.baseline_id,
+        baseline_type=result.baseline_type,
+        bucket_size=result.bucket_size,
+        window_start=result.window_start,
+        window_end=result.window_end,
+        expected_energy_kwh=result.expected_energy_kwh,
+        actual_energy_kwh=result.actual_energy_kwh,
+        ok_bucket_count=result.ok_bucket_count,
+        missing_inputs_bucket_count=result.missing_inputs_bucket_count,
+        pre_pto_bucket_count=result.pre_pto_bucket_count,
+        buckets=[
+            ExpectedPreviewBucket(
+                bucket_start=b.bucket_start,
+                status=b.status.value,
+                expected_power_kw=b.expected_power_kw,
+                expected_energy_kwh=b.expected_energy_kwh,
+                actual_power_kw=b.actual_power_kw,
+                irradiance_wm2=b.irradiance_wm2,
+                cell_temperature_f=b.cell_temperature_f,
+                age_years=b.age_years,
+            )
+            for b in result.buckets
+        ],
     )

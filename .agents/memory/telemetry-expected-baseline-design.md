@@ -31,6 +31,25 @@ by the *weather-adjusted physics* expected, NOT the PVsyst design estimate. Trea
 PostgreSQL/Python with NO BigQuery. (A) stays monthly/annual only until an 8760
 parser is built — never synthesize hourly from monthly (that is fabrication).
 
+# Phase P3.1+P3.2 status — foundation BUILT (backend only, no UI yet)
+- The native baseline foundation now EXISTS: two PG tables
+  (`telemetry_expected_baselines` typed-physics header + `_baseline_points`),
+  a pure+DB calc service that ports the (B) jinja physics EXACTLY (verified
+  line-by-line), and admin/preview endpoints. **interval_rollups table was DEFERRED
+  on purpose** — weather-adjusted expected is computed on read from V2 rollups, not
+  materialized. **Why:** the inputs are already ingested, so materializing adds
+  cache-invalidation burden with no current consumer.
+- Never-fabricate state machine is the contract: no approved baseline ⇒
+  `baseline_not_available`; bucket missing irradiance/cell-temp ⇒ `missing_inputs`;
+  PTO null/before bucket ⇒ `pre_pto`; all of these mean expected = NULL, never 0.
+- One-active per (site, baseline_type) enforced by a partial unique index
+  `WHERE status='active'` PLUS a FOR UPDATE supersede in the activate tx. **Edge:** a
+  true concurrent activation race surfaces as an IntegrityError 500 (not a clean 409)
+  — accepted for the foundation, not a bug to chase.
+- Percent columns are stored AS percent and divided by /100 exactly once in the calc;
+  loss% is abs()-normalized and snapshotted (with PTO + site tz) onto the immutable
+  baseline at creation; age is anchored on PTO via the baseline's snapshot tz.
+
 # Baseline-build rules (Phase 3 design)
 - Postgres V2 = source of truth for actuals; BQ is not an app dep; do not route V2
   expected/loss through BQ; do not derive expected from actual.
@@ -46,7 +65,10 @@ parser is built — never synthesize hourly from monthly (that is fabrication).
   as negative percentages in `site_details` examples but the BQ formula expects
   positive `%` subtracted `/100` — normalize sign+magnitude on import or expected is
   silently wrong.
-- Do NOT remove until V2 baseline exists: BQ read layer + the 4 `/api/om/.../-chart`
-  fallbacks, rea-telemetry jinja templates, Firestore config models, DocAI PVsyst
-  pipeline + mapper + extraction registry, parameter source columns, and the
+- Do NOT remove the legacy layer yet: the baseline foundation exists but NOTHING
+  consumes it for charts (UI/chart rewiring intentionally out of P3.1+P3.2 scope).
+  Keep until the charts are actually rewired to the native model: BQ read layer + the
+  4 `/api/om/.../-chart` fallbacks, rea-telemetry jinja templates (still the
+  formula-of-record to diff against), Firestore config models, DocAI PVsyst pipeline +
+  mapper + extraction registry, parameter source columns, and the
   `expected_baseline_available` flag contract.
