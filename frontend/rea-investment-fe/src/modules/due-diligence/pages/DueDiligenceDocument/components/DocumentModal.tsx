@@ -52,7 +52,8 @@ import {
   ParsingStatusBadge,
   ParseErrorMessage,
   TruncationWarning,
-  ParsingMetadata
+  ParsingMetadata,
+  ParsingProgressIndicator
 } from '../../../../../components/common/ParsingStatus';
 import PDFViewer from './PDFViewer';
 
@@ -741,6 +742,12 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                             position: 'relative'
                           }}
                         >
+                          {(isProcessing ||
+                            isStartingParse ||
+                            parsingStatus === 'queued' ||
+                            parsingStatus === 'processing') && (
+                            <ParsingProgressIndicator status={parsingStatus === 'queued' ? 'queued' : 'processing'} />
+                          )}
                           {hasFailed && (
                             <ParseErrorMessage errorMessage={documentStatus?.error_message} onRetry={handleReprocess} />
                           )}

@@ -71,7 +71,7 @@ export function getStatusDisplayInfo(status: ParsingStatus | string): {
 
   switch (normalizedStatus) {
     case 'queued':
-      return { label: 'Queued', color: 'info', isLoading: false };
+      return { label: 'Queued', color: 'info', isLoading: true };
     case 'processing':
       return { label: 'Processing', color: 'primary', isLoading: true };
     case 'completed':
