@@ -1,0 +1,111 @@
+Start the next controlled sprint: DD V2 Phase 5B — Remove DD → BigQuery Write and Retire Legacy Baseline Source.
+
+Context:
+DD V2 Phases 1–5A are complete:
+
+* all DD document types are parse-eligible
+* PVsyst specialized schema v2 exists
+* project_facts provenance/audit model exists
+* single-key and bulk-accept override guardrails protect baseline-driving assumptions
+* promoted project_facts can create draft expected baselines
+* design-estimate baseline points can be generated from promoted facts
+* reconciliation backend endpoint exists
+* read-only admin Reconciliation tab exists in Project Hub
+* V2 expected/weather-adjusted baseline path exists
+* legacy telemetry is gated behind off-by-default legacy_telemetry_enabled
+
+Strategic decision:
+BigQuery is not an operational app dependency. Current DD/BigQuery behavior exists only as legacy/test infrastructure and should no longer be preserved as an app path.
+
+Objective:
+Remove the remaining DD → BigQuery characteristics write and retire legacy baseline-source behavior so V2 due diligence, project_facts, and telemetry_expected_baselines are the supported path.
+
+Scope:
+
+A. Remove DD → BigQuery characteristics write
+
+Target:
+
+* routers/due_diligence/documents.py path that calls SiteDDCharacteristicsHandler.sync_to_bq
+
+Requirements:
+
+* Remove the DD → BigQuery write from the active due diligence review/promotion flow.
+* Do not replace it with another BigQuery write.
+* Do not let BigQuery failure or absence affect DD review, document key update, promotion, or baseline workflows.
+* Remove or deprecate now-unused imports/helpers only if clearly safe.
+* If SiteDDCharacteristicsHandler has no remaining app-facing use, mark/remove it according to safe dependency checks.
+
+B. Retire SiteAdditionalFieldList as a V2 baseline source
+
+Current state:
+
+* The new facts→draft-baseline bridge reads promoted project_facts.
+* The legacy create_draft path may still snapshot from SiteAdditionalFieldList.
+
+Requirements:
+
+* Do not allow new V2 baseline workflows to depend on SiteAdditionalFieldList.
+* Prefer the project_facts-based create-draft-from-facts path for V2 baselines.
+* If the legacy create_draft endpoint is still needed for tests/admin tooling, gate it, deprecate it, or clearly label it as legacy/manual.
+* Ensure O&M expected calculations rely on approved/active TelemetryExpectedBaseline records, not SiteAdditionalFieldList.
+* Do not delete SiteAdditionalFieldList globally if other non-telemetry/project screens still use it.
+* Remove only the baseline-source dependency, not unrelated site metadata.
+
+C. API/client cleanup
+
+* Ensure frontend/admin flows point users to the facts-based baseline draft creation path where available.
+* Ensure no UI path encourages creating baselines from legacy site fields.
+* Keep the Reconciliation tab display-only for legacy SAFL comparison if still useful.
+* If reconciliation still shows legacy SAFL, label it as “legacy/display-only” or equivalent.
+
+D. Tests
+
+Add/update tests for:
+
+1. Updating/accepting/overriding a DD key no longer calls SiteDDCharacteristicsHandler.sync_to_bq.
+2. DD review/promotion succeeds when BigQuery is unavailable.
+3. BigQuery imports are not used in the DD review/promotion path.
+4. Facts→draft-baseline path still works.
+5. Design points producer still works.
+6. Reconciliation tab/backend still works and may show legacy SAFL as display-only.
+7. O&M expected calculation still uses active TelemetryExpectedBaseline.
+8. No baseline is auto-created, auto-approved, or auto-activated.
+9. Existing active baselines are not overwritten.
+10. Single-key and bulk override guardrails still pass.
+11. Backend starts cleanly.
+12. Frontend builds/serves cleanly.
+13. Architect review passes.
+
+E. Documentation / deprecation notes
+
+Update code comments or internal docs to state:
+
+* DD no longer writes baseline-driving facts to BigQuery.
+* V2 baselines are created from promoted project_facts.
+* SiteAdditionalFieldList is not the V2 baseline source.
+* Reconciliation may show legacy values only for transition/display.
+
+Do not:
+
+* Remove SiteAdditionalFieldList table/model globally.
+* Remove BigQuery engine globally unless a separate audit confirms no non-DD usage.
+* Touch expected calculation math.
+* Touch scheduler/refresh logic.
+* Touch O&M chart logic.
+* Touch company/portfolio aggregation.
+* Touch device eligibility.
+* Touch plaintext-secret migration.
+* Add new document types.
+* Change AI parsing prompts or schemas.
+
+Return:
+
+* files changed
+* DD→BigQuery write removal details
+* remaining BigQuery references, if any, and why
+* legacy baseline-source behavior after change
+* tests added/updated
+* validation results
+* risks
+* recommended next sprint

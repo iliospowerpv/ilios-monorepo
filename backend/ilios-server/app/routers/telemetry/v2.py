@@ -2639,7 +2639,15 @@ def get_active_expected_baseline(
     "/v2/sites/{site_id}/expected-baselines",
     response_model=ExpectedBaselineResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Create a draft expected baseline (snapshots site loss%/PTO/timezone)",
+    summary="(LEGACY/manual) Create a draft baseline from the SiteAdditionalFieldList snapshot",
+    description=(
+        "DEPRECATED in DD V2: prefer "
+        "POST /v2/sites/{site_id}/expected-baseline/create-draft-from-facts, which builds the "
+        "draft from promoted project_facts. This legacy endpoint snapshots site loss%/PTO/"
+        "timezone and SiteAdditionalFieldList (SAFL) loss columns, and is retained only for "
+        "manual/backfill use."
+    ),
+    deprecated=True,
     dependencies=[Depends(telemetry_admin_required)],
 )
 def create_expected_baseline(
@@ -2648,11 +2656,20 @@ def create_expected_baseline(
     db: Annotated[Session, Depends(get_session)],
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
 ) -> ExpectedBaselineResponse:
-    """Create a ``draft`` baseline. Loss %, PTO date and timezone are snapshot
-    from the site when not supplied (losses abs()-normalized). The baseline is
-    immutable once approved; AI-parsed baselines still pass through approval.
+    """LEGACY/manual: create a ``draft`` baseline from the SiteAdditionalFieldList snapshot.
+
+    DEPRECATED in DD V2 — the supported path is ``create-draft-from-facts``, which builds
+    the draft from promoted ``project_facts`` instead of ``SiteAdditionalFieldList`` (SAFL).
+    This endpoint is retained only for manual/backfill use: loss %, PTO date and timezone are
+    snapshot from the site (and SAFL loss columns) when not supplied (losses abs()-normalized).
+    The baseline is immutable once approved; AI-parsed baselines still pass through approval.
     """
     _enforce_company_visibility(current_user, site.company_id)
+    logger.warning(
+        "telemetry_v2_legacy_expected_baseline_create_used site_id=%s — this SiteAdditionalFieldList "
+        "snapshot endpoint is deprecated; prefer create-draft-from-facts (promoted project_facts).",
+        site.id,
+    )
     site_additional = (
         db.query(SiteAdditionalFieldList)
         .filter(SiteAdditionalFieldList.site_id == site.id)

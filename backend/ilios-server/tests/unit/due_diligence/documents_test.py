@@ -722,3 +722,113 @@ class TestSetKeyOverrideGuardrail:
         assert saved.overridden_by_id is None
         assert saved.overridden_at is None
         assert saved.override_notes is None
+
+
+class TestSetKeyDoesNotWriteBigQuery:
+    """DD V2 Phase 5B — the legacy DD -> BigQuery characteristics write was removed.
+
+    Accepting/overriding a Due Diligence key (including the As-built PV Syst keys that
+    previously triggered the BigQuery upsert) must succeed WITHOUT any BigQuery I/O. Reviewed
+    values now flow only into ``project_facts``; DD review/promotion no longer depends on
+    BigQuery being reachable.
+    """
+
+    BASELINE_KEY = "Module Wattage"
+    CANONICAL_NAME = "module_wattage"
+    # Patch the shared base method so ANY characteristics-handler subclass write is caught.
+    SYNC_TARGET = "app.helpers.bq_data_sync_helper.CharacteristicsHandler.sync_to_bq"
+
+    @staticmethod
+    def _key_endpoint(site_id_, document_id_):
+        return f"/api/due-diligence/{site_id_}/documents/{document_id_}/keys"
+
+    @staticmethod
+    def _patch_allowed_keys(monkeypatch, allowed):
+        # Registry is not seeded in the test DB and config fallback is off, so the
+        # allowed-keys set must be supplied explicitly (mirrors the guardrail tests).
+        monkeypatch.setattr(
+            "app.routers.due_diligence.documents.AIParsingHandler.get_keys_by_document_type",
+            lambda self, document_type: list(allowed),
+        )
+
+    @classmethod
+    def _spy_sync_to_bq(cls, monkeypatch):
+        """Record any BigQuery characteristics write; the DD path must never trigger one."""
+        calls = []
+
+        def _record(self, old_record, new_record):
+            calls.append((old_record, new_record))
+            return True
+
+        monkeypatch.setattr(cls.SYNC_TARGET, _record)
+        return calls
+
+    @classmethod
+    def _ensure_canonical_field(cls, db_session):
+        # canonical_fields.name is UNIQUE and the session is shared, so get-or-create.
+        field = db_session.query(CanonicalField).filter_by(name=cls.CANONICAL_NAME).first()
+        if field is None:
+            field = CanonicalField(
+                name=cls.CANONICAL_NAME, display_name=cls.BASELINE_KEY, field_type="text", is_active=True
+            )
+            db_session.add(field)
+            db_session.commit()
+            db_session.refresh(field)
+        return field
+
+    def test_baseline_key_update_does_not_write_to_bigquery(
+        self, client, site_id, document, file, db_session, company_member_user_auth_header, monkeypatch
+    ):
+        """A former-BQ key ('Module Wattage') update + rationale -> 202 and zero BigQuery writes."""
+        self._patch_allowed_keys(monkeypatch, [self.BASELINE_KEY])
+        self._ensure_canonical_field(db_session)
+        calls = self._spy_sync_to_bq(monkeypatch)
+
+        response = client.put(
+            self._key_endpoint(site_id, document.id),
+            headers=company_member_user_auth_header,
+            json={
+                "name": self.BASELINE_KEY,
+                "value": "987654",
+                "file_id": file.id,
+                # Always pass a rationale so the result is 202 regardless of any AI original.
+                "override_notes": "DD V2 Phase 5B no-BigQuery regression guard",
+            },
+        )
+
+        assert response.status_code == 202
+        assert calls == []  # legacy DD -> BigQuery sync was removed; nothing should be written
+
+    def test_non_baseline_key_accept_does_not_write_to_bigquery(
+        self, client, site_id, document, file, company_member_user_auth_header, monkeypatch
+    ):
+        """A plain DD key accept succeeds with no BigQuery mocks present and triggers no write."""
+        self._patch_allowed_keys(monkeypatch, ["Quiet Enjoyment"])
+        calls = self._spy_sync_to_bq(monkeypatch)
+
+        response = client.put(
+            self._key_endpoint(site_id, document.id),
+            headers=company_member_user_auth_header,
+            json={"name": "Quiet Enjoyment", "value": "Materially changed text", "file_id": file.id},
+        )
+
+        assert response.status_code == 202
+        assert calls == []
+
+    def test_documents_router_has_no_bigquery_path(self):
+        """Static guard: the documents router contains no BigQuery sync code path."""
+        import inspect
+
+        import app.routers.due_diligence.documents as documents_module
+
+        source = inspect.getsource(documents_module)
+        # Assert the concrete BigQuery code symbols are gone. (The word "BigQuery" may
+        # still appear in an explanatory Phase-5B comment, so we check identifiers, not prose.)
+        for forbidden in (
+            "SiteDDCharacteristicsHandler",
+            "prepare_keys_sync_payload",
+            "sync_to_bq",
+            "DueDiligenceBQKeys",
+            "document_key_sync_helper",
+        ):
+            assert forbidden not in source, f"unexpected reference to {forbidden} in documents router"

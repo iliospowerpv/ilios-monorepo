@@ -1,0 +1,26 @@
+...................                                                      [100%]
+=============================== warnings summary ===============================
+../../.pythonlibs/lib/python3.11/site-packages/pydantic/_internal/_config.py:272: 27 warnings
+  /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/pydantic/_internal/_config.py:272: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.6/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+../../.pythonlibs/lib/python3.11/site-packages/pydantic/_internal/_fields.py:151
+  /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/pydantic/_internal/_fields.py:151: UserWarning: Field "model_review" has conflict with protected namespace "model_".
+  
+  You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+    warnings.warn(
+
+../../.pythonlibs/lib/python3.11/site-packages/pydantic/_internal/_fields.py:151
+  /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/pydantic/_internal/_fields.py:151: UserWarning: Field "model_approved" has conflict with protected namespace "model_".
+  
+  You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+    warnings.warn(
+
+../../.pythonlibs/lib/python3.11/site-packages/pydantic/_internal/_fields.py:151
+  /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/pydantic/_internal/_fields.py:151: UserWarning: Field "model_name" has conflict with protected namespace "model_".
+  
+  You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+19 passed, 30 warnings in 15.00s

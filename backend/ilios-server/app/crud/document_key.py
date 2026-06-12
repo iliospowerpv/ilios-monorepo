@@ -16,13 +16,6 @@ class DocumentKeyCRUD(BaseCRUD):
             query = query.filter_by(file_id=file_id)
         return query.first()
 
-    def get_document_keys_by_names(self, document_id: int, keys_names: list):
-        return (
-            self.db_session.query(self.model)
-            .filter(self.model.name.in_(keys_names), self.model.document_id == document_id)
-            .all()
-        )
-
     def get_keys_for_file(self, file_id: int) -> list[DocumentKey]:
         return self.db_session.query(self.model).filter_by(file_id=file_id).all()
 

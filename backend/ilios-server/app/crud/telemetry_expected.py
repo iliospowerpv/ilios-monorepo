@@ -156,6 +156,11 @@ class TelemetryExpectedBaselineCRUD(BaseCRUD):
         ``version`` is set explicitly when provided (the project-facts bridge
         assigns ``max(version)+1`` for a new draft); otherwise the column default
         (1) applies. ``version`` is intentionally not part of ``_CREATE_FIELDS``.
+
+        DD V2 note: ``site_additional`` (a ``SiteAdditionalFieldList`` snapshot) is a
+        LEGACY baseline source used only by the deprecated manual create endpoint. The
+        supported project-facts bridge (``create-draft-from-facts``) passes
+        ``site_additional=None``, so the SAFL loss/PTO block below is skipped on the V2 path.
         """
         data = {k: payload[k] for k in _CREATE_FIELDS if k in payload}
         if version is not None:

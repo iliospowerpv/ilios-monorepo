@@ -1,7 +1,6 @@
 """Interfaces to insert data for BQ"""
 
 import logging
-import re
 from abc import ABC, abstractmethod
 from typing import Type
 
@@ -17,7 +16,6 @@ from app.schema.bq_models import (
     BQSiteCharacteristicsUpdateSchema,
 )
 from app.settings import settings
-from app.static.due_diligence_bq_keys import DD_BQ_QUANTITY_KEYS
 
 logger = logging.getLogger(__name__)
 
@@ -209,22 +207,3 @@ class SiteCharacteristicsHandler(CharacteristicsHandler):
 
     def populate_create_schema(self, update_schema_payload: dict):
         return self.create_schema(site_id=self.site.id, **update_schema_payload).model_dump()
-
-
-class SiteDDCharacteristicsHandler(SiteCharacteristicsHandler):
-    def _diff_postprocessing(self, diff_object: dict):
-        """Overwrite parent class method.
-        For the Due Diligence keys, we need clean up the input value and group year1 metrics into the array
-        """
-        result = {}
-        for key, value in diff_object.items():
-            normalized_value = self.parse_numbers(value) if key in DD_BQ_QUANTITY_KEYS else value
-            result[key] = normalized_value
-        return result
-
-    @staticmethod
-    def parse_numbers(input_value):
-        """Get float value from the string"""
-        match = re.match(r"(\d*\.?\d+)", input_value.lower())
-        if match:
-            return float(match.group(1))

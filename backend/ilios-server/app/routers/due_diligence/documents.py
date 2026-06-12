@@ -14,11 +14,8 @@ from app.db.session import get_session
 from app.helpers.authentication import get_current_user
 from app.helpers.authorization.project_access import get_authorized_document, get_authorized_site
 from app.helpers.permission_guards import require_module_permission
-from app.helpers.bq_data_sync_helper import SiteDDCharacteristicsHandler
 from app.helpers.configs.ai_parsing_helper import AIParsingHandler
 from app.helpers.configs.co_terminus_helper import CoTerminusHandler
-from app.helpers.telemetry.legacy_flag import legacy_telemetry_enabled
-from app.helpers.due_diligence.document_key_sync_helper import prepare_keys_sync_payload
 from app.helpers.due_diligence.document_sections_handler import DocumentSectionsHandler
 from app.helpers.due_diligence.due_diligence_helper import validate_document_section
 from app.helpers.due_diligence.override_guardrail import evaluate_baseline_override
@@ -47,7 +44,6 @@ from app.schema.user import CurrentUserSchema
 from app.static import HTTP_403_RESPONSE, HTTP_404_RESPONSE, DocumentMessages
 from app.static.baseline_driving_fields import is_baseline_driving_field
 from app.static.default_site_documents_enum import SiteDocumentsEnum
-from app.static.due_diligence_bq_keys import DueDiligenceBQKeys
 
 logger = logging.getLogger(__name__)
 documents_router = APIRouter()
@@ -473,28 +469,10 @@ async def set_key(
             document.site.co_terminus_check.is_actual = False
             db_session.commit()
 
-    # additional functionality is applied for specific keys of the As-build PV Syst doc:
-    # if they were changed need to sync them into BQ.
-    #
-    # This DD -> BigQuery write is a LEGACY side effect of the decommissioned BigQuery
-    # pipeline. It is gated behind ``legacy_telemetry_enabled`` (default False) so it is
-    # inert unless explicitly re-enabled, and wrapped so a BigQuery failure can NEVER
-    # block DD review/promotion. Slated for removal in DD V2 Phase 2.
-    if (
-        legacy_telemetry_enabled()
-        and document.name == SiteDocumentsEnum.as_built_pv_syst_with_full_data_package
-        and key.name in DueDiligenceBQKeys.list()
-        and key_change_detected
-    ):
-        try:
-            sync_payload = prepare_keys_sync_payload(document_key_crud, document, key)
-            SiteDDCharacteristicsHandler(document.site).sync_to_bq(old_record={}, new_record=sync_payload)
-        except Exception as exc:
-            logger.warning(
-                f"Legacy DD->BigQuery sync failed for key '{key.name}' on document "
-                f"{document.id} (non-blocking, DD review/promotion unaffected): {exc}"
-            )
-
+    # DD V2 Phase 5B: the legacy DD -> BigQuery characteristics write was removed here.
+    # Reviewed/accepted PV Syst values now flow ONLY into project_facts (candidate below),
+    # which the V2 expected-baseline path consumes via create-draft-from-facts. DD review
+    # and promotion no longer perform any BigQuery I/O.
     if document_key and document_key.file_id and document_key.status in ("accepted", "overridden"):
         try:
             facts_service = ProjectFactsService(db_session)

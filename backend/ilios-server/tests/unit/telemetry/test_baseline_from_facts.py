@@ -541,3 +541,30 @@ def test_endpoint_requires_telemetry_admin(
         _readiness_url(site_id), headers=non_system_user_auth_header
     )
     assert resp.status_code in (401, 403, 404)
+
+
+def test_legacy_create_baseline_endpoint_is_deprecated_and_warns(
+    client, system_user_auth_header, db_session, site_id, caplog
+):
+    """DD V2 Phase 5B — the legacy SAFL-snapshot create endpoint still works (201) but is
+    now marked deprecated and logs a warning steering callers to create-draft-from-facts.
+
+    A ``draft`` row is created (the partial unique index only constrains ``active`` rows,
+    so this never collides with other drafts on the shared site).
+    """
+    import logging
+
+    url = f"/api/telemetry/v2/sites/{site_id}/expected-baselines"
+    with caplog.at_level(logging.WARNING, logger="app.routers.telemetry.v2"):
+        resp = client.post(
+            url,
+            json={"baseline_name": "Phase 5B legacy deprecation check"},
+            headers=system_user_auth_header,
+        )
+
+    assert resp.status_code == 201
+    assert any(
+        "deprecated" in record.getMessage().lower()
+        and "create-draft-from-facts" in record.getMessage()
+        for record in caplog.records
+    ), "expected a deprecation warning pointing to create-draft-from-facts"
