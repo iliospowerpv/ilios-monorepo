@@ -1,0 +1,165 @@
+Start the next controlled sprint: Weather Data Source Strategy — Source Hierarchy, Data Availability, and V2 Integration Audit.
+
+This is an audit/design task first. Do not implement changes yet unless a narrow bug is clearly safe.
+
+Context:
+The V2 telemetry, expected-performance, and due diligence truth-store work is now established:
+- V2 actuals from PostgreSQL telemetry readings/rollups
+- V2 weather-adjusted expected calculation
+- V2 expected baselines from promoted project_facts
+- design-estimate baseline points
+- DD reconciliation visibility
+- DD no longer writes to BigQuery
+- BigQuery is not an operational app dependency
+- SiteAdditionalFieldList is deprecated as a V2 baseline source
+
+Objective:
+Audit and design the weather data source strategy for weather-adjusted expected performance, O&M diagnostics, missing-input states, and future reporting.
+
+Key product distinction:
+- Actual production comes from V2 telemetry.
+- Weather-adjusted expected uses approved baseline assumptions plus observed weather inputs.
+- Design estimate comes from PVsyst/design documents.
+- Weather data must be source-aware and auditable; do not silently substitute external weather without labeling it.
+
+Audit areas:
+
+1. Current weather inputs in V2
+Identify all current weather-related metrics in telemetry_readings and rollups:
+- irradiance_wm2
+- cell_temperature_f
+- ambient_temperature_f, if present
+- reference cell data
+- weather station data
+- provider site-level weather streams
+- device-level weather streams
+
+For each:
+- source provider
+- source device / external device id
+- mapped project device, if any
+- metric name
+- unit
+- rollup behavior
+- freshness
+- site coverage
+- gaps
+
+2. Current expected calculation dependency
+Identify exactly what expected_service requires:
+- required weather inputs
+- optional weather inputs
+- how missing inputs are classified
+- how pre-PTO is classified
+- whether site-level or device-level weather is used
+- whether values come from site rollups or device rollups
+- how units are normalized
+
+3. Weather source hierarchy
+Propose a source hierarchy for weather-adjusted expected:
+1. on-site calibrated sensor / reference cell
+2. on-site weather station
+3. provider DAS weather stream
+4. nearby third-party weather source
+5. PVsyst/design weather assumption
+6. unavailable
+
+For each level, define:
+- when it is allowed
+- how it should be labeled
+- whether it can drive expected calculations
+- whether it should produce a warning
+- how it affects confidence
+- whether user approval is required
+
+4. External weather sourcing
+Identify whether the app currently has any external weather data provider integration.
+If not, propose options and model requirements without implementing:
+- provider options
+- API key/storage needs
+- historical weather availability
+- irradiance availability
+- temperature availability
+- licensing/cost implications
+- caching/storage design
+- audit/provenance requirements
+
+Do not choose or implement a paid provider in this task.
+
+5. Weather data model gaps
+Assess whether current telemetry_readings / rollups are enough to represent weather-source provenance.
+
+Identify whether we need:
+- weather_source table
+- weather_observations table
+- source_priority / source_type
+- source confidence
+- observed vs modeled weather distinction
+- external provider metadata
+- device calibration status
+- site weather-source selection
+- user override / approval workflow
+
+6. O&M diagnostic implications
+Identify how O&M should explain:
+- missing irradiance
+- missing cell temperature
+- stale weather data
+- external weather fallback
+- conflicting weather sources
+- expected unavailable due to missing inputs
+- weather source used in expected calculation
+
+7. Device eligibility dependencies
+Identify which current device types should be considered weather-source devices:
+- weather station
+- reference cell
+- irradiance sensor
+- temperature sensor
+- meter/logger/gateway, if they carry weather streams
+
+Return any implications for the upcoming device eligibility sprint.
+
+8. Reporting implications
+Identify how weather source should appear in:
+- O&M charts
+- Actual vs Expected
+- Past Performance
+- Losses
+- Investor reports
+- Reconciliation panel
+- Future Power BI/export layer
+
+9. Path B usability/help
+List help/FAQ/tooltips needed:
+- weather-adjusted expected
+- irradiance
+- cell temperature
+- on-site weather source
+- external weather fallback
+- missing weather inputs
+- confidence/warnings
+- why expected may be unavailable
+
+Return:
+1. current weather input inventory
+2. expected_service dependency map
+3. proposed weather source hierarchy
+4. external weather provider/design options
+5. data model gaps
+6. O&M diagnostic requirements
+7. device eligibility implications
+8. reporting implications
+9. implementation phases
+10. risks
+11. Path B tasks for the new resource
+12. what not to change until reviewed
+
+Do not:
+- change expected calculation math
+- add an external weather provider
+- change telemetry ingestion
+- change device eligibility
+- change O&M charts
+- touch plaintext secrets
+- reintroduce BigQuery/Firestore/legacy telemetry
