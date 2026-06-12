@@ -11,7 +11,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
@@ -68,11 +68,15 @@ from app.models.telemetry_expected import (
 )
 from app.static import PermissionsActions
 from app.schema.telemetry_v2 import (
+    BaselineFactFieldUsage,
+    CreateDraftFromFactsRequest,
+    CreateDraftFromFactsResponse,
     DeviceMappingBulkRequest,
     DeviceMappingBulkResponse,
     ExpectedBaselineCreateRequest,
     ExpectedBaselineListResponse,
     ExpectedBaselineResponse,
+    ReadinessFromFactsResponse,
     ExpectedPreviewBucket,
     ExpectedPreviewResponse,
     ExternalDeviceList,
@@ -127,6 +131,7 @@ from app.services.telemetry.expected_service import (
     BUCKET_SIZE_TO_HOURS,
     compute_site_expected,
 )
+from app.services.telemetry import baseline_from_facts_service
 from app.models.device import Device
 from app.services.telemetry.ingestion_service import (
     IngestionConfigError,
@@ -2665,6 +2670,146 @@ def create_expected_baseline(
         baseline.baseline_type.value,
     )
     return ExpectedBaselineResponse.model_validate(baseline)
+
+
+def _field_usage_schema(usage) -> BaselineFactFieldUsage:
+    """Map a service ``FieldUsage`` dataclass to its response schema."""
+    return BaselineFactFieldUsage(
+        field=usage.field,
+        source=usage.source,
+        value=usage.value,
+        canonical_name=usage.canonical_name,
+        fact_id=usage.fact_id,
+        document_id=usage.document_id,
+        ai_confidence=usage.ai_confidence,
+    )
+
+
+@telemetry_v2_router.get(
+    "/v2/sites/{site_id}/expected-baseline/readiness-from-facts",
+    response_model=ReadinessFromFactsResponse,
+    summary="Whether a site's promoted project_facts can produce a draft baseline",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def expected_baseline_readiness_from_facts(
+    site: Annotated[Site, Depends(get_authorized_site_with_company_admin)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    baseline_type: TelemetryBaselineType = TelemetryBaselineType.weather_adjusted_model,
+) -> ReadinessFromFactsResponse:
+    """Report readiness from PROMOTED ``project_facts`` only (no body, never writes).
+
+    Module / inverter physics come from active facts; the reviewer-only datasheet
+    constants are always reported as ``missing_fields`` here (they are supplied on
+    the create request). Nothing is ever fabricated.
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+    readiness = baseline_from_facts_service.evaluate_readiness(
+        db, site.id, baseline_type
+    )
+    return ReadinessFromFactsResponse(
+        site_id=site.id,
+        baseline_type=baseline_type,
+        ready=readiness.ready,
+        fields_used=[_field_usage_schema(f) for f in readiness.fields_used],
+        missing_fields=readiness.missing_fields,
+        warnings=readiness.warnings,
+        source_fact_ids=readiness.source_fact_ids,
+        source_document_ids=readiness.source_document_ids,
+    )
+
+
+@telemetry_v2_router.post(
+    "/v2/sites/{site_id}/expected-baseline/create-draft-from-facts",
+    response_model=CreateDraftFromFactsResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a DRAFT baseline from promoted project_facts + reviewer constants",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def create_expected_baseline_draft_from_facts(
+    payload: CreateDraftFromFactsRequest,
+    site: Annotated[Site, Depends(get_authorized_site_with_company_admin)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    response: Response,
+) -> CreateDraftFromFactsResponse:
+    """Create a ``draft`` baseline from promoted facts ∪ reviewer-supplied constants.
+
+    A new draft is ``201``; an idempotent re-create (same facts + reviewer values)
+    returns the existing draft as ``200``. When required physics fields are still
+    missing, nothing is created and the endpoint returns ``422`` with the readiness
+    body (``status='review_required'``). The draft is NEVER auto-approved/activated,
+    an active baseline is NEVER overwritten, and ``SiteAdditionalFieldList`` is
+    never read (the legacy snapshot path stays side-by-side).
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+    reviewer_values = payload.model_dump(
+        exclude={"baseline_type", "baseline_name", "reason"}
+    )
+    result = baseline_from_facts_service.create_draft_from_facts(
+        db,
+        company_id=site.company_id,
+        site_id=site.id,
+        site_timezone=getattr(site, "timezone", None),
+        baseline_type=payload.baseline_type,
+        reviewer_values=reviewer_values,
+        baseline_name=payload.baseline_name,
+        reason=payload.reason,
+        created_by_user_id=getattr(current_user, "id", None),
+    )
+    readiness = result.readiness
+    if not readiness.ready:
+        # Honest "needs review" outcome: nothing was created. We return the
+        # structured readiness body with a 422 status (rather than raising
+        # HTTPException, whose global handler would flatten the detail to a
+        # string) so callers get machine-readable missing_fields.
+        response.status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+        logger.info(
+            "telemetry_v2_baseline_from_facts site_id=%s review_required missing=%s",
+            site.id,
+            readiness.missing_fields,
+        )
+        return CreateDraftFromFactsResponse(
+            site_id=site.id,
+            baseline_type=payload.baseline_type,
+            ready=False,
+            status="review_required",
+            draft_baseline_id=None,
+            created=False,
+            idempotent_existing=False,
+            fields_used=[_field_usage_schema(f) for f in readiness.fields_used],
+            missing_fields=readiness.missing_fields,
+            warnings=readiness.warnings,
+            source_fact_ids=readiness.source_fact_ids,
+            source_document_ids=readiness.source_document_ids,
+            baseline=None,
+        )
+    baseline = result.baseline
+    response.status_code = (
+        status.HTTP_201_CREATED if result.created else status.HTTP_200_OK
+    )
+    logger.info(
+        "telemetry_v2_baseline_from_facts site_id=%s baseline_id=%s created=%s idempotent=%s",
+        site.id,
+        getattr(baseline, "id", None),
+        result.created,
+        result.idempotent_existing,
+    )
+    return CreateDraftFromFactsResponse(
+        site_id=site.id,
+        baseline_type=payload.baseline_type,
+        ready=True,
+        status="draft",
+        draft_baseline_id=baseline.id,
+        created=result.created,
+        idempotent_existing=result.idempotent_existing,
+        fields_used=[_field_usage_schema(f) for f in readiness.fields_used],
+        missing_fields=readiness.missing_fields,
+        warnings=readiness.warnings,
+        source_fact_ids=readiness.source_fact_ids,
+        source_document_ids=readiness.source_document_ids,
+        baseline=ExpectedBaselineResponse.model_validate(baseline),
+    )
 
 
 @telemetry_v2_router.post(

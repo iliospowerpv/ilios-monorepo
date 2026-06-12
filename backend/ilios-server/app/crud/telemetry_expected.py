@@ -145,13 +145,19 @@ class TelemetryExpectedBaselineCRUD(BaseCRUD):
         site_additional: Optional[SiteAdditionalFieldList],
         site_timezone: Optional[str],
         created_by_user_id: Optional[int],
+        version: Optional[int] = None,
     ) -> TelemetryExpectedBaseline:
         """Create a ``draft`` baseline, snapshotting site-derived assumptions.
 
         Loss %, PTO and timezone are copied from the site when the caller did not
         supply them; loss values are abs()-normalized to positive percent.
+        ``version`` is set explicitly when provided (the project-facts bridge
+        assigns ``max(version)+1`` for a new draft); otherwise the column default
+        (1) applies. ``version`` is intentionally not part of ``_CREATE_FIELDS``.
         """
         data = {k: payload[k] for k in _CREATE_FIELDS if k in payload}
+        if version is not None:
+            data["version"] = version
 
         if site_additional is not None:
             if data.get("dc_loss_pct") is None:

@@ -737,3 +737,93 @@ class ExpectedPreviewResponse(BaseModel):
     missing_inputs_bucket_count: int = 0
     pre_pto_bucket_count: int = 0
     buckets: list[ExpectedPreviewBucket] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# DD V2 Phase 2 — promoted project_facts -> draft baseline bridge
+# ---------------------------------------------------------------------------
+
+
+class BaselineFactFieldUsage(BaseModel):
+    """One physics input that fed (or could feed) a facts-based draft."""
+
+    field: str
+    source: str  # 'project_fact' | 'reviewer_supplied'
+    value: float
+    canonical_name: Optional[str] = None
+    fact_id: Optional[int] = None
+    document_id: Optional[int] = None
+    ai_confidence: Optional[float] = None
+
+
+class ReadinessFromFactsResponse(BaseModel):
+    """Whether a site's promoted facts can produce a weather-adjusted draft.
+
+    ``ready`` is True only when every required physics field is satisfied.
+    Reviewer-only datasheet constants are always reported as ``missing_fields``
+    here (they are supplied on the create request), so ``ready`` is typically
+    False until they are provided. Nothing is ever fabricated.
+    """
+
+    site_id: int
+    baseline_type: TelemetryBaselineType
+    ready: bool
+    fields_used: list[BaselineFactFieldUsage] = Field(default_factory=list)
+    missing_fields: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    source_fact_ids: list[int] = Field(default_factory=list)
+    source_document_ids: list[int] = Field(default_factory=list)
+
+
+class CreateDraftFromFactsRequest(BaseModel):
+    """Create a draft baseline from promoted facts + reviewer-supplied constants.
+
+    Module / inverter wattage + quantity come from promoted ``project_facts`` and
+    are NOT accepted here (facts are the source of truth). The reviewer supplies
+    the datasheet constants that have no fact source; loss %, soiling and PTO are
+    optional (the calc has safe defaults). Percent-valued fields are PERCENT.
+    """
+
+    model_config = ConfigDict(protected_namespaces=())
+
+    baseline_type: TelemetryBaselineType = TelemetryBaselineType.weather_adjusted_model
+    baseline_name: Optional[str] = Field(default=None, max_length=255)
+    reason: Optional[str] = None
+
+    # Required datasheet constants (no fact source exists today).
+    thermal_coefficient_pct: Optional[float] = None
+    power_tolerance_min_pct: Optional[float] = None
+    year_1_degradation_pct: Optional[float] = None
+    annual_degradation_pct: Optional[float] = None
+    cec_efficiency_pct: Optional[float] = None
+
+    # Optional supplemental — absence is a warning, not a blocker.
+    soiling_factor: Optional[float] = None
+    dc_loss_pct: Optional[float] = None
+    ac_loss_pct: Optional[float] = None
+    medium_voltage_loss_pct: Optional[float] = None
+    mv_line_loss_pct: Optional[float] = None
+    pto_date: Optional[date] = None
+
+
+class CreateDraftFromFactsResponse(BaseModel):
+    """Result of a create-draft-from-facts attempt.
+
+    ``status`` is ``draft`` when a draft exists (newly created or reused) or
+    ``review_required`` when required fields are missing (then no row is created
+    and the endpoint returns 422 with this body).
+    """
+
+    site_id: int
+    baseline_type: TelemetryBaselineType
+    ready: bool
+    status: str
+    draft_baseline_id: Optional[int] = None
+    created: bool = False
+    idempotent_existing: bool = False
+    fields_used: list[BaselineFactFieldUsage] = Field(default_factory=list)
+    missing_fields: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    source_fact_ids: list[int] = Field(default_factory=list)
+    source_document_ids: list[int] = Field(default_factory=list)
+    baseline: Optional[ExpectedBaselineResponse] = None

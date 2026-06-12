@@ -1,0 +1,214 @@
+Start the next controlled sprint: Due Diligence V2 Phase 2 — Promoted Project Facts to Baseline Draft Bridge.
+
+Context:
+Due Diligence V2 Phase 1, 1.5, and 1.6 are complete:
+
+* project_facts now carry provenance/audit fields
+* all due diligence document types are parse-eligible through extraction_registry
+* PVsyst As-Built specialized schema v2 is registered
+* single-key set_key enforces server-side override guardrail
+* bulk_accept_ai_values enforces the same guardrail
+* baseline-driving field divergence requires reviewer identity and written override rationale
+* no baseline auto-creation or auto-activation has been introduced
+* DD→BigQuery write is gated/non-blocking and remains a future removal target
+* V2 expected baseline storage and weather-adjusted expected calculation already exist
+
+Objective:
+Create the V2 bridge from promoted, source-backed project_facts to draft TelemetryExpectedBaseline records.
+
+This is the first step where accepted/promoted diligence facts can produce a V2 expected baseline draft. It must preserve human accountability and never auto-approve or auto-activate.
+
+Core rules:
+
+1. Only promoted/active project_facts may feed baseline draft creation.
+2. AI-parsed candidate facts alone must not create active baselines.
+3. Baseline creation from diligence facts creates DRAFT only.
+4. No baseline should be approved or activated automatically.
+5. Existing active baselines must not be overwritten.
+6. Historical facts and baselines must remain auditable.
+7. Changes must support effective dates and supersession.
+8. The bridge must use project_facts, not SiteAdditionalFieldList, for source-backed assumptions.
+9. Do not remove DD→BigQuery write yet unless it is proven safe and explicitly approved.
+10. Do not change weather-adjusted expected calculation math.
+
+Scope:
+
+A. Baseline draft creation service
+
+Create a service/helper that builds a draft TelemetryExpectedBaseline from active/promoted project_facts for a given site/project.
+
+Input:
+
+* site_id or project_id/site_id
+* baseline_type defaulting to weather_adjusted_model or design_estimate as appropriate
+* source_type = diligence_ai_parse when facts came from AI-reviewed diligence
+* optional explicit source_document_id/source_project_fact_id references
+* requested_by user/admin
+
+Output:
+
+* draft TelemetryExpectedBaseline
+* structured list of fields used
+* structured list of missing required fields
+* structured list of warnings
+
+Requirements:
+
+* Use active/promoted project_facts as source of truth.
+* Do not read baseline-driving values from SiteAdditionalFieldList for the new bridge.
+* Store provenance:
+
+  * source_document_id where available
+  * source_project_fact_id or source fact list in metadata
+  * ai_confidence_json
+  * model_parameters_json
+  * loss_assumptions_json
+* Snapshot baseline-driving fields into the baseline draft.
+* Include effective_from / PTO date where available.
+* Include timezone snapshot.
+* Missing required physics fields should not fabricate defaults.
+* Missing fields should return a clear validation result.
+* Draft can be created only when minimum required fields exist; otherwise return review_required / missing_fields.
+
+B. Required field policy
+
+Define and implement a clear minimum required field set for creating a usable weather_adjusted_model draft.
+
+At minimum evaluate whether these are required:
+
+* system_size_dc or system_size_ac
+* module_wattage or module capacity basis
+* DC loss %
+* AC loss %
+* medium voltage / MV line loss if applicable
+* soiling factor
+* degradation assumptions if available
+* PTO/effective date
+* timezone
+* any physics constants currently required by expected_service
+
+Do not invent missing values.
+If a field has no source-backed fact, return it as missing.
+
+C. Baseline draft trigger
+
+Add an explicit admin/reviewer action to create a baseline draft from current promoted facts.
+
+Preferred:
+
+* API endpoint: create baseline draft from promoted facts for site/project
+* No automatic baseline creation during normal promotion unless explicitly approved as a separate action.
+* If an existing draft already exists from the same promoted fact set, avoid duplicate drafts or return existing draft/idempotent result.
+* If promoted facts changed since the last draft, create a new draft version rather than mutating the old draft.
+
+Do not:
+
+* create baseline draft on every individual key accept
+* create baseline draft on bulk accept
+* auto-approve
+* auto-activate
+
+D. Baseline versioning / accountability
+
+When creating a new draft:
+
+* Preserve prior draft/approved/active baselines.
+* Do not overwrite active baselines.
+* Attach source facts and documents.
+* Include effective date.
+* Include created_by.
+* Include reason/rationale if provided.
+* If this draft is intended to represent a site upgrade, repower, or phase-two buildout, it should be a new baseline version with effective_from, not a mutation of old history.
+
+E. API / schema
+
+Expose minimal backend endpoint(s) for:
+
+1. Preview baseline draft readiness from promoted facts.
+2. Create draft baseline from promoted facts.
+
+Possible endpoints, adjust to existing router conventions:
+
+* GET /api/telemetry/v2/sites/{site_id}/expected-baseline/readiness-from-facts
+* POST /api/telemetry/v2/sites/{site_id}/expected-baseline/create-draft-from-facts
+
+Responses should include:
+
+* ready: boolean
+* missing_fields
+* fields_used
+* source_fact_ids
+* source_document_ids
+* warnings
+* draft_baseline_id when created
+* status = draft / review_required
+
+Permissions:
+
+* Admin or appropriate due-diligence/baseline management permission.
+* Regular users should not create baseline drafts.
+
+F. Keep existing create_draft behavior stable
+
+Do not repoint existing create_draft from SiteAdditionalFieldList yet unless explicitly safe and requested.
+This sprint adds the new project_facts-based bridge side-by-side.
+A later sprint will retire the legacy create_draft source after reconciliation and validation.
+
+G. DD→BigQuery write
+
+Leave DD→BigQuery write gated/non-blocking.
+Do not invest in dual-write.
+Document whether the new bridge now makes DD→BigQuery removable in the next sprint.
+
+H. Tests
+
+Add tests for:
+
+1. Readiness returns missing_fields when required promoted facts are absent.
+2. Readiness returns ready when required promoted facts exist.
+3. Draft creation uses project_facts, not SiteAdditionalFieldList.
+4. Draft stores source fact/document provenance.
+5. Draft stores loss/model assumptions correctly.
+6. Draft is created as draft only.
+7. Draft is not approved or activated.
+8. Existing active baseline is not overwritten.
+9. Re-running create with unchanged facts is idempotent or returns existing draft.
+10. Changed promoted facts create a new draft/version.
+11. Missing required fields do not result in fabricated defaults.
+12. User without permission cannot create draft.
+13. Baseline-driving override guardrails from set_key and bulk_accept still pass.
+14. No BigQuery/Firestore/DocAI/legacy telemetry path is re-enabled.
+15. Expected calculation math is unchanged.
+
+Validation:
+
+* Backend starts cleanly.
+* Frontend builds/serves cleanly.
+* Targeted backend tests pass.
+* Existing due diligence upload/parse/review/promote still works.
+* Existing telemetry expected preview/approve/activate lifecycle still works.
+* No baseline auto-approval or auto-activation occurs.
+* Architect review passes.
+
+Return:
+
+* files changed
+* new service/helper details
+* endpoint details
+* required field policy
+* fields mapped from project_facts to TelemetryExpectedBaseline
+* provenance behavior
+* draft version/idempotency behavior
+* validation results
+* risks
+* recommended next sprint
+
+Do not touch:
+
+* weather-adjusted expected calculation math
+* scheduler/refresh logic
+* O&M chart logic
+* company/portfolio aggregation logic
+* device eligibility logic
+* plaintext-secret migration
+* Power BI/reporting
