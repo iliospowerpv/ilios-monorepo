@@ -1,0 +1,185 @@
+Start the next controlled sprint: DD V2 Phase 4 — Reconciliation View for Source-Backed Assumptions and Baseline Drafts.
+
+Context:
+Due Diligence V2 phases 1–3 are complete:
+
+* project_facts carry provenance/audit fields
+* all DD document types are parse-eligible
+* PVsyst specialized schema v2 exists
+* single-key and bulk-accept override guardrails are enforced server-side
+* promoted project_facts can create draft TelemetryExpectedBaseline records
+* design-estimate baseline points can be generated for draft/in_review design_estimate baselines
+* baselines are draft-only until separately approved/activated
+* no baseline values are fabricated
+* weather-adjusted expected math is separate and unchanged
+
+Objective:
+Create an admin-facing reconciliation surface/API so users can review how source-backed due diligence facts map into current assumptions and baseline drafts before legacy paths are removed.
+
+This sprint should prioritize backend data shape and minimal UI/API visibility. Do not overbuild visual design.
+
+Core product need:
+Users need to understand and audit the chain:
+uploaded document
+→ AI-extracted value
+→ human accepted/overridden value
+→ promoted project_fact
+→ baseline draft
+→ design-estimate points
+→ approved/active weather-adjusted expected baseline
+
+Scope:
+
+A. Reconciliation data service
+
+Create a service/helper that returns a site/project reconciliation payload for baseline-driving and diligence-critical fields.
+
+The payload should include rows such as:
+
+* canonical_field
+* display_label
+* category:
+
+  * baseline_physics
+  * design_estimate
+  * legal/commercial
+  * equipment
+  * weather
+  * warranty/permit/insurance
+* AI extracted value
+* accepted/overridden document value
+* active/promoted project_fact value
+* current draft baseline value, if present
+* active baseline value, if present
+* legacy site_additional_field value, if present
+* source document id/file id
+* source document type
+* source run id
+* evidence page/snippet
+* confidence
+* status:
+
+  * missing
+  * candidate_only
+  * active_fact
+  * draft_baseline
+  * active_baseline
+  * mismatch
+  * superseded
+* effective_from / effective_to where available
+* supersession information
+* warnings:
+
+  * missing_required_for_baseline
+  * fact_differs_from_legacy
+  * draft_differs_from_active
+  * active_baseline_outdated
+  * design_points_missing
+  * needs_review
+
+B. Contracted / Design / Current / Active distinction
+
+The reconciliation view must not collapse these concepts:
+
+1. Contracted/source-backed value from legal or diligence document.
+2. Design/PVsyst estimate value.
+3. Current approved project_fact/current assumption.
+4. Draft baseline snapshot.
+5. Active baseline used for expected calculations.
+6. Telemetry-discovered deployed reality, if already available.
+
+If telemetry-discovered device or capacity data exists, include a placeholder or minimal comparison only where safe. Do not implement full device reconciliation yet unless trivial.
+
+C. Baseline readiness integration
+
+Include the readiness outputs from:
+
+* facts → baseline draft readiness
+* design-points readiness
+* active baseline availability
+* missing required physics fields
+* malformed or partial design estimate points
+
+D. Legacy comparison
+
+Include legacy SiteAdditionalFieldList values only for reconciliation/transition visibility.
+
+Do not use legacy values to create new V2 baselines.
+Do not write to BigQuery.
+Do not remove the DD→BigQuery write in this sprint unless explicitly safe and approved.
+Do not create a new legacy bridge.
+
+E. Minimal endpoint
+
+Add a read-only endpoint, admin/authorized-site gated, such as:
+GET /api/due_diligence/sites/{site_id}/reconciliation
+or a route matching existing conventions.
+
+Response should be structured and machine-readable.
+
+F. Minimal UI hook, if low risk
+
+If frontend placement is straightforward, add a simple admin-only “Assumptions Reconciliation” or “Baseline Readiness” panel/link in the Due Diligence or Baseline admin area.
+
+If UI placement is not obvious, return backend endpoint only and document recommended UI placement.
+
+G. Usability / Path B hooks
+
+Return tooltip/help targets for:
+
+* AI extracted value
+* accepted value
+* promoted/current assumption
+* baseline draft
+* active baseline
+* superseded value
+* source-backed value
+* mismatch
+* effective date
+* design estimate vs weather-adjusted expected
+
+Do not build full help content unless trivial.
+
+H. Tests
+
+Add tests for:
+
+1. Reconciliation returns active project_facts with provenance.
+2. Reconciliation shows missing required baseline fields.
+3. Reconciliation shows draft baseline values when a draft exists.
+4. Reconciliation shows active baseline values when active exists.
+5. Reconciliation flags project_fact vs legacy SiteAdditionalFieldList mismatch.
+6. Reconciliation flags draft vs active mismatch.
+7. Reconciliation includes source document/run/evidence/confidence when available.
+8. Existing records with null provenance do not crash.
+9. Unauthorized user cannot access reconciliation.
+10. No BigQuery/Firestore/DocAI/legacy telemetry path is re-enabled.
+11. Existing DD upload/parse/review/promote still works.
+12. Existing baseline draft and design-points endpoints still work.
+
+Do not:
+
+* Change expected calculation math.
+* Auto-create, approve, or activate baselines.
+* Mutate project_facts.
+* Mutate baseline records.
+* Remove DD→BigQuery write yet.
+* Change scheduler/telemetry/O&M/company aggregation/device eligibility/plaintext secrets.
+
+Validation:
+
+* Backend starts cleanly.
+* Frontend builds/serves cleanly if touched.
+* Targeted tests pass.
+* Architect review passes.
+
+Return:
+
+* files changed
+* endpoint details
+* reconciliation payload shape
+* mismatch/warning logic
+* UI placement if any
+* validation results
+* risks
+* recommended next sprint

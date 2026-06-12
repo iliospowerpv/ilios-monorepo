@@ -68,6 +68,7 @@ from .routers import (
     global_admin_router,
     role_profiles_router,
     extraction_registry_router,
+    reconciliation_router,
     summary_stats_router,
     contacts_router,
     entities_router,
@@ -343,6 +344,7 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
     app.include_router(agreements_router, prefix="/api/due-diligence/{site_id}/agreements", tags=[tags.DOCUMENTS_TAG])
     app.include_router(co_terminus_router, prefix="/api/due-diligence/{site_id}/co-terminus", tags=[tags.DOCUMENTS_TAG])
     app.include_router(summary_stats_router, prefix="/api/due-diligence/sites/{site_id}", tags=[tags.DOCUMENTS_TAG])
+    app.include_router(reconciliation_router, prefix="/api/due-diligence/sites/{site_id}", tags=[tags.DOCUMENTS_TAG])
     app.include_router(
         files_router, prefix="/api/due-diligence/{site_id}/documents/{document_id}/files", tags=[tags.FILES_TAG]
     )
