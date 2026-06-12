@@ -71,11 +71,13 @@ from app.schema.telemetry_v2 import (
     BaselineFactFieldUsage,
     CreateDraftFromFactsRequest,
     CreateDraftFromFactsResponse,
+    DesignPointsReadinessResponse,
     DeviceMappingBulkRequest,
     DeviceMappingBulkResponse,
     ExpectedBaselineCreateRequest,
     ExpectedBaselineListResponse,
     ExpectedBaselineResponse,
+    GenerateDesignPointsResponse,
     ReadinessFromFactsResponse,
     ExpectedPreviewBucket,
     ExpectedPreviewResponse,
@@ -132,6 +134,7 @@ from app.services.telemetry.expected_service import (
     compute_site_expected,
 )
 from app.services.telemetry import baseline_from_facts_service
+from app.services.telemetry import baseline_points_service
 from app.models.device import Device
 from app.services.telemetry.ingestion_service import (
     IngestionConfigError,
@@ -2809,6 +2812,188 @@ def create_expected_baseline_draft_from_facts(
         source_fact_ids=readiness.source_fact_ids,
         source_document_ids=readiness.source_document_ids,
         baseline=ExpectedBaselineResponse.model_validate(baseline),
+    )
+
+
+def _load_design_baseline_or_raise(
+    db: Session,
+    site: Site,
+    baseline_id: int,
+    *,
+    require_mutable: bool,
+) -> "TelemetryExpectedBaseline":
+    """Load a ``design_estimate`` baseline for the points producer, or 4xx.
+
+    * 404 when the baseline does not exist or belongs to another site.
+    * 409 when it is not a ``design_estimate`` baseline — the model mandates the
+      design-estimate and weather-adjusted notions never be conflated, so design
+      points may only ever be written onto a ``design_estimate`` header.
+    * 409 (only when ``require_mutable``) when the status is not ``draft`` /
+      ``in_review`` — approved/active/superseded baselines are never mutated.
+    """
+    baseline = TelemetryExpectedBaselineCRUD(db).get(baseline_id)
+    if baseline is None or baseline.site_id != site.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Baseline not found for this site.",
+        )
+    if baseline.baseline_type != TelemetryBaselineType.design_estimate:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Design-estimate points can only be produced on a design_estimate "
+                f"baseline (this baseline is '{baseline.baseline_type.value}'). Create "
+                "a design_estimate draft first."
+            ),
+        )
+    if require_mutable and baseline.status not in (
+        TelemetryBaselineStatus.draft,
+        TelemetryBaselineStatus.in_review,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Cannot modify a baseline in status '{baseline.status.value}'. Only a "
+                "draft or in_review baseline may have its design points generated."
+            ),
+        )
+    return baseline
+
+
+def _design_points_readiness_response(
+    site_id: int, readiness: "baseline_points_service.PointsReadiness"
+) -> DesignPointsReadinessResponse:
+    return DesignPointsReadinessResponse(
+        site_id=site_id,
+        baseline_id=readiness.baseline_id,
+        baseline_type=readiness.baseline_type,
+        ready=readiness.ready,
+        has_design_data=readiness.has_design_data,
+        parsed_months=readiness.parsed_months,
+        monthly_points_planned=len(readiness.parsed_months),
+        annual_value=readiness.annual_value,
+        annual_point_planned=readiness.annual_value is not None,
+        reference_year=readiness.reference_year,
+        reference_year_source=readiness.reference_year_source,
+        missing_fields=readiness.missing_fields,
+        parse_errors=readiness.parse_errors,
+        warnings=readiness.warnings,
+        scenarios=readiness.scenarios,
+        schema_expansion_recommended=readiness.schema_expansion_recommended,
+        source_fact_ids=readiness.source_fact_ids,
+        source_document_ids=readiness.source_document_ids,
+    )
+
+
+@telemetry_v2_router.get(
+    "/v2/sites/{site_id}/expected-baseline/{baseline_id}/points-readiness",
+    response_model=DesignPointsReadinessResponse,
+    summary="Whether a design_estimate baseline's points can be produced from facts",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def design_points_readiness(
+    baseline_id: int,
+    site: Annotated[Site, Depends(get_authorized_site_with_company_admin)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> DesignPointsReadinessResponse:
+    """Preview (read-only) the design-estimate points buildable from promoted facts.
+
+    Never writes. Reports the months/annual production that parse, the anchored
+    reference year, any present-but-malformed values (``parse_errors``), and the
+    GHI / P50 / P90 detail the single-value point schema cannot store. Absent
+    months are surfaced as a partial-coverage warning, never fabricated.
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+    baseline = _load_design_baseline_or_raise(
+        db, site, baseline_id, require_mutable=False
+    )
+    readiness = baseline_points_service.evaluate_points_readiness(db, site, baseline)
+    return _design_points_readiness_response(site.id, readiness)
+
+
+@telemetry_v2_router.post(
+    "/v2/sites/{site_id}/expected-baseline/{baseline_id}/generate-design-points",
+    response_model=GenerateDesignPointsResponse,
+    summary="Generate/rebuild a design_estimate baseline's monthly + annual points",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def generate_design_points(
+    baseline_id: int,
+    site: Annotated[Site, Depends(get_authorized_site_with_company_admin)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    response: Response,
+) -> GenerateDesignPointsResponse:
+    """Delete + rebuild the baseline's monthly/annual design-estimate points.
+
+    Idempotent: re-running with the same promoted facts replaces the prior points
+    with an identical set (no duplicates). When no production fact exists, or a
+    present production fact is malformed, NOTHING is written and the endpoint
+    returns ``422`` with the structured body (``status='no_design_data'`` or
+    ``'malformed'``). Only ``draft`` / ``in_review`` ``design_estimate`` baselines
+    are accepted; the weather-adjusted calc is never touched and missing months are
+    never fabricated or distributed.
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+    baseline = _load_design_baseline_or_raise(
+        db, site, baseline_id, require_mutable=True
+    )
+    result = baseline_points_service.generate_design_points(db, site, baseline)
+    readiness = result.readiness
+
+    if not readiness.ready:
+        # Honest "nothing to do" outcomes — no rows were written. Return the
+        # structured body with a 422 status (rather than raising HTTPException,
+        # whose global handler flattens detail to a string) so callers get the
+        # machine-readable parse_errors / missing_fields.
+        response.status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+        status_str = "malformed" if readiness.parse_errors else "no_design_data"
+        logger.info(
+            "telemetry_v2_design_points site_id=%s baseline_id=%s not_ready=%s",
+            site.id,
+            baseline_id,
+            status_str,
+        )
+        return _generate_design_points_response(site.id, result, status_str)
+
+    logger.info(
+        "telemetry_v2_design_points site_id=%s baseline_id=%s generated monthly=%s annual=%s",
+        site.id,
+        baseline_id,
+        result.monthly_points,
+        result.annual_points,
+    )
+    return _generate_design_points_response(site.id, result, "generated")
+
+
+def _generate_design_points_response(
+    site_id: int,
+    result: "baseline_points_service.GeneratePointsResult",
+    status_str: str,
+) -> GenerateDesignPointsResponse:
+    readiness = result.readiness
+    return GenerateDesignPointsResponse(
+        site_id=site_id,
+        baseline_id=readiness.baseline_id,
+        baseline_type=readiness.baseline_type,
+        ready=readiness.ready,
+        status=status_str,
+        parsed_months=readiness.parsed_months,
+        annual_value=readiness.annual_value,
+        reference_year=readiness.reference_year,
+        reference_year_source=readiness.reference_year_source,
+        points_created=result.points_created,
+        points_deleted=result.points_deleted,
+        monthly_points=result.monthly_points,
+        annual_points=result.annual_points,
+        missing_fields=readiness.missing_fields,
+        parse_errors=readiness.parse_errors,
+        warnings=readiness.warnings,
+        scenarios=readiness.scenarios,
+        schema_expansion_recommended=readiness.schema_expansion_recommended,
+        source_fact_ids=readiness.source_fact_ids,
+        source_document_ids=readiness.source_document_ids,
     )
 
 

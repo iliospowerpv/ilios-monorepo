@@ -1,0 +1,163 @@
+Start the next controlled sprint: Due Diligence V2 Phase 3 — Baseline Points Producer for Design Estimates.
+
+Context:
+DD V2 Phase 2 is complete:
+
+* promoted project_facts can produce draft TelemetryExpectedBaseline records
+* the bridge reads project_facts, not SiteAdditionalFieldList
+* created baselines are draft-only
+* no baseline is auto-approved or auto-activated
+* active baselines are never overwritten
+* provenance is attached
+* idempotency/versioning is implemented for draft rows
+* expected calculation math, scheduler, aggregation, and legacy create_draft path were untouched
+
+Current gap:
+telemetry_expected_baseline_points exists, but there is no producer. PVsyst/design monthly and annual production values parsed through due diligence are not yet converted into baseline points.
+
+Objective:
+Build a safe, auditable producer that creates TelemetryExpectedBaselinePoint rows from promoted PVsyst/design estimate facts.
+
+Core product distinction:
+
+1. Actual = measured V2 telemetry.
+2. Design estimate = PVsyst/design-model production estimate from source documents.
+3. Weather-adjusted expected = calculated operational expected using approved model assumptions plus observed irradiance/cell temperature.
+
+This sprint is about design estimate points only. Do not change weather-adjusted expected calculation.
+
+Scope:
+
+A. Identify design estimate facts
+
+Use promoted/active project_facts associated with PVsyst/design/due diligence source documents.
+
+Support these field types where available:
+
+* monthly_expected_production
+* annual_expected_production
+* monthly_irradiance / GHI if available
+* P50/P90 if available
+* future-compatible structure for imported_8760 / hourly points
+
+If existing fact values are JSON/string formats, parse safely with validation. Do not guess malformed values.
+
+B. Produce baseline points
+
+Create a service/helper that takes a draft baseline_id and promoted facts, then inserts baseline points into telemetry_expected_baseline_points.
+
+Requirements:
+
+* baseline must be draft or in_review; do not mutate approved/active baselines unless explicitly allowed by existing lifecycle.
+* create points with source_granularity:
+
+  * monthly
+  * annual
+  * future: hourly / interval
+* expected_energy_kwh should be populated for monthly/annual production estimates.
+* expected_power_kw may be null for monthly/annual points unless a defensible conversion exists.
+* point_ts should use a consistent convention:
+
+  * monthly: first day of month at site-local midnight converted to naive UTC, or documented equivalent
+  * annual: first day of year at site-local midnight converted to naive UTC, or documented equivalent
+* include site_id and baseline_id.
+* device_id should remain null unless device-level design estimates exist.
+* preserve provenance in calculation_method/model metadata if supported.
+* do not fabricate missing months.
+* do not spread annual values across months unless explicitly documented and approved.
+* do not convert monthly/annual design estimates into weather-adjusted expected.
+
+C. Idempotency and version safety
+
+* Re-running the producer for the same baseline and same source facts should not duplicate points.
+* If source facts change and a new draft baseline version is created, points should belong to the new baseline version.
+* Do not mutate points for approved/active baselines unless the lifecycle explicitly allows it.
+* Provide a clear delete/rebuild strategy for draft-only points if needed.
+
+D. API endpoints
+
+Add or extend minimal backend endpoints for:
+
+1. Preview design estimate point readiness for a draft baseline.
+2. Generate/rebuild design estimate points for a draft baseline.
+
+Possible endpoints, adjust to conventions:
+
+* GET /api/telemetry/v2/sites/{site_id}/expected-baseline/{baseline_id}/points-readiness
+* POST /api/telemetry/v2/sites/{site_id}/expected-baseline/{baseline_id}/generate-design-points
+
+Responses should include:
+
+* ready
+* missing_fields
+* parsed_months
+* annual_value
+* warnings
+* points_created
+* points_reused
+* points_deleted/rebuilt if applicable
+* source_fact_ids
+
+Permissions:
+
+* same baseline management/admin permission as draft creation.
+* reads should follow authorized site visibility.
+
+E. Validation rules
+
+* Missing monthly/annual production → clear missing_fields / no data state.
+* Malformed monthly values → 422 with itemized parsing errors.
+* Partial months → allow but warn; do not fabricate missing months.
+* Annual-only → create annual point only; do not distribute monthly.
+* Monthly-only → create monthly points; annual may be null/derived only if explicitly documented as sum and labeled as derived.
+* Monthly irradiance/GHI may be stored where available, but do not require it for production points unless needed.
+* P50/P90 should be stored in metadata/model parameters if the current point model cannot represent multiple scenarios directly; return recommendation if schema needs expansion.
+
+F. Tests
+
+Add tests for:
+
+1. Monthly expected production facts create 12 monthly points.
+2. Partial monthly facts create only present months with warning.
+3. Annual expected production creates annual point.
+4. Annual-only does not fabricate monthly points.
+5. Malformed monthly data returns 422 / validation error.
+6. Re-run is idempotent and does not duplicate points.
+7. Approved/active baseline cannot be mutated.
+8. Points belong to the correct baseline version.
+9. Source provenance/fact ids are preserved.
+10. Missing facts returns missing_fields.
+11. Site-local timezone convention is respected.
+12. No weather-adjusted calculation math is changed.
+13. No BigQuery/Firestore/DocAI/legacy telemetry path is re-enabled.
+
+Do not:
+
+* Auto-approve or auto-activate baselines.
+* Change expected_service weather-adjusted formula.
+* Repoint legacy create_draft.
+* Remove DD→BigQuery write yet.
+* Build O&M UI for design estimate points in this sprint.
+* Add device-level expected allocation unless source facts explicitly support it.
+* Touch scheduler, telemetry ingestion, O&M charts, company/portfolio aggregation, device eligibility, or plaintext secrets.
+
+Validation:
+
+* Backend starts cleanly.
+* Targeted tests pass.
+* Existing due diligence upload/parse/review/promote still works.
+* Existing facts→draft-baseline bridge still works.
+* Existing baseline approve/activate/preview lifecycle still works.
+* Architect review passes.
+
+Return:
+
+* files changed
+* point producer design
+* supported fact formats
+* point timestamp convention
+* idempotency behavior
+* validation behavior
+* tests added
+* risks
+* recommended next sprint

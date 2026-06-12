@@ -827,3 +827,73 @@ class CreateDraftFromFactsResponse(BaseModel):
     source_fact_ids: list[int] = Field(default_factory=list)
     source_document_ids: list[int] = Field(default_factory=list)
     baseline: Optional[ExpectedBaselineResponse] = None
+
+
+# ---------------------------------------------------------------------------
+# DD V2 Phase 3 — design-estimate baseline POINTS producer
+# ---------------------------------------------------------------------------
+class DesignPointsReadinessResponse(BaseModel):
+    """Whether a draft baseline's design-estimate points can be produced.
+
+    Read-only preview: ``ready`` is True only when at least one production fact is
+    present, all PRESENT production facts parse, and a reference year can be
+    anchored. Absent months are reported as "partial" (a warning), never an error;
+    a present-but-malformed value is an itemized ``parse_errors`` entry. GHI and
+    P50/P90 are surfaced under ``scenarios`` (the point schema cannot store them).
+    Nothing is ever fabricated and the GET never writes.
+    """
+
+    model_config = ConfigDict(protected_namespaces=())
+
+    site_id: int
+    baseline_id: int
+    baseline_type: TelemetryBaselineType
+    ready: bool
+    has_design_data: bool
+    parsed_months: list[int] = Field(default_factory=list)
+    monthly_points_planned: int = 0
+    annual_value: Optional[float] = None
+    annual_point_planned: bool = False
+    reference_year: Optional[int] = None
+    reference_year_source: Optional[str] = None
+    missing_fields: list[str] = Field(default_factory=list)
+    parse_errors: list[dict[str, Any]] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    scenarios: Optional[dict[str, Any]] = None
+    schema_expansion_recommended: bool = False
+    source_fact_ids: list[int] = Field(default_factory=list)
+    source_document_ids: list[int] = Field(default_factory=list)
+
+
+class GenerateDesignPointsResponse(BaseModel):
+    """Result of a generate/rebuild of a baseline's design-estimate points.
+
+    ``status`` is ``generated`` when points were (re)written, ``no_design_data``
+    when no production fact exists, or ``malformed`` when a present production fact
+    failed to parse. In the latter two cases nothing is written and the endpoint
+    returns 422 with this body. The rebuild is idempotent: re-running with the same
+    facts deletes the prior monthly/annual points and re-inserts an identical set.
+    """
+
+    model_config = ConfigDict(protected_namespaces=())
+
+    site_id: int
+    baseline_id: int
+    baseline_type: TelemetryBaselineType
+    ready: bool
+    status: str
+    parsed_months: list[int] = Field(default_factory=list)
+    annual_value: Optional[float] = None
+    reference_year: Optional[int] = None
+    reference_year_source: Optional[str] = None
+    points_created: int = 0
+    points_deleted: int = 0
+    monthly_points: int = 0
+    annual_points: int = 0
+    missing_fields: list[str] = Field(default_factory=list)
+    parse_errors: list[dict[str, Any]] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    scenarios: Optional[dict[str, Any]] = None
+    schema_expansion_recommended: bool = False
+    source_fact_ids: list[int] = Field(default_factory=list)
+    source_document_ids: list[int] = Field(default_factory=list)

@@ -41,10 +41,34 @@ A SECOND, side-by-side producer now turns promoted `project_facts` into a baseli
   NOT a raised `HTTPException` — the app's global handler flattens `HTTPException.detail` to a string,
   which would destroy machine-readable `missing_fields`.
 
+## facts→baseline POINTS producer (design estimates)
+A third producer turns a site's promoted/active PVsyst production `project_facts` into stored
+`TelemetryExpectedBaselinePoint` rows (monthly + annual granularity ONLY), attached to an EXISTING
+`draft`/`in_review` **`design_estimate`** baseline. Endpoints: GET `.../{baseline_id}/points-readiness`
+(read-only) + POST `.../{baseline_id}/generate-design-points` (delete+rebuild).
+- **Strict separation from the weather-adjusted curve:** this table is NEVER consulted by
+  `weather_adjusted_model` (which still computes on-read from snapshot columns + live telemetry), so design
+  points cannot perturb the live actual-vs-expected calc. The producer refuses any non-`design_estimate`
+  baseline (409 / ValueError) so the two "expected" notions are never conflated.
+- **Never fabricate:** absent month = partial (warning), present-but-unparseable value = hard parse error
+  blocking the whole write (422 `malformed`); an annual total is NEVER distributed into months; no production
+  facts at all = 422 `no_design_data`. Nothing is written unless ready.
+- **Units stored as-extracted** into `expected_energy_kwh` (PVsyst monthly/annual facts carry no unit;
+  `unit_verified=false` + MWh plausibility warnings, never auto-converted). GHI insolation and P50/P90
+  scenarios CANNOT be represented by the single-value point row — they live in header
+  `model_parameters_json['design_points']` metadata only (GHI never written to `irradiance_wm2`), with
+  `schema_expansion_recommended`.
+- **Reference year** anchors all points: precedence `pto_date.year` else site-local year of `created_at`
+  (drafts have no `active_from`). Site-local first-of-month midnight → naive-UTC via
+  `baseline.timezone`→`site.timezone`→UTC, matching how readings/rollups are stored.
+- **Idempotent rebuild:** delete (scoped to monthly+annual granularities, so any future hourly/interval
+  curve survives) → bulk insert → header JSON reassign, all in ONE txn (rollback on error). Immutable
+  (`approved`/`active`/`superseded`) baselines are never mutated; guard enforced in BOTH the endpoint and the
+  service. Same 422-as-structured-body (not raised HTTPException) rule as the Phase 2 bridge.
+
 ## Key disconnects that REMAIN
 - The legacy `create_draft` SAFL-snapshot path still exists side-by-side (intentionally kept; not repointed).
-- `TelemetryExpectedBaselinePoint` still has ZERO producers — monthly/annual/8760 → points unbuilt;
-  `weather_adjusted_model` computes expected on-read from snapshot columns + live irradiance/temp.
+- Hourly/8760 → points are still unbuilt (only monthly+annual design points are produced today).
 - DD→BigQuery characteristics write is still gated behind `legacy_telemetry_enabled` (Phase-2 removal target,
   not yet retired).
 - `ilios-DocAI` (external PVsyst CSV-instruction parser) is offline / unreferenced in `ilios-server`.

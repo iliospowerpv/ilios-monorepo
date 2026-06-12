@@ -21,9 +21,11 @@ from sqlalchemy.orm import Session
 from app.crud.base_crud import BaseCRUD
 from app.models.site import SiteAdditionalFieldList
 from app.models.telemetry_expected import (
+    TelemetryBaselineGranularity,
     TelemetryBaselineStatus,
     TelemetryBaselineType,
     TelemetryExpectedBaseline,
+    TelemetryExpectedBaselinePoint,
 )
 
 # Scalar columns a create payload may set directly (snapshot/audit columns and
@@ -246,3 +248,59 @@ class TelemetryExpectedBaselineCRUD(BaseCRUD):
         self.db_session.commit()
         self.db_session.refresh(baseline)
         return baseline
+
+
+# Granularities the design-estimate points producer owns. Hourly/interval points
+# (a future enhancement) are NEVER touched by the design-estimate delete/rebuild.
+DESIGN_POINT_GRANULARITIES = (
+    TelemetryBaselineGranularity.monthly,
+    TelemetryBaselineGranularity.annual,
+)
+
+
+class TelemetryExpectedBaselinePointCRUD(BaseCRUD):
+    """Reads/writes for stored expected-curve points of a baseline.
+
+    The design-estimate points producer (DD V2 Phase 3) drives the lifecycle of
+    monthly/annual rows through here. Writes are deliberately commit-free so the
+    caller can delete + re-insert + update the header JSON in a single atomic
+    transaction (a half-rebuilt baseline must never be observable).
+    """
+
+    def __init__(self, db_session: Session):
+        super().__init__(model=TelemetryExpectedBaselinePoint, db_session=db_session)
+
+    def list_for_baseline(
+        self,
+        baseline_id: int,
+        granularities: Optional[tuple] = None,
+    ) -> list[TelemetryExpectedBaselinePoint]:
+        query = self.db_session.query(TelemetryExpectedBaselinePoint).filter(
+            TelemetryExpectedBaselinePoint.baseline_id == baseline_id
+        )
+        if granularities:
+            query = query.filter(
+                TelemetryExpectedBaselinePoint.source_granularity.in_(granularities)
+            )
+        return query.order_by(
+            TelemetryExpectedBaselinePoint.source_granularity,
+            TelemetryExpectedBaselinePoint.point_ts,
+        ).all()
+
+    def delete_design_points(self, baseline_id: int) -> int:
+        """Delete this baseline's monthly + annual points (no commit).
+
+        Scoped to the design-estimate granularities so any future hourly/interval
+        curve survives the rebuild. Returns the deleted row count. The caller owns
+        the surrounding transaction (it must ``commit`` or ``rollback``).
+        """
+        return (
+            self.db_session.query(TelemetryExpectedBaselinePoint)
+            .filter(
+                TelemetryExpectedBaselinePoint.baseline_id == baseline_id,
+                TelemetryExpectedBaselinePoint.source_granularity.in_(
+                    DESIGN_POINT_GRANULARITIES
+                ),
+            )
+            .delete(synchronize_session=False)
+        )
