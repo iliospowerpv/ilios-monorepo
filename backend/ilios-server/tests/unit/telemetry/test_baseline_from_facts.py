@@ -568,3 +568,17 @@ def test_legacy_create_baseline_endpoint_is_deprecated_and_warns(
         and "create-draft-from-facts" in record.getMessage()
         for record in caplog.records
     ), "expected a deprecation warning pointing to create-draft-from-facts"
+
+    # Contract: the route itself is flagged deprecated in the OpenAPI schema
+    # (not only logged), so generated clients/docs surface the deprecation.
+    legacy_routes = [
+        r
+        for r in client.app.routes
+        if getattr(r, "path", None)
+        == "/api/telemetry/v2/sites/{site_id}/expected-baselines"
+        and "POST" in (getattr(r, "methods", None) or set())
+    ]
+    assert legacy_routes, "legacy create-baseline POST route not found"
+    assert all(
+        getattr(r, "deprecated", False) for r in legacy_routes
+    ), "legacy create-baseline route must be marked deprecated=True"

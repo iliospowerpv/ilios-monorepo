@@ -5,7 +5,7 @@ description: How parsed DD facts, project_facts, site_additional_fields, BigQuer
 
 # DD parsing ↔ expected-baseline data flow
 
-There are THREE partially-connected "truth" stores, plus a (now-gated) legacy BQ write:
+There are THREE partially-connected "truth" stores (a legacy DD→BQ characteristics write also existed but was REMOVED in Phase 5B):
 
 1. `site_additional_fields` (`SiteAdditionalFieldList`, models/site.py) — legacy flattened
    site characteristics (dc/ac/mv losses, permission_to_operate, system sizes).
@@ -14,8 +14,16 @@ There are THREE partially-connected "truth" stores, plus a (now-gated) legacy BQ
 3. `telemetry_expected_baselines` (+ `telemetry_expected_baseline_points`) — V2 physics
    snapshot baseline.
 
+## DD→BigQuery characteristics write — REMOVED (Phase 5B)
+- The DD→BQ "characteristics" write was deleted from the active DD flow (`set_key`) along with all
+  dead helpers (`SiteDDCharacteristicsHandler`, `document_key_sync_helper`, `DocumentKeyCRUD.get_document_keys_by_names`).
+  It was originally (Phase 1E) only gated behind `legacy_telemetry_enabled` + non-blocking; now there is
+  NO BigQuery path in the DD flow at all. DD term accept/override writes ONLY `project_facts` candidates.
+- **Why:** BigQuery was declared non-operational for DD; the gated-but-present write was dead weight and a
+  misleading "truth store". The separate device/site-card BQ sync (`SiteCharacteristicsHandler`) is a
+  DIFFERENT concern and is intentionally kept.
+
 ## What DD V2 Phase 1 changed
-- **DD→BigQuery characteristics write is now gated behind `legacy_telemetry_enabled` AND wrapped non-blocking** (Phase 1E). It is NOT removed (Phase 2 removal target). When the flag is off it no-ops; failures never block DD review/promotion.
 - `project_facts` gained additive nullable provenance/audit columns (evidence JSONB, ai_confidence, ai_extracted_value, accepted/overridden by/at, override_notes, effective_from/to, `superseded_by_fact_id`). `create_candidate_from_document_key` now threads provenance in both create and update branches; `retire_active_fact` sets the retired fact's `superseded_by_fact_id` (leaves legacy `supersedes_fact_id` intact for summary_stats.py).
 - **In-app parser coverage broadened**: every `SiteDocumentsEnum` doc type is now parse-eligible (generic schema/prompt), and the As-Built (Second Buyer) PVsyst report has a specialized v2 schema marking the 16 `DueDiligenceBQKeys` baseline-driving fields required. See `dd-v2-extraction-registry-seeding.md`.
 
@@ -68,9 +76,11 @@ A third producer turns a site's promoted/active PVsyst production `project_facts
 
 ## Key disconnects that REMAIN
 - The legacy `create_draft` SAFL-snapshot path still exists side-by-side (intentionally kept; not repointed).
+  Its HTTP entrypoint (POST `/api/telemetry/v2/sites/{id}/expected-baselines`) is now **deprecated** (Phase 5B:
+  `deprecated=True` + a `logger.warning` steering callers to create-draft-from-facts) but still returns 201 for
+  manual/backfill use. SAFL is NOT a V2 baseline source; V2 baselines come from `project_facts` via
+  create-draft-from-facts. Do NOT hard-410 it without confirming no manual/backfill caller depends on it.
 - Hourly/8760 → points are still unbuilt (only monthly+annual design points are produced today).
-- DD→BigQuery characteristics write is still gated behind `legacy_telemetry_enabled` (Phase-2 removal target,
-  not yet retired).
 - `ilios-DocAI` (external PVsyst CSV-instruction parser) is offline / unreferenced in `ilios-server`.
 - `_next_version` is read-then-insert with no unique constraint on (site, type, version) — concurrent
   create could duplicate a version number (acceptable for an admin-triggered action; future constraint).
