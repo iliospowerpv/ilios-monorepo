@@ -21,6 +21,7 @@ from app.helpers.telemetry.legacy_flag import legacy_telemetry_enabled
 from app.helpers.due_diligence.document_key_sync_helper import prepare_keys_sync_payload
 from app.helpers.due_diligence.document_sections_handler import DocumentSectionsHandler
 from app.helpers.due_diligence.due_diligence_helper import validate_document_section
+from app.helpers.due_diligence.override_guardrail import evaluate_baseline_override
 from app.helpers.roles_documents_mapping.handlers_factory import RoleDocumentsHandlerFactory
 from app.helpers.task_tracker import TaskTrackerHandlerFactory
 from app.helpers.task_tracker.board_defaults_helper import create_default_board, create_default_document_tasks
@@ -50,18 +51,6 @@ from app.static.due_diligence_bq_keys import DueDiligenceBQKeys
 
 logger = logging.getLogger(__name__)
 documents_router = APIRouter()
-
-
-def _normalize_term(value) -> str:
-    """Normalize a term value for divergence comparison (DD V2 Phase 1.5).
-
-    Coerces to a trimmed string so that ``None``, numeric, and whitespace-padded forms of the
-    same value compare equal. Used only to decide whether a submitted baseline-driving value
-    diverges from its AI-extracted original; it never mutates the stored value.
-    """
-    if value is None:
-        return ""
-    return str(value).strip()
 
 
 @documents_router.get(
@@ -410,26 +399,21 @@ async def set_key(
         determined, ai_original = facts_service.resolve_ai_original_value(
             document.site_id, canonical_field, key.file_id
         )
-        if determined:
-            diverges = _normalize_term(submitted_value) != _normalize_term(ai_original)
-        elif existing_key is not None:
-            # Fail-safe (Phase 1.5D): AI-original undeterminable — gate any change to the
-            # previously stored value so a silent edit still requires a rationale.
-            diverges = _normalize_term(submitted_value) != _normalize_term(existing_key.effective_value)
-        else:
-            # Brand-new manual entry with no AI evidence: not an override of an AI value.
-            diverges = False
-
-        if diverges:
-            if not (key.override_notes and key.override_notes.strip()):
-                raise HTTPException(
-                    status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    f"Changing the baseline-driving field '{key.name}' from the AI-extracted "
-                    f"value requires a non-empty 'override_notes' rationale.",
-                )
-            effective_status = "overridden"
-        else:
-            effective_status = "accepted"
+        evaluation = evaluate_baseline_override(
+            submitted_value=submitted_value,
+            ai_determined=determined,
+            ai_original=ai_original,
+            existing_effective_value=existing_key.effective_value if existing_key else None,
+            existing_key_present=existing_key is not None,
+            has_rationale=bool(key.override_notes and key.override_notes.strip()),
+        )
+        if evaluation.requires_rationale:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                f"Changing the baseline-driving field '{key.name}' from the AI-extracted "
+                f"value requires a non-empty 'override_notes' rationale.",
+            )
+        effective_status = evaluation.effective_status
 
     now = datetime.now(timezone.utc)
     payload = {

@@ -1,6 +1,6 @@
 ---
 name: DD baseline-driving override guardrail (audit integrity)
-description: How the DD override-rationale guardrail enforces server-side, why it fails closed, and which sibling endpoint still bypasses it.
+description: How the DD override-rationale guardrail enforces server-side across BOTH set_key and bulk_accept_ai_values, why it fails closed, and the all-or-nothing bulk contract.
 ---
 
 # Override guardrail for baseline-driving DD fields
@@ -16,5 +16,14 @@ Enforcement is by VALUE DIVERGENCE, computed in `set_key`, not by the client-sen
 
 **Fails CLOSED:** `_normalize_term` is a strict post-strip string compare, so "100" vs "100.0"/"1,000" reads as divergent and demands a rationale — never silently accepted. Acceptable tradeoff (reviewer friction, not a hole).
 
-## REMAINING bypass — top Phase 2 item
-`bulk_accept_ai_values` (`routers/due_diligence/files_parsing.py`) writes client-supplied `field.value` with status `"accepted"` and never validates it against the run's parsed value, then updates the candidate fact to the divergent number. Same audit hole on a sibling endpoint. Still requires `Diligence:edit`, so it is an audit-integrity gap, not an access-control one. Fix: validate `field.value` against the run parsed value (or route bulk-accept through the same divergence guardrail) before accepting.
+## Shared between BOTH endpoints
+`set_key` and `bulk_accept_ai_values` now both route through the same pure helper `app/helpers/due_diligence/override_guardrail.py` (`normalize_term` + `evaluate_baseline_override(...) -> OverrideEvaluation{diverges, effective_status, requires_rationale}`, no DB/no baseline calc). Keep enforcement in this one place so the two paths can never drift.
+
+## Bulk-accept is all-or-nothing
+`bulk_accept_ai_values` is two-pass: Pass 1 classifies every field with ZERO writes (benign skip if not in allowed keys; non-baseline → write-plan accepted; baseline-driving → resolve canonical + AI-original-for-run + evaluate). If ANY baseline field requires a rationale it lacks, the whole batch is rejected with a 422 `JSONResponse {message, detail, code, items}` and NOTHING is written — no partial accept. Pass 2 (writes) only runs when Pass 1 is clean; its payloads mirror set_key (accepted clears the 4 override cols; overridden stamps override_value/overridden_by_id/at/notes); per-item write exceptions still preserve the 207 partial contract.
+
+**Why two-pass:** `BaseCRUD` commits per item, so you cannot roll back mid-write; the only way to guarantee write-nothing-on-audit-failure is to validate everything before touching the DB.
+
+**Bulk uses a RUN-preferred AI original:** `resolve_ai_original_value_for_run(run, site_id, canonical_field, source_file_id)` prefers the parsed value of the run being accepted (authoritative for bulk), falling back to `resolve_ai_original_value`. So a stale candidate fact never overrides what the accepted run actually parsed.
+
+**Deliberately NOT copied into bulk:** set_key's legacy DD→BQ characteristics sync stays only in set_key (flag-gated); bulk only writes the DocumentKey + candidate fact (never promotes to baseline). override_notes on a NON-baseline bulk field is intentionally dropped (status forced "accepted") — bulk preserves its existing non-baseline behavior.

@@ -168,6 +168,30 @@ class ProjectFactsService:
 
         return False, None
 
+    def resolve_ai_original_value_for_run(
+        self,
+        run,
+        site_id: int,
+        canonical_field: Optional[CanonicalField],
+        source_file_id: Optional[int],
+    ) -> tuple[bool, any]:
+        """Resolve the AI original for a bulk-accept item (DD V2 Phase 1.6).
+
+        Bulk-accept holds the specific parse ``run`` whose values the reviewer is accepting, and
+        that run is exactly what ``create_candidate_from_document_key`` records as provenance — so
+        the run's own parsed value is the authoritative AI original for the divergence check.
+        Preferring the captured candidate-fact value would mis-compare when accepting a re-parse
+        (whose AI value legitimately changed) or an older run via ``allow_accept_non_latest``.
+
+        Falls back to :meth:`resolve_ai_original_value` (candidate fact, then latest completed run)
+        only when the accepted run does not carry this field.
+        """
+        if run is not None and canonical_field is not None:
+            field_data = self._find_field_in_run(run, canonical_field.name)
+            if field_data.get("value") is not None:
+                return True, field_data["value"]
+        return self.resolve_ai_original_value(site_id, canonical_field, source_file_id)
+
     @staticmethod
     def _find_field_in_run(run, field_name: str) -> dict:
         """Return {value, confidence, evidence} for ``field_name`` (snake_case canonical

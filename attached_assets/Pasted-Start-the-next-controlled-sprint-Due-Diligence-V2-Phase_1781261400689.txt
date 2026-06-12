@@ -1,0 +1,112 @@
+Start the next controlled sprint: Due Diligence V2 Phase 1.6 — Bulk Accept Guardrail Hardening.
+
+Context:
+DD V2 Phase 1.5 closed the audit-integrity hole in the single-key set_key endpoint:
+- override-vs-accept is now determined server-side by value divergence
+- baseline-driving fields that diverge from AI original require override_notes
+- client-sent status is no longer trusted
+- stale override metadata clears on re-accept
+- no baseline creation/activation/calculation changes were made
+
+Phase 1.5 flagged a sibling endpoint:
+- bulk_accept_ai_values in files_parsing.py can still accept client-supplied values without server-side divergence checks.
+- This is an audit risk because baseline-driving values could be changed in bulk without rationale.
+
+Objective:
+Apply the same server-side override guardrail and stale-provenance cleanup rules to bulk_accept_ai_values before we allow promoted facts to create baseline drafts.
+
+Core rule:
+No baseline-driving assumption may be changed from the AI-extracted/original value without authenticated reviewer identity and override rationale, regardless of whether the client calls it accepted, overridden, or bulk accepted.
+
+Scope:
+
+A. Apply server-side divergence detection to bulk_accept_ai_values
+- For each item being bulk accepted:
+  - resolve canonical field
+  - determine whether field is baseline-driving
+  - resolve AI-extracted original value using the same service logic added in Phase 1.5
+  - compare submitted value to AI original using the same normalized term comparison
+- If baseline-driving and submitted value diverges from AI original:
+  - require non-empty override_notes/rationale for that item
+  - force status to overridden or equivalent
+  - persist override provenance
+- If baseline-driving and value matches AI original:
+  - persist as accepted
+  - clear stale override metadata where appropriate
+- If AI original cannot be determined:
+  - fail safely for baseline-driving fields
+  - do not silently accept changed baseline-driving values
+- Non-baseline-driving fields should preserve existing behavior unless they are explicitly overridden.
+
+B. Bulk operation behavior
+- Prefer partial failure prevention over silent partial acceptance.
+- If any baseline-driving item requires rationale and none is provided, return 422 with item-level details:
+  - document key id or field key
+  - reason
+  - required action
+- Do not accept part of the batch and reject part unless the existing API already has a clear partial-success contract.
+- If the endpoint currently supports partial success, preserve it but make failures explicit and auditable.
+- Do not create candidate facts for invalid baseline-driving changes.
+
+C. Provenance consistency
+- Ensure project_facts created/updated through bulk accept carry the same provenance as the single-key flow:
+  - source_file_id
+  - source_run_id
+  - source_document_key_id where available
+  - evidence
+  - ai_confidence
+  - ai_extracted_value
+  - accepted_by_id / accepted_at
+  - overridden_by_id / overridden_at / override_notes where applicable
+- Ensure stale override metadata is cleared when re-accepting the original value.
+
+D. Shared helper reuse
+- Reuse the same divergence/override logic from set_key where possible.
+- Avoid duplicating fragile comparison logic across endpoints.
+- If appropriate, extract a shared service/helper for:
+  - resolve original AI value
+  - normalized comparison
+  - baseline-driving field detection
+  - determining accepted vs overridden state
+  - validating required override rationale
+
+E. Tests
+Add targeted tests for bulk_accept_ai_values:
+1. Bulk accept baseline-driving field matching AI original → accepted, no rationale required.
+2. Bulk accept baseline-driving field changed from AI original with no rationale → 422.
+3. Bulk accept baseline-driving field changed with rationale → saved as overridden with provenance.
+4. Client sends accepted status but value diverges → forced overridden or rejected without rationale.
+5. Mixed batch with one invalid baseline-driving override → no silent partial success.
+6. Non-baseline-driving field bulk accept remains compatible.
+7. AI original missing for baseline-driving field → fail safely.
+8. Stale override metadata clears when re-accepting original value.
+9. Candidate project_facts created through bulk flow include provenance fields.
+10. No baseline is created or activated.
+11. No BigQuery/Firestore/DocAI/legacy telemetry path is re-enabled.
+
+Do not:
+- Build the project_facts → baseline draft bridge in this sprint.
+- Change baseline expected calculation logic.
+- Repoint baseline create_draft to project_facts.
+- Remove DD→BigQuery write yet.
+- Add new document types.
+- Touch scheduler, telemetry ingestion, O&M charts, company/portfolio aggregation, device eligibility, or plaintext secrets.
+
+Validation:
+- Backend starts cleanly.
+- Frontend builds/serves cleanly.
+- Targeted tests pass.
+- Existing due diligence upload/parse/review/promote flow still works.
+- Single-key set_key guardrail still works.
+- Bulk accept UI still works.
+- Architect review passes.
+
+Return:
+- files changed
+- shared helper/service changes
+- bulk guardrail behavior
+- item-level error behavior
+- tests added
+- validation results
+- risks
+- recommended Phase 2 plan

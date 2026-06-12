@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -15,6 +16,8 @@ from app.helpers.authorization.project_access import get_authorized_file
 from app.helpers.permission_guards import require_module_permission
 from app.helpers.configs.agreement_names_helper import AgreementNamesMappingHandler
 from app.helpers.configs.ai_parsing_helper import AIParsingHandler
+from app.helpers.due_diligence.override_guardrail import evaluate_baseline_override
+from app.static.baseline_driving_fields import is_baseline_driving_field
 from app.helpers.files.file_helper import combine_user_ai_parsing_results
 from app.models.comment import CommentedEntityTypeEnum
 from app.models.file import File as FileModel
@@ -599,6 +602,7 @@ async def reprocess_file(
 class BulkAcceptFieldSchema(BaseModel):
     field_name: str
     value: Optional[str] = None
+    override_notes: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -699,31 +703,117 @@ async def bulk_accept_ai_values(
 
     document = file.document
     document_key_crud = DocumentKeyCRUD(db_session)
+    facts_service = ProjectFactsService(db_session)
     allowed_keys = AIParsingHandler(db_session).get_keys_by_document_type(document.name.value)
 
-    accepted_count = 0
-    skipped_count = 0
-    errors = []
+    # DD V2 Phase 1.6 bulk override guardrail. The single-key set_key endpoint enforces
+    # server-side divergence detection; this mirrors it for bulk accept so a baseline-driving
+    # value can never be accepted in bulk away from its AI-extracted original without an
+    # authenticated reviewer rationale. The batch is VALIDATED FIRST (no writes); if any
+    # baseline-driving item diverges without a rationale the ENTIRE batch is rejected (422),
+    # so there is never a silent partial acceptance of a baseline-driving change. Benign
+    # issues (key not allowed, per-item write failures) keep the existing partial-success
+    # contract. Reuses the shared guardrail + run-preferred AI resolver from Phase 1.5/1.6.
 
+    # Dedupe duplicate field_name entries (last-wins) so each field is decided/written once.
+    deduped_fields: dict[str, BulkAcceptFieldSchema] = {}
     for field in request.fields:
+        deduped_fields[field.field_name] = field
+
+    write_plans: list[tuple] = []  # (field, existing_key, effective_status)
+    benign_skips: list[str] = []
+    audit_failures: list[dict] = []
+
+    for field in deduped_fields.values():
         if field.field_name not in allowed_keys:
-            errors.append(f"Key '{field.field_name}' not allowed for document type '{document.name.value}'")
-            skipped_count += 1
+            benign_skips.append(
+                f"Key '{field.field_name}' not allowed for document type '{document.name.value}'"
+            )
             continue
 
+        existing_key = document_key_crud.get_document_key(
+            name=field.field_name, document_id=document.id, file_id=file.id
+        )
+
+        if not is_baseline_driving_field(field.field_name):
+            # Non-baseline fields preserve existing bulk-accept behavior (accepted).
+            write_plans.append((field, existing_key, "accepted"))
+            continue
+
+        canonical_field = facts_service._resolve_canonical_field(field.field_name)
+        determined, ai_original = facts_service.resolve_ai_original_value_for_run(
+            run, document.site_id, canonical_field, file.id
+        )
+        evaluation = evaluate_baseline_override(
+            submitted_value=field.value,
+            ai_determined=determined,
+            ai_original=ai_original,
+            existing_effective_value=existing_key.effective_value if existing_key else None,
+            existing_key_present=existing_key is not None,
+            has_rationale=bool(field.override_notes and field.override_notes.strip()),
+        )
+        if evaluation.requires_rationale:
+            audit_failures.append(
+                {
+                    "field_key": field.field_name,
+                    "document_key_id": existing_key.id if existing_key else None,
+                    "reason": (
+                        f"Baseline-driving field '{field.field_name}' diverges from its "
+                        f"AI-extracted value and has no override rationale."
+                    ),
+                    "required_action": (
+                        "Provide a non-empty 'override_notes' rationale for this field, or "
+                        "accept the AI-extracted value unchanged."
+                    ),
+                }
+            )
+            continue
+
+        write_plans.append((field, existing_key, evaluation.effective_status))
+
+    # All-or-nothing for baseline-driving audit failures: write nothing when any item fails.
+    if audit_failures:
+        offending = ", ".join(item["field_key"] for item in audit_failures)
+        summary = (
+            f"{len(audit_failures)} baseline-driving field(s) require an override rationale "
+            f"before they can be accepted: {offending}. No values were accepted."
+        )
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={
+                "message": summary,
+                "detail": summary,
+                "code": status.HTTP_422_UNPROCESSABLE_ENTITY,
+                "items": audit_failures,
+            },
+        )
+
+    accepted_count = 0
+    skipped_count = len(benign_skips)
+    errors = list(benign_skips)
+
+    for field, existing_key, effective_status in write_plans:
         try:
+            now = datetime.now(timezone.utc)
             payload = {
                 "value": field.value,
                 "editor_id": current_user.id,
                 "file_id": file.id,
-                "status": "accepted",
-                "accepted_by_id": current_user.id,
-                "accepted_at": datetime.now(timezone.utc),
+                "status": effective_status,
             }
-
-            existing_key = document_key_crud.get_document_key(
-                name=field.field_name, document_id=document.id, file_id=file.id
-            )
+            if effective_status == "accepted":
+                payload["accepted_by_id"] = current_user.id
+                payload["accepted_at"] = now
+                # Clear any stale override metadata when (re-)accepting the AI value.
+                payload["override_value"] = None
+                payload["overridden_by_id"] = None
+                payload["overridden_at"] = None
+                payload["override_notes"] = None
+            else:  # overridden
+                payload["override_value"] = field.value
+                payload["overridden_by_id"] = current_user.id
+                payload["overridden_at"] = now
+                payload["override_notes"] = field.override_notes
 
             if not existing_key:
                 payload |= {"name": field.field_name, "document_id": document.id}
@@ -733,9 +823,8 @@ async def bulk_accept_ai_values(
                 db_session.refresh(existing_key)
                 document_key = existing_key
 
-            if document_key and document_key.status == "accepted":
+            if document_key and document_key.status in ("accepted", "overridden"):
                 try:
-                    facts_service = ProjectFactsService(db_session)
                     # Bulk-accept holds the validated parse run, so attach its per-field
                     # AI evidence/confidence/raw value to the candidate fact provenance.
                     facts_service.create_candidate_from_document_key(
