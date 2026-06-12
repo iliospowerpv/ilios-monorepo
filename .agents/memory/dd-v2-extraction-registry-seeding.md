@@ -20,5 +20,5 @@ These models mix `default=` (client/ORM-side, NOT applied by `connection.execute
 ## PVsyst specialized v2 (Phase 1C)
 The As-Built (Second Buyer) PVsyst report is the baseline-input document. Its specialized v2 schema is built by **cloning v1's field links** (so no display-name key is ever lost) and marking the 16 `DueDiligenceBQKeys` baseline-driving fields `is_required`, then flipping `is_active` (deactivate v1, activate v2). v1 rows are never mutated. Seeding is idempotent via marker `notes`; re-run is a no-op.
 
-## Override guardrail is status-gated (known limitation)
-The baseline-driving override 422 (in `routers/due_diligence/documents.py`) fires only when the client sends `status="overridden"`. The schema defaults `status` to `"accepted"`, so a direct API call can change a baseline-driving value without rationale. The UI sends `overridden` when the value diverges from the AI value, so the guardrail holds through the app. Closing the API bypass needs a server-side divergence check (submitted vs stored AI value) — Phase 2.
+## Override guardrail: status-gated API bypass is CLOSED
+The status-gated bypass is closed — `set_key` (`routers/due_diligence/documents.py`) now detects baseline-driving value divergence SERVER-SIDE and forces the override-rationale path regardless of client status. NOTE the same audit hole still exists on the sibling `bulk_accept_ai_values` endpoint. See `dd-override-guardrail.md` for the design and the remaining gap.

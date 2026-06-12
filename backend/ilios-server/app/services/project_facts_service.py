@@ -21,6 +21,10 @@ logger = logging.getLogger(__name__)
 
 
 class ProjectFactsService:
+    # Provenance columns that capture a manual override. They are force-cleared on the
+    # candidate fact whenever a key is (re-)accepted (DD V2 Phase 1.5C).
+    _OVERRIDE_PROVENANCE_KEYS = ("overridden_by_id", "overridden_at", "override_notes")
+
     def __init__(self, db_session: Session):
         self.db_session = db_session
         self.fact_crud = ProjectFactCRUD(db_session)
@@ -75,10 +79,20 @@ class ProjectFactsService:
         if document_key.accepted_by_id is not None:
             provenance["accepted_by_id"] = document_key.accepted_by_id
             provenance["accepted_at"] = document_key.accepted_at
-        if document_key.status == "overridden":
+
+        # Override-provenance lifecycle (DD V2 Phase 1.5C): when the key is overridden,
+        # snapshot the reviewer rationale; when it is (re-)accepted, EXPLICITLY clear any
+        # stale override metadata so a prior override never lingers on the candidate fact.
+        # ``ai_extracted_value`` is intentionally left untouched here — re-accepting must
+        # not discard the original AI evidence captured at bulk-accept.
+        is_override = document_key.status == "overridden"
+        if is_override:
             provenance["overridden_by_id"] = document_key.overridden_by_id
             provenance["overridden_at"] = document_key.overridden_at
             provenance["override_notes"] = getattr(document_key, "override_notes", None)
+        else:
+            for clearable in self._OVERRIDE_PROVENANCE_KEYS:
+                provenance[clearable] = None
 
         # AI evidence/confidence/raw value from the parse run (manual edits have none).
         if run is not None:
@@ -91,8 +105,13 @@ class ProjectFactsService:
             if field_data.get("value") is not None:
                 provenance["ai_extracted_value"] = {"v": field_data["value"]}
 
-        # Drop None entries so we never overwrite existing provenance with NULL on update.
-        provenance = {k: v for k, v in provenance.items() if v is not None}
+        # Drop None entries so we never overwrite existing provenance with NULL on update —
+        # EXCEPT the override metadata on (re-)accept, which must be force-cleared to None.
+        provenance = {
+            k: v
+            for k, v in provenance.items()
+            if v is not None or (not is_override and k in self._OVERRIDE_PROVENANCE_KEYS)
+        }
 
         fact = self.fact_crud.create_or_update_candidate(
             site_id=site_id,
@@ -110,6 +129,44 @@ class ProjectFactsService:
 
     def _resolve_canonical_field(self, extraction_key: str) -> Optional[CanonicalField]:
         return self.field_crud.find_by_extraction_key(extraction_key)
+
+    def resolve_ai_original_value(
+        self,
+        site_id: int,
+        canonical_field: Optional[CanonicalField],
+        source_file_id: Optional[int],
+    ) -> tuple[bool, any]:
+        """Resolve the AI-extracted/original value for a field (DD V2 Phase 1.5A).
+
+        Used by the override guardrail to decide whether a submitted value diverges from
+        what the AI proposed. Resolution order:
+
+        1. The candidate fact's captured ``ai_extracted_value`` (recorded at bulk-accept
+           from the validated parse run) — the authoritative original.
+        2. The latest completed parse run for the file (fallback for keys edited before a
+           bulk-accept ever ran).
+
+        Returns ``(determined, value)``. ``determined`` is ``False`` when no AI value can
+        be established, so the caller can fail safely instead of fabricating a comparison.
+        """
+        if canonical_field is None or source_file_id is None:
+            return False, None
+
+        # 1. Candidate fact's captured AI value (primary, authoritative).
+        fact = self.fact_crud.get_candidate_fact(site_id, canonical_field.id, source_file_id)
+        if fact is not None and fact.ai_extracted_value is not None:
+            return True, self._extract_value(fact.ai_extracted_value)
+
+        # 2. Latest completed parse run for the file (pre-bulk-accept fallback).
+        from app.crud.ai_parsing_result import AIParsingResultCRUD
+
+        runs = AIParsingResultCRUD(self.db_session).get_completed_runs_for_file(source_file_id)
+        for run in runs:
+            field_data = self._find_field_in_run(run, canonical_field.name)
+            if field_data.get("value") is not None:
+                return True, field_data["value"]
+
+        return False, None
 
     @staticmethod
     def _find_field_in_run(run, field_name: str) -> dict:

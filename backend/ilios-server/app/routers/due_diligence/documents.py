@@ -52,6 +52,18 @@ logger = logging.getLogger(__name__)
 documents_router = APIRouter()
 
 
+def _normalize_term(value) -> str:
+    """Normalize a term value for divergence comparison (DD V2 Phase 1.5).
+
+    Coerces to a trimmed string so that ``None``, numeric, and whitespace-padded forms of the
+    same value compare equal. Used only to decide whether a submitted baseline-driving value
+    diverges from its AI-extracted original; it never mutates the stored value.
+    """
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
 @documents_router.get(
     "/{document_id}",
     response_model=DocumentDetailsSchema,
@@ -377,38 +389,69 @@ async def set_key(
             f"Key '{key.name}' is not allowed for the '{document.name.value}' document",
         )
 
-    # DD V2 Phase 1D guardrail: overriding a baseline-driving field requires a documented
-    # rationale. A wrong value on these fields silently propagates into expected-production
-    # / loss baselines, so we refuse the override unless override_notes is provided.
-    # (Reviewer identity is always known from the authenticated user.)
-    if key.status == "overridden" and is_baseline_driving_field(key.name):
-        if not (key.override_notes and key.override_notes.strip()):
-            raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
-                f"Overriding the baseline-driving field '{key.name}' requires a non-empty "
-                f"'override_notes' rationale.",
-            )
-
-    payload = {
-        "value": key.value,
-        "editor_id": current_user.id,
-        "file_id": key.file_id,
-        "status": key.status or "accepted",
-    }
-    if key.status == "accepted":
-        payload["accepted_by_id"] = current_user.id
-        payload["accepted_at"] = datetime.now(timezone.utc)
-    if key.status == "overridden" and key.override_value:
-        payload["override_value"] = key.override_value
-        payload["overridden_by_id"] = current_user.id
-        payload["overridden_at"] = datetime.now(timezone.utc)
-        if key.override_notes is not None:
-            payload["override_notes"] = key.override_notes
-
     document_key_crud = DocumentKeyCRUD(db_session)
     existing_key = document_key_crud.get_document_key(
         name=key.name, document_id=document.id, file_id=key.file_id
     )
+
+    # DD V2 Phase 1.5 server-side override guardrail. The prior guardrail only fired when the
+    # client explicitly sent status="overridden"; because the default status is "accepted", a
+    # changed baseline-driving value could bypass the rationale requirement entirely. We now
+    # resolve the AI-extracted/original value server-side and force the override path (422
+    # without a rationale) whenever a baseline-driving value diverges from it — regardless of
+    # the client-sent status. A wrong value on these fields silently propagates into
+    # expected-production / loss baselines. Reviewer identity is always the authenticated user.
+    submitted_value = key.value
+    effective_status = key.status or "accepted"
+
+    if is_baseline_driving_field(key.name):
+        facts_service = ProjectFactsService(db_session)
+        canonical_field = facts_service._resolve_canonical_field(key.name)
+        determined, ai_original = facts_service.resolve_ai_original_value(
+            document.site_id, canonical_field, key.file_id
+        )
+        if determined:
+            diverges = _normalize_term(submitted_value) != _normalize_term(ai_original)
+        elif existing_key is not None:
+            # Fail-safe (Phase 1.5D): AI-original undeterminable — gate any change to the
+            # previously stored value so a silent edit still requires a rationale.
+            diverges = _normalize_term(submitted_value) != _normalize_term(existing_key.effective_value)
+        else:
+            # Brand-new manual entry with no AI evidence: not an override of an AI value.
+            diverges = False
+
+        if diverges:
+            if not (key.override_notes and key.override_notes.strip()):
+                raise HTTPException(
+                    status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    f"Changing the baseline-driving field '{key.name}' from the AI-extracted "
+                    f"value requires a non-empty 'override_notes' rationale.",
+                )
+            effective_status = "overridden"
+        else:
+            effective_status = "accepted"
+
+    now = datetime.now(timezone.utc)
+    payload = {
+        "value": submitted_value,
+        "editor_id": current_user.id,
+        "file_id": key.file_id,
+        "status": effective_status,
+    }
+    if effective_status == "accepted":
+        payload["accepted_by_id"] = current_user.id
+        payload["accepted_at"] = now
+        # Clear any stale override metadata so (re-)accepting a key drops a prior override.
+        payload["override_value"] = None
+        payload["overridden_by_id"] = None
+        payload["overridden_at"] = None
+        payload["override_notes"] = None
+    elif effective_status == "overridden":
+        payload["override_value"] = key.override_value or submitted_value
+        payload["overridden_by_id"] = current_user.id
+        payload["overridden_at"] = now
+        payload["override_notes"] = key.override_notes
+
     key_id = existing_key.id if existing_key else None
     key_change_detected = False
     document_key = None

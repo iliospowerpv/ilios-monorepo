@@ -1,0 +1,91 @@
+Start the next controlled sprint: Due Diligence V2 Phase 1.5 — Override Guardrail Hardening and Audit Integrity.
+
+Context:
+Due Diligence V2 Phase 1 is complete:
+- project_facts provenance/audit columns added
+- provenance threaded through candidate fact creation
+- generic extraction coverage added for every SiteDocumentsEnum doc type
+- PVsyst specialized schema v2 added
+- DD→BigQuery write gated behind legacy_telemetry_enabled and non-blocking
+- UI override rationale for baseline-driving fields added
+- no baseline auto-creation or auto-activation
+
+Phase 1 flagged two audit issues that need to be closed before building the baseline draft bridge:
+1. Override guardrail API bypass:
+   The 422 guardrail only fires when the client sends status="overridden". Because schema status defaults to "accepted", a direct API call can change a baseline-driving value without override_notes.
+2. Stale override provenance:
+   Re-accepting a previously overridden key can leave old overridden_by_id / overridden_at / override_notes on the candidate fact.
+
+Objective:
+Close the server-side audit bypass and clean up stale override provenance so baseline-driving assumptions are protected at the API layer, not only the UI layer.
+
+Scope:
+
+A. Server-side divergence detection
+- In the document key update endpoint/service, compare the submitted value against the stored AI-extracted/original value.
+- If the canonical field is baseline-driving and the submitted value differs from the AI-extracted/original value, treat it as an override regardless of the client-sent status.
+- Require:
+  - authenticated reviewer identity
+  - override_notes / rationale
+- Return 422 if rationale is missing.
+- Do not rely on the frontend to send status="overridden".
+- Preserve existing UI behavior.
+
+B. Correct lifecycle/status handling
+- If a submitted baseline-driving value differs from the AI-extracted/original value, persist status as overridden or equivalent even if the client sent accepted.
+- If the submitted value matches the AI-extracted/original value, persist status as accepted.
+- Do not silently mutate active facts in place.
+- Do not create or activate baselines.
+
+C. Stale override provenance cleanup
+- If a previously overridden key is later re-accepted with the original AI-extracted value, clear stale override metadata from the new candidate fact where appropriate:
+  - overridden_by_id
+  - overridden_at
+  - override_notes
+- Preserve historical records/audit rows where they already exist.
+- Do not delete historical facts or promotion history.
+- Make sure superseded facts remain auditable.
+
+D. Existing records compatibility
+- Existing document_keys and project_facts with null ai_extracted_value/evidence/confidence should not crash.
+- If original AI value cannot be determined, fail safely for baseline-driving fields:
+  - either require rationale for changed baseline-driving values
+  - or return a clear validation error requiring review
+- Do not block non-baseline-driving document review unnecessarily.
+
+E. Tests
+Add or update tests for:
+1. Baseline-driving field changed with client status="accepted" and no rationale → 422.
+2. Baseline-driving field changed with rationale → saved as overridden.
+3. Baseline-driving field unchanged → saved as accepted without rationale.
+4. Non-baseline-driving field changed → existing behavior preserved.
+5. Re-accept original value after prior override → stale override metadata does not carry forward to the new candidate fact.
+6. Existing records with null ai_extracted_value do not crash.
+7. UI flow still works.
+8. Promotion still works.
+9. No baseline is created or activated.
+10. No BigQuery/Firestore/DocAI/legacy telemetry path is re-enabled.
+
+Do not:
+- Build the project_facts → baseline draft bridge in this sprint.
+- Change baseline expected calculation logic.
+- Repoint baseline create_draft to project_facts.
+- Remove DD→BigQuery write yet.
+- Add new document types.
+- Touch scheduler, telemetry ingestion, O&M charts, company/portfolio aggregation, or plaintext secrets.
+
+Validation:
+- Backend starts cleanly.
+- Frontend builds/serves cleanly.
+- Targeted tests pass.
+- Existing due diligence upload/parse/review/promote flow still works.
+- Architect review passes.
+
+Return:
+- files changed
+- server-side guardrail behavior
+- stale provenance behavior
+- tests added
+- validation results
+- risks
+- recommended Phase 2 prompt/plan

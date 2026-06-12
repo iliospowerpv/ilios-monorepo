@@ -1,11 +1,14 @@
 import copy
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 
 import tests.unit.samples as samples
+from app.crud.document_key import DocumentKeyCRUD
 from app.crud.file import FileCRUD
 from app.crud.role import RoleCRUD
+from app.models.file import AIParsingResult, FileParsingStatuses
+from app.models.project_facts import CanonicalField, FactStatus, ProjectFact
 from tests.utils import remove_dynamic_fields, set_user_site_access
 
 
@@ -456,3 +459,266 @@ class TestDocuments:
 
         assert response.status_code == 412
         assert response.json()["message"] == "Cannot associate document with task"
+
+
+class TestSetKeyOverrideGuardrail:
+    """DD V2 Phase 1.5 — server-side override guardrail + audit integrity for ``set_key``.
+
+    The guardrail must fire on *value divergence* from the AI-extracted original for
+    baseline-driving fields, regardless of the client-sent ``status`` — closing the prior
+    bypass where sending ``status="accepted"`` skipped the rationale requirement.
+    """
+
+    BASELINE_KEY = "Module Wattage"
+    CANONICAL_NAME = "module_wattage"
+
+    @staticmethod
+    def _key_endpoint(site_id_, document_id_):
+        return f"/api/due-diligence/{site_id_}/documents/{document_id_}/keys"
+
+    @staticmethod
+    def _patch_allowed_keys(monkeypatch, allowed):
+        # Registry is not seeded in the test DB (create_all, no Alembic) and config fallback
+        # is off, so the allowed-keys set must be supplied explicitly.
+        monkeypatch.setattr(
+            "app.routers.due_diligence.documents.AIParsingHandler.get_keys_by_document_type",
+            lambda self, document_type: list(allowed),
+        )
+
+    @staticmethod
+    def _make_canonical_field(db_session, name, display):
+        # db_session is session-scoped with no rollback between tests and canonical_fields.name
+        # is UNIQUE, so this must be get-or-create to avoid poisoning the shared session.
+        field = db_session.query(CanonicalField).filter_by(name=name).first()
+        if field is not None:
+            return field
+        field = CanonicalField(name=name, display_name=display, field_type="text", is_active=True)
+        db_session.add(field)
+        db_session.commit()
+        db_session.refresh(field)
+        return field
+
+    @staticmethod
+    def _make_candidate_fact(db_session, site_id, canonical_field_id, file_id, value, ai_value):
+        fact = ProjectFact(
+            site_id=site_id,
+            canonical_field_id=canonical_field_id,
+            value={"v": value} if value is not None else None,
+            ai_extracted_value={"v": ai_value} if ai_value is not None else None,
+            status=FactStatus.candidate.value,
+            source_file_id=file_id,
+        )
+        db_session.add(fact)
+        db_session.commit()
+        db_session.refresh(fact)
+        return fact
+
+    def test_baseline_divergence_without_notes_is_rejected(
+        self, client, site_id, document, file, db_session, company_member_user_auth_header, monkeypatch
+    ):
+        """Changed baseline value + status=accepted + no rationale -> 422 (bypass closed)."""
+        self._patch_allowed_keys(monkeypatch, [self.BASELINE_KEY])
+        field = self._make_canonical_field(db_session, self.CANONICAL_NAME, self.BASELINE_KEY)
+        self._make_candidate_fact(db_session, document.site_id, field.id, file.id, "100", "100")
+
+        response = client.put(
+            self._key_endpoint(site_id, document.id),
+            headers=company_member_user_auth_header,
+            json={"name": self.BASELINE_KEY, "value": "999", "file_id": file.id, "status": "accepted"},
+        )
+
+        assert response.status_code == 422
+        assert "override_notes" in response.json()["message"]
+        # Nothing persisted on rejection.
+        assert (
+            DocumentKeyCRUD(db_session).get_document_key(
+                name=self.BASELINE_KEY, document_id=document.id, file_id=file.id
+            )
+            is None
+        )
+
+    def test_baseline_divergence_with_notes_is_saved_as_override(
+        self, client, site_id, document, file, db_session, company_member_user_auth_header, monkeypatch
+    ):
+        """Changed baseline value + rationale -> persisted as overridden even if client said accepted."""
+        self._patch_allowed_keys(monkeypatch, [self.BASELINE_KEY])
+        field = self._make_canonical_field(db_session, self.CANONICAL_NAME, self.BASELINE_KEY)
+        self._make_candidate_fact(db_session, document.site_id, field.id, file.id, "100", "100")
+
+        response = client.put(
+            self._key_endpoint(site_id, document.id),
+            headers=company_member_user_auth_header,
+            json={
+                "name": self.BASELINE_KEY,
+                "value": "999",
+                "file_id": file.id,
+                "status": "accepted",
+                "override_notes": "Corrected per manufacturer datasheet",
+            },
+        )
+
+        assert response.status_code == 202
+        saved = DocumentKeyCRUD(db_session).get_document_key(
+            name=self.BASELINE_KEY, document_id=document.id, file_id=file.id
+        )
+        assert saved.status == "overridden"
+        assert saved.override_notes == "Corrected per manufacturer datasheet"
+        assert saved.overridden_by_id is not None
+        assert saved.overridden_at is not None
+        assert saved.override_value == "999"
+
+    def test_baseline_value_matching_ai_is_accepted_without_notes(
+        self, client, site_id, document, file, db_session, company_member_user_auth_header, monkeypatch
+    ):
+        """Submitting the AI value unchanged -> accepted, no rationale, no override metadata."""
+        self._patch_allowed_keys(monkeypatch, [self.BASELINE_KEY])
+        field = self._make_canonical_field(db_session, self.CANONICAL_NAME, self.BASELINE_KEY)
+        self._make_candidate_fact(db_session, document.site_id, field.id, file.id, "100", "100")
+
+        response = client.put(
+            self._key_endpoint(site_id, document.id),
+            headers=company_member_user_auth_header,
+            json={"name": self.BASELINE_KEY, "value": "100", "file_id": file.id},
+        )
+
+        assert response.status_code == 202
+        saved = DocumentKeyCRUD(db_session).get_document_key(
+            name=self.BASELINE_KEY, document_id=document.id, file_id=file.id
+        )
+        assert saved.status == "accepted"
+        assert saved.override_notes is None
+        assert saved.overridden_by_id is None
+        assert saved.override_value is None
+
+    def test_non_baseline_field_change_is_allowed_without_notes(
+        self, client, site_id, document, file, db_session, company_member_user_auth_header, monkeypatch
+    ):
+        """Non-baseline fields are unaffected by the guardrail (existing behavior preserved)."""
+        self._patch_allowed_keys(monkeypatch, ["Quiet Enjoyment"])
+
+        response = client.put(
+            self._key_endpoint(site_id, document.id),
+            headers=company_member_user_auth_header,
+            json={"name": "Quiet Enjoyment", "value": "Materially changed text", "file_id": file.id},
+        )
+
+        assert response.status_code == 202
+        saved = DocumentKeyCRUD(db_session).get_document_key(
+            name="Quiet Enjoyment", document_id=document.id, file_id=file.id
+        )
+        assert saved.status == "accepted"
+
+    def test_null_ai_extracted_value_does_not_crash(
+        self, client, site_id, document, file, db_session, company_member_user_auth_header, monkeypatch
+    ):
+        """A candidate fact with NULL ai_extracted_value and no run -> fail-safe, no 500."""
+        self._patch_allowed_keys(monkeypatch, [self.BASELINE_KEY])
+        field = self._make_canonical_field(db_session, self.CANONICAL_NAME, self.BASELINE_KEY)
+        self._make_candidate_fact(db_session, document.site_id, field.id, file.id, "100", None)
+
+        response = client.put(
+            self._key_endpoint(site_id, document.id),
+            headers=company_member_user_auth_header,
+            json={"name": self.BASELINE_KEY, "value": "150", "file_id": file.id},
+        )
+
+        # Brand-new key with AI original undeterminable -> not treated as an override.
+        assert response.status_code == 202
+        saved = DocumentKeyCRUD(db_session).get_document_key(
+            name=self.BASELINE_KEY, document_id=document.id, file_id=file.id
+        )
+        assert saved.status == "accepted"
+
+    def test_run_fallback_divergence_is_rejected(
+        self, client, site_id, document, file, db_session, company_member_user_auth_header, monkeypatch
+    ):
+        """With no candidate fact, the latest completed parse run supplies the AI original."""
+        self._patch_allowed_keys(monkeypatch, [self.BASELINE_KEY])
+        self._make_canonical_field(db_session, self.CANONICAL_NAME, self.BASELINE_KEY)
+        run = AIParsingResult(
+            file_id=file.id,
+            status=FileParsingStatuses.completed,
+            parsed_result={self.CANONICAL_NAME: {"value": "100"}},
+            extraction_run_number=1,
+        )
+        db_session.add(run)
+        db_session.commit()
+
+        response = client.put(
+            self._key_endpoint(site_id, document.id),
+            headers=company_member_user_auth_header,
+            json={"name": self.BASELINE_KEY, "value": "999", "file_id": file.id},
+        )
+
+        assert response.status_code == 422
+        assert "override_notes" in response.json()["message"]
+
+    def test_existing_key_fail_safe_blocks_silent_change(
+        self, client, site_id, document, file, db_session, company_member_user_auth_header, monkeypatch
+    ):
+        """AI original undeterminable + an EXISTING stored value -> any change still needs a rationale."""
+        self._patch_allowed_keys(monkeypatch, [self.BASELINE_KEY])
+        # Canonical field exists, but there is NO candidate fact and NO completed run, so
+        # resolve_ai_original_value returns undetermined and the fail-safe branch engages.
+        self._make_canonical_field(db_session, self.CANONICAL_NAME, self.BASELINE_KEY)
+        DocumentKeyCRUD(db_session).create_item(
+            {
+                "document_id": document.id,
+                "file_id": file.id,
+                "name": self.BASELINE_KEY,
+                "value": "100",
+                "status": "accepted",
+            }
+        )
+
+        response = client.put(
+            self._key_endpoint(site_id, document.id),
+            headers=company_member_user_auth_header,
+            json={"name": self.BASELINE_KEY, "value": "999", "file_id": file.id},
+        )
+
+        assert response.status_code == 422
+        assert "override_notes" in response.json()["message"]
+        # The previously stored value is untouched by the rejected change.
+        saved = DocumentKeyCRUD(db_session).get_document_key(
+            name=self.BASELINE_KEY, document_id=document.id, file_id=file.id
+        )
+        assert saved.value == "100"
+        assert saved.status == "accepted"
+
+    def test_reaccept_clears_existing_key_override_columns(
+        self, client, site_id, document, file, db_session, company_member_user_auth_header, non_system_user_id, monkeypatch
+    ):
+        """Re-accepting a previously-overridden key (value back to the AI original) clears override columns."""
+        self._patch_allowed_keys(monkeypatch, [self.BASELINE_KEY])
+        field = self._make_canonical_field(db_session, self.CANONICAL_NAME, self.BASELINE_KEY)
+        self._make_candidate_fact(db_session, document.site_id, field.id, file.id, "100", "100")
+        DocumentKeyCRUD(db_session).create_item(
+            {
+                "document_id": document.id,
+                "file_id": file.id,
+                "name": self.BASELINE_KEY,
+                "value": "100",
+                "status": "overridden",
+                "override_value": "999",
+                "overridden_by_id": non_system_user_id,
+                "overridden_at": datetime.now(timezone.utc),
+                "override_notes": "prior override rationale",
+            }
+        )
+
+        response = client.put(
+            self._key_endpoint(site_id, document.id),
+            headers=company_member_user_auth_header,
+            json={"name": self.BASELINE_KEY, "value": "100", "file_id": file.id},
+        )
+
+        assert response.status_code == 202
+        saved = DocumentKeyCRUD(db_session).get_document_key(
+            name=self.BASELINE_KEY, document_id=document.id, file_id=file.id
+        )
+        assert saved.status == "accepted"
+        assert saved.override_value is None
+        assert saved.overridden_by_id is None
+        assert saved.overridden_at is None
+        assert saved.override_notes is None
