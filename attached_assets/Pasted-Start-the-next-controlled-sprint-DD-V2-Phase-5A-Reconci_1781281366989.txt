@@ -1,0 +1,179 @@
+Start the next controlled sprint: DD V2 Phase 5A — Reconciliation Panel UI.
+
+Context:
+DD V2 Phase 4 added a backend-only, read-only reconciliation endpoint:
+GET /api/due-diligence/sites/{site_id}/reconciliation
+
+It traces:
+uploaded document
+→ AI value
+→ human accepted/overridden value
+→ active project_fact
+→ draft baseline
+→ design-estimate points
+→ active weather-adjusted baseline
+plus display-only legacy SiteAdditionalFieldList comparison and telemetry-reality placeholder.
+
+Backend guarantees:
+
+* read-only
+* zero writes/commits
+* auth-gated
+* no recomputation/mutation
+* no auto-create/approve/activate
+* weather-adjusted math untouched
+* legacy SAFL display-only
+* tested with 25 unit tests
+* architect review PASS
+
+Objective:
+Expose this reconciliation payload in a minimal admin-facing UI panel so users can inspect source-backed assumptions before legacy paths are removed.
+
+Scope:
+Build a read-only “Assumptions Reconciliation” panel in the Due Diligence admin area or the closest existing site/diligence admin surface.
+
+Do not build a large new workflow. This is a visibility panel.
+
+UI requirements:
+
+1. Entry point
+
+* Add a clear admin-only entry/link/tab/card labeled:
+  “Assumptions Reconciliation”
+  or
+  “Baseline Readiness & Assumptions”
+* Place it in the Due Diligence / Data Room / Site admin area where users review diligence facts and baselines.
+* If there is uncertainty on placement, choose the least invasive location and document it.
+
+2. Data loading
+
+* Call GET /api/due-diligence/sites/{site_id}/reconciliation.
+* Respect existing auth/session patterns.
+* Handle loading, empty, error, and unauthorized states.
+
+3. Row display
+   Display reconciliation rows with at least:
+
+* field label
+* category
+* status
+* AI extracted value
+* accepted/overridden value
+* active/current project_fact value
+* draft baseline value
+* active baseline value
+* legacy SAFL value, if present
+* source document/type
+* confidence, if present
+* evidence page/snippet, if present
+* warnings
+
+4. Status and warning treatment
+   Use clear visual labels for:
+
+* missing
+* candidate_only
+* active_fact
+* in_draft_baseline
+* in_active_baseline
+* mismatch
+* superseded
+* needs_review
+
+Warnings should be visible and human-readable:
+
+* missing_required_for_baseline
+* fact_differs_from_legacy
+* draft_differs_from_active
+* active_baseline_outdated
+* design_points_missing
+* needs_review
+
+5. Evidence links
+   Where source document/file/evidence page/snippet exists:
+
+* show source document reference
+* show evidence snippet
+* if existing PDF/document viewer deep-link patterns exist, use them
+* otherwise show non-clickable evidence text and document reference
+
+6. Filtering/grouping
+   Add simple grouping or filters if straightforward:
+
+* Baseline physics
+* Design estimate
+* Legal/commercial
+* Equipment
+* Weather
+* Warranty/permit/insurance
+* Missing/needs review
+
+Keep this lightweight; do not overbuild.
+
+7. Read-only guardrails
+
+* No edit buttons.
+* No approve/activate buttons.
+* No mutation actions.
+* No baseline generation buttons.
+* This sprint is visibility only.
+
+8. Help/tooltips
+   Add minimal inline help or tooltip copy for:
+
+* AI extracted value
+* accepted value
+* current assumption
+* draft baseline
+* active baseline
+* design estimate
+* weather-adjusted expected
+* mismatch
+* superseded
+
+Do not build full help center content in this sprint. Mark larger help work as Path B.
+
+9. Expected design-state behavior
+   The UI must not imply that:
+
+* AI extracted values are truth
+* accepted document keys are active truth
+* draft baselines are active
+* design estimates are weather-adjusted expected
+* legacy SAFL is authoritative
+
+10. Tests / validation
+    Validate:
+
+* admin can load the panel for site 4
+* unauthorized user cannot access
+* null/missing provenance does not crash UI
+* warnings render
+* mismatches render
+* evidence snippets render
+* empty state renders
+* backend endpoint is not called from non-site context incorrectly
+* no mutation endpoint is called
+* frontend typecheck/build passes
+* backend remains clean
+* architect review passes
+
+Do not:
+
+* Change reconciliation backend logic unless a narrow schema mismatch requires it.
+* Add write actions.
+* Create or activate baselines.
+* Change expected calculation math.
+* Remove DD→BigQuery write yet.
+* Repoint legacy create_draft.
+* Touch telemetry scheduler, ingestion, O&M charts, company/portfolio aggregation, device eligibility, or plaintext secrets.
+
+Return:
+
+* files changed
+* UI placement
+* data model/API client changes
+* displayed statuses/warnings
+* validation results
+* Path B help/FAQ items
+* recommended Phase 5B plan

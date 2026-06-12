@@ -57,9 +57,7 @@ export const DocumentTermUserInputField = React.forwardRef<
   // "override". The server enforces a rationale for these (DD V2 Phase 1D); we collect
   // it here so the save succeeds and the reviewer's reasoning is captured.
   const requiresRationale =
-    isBaselineDriving &&
-    (watchedText ?? '').trim().length > 0 &&
-    (watchedText ?? '').trim() !== (aiValue ?? '').trim();
+    isBaselineDriving && (watchedText ?? '').trim().length > 0 && (watchedText ?? '').trim() !== (aiValue ?? '').trim();
 
   const { mutateAsync: updateDocumentKeyValue } = useMutation({
     mutationFn: (params: SetDocumentKeyValueParams) =>

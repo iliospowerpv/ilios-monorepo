@@ -191,5 +191,49 @@ Click on a document to:
 **Cause:** Status calculations may refresh on a schedule rather than immediately.
 
 **Solution:** Refresh the page. If the status still doesn't reflect your recent uploads, wait a few minutes and check again.`
+  },
+  {
+    slug: 'assumptions-reconciliation',
+    title: 'Assumptions Reconciliation (Read-Only)',
+    summary:
+      'A read-only admin view that traces each diligence field from AI extraction through to the active baseline.',
+    category: 'data-room',
+    module: 'project-hub',
+    audience: ['admin', 'asset-manager'],
+    articleType: 'reference',
+    tags: ['due diligence', 'reconciliation', 'baseline', 'assumptions', 'admin'],
+    searchKeywords: [
+      'assumptions reconciliation',
+      'reconciliation tab',
+      'reconciliation view',
+      'active fact',
+      'draft baseline',
+      'active baseline',
+      'legacy value',
+      'readiness'
+    ],
+    relatedArticles: ['assumptions-reconciliation-explained', 'data-room-overview'],
+    lastUpdated: '2026-06-12',
+    body: `## Where to Find It
+
+The **Reconciliation** tab appears on a project's detail page (Project Hub → a project → **Reconciliation**) for administrators and users with Diligence access. If you don't have permission, the tab is hidden and opening its link directly shows an access-restricted message.
+
+## What It Shows
+
+The view is strictly **read-only**. It does not let you edit, accept, promote, or activate anything — it only reports the current state. For each diligence field it shows:
+
+- The value at every stage: **AI value → Accepted → Active fact → Draft baseline → Active baseline**, plus the **Legacy** value for comparison.
+- A **status** chip (Missing, Candidate only, Active fact, In draft baseline, In active baseline).
+- **Warnings** when values diverge or a required value is missing.
+- **Provenance** — the source document type, page, AI confidence, and a short evidence snippet (shown as text in this release).
+
+A **Baseline Readiness** summary at the top indicates whether the project can form a weather-adjusted draft baseline, whether an active baseline exists, and whether design-estimate monthly points are complete.
+
+## Reading the View
+
+- Group rows by **category** and filter by **status**, by category, by free text, or to **only rows with warnings**.
+- Remember that **AI value ≠ truth**, **accepted ≠ active**, **draft ≠ active baseline**, and a **design estimate** is not the same as a **weather-adjusted baseline**. Legacy values are shown for context only and are never used to build a V2 baseline.
+
+For a deeper explanation of these concepts, see **Assumptions Reconciliation Explained**.`
   }
 ];

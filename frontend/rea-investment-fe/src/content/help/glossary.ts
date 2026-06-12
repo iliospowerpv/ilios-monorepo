@@ -240,5 +240,69 @@ export const glossaryEntries: GlossaryEntry[] = [
       'A formal request for maintenance, repair, or inspection work at a project site. Work orders are created in the O&M module and track the full lifecycle of maintenance activities.',
     relatedTerms: ['Maintenance', 'O&M'],
     tags: ['o&m']
+  },
+  {
+    term: 'Assumptions Reconciliation',
+    slug: 'assumptions-reconciliation',
+    definition:
+      'A read-only admin view that traces each due-diligence field from its AI-extracted value through reviewer acceptance, active fact, draft baseline, and active baseline, highlighting where versions diverge.',
+    relatedTerms: ['Active Fact', 'Draft Baseline', 'Active Baseline', 'Candidate Fact'],
+    tags: ['due diligence', 'reconciliation']
+  },
+  {
+    term: 'Active Fact',
+    slug: 'active-fact',
+    definition:
+      'The current promoted, source-backed assumption for a field (an active project fact). It is what the platform treats as truth for that field, distinct from the raw AI-extracted value or a document-level accepted value.',
+    relatedTerms: ['Candidate Fact', 'Assumptions Reconciliation', 'Active Baseline'],
+    tags: ['due diligence', 'reconciliation']
+  },
+  {
+    term: 'Candidate Fact',
+    slug: 'candidate-fact',
+    definition:
+      'A diligence value that has been extracted but not yet promoted to an active assumption. Candidate facts appear in reconciliation with a "candidate only" status.',
+    relatedTerms: ['Active Fact', 'Assumptions Reconciliation'],
+    tags: ['due diligence', 'reconciliation']
+  },
+  {
+    term: 'Draft Baseline',
+    slug: 'draft-baseline',
+    definition:
+      'A proposed baseline that is not yet active. Its field values may differ from the active baseline and from the underlying active facts. Drafts must be activated before they drive expected output.',
+    relatedTerms: ['Active Baseline', 'Weather-Adjusted Baseline', 'Assumptions Reconciliation'],
+    tags: ['due diligence', 'reconciliation', 'baseline']
+  },
+  {
+    term: 'Active Baseline',
+    slug: 'active-baseline',
+    definition:
+      'The baseline currently driving the expected-output calculations of a project. Only one baseline is active at a time; a newer fact or draft can make it outdated until it is re-activated.',
+    relatedTerms: ['Draft Baseline', 'Weather-Adjusted Baseline', 'Active Fact'],
+    tags: ['due diligence', 'reconciliation', 'baseline']
+  },
+  {
+    term: 'Weather-Adjusted Baseline',
+    slug: 'weather-adjusted-baseline',
+    definition:
+      'An expected-output baseline computed from physical site characteristics and actual weather, as opposed to a vendor design estimate. The two are tracked separately and should never be conflated.',
+    relatedTerms: ['Design Estimate', 'Active Baseline', 'Draft Baseline'],
+    tags: ['due diligence', 'baseline']
+  },
+  {
+    term: 'Design Estimate',
+    slug: 'design-estimate',
+    definition:
+      'A planning-stage production estimate (for example, monthly production figures from a vendor). It is not the same as a weather-adjusted physics baseline and is categorized separately in reconciliation.',
+    relatedTerms: ['Weather-Adjusted Baseline', 'Assumptions Reconciliation'],
+    tags: ['due diligence', 'baseline']
+  },
+  {
+    term: 'Legacy Value',
+    slug: 'legacy-value',
+    definition:
+      'An older site-field value shown in reconciliation for comparison and historical context only. Legacy values are never used to build a V2 baseline.',
+    relatedTerms: ['Active Fact', 'Assumptions Reconciliation'],
+    tags: ['due diligence', 'reconciliation']
   }
 ];

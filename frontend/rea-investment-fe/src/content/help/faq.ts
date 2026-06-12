@@ -316,5 +316,29 @@ export const faqItems: FAQItem[] = [
       'Differences may be due to different time periods, rollup calculation methods, data refresh timing, or scope differences. Check that both views use the same date range and scope. See the "Report Data Mismatches" troubleshooting article for details.',
     group: 'Troubleshooting',
     tags: ['troubleshooting', 'reports', 'data']
+  },
+  {
+    id: 'faq-what-is-reconciliation',
+    question: 'What is the Assumptions Reconciliation view?',
+    answer:
+      'It is a read-only admin view on a project that traces each due-diligence field from its AI-extracted value through reviewer acceptance, active fact, draft baseline, and active baseline. It highlights where these versions diverge so you can audit which number is actually being relied upon. It never edits, accepts, promotes, or activates anything.',
+    group: 'Data Room',
+    tags: ['due diligence', 'reconciliation', 'baseline']
+  },
+  {
+    id: 'faq-reconciliation-access',
+    question: 'Why is the Reconciliation tab not visible?',
+    answer:
+      'The Reconciliation tab is restricted to administrators and users with Diligence access. If you do not have permission, the tab is hidden, and opening its link directly shows an access-restricted message. Contact your administrator if you need access.',
+    group: 'Data Room',
+    tags: ['due diligence', 'reconciliation', 'permissions']
+  },
+  {
+    id: 'faq-ai-value-vs-active',
+    question: 'Why does the AI-extracted value differ from the active assumption?',
+    answer:
+      'The AI value is what the model first read from a document — it is a starting point, not truth. It only becomes an assumption after a reviewer accepts it and it is promoted to an active fact, and it only affects output after it is placed on an activated baseline. The Reconciliation view shows every stage so you can see exactly where a value is in that lifecycle.',
+    group: 'Data Room',
+    tags: ['due diligence', 'reconciliation', 'ai']
   }
 ];

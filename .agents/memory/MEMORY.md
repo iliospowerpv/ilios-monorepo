@@ -15,3 +15,4 @@
 - [Repo validation known noise](repo-validation-known-noise.md) — pre-existing failures NOT your regression: ilios-server extract_text mock-arity + idempotency file_id=999 FK; FE tsc errors confined to __tests__ stale fixtures (Babel build skips typecheck).
 - [DD override guardrail](dd-override-guardrail.md) — baseline-driving override-rationale enforced server-side by value divergence (not client status), fails closed; BOTH set_key + bulk_accept share one helper; bulk is all-or-nothing (422 writes nothing).
 - [DD reconciliation view](dd-reconciliation-view.md) — read-only aggregator; "in baseline" status must use the target's OWN baseline (physics→WAM header, production→design points), never cross them.
+- [FE build/test env truth-sources](frontend-build-test-env.md) — jest needs libuuid (util-linux) or every test fails; stale node_modules/.cache fakes/hides eslint errors; trust fork-ts-checker "No issues found"; format via eslint --fix not prettier CLI.

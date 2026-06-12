@@ -636,6 +636,12 @@ const router = createBrowserRouter(
             loader={withAuthControl(PHSiteDetails.createLoader(queryClient))}
             element={<PHSiteDetails.Component tabId="reporting" />}
           />
+          <Route
+            path="/project-hub/projects/:siteId/reconciliation"
+            handle={PHSiteDetails.createHandle(queryClient)}
+            loader={withAuthControl(PHSiteDetails.createLoader(queryClient))}
+            element={<PHSiteDetails.Component tabId="reconciliation" />}
+          />
         </Route>
         <Route path="/settings">
           <Route

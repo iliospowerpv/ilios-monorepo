@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import Box from '@mui/material/Box';
@@ -12,9 +12,12 @@ import WhatshotIcon from '@mui/icons-material/Whatshot';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
+import AlertTitle from '@mui/material/AlertTitle';
 import { siteDetailsQuery } from './loader';
 import Overview from './tabs/Overview/Overview';
 import DataRoom from './tabs/DataRoom/DataRoom';
@@ -22,9 +25,11 @@ import OM from './tabs/OM/OM';
 import Finance from './tabs/Finance/Finance';
 import Tasks from './tabs/Tasks/Tasks';
 import Reporting from './tabs/Reporting/Reporting';
+import Reconciliation from './tabs/Reconciliation/Reconciliation';
 import type { AssetManagementSiteDetailsTabProps } from './tabs/types';
 import { useEntityContext } from '../../../../contexts/entityContext';
 import { useAccess } from '../../../../hooks/access/access';
+import { useAuth } from '../../../../contexts/auth/auth';
 import { ApiClient } from '../../../../api';
 import ArchiveConfirmationModal from '../../../../components/common/ArchiveConfirmationModal/ArchiveConfirmationModal';
 
@@ -37,13 +42,13 @@ interface TabData {
   content: React.FC<AssetManagementSiteDetailsTabProps> | null;
 }
 
-type TabType = 'overview' | 'data-room' | 'om' | 'finance' | 'tasks' | 'reporting';
+type TabType = 'overview' | 'data-room' | 'om' | 'finance' | 'tasks' | 'reporting' | 'reconciliation';
 
 interface AssetManagementSiteDetailsProps {
   tabId?: TabType;
 }
 
-const tabsData: TabData[] = [
+const baseTabs: TabData[] = [
   {
     id: 'overview',
     label: 'Overview',
@@ -94,6 +99,17 @@ const tabsData: TabData[] = [
   }
 ];
 
+// Admin-only, read-only assumptions reconciliation. Visibility mirrors the
+// backend gate (system user OR Diligence:view); the endpoint enforces auth.
+const reconciliationTab: TabData = {
+  id: 'reconciliation',
+  label: 'Reconciliation',
+  link: '/project-hub/projects/:siteId/reconciliation',
+  disabled: false,
+  icon: <FactCheckOutlinedIcon />,
+  content: Reconciliation
+};
+
 const legacyTabAliases: Record<string, TabType> = {
   devices: 'om',
   telemetry: 'om',
@@ -105,6 +121,12 @@ export const AssetManagementSiteDetails: React.FC<AssetManagementSiteDetailsProp
   const isValidId = !!siteId && Number.isSafeInteger(Number.parseInt(siteId));
   const { setCurrentCompany, setCurrentProject } = useEntityContext();
   const { isSystemUser } = useAccess();
+  const { user } = useAuth();
+  const canViewReconciliation = !!user?.is_system_user || !!user?.role?.permissions?.['Diligence']?.view;
+  const tabsData = useMemo<TabData[]>(
+    () => (canViewReconciliation ? [...baseTabs, reconciliationTab] : baseTabs),
+    [canViewReconciliation]
+  );
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
@@ -154,10 +176,14 @@ export const AssetManagementSiteDetails: React.FC<AssetManagementSiteDetailsProp
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [siteDetails?.id, siteDetails?.company?.id]);
 
+  // A non-permitted user reaching /reconciliation directly must see an explicit
+  // unauthorized state rather than silently falling back to Overview.
+  const showReconciliationUnauthorized = activeTab === 'reconciliation' && !canViewReconciliation;
+
   const DisplayContent = React.useMemo(() => {
     const tab = tabsData.find(({ id }) => id === activeTab);
-    return tab ? tab.content : tabsData[0].content;
-  }, [activeTab]);
+    return tab ? tab.content : baseTabs[0].content;
+  }, [activeTab, tabsData]);
 
   if (!DisplayContent || isLoadingSiteDetails || !siteDetails) return null;
 
@@ -179,7 +205,7 @@ export const AssetManagementSiteDetails: React.FC<AssetManagementSiteDetailsProp
         )}
       </Box>
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={activeTab}>
+        <Tabs value={tabsData.some(tab => tab.id === activeTab) ? activeTab : false}>
           {tabsData.map(tab => (
             <Tab
               key={tab.id}
@@ -195,7 +221,15 @@ export const AssetManagementSiteDetails: React.FC<AssetManagementSiteDetailsProp
       </Box>
       <div role="tabpanel">
         <Box sx={{ paddingTop: '24px' }}>
-          <DisplayContent siteDetails={siteDetails} />
+          {showReconciliationUnauthorized ? (
+            <Alert severity="warning" icon={<LockOutlinedIcon />} data-testid="reconciliation-tab-unauthorized">
+              <AlertTitle>Access restricted</AlertTitle>
+              You don&apos;t have permission to view the assumptions reconciliation for this project. This view requires
+              Diligence access.
+            </Alert>
+          ) : (
+            <DisplayContent siteDetails={siteDetails} />
+          )}
         </Box>
       </div>
 

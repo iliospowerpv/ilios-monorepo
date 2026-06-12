@@ -23,6 +23,7 @@ import { createEntitiesApi } from './entities';
 import { financeIntegrations, financeData } from './financeIntegrations';
 import { buildProjectImportApi } from './project-import';
 import { buildTelemetryV2Api } from './telemetryV2';
+import { buildReconciliationApi } from './reconciliation';
 
 export const ApiClient = Object.freeze({
   _tokenManager: tokenManager,
@@ -50,7 +51,8 @@ export const ApiClient = Object.freeze({
   financeIntegrations,
   financeData,
   projectImport: buildProjectImportApi(httpClient),
-  telemetryV2: buildTelemetryV2Api(httpClient)
+  telemetryV2: buildTelemetryV2Api(httpClient),
+  reconciliation: buildReconciliationApi(httpClient)
 });
 
 export type {
@@ -202,3 +204,15 @@ export type {
   FinanceIntegrationUpdatePayload,
   FinanceIntegrationTestResponse
 } from './financeIntegrations';
+
+export type {
+  ReconciliationValue,
+  ReconciliationStatus,
+  ReconciliationCategory,
+  ReconciliationBaselineTarget,
+  ReconciliationWarning,
+  ReconciliationRow,
+  ReconciliationReadiness,
+  TelemetryReality,
+  SiteReconciliationResponse
+} from './reconciliation';

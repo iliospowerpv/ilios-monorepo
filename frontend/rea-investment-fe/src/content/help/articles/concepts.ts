@@ -443,5 +443,81 @@ Once converted:
 - Conversion does not delete the original deal record
 - Not all deal fields have direct project equivalents — some data may need manual entry
 - The conversion is a one-way process; projects cannot be "unconverted" back to deals`
+  },
+  {
+    slug: 'assumptions-reconciliation-explained',
+    title: 'Assumptions Reconciliation Explained',
+    summary:
+      'How the read-only Reconciliation view traces source-backed diligence facts into current assumptions and baselines.',
+    category: 'concepts',
+    audience: ['admin', 'asset-manager'],
+    articleType: 'concept',
+    tags: ['due diligence', 'reconciliation', 'baseline', 'assumptions', 'facts'],
+    searchKeywords: [
+      'assumptions reconciliation',
+      'reconciliation',
+      'active fact',
+      'draft baseline',
+      'active baseline',
+      'weather-adjusted baseline',
+      'design estimate',
+      'legacy value',
+      'candidate fact',
+      'provenance',
+      'evidence'
+    ],
+    relatedArticles: ['assumptions-reconciliation', 'data-room-overview'],
+    lastUpdated: '2026-06-12',
+    body: `## What Is Assumptions Reconciliation?
+
+**Assumptions Reconciliation** is a read-only audit view that shows how a project's source-backed diligence facts flow into the assumptions and baselines that drive expected output. It answers a single question for each field: *where did this number come from, and which version is actually being relied upon today?*
+
+The view never edits, accepts, promotes, or activates anything. It is a transparency and review tool only — every action that changes data happens elsewhere, in the Data Room and baseline workflows.
+
+## The Value Lifecycle
+
+For each field, the view lays out the value at every stage of its life so you can spot where they diverge:
+
+- **AI value** — what the AI model first read from a source document. This is a starting point, *not* truth. It has not been reviewed.
+- **Accepted** — the value a reviewer accepted or overrode at the document level. An accepted value is a document decision, *not yet* an active assumption.
+- **Active fact** — the current promoted assumption (the active project fact). This is what the platform treats as the source-backed truth for the field.
+- **Draft baseline** — the value sitting on the latest draft baseline. A draft is a proposal that is not yet active.
+- **Active baseline** — the value on the baseline that actually drives expected-output calculations today.
+- **Legacy** — the old site-field value. It is shown only for comparison and historical context, and is **never** used to build a V2 baseline.
+
+These can legitimately differ. A field can have an active fact that has not yet been rolled into a draft, or a draft that differs from the active baseline because the baseline has not been re-activated.
+
+## Field Status
+
+Each field carries a status describing how far it has progressed (first match wins):
+
+- **Missing** — no source-backed value has been captured yet.
+- **Candidate only** — a value was extracted but not yet promoted to an active assumption.
+- **Active fact** — a promoted fact exists, but it is not yet on a baseline.
+- **In draft baseline** — the value is reflected on a draft baseline that is not yet active.
+- **In active baseline** — the value is on the active baseline that drives expected output.
+
+## Warnings
+
+Warnings flag fields that deserve attention:
+
+- **Required value missing** — a field required for the weather-adjusted baseline has no source-backed value.
+- **Differs from legacy** — the active fact differs from the legacy site-field value.
+- **Draft ≠ active** — the draft baseline value differs from the active baseline value.
+- **Active baseline outdated** — a newer fact or draft suggests the active baseline may be stale.
+- **Design points missing** — monthly design-estimate production points are incomplete.
+- **Needs review** — a reviewer should look at this field before relying on it.
+
+## Two Kinds of "Expected"
+
+A common source of confusion: the **design estimate** (for example, a vendor's monthly production estimate) is *not* the same as a **weather-adjusted physics baseline**. The design estimate is a planning number; the weather-adjusted baseline is computed from physical site characteristics and actual weather. The Reconciliation view keeps these in separate categories so they are never conflated.
+
+## Baseline Readiness
+
+The readiness summary at the top tells you, at a glance, whether the project has enough source-backed facts to build a weather-adjusted draft baseline, whether an active baseline already exists, and whether the design-estimate monthly points are complete.
+
+## Provenance
+
+Every active fact links back to its source: the document type, page, AI confidence, and a short evidence snippet. In this release the evidence is shown as read-only text; jumping directly to the underlying document from this view is planned for a future iteration.`
   }
 ];

@@ -31,6 +31,6 @@ bug-prone trap here.
 
 **How to apply:** any new baseline_target must map to its own baseline pair
 before the status ladder runs; never reuse one baseline-type's draft/active for
-another type's presence test. Regression-guarded by H10/H10c in
-`tests/unit/due_diligence/reconciliation_test.py`, and H17 guards the catalog
-canonical names against drift from the Phase 3 points producer.
+another type's presence test. Regression-guarded in
+`tests/unit/due_diligence/reconciliation_test.py` (baseline-presence-per-target
+cases, plus a catalog-canonical-name guard against drift from the points producer).
