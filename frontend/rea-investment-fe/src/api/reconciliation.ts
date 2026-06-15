@@ -4,10 +4,21 @@ export type ReconciliationValue = string | number | boolean | null;
 
 export type ReconciliationStatus =
   | 'missing'
+  | 'ai_extracted_only'
+  | 'accepted_document_value'
   | 'candidate_only'
+  | 'accepted_not_promoted'
   | 'active_fact'
   | 'in_draft_baseline'
-  | 'in_active_baseline';
+  | 'in_active_baseline'
+  | 'superseded';
+
+export type ReconciliationBlockingLevel =
+  | 'blocks_baseline'
+  | 'blocks_expected'
+  | 'blocks_reporting'
+  | 'lowers_confidence'
+  | 'informational';
 
 export type ReconciliationCategory =
   | 'baseline_physics'
@@ -36,6 +47,12 @@ export interface ReconciliationRow {
   baseline_target: ReconciliationBaselineTarget | string;
   status: ReconciliationStatus | string;
 
+  status_label: string | null;
+  status_explanation: string | null;
+  required_action: string | null;
+  blocking_level: ReconciliationBlockingLevel | string | null;
+  missing_dependencies: string[];
+
   ai_extracted_value: ReconciliationValue;
   accepted_value: ReconciliationValue;
   active_fact_value: ReconciliationValue;
@@ -44,6 +61,7 @@ export interface ReconciliationRow {
   legacy_value: ReconciliationValue;
 
   fact_id: number | null;
+  project_fact_id: number | null;
   source_file_id: number | null;
   source_document_type: string | null;
   source_run_id: number | null;
@@ -52,6 +70,15 @@ export interface ReconciliationRow {
   confidence: number | null;
   effective_from: string | null;
   effective_to: string | null;
+
+  // Navigation handles (read-only deep links the UI can resolve to existing routes).
+  document_id: number | null;
+  document_version_id: number | null;
+  ai_run_id: number | null;
+  document_key_id: number | null;
+  baseline_id: number | null;
+  baseline_point_id: number | null;
+  aliases_matched: string[];
 
   supersedes_fact_id: number | null;
   candidate_count: number;

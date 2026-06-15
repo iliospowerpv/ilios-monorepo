@@ -131,8 +131,8 @@ export const Reconciliation: React.FC<AssetManagementSiteDetailsTabProps> = ({ s
             <strong>Design-estimate</strong> values are not the same as weather-adjusted physics expectations.
           </li>
           <li>
-            <strong>Legacy</strong> values (e.g. the former SiteAdditionalFieldList snapshot) are display-only —
-            shown for comparison and never used to build a V2 baseline.
+            <strong>Legacy</strong> values (e.g. the former SiteAdditionalFieldList snapshot) are display-only — shown
+            for comparison and never used to build a V2 baseline.
           </li>
         </Box>
       </Alert>
@@ -220,7 +220,7 @@ export const Reconciliation: React.FC<AssetManagementSiteDetailsTabProps> = ({ s
               </Typography>
             </Paper>
           ) : (
-            <ReconciliationTable rows={filteredRows} helpTargets={data.help_targets} />
+            <ReconciliationTable rows={filteredRows} helpTargets={data.help_targets} siteId={siteId} />
           )}
         </>
       )}

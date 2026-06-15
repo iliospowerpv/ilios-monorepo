@@ -30,9 +30,38 @@ class ReconciliationRow(BaseModel):
     )
     status: str = Field(
         description=(
-            "Per-field lifecycle (first match wins): missing, candidate_only, "
-            "active_fact, in_draft_baseline, in_active_baseline."
+            "Per-field lifecycle, most-advanced stage wins. One of: missing, "
+            "ai_extracted_only, accepted_document_value, candidate_only, "
+            "accepted_not_promoted, active_fact, in_draft_baseline, "
+            "in_active_baseline, superseded."
         )
+    )
+    status_label: Optional[str] = Field(
+        None, description="Short human-readable label for ``status`` (UI display)."
+    )
+    status_explanation: Optional[str] = Field(
+        None,
+        description="One-sentence plain-language explanation of where this value sits "
+        "in the audit chain.",
+    )
+    required_action: Optional[str] = Field(
+        None,
+        description="The single next step a reviewer should take to advance this value "
+        "(e.g. accept in Due Diligence, promote to project assumptions). None when no "
+        "action is needed.",
+    )
+    blocking_level: Optional[str] = Field(
+        None,
+        description=(
+            "Single most-severe impact of this row's gaps, or None when nothing is "
+            "blocked. One of: blocks_baseline, blocks_expected, blocks_reporting, "
+            "lowers_confidence, informational."
+        ),
+    )
+    missing_dependencies: list[str] = Field(
+        default_factory=list,
+        description="Ordered pipeline stages still pending to reach in_active_baseline "
+        "(e.g. acceptance, promotion, baseline, baseline_activation).",
     )
 
     ai_extracted_value: Optional[Any] = Field(
@@ -64,6 +93,9 @@ class ReconciliationRow(BaseModel):
 
     # Provenance
     fact_id: Optional[int] = Field(None, description="Source project_fact id.")
+    project_fact_id: Optional[int] = Field(
+        None, description="Project fact id (alias of fact_id, clearer name for the UI)."
+    )
     source_file_id: Optional[int] = None
     source_document_type: Optional[str] = None
     source_run_id: Optional[int] = Field(None, description="AI parsing run id.")
@@ -72,6 +104,31 @@ class ReconciliationRow(BaseModel):
     confidence: Optional[float] = Field(None, description="AI extraction confidence.")
     effective_from: Optional[datetime] = None
     effective_to: Optional[datetime] = None
+
+    # Navigation handles (read-only deep links the UI can resolve to existing routes).
+    document_id: Optional[int] = Field(
+        None, description="Owning Document id for the source value, if known."
+    )
+    document_version_id: Optional[int] = Field(
+        None, description="Source File (document version) id, if known."
+    )
+    ai_run_id: Optional[int] = Field(
+        None, description="AI parsing run id behind the value (alias of source_run_id)."
+    )
+    document_key_id: Optional[int] = Field(
+        None, description="DocumentKey id the accepted value was recorded under, if any."
+    )
+    baseline_id: Optional[int] = Field(
+        None, description="Baseline id this value currently lives on (active or draft)."
+    )
+    baseline_point_id: Optional[int] = Field(
+        None, description="Design-estimate baseline point id, for points targets only."
+    )
+    aliases_matched: list[str] = Field(
+        default_factory=list,
+        description="Distinct document key/extraction names that resolved to this "
+        "canonical field.",
+    )
 
     # Supersession / review context
     supersedes_fact_id: Optional[int] = Field(

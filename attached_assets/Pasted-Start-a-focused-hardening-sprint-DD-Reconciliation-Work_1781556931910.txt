@@ -1,0 +1,235 @@
+Start a focused hardening sprint: DD/Reconciliation Workflow Hardening — Document Review to Project Truth.
+
+Context:
+The Due Diligence V2 truth-store work is complete:
+
+* AI parsing writes ai_parsing_results
+* human review creates accepted/overridden DocumentKey records
+* ProjectFactsService creates project_facts candidates
+* PromotionService promotes candidates into active/current project facts
+* facts→draft-baseline bridge creates draft TelemetryExpectedBaseline records
+* design-estimate points producer creates monthly/annual baseline points
+* Reconciliation endpoint and UI tab display the audit chain
+* DD→BigQuery write has been removed
+* SiteAdditionalFieldList is display-only/legacy for reconciliation
+
+Current issue:
+The Reconciliation screen is showing many/all values as “Needs Review,” “Requires Value,” or candidate-like statuses even after PVsyst values were reviewed/approved in Due Diligence. We need to verify and harden the full workflow so document review correctly translates into project facts, baseline readiness, and reconciliation status.
+
+Objective:
+Make the Reconciliation screen accurately and clearly reflect the state of each value in the chain:
+uploaded document → AI extracted → accepted/overridden → project_fact candidate → promoted active fact → draft baseline → design estimate points → active baseline.
+
+Do not change the overall architecture. This is an audit/fix/hardening sprint.
+
+Scope:
+
+A. Reproduce the PVsyst reconciliation issue
+
+Using the current PVsyst review workflow:
+
+1. Upload or use existing PVsyst document.
+2. Confirm AI parse fields exist.
+3. Accept or override required PVsyst fields.
+4. Confirm DocumentKey records are created.
+5. Confirm project_facts candidates are created.
+6. Promote the relevant candidates, if the workflow requires promotion.
+7. Open the Reconciliation tab.
+8. Confirm whether values show as:
+
+   * candidate_only
+   * accepted_not_promoted
+   * active_fact
+   * in_draft_baseline
+   * in_active_baseline
+   * missing
+   * needs_review
+
+Document the exact current failure mode.
+
+B. Validate status semantics
+
+Reconciliation must distinguish these states clearly:
+
+* missing: no AI/document/fact/baseline value exists
+* ai_extracted_only: AI extracted value exists but user has not accepted/overridden
+* accepted_document_value: user accepted/overrode document value, but no project_fact candidate exists
+* candidate_only: project_fact candidate exists but has not been promoted
+* accepted_not_promoted: document value accepted and candidate exists, but not promoted to active/current assumption
+* active_fact: promoted/current project_fact exists
+* in_draft_baseline: value was used in draft baseline snapshot
+* in_active_baseline: value is part of active baseline used for expected calculation
+* superseded: older value superseded by a later active fact/baseline
+* mismatch: values disagree across document/fact/baseline/legacy
+* needs_review: true ambiguity or conflict requiring user review
+
+Do not use “Needs Review” as a generic missing/default status.
+
+C. Clarify missing dependency indicators
+
+Where a value is missing or blocked, return/display:
+
+* what is missing
+* why it matters
+* where it normally comes from
+* what action is needed
+* whether it blocks calculation, review, approval, reporting, or only lowers confidence
+
+Required examples:
+
+* “Accepted from document but not promoted to project assumptions.”
+* “Required for baseline draft: module quantity is missing.”
+* “Required for weather-adjusted expected: active baseline missing.”
+* “Required for design points: monthly production values missing.”
+* “PVsyst value exists but canonical field does not match reconciliation catalog.”
+* “Legacy value differs from active project fact.”
+* “Draft baseline differs from active baseline.”
+* “Source document/evidence missing.”
+* “Value exists as AI extraction only; review is required.”
+
+D. Canonical field/key alignment audit
+
+Audit and fix mismatches between:
+
+* PVsyst specialized schema v2 fields
+* extraction canonical fields
+* DueDiligenceBQKeys or legacy field keys, if still referenced for naming only
+* DocumentKey.key / canonical key
+* project_facts.field_name / canonical_field
+* reconciliation_catalog.py
+* baseline_from_facts_service.py required fields
+* baseline_points_service.py monthly/annual production fields
+
+Requirements:
+
+* One canonical field should resolve consistently across the chain.
+* Reconciliation should not miss promoted facts because of key aliasing.
+* Baseline readiness should not report missing values that exist under an accepted alias.
+* Keep compatibility aliases if needed, but make canonical resolution explicit and tested.
+
+E. Promotion workflow clarity
+
+If document acceptance does not automatically promote to active project_facts, ensure the UI/API states that clearly.
+
+If promotion is required:
+
+* Reconciliation should show accepted_not_promoted or candidate_only, not vague needs_review.
+* The UI should tell the user what action is needed: “Promote to project assumptions.”
+* Do not auto-promote baseline-driving values unless existing workflow explicitly supports it and guardrails/rationale are preserved.
+
+F. Reconciliation endpoint improvements
+
+Update the backend reconciliation response if needed to include:
+
+* status
+* status_label
+* status_explanation
+* required_action
+* blocking_level:
+
+  * blocks_baseline
+  * blocks_expected
+  * blocks_reporting
+  * lowers_confidence
+  * informational
+* source document id/file id
+* document version id, if available
+* AI run id
+* document key id
+* project_fact id
+* baseline id
+* baseline point id, if applicable
+* canonical field
+* aliases matched, if any
+* missing_dependencies array
+
+Keep response additive/nullable to avoid breaking the UI.
+
+G. Reconciliation UI improvements
+
+Update the Reconciliation tab to:
+
+* avoid generic “Needs Review” where a more precise state exists
+* show clear next action
+* show missing dependency chips
+* distinguish candidate vs accepted-not-promoted vs active fact
+* show whether the value is used in a draft baseline or active baseline
+* show source/evidence links if available
+* preserve read-only behavior; no edit/approve/activate buttons unless existing safe navigation links exist
+
+If direct action buttons are not appropriate, provide links/navigation only:
+
+* View source document
+* View document details/version
+* Go to Due Diligence review
+* Go to project facts/current assumptions area, if it exists
+
+H. Data Room / document detail navigation check
+
+As part of this sprint, audit the document detail routing used by Reconciliation and Data Room.
+
+Requirements:
+
+* “View Details” should open the document detail/version surface, not an inconsistent modal/page.
+* The user should be able to see uploaded versions, parsing status, accepted/overridden values, evidence, and review/promote state.
+* If the full navigation fix is larger, document it as a follow-up, but ensure Reconciliation does not link to a dead or misleading route.
+
+I. Tests
+
+Add tests for:
+
+1. AI-extracted-only value shows ai_extracted_only.
+2. Accepted document value shows accepted_document_value or accepted_not_promoted.
+3. Candidate project_fact shows candidate_only.
+4. Promoted project_fact shows active_fact.
+5. Draft baseline snapshot shows in_draft_baseline.
+6. Active baseline shows in_active_baseline.
+7. Superseded value shows superseded.
+8. PVsyst accepted/promoted values no longer incorrectly show generic needs_review.
+9. Required baseline field missing returns clear missing dependency.
+10. Canonical alias maps correctly across PVsyst schema → DocumentKey → project_facts → reconciliation.
+11. Baseline readiness does not report missing when promoted fact exists under alias.
+12. Design points readiness sees monthly/annual production when accepted/promoted.
+13. UI renders precise status labels and required actions.
+14. Reconciliation remains read-only and does not mutate data.
+15. Permissions still work.
+16. Frontend build/typecheck passes.
+17. Backend starts cleanly.
+18. Architect review passes.
+
+Do not:
+
+* change expected calculation math
+* change weather resolver behavior
+* change historical weather import behavior
+* change telemetry ingestion
+* change baseline approval/activation rules
+* auto-promote facts unless already part of approved workflow
+* reintroduce BigQuery/Firestore/legacy telemetry
+* use SiteAdditionalFieldList as a baseline source
+* touch plaintext secrets
+
+Validation:
+
+* Reproduce before/after on the PVsyst case.
+* Backend starts cleanly.
+* Frontend builds cleanly.
+* Existing DD review/promote tests still pass.
+* Existing reconciliation tests still pass or are updated for more precise statuses.
+* Existing baseline-from-facts tests still pass.
+* Existing design-points tests still pass.
+* Weather W0/W1/W2 tests remain unaffected.
+* Architect review passes.
+
+Return:
+
+* root cause of generic Needs Review / Requires Value statuses
+* files changed
+* canonical field/key alignment findings
+* workflow state definitions
+* backend response changes
+* UI changes
+* tests added/updated
+* validation results
+* remaining follow-ups
+* recommended next sprint

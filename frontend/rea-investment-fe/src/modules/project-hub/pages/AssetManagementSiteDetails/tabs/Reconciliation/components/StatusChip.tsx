@@ -5,14 +5,18 @@ import { statusMeta } from '../utils';
 
 interface StatusChipProps {
   status: string;
+  /** Backend-supplied label override (`status_label`); falls back to STATUS_META. */
+  label?: string | null;
+  /** Backend-supplied explanation override (`status_explanation`); falls back to STATUS_META. */
+  description?: string | null;
 }
 
-export const StatusChip: React.FC<StatusChipProps> = ({ status }) => {
+export const StatusChip: React.FC<StatusChipProps> = ({ status, label, description }) => {
   const meta = statusMeta(status);
   return (
-    <BootstrapTooltip title={meta.description} placement="top">
+    <BootstrapTooltip title={description || meta.description} placement="top">
       <Chip
-        label={meta.label}
+        label={label || meta.label}
         color={meta.color}
         size="small"
         variant="outlined"

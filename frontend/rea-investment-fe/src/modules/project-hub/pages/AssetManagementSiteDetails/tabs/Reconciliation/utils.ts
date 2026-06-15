@@ -38,19 +38,40 @@ export interface StatusMeta {
   description: string;
 }
 
+/**
+ * Per-status display metadata. The ladder runs from least-advanced (missing) to
+ * most-advanced (in_active_baseline). `label`/`description` are UI fallbacks —
+ * when the backend supplies `status_label`/`status_explanation` for a row those
+ * take precedence (see {@link statusMeta} consumers).
+ */
 export const STATUS_META: Record<string, StatusMeta> = {
   missing: {
     label: 'Missing',
     color: 'default',
-    description: 'No source-backed value has been captured for this field yet.'
+    description: 'No source-backed value has been captured anywhere in the chain for this field yet.'
+  },
+  ai_extracted_only: {
+    label: 'AI extracted (unreviewed)',
+    color: 'warning',
+    description: 'The AI read a value from the document, but no reviewer has accepted it yet.'
+  },
+  accepted_document_value: {
+    label: 'Accepted (no project fact)',
+    color: 'warning',
+    description: 'A reviewer accepted a document value, but no project fact was created from it.'
   },
   candidate_only: {
-    label: 'Candidate only',
+    label: 'Candidate (not accepted)',
     color: 'warning',
-    description: 'A value was extracted but not yet promoted to an active assumption.'
+    description: 'A candidate fact exists from extraction, but no reviewer has accepted it yet.'
+  },
+  accepted_not_promoted: {
+    label: 'Accepted, not promoted',
+    color: 'info',
+    description: 'A reviewer accepted or overrode this value, but it is not yet a promoted assumption.'
   },
   active_fact: {
-    label: 'Active fact',
+    label: 'Promoted assumption',
     color: 'info',
     description: 'A promoted (active) project fact exists, but it is not yet on a baseline.'
   },
@@ -63,11 +84,73 @@ export const STATUS_META: Record<string, StatusMeta> = {
     label: 'In active baseline',
     color: 'success',
     description: 'The value is on the active baseline that drives expected output.'
+  },
+  superseded: {
+    label: 'Superseded',
+    color: 'default',
+    description: 'Only superseded (retired) values remain; there is no current active value.'
   }
 };
 
 export const statusMeta = (status: string): StatusMeta =>
   STATUS_META[status] || { label: status, color: 'default', description: 'Unrecognized status.' };
+
+export type BlockingColor = 'default' | 'info' | 'warning' | 'error';
+
+export interface BlockingMeta {
+  label: string;
+  color: BlockingColor;
+  description: string;
+}
+
+/**
+ * The single most-severe impact a row's gaps currently have. Severity descends
+ * from baseline-blocking (error) to purely informational (default).
+ */
+export const BLOCKING_META: Record<string, BlockingMeta> = {
+  blocks_baseline: {
+    label: 'Blocks baseline',
+    color: 'error',
+    description: 'A required value is missing, so the weather-adjusted baseline cannot be built.'
+  },
+  blocks_expected: {
+    label: 'Blocks expected',
+    color: 'error',
+    description: 'Design-estimate points are missing, so expected production cannot be computed.'
+  },
+  blocks_reporting: {
+    label: 'Blocks reporting',
+    color: 'warning',
+    description: 'The active baseline diverges from the latest values, so reporting may be stale.'
+  },
+  lowers_confidence: {
+    label: 'Lowers confidence',
+    color: 'warning',
+    description: 'A divergence or unreviewed conflict reduces confidence in this value.'
+  },
+  informational: {
+    label: 'Informational',
+    color: 'default',
+    description: 'A noted difference that does not block anything downstream.'
+  }
+};
+
+export const blockingMeta = (level: string): BlockingMeta =>
+  BLOCKING_META[level] || { label: level.replace(/_/g, ' '), color: 'default', description: 'Unrecognized impact.' };
+
+/** Human labels for the ordered pipeline stages still pending for a row. */
+export const MISSING_DEPENDENCY_LABELS: Record<string, string> = {
+  source_value: 'Source value',
+  acceptance: 'Acceptance',
+  project_fact: 'Project fact',
+  promotion: 'Promotion',
+  baseline: 'Baseline',
+  baseline_activation: 'Baseline activation',
+  current_value: 'Current value'
+};
+
+export const missingDependencyLabel = (dep: string): string =>
+  MISSING_DEPENDENCY_LABELS[dep] || dep.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
 export interface WarningMeta {
   label: string;

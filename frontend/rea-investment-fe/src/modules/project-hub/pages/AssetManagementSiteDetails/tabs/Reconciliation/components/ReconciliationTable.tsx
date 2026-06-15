@@ -8,18 +8,46 @@ import TableBody from '@mui/material/TableBody';
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
+import Chip from '@mui/material/Chip';
+import MuiLink from '@mui/material/Link';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { Link as RouterLink } from 'react-router-dom';
 import { BootstrapTooltip } from '../../../../../../../components/common/BootstrapTooltip/BootstrapTooltip';
 import type { ReconciliationRow } from '../../../../../../../api';
 import StatusChip from './StatusChip';
 import WarningChips from './WarningChips';
-import { CATEGORY_ORDER, categoryLabel, formatValue, formatConfidence, PLACEHOLDER } from '../utils';
+import {
+  CATEGORY_ORDER,
+  categoryLabel,
+  formatValue,
+  formatConfidence,
+  blockingMeta,
+  missingDependencyLabel,
+  PLACEHOLDER
+} from '../utils';
 
 interface ReconciliationTableProps {
   rows: ReconciliationRow[];
   helpTargets: Record<string, string>;
+  /** Owning site id; used to build the read-only Data Room deep link. */
+  siteId?: number | null;
 }
+
+/**
+ * Statuses whose next step (acceptance / promotion) is performed in the Data
+ * Room. Baseline-activation steps have no dedicated route, so they show the
+ * required-action text without a link rather than pointing at a non-existent page.
+ */
+const ACTIONS_IN_DATA_ROOM = new Set<string>([
+  'missing',
+  'ai_extracted_only',
+  'accepted_document_value',
+  'candidate_only',
+  'accepted_not_promoted',
+  'superseded'
+]);
 
 interface ValueColumn {
   key: keyof ReconciliationRow;
@@ -115,11 +143,75 @@ const SourceCell: React.FC<{ row: ReconciliationRow }> = ({ row }) => {
   );
 };
 
+const StatusCell: React.FC<{ row: ReconciliationRow; dataRoomPath: string | null }> = ({ row, dataRoomPath }) => {
+  const blocking = row.blocking_level ? blockingMeta(row.blocking_level) : null;
+  const showDataRoomLink =
+    Boolean(row.required_action) && dataRoomPath !== null && ACTIONS_IN_DATA_ROOM.has(row.status);
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 200 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
+        <StatusChip status={row.status} label={row.status_label} description={row.status_explanation} />
+        {blocking && (
+          <BootstrapTooltip title={blocking.description} placement="top">
+            <Chip
+              label={blocking.label}
+              color={blocking.color}
+              size="small"
+              variant="filled"
+              data-testid="reconciliation-blocking-chip"
+            />
+          </BootstrapTooltip>
+        )}
+      </Box>
+
+      {row.required_action && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+          <Typography variant="caption" color="text.secondary" data-testid="reconciliation-required-action">
+            <Box component="strong" sx={{ color: 'text.primary' }}>
+              Next:
+            </Box>{' '}
+            {row.required_action}
+          </Typography>
+          {showDataRoomLink && (
+            <MuiLink
+              component={RouterLink}
+              to={dataRoomPath as string}
+              variant="caption"
+              sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.25, alignSelf: 'flex-start' }}
+              data-testid="reconciliation-dataroom-link"
+            >
+              <OpenInNewIcon sx={{ fontSize: 12 }} />
+              Open Data Room
+            </MuiLink>
+          )}
+        </Box>
+      )}
+
+      {row.missing_dependencies.length > 0 && (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.25 }} data-testid="reconciliation-missing-deps">
+          {row.missing_dependencies.map(dep => (
+            <BootstrapTooltip key={dep} title={`Pending stage: ${missingDependencyLabel(dep)}`} placement="top">
+              <Chip
+                label={missingDependencyLabel(dep)}
+                size="small"
+                variant="outlined"
+                sx={{ height: 18, '& .MuiChip-label': { px: 0.75, fontSize: 10 } }}
+              />
+            </BootstrapTooltip>
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+};
+
 const CategorySection: React.FC<{
   category: string;
   rows: ReconciliationRow[];
   helpTargets: Record<string, string>;
-}> = ({ category, rows, helpTargets }) => (
+  dataRoomPath: string | null;
+}> = ({ category, rows, helpTargets, dataRoomPath }) => (
   <Paper variant="outlined" sx={{ mb: 3, overflow: 'hidden' }} data-testid={`reconciliation-category-${category}`}>
     <Box sx={{ px: 2, py: 1.5, backgroundColor: 'action.hover' }}>
       <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
@@ -160,9 +252,22 @@ const CategorySection: React.FC<{
                   {row.canonical_field}
                   {row.candidate_count > 0 ? ` · ${row.candidate_count} candidate(s)` : ''}
                 </Typography>
+                {row.aliases_matched.length > 0 && (
+                  <BootstrapTooltip title={`Matched source names: ${row.aliases_matched.join(', ')}`} placement="top">
+                    <Typography
+                      variant="caption"
+                      color="text.disabled"
+                      sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.25, cursor: 'help' }}
+                      data-testid="reconciliation-aliases"
+                    >
+                      <InfoOutlinedIcon sx={{ fontSize: 12 }} />
+                      {row.aliases_matched.length} matched name{row.aliases_matched.length > 1 ? 's' : ''}
+                    </Typography>
+                  </BootstrapTooltip>
+                )}
               </TableCell>
               <TableCell>
-                <StatusChip status={row.status} />
+                <StatusCell row={row} dataRoomPath={dataRoomPath} />
               </TableCell>
               {VALUE_COLUMNS.map(col => (
                 <TableCell key={String(col.key)} sx={{ whiteSpace: 'nowrap' }}>
@@ -183,7 +288,10 @@ const CategorySection: React.FC<{
   </Paper>
 );
 
-export const ReconciliationTable: React.FC<ReconciliationTableProps> = ({ rows, helpTargets }) => {
+export const ReconciliationTable: React.FC<ReconciliationTableProps> = ({ rows, helpTargets, siteId }) => {
+  const dataRoomPath =
+    Number.isSafeInteger(siteId) && (siteId as number) > 0 ? `/project-hub/projects/${siteId}/data-room` : null;
+
   const grouped = React.useMemo(() => {
     const map = new Map<string, ReconciliationRow[]>();
     for (const row of rows) {
@@ -199,7 +307,13 @@ export const ReconciliationTable: React.FC<ReconciliationTableProps> = ({ rows, 
   return (
     <Box data-testid="reconciliation-table">
       {grouped.map(group => (
-        <CategorySection key={group.category} category={group.category} rows={group.rows} helpTargets={helpTargets} />
+        <CategorySection
+          key={group.category}
+          category={group.category}
+          rows={group.rows}
+          helpTargets={helpTargets}
+          dataRoomPath={dataRoomPath}
+        />
       ))}
     </Box>
   );

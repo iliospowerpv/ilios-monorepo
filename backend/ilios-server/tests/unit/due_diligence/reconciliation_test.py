@@ -31,6 +31,8 @@ from datetime import date, datetime
 
 import pytest
 
+from app.models.document import Document, DocumentKey
+from app.models.file import AIParsingResult, File, FileParsingStatuses
 from app.models.project_facts import CanonicalField, FactStatus, ProjectFact
 from app.models.site import SiteAdditionalFieldList
 from app.models.telemetry_expected import (
@@ -87,6 +89,7 @@ def _add_fact(
     ai_extracted_value=None,
     evidence=None,
     source_document_type=None,
+    accepted_at=None,
     overridden_at=None,
     override_notes=None,
     promoted_at=None,
@@ -106,6 +109,7 @@ def _add_fact(
         ),
         evidence=evidence,
         source_document_type=source_document_type,
+        accepted_at=accepted_at,
         overridden_at=overridden_at,
         override_notes=override_notes,
         promoted_at=promoted_at,
@@ -175,6 +179,62 @@ def _add_safl(db, site_id, **cols):
     return safl
 
 
+def _add_document(db, site_id, *, is_archived=False):
+    doc = Document(site_id=site_id, description="recon test doc", is_archived=is_archived)
+    db.add(doc)
+    db.commit()
+    db.refresh(doc)
+    return doc
+
+
+def _add_file(db, document_id):
+    f = File(document_id=document_id, filename="recon.pdf", filepath="recon.pdf")
+    db.add(f)
+    db.commit()
+    db.refresh(f)
+    return f
+
+
+def _add_key(
+    db,
+    document_id,
+    file_id,
+    canonical_field,
+    value,
+    *,
+    name=None,
+    override_value=None,
+    overridden_at=None,
+    status="accepted",
+):
+    key = DocumentKey(
+        document_id=document_id,
+        file_id=file_id,
+        name=name or canonical_field,
+        value=value,
+        canonical_field=canonical_field,
+        override_value=override_value,
+        overridden_at=overridden_at,
+        status=status,
+    )
+    db.add(key)
+    db.commit()
+    db.refresh(key)
+    return key
+
+
+def _add_run(db, file_id, parsed_result, *, status=None):
+    run = AIParsingResult(
+        file_id=file_id,
+        status=status or FileParsingStatuses.completed,
+        parsed_result=parsed_result,
+    )
+    db.add(run)
+    db.commit()
+    db.refresh(run)
+    return run
+
+
 def _row(resp, canonical_name):
     return next(r for r in resp.rows if r.canonical_field == canonical_name)
 
@@ -210,7 +270,10 @@ def test_h1_empty_site_renders_full_catalog(db_session, site):
 
 
 # ===========================================================================
-# H2 — candidate-only fact: candidate_only status + needs_review + required gap
+# H2 — candidate-only (extracted, NOT accepted): a clean, non-alarming state.
+# The value exists, so it is NOT "Requires Value" (no missing_required), and a
+# single un-accepted candidate is NOT a conflict (no needs_review). The pending
+# work is carried by blocking_level + required_action instead.
 # ===========================================================================
 def test_h2_candidate_only_status(db_session, site, site_id):
     _add_fact(
@@ -228,8 +291,12 @@ def test_h2_candidate_only_status(db_session, site, site_id):
     assert row.accepted_value == 400.0
     assert row.active_fact_value is None
     assert row.candidate_count == 1
-    assert W_MISSING_REQUIRED in row.warnings  # no ACTIVE fact yet
-    assert W_NEEDS_REVIEW in row.warnings  # unresolved candidate on a driver
+    assert W_MISSING_REQUIRED not in row.warnings  # value exists; not "Requires Value"
+    assert W_NEEDS_REVIEW not in row.warnings  # one un-accepted candidate is not a conflict
+    assert row.status_label == "Candidate (not accepted)"
+    assert row.required_action  # tells the reviewer to accept it
+    assert row.blocking_level == "blocks_baseline"  # required + no active fact
+    assert "acceptance" in row.missing_dependencies
 
 
 # ===========================================================================
@@ -695,6 +762,297 @@ def test_h17_catalog_names_match_points_producer():
     }
     assert monthly_catalog == set(MONTHLY_PRODUCTION_FIELDS)
     assert ANNUAL_PRODUCTION_FIELD in CATALOG_BY_NAME
+
+
+# ===========================================================================
+# H18 — accepted_not_promoted: candidate a reviewer accepted, not yet promoted.
+# This is THE headline case: precise "Accepted, not promoted" instead of a
+# generic "Needs Review" / "Requires Value".
+# ===========================================================================
+def test_h18_accepted_not_promoted(db_session, site, site_id):
+    _add_fact(
+        db_session,
+        site_id,
+        "module_wattage",
+        400.0,
+        status=FactStatus.candidate.value,
+        accepted_at=datetime(2025, 1, 1),
+    )
+
+    resp = svc.build_site_reconciliation(db_session, site)
+    row = _row(resp, "module_wattage")
+
+    assert row.status == "accepted_not_promoted"
+    assert row.status_label == "Accepted, not promoted"
+    assert row.accepted_value == 400.0
+    assert row.active_fact_value is None
+    assert W_MISSING_REQUIRED not in row.warnings
+    assert W_NEEDS_REVIEW not in row.warnings  # a single accepted value is not a conflict
+    assert "promote" in (row.required_action or "").lower()
+    assert row.blocking_level == "blocks_baseline"  # required + no active fact yet
+    assert row.missing_dependencies == ["promotion", "baseline"]
+    assert row.project_fact_id == row.fact_id
+
+
+# ===========================================================================
+# H18b — older ACCEPTED candidate + newer UNACCEPTED candidate. The ladder ranks
+# acceptance above recency: the row must stay accepted_not_promoted and surface
+# the accepted value, never sliding back to candidate_only on the newer draft.
+# ===========================================================================
+def test_h18b_accepted_candidate_beats_newer_unaccepted(db_session, site, site_id):
+    accepted = _add_fact(
+        db_session,
+        site_id,
+        "module_wattage",
+        400.0,
+        status=FactStatus.candidate.value,
+        accepted_at=datetime(2025, 1, 1),
+    )
+    # Newer (higher id) candidate left UNACCEPTED — it must not win the row.
+    _add_fact(
+        db_session,
+        site_id,
+        "module_wattage",
+        410.0,
+        status=FactStatus.candidate.value,
+    )
+
+    resp = svc.build_site_reconciliation(db_session, site)
+    row = _row(resp, "module_wattage")
+
+    assert row.status == "accepted_not_promoted"  # not candidate_only
+    assert row.accepted_value == 400.0  # the accepted value, not the newer 410 draft
+    assert row.active_fact_value is None
+    assert row.candidate_count == 2
+    assert W_NEEDS_REVIEW not in row.warnings  # one unaccepted draft is not a conflict
+    assert row.project_fact_id == accepted.id
+
+
+# ===========================================================================
+# H19 — accepted_document_value: a DocumentKey was accepted but no project fact
+# exists (catch-all anomaly). Value is surfaced from the key, status is precise.
+# ===========================================================================
+def test_h19_accepted_document_value_key_only(db_session, site, site_id):
+    doc = _add_document(db_session, site_id)
+    f = _add_file(db_session, doc.id)
+    key = _add_key(db_session, doc.id, f.id, "module_wattage", "400")
+
+    resp = svc.build_site_reconciliation(db_session, site)
+    row = _row(resp, "module_wattage")
+
+    assert row.status == "accepted_document_value"
+    assert row.accepted_value == "400"
+    assert row.active_fact_value is None
+    assert row.fact_id is None
+    assert row.document_key_id == key.id
+    assert row.document_id == doc.id
+    assert W_MISSING_REQUIRED not in row.warnings  # value exists at the document
+    assert row.blocking_level == "blocks_baseline"  # required + no active fact
+    assert "project_fact" in row.missing_dependencies
+
+
+# ===========================================================================
+# H20 — ai_extracted_only: a completed parse run holds a value, but nothing was
+# accepted (no key) and no fact exists. Lowest non-empty rung of the ladder.
+# ===========================================================================
+def test_h20_ai_extracted_only_run_value(db_session, site, site_id):
+    doc = _add_document(db_session, site_id)
+    f = _add_file(db_session, doc.id)
+    run = _add_run(
+        db_session,
+        f.id,
+        {"module_wattage": {"value": 400, "confidence": 0.91, "evidence": {"page": 2}}},
+    )
+
+    resp = svc.build_site_reconciliation(db_session, site)
+    row = _row(resp, "module_wattage")
+
+    assert row.status == "ai_extracted_only"
+    assert row.ai_extracted_value == 400
+    assert row.accepted_value is None
+    assert row.fact_id is None
+    assert row.ai_run_id == run.id
+    assert row.confidence == pytest.approx(0.91)
+    assert row.evidence_page == 2
+    assert W_MISSING_REQUIRED not in row.warnings
+    assert "acceptance" in row.missing_dependencies
+
+
+# ===========================================================================
+# H20b — a fact always wins over a bare key/run for the same field (ladder).
+# ===========================================================================
+def test_h20b_fact_wins_over_key_and_run(db_session, site, site_id):
+    doc = _add_document(db_session, site_id)
+    f = _add_file(db_session, doc.id)
+    _add_key(db_session, doc.id, f.id, "module_wattage", "300")
+    _add_run(db_session, f.id, {"module_wattage": {"value": 350}})
+    _add_fact(db_session, site_id, "module_wattage", 400.0)
+
+    resp = svc.build_site_reconciliation(db_session, site)
+    row = _row(resp, "module_wattage")
+
+    assert row.status == "active_fact"
+    assert row.active_fact_value == 400.0
+    assert row.document_key_id is None  # key/run fallbacks not consulted when a fact exists
+
+
+# ===========================================================================
+# H21 — superseded: only a retired fact remains; honest "no current value"
+# WITHOUT a misleading "Requires Value" alarm.
+# ===========================================================================
+def test_h21_superseded_only(db_session, site, site_id):
+    _add_fact(
+        db_session,
+        site_id,
+        "module_wattage",
+        390.0,
+        status=FactStatus.retired.value,
+    )
+
+    resp = svc.build_site_reconciliation(db_session, site)
+    row = _row(resp, "module_wattage")
+
+    assert row.status == "superseded"
+    assert row.status_label == "Superseded"
+    assert W_MISSING_REQUIRED not in row.warnings
+    assert "current_value" in row.missing_dependencies
+    assert row.blocking_level == "blocks_baseline"  # required + no active value
+
+
+# ===========================================================================
+# H22 — multi-candidate conflict: two DISTINCT accepted candidates, no active
+# fact -> needs_review (a genuine human-resolution conflict).
+# ===========================================================================
+def test_h22_multi_distinct_accepted_candidates_needs_review(db_session, site, site_id):
+    _add_fact(
+        db_session,
+        site_id,
+        "module_wattage",
+        400.0,
+        status=FactStatus.candidate.value,
+        accepted_at=datetime(2025, 1, 1),
+    )
+    _add_fact(
+        db_session,
+        site_id,
+        "module_wattage",
+        410.0,
+        status=FactStatus.candidate.value,
+        accepted_at=datetime(2025, 1, 2),
+    )
+
+    resp = svc.build_site_reconciliation(db_session, site)
+    row = _row(resp, "module_wattage")
+
+    assert row.candidate_count == 2
+    assert W_NEEDS_REVIEW in row.warnings
+    # required + no active fact dominates: the baseline still can't be built.
+    assert row.blocking_level == "blocks_baseline"
+
+
+# ===========================================================================
+# H22b — two EQUAL accepted candidates are NOT a conflict (informational only).
+# ===========================================================================
+def test_h22b_equal_candidates_no_needs_review(db_session, site, site_id):
+    _add_fact(
+        db_session,
+        site_id,
+        "module_wattage",
+        400.0,
+        status=FactStatus.candidate.value,
+        accepted_at=datetime(2025, 1, 1),
+    )
+    _add_fact(
+        db_session,
+        site_id,
+        "module_wattage",
+        400.0,
+        status=FactStatus.candidate.value,
+        accepted_at=datetime(2025, 1, 2),
+    )
+
+    resp = svc.build_site_reconciliation(db_session, site)
+    row = _row(resp, "module_wattage")
+
+    assert row.candidate_count == 2
+    assert W_NEEDS_REVIEW not in row.warnings
+
+
+# ===========================================================================
+# H23 — active fact contradicted by a differing candidate (from another run)
+# -> needs_review. Equal candidate alongside an active fact does NOT.
+# ===========================================================================
+def test_h23_active_with_differing_candidate_needs_review(db_session, site, site_id):
+    _add_fact(db_session, site_id, "module_wattage", 400.0)  # active
+    _add_fact(
+        db_session,
+        site_id,
+        "module_wattage",
+        410.0,
+        status=FactStatus.candidate.value,
+    )
+
+    resp = svc.build_site_reconciliation(db_session, site)
+    row = _row(resp, "module_wattage")
+
+    assert row.status == "active_fact"
+    assert W_NEEDS_REVIEW in row.warnings
+    # active fact present (baseline not blocked), so the conflict only lowers confidence.
+    assert row.blocking_level == "lowers_confidence"
+
+
+def test_h23b_active_with_equal_candidate_no_needs_review(db_session, site, site_id):
+    _add_fact(db_session, site_id, "module_wattage", 400.0)  # active
+    _add_fact(
+        db_session,
+        site_id,
+        "module_wattage",
+        400.0,
+        status=FactStatus.candidate.value,
+    )
+
+    resp = svc.build_site_reconciliation(db_session, site)
+    row = _row(resp, "module_wattage")
+
+    assert W_NEEDS_REVIEW not in row.warnings
+
+
+# ===========================================================================
+# H24 — the doc-chain bulk loaders write NOTHING (read-only contract holds even
+# with documents, files, keys, and parse runs present).
+# ===========================================================================
+def test_h24_doc_chain_read_only(db_session, site, site_id):
+    doc = _add_document(db_session, site_id)
+    f = _add_file(db_session, doc.id)
+    _add_key(db_session, doc.id, f.id, "module_wattage", "400")
+    _add_run(db_session, f.id, {"inverter_wattage": {"value": 1000}})
+
+    before_keys = db_session.query(DocumentKey).count()
+    before_runs = db_session.query(AIParsingResult).count()
+
+    svc.build_site_reconciliation(db_session, site)
+
+    assert len(db_session.new) == 0
+    assert len(db_session.dirty) == 0
+    assert len(db_session.deleted) == 0
+    assert db_session.query(DocumentKey).count() == before_keys
+    assert db_session.query(AIParsingResult).count() == before_runs
+
+
+# ===========================================================================
+# H25 — a key/run that does not resolve to a reconciled canonical field is
+# never inferred into a catalog row (no phantom rows, no wrong-field bleed).
+# ===========================================================================
+def test_h25_unmapped_key_does_not_create_row(db_session, site, site_id):
+    doc = _add_document(db_session, site_id)
+    f = _add_file(db_session, doc.id)
+    _add_key(db_session, doc.id, f.id, "totally_unknown_field_xyz", "123")
+
+    resp = svc.build_site_reconciliation(db_session, site)
+
+    # Only catalog rows — the unmapped key adds nothing.
+    assert len(resp.rows) == len(RECONCILIATION_CATALOG)
+    assert all(r.canonical_field != "totally_unknown_field_xyz" for r in resp.rows)
 
 
 # ===========================================================================
