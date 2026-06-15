@@ -298,6 +298,29 @@ class WeatherDeviceMappingCRUD(BaseCRUD):
             .all()
         )
 
+    def list_for_device(self, device_id: int) -> list[WeatherDeviceMapping]:
+        """All declarations for a device, oldest-first (history is append-only)."""
+        return (
+            self.db_session.query(WeatherDeviceMapping)
+            .filter(WeatherDeviceMapping.device_id == device_id)
+            .order_by(WeatherDeviceMapping.id)
+            .all()
+        )
+
+    def get_current_for_device(
+        self, device_id: int, *, metric: Optional[str] = None
+    ) -> Optional[WeatherDeviceMapping]:
+        """The most recently declared mapping for a device (latest row wins).
+
+        Declarations are versioned by NEW ROW, so the highest ``id`` is the current
+        semantics. Optionally narrows to a single ``metric``. Pure read."""
+        query = self.db_session.query(WeatherDeviceMapping).filter(
+            WeatherDeviceMapping.device_id == device_id
+        )
+        if metric is not None:
+            query = query.filter(WeatherDeviceMapping.metric == metric)
+        return query.order_by(WeatherDeviceMapping.id.desc()).first()
+
 
 class ExpectedWeatherProvenanceCRUD(BaseCRUD):
     """W0 placeholder CRUD. The runtime does NOT write provenance in W0; this

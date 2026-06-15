@@ -17,7 +17,11 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.db.session import SessionFactory, get_session
 from app.helpers.authentication import get_current_user
-from app.helpers.authorization import AuthorizedUser, SettingsPermissions
+from app.helpers.authorization import (
+    AssetPermissions,
+    AuthorizedUser,
+    SettingsPermissions,
+)
 from app.helpers.authorization.module_based.telemetry import (
     telemetry_admin_required,
     user_has_telemetry_admin,
@@ -67,6 +71,7 @@ from app.models.telemetry_expected import (
     TelemetryBaselineType,
 )
 from app.static import PermissionsActions
+from app.schema.device_eligibility import DeviceEligibilityDiagnosticsResponse
 from app.schema.telemetry_v2 import (
     BaselineFactFieldUsage,
     CreateDraftFromFactsRequest,
@@ -136,6 +141,9 @@ from app.services.telemetry.expected_service import (
 )
 from app.services.telemetry import baseline_from_facts_service
 from app.services.telemetry import baseline_points_service
+from app.services.telemetry.device_eligibility_diagnostics_service import (
+    compute_site_eligibility_diagnostics,
+)
 from app.models.device import Device
 from app.services.telemetry.ingestion_service import (
     IngestionConfigError,
@@ -1531,6 +1539,29 @@ def sync_provider_account_devices(
 # ---------------------------------------------------------------------------
 
 
+@telemetry_v2_router.get(
+    "/v2/sites/{site_id}/eligibility-diagnostics",
+    response_model=DeviceEligibilityDiagnosticsResponse,
+    summary="Read-only Path-B device eligibility diagnostics for a site",
+    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.view)))],
+)
+def get_site_eligibility_diagnostics(
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> DeviceEligibilityDiagnosticsResponse:
+    """Disclose every device's eligibility/mapping/weather-semantics position.
+
+    Strictly READ-ONLY: it explains where each device sits in the eligibility →
+    mapping → weather-semantics chain and surfaces Path-B "why" indicators with a
+    ``blocking_level`` + ``recommended_action``. It changes NO eligibility, mapping,
+    weather semantics, resolver behavior, or expected math. Meters/loggers/gateways
+    are reported as mappable inspection-only, never as expected drivers.
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+    return compute_site_eligibility_diagnostics(db, site=site)
+
+
 @telemetry_v2_router.post(
     "/v2/sites/{site_id}/device-mappings",
     response_model=DeviceMappingBulkResponse,
@@ -1558,10 +1589,8 @@ def bulk_upsert_device_mappings(
     - Mappings are upserted on ``device_id`` (unique). Per-row failures are
       collected and reported; nothing is wiped because no provider call is made.
     """
-    # Single source of truth for eligibility lives in the v1 router module.
-    from app.routers.telemetry.telemetry import (
-        TELEMETRY_ELIGIBLE_CATEGORIES,
-    )
+    # Single source of truth for eligibility lives in the shared classification service.
+    from app.services.telemetry.device_classification import is_mappable
 
     # 1. Resolve + authorize the provider account (scoped to caller's companies).
     account, _ = _require_account(db, payload.provider_account_id, current_user)
@@ -1598,7 +1627,7 @@ def bulk_upsert_device_mappings(
             errors.append(f"Device {item.device_id} does not belong to this project")
             failed += 1
             continue
-        if device.category not in TELEMETRY_ELIGIBLE_CATEGORIES:
+        if not is_mappable(device):
             errors.append(
                 f"Device {item.device_id} is not telemetry-eligible "
                 f"(category: {device.category.value if device.category else None})"

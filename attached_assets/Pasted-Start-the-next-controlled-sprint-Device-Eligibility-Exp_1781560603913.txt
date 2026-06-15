@@ -1,0 +1,191 @@
+Start the next controlled sprint: Device Eligibility Expansion — Meters, Power Loggers, Gateways, and Weather Devices.
+Context:
+The V2 telemetry and weather architecture are now established:
+•	V2 telemetry ingestion, readings, site rollups, device rollups, scheduler, and O&M actuals are live.
+•	Weather W0 added native weather provenance models.
+•	Weather W1 added WeatherResolver over existing DAS rollups only, preserving expected math and byte-identical live DAS behavior.
+•	Weather W2 added historical weather import/backfill with tenant-safe weather source visibility and approved historical profile resolution.
+•	Due Diligence V2 now uses project_facts and V2 baselines, not BigQuery.
+•	BigQuery/Firestore/legacy telemetry must not be reintroduced.
+Objective:
+Expand telemetry device eligibility and device classification so Ilios can correctly support meters, power loggers, gateways, and weather-source devices without disrupting the existing inverter/weather station flow.
+This sprint should focus on additive device eligibility, mapping, classification, and diagnostics. Do not change expected calculation math or telemetry ingestion contracts unless a narrow additive mapping change is required.
+Current known state:
+•	Inverters and weather stations are already telemetry-eligible.
+•	Some provider devices such as production meters, power loggers, gateways, UPS/modems, and site performance devices were previously not eligible.
+•	Weather data may come through devices that are not currently classified as weather stations.
+•	Weather source provenance now needs device semantics such as irradiance plane, temperature type, and calibration status.
+•	O&M drill-down will depend on correct device semantics.
+Scope:
+A. Audit current device taxonomy and provider device mapping
+Identify:
+•	current DeviceCategory / DeviceType enums
+•	current TELEMETRY_ELIGIBLE_CATEGORIES
+•	current provider device sync behavior
+•	current project device creation behavior
+•	current site/device mapping behavior
+•	how AlsoEnergy/external devices are classified
+•	where devices are filtered out or marked non-eligible
+•	whether excluded devices still have usable telemetry streams
+Specifically review support for:
+•	inverter
+•	revenue meter / production meter
+•	power meter
+•	power logger
+•	gateway / network gateway
+•	DAS logger
+•	weather station
+•	irradiance sensor
+•	temperature sensor
+•	reference cell
+•	UPS
+•	modem
+•	site performance / virtual site device
+B. Add device eligibility categories safely
+Expand eligibility only where safe and additive.
+Candidate device roles:
+•	inverter
+•	production_meter
+•	revenue_meter
+•	power_logger
+•	gateway
+•	das_logger
+•	weather_station
+•	irradiance_sensor
+•	temperature_sensor
+•	reference_cell
+•	site_performance_virtual
+Do not assume every gateway/meter should drive O&M metrics automatically. Eligibility means the device can be mapped, stored, and inspected. Metric usage must remain controlled by metric catalog and resolver rules.
+C. Device role and capability metadata
+Add or use existing fields to represent:
+•	device_role
+•	telemetry_capable
+•	weather_source_capable
+•	production_meter_capable
+•	gateway_capable
+•	virtual_device
+•	source_provider
+•	external_device_type
+•	mapped_status
+•	eligibility_reason
+•	ineligibility_reason
+Keep this additive and native.
+D. Weather device semantics integration
+For devices that can provide weather:
+•	allow mapping to W0 weather_device_mappings where applicable
+•	support irradiance_plane: poa, ghi, dni, dhi, unknown
+•	support temperature_type: cell, module, ambient, modeled_cell, unknown
+•	support calibration_status: calibrated, uncalibrated, expired, unknown
+•	do not guess unknown semantics
+•	do not convert GHI to POA
+•	do not convert ambient to cell temperature
+The user must see clear indicators when required data is missing:
+•	irradiance source missing
+•	irradiance plane unknown
+•	cell/module temperature missing
+•	temperature type unknown
+•	calibration status unknown or expired
+•	weather source device not mapped
+•	source profile missing or unapproved
+E. Meter and logger diagnostics
+For production/revenue meters and power loggers:
+•	enable mapping/visibility
+•	store device rollups where metric catalog supports them
+•	do not replace site actual logic unless already supported
+•	identify whether meter readings can later be used to validate inverter/site production
+•	surface missing meter mapping or unsupported meter metric clearly
+F. Gateway diagnostics
+For gateways/loggers:
+•	enable mapping/visibility when they provide operational signals or carry child-device/weather streams
+•	do not treat gateway power values as production unless explicitly cataloged
+•	identify gateway communication/staleness diagnostics that could support O&M later
+G. UI/API implications
+If low-risk, expose eligibility/mapping status in existing telemetry admin/device sync views:
+•	eligible
+•	mapped
+•	unmapped
+•	not supported
+•	missing required semantics
+•	weather-capable
+•	meter-capable
+•	gateway-capable
+Do not build the full O&M drill-down UI in this sprint.
+H. Backfill existing provider devices
+For existing synced provider devices:
+•	do not delete/recreate devices unnecessarily
+•	update eligibility/classification additively where safe
+•	preserve existing mappings
+•	create missing project devices only when consistent with current sync behavior
+•	do not break 110 Shawmut / site 4 mappings
+I. Tests
+Add tests for:
+1.	Existing inverter eligibility still works.
+2.	Existing weather station eligibility still works.
+3.	Production meter can be eligible/mappable without replacing site actual logic.
+4.	Power logger can be eligible/mappable.
+5.	Gateway/DAS logger can be visible/mappable without being treated as production.
+6.	Irradiance sensor/reference cell can be weather-source capable.
+7.	Temperature sensor can be weather-source capable.
+8.	Unknown weather semantics remain unknown and are not guessed.
+9.	Weather device mapping can declare POA/cell semantics.
+10.	Meter/loggers do not change expected_service math.
+11.	Device sync does not delete/recreate existing mapped devices.
+12.	Existing site 4 mappings remain intact.
+13.	No BigQuery/Firestore/legacy telemetry references are added.
+14.	Backend starts cleanly.
+15.	Architect review passes.
+J. Path B missing-dependency indicators
+Return a list of user-facing indicators for:
+•	device present but not mapped
+•	device type unsupported
+•	production meter missing
+•	logger present but no usable metrics
+•	gateway present but child devices not mapped
+•	irradiance sensor present but plane unknown
+•	temperature sensor present but type unknown
+•	weather device present but calibration unknown
+•	reference cell missing
+•	telemetry stream stale
+•	metric catalog does not support this device’s metric
+•	device can be mapped but cannot yet drive expected/performance
+Indicators must distinguish:
+- device exists but is not mapped
+- device is mapped but metric semantics are unknown
+- metric exists but is not supported for this calculation
+- required companion metric is missing
+- device role is eligible for visibility but not eligible to drive expected/performance
+- calibration/measurement semantics are required before weather use
+For each indicator include:
+•	label
+•	explanation
+•	blocking level: blocks calculation / lowers confidence / informational
+•	recommended user action
+Do not:
+•	change expected calculation math
+•	change WeatherResolver source priority behavior
+•	change historical weather import behavior
+•	add external weather providers
+•	change telemetry ingestion beyond additive eligibility/classification
+•	change O&M charts
+•	touch due diligence baseline flow
+•	touch plaintext secrets
+•	reintroduce BigQuery/Firestore/legacy telemetry
+Validation:
+•	Backend starts cleanly.
+•	Existing V2 telemetry tests still pass.
+•	Weather W1/W2 resolver tests still pass.
+•	Site 4/110 Shawmut existing mappings remain stable.
+•	New meter/logger/gateway/weather-device eligibility tests pass.
+•	Architect review passes.
+Return:
+•	files changed
+•	eligibility changes
+•	device taxonomy changes
+•	weather-device semantics integration
+•	meter/logger/gateway behavior
+•	migration/data backfill behavior, if any
+•	tests added
+•	validation results
+•	risks
+•	Path B missing-dependency indicators
+•	recommended next sprint

@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import VARCHAR, Column, Date, DateTime, Enum, ForeignKey, Identity, Integer
+from sqlalchemy import VARCHAR, Boolean, Column, Date, DateTime, Enum, ForeignKey, Identity, Integer
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import relationship
 
@@ -251,6 +251,31 @@ class Device(Base):
 
     # technical details, structure depends on the device category, use json field for storage
     technical_details = Column(JSON, nullable=True)
+
+    # --- Telemetry classification & eligibility (additive; ALL nullable) ---------
+    # These refine `category` for telemetry purposes WITHOUT replacing it. NULL on
+    # every column means "derive from category/type" via
+    # app.services.telemetry.device_classification.classify_device(); an explicit
+    # value lets an operator promote/demote a device without changing its category.
+    # None of these widen what drives expected performance (see can_drive_expected).
+    #
+    # Finer telemetry role (e.g. production_meter, revenue_meter, power_logger,
+    # das_logger, gateway, irradiance_sensor, temperature_sensor, reference_cell,
+    # site_performance_virtual). Stored as a plain string (no DB enum) so the
+    # taxonomy can grow without a migration; see classification.DeviceRole.
+    device_role = Column(VARCHAR, nullable=True)
+    # Capability overrides (NULL => derived).
+    telemetry_capable = Column(Boolean, nullable=True)
+    weather_source_capable = Column(Boolean, nullable=True)
+    production_meter_capable = Column(Boolean, nullable=True)
+    gateway_capable = Column(Boolean, nullable=True)
+    virtual_device = Column(Boolean, nullable=True)
+    # Provenance of an externally-discovered device (non-secret provider metadata).
+    source_provider = Column(VARCHAR, nullable=True)
+    external_device_type = Column(VARCHAR, nullable=True)
+    # Operator-authored eligibility narrative (overrides the derived reason text).
+    eligibility_reason = Column(VARCHAR, nullable=True)
+    ineligibility_reason = Column(VARCHAR, nullable=True)
 
     site = relationship("Site", back_populates="devices")
     alerts = relationship("Alert", back_populates="device")

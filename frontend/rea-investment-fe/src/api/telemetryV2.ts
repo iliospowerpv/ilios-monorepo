@@ -4,6 +4,7 @@ import type {
   BackfillReadingsPayload,
   BackfillReadingsResponse,
   CompanySchedulerStatusList,
+  DeviceEligibilityDiagnosticsResponse,
   DeviceMappingBulkPayload,
   DeviceMappingBulkResponse,
   ExternalDeviceListResponse,
@@ -272,6 +273,20 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     return data;
   };
 
+  /**
+   * Read strictly READ-ONLY Path-B eligibility diagnostics for a site. Discloses
+   * where each device sits in the eligibility -> mapping -> weather-semantics
+   * chain plus a deduped site-level rollup of "why" indicators. Never triggers a
+   * provider/credential call and changes no eligibility, mapping, semantics,
+   * resolver, or expected math.
+   */
+  const getSiteEligibilityDiagnostics = async (siteId: number): Promise<DeviceEligibilityDiagnosticsResponse> => {
+    const { data } = await httpClient.get<DeviceEligibilityDiagnosticsResponse>(
+      `${V2}/sites/${siteId}/eligibility-diagnostics`
+    );
+    return data;
+  };
+
   /** List per-site scheduler status across a company's mapped telemetry sites. */
   const getCompanySchedulerStatus = async (companyId: number): Promise<CompanySchedulerStatusList> => {
     const { data } = await httpClient.get<CompanySchedulerStatusList>(`${V2}/companies/${companyId}/scheduler/status`);
@@ -322,6 +337,7 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     getSiteScheduler,
     updateSiteScheduler,
     getCompanySchedulerStatus,
+    getSiteEligibilityDiagnostics,
     backfillSiteReadings
   };
 };

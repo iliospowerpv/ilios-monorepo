@@ -29,7 +29,7 @@ from app.helpers.telemetry.telemetry_helper import (
     format_das_credentials,
     update_site_mapping_for_telemetry,
 )
-from app.models.device import Device, DeviceCategories
+from app.models.device import Device
 from app.models.site import Site
 from app.models.telemetry import DASConnection, DASProvidersEnum, TelemetrySiteMapping
 from app.schema.telemetry import (
@@ -60,12 +60,15 @@ from app.schema.telemetry import (
     TelemetrySiteMappingSchema,
     TelemetrySitesDevicesList,
 )
+from app.services.telemetry.device_classification import (
+    TELEMETRY_ELIGIBLE_CATEGORIES,  # noqa: F401  (backward-compat re-export)
+    drives_expected,
+    is_mappable,
+)
 from app.static import PermissionsActions, TelemetryMessages
 
 logger = logging.getLogger(__name__)
 telemetry_router = APIRouter()
-
-TELEMETRY_ELIGIBLE_CATEGORIES = [DeviceCategories.inverter, DeviceCategories.module, DeviceCategories.weather_station]
 
 
 @telemetry_router.post(
@@ -621,10 +624,12 @@ async def get_site_telemetry_health(
     # a cadence change is reflected with no code change.
     interval_minutes, interval_label = _resolve_expected_interval(db_session, site.id)
 
-    # Get mapped devices
+    # Get mapped devices. Health keys off the STABLE expected-driving set
+    # (drives_expected), NOT the broad mappable set — so expanding eligibility to
+    # meters/loggers/gateways never changes a site's health status.
     mapped_devices = [
         device for device in site.devices
-        if device.telemetry_mapping is not None and device.category in TELEMETRY_ELIGIBLE_CATEGORIES
+        if device.telemetry_mapping is not None and drives_expected(device)
     ]
     mapped_device_count = len(mapped_devices)
 
@@ -729,8 +734,11 @@ async def get_site_telemetry_readiness(
     is_connected = site.das_connection is not None
     is_site_mapped = site.telemetry_mapping is not None
 
-    # Count telemetry-eligible devices
-    eligible_devices = [d for d in site.devices if d.category in TELEMETRY_ELIGIBLE_CATEGORIES]
+    # Count expected-driving devices. Readiness keys off the STABLE expected-driving
+    # set (drives_expected), NOT the broad mappable set — the "is data flowing"
+    # signal stays anchored to devices that feed the expected/O&M pipeline, so newly
+    # mappable meters/loggers/gateways never flip readiness for existing sites.
+    eligible_devices = [d for d in site.devices if drives_expected(d)]
     total_eligible = len(eligible_devices)
     mapped_devices = [d for d in eligible_devices if d.telemetry_mapping is not None]
     mapped_count = len(mapped_devices)
@@ -818,7 +826,7 @@ async def bulk_map_devices(
             failed += 1
             continue
 
-        if device.category not in TELEMETRY_ELIGIBLE_CATEGORIES:
+        if not is_mappable(device):
             errors.append(f"Device {mapping.device_id} is not telemetry-eligible (category: {device.category})")
             failed += 1
             continue
@@ -893,7 +901,7 @@ async def get_eligible_devices(
     """Get list of telemetry-eligible devices with their mapping status"""
     eligible_devices = []
     for device in site.devices:
-        if device.category in TELEMETRY_ELIGIBLE_CATEGORIES:
+        if is_mappable(device):
             eligible_devices.append({
                 "id": device.id,
                 "name": device.name,

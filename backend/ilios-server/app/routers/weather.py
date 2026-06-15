@@ -24,7 +24,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
-from app.crud.weather import WeatherSourceCRUD, WeatherSourceProfileCRUD
+from app.crud.weather import (
+    WeatherDeviceMappingCRUD,
+    WeatherSourceCRUD,
+    WeatherSourceProfileCRUD,
+)
 from app.db.session import get_session
 from app.helpers.authentication import get_current_user
 from app.helpers.authorization.module_based.telemetry import telemetry_admin_required
@@ -33,6 +37,7 @@ from app.helpers.authorization.project_access import (
     get_authorized_site_with_company_admin,
 )
 from app.helpers.telemetry.audit import create_audit_log as _create_audit_log
+from app.models.device import Device
 from app.models.site import Site
 from app.models.weather import WeatherSourceProfileRole
 from app.schema.user import CurrentUserSchema
@@ -42,11 +47,14 @@ from app.schema.weather import (
     HistoricalImportRequest,
     HistoricalImportResponse,
     HistoricalProfileCreateRequest,
+    WeatherDeviceMappingDeclareRequest,
+    WeatherDeviceMappingResponse,
     WeatherProfileActionRequest,
     WeatherProfileActionResponse,
     WeatherProfileResponse,
     WeatherReadinessResponse,
 )
+from app.services.telemetry.device_classification import classify_device
 from app.services.weather.historical_weather_import_service import (
     WeatherImportValidationError,
     preview_import,
@@ -367,3 +375,122 @@ def apply_historical_profile_action(
         action=payload.action,
         status=WeatherProfileResponse._ev(updated.status),
     )
+
+
+# ---------------------------------------------------------------------------
+# Weather device semantics (declare what a device's weather stream MEANS)
+# ---------------------------------------------------------------------------
+
+
+@weather_router.get(
+    "/sites/{site_id}/device-mappings",
+    response_model=list[WeatherDeviceMappingResponse],
+    summary="List declared weather measurement semantics for a site's devices",
+)
+def list_weather_device_mappings(
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> list[WeatherDeviceMappingResponse]:
+    """List every declared weather device mapping for a site (read-only).
+
+    Returns the full append-only declaration history (oldest first). The current
+    semantics for a device/metric are the latest row; nothing is converted — a row
+    discloses ``physics_usable_*`` purely from its declared plane/temperature.
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+    mappings = WeatherDeviceMappingCRUD(db).list_for_site(site.id)
+    return [WeatherDeviceMappingResponse.from_model(m) for m in mappings]
+
+
+@weather_router.post(
+    "/sites/{site_id}/device-mappings",
+    response_model=WeatherDeviceMappingResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Declare measurement semantics for a weather-source device stream",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def declare_weather_device_mapping(
+    payload: WeatherDeviceMappingDeclareRequest,
+    request: Request,
+    site: Annotated[Site, Depends(get_authorized_site_with_company_admin)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> WeatherDeviceMappingResponse:
+    """Declare what a device's weather stream MEANS (plane / temperature / calibration).
+
+    Semantics are NEVER guessed: they default to ``unknown`` and only this explicit
+    declaration sets POA / cell / etc. W0/W2 performs NO conversion — declaring GHI
+    does not transpose it to POA. The target device must be weather-source capable;
+    a NEW effective-dated mapping row is appended so history is never rewritten. This
+    does NOT change WeatherResolver source priority, expected math, or ingestion.
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+
+    device = (
+        db.query(Device)
+        .filter(Device.id == payload.device_id, Device.site_id == site.id)
+        .one_or_none()
+    )
+    if device is None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            f"Device {payload.device_id} not found on this project/site",
+        )
+
+    if not classify_device(device).weather_source_capable:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            (
+                f"Device {payload.device_id} is not weather-source capable; assign a "
+                "weather role/capability to the device before declaring weather "
+                "semantics. Semantics are never inferred from a non-weather device."
+            ),
+        )
+
+    if payload.weather_source_id is not None:
+        source = WeatherSourceCRUD(db).get_visible_to_site(
+            site_id=site.id, source_id=payload.weather_source_id
+        )
+        if source is None:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                f"weather_source_id {payload.weather_source_id} not found or not "
+                "accessible from this project/site",
+            )
+
+    mapping = WeatherDeviceMappingCRUD(db).create(
+        site_id=site.id,
+        device_id=device.id,
+        external_device_id=payload.external_device_id,
+        weather_source_id=payload.weather_source_id,
+        metric=payload.metric,
+        provider_key=payload.provider_key,
+        irradiance_plane=payload.irradiance_plane,
+        temperature_type=payload.temperature_type,
+        calibration_status=payload.calibration_status,
+        calibrated_at=payload.calibrated_at,
+        calibration_reference=payload.calibration_reference,
+        effective_from=payload.effective_from,
+        effective_to=payload.effective_to,
+    )
+
+    try:
+        _create_audit_log(
+            request,
+            db,
+            "weather_device_mapping_declare",
+            (
+                f"Declared weather semantics for device {device.id} on project/site "
+                f"{site.id} (metric {payload.metric}, plane "
+                f"{WeatherDeviceMappingResponse._ev(mapping.irradiance_plane)}, temp "
+                f"{WeatherDeviceMappingResponse._ev(mapping.temperature_type)})"
+            ),
+            is_success=True,
+        )
+    except Exception:  # noqa: BLE001
+        logger.warning(
+            "weather_device_mapping_declare_audit_failed site_id=%s", site.id
+        )
+
+    return WeatherDeviceMappingResponse.from_model(mapping)

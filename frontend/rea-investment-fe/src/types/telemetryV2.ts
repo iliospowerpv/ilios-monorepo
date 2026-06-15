@@ -456,3 +456,84 @@ export interface BackfillReadingsResponse {
    */
   cooldown_seconds: number;
 }
+
+// ---------------------------------------------------------------------------
+// Path-B device eligibility diagnostics (read-only)
+// ---------------------------------------------------------------------------
+
+/**
+ * How severely a diagnostic indicator limits a device's telemetry usefulness.
+ * Mirrors the backend `DiagnosticBlockingLevel` (most -> least severe).
+ */
+export type DiagnosticBlockingLevel = 'blocks_calculation' | 'lowers_confidence' | 'informational';
+
+/** A single Path-B "why" item for a device (or the site-level rollup). */
+export interface DiagnosticIndicator {
+  key: string;
+  label: string;
+  explanation: string;
+  blocking_level: DiagnosticBlockingLevel;
+  recommended_action: string | null;
+}
+
+/**
+ * Disclosed weather measurement semantics for a weather-source device. Reflects
+ * the latest `weather_device_mappings` declaration verbatim; never inferred or
+ * converted. `physics_usable_*` only report whether the *declared* plane /
+ * temperature is usable by today's physics (POA / cell-usable).
+ */
+export interface DeviceWeatherSemantics {
+  has_declaration: boolean;
+  metric: string | null;
+  irradiance_plane: string;
+  temperature_type: string;
+  calibration_status: string;
+  physics_usable_irradiance: boolean;
+  physics_usable_temperature: boolean;
+}
+
+/** Per-device eligibility / mapping / semantics position + Path-B indicators. */
+export interface DeviceEligibilityDiagnostic {
+  device_id: number;
+  name: string | null;
+  category: string | null;
+  device_role: string | null;
+  mappable: boolean;
+  can_drive_expected: boolean;
+  telemetry_capable: boolean;
+  weather_source_capable: boolean;
+  production_meter_capable: boolean;
+  gateway_capable: boolean;
+  virtual_device: boolean;
+  mapped_status: string;
+  is_mapped: boolean;
+  source_provider: string | null;
+  external_device_type: string | null;
+  eligibility_reason: string | null;
+  ineligibility_reason: string | null;
+  weather_semantics: DeviceWeatherSemantics | null;
+  indicators: DiagnosticIndicator[];
+}
+
+/**
+ * Site-level eligibility diagnostics. `indicators` is a deduped site rollup of
+ * the distinct Path-B items across devices (most-severe `blocking_level` per
+ * key). Strictly read-only: it never changes eligibility, mapping, semantics,
+ * the resolver, or the expected math.
+ */
+export interface DeviceEligibilityDiagnosticsResponse {
+  site_id: number;
+  total_devices: number;
+  mappable_count: number;
+  mapped_count: number;
+  unmapped_eligible_count: number;
+  expected_driving_count: number;
+  weather_source_count: number;
+  meter_count: number;
+  gateway_count: number;
+  virtual_count: number;
+  ineligible_count: number;
+  weather_unknown_semantics_count: number;
+  devices: DeviceEligibilityDiagnostic[];
+  indicators: DiagnosticIndicator[];
+}

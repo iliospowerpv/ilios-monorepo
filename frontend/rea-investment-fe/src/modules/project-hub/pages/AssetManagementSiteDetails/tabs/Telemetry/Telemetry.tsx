@@ -26,6 +26,7 @@ import { AssetManagementSiteDetailsTabProps } from '../types';
 import { TelemetryWizard } from './TelemetryWizard';
 import { RefreshTelemetryButton } from './RefreshTelemetryButton';
 import { ScheduleDialog } from './ScheduleDialog';
+import { EligibilityDiagnosticsPanel } from './EligibilityDiagnosticsPanel';
 
 const getStatusColor = (status: TelemetryHealthStatus): 'success' | 'warning' | 'error' | 'default' => {
   switch (status) {
@@ -273,6 +274,8 @@ export const Telemetry: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDe
       {readiness && <ReadinessStrip readiness={readiness} />}
 
       {health && <HealthStrip health={health} />}
+
+      {isConfigured && <EligibilityDiagnosticsPanel siteId={siteDetails.id} />}
 
       {!isConfigured && (
         <Alert severity="info" sx={{ mt: 2 }}>

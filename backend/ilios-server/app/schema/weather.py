@@ -27,12 +27,27 @@ from typing import Any, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.models.weather import (
+    WeatherCalibrationStatus,
     WeatherConfidence,
     WeatherIrradiancePlane,
     WeatherObservationBatchKind,
     WeatherSourceProfileRole,
     WeatherSourceType,
     WeatherTemperatureType,
+)
+
+# Irradiance planes that are physics-usable today (no transposition model exists
+# in W0/W2): only true plane-of-array. GHI/DNI/DHI are stored verbatim but NEVER
+# transposed to POA.
+_PHYSICS_USABLE_PLANES = frozenset({WeatherIrradiancePlane.poa})
+# Temperature semantics usable by the cell-temperature physics path. Ambient is
+# NOT converted to cell/module in W0/W2.
+_PHYSICS_USABLE_TEMPERATURES = frozenset(
+    {
+        WeatherTemperatureType.cell,
+        WeatherTemperatureType.module,
+        WeatherTemperatureType.modeled_cell,
+    }
 )
 
 
@@ -338,3 +353,95 @@ class WeatherProfileActionResponse(BaseModel):
     approval_id: int
     action: str
     status: str
+
+
+# ---------------------------------------------------------------------------
+# Weather device semantics (declare what a device's weather stream MEANS)
+# ---------------------------------------------------------------------------
+class WeatherDeviceMappingDeclareRequest(BaseModel):
+    """Declare measurement semantics for a weather-source device stream.
+
+    Semantics are NEVER guessed: ``irradiance_plane`` / ``temperature_type`` /
+    ``calibration_status`` all default to ``unknown`` and only an explicit operator
+    declaration sets POA / cell / etc. W0/W2 performs NO conversion — declaring GHI
+    does not transpose it to POA, and declaring ambient does not promote it to cell.
+    Each declaration is appended as a NEW effective-dated row; history is never
+    rewritten.
+    """
+
+    device_id: int
+    metric: str = Field(min_length=1, max_length=64)
+    weather_source_id: Optional[int] = None
+    external_device_id: Optional[str] = Field(default=None, max_length=255)
+    provider_key: Optional[str] = Field(default=None, max_length=128)
+    irradiance_plane: WeatherIrradiancePlane = WeatherIrradiancePlane.unknown
+    temperature_type: WeatherTemperatureType = WeatherTemperatureType.unknown
+    calibration_status: WeatherCalibrationStatus = WeatherCalibrationStatus.unknown
+    calibrated_at: Optional[datetime] = None
+    calibration_reference: Optional[str] = Field(default=None, max_length=255)
+    effective_from: Optional[datetime] = None
+    effective_to: Optional[datetime] = None
+
+    @model_validator(mode="after")
+    def _validate_window(self) -> "WeatherDeviceMappingDeclareRequest":
+        if (
+            self.effective_from is not None
+            and self.effective_to is not None
+            and self.effective_to <= self.effective_from
+        ):
+            raise ValueError("effective_to must be after effective_from.")
+        return self
+
+
+class WeatherDeviceMappingResponse(BaseModel):
+    """A declared weather device mapping (enum fields surfaced as string values).
+
+    ``physics_usable_irradiance`` / ``physics_usable_temperature`` are additive,
+    read-only disclosures of whether the declared semantics are usable by the
+    expected physics today (POA / cell-usable). They DISCLOSE; they never convert
+    or upgrade an ``unknown``/GHI/ambient declaration.
+    """
+
+    id: int
+    site_id: int
+    device_id: Optional[int] = None
+    external_device_id: Optional[str] = None
+    weather_source_id: Optional[int] = None
+    metric: str
+    provider_key: Optional[str] = None
+    irradiance_plane: str
+    temperature_type: str
+    calibration_status: str
+    calibrated_at: Optional[datetime] = None
+    calibration_reference: Optional[str] = None
+    effective_from: Optional[datetime] = None
+    effective_to: Optional[datetime] = None
+    physics_usable_irradiance: bool = False
+    physics_usable_temperature: bool = False
+
+    @staticmethod
+    def _ev(value: Any) -> Any:
+        return value.value if hasattr(value, "value") else value
+
+    @classmethod
+    def from_model(cls, mapping: Any) -> "WeatherDeviceMappingResponse":
+        plane = mapping.irradiance_plane
+        temp = mapping.temperature_type
+        return cls(
+            id=mapping.id,
+            site_id=mapping.site_id,
+            device_id=mapping.device_id,
+            external_device_id=mapping.external_device_id,
+            weather_source_id=mapping.weather_source_id,
+            metric=mapping.metric,
+            provider_key=mapping.provider_key,
+            irradiance_plane=cls._ev(plane),
+            temperature_type=cls._ev(temp),
+            calibration_status=cls._ev(mapping.calibration_status),
+            calibrated_at=mapping.calibrated_at,
+            calibration_reference=mapping.calibration_reference,
+            effective_from=mapping.effective_from,
+            effective_to=mapping.effective_to,
+            physics_usable_irradiance=plane in _PHYSICS_USABLE_PLANES,
+            physics_usable_temperature=temp in _PHYSICS_USABLE_TEMPERATURES,
+        )
