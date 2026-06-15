@@ -49,3 +49,12 @@ from app.models.project_entity import (
     EntityRelationship,
     ProjectEntity,
 )
+from app.models.weather import (
+    ExpectedWeatherProvenance,
+    WeatherDeviceMapping,
+    WeatherObservation,
+    WeatherObservationBatch,
+    WeatherSource,
+    WeatherSourceApproval,
+    WeatherSourceProfile,
+)

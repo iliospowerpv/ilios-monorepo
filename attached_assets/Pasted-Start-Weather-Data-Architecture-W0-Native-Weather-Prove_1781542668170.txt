@@ -1,0 +1,190 @@
+Start Weather Data Architecture W0 — Native Weather Provenance Foundation.
+
+Context:
+The weather architecture design sprint is approved directionally. Ilios must remain native to the new V2/PostgreSQL data model. Do not reintroduce BigQuery, Firestore, legacy telemetry, or external weather provider dependencies.
+
+Strategic rules:
+- Existing live DAS weather continues to flow through V2 telemetry_readings and telemetry rollups.
+- The new weather domain coexists beside telemetry; it does not replace telemetry ingestion.
+- Weather provenance, source identity, measurement semantics, confidence, approval, and effective-period selection must become first-class.
+- Do not change expected_service physics math in W0.
+- Do not change O&M chart behavior in W0.
+- Do not add an external weather provider in W0.
+- Do not silently substitute modeled weather.
+- Do not convert GHI/DNI/DHI to POA in W0.
+- Do not convert ambient temperature to cell/module temperature in W0.
+- Unknown weather semantics must remain explicit, not guessed.
+
+Objective:
+Add the native PostgreSQL weather provenance foundation needed for future WeatherResolver, historical backfill, external modeled fallback, and reporting disclosure.
+
+Scope:
+Implement schema/model foundation only, with minimal CRUD/helpers if needed for tests. No behavior change to expected calculations.
+
+Tables / models to add or prepare, following existing Ilios naming and migration conventions:
+
+1. weather_sources
+Purpose: catalog weather source identity and non-secret provider metadata.
+Fields should support:
+- id
+- company_id nullable if global/source-library supported
+- site_id nullable
+- source_type enum:
+  - on_site_calibrated_sensor
+  - on_site_weather_station
+  - das_provider_stream
+  - external_modeled_provider
+  - imported_historical_provider_file
+  - imported_weather_station_file
+  - pvsyst_design_weather
+  - manual_approved_weather_assumption
+  - unavailable
+- display_name
+- provider_key nullable
+- is_modeled
+- default_confidence enum or numeric
+- licensing_note nullable
+- active
+- created_at / updated_at
+
+No secrets/API keys belong here.
+
+2. weather_source_profiles
+Purpose: effective-dated per-site source policy.
+Fields should support:
+- id
+- site_id
+- role: live, historical, design, fallback
+- weather_source_id
+- priority
+- effective_from
+- effective_to
+- fallback_allowed
+- external_modeled_allowed
+- min_confidence_policy
+- status: draft, in_review, approved, active, superseded, rejected
+- approved_by
+- approved_at
+- notes/rationale
+- created_at / updated_at
+
+Rules:
+- Version by new row, not mutation.
+- No automatic activation.
+- Overlap/priority rules should be representable, but do not build full resolver yet.
+
+3. weather_observation_batches
+Purpose: immutable import/pull provenance.
+Fields should support:
+- id
+- site_id
+- weather_source_id
+- batch_kind: file_import, provider_pull, manual, telemetry_backfill
+- period_start
+- period_end
+- row_count
+- unit_system
+- timezone_alignment_note
+- file_ref/source_file_id nullable
+- imported_by
+- superseded_by_batch_id nullable
+- created_at
+
+4. weather_observations
+Purpose: non-telemetry weather values for imported, modeled, or manual weather.
+Fields should support:
+- id
+- site_id
+- batch_id
+- weather_source_id
+- metric
+- value
+- unit
+- obs_ts using existing naive-UTC convention
+- irradiance_plane enum: poa, ghi, dni, dhi, unknown
+- temperature_type enum: cell, module, ambient, modeled_cell, unknown
+- is_modeled
+- confidence
+- dedupe_key
+- created_at
+
+Rules:
+- Append/idempotent by dedupe_key.
+- Do not use this table to replace telemetry_readings.
+- No provider integration in W0.
+
+5. weather_source_approvals
+Purpose: immutable approval ledger.
+Fields should support:
+- id
+- site_id
+- target_type: profile, batch
+- target_id
+- action: approve, reject, revoke, supersede
+- approved_by
+- approved_at
+- rationale
+- created_at
+
+6. weather_device_mappings or weather semantics mapping
+Purpose: declare semantics for weather values coming from telemetry devices/streams.
+Fields should support:
+- id
+- site_id
+- device_id nullable
+- external_device_id nullable if needed
+- weather_source_id nullable
+- metric
+- provider_key/provider_metric if needed
+- irradiance_plane
+- temperature_type
+- calibration_status: calibrated, uncalibrated, expired, unknown
+- calibrated_at nullable
+- calibration_reference nullable
+- effective_from
+- effective_to
+- created_at / updated_at
+
+Rules:
+- Existing DAS weather should default to unknown semantics until explicitly mapped.
+- Do not assume irradiance_wm2 is POA without mapping.
+- Do not break existing telemetry ingestion.
+
+7. expected_weather_provenance
+Define now if low-risk, or create a documented placeholder if better deferred.
+Purpose: future snapshot of which weather source drove expected values.
+Do not write to it in W0 unless trivial and no behavior changes are required.
+
+Requirements:
+- Use PostgreSQL-native models/migrations.
+- Register models in app/db/base.py if required.
+- Add schemas/enums as appropriate.
+- Add simple CRUD/list/create helpers only if needed for validation.
+- Add tests for migrations/model creation/enums/idempotent constraints.
+- No runtime expected calculation behavior should change.
+- Existing V2 telemetry, scheduler, O&M charts, due diligence, baselines, and reconciliation should continue to work.
+
+Validation:
+1. Migration applies cleanly.
+2. Backend starts cleanly.
+3. Models are registered.
+4. Enums serialize correctly.
+5. Weather source/profile/batch/observation rows can be created in tests.
+6. Unknown irradiance_plane and unknown temperature_type are supported.
+7. No expected_service math changes.
+8. No telemetry ingestion changes.
+9. No O&M chart behavior changes.
+10. No external provider code or secrets.
+11. No BigQuery/Firestore/legacy telemetry references added.
+12. Architect review passes.
+
+Return:
+- files changed
+- migrations added
+- final table/model definitions
+- enum definitions
+- how existing DAS weather will be represented later
+- what behavior intentionally did not change
+- validation results
+- risks
+- recommended W1 WeatherResolver prompt

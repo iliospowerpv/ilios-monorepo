@@ -17,6 +17,22 @@ description: How to actually run the FastAPI backend pytest suite and the gotcha
   on collection here). Use the built-in `monkeypatch` instead.
 - Session setup itself (create_all + default roles + predefined data) is fast
   (~3-5s); a 2-min timeout earlier was coverage scanning the whole app, not setup.
+- **The shared `company_id`/`site_id`/`api_site*` fixtures transitively pull in the
+  session-scoped `client` fixture**, which enters `TestClient(test_app)` and runs the
+  FULL FastAPI lifespan (telemetry scheduler + startup tasks). That lifespan talks to
+  the **dev DB** (settings.database_url — NOT the test-DB dependency override), so when
+  the `Backend` workflow is live it contends/blocks and the whole run hangs forever
+  (db_session-only tests still pass, which is the tell). For pure model/CRUD/schema
+  tests, **override `company_id`/`site_id` in your test module** to create rows
+  directly via `CompanyCRUD`/`SiteCRUD` on `db_session` (uses `samples.SETUP_COMPANIES[0]`
+  / `samples.TEST_SITE_BODY`); this skips `client` and runs in seconds.
+- **A killed pytest run leaves connections holding locks on the test DB**; the next
+  run's `create_all` then blocks forever. Clear them first:
+  `psql "$DATABASE_URL" -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='<test_db>' AND pid<>pg_backend_pid()"`.
+- **`alembic downgrade` on the dev DB hangs while `Backend` is live**: dropping a child
+  table must drop its FKs, needing ACCESS EXCLUSIVE on parent tables (sites/companies)
+  the live backend keeps busy. Transactional DDL makes a killed downgrade roll back
+  cleanly (DB stays at head), so to truly exercise downgrade live, stop the workflow first.
 
 # Auth gotchas in tests
 
