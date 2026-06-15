@@ -50,6 +50,7 @@ from sqlalchemy.orm import Session
 from app.crud.telemetry_native import TelemetrySiteRollupCRUD
 from app.crud.weather import (
     WeatherDeviceMappingCRUD,
+    WeatherObservationCRUD,
     WeatherSourceCRUD,
     WeatherSourceProfileCRUD,
 )
@@ -57,9 +58,15 @@ from app.models.weather import (
     WeatherCalibrationStatus,
     WeatherConfidence,
     WeatherIrradiancePlane,
+    WeatherSourceProfileRole,
     WeatherSourceProfileStatus,
     WeatherSourceType,
     WeatherTemperatureType,
+)
+from app.services.weather.bucketing import (
+    bucket_observations,
+    expected_bucket_starts,
+    min_confidence,
 )
 
 logger = logging.getLogger(__name__)
@@ -122,6 +129,13 @@ IND_WEATHER_SOURCE_UNAPPROVED = "weather_source_unapproved"
 IND_BELOW_CONFIDENCE_THRESHOLD = "below_confidence_threshold"
 IND_MODELED_NOT_AVAILABLE = "modeled_not_available"
 
+# W2 historical-path keys (used only when an approved historical profile drives
+# the window from imported observations; the DAS path never sets these).
+WARN_HISTORICAL_PARTIAL_WINDOW = "historical_partial_window"
+IND_HISTORICAL_WEATHER_ACTIVE = "historical_weather_active"
+IND_MODELED_WEATHER_PRESENT = "modeled_weather_present"
+IND_COVERAGE_GAPS_PRESENT = "coverage_gaps_present"
+
 
 # ---------------------------------------------------------------------------
 # Result dataclasses (immutable)
@@ -163,6 +177,12 @@ class ResolvedWeatherProvenance:
     missing_inputs: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
     indicators: tuple[str, ...] = ()
+    # W2 additive fields. The DAS path leaves these at their defaults so its
+    # provenance is unchanged; the historical path sets them to disclose that the
+    # values came from approved imported observations.
+    observation_batch_ids: tuple[int, ...] = ()
+    historical: bool = False
+    coverage_pct: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -484,6 +504,132 @@ def derive_weather_provenance(
     )
 
 
+def derive_historical_provenance(
+    *,
+    bucketed,
+    source: Optional[object],
+    profile: object,
+    profile_partial_window: bool,
+    coverage_pct: float,
+) -> ResolvedWeatherProvenance:
+    """Pure provenance for the W2 historical path (no DB).
+
+    Values come exclusively from APPROVED imported observations whose semantics
+    are EXPLICIT (only POA irradiance / cell-usable temperature rows survive the
+    bucketing usable-filter) — that is precisely what makes the window
+    ``semantics_verified`` without any conversion. Strict W2 disclosure:
+
+    * a physics input absent from the window is reported via ``missing_inputs``
+      (and a matching indicator), never fabricated or back-filled;
+    * modeled data is flagged (``is_modeled`` + ``modeled_weather_present``) but
+      never hidden or treated as measured;
+    * confidence is the MOST CONSERVATIVE band across the mapped source default
+      and the observed rows — never silently upgraded;
+    * ``calibration_status`` stays ``unknown`` (W2 performs no calibration);
+    * the additive ``historical`` / ``observation_batch_ids`` / ``coverage_pct``
+      fields make the provenance auditable back to the exact import batches.
+    """
+    aggs = list(bucketed.buckets.values())
+    has_irradiance = any(a.irradiance_poa_wm2 is not None for a in aggs)
+    has_cell_temperature = any(a.cell_temperature_f is not None for a in aggs)
+
+    irr_modeled = any(
+        a.irradiance_poa_wm2 is not None and a.irradiance_modeled for a in aggs
+    )
+    temp_modeled = any(
+        a.cell_temperature_f is not None and a.cell_temperature_modeled for a in aggs
+    )
+    source_modeled = bool(getattr(source, "is_modeled", False))
+    is_modeled = source_modeled or irr_modeled or temp_modeled
+
+    bands: list[Optional[str]] = [
+        _enum_value(getattr(source, "default_confidence", None))
+    ]
+    for a in aggs:
+        if a.irradiance_poa_wm2 is not None:
+            bands.append(a.irradiance_confidence)
+        if a.cell_temperature_f is not None:
+            bands.append(a.cell_temperature_confidence)
+    confidence = min_confidence(bands) or WeatherConfidence.unknown.value
+
+    irradiance_plane = (
+        WeatherIrradiancePlane.poa.value
+        if has_irradiance
+        else WeatherIrradiancePlane.unknown.value
+    )
+    temperature_type = (
+        (
+            WeatherTemperatureType.modeled_cell.value
+            if temp_modeled
+            else WeatherTemperatureType.cell.value
+        )
+        if has_cell_temperature
+        else WeatherTemperatureType.unknown.value
+    )
+
+    missing: list[str] = []
+    warnings: list[str] = []
+    indicators: list[str] = [IND_HISTORICAL_WEATHER_ACTIVE]
+
+    if not has_irradiance:
+        missing.append(MISSING_IRRADIANCE)
+        indicators.append(IND_MISSING_IRRADIANCE)
+    if not has_cell_temperature:
+        missing.append(MISSING_CELL_TEMPERATURE)
+        indicators.append(IND_MISSING_CELL_TEMPERATURE)
+
+    if profile_partial_window:
+        warnings.append(WARN_HISTORICAL_PARTIAL_WINDOW)
+
+    if is_modeled:
+        indicators.append(IND_MODELED_WEATHER_PRESENT)
+    if coverage_pct < 1.0:
+        indicators.append(IND_COVERAGE_GAPS_PRESENT)
+    if confidence == WeatherConfidence.unknown.value:
+        indicators.append(IND_CONFIDENCE_UNKNOWN)
+
+    min_confidence_policy = _enum_value(
+        getattr(profile, "min_confidence_policy", None)
+    )
+    if min_confidence_policy is not None and _confidence_rank(
+        confidence
+    ) < _confidence_rank(min_confidence_policy):
+        missing.append(BELOW_CONFIDENCE_THRESHOLD)
+        indicators.append(IND_BELOW_CONFIDENCE_THRESHOLD)
+
+    if source is not None:
+        source_type = _enum_value(source.source_type)
+        source_label = source.display_name
+        weather_source_id = source.id
+    else:
+        # Defensive: a historical profile always references a source, but never
+        # crash provenance if the row was removed out from under us.
+        source_type = WeatherSourceType.imported_historical_provider_file.value
+        source_label = "Imported historical weather"
+        weather_source_id = getattr(profile, "weather_source_id", None)
+
+    return ResolvedWeatherProvenance(
+        status=WeatherResolverStatus.semantics_verified.value,
+        source_type=source_type,
+        source_label=source_label,
+        is_modeled=is_modeled,
+        confidence=confidence,
+        irradiance_plane=irradiance_plane,
+        temperature_type=temperature_type,
+        calibration_status=WeatherCalibrationStatus.unknown.value,
+        weather_source_id=weather_source_id,
+        profile_id=profile.id,
+        profile_role=_enum_value(profile.role),
+        min_confidence_policy=min_confidence_policy,
+        missing_inputs=_dedupe(missing),
+        warnings=_dedupe(warnings),
+        indicators=_dedupe(indicators),
+        observation_batch_ids=bucketed.batch_ids,
+        historical=True,
+        coverage_pct=coverage_pct,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Resolver (DB wrapper — read-only)
 # ---------------------------------------------------------------------------
@@ -508,10 +654,60 @@ class WeatherResolver:
     ) -> ResolvedWeatherWindow:
         """Resolve irradiance + cell-temperature buckets and provenance.
 
+        Selection rule: when an ACTIVE ``role=historical`` profile governs the
+        window AND physics-usable imported observations exist for it (W2), the
+        window is resolved from those approved observations. In every other case
+        — including no historical profile, a draft/rejected one, or one with no
+        usable observations — the resolver falls through to the EXISTING live-DAS
+        path, which is byte-for-byte identical to W1.
+        """
+        profiles = WeatherSourceProfileCRUD(self._db).list_for_site(site_id)
+        historical_profile, partial_window, _ = _select_active_profile(
+            [
+                p
+                for p in profiles
+                if _enum_value(p.role) == WeatherSourceProfileRole.historical.value
+            ],
+            start,
+            end,
+        )
+        if historical_profile is not None:
+            historical = self._resolve_historical_window(
+                site_id=site_id,
+                start=start,
+                end=end,
+                bucket_size=bucket_size,
+                profile=historical_profile,
+                profile_partial_window=partial_window,
+            )
+            if historical is not None:
+                return historical
+
+        return self._resolve_das_window(
+            site_id=site_id,
+            start=start,
+            end=end,
+            bucket_size=bucket_size,
+            profiles=profiles,
+        )
+
+    def _resolve_das_window(
+        self,
+        *,
+        site_id: int,
+        start: datetime,
+        end: datetime,
+        bucket_size: str,
+        profiles: list,
+    ) -> ResolvedWeatherWindow:
+        """The W1 live-DAS resolution, unchanged.
+
         The bucket set is exactly the union of the irradiance and cell-temp
         rollup buckets present in the window (never invented, never zero-filled),
         with values equal to ``float(row.value)`` — identical to the legacy
-        direct reads so the downstream expected numbers are unchanged.
+        direct reads so the downstream expected numbers are unchanged. ``profiles``
+        is passed in (already fetched by :meth:`resolve_window`) to avoid a
+        redundant read; the resolution is otherwise identical to W1.
         """
         rollups = TelemetrySiteRollupCRUD(self._db)
         irradiance_rows = rollups.get_series(
@@ -542,7 +738,6 @@ class WeatherResolver:
         }
 
         mappings = WeatherDeviceMappingCRUD(self._db).list_for_site(site_id)
-        profiles = WeatherSourceProfileCRUD(self._db).list_for_site(site_id)
 
         irr_sem = _resolve_metric_mappings(
             mappings,
@@ -559,8 +754,20 @@ class WeatherResolver:
             end=end,
         )
 
+        # Historical-role profiles are a W2 concept and must NEVER influence the
+        # live DAS provenance. When the historical path declines (no active
+        # profile, or no usable observations) and we fall back here, the DAS
+        # resolution must behave exactly as W1 did — i.e. as if historical
+        # profiles did not exist. Excluding them keeps active-profile selection
+        # and `has_unapproved` byte-identical to W1 even if a draft/active-but-
+        # unusable historical profile happens to overlap the window.
+        das_governing_profiles = [
+            p
+            for p in profiles
+            if _enum_value(p.role) != WeatherSourceProfileRole.historical.value
+        ]
         active_profile, profile_partial_window, has_unapproved = _select_active_profile(
-            profiles, start, end
+            das_governing_profiles, start, end
         )
 
         value_source = self._resolve_value_source(irr_sem, temp_sem)
@@ -576,6 +783,74 @@ class WeatherResolver:
             has_cell_temperature=bool(cell_temp_map),
         )
 
+        return ResolvedWeatherWindow(buckets=buckets, provenance=provenance)
+
+    def _resolve_historical_window(
+        self,
+        *,
+        site_id: int,
+        start: datetime,
+        end: datetime,
+        bucket_size: str,
+        profile: object,
+        profile_partial_window: bool,
+    ) -> Optional[ResolvedWeatherWindow]:
+        """Resolve a window from APPROVED imported historical observations.
+
+        Reads only the governing historical profile's source observations for the
+        two physics metrics, buckets them onto the SAME epoch-anchored grid the
+        rollups/expected calc use (so values slot in without a separate replay
+        engine), and emits buckets ONLY where a usable value exists (never
+        zero-filled). Returns ``None`` — so the caller falls back to the W1 DAS
+        path — when there is no physics-usable observation in the window, so the
+        resolver never downgrades a live window to an empty historical one.
+        """
+        observations = WeatherObservationCRUD(self._db).get_window(
+            site_id,
+            start=start,
+            end=end,
+            metrics=[IRRADIANCE_METRIC, CELL_TEMPERATURE_METRIC],
+            weather_source_id=profile.weather_source_id,
+        )
+        bucketed = bucket_observations(
+            observations,
+            bucket_size=bucket_size,
+            irradiance_metric=IRRADIANCE_METRIC,
+            cell_temperature_metric=CELL_TEMPERATURE_METRIC,
+        )
+
+        buckets = {
+            bs: ResolvedWeatherBucket(
+                bucket_start=bs,
+                irradiance_poa_wm2=agg.irradiance_poa_wm2,
+                cell_temperature_f=agg.cell_temperature_f,
+            )
+            for bs, agg in bucketed.buckets.items()
+            if agg.irradiance_poa_wm2 is not None
+            or agg.cell_temperature_f is not None
+        }
+        if not buckets:
+            return None  # no usable historical data → fall back to the DAS path
+
+        grid = expected_bucket_starts(start, end, bucket_size)
+        total = len(grid)
+        both_usable = sum(
+            1
+            for bs in grid
+            if (agg := bucketed.buckets.get(bs)) is not None
+            and agg.irradiance_poa_wm2 is not None
+            and agg.cell_temperature_f is not None
+        )
+        coverage_pct = round(both_usable / total, 4) if total else 0.0
+
+        source = WeatherSourceCRUD(self._db).get(profile.weather_source_id)
+        provenance = derive_historical_provenance(
+            bucketed=bucketed,
+            source=source,
+            profile=profile,
+            profile_partial_window=profile_partial_window,
+            coverage_pct=coverage_pct,
+        )
         return ResolvedWeatherWindow(buckets=buckets, provenance=provenance)
 
     def _resolve_value_source(

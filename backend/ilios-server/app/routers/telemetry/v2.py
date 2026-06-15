@@ -3197,6 +3197,11 @@ def get_expected_preview(
                 missing_inputs=list(result.weather_provenance.missing_inputs),
                 warnings=list(result.weather_provenance.warnings),
                 indicators=list(result.weather_provenance.indicators),
+                historical=result.weather_provenance.historical,
+                observation_batch_ids=list(
+                    result.weather_provenance.observation_batch_ids
+                ),
+                coverage_pct=result.weather_provenance.coverage_pct,
             )
             if result.weather_provenance is not None
             else None

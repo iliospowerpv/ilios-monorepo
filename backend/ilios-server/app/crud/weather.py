@@ -11,12 +11,14 @@ secret, BigQuery, or Firestore logic.
 """
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Iterable, Optional
 
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from app.crud.base_crud import BaseCRUD
+from app.models.site import Site
 from app.models.weather import (
     ExpectedWeatherProvenance,
     WeatherApprovalAction,
@@ -27,6 +29,7 @@ from app.models.weather import (
     WeatherSource,
     WeatherSourceApproval,
     WeatherSourceProfile,
+    WeatherSourceProfileStatus,
 )
 
 
@@ -47,6 +50,28 @@ class WeatherSourceCRUD(BaseCRUD):
             .filter(WeatherSource.id == source_id)
             .one_or_none()
         )
+
+    def get_visible_to_site(
+        self, *, site_id: int, source_id: int
+    ) -> Optional[WeatherSource]:
+        """Return the source IFF it is visible to ``site_id``.
+
+        A source is visible when it is site-scoped to this exact site, OR
+        company-scoped to the site's company, OR global (no site/company). A
+        source bound to a DIFFERENT site (or a different company) returns
+        ``None`` so callers can never attach another tenant's weather source to
+        this site. Pure read; no writes.
+        """
+        source = self.get(source_id)
+        if source is None:
+            return None
+        if source.site_id is not None:
+            return source if source.site_id == site_id else None
+        if source.company_id is not None:
+            site = self.db_session.get(Site, site_id)
+            if site is None or source.company_id != site.company_id:
+                return None
+        return source
 
     def list_for_site(
         self, site_id: int, *, active_only: bool = False
@@ -72,6 +97,13 @@ class WeatherSourceProfileCRUD(BaseCRUD):
         self.db_session.refresh(profile)
         return profile
 
+    def get(self, profile_id: int) -> Optional[WeatherSourceProfile]:
+        return (
+            self.db_session.query(WeatherSourceProfile)
+            .filter(WeatherSourceProfile.id == profile_id)
+            .one_or_none()
+        )
+
     def list_for_site(self, site_id: int) -> list[WeatherSourceProfile]:
         return (
             self.db_session.query(WeatherSourceProfile)
@@ -82,6 +114,35 @@ class WeatherSourceProfileCRUD(BaseCRUD):
             )
             .all()
         )
+
+    def set_lifecycle_status(
+        self,
+        profile_id: int,
+        *,
+        status: WeatherSourceProfileStatus,
+        approved_by: Optional[int] = None,
+        approved_at: Optional[datetime] = None,
+    ) -> Optional[WeatherSourceProfile]:
+        """Transition ONLY the lifecycle fields of a profile.
+
+        Mutates ``status`` and, when supplied, ``approved_by`` / ``approved_at``.
+        It deliberately NEVER touches policy fields (role, source, priority,
+        effective window, fallback/modeled flags, min-confidence) — a policy
+        change must be expressed as a NEW profile row, preserving the W0
+        versioned-by-new-row invariant. Returns ``None`` if no such profile.
+        """
+        profile = self.get(profile_id)
+        if profile is None:
+            return None
+        profile.status = status
+        if approved_by is not None:
+            profile.approved_by = approved_by
+        if approved_at is not None:
+            profile.approved_at = approved_at
+        self.db_session.add(profile)
+        self.db_session.commit()
+        self.db_session.refresh(profile)
+        return profile
 
 
 class WeatherObservationBatchCRUD(BaseCRUD):
@@ -94,6 +155,13 @@ class WeatherObservationBatchCRUD(BaseCRUD):
         self.db_session.commit()
         self.db_session.refresh(batch)
         return batch
+
+    def get(self, batch_id: int) -> Optional[WeatherObservationBatch]:
+        return (
+            self.db_session.query(WeatherObservationBatch)
+            .filter(WeatherObservationBatch.id == batch_id)
+            .one_or_none()
+        )
 
 
 class WeatherObservationCRUD(BaseCRUD):
@@ -127,6 +195,39 @@ class WeatherObservationCRUD(BaseCRUD):
         )
         if metric is not None:
             query = query.filter(WeatherObservation.metric == metric)
+        return query.order_by(
+            WeatherObservation.metric, WeatherObservation.obs_ts
+        ).all()
+
+    def get_window(
+        self,
+        site_id: int,
+        *,
+        start: datetime,
+        end: datetime,
+        metrics: Optional[Iterable[str]] = None,
+        weather_source_id: Optional[int] = None,
+    ) -> list[WeatherObservation]:
+        """Read observations for a site whose ``obs_ts`` falls in ``[start, end]``.
+
+        Read-only window fetch used by the readiness/resolver historical paths.
+        ``obs_ts`` is naive-UTC (the existing telemetry convention); the window
+        bounds are inclusive on both ends to mirror the rollup ``get_series``
+        contract. Optionally narrows to specific ``metrics`` and/or a single
+        ``weather_source_id``. Never mutates anything.
+        """
+        query = self.db_session.query(WeatherObservation).filter(
+            WeatherObservation.site_id == site_id,
+            WeatherObservation.obs_ts >= start,
+            WeatherObservation.obs_ts <= end,
+        )
+        metric_list = list(metrics) if metrics is not None else None
+        if metric_list:
+            query = query.filter(WeatherObservation.metric.in_(metric_list))
+        if weather_source_id is not None:
+            query = query.filter(
+                WeatherObservation.weather_source_id == weather_source_id
+            )
         return query.order_by(
             WeatherObservation.metric, WeatherObservation.obs_ts
         ).all()

@@ -741,6 +741,13 @@ class ExpectedWeatherProvenanceSchema(BaseModel):
     missing_inputs: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     indicators: list[str] = Field(default_factory=list)
+    # W2 additive: populated only when an APPROVED historical profile drove the
+    # window from imported observations. The live DAS path leaves these at their
+    # defaults (``historical=False``, no batch ids, ``coverage_pct=None``) so W1
+    # responses are unchanged.
+    historical: bool = False
+    observation_batch_ids: list[int] = Field(default_factory=list)
+    coverage_pct: Optional[float] = None
 
 
 class ExpectedPreviewResponse(BaseModel):

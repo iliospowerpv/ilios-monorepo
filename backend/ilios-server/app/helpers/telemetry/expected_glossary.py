@@ -41,6 +41,8 @@ CATEGORY_STATE = "Expected status"
 CATEGORY_COVERAGE = "Company coverage"
 CATEGORY_DISPLAY = "Reading the values"
 CATEGORY_WEATHER = "Weather provenance"
+CATEGORY_WEATHER_READINESS = "Weather readiness"
+CATEGORY_WEATHER_IMPORT = "Weather import"
 
 # Audience/scope tags: where a term is meaningful.
 SCOPE_SITE = "site"
@@ -382,6 +384,189 @@ EXPECTED_GLOSSARY: list[dict] = [
             "The active policy permits modeled-weather fallback, but the platform "
             "resolves measured DAS weather only at this stage and never silently "
             "substitutes a modeled value."
+        ),
+    },
+    # ----- Historical weather provenance (W2) ------------------------------
+    {
+        "key": "historical_weather_active",
+        "term": "Imported historical weather",
+        "category": CATEGORY_WEATHER,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "Expected for this window was resolved from approved, imported "
+            "historical weather observations governed by an active historical "
+            "weather policy — not from the site's live DAS feed. The imported "
+            "values are used exactly as tagged; nothing is converted or modeled."
+        ),
+    },
+    {
+        "key": "modeled_weather_present",
+        "term": "Includes modeled weather",
+        "category": CATEGORY_WEATHER,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "At least one weather value driving this result is flagged as modeled "
+            "(derived/estimated) rather than directly measured. It is disclosed, "
+            "never silently substituted, and the underlying measurement semantics "
+            "are preserved."
+        ),
+    },
+    {
+        "key": "coverage_gaps_present",
+        "term": "Coverage gaps present",
+        "category": CATEGORY_WEATHER,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "One or more expected time buckets in the window lack usable weather "
+            "(POA irradiance and/or cell temperature), so those buckets cannot "
+            "produce an expected value. Gaps are reported rather than filled in."
+        ),
+    },
+    {
+        "key": "unknown_semantics_present",
+        "term": "Unknown weather semantics present",
+        "category": CATEGORY_WEATHER,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "Some weather rows in the window carry an irradiance plane or "
+            "temperature type that is not physics-usable (e.g. GHI irradiance or "
+            "ambient temperature). They are stored for the record but are NOT "
+            "treated as POA/cell — nothing is converted."
+        ),
+    },
+    {
+        "key": "historical_partial_window",
+        "term": "Policy covers part of window",
+        "category": CATEGORY_WEATHER,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "The active historical weather policy's effective period covers only "
+            "part of the requested window. The portion outside the policy's "
+            "effective dates is not resolved from imported historical weather."
+        ),
+    },
+    # ----- Historical weather readiness (W2) -------------------------------
+    {
+        "key": "ready_for_expected_replay",
+        "term": "Ready for expected replay",
+        "category": CATEGORY_WEATHER_READINESS,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "An active historical weather policy governs the full window and the "
+            "imported observations supply enough usable POA irradiance and cell "
+            "temperature for expected to be computed from historical weather with "
+            "no blocking gaps."
+        ),
+    },
+    {
+        "key": "historical_profile_missing",
+        "term": "No active historical policy",
+        "category": CATEGORY_WEATHER_READINESS,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "No approved (active) historical weather policy governs this window, "
+            "so imported historical weather is not yet used to drive expected for "
+            "the period."
+        ),
+    },
+    {
+        "key": "historical_profile_unapproved",
+        "term": "Historical policy not approved",
+        "category": CATEGORY_WEATHER_READINESS,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "A historical weather policy exists for the window but is still in "
+            "draft (not approved into an active state), so it does not yet govern "
+            "weather resolution."
+        ),
+    },
+    {
+        "key": "historical_profile_partial_window",
+        "term": "Historical policy covers part of window",
+        "category": CATEGORY_WEATHER_READINESS,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "The active historical weather policy covers only part of the "
+            "requested window; the uncovered portion is not eligible for "
+            "historical expected replay."
+        ),
+    },
+    {
+        "key": "no_usable_irradiance",
+        "term": "No usable POA irradiance",
+        "category": CATEGORY_WEATHER_READINESS,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "The window has no plane-of-array (POA) irradiance observations that "
+            "are physics-usable. GHI/DNI/DHI and unknown-plane rows do not count "
+            "and are never converted to POA."
+        ),
+    },
+    {
+        "key": "no_usable_cell_temperature",
+        "term": "No usable cell temperature",
+        "category": CATEGORY_WEATHER_READINESS,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "The window has no cell / module / modeled-cell temperature "
+            "observations that are physics-usable. Ambient and unknown-type rows "
+            "do not count and are never converted to cell temperature."
+        ),
+    },
+    {
+        "key": "insufficient_coverage",
+        "term": "Insufficient coverage",
+        "category": CATEGORY_WEATHER_READINESS,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "The share of expected buckets that have BOTH usable POA irradiance "
+            "and usable cell temperature is below the minimum coverage threshold "
+            "required to consider the window ready for expected replay."
+        ),
+    },
+    {
+        "key": "no_expected_buckets",
+        "term": "No expected buckets",
+        "category": CATEGORY_WEATHER_READINESS,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "The requested window resolves to zero expected time buckets (e.g. an "
+            "empty or invalid range), so there is nothing to assess for readiness."
+        ),
+    },
+    # ----- Historical weather import disclosures (W2) ----------------------
+    {
+        "key": "stored_not_usable_rows_present",
+        "term": "Stored, not physics-usable",
+        "category": CATEGORY_WEATHER_IMPORT,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "Some imported rows (e.g. GHI/DNI/DHI irradiance or ambient "
+            "temperature) are stored verbatim for the record but are NOT usable by "
+            "the expected physics, because only POA irradiance and cell/module "
+            "temperature drive expected. Nothing is converted to make them usable."
+        ),
+    },
+    {
+        "key": "modeled_rows_present",
+        "term": "Includes modeled rows",
+        "category": CATEGORY_WEATHER_IMPORT,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "Some imported rows are flagged as modeled (derived/estimated) rather "
+            "than directly measured. The flag is preserved through to resolution "
+            "and disclosure; it is never dropped."
+        ),
+    },
+    {
+        "key": "idempotent_duplicates_skipped",
+        "term": "Duplicates skipped",
+        "category": CATEGORY_WEATHER_IMPORT,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "Some rows in the import already existed (same site, source, metric, "
+            "timestamp and semantics) and were skipped. Imports are idempotent — "
+            "re-importing the same window inserts nothing and never duplicates."
         ),
     },
 ]

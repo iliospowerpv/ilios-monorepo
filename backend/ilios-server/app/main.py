@@ -72,6 +72,7 @@ from .routers import (
     summary_stats_router,
     contacts_router,
     entities_router,
+    weather_router,
     users_router,
 )
 from .routers.project_assumptions import assumptions_router
@@ -439,6 +440,8 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
     # Sales related APIs
     app.include_router(sales_router)
     app.include_router(entities_router)
+    # Weather (W2 native historical weather import + lifecycle)
+    app.include_router(weather_router, prefix="/api/weather", tags=["Weather"])
     # Admin APIs
     app.include_router(access_health_router, prefix="/api/admin/access-health", tags=[tags.ADMIN_ACCESS_HEALTH_TAG])
     app.include_router(extraction_registry_router, prefix="/api/admin/extraction", tags=["Admin - Extraction Registry"])

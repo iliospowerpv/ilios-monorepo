@@ -98,6 +98,7 @@ def _profile(
     effective_from=None,
     effective_to=None,
     external_modeled_allowed=False,
+    weather_source_id=None,
 ):
     return SimpleNamespace(
         id=id,
@@ -107,6 +108,33 @@ def _profile(
         effective_from=effective_from,
         effective_to=effective_to,
         external_modeled_allowed=external_modeled_allowed,
+        weather_source_id=weather_source_id,
+    )
+
+
+def _obs(
+    obs_ts: datetime,
+    metric: str,
+    value: float,
+    *,
+    plane="unknown",
+    temp="unknown",
+    is_modeled=False,
+    confidence="unknown",
+    batch_id=None,
+    weather_source_id=None,
+):
+    """An in-memory imported weather observation (as ``bucket_observations`` sees it)."""
+    return SimpleNamespace(
+        obs_ts=obs_ts,
+        metric=metric,
+        value=value,
+        irradiance_plane=plane,
+        temperature_type=temp,
+        is_modeled=is_modeled,
+        confidence=confidence,
+        batch_id=batch_id,
+        weather_source_id=weather_source_id,
     )
 
 
@@ -135,6 +163,7 @@ def _patch_resolver(
     mappings=(),
     profiles=(),
     sources=(),
+    observations=(),
     calls=None,
 ):
     """Monkeypatch the read CRUDs the resolver uses with in-memory fakes."""
@@ -177,10 +206,27 @@ def _patch_resolver(
             calls.append("get")
             return source_by_id.get(source_id)
 
+    class FakeObservationCRUD:
+        def __init__(self, db):  # noqa: D107
+            pass
+
+        def get_window(self, site_id, *, start, end, metrics, weather_source_id=None):
+            calls.append("get_window")
+            out = []
+            for o in observations:
+                if o.metric not in metrics:
+                    continue
+                if weather_source_id is not None and o.weather_source_id != weather_source_id:
+                    continue
+                if start <= o.obs_ts <= end:
+                    out.append(o)
+            return out
+
     monkeypatch.setattr(wr, "TelemetrySiteRollupCRUD", FakeRollupCRUD)
     monkeypatch.setattr(wr, "WeatherDeviceMappingCRUD", FakeMappingCRUD)
     monkeypatch.setattr(wr, "WeatherSourceProfileCRUD", FakeProfileCRUD)
     monkeypatch.setattr(wr, "WeatherSourceCRUD", FakeSourceCRUD)
+    monkeypatch.setattr(wr, "WeatherObservationCRUD", FakeObservationCRUD)
     return calls
 
 
@@ -614,6 +660,160 @@ def test_resolve_window_uses_only_read_methods(monkeypatch):
         site_id=1, start=_WIN_START, end=_WIN_END, bucket_size="1h"
     )
     assert set(calls) <= {"get_series", "list_for_site", "get"}
+
+
+# ---------------------------------------------------------------------------
+# Historical (W2) path selection — only an ACTIVE role=historical profile with
+# physics-usable imported observations diverts off the byte-identical DAS path.
+# ---------------------------------------------------------------------------
+def test_resolve_window_historical_path_used_when_active_profile_and_usable_obs(
+    monkeypatch,
+):
+    src = _source(id=20, confidence=WeatherConfidence.high, is_modeled=False)
+    hist_profile = _profile(
+        id=9,
+        role=WeatherSourceProfileRole.historical,
+        status=WeatherSourceProfileStatus.active,
+        weather_source_id=20,
+    )
+    _patch_resolver(
+        monkeypatch,
+        # DAS rollups also present — must be IGNORED while the historical path wins.
+        irr_rows=[_row(_T0, 1.0)],
+        cell_rows=[_row(_T0, 2.0)],
+        profiles=[hist_profile],
+        sources=[src],
+        observations=[
+            _obs(_T0, IRRADIANCE_METRIC, 600.0, plane="poa", confidence="high",
+                 batch_id=7, weather_source_id=20),
+            _obs(_T0, CELL_TEMPERATURE_METRIC, 100.0, temp="cell", confidence="high",
+                 batch_id=7, weather_source_id=20),
+        ],
+    )
+    window = WeatherResolver(db=None).resolve_window(
+        site_id=1, start=_WIN_START, end=_WIN_END, bucket_size="1h"
+    )
+    prov = window.provenance
+    # Values come from the IMPORTED observations, not the DAS rollups.
+    assert window.buckets[_T0].irradiance_poa_wm2 == 600.0
+    assert window.buckets[_T0].cell_temperature_f == 100.0
+    assert prov.status == WeatherResolverStatus.semantics_verified.value
+    assert prov.historical is True
+    assert prov.irradiance_plane == "poa"
+    assert prov.temperature_type == "cell"
+    assert prov.weather_source_id == 20
+    assert prov.profile_id == 9
+    assert 7 in prov.observation_batch_ids
+    assert wr.IND_HISTORICAL_WEATHER_ACTIVE in prov.indicators
+
+
+def test_resolve_window_falls_back_to_das_when_historical_obs_unusable(monkeypatch):
+    # Active historical profile, but the only imported irradiance is GHI (NOT POA)
+    # and the only temperature is ambient — neither is physics-usable, so the
+    # resolver must fall back to the EXISTING DAS path rather than emit an empty
+    # historical window (and must never convert GHI→POA / ambient→cell).
+    src = _source(id=20, confidence=WeatherConfidence.high)
+    hist_profile = _profile(
+        id=9,
+        role=WeatherSourceProfileRole.historical,
+        status=WeatherSourceProfileStatus.active,
+        weather_source_id=20,
+    )
+    _patch_resolver(
+        monkeypatch,
+        irr_rows=[_row(_T0, 500.0), _row(_T1, 800.0)],
+        cell_rows=[_row(_T0, 95.0)],
+        profiles=[hist_profile],
+        sources=[src],
+        observations=[
+            _obs(_T0, IRRADIANCE_METRIC, 999.0, plane="ghi", weather_source_id=20),
+            _obs(_T0, CELL_TEMPERATURE_METRIC, 70.0, temp="ambient", weather_source_id=20),
+        ],
+    )
+    window = WeatherResolver(db=None).resolve_window(
+        site_id=1, start=_WIN_START, end=_WIN_END, bucket_size="1h"
+    )
+    # DAS values pass through unchanged; the unusable imports are never promoted.
+    assert window.buckets[_T0].irradiance_poa_wm2 == 500.0
+    assert window.buckets[_T1].irradiance_poa_wm2 == 800.0
+    assert window.provenance.historical is False
+    assert window.provenance.status == WeatherResolverStatus.legacy_das_unverified.value
+    # The active historical profile must NOT leak into the DAS provenance as the
+    # governing profile — the fallback path stays byte-identical to W1.
+    assert window.provenance.profile_id is None
+
+
+def test_resolve_window_das_provenance_unaffected_by_draft_historical_profile(
+    monkeypatch,
+):
+    # A draft historical profile must NOT leak into the live DAS provenance:
+    # specifically it must NOT raise the "weather_source_unapproved" indicator
+    # that W1 (which had no historical profiles) would never emit. The DAS
+    # provenance with a draft historical profile present must be byte-identical
+    # to the W1 world where no historical profile exists at all.
+    src = _source(id=20)
+    draft_profile = _profile(
+        id=9,
+        role=WeatherSourceProfileRole.historical,
+        status=WeatherSourceProfileStatus.draft,
+        weather_source_id=20,
+    )
+
+    def _run(profiles):
+        _patch_resolver(
+            monkeypatch,
+            irr_rows=[_row(_T0, 500.0)],
+            cell_rows=[_row(_T0, 95.0)],
+            profiles=profiles,
+            sources=[src],
+        )
+        return (
+            WeatherResolver(db=None)
+            .resolve_window(
+                site_id=1, start=_WIN_START, end=_WIN_END, bucket_size="1h"
+            )
+            .provenance
+        )
+
+    baseline = _run([])  # W1 world: no historical profile at all
+    with_draft = _run([draft_profile])
+
+    assert wr.IND_WEATHER_SOURCE_UNAPPROVED not in with_draft.indicators
+    assert with_draft.indicators == baseline.indicators
+    assert with_draft.profile_id == baseline.profile_id
+    assert with_draft.status == baseline.status
+    assert with_draft.historical is False
+
+
+def test_resolve_window_das_byte_identical_when_historical_profile_not_active(
+    monkeypatch,
+):
+    # A DRAFT historical profile (not approved/active) must NOT divert the window:
+    # the live DAS resolution stays byte-for-byte identical to W1.
+    src = _source(id=20)
+    draft_profile = _profile(
+        id=9,
+        role=WeatherSourceProfileRole.historical,
+        status=WeatherSourceProfileStatus.draft,
+        weather_source_id=20,
+    )
+    _patch_resolver(
+        monkeypatch,
+        irr_rows=[_row(_T0, 500.0), _row(_T1, 800.0)],
+        cell_rows=[_row(_T0, 95.0), _row(_T1, 104.0)],
+        profiles=[draft_profile],
+        sources=[src],
+        observations=[
+            _obs(_T0, IRRADIANCE_METRIC, 600.0, plane="poa", weather_source_id=20),
+        ],
+    )
+    window = WeatherResolver(db=None).resolve_window(
+        site_id=1, start=_WIN_START, end=_WIN_END, bucket_size="1h"
+    )
+    assert set(window.buckets) == {_T0, _T1}
+    assert window.buckets[_T0].irradiance_poa_wm2 == 500.0
+    assert window.buckets[_T1].cell_temperature_f == 104.0
+    assert window.provenance.historical is False
 
 
 # ---------------------------------------------------------------------------

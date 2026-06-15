@@ -1,0 +1,289 @@
+Start Weather Data Architecture W2 — Historical Weather Import / Backfill.
+
+Context:
+Weather W0 and W1 are complete:
+
+* W0 added native PostgreSQL weather provenance foundation:
+
+  * weather_sources
+  * weather_source_profiles
+  * weather_observation_batches
+  * weather_observations
+  * weather_source_approvals
+  * weather_device_mappings / calibration semantics
+  * related enums and CRUD
+* W1 added WeatherResolver over existing DAS telemetry only:
+
+  * resolves irradiance_poa_wm2 and cell_temperature_f from V2 telemetry rollups
+  * carries weather provenance
+  * preserves byte-identical expected outputs for existing DAS weather
+  * labels unverified/unknown DAS semantics conservatively as legacy_das_unverified
+  * does not write expected_weather_provenance
+  * no external provider, no GHI→POA conversion, no ambient→cell modeling
+  * expected_service math unchanged
+
+Strategic rules:
+
+* Stay native to the V2/PostgreSQL data model.
+* Do not reintroduce BigQuery, Firestore, or legacy telemetry.
+* Do not select or integrate an external paid weather provider.
+* Do not change live telemetry ingestion.
+* Do not change expected_service physics math.
+* Do not change O&M chart behavior except for additive metadata if necessary.
+* Do not fabricate missing weather.
+* Do not silently use design/PVsyst weather as observed weather.
+* Do not perform GHI/DNI/DHI → POA transposition.
+* Do not perform ambient → cell/module temperature modeling.
+* Historical weather must be source-labeled, versioned, effective-dated, and auditable.
+
+Objective:
+Build the native historical weather import/backfill foundation for onboarding existing operating sites.
+
+This sprint should support importing historical weather observations into the W0 weather_observations model, validating coverage/semantics, and making approved historical profiles available to the WeatherResolver for historical expected calculations.
+
+Scope:
+
+A. Historical weather import service
+
+Create a backend service such as:
+app/services/weather/historical_weather_import_service.py
+
+Responsibilities:
+
+* Accept normalized historical weather rows from a file/import payload or test fixture.
+* Create weather_observation_batches.
+* Insert weather_observations idempotently using dedupe_key.
+* Normalize timestamps to the existing naive-UTC convention.
+* Preserve site timezone alignment notes.
+* Preserve units and conversion metadata.
+* Preserve source type, measured/modeled status, confidence, irradiance_plane, and temperature_type.
+* Reject malformed rows with structured errors.
+* Do not coerce unknown or invalid values into usable weather.
+
+Supported source types in W2:
+
+* imported_historical_provider_file
+* imported_weather_station_file
+* das_provider_stream historical export if represented as import rows
+* external_modeled_provider only as imported modeled rows, not live API integration
+* manual_approved_weather_assumption only if explicitly tagged and not used as observed weather unless policy permits
+
+No provider API integration in this sprint.
+
+B. Supported import format
+
+Implement a minimal internal import schema first. Do not overbuild a public CSV wizard.
+
+Rows should support:
+
+* timestamp
+* metric
+* value
+* unit
+* irradiance_plane: poa, ghi, dni, dhi, unknown
+* temperature_type: cell, module, ambient, modeled_cell, unknown
+* is_modelled / is_modeled
+* confidence
+* source_row_id optional
+* notes optional
+
+Required physics-usable rows:
+
+* irradiance with irradiance_plane=poa
+* temperature with temperature_type=cell/module/modeled_cell
+
+GHI/DNI/DHI and ambient should be stored but not treated as physics-usable in W2.
+
+C. Coverage/readiness service
+
+Add a service/helper that evaluates a historical window:
+
+* total expected buckets
+* buckets with usable POA irradiance
+* buckets with usable cell/module/modeled_cell temperature
+* buckets missing irradiance
+* buckets missing temperature
+* buckets with unknown semantics
+* coverage_pct
+* confidence summary
+* modeled_pct
+* gap ranges
+* ready_for_expected_replay yes/no
+
+The output must clearly indicate:
+
+* what is missing
+* why it matters
+* what action is needed
+* whether it blocks expected calculation or only lowers confidence
+
+This directly supports Path B missing-dependency indicators.
+
+D. Profile approval integration
+
+Support creating or referencing a weather_source_profile for historical use:
+
+* role=historical
+* effective_from/effective_to
+* approved/active state required before WeatherResolver may use the imported observations for expected replay
+* profile changes create new effective-dated rows, not in-place history rewrites
+* approval ledger records approve/reject/revoke/supersede actions
+
+If approval lifecycle already exists from W0 but lacks helpers, add minimal helpers only.
+
+E. WeatherResolver integration for historical observations
+
+Extend WeatherResolver to support approved historical weather_observations for historical windows.
+
+Rules:
+
+* Existing live DAS behavior remains unchanged.
+* Resolver should choose approved historical profile/observations for historical effective periods.
+* Imported observations must be used only if profile is approved/active for that period.
+* Only POA irradiance + cell/module/modeled_cell temperature may drive expected in W2.
+* GHI/DNI/DHI and ambient are stored but returned as not physics-usable / missing_inputs until future modeling is approved.
+* If no approved historical profile exists, return missing_inputs/profile_missing for historical backfill, not fabricated values.
+* Preserve provenance:
+
+  * weather_source_id
+  * observation_batch_id
+  * profile_id
+  * is_modeled
+  * confidence
+  * source_type
+  * coverage
+  * missing input detail
+
+F. Expected replay behavior
+
+Do not build a separate recomputation engine.
+
+Allow existing expected preview/compute flow to consume WeatherResolver historical observations when:
+
+* time window is historical
+* active historical profile exists
+* observations are physics-usable
+* baseline is active/approved and PTO rules allow it
+
+Expected math remains unchanged.
+
+G. API endpoints
+
+Add minimal admin-gated endpoints if consistent with existing patterns:
+
+1. POST /api/weather/sites/{site_id}/historical-import/preview
+
+* validates rows
+* returns parsed count, errors, coverage, readiness
+* writes nothing
+
+2. POST /api/weather/sites/{site_id}/historical-import
+
+* creates batch + observations
+* returns batch id, row count, parse warnings, coverage/readiness
+* does not automatically activate profile unless explicitly requested and safe
+
+3. GET /api/weather/sites/{site_id}/historical-readiness
+
+* evaluates a period/source/profile/batch
+
+4. POST /api/weather/sites/{site_id}/historical-profile
+
+* create draft historical profile from an approved/validated batch, if not already available
+
+Keep endpoints minimal. If API surface is too much for W2, implement service/tests first and document endpoints as follow-up.
+
+Permissions:
+
+* admin/weather-management or telemetry-admin equivalent
+* authorized site visibility
+
+H. Tests
+
+Add tests for:
+
+1. Import valid POA irradiance + cell temp rows.
+2. Import is idempotent by dedupe_key.
+3. Malformed rows return structured errors and do not partially write if transaction should fail.
+4. GHI is stored but not physics-usable.
+5. Ambient temperature is stored but not physics-usable.
+6. Modeled cell temperature is stored and flagged modeled.
+7. Coverage/readiness identifies missing irradiance.
+8. Coverage/readiness identifies missing cell temperature.
+9. Coverage/readiness identifies unknown semantics.
+10. Historical profile required before resolver uses observations.
+11. Approved/active historical profile allows resolver to use observations.
+12. Profile effective dates are honored.
+13. Existing live DAS resolver behavior remains unchanged.
+14. Expected math remains unchanged.
+15. No external provider calls.
+16. No BigQuery/Firestore/legacy telemetry references.
+17. No O&M chart behavior changes.
+18. Backend starts cleanly.
+19. Architect review passes.
+
+I. Path B missing-dependency indicators
+
+Return explicit indicator specs for user-facing copy:
+
+* Missing historical weather source
+* Historical profile not approved
+* Missing POA irradiance
+* Missing cell/module temperature
+* GHI present but POA required
+* Ambient temperature present but cell/module temperature required
+* Unknown irradiance plane
+* Unknown temperature type
+* Modeled data present and requires disclosure
+* Coverage below threshold
+* Timezone alignment unresolved
+* Batch imported but not approved
+* Baseline exists but historical weather missing
+* Historical expected unavailable because required weather is missing
+
+For each, include:
+
+* user-facing label
+* plain-language explanation
+* blocking level: blocks calculation / lowers confidence / informational
+* recommended user action
+
+Do not build full UI/help in this sprint.
+
+Do not:
+
+* add an external provider adapter
+* add paid provider credentials
+* implement GHI→POA transposition
+* implement ambient→cell modeling
+* use PVsyst/design weather as observed weather
+* change expected formula
+* change telemetry ingestion
+* change device eligibility
+* change O&M charts
+* touch plaintext secrets
+* reintroduce BigQuery/Firestore/legacy telemetry
+
+Validation:
+
+* Migration state remains clean.
+* Backend starts cleanly.
+* Targeted tests pass.
+* Existing W1 WeatherResolver tests still pass.
+* Site 4 expected preview still works.
+* Historical observations can be imported and resolved only when profile rules allow.
+* Architect review passes.
+
+Return:
+
+* files changed
+* import service behavior
+* supported row format
+* coverage/readiness output
+* resolver integration behavior
+* profile/approval behavior
+* tests added
+* validation results
+* risks
+* Path B indicator list
+* recommended next sprint
