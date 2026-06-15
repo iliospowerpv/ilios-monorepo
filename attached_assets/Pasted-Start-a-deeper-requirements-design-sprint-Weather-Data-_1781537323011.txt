@@ -1,0 +1,266 @@
+Start a deeper requirements/design sprint: Weather Data Architecture — Design, Historical Backfill, Live Operations, and Reporting.
+
+This is design only. Do not implement code or migrations.
+
+Context:
+The V2 telemetry and expected-performance foundation is now established:
+
+* V2 actuals from PostgreSQL telemetry readings/rollups
+* V2 weather-adjusted expected calculation
+* V2 expected baselines from promoted project_facts
+* design-estimate baseline points from PVsyst/design facts
+* due diligence truth-store and reconciliation workflow
+* DD no longer writes to BigQuery
+* BigQuery/Firestore/legacy telemetry are not operational dependencies
+
+Recent weather audit finding:
+Today, weather-adjusted expected is driven by DAS-sourced weather inputs where available:
+
+* irradiance_wm2
+* cell_temperature_f
+
+However, the current model does not fully distinguish:
+
+* measured vs modeled weather
+* design weather vs observed weather
+* live telemetry weather vs historical reconstructed weather
+* POA vs GHI/DNI/DHI irradiance
+* cell/module temperature vs ambient temperature
+* calibrated source vs uncalibrated source
+* provider source, confidence, and approval status
+
+We need a broader weather architecture before building W0.
+
+Objective:
+Design the full weather data architecture for Ilios across:
+
+1. PVsyst/design weather assumptions
+2. historical weather for onboarding existing sites
+3. live on-site weather for operations
+4. external modeled weather fallback/reconstruction
+5. reporting/investor disclosure
+
+Core product principles:
+
+1. On-site telemetry weather should be preferred where available and reliable.
+2. Historical weather is required when onboarding existing operating sites.
+3. Design/PVsyst weather assumptions are not the same as observed operating weather.
+4. External modeled weather must never be silently substituted.
+5. Every weather value used for expected calculations must carry source, provenance, confidence, and measured/modeled status.
+6. Weather source configuration must be reviewable and auditable.
+7. Weather changes must not rewrite history; they must be versioned/effective by period.
+8. Expected calculations must disclose which weather source was used.
+9. Missing weather should remain an honest missing-input state, not a fabricated value.
+10. Power BI/reporting exports later must preserve weather source metadata.
+
+Design areas to cover:
+
+A. Weather use cases
+Define requirements separately for:
+
+1. Design/PVsyst weather assumptions
+2. Historical weather backfill for existing sites
+3. Live operational weather
+4. External modeled weather fallback
+5. Reporting/investor disclosure
+
+For each use case, define:
+
+* allowed sources
+* whether it may drive weather-adjusted expected
+* whether it may drive design estimates only
+* approval requirements
+* provenance requirements
+* confidence treatment
+* UI/reporting disclosure requirements
+
+B. Weather source types
+Propose taxonomy for:
+
+* on_site_calibrated_sensor
+* on_site_weather_station
+* das_provider_stream
+* external_modeled_provider
+* imported_historical_provider_file
+* imported_weather_station_file
+* pvsyst_design_weather
+* manual_approved_weather_assumption
+* unavailable
+
+C. Weather measurement types
+Define how to model:
+
+* irradiance POA
+* irradiance GHI
+* irradiance DNI
+* irradiance DHI
+* cell/module temperature
+* ambient temperature
+* modeled cell temperature
+* wind speed
+* humidity
+* rain
+* barometric pressure
+* unknown/unsupported
+
+D. Historical weather backfill
+Design the workflow for onboarding an existing site:
+
+* identify historical operating period
+* choose historical weather source
+* import/download historical weather
+* align to site-local time
+* normalize units
+* store source metadata
+* validate gaps
+* calculate historical weather-adjusted expected
+* flag missing/low-confidence periods
+* preserve versioned source selection
+
+Include support for:
+
+* DAS historical data if provider has it
+* external provider historical data
+* uploaded weather station files
+* PVsyst/design weather as design comparison only
+* mixed source periods
+
+E. Weather source selection / profile
+Design a site-level weather source profile:
+
+* current live source
+* historical source by date range
+* fallback allowed yes/no
+* external modeled allowed yes/no
+* approved_by / approved_at
+* effective_from / effective_to
+* confidence policy
+* source priority
+* calibration status
+* notes/rationale
+
+F. Data model proposal
+Propose tables or model changes for:
+
+* weather_sources
+* weather_source_profiles
+* weather_observations
+* weather_observation_batches
+* weather_source_approvals
+* device calibration metadata
+* source-to-device mapping
+* irradiance plane tagging
+* temperature type tagging
+* expected calculation weather provenance
+
+For each table/model, include:
+
+* purpose
+* key fields
+* relationships
+* versioning/effective-date behavior
+* how it ties to telemetry_readings and rollups
+* how it ties to expected calculations
+* how it ties to reporting exports
+
+G. Expected calculation integration
+Define how expected_service should eventually resolve weather:
+
+* current state: site-level rollups
+* future state: weather resolver
+* source priority
+* bucket-level provenance
+* missing input classification
+* modeled/external flag
+* confidence
+* whether expected outputs should store source metadata
+
+Do not change expected math in this design.
+
+H. Provider strategy
+Evaluate external provider categories, but do not select one:
+
+* NREL NSRDB
+* Open-Meteo
+* Solcast
+* Solargis
+* PVGIS
+* NOAA/Meteostat
+* uploaded files
+* DAS provider historical export
+
+For each, identify:
+
+* historical availability
+* live availability
+* irradiance types
+* temperature types
+* POA availability
+* cell/module temperature availability
+* cost/licensing risk
+* implementation complexity
+* best use case
+
+I. UI / O&M implications
+Define how weather source should appear in:
+
+* O&M Actual vs Expected
+* Past Performance
+* Losses
+* Data Health
+* Reconciliation tab
+* Baseline approval
+* Historical backfill/admin screens
+* Investor reports
+
+J. Path B usability/help
+List help/FAQ/glossary requirements for the new resource:
+
+* weather-adjusted expected
+* design weather vs observed weather
+* historical weather backfill
+* POA vs GHI/DNI/DHI
+* cell temperature vs ambient temperature
+* modeled weather
+* external weather fallback
+* confidence labels
+* why expected is unavailable
+* why historical expected may differ after source changes
+
+K. Implementation phases
+Propose phased build plan:
+
+* foundation data model
+* resolver using existing DAS weather only
+* historical weather import/backfill
+* external provider abstraction
+* O&M/reporting source disclosures
+* admin weather-source profile UI
+* export/reporting integration
+
+Return:
+
+1. full requirements by use case
+2. proposed weather taxonomy
+3. proposed data model
+4. historical backfill workflow
+5. source-profile approval workflow
+6. expected_service integration plan
+7. external provider comparison
+8. UI/reporting implications
+9. implementation phases
+10. risks
+11. Path B tasks
+12. what not to build yet
+
+Do not:
+
+* implement code
+* add migrations
+* choose a paid external provider
+* change expected calculation math
+* change telemetry ingestion
+* change O&M charts
+* change device eligibility
+* touch plaintext secrets
+* reintroduce BigQuery/Firestore/legacy telemetry
