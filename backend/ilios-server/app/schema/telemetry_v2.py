@@ -716,6 +716,33 @@ class ExpectedPreviewBucket(BaseModel):
     age_years: Optional[int] = None
 
 
+class ExpectedWeatherProvenanceSchema(BaseModel):
+    """W1 provenance describing what weather drove an expected computation.
+
+    Additive and nullable. ``source_type``/``is_modeled`` describe how the
+    numeric values were produced (always the DAS stream in W1).
+    ``missing_inputs`` here lists provenance/availability gaps for the WINDOW and
+    is distinct from the per-bucket ``status == missing_inputs``. The resolver
+    never promotes an unknown stream to high-confidence POA.
+    """
+
+    status: str
+    source_type: str
+    source_label: str
+    is_modeled: bool
+    confidence: str
+    irradiance_plane: str
+    temperature_type: str
+    calibration_status: str
+    weather_source_id: Optional[int] = None
+    profile_id: Optional[int] = None
+    profile_role: Optional[str] = None
+    min_confidence_policy: Optional[str] = None
+    missing_inputs: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    indicators: list[str] = Field(default_factory=list)
+
+
 class ExpectedPreviewResponse(BaseModel):
     """Weather-adjusted expected vs. actual for a site + window.
 
@@ -737,6 +764,9 @@ class ExpectedPreviewResponse(BaseModel):
     missing_inputs_bucket_count: int = 0
     pre_pto_bucket_count: int = 0
     buckets: list[ExpectedPreviewBucket] = Field(default_factory=list)
+    # Additive (W1): nullable provenance for the weather inputs. ``None`` when no
+    # baseline was available (no weather was resolved).
+    weather_provenance: Optional[ExpectedWeatherProvenanceSchema] = None
 
 
 # ---------------------------------------------------------------------------

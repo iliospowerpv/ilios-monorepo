@@ -1,0 +1,183 @@
+Start Weather Data Architecture W1 — WeatherResolver over Existing DAS Weather Only.
+
+Context:
+Weather W0 is complete:
+
+* native PostgreSQL weather provenance foundation added
+* 7 weather models/tables + 10 enums
+* measurement semantics default to unknown
+* weather observations append/idempotent on dedupe_key
+* approval ledger exists
+* ff32 migration applied
+* no expected math, ingestion, O&M, or device eligibility behavior changed
+
+Strategic rules:
+
+* Stay native to the V2/PostgreSQL data model.
+* Do not reintroduce BigQuery, Firestore, legacy telemetry, or external weather dependencies.
+* Existing DAS weather continues to arrive through telemetry_readings and telemetry_site_interval_rollups.
+* W1 should use existing DAS weather only.
+* Do not add or select an external provider.
+* Do not perform GHI/DNI/DHI → POA transposition.
+* Do not perform ambient → cell temperature modeling.
+* Do not silently substitute modeled weather.
+* Do not change expected_service physics math.
+* Do not change telemetry ingestion.
+* Do not change O&M chart behavior unless adding additive metadata is required and safe.
+
+Objective:
+Introduce a WeatherResolver seam that resolves weather inputs for expected calculations from existing V2 DAS/site rollups while carrying source/provenance/confidence metadata.
+
+The numerical expected calculation should remain unchanged when the resolver returns the same irradiance and cell-temperature values the current expected_service already uses.
+
+Scope:
+
+A. WeatherResolver service
+
+Create a native service/helper, for example:
+app/services/weather/weather_resolver.py
+
+Responsibilities:
+
+* Resolve weather for a site and time window/bucket from existing telemetry_site_interval_rollups.
+* Return the two physics inputs currently required:
+
+  * irradiance_poa_wm2
+  * cell_temperature_f
+* Return provenance metadata:
+
+  * source_type
+  * weather_source_id if mapped/available
+  * profile_id if active profile exists
+  * is_modeled
+  * confidence
+  * irradiance_plane
+  * temperature_type
+  * source_label
+  * missing_inputs
+  * warnings
+* Do not query external providers.
+* Do not query BigQuery or Firestore.
+* Do not mutate data.
+
+B. Semantics behavior
+
+Use W0 weather mappings if present:
+
+* weather_device_mappings / semantics mapping should determine whether existing telemetry values are POA/GHI/unknown and cell/module/ambient/unknown.
+* If semantics are explicitly POA + cell/module, resolver may return values as physics-usable.
+* If semantics are unknown, return provenance as unknown and mark warnings.
+* Do not guess unknown as POA unless we deliberately preserve current behavior under a compatibility flag/status.
+
+Important transition requirement:
+Because the current expected_service already successfully calculates from existing site-level irradiance_wm2 and cell_temperature_f, W1 should not accidentally break expected for existing sites. If the resolver cannot yet identify semantics for existing DAS rollups, return a clear status such as semantics_unknown while preserving current numerical behavior only where explicitly allowed and labeled as legacy_das_unverified or equivalent.
+
+The implementation must not silently promote unknown semantics to high-confidence POA.
+
+C. Active weather source profile handling
+
+If an active weather_source_profile exists for the site/window:
+
+* include profile_id
+* enforce its role/effective period where feasible
+* include min_confidence_policy if relevant
+* do not build full priority/fallback logic yet unless straightforward
+
+If no active profile exists:
+
+* return profile_missing or unprofiled_das_weather warning
+* do not fail existing expected calculations solely because profile does not exist yet, unless that is explicitly coded as a non-breaking metadata state.
+
+D. expected_service integration
+
+Add the resolver seam to expected_service in the least invasive way.
+
+Requirements:
+
+* Weather-adjusted expected math remains unchanged.
+* Existing expected values should remain numerically identical for site 4 when using current DAS inputs.
+* expected_service should receive/use resolver output for weather inputs, but not alter formula.
+* expected bucket/state responses should gain additive weather provenance metadata where schemas allow.
+* If schema change is required, make it additive and nullable.
+* Existing callers should not break.
+* Missing irradiance/cell temperature still yields missing_inputs.
+* Do not convert missing values to zero.
+
+E. Missing-field detail
+
+Improve missing_inputs metadata if feasible:
+
+* distinguish missing_irradiance
+* distinguish missing_cell_temperature
+* distinguish semantics_unknown
+* distinguish profile_missing
+* distinguish weather_source_unapproved
+* distinguish below_confidence_threshold, if applicable
+
+This supports Path B and user-facing indicators later.
+
+F. Tests
+
+Add tests for:
+
+1. Resolver returns existing DAS irradiance/cell-temp values from V2 rollups.
+2. Expected calculation remains numerically unchanged for known test inputs.
+3. Missing irradiance returns missing_irradiance / missing_inputs.
+4. Missing cell temperature returns missing_cell_temperature / missing_inputs.
+5. Unknown irradiance plane is surfaced as unknown/semantics warning, not high-confidence POA.
+6. Unknown temperature type is surfaced as unknown/semantics warning.
+7. Active weather profile id is returned when present.
+8. Missing profile returns warning but does not break current expected behavior.
+9. No BigQuery/Firestore/external provider calls.
+10. No data writes/mutations.
+11. Existing O&M expected paths remain compatible.
+12. Backend starts cleanly.
+13. Architect review passes.
+
+G. Path B usability hooks
+
+Return recommended user-facing indicators for:
+
+* missing irradiance
+* missing cell temperature
+* unknown weather semantics
+* missing weather source profile
+* unapproved weather source
+* modeled/external not available
+* confidence unknown
+* why expected can calculate but source confidence is unverified
+
+Do not build full UI/help in this sprint.
+
+Do not:
+
+* add external weather provider
+* implement historical import/backfill
+* implement GHI→POA transposition
+* implement ambient→cell model
+* change device eligibility
+* change telemetry ingestion
+* change O&M chart design
+* touch plaintext secrets
+* reintroduce BigQuery/Firestore/legacy telemetry
+
+Validation:
+
+* Backend starts cleanly.
+* Targeted tests pass.
+* Site 4 expected preview still works.
+* Current expected numbers remain the same for existing DAS weather where current behavior is preserved.
+* Weather provenance metadata is additive and nullable.
+* Architect review passes.
+
+Return:
+
+* files changed
+* resolver interface
+* expected_service integration details
+* weather provenance fields added
+* missing-input details
+* validation results
+* risks
+* recommended W2 plan
+* Path B indicator/help requirements

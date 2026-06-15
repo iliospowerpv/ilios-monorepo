@@ -53,6 +53,10 @@ from zoneinfo import ZoneInfo
 from sqlalchemy.orm import Session
 
 from app.crud.telemetry_native import TelemetrySiteRollupCRUD
+from app.services.weather.weather_resolver import (
+    ResolvedWeatherProvenance,
+    WeatherResolver,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -220,6 +224,10 @@ class ExpectedResult:
     ok_bucket_count: int
     missing_inputs_bucket_count: int
     pre_pto_bucket_count: int
+    # Additive (W1): provenance describing what weather drove this computation.
+    # ``None`` when no baseline was available (no weather was resolved) — the
+    # field defaults at the end so existing constructors stay valid.
+    weather_provenance: Optional[ResolvedWeatherProvenance] = None
 
 
 # ---------------------------------------------------------------------------
@@ -382,12 +390,20 @@ def compute_site_expected(
     start: datetime,
     end: datetime,
     bucket_size: str = "1h",
+    weather_resolver: Optional[WeatherResolver] = None,
 ) -> ExpectedResult:
     """Compute weather-adjusted expected vs. actual for one site + window.
 
     ``baseline`` is a ``TelemetryExpectedBaseline`` row (or ``None``). When it is
     ``None`` the result is ``baseline_not_available`` with no buckets — the calc
     never fabricates an expected line without an approved baseline.
+
+    The weather physics inputs (irradiance + cell temperature) are resolved
+    through the read-only :class:`WeatherResolver` (W1), which reads the SAME V2
+    rollups as before and returns identical values — so the expected numbers are
+    unchanged — while additionally attaching ``weather_provenance``. Pass a
+    ``weather_resolver`` to inject a stub in tests; it defaults to a DB-backed
+    resolver bound to ``db``.
     """
     if baseline is None:
         return ExpectedResult(
@@ -403,6 +419,7 @@ def compute_site_expected(
             ok_bucket_count=0,
             missing_inputs_bucket_count=0,
             pre_pto_bucket_count=0,
+            weather_provenance=None,
         )
 
     crud = TelemetrySiteRollupCRUD(db)
@@ -413,38 +430,34 @@ def compute_site_expected(
         start=start,
         end=end,
     )
-    irradiance_rows = crud.get_series(
-        site_id=site.id,
-        normalized_metric=IRRADIANCE_METRIC,
-        bucket_size=bucket_size,
-        start=start,
-        end=end,
-    )
-    cell_temp_rows = crud.get_series(
-        site_id=site.id,
-        normalized_metric=CELL_TEMPERATURE_METRIC,
-        bucket_size=bucket_size,
-        start=start,
-        end=end,
-    )
 
     power_map = {r.bucket_start: float(r.value) for r in power_rows}
-    irradiance_map = {r.bucket_start: float(r.value) for r in irradiance_rows}
-    cell_temp_map = {r.bucket_start: float(r.value) for r in cell_temp_rows}
+
+    # Resolve the weather physics inputs through the W1 resolver. It reads the
+    # same irradiance/cell-temp rollups as the legacy direct reads and returns
+    # identical float values (no transposition/conversion), so the numbers below
+    # are unchanged; it additionally carries provenance.
+    resolver = weather_resolver or WeatherResolver(db)
+    resolved = resolver.resolve_window(
+        site_id=site.id,
+        start=start,
+        end=end,
+        bucket_size=bucket_size,
+    )
 
     # Union of buckets actually present — never invent buckets, never zero-fill.
-    bucket_starts = sorted(
-        set(power_map) | set(irradiance_map) | set(cell_temp_map)
-    )
-    bucket_inputs = [
-        BucketInput(
-            bucket_start=bs,
-            irradiance_wm2=irradiance_map.get(bs),
-            cell_temperature_f=cell_temp_map.get(bs),
-            actual_power_kw=power_map.get(bs),
+    bucket_starts = sorted(set(power_map) | set(resolved.buckets))
+    bucket_inputs = []
+    for bs in bucket_starts:
+        weather = resolved.buckets.get(bs)
+        bucket_inputs.append(
+            BucketInput(
+                bucket_start=bs,
+                irradiance_wm2=weather.irradiance_poa_wm2 if weather else None,
+                cell_temperature_f=weather.cell_temperature_f if weather else None,
+                actual_power_kw=power_map.get(bs),
+            )
         )
-        for bs in bucket_starts
-    ]
 
     bucket_hours = BUCKET_SIZE_TO_HOURS.get(bucket_size, 1.0)
     params = BaselineParams.from_baseline(baseline)
@@ -482,6 +495,7 @@ def compute_site_expected(
         pre_pto_bucket_count=sum(
             1 for b in buckets if b.status == BucketStatus.pre_pto
         ),
+        weather_provenance=resolved.provenance,
     )
 
 

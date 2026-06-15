@@ -40,6 +40,7 @@ CATEGORY_BASELINE = "Baselines"
 CATEGORY_STATE = "Expected status"
 CATEGORY_COVERAGE = "Company coverage"
 CATEGORY_DISPLAY = "Reading the values"
+CATEGORY_WEATHER = "Weather provenance"
 
 # Audience/scope tags: where a term is meaningful.
 SCOPE_SITE = "site"
@@ -245,6 +246,142 @@ EXPECTED_GLOSSARY: list[dict] = [
             "per-inverter expected. Expected is modeled at the whole-plant level, "
             "and the platform does not split a site baseline down to individual "
             "inverters, so a per-device performance figure would be misleading."
+        ),
+    },
+    # ----- Weather provenance (W1 resolver disclosure) ---------------------
+    {
+        "key": "weather_status_semantics_verified",
+        "term": "Verified weather semantics",
+        "category": CATEGORY_WEATHER,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "The weather inputs driving expected are confirmed plane-of-array "
+            "irradiance and cell (or module) temperature, because the site's "
+            "telemetry streams are explicitly mapped to those measurements. This is "
+            "the only case where the weather inputs are treated as fully trustworthy."
+        ),
+    },
+    {
+        "key": "weather_status_legacy_das_unverified",
+        "term": "Unverified weather semantics",
+        "category": CATEGORY_WEATHER,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "Expected is computed from the existing DAS weather values, but those "
+            "streams have not been mapped to a confirmed plane/temperature type. The "
+            "numbers are used as-is to preserve current behavior; they are NOT "
+            "assumed to be plane-of-array or cell temperature, and confidence is "
+            "reported as unknown until the streams are mapped."
+        ),
+    },
+    {
+        "key": "weather_status_no_weather",
+        "term": "No weather data",
+        "category": CATEGORY_WEATHER,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "Neither irradiance nor cell-temperature telemetry was present for the "
+            "period, so no weather could be resolved and expected cannot be computed."
+        ),
+    },
+    {
+        "key": "missing_irradiance",
+        "term": "Missing irradiance",
+        "category": CATEGORY_WEATHER,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "No irradiance telemetry was available for the period. Without "
+            "irradiance the weather-adjusted expected cannot be computed, so it is "
+            "reported as N/A rather than guessed."
+        ),
+    },
+    {
+        "key": "missing_cell_temperature",
+        "term": "Missing cell temperature",
+        "category": CATEGORY_WEATHER,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "No cell-temperature telemetry was available for the period. The "
+            "temperature correction cannot be applied, so expected is reported as "
+            "N/A rather than guessed."
+        ),
+    },
+    {
+        "key": "semantics_unknown",
+        "term": "Unknown weather semantics",
+        "category": CATEGORY_WEATHER,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "The site's weather streams are not yet mapped to a confirmed "
+            "irradiance plane and temperature type. The platform never assumes an "
+            "unmapped irradiance stream is plane-of-array or that a temperature is "
+            "cell temperature; map the streams to upgrade to verified semantics."
+        ),
+    },
+    {
+        "key": "why_unverified",
+        "term": "Why this is unverified",
+        "category": CATEGORY_WEATHER,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "Expected used existing DAS weather whose measurement semantics are not "
+            "confirmed. The values are passed through unchanged (no transposition or "
+            "ambient-to-cell conversion is performed), but they are labelled "
+            "unverified so the disclosure stays honest."
+        ),
+    },
+    {
+        "key": "confidence_unknown",
+        "term": "Confidence unknown",
+        "category": CATEGORY_WEATHER,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "No confidence band could be established for the weather inputs, "
+            "typically because the stream is unmapped or its source has no declared "
+            "confidence. Confidence is left as unknown rather than assumed."
+        ),
+    },
+    {
+        "key": "profile_missing",
+        "term": "No weather policy",
+        "category": CATEGORY_WEATHER,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "No active weather source policy (profile) governs this site for the "
+            "period. Expected still uses the available DAS weather, but no approved "
+            "policy yet declares which source should drive weather."
+        ),
+    },
+    {
+        "key": "weather_source_unapproved",
+        "term": "Weather policy not approved",
+        "category": CATEGORY_WEATHER,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "A weather source policy exists for the site but has not been approved "
+            "into an active state, so it does not yet govern weather resolution."
+        ),
+    },
+    {
+        "key": "below_confidence_threshold",
+        "term": "Below confidence threshold",
+        "category": CATEGORY_WEATHER,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "The resolved weather confidence is lower than the minimum the active "
+            "policy requires. The value is still shown, but flagged so reviewers "
+            "know it does not meet the configured confidence floor."
+        ),
+    },
+    {
+        "key": "modeled_not_available",
+        "term": "Modeled weather not used",
+        "category": CATEGORY_WEATHER,
+        "applies_to": [SCOPE_SITE],
+        "definition": (
+            "The active policy permits modeled-weather fallback, but the platform "
+            "resolves measured DAS weather only at this stage and never silently "
+            "substitutes a modeled value."
         ),
     },
 ]

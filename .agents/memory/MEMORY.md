@@ -17,3 +17,4 @@
 - [DD reconciliation view](dd-reconciliation-view.md) — read-only aggregator; "in baseline" status must use the target's OWN baseline (physics→WAM header, production→design points), never cross them.
 - [FE build/test env truth-sources](frontend-build-test-env.md) — jest needs libuuid (util-linux) or every test fails; stale node_modules/.cache fakes/hides eslint errors; trust fork-ts-checker "No issues found"; format via eslint --fix not prettier CLI.
 - [Weather provenance foundation (W0)](weather-provenance-foundation.md) — additive native weather domain beside telemetry_readings; never-guess semantics (default unknown), overlap+priority profiles (no single-active), expected_weather_provenance not written in W0.
+- [WeatherResolver W1 (DAS-only)](weather-resolver-w1.md) — read-only weather-input seam for expected_service; semantics_verified needs FULL window coverage + no unknown-overlap, else stays unverified (never promote unknown→POA/cell).

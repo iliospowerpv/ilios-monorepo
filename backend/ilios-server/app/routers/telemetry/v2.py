@@ -81,6 +81,7 @@ from app.schema.telemetry_v2 import (
     ReadinessFromFactsResponse,
     ExpectedPreviewBucket,
     ExpectedPreviewResponse,
+    ExpectedWeatherProvenanceSchema,
     ExternalDeviceList,
     ExternalDeviceResponse,
     ExternalSiteList,
@@ -3179,4 +3180,25 @@ def get_expected_preview(
             )
             for b in result.buckets
         ],
+        weather_provenance=(
+            ExpectedWeatherProvenanceSchema(
+                status=result.weather_provenance.status,
+                source_type=result.weather_provenance.source_type,
+                source_label=result.weather_provenance.source_label,
+                is_modeled=result.weather_provenance.is_modeled,
+                confidence=result.weather_provenance.confidence,
+                irradiance_plane=result.weather_provenance.irradiance_plane,
+                temperature_type=result.weather_provenance.temperature_type,
+                calibration_status=result.weather_provenance.calibration_status,
+                weather_source_id=result.weather_provenance.weather_source_id,
+                profile_id=result.weather_provenance.profile_id,
+                profile_role=result.weather_provenance.profile_role,
+                min_confidence_policy=result.weather_provenance.min_confidence_policy,
+                missing_inputs=list(result.weather_provenance.missing_inputs),
+                warnings=list(result.weather_provenance.warnings),
+                indicators=list(result.weather_provenance.indicators),
+            )
+            if result.weather_provenance is not None
+            else None
+        ),
     )
