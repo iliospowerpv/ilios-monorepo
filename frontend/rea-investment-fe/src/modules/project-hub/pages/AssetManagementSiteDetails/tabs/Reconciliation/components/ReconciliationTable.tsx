@@ -25,6 +25,7 @@ import {
   formatConfidence,
   blockingMeta,
   missingDependencyLabel,
+  ACTIONS_IN_DATA_ROOM,
   PLACEHOLDER
 } from '../utils';
 
@@ -34,20 +35,6 @@ interface ReconciliationTableProps {
   /** Owning site id; used to build the read-only Data Room deep link. */
   siteId?: number | null;
 }
-
-/**
- * Statuses whose next step (acceptance / promotion) is performed in the Data
- * Room. Baseline-activation steps have no dedicated route, so they show the
- * required-action text without a link rather than pointing at a non-existent page.
- */
-const ACTIONS_IN_DATA_ROOM = new Set<string>([
-  'missing',
-  'ai_extracted_only',
-  'accepted_document_value',
-  'candidate_only',
-  'accepted_not_promoted',
-  'superseded'
-]);
 
 interface ValueColumn {
   key: keyof ReconciliationRow;

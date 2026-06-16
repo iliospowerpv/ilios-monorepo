@@ -19,7 +19,9 @@ import {
 import { useNotify } from '../../../../../../../../../contexts/notifications/notifications';
 
 import { ApiClient } from '../../../../../../../../../api';
-import { ProvenanceNote, BaselineNavLinks } from '../../provenance/BaselineProvenance';
+import type { ReconciliationValue } from '../../../../../../../../../api';
+import { BaselineNavLinks } from '../../provenance/BaselineProvenance';
+import { ProtectedField } from '../../provenance/ProtectedField';
 
 dayjs.extend(CustomParseFormatPlugin);
 
@@ -34,6 +36,15 @@ interface KeyDatesFormFields {
 }
 
 const inputStyles = { fontSize: '0.875rem', lineHeight: 1.43 };
+
+const formatPtoValue = (value: ReconciliationValue): string | null => {
+  if (value === null || value === undefined || value === '') return null;
+  const raw = String(value);
+  const strict = dayjs(raw, 'YYYY-MM-DD', true);
+  if (strict.isValid()) return strict.format('MM/DD/YYYY');
+  const loose = dayjs(raw);
+  return loose.isValid() ? loose.format('MM/DD/YYYY') : raw;
+};
 
 const KeyDatesForm = React.forwardRef<InformationCardFormRef, InformationCardFormProps<KeyDatesCardData>>(
   ({ mode, setMode, siteId, data, reflectFormState }, ref) => {
@@ -149,12 +160,12 @@ const KeyDatesForm = React.forwardRef<InformationCardFormRef, InformationCardFor
                 <TextBox fieldName>Permission to Operate:</TextBox>
               </FieldCell>
               <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
-                <TextBox>
-                  {data.permission_to_operate
-                    ? dayjs(data.permission_to_operate, 'YYYY-MM-DD', true).format('MM/DD/YYYY')
-                    : null}
-                </TextBox>
-                <ProvenanceNote variant="baseline" />
+                <ProtectedField
+                  field="permission_to_operate"
+                  variant="baseline"
+                  fallback={data.permission_to_operate}
+                  format={formatPtoValue}
+                />
               </FieldCell>
             </TableRow>
             <TableRow>

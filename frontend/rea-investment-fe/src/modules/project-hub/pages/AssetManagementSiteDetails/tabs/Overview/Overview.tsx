@@ -24,6 +24,7 @@ import { DraggableCardLayout, CardItem } from './components/DraggableLayout';
 import { ExecutiveSummary } from './components/ExecutiveSummary';
 import { UnderwritingReadiness } from './components/UnderwritingReadiness';
 import formatFloatValue from '../../../../../../utils/formatters/formatFloatValue';
+import { OverviewProvenanceProvider } from './components/provenance/ReconciliationProvenanceContext';
 
 const CARD_TITLES: Record<string, string> = {
   site_level_details: 'Site Level Details',
@@ -288,7 +289,9 @@ export const OverviewTab: React.FC<AssetManagementSiteDetailsTabProps> = ({ site
         totalCriticalCards={CRITICAL_CARDS.length}
         completeCards={criticalCompleteCount}
       />
-      <DraggableCardLayout cards={cardItems} storageKey={`overview_cards_${siteId}`} columns={3} />
+      <OverviewProvenanceProvider siteId={siteId}>
+        <DraggableCardLayout cards={cardItems} storageKey={`overview_cards_${siteId}`} columns={3} />
+      </OverviewProvenanceProvider>
     </Box>
   );
 };

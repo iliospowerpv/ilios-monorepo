@@ -1,0 +1,197 @@
+Start implementation sprint: Project Hub Overview Phase 3 — Rebind Protected Field Provenance to Reconciliation / project_facts Status.
+
+Context:
+Project Hub Overview Phase 1+2 is complete:
+
+* baseline-driving fields in Overview are read-only
+* protected fields are stripped before SAFL writes
+* protected fields do not trigger SiteCharacteristicsHandler.sync_to_bq
+* ordinary metadata editing remains intact
+* provenance labels and Data Room/Reconciliation navigation exist
+* no reads were rebound to project_facts yet
+* tests were authored but not executed due to environment timeout
+* architect review passed
+
+Objective:
+Replace static/presentation-only provenance labels on protected Overview fields with live V2 truth-state indicators using the existing Reconciliation endpoint/status ladder and promoted project_facts/baseline status.
+
+Do not create a new truth path. The Overview should consume the existing reconciliation/project_facts/baseline truth model.
+
+Hard constraints:
+
+* Do not make protected baseline-driving fields editable.
+* Do not write protected fields to SAFL.
+* Do not trigger BigQuery sync for protected fields.
+* Do not use SAFL as a V2 baseline source.
+* Do not create new screens.
+* Do not redesign Overview.
+* Do not change draggable layout or localStorage keys.
+* Do not change expected calculation math.
+* Do not change telemetry ingestion.
+* Do not change WeatherResolver.
+* Do not change device eligibility.
+* Do not change baseline lifecycle.
+* Do not change due diligence parsing/prompts.
+* Do not touch plaintext secrets.
+* Do not reintroduce BigQuery, Firestore, or legacy telemetry.
+* Preserve existing Project Hub Overview look and feel.
+
+Scope:
+
+A. Use existing reconciliation truth
+
+Use the existing endpoint:
+GET /api/due-diligence/sites/{site_id}/reconciliation
+or the current registered reconciliation API client route.
+
+Do not create a duplicate reconciliation service.
+
+Map protected Overview fields to reconciliation rows by canonical field / alias:
+
+* DC wiring loss
+* AC wiring loss
+* MV transformer loss
+* MV line loss
+* permission_to_operate / PTO
+* system_size_dc
+* system_size_ac
+* PVsyst / year-one expected production
+* degradation amount
+* module quantity, if displayed
+* inverter quantity, if displayed
+* any other protected baseline-driving field identified in Phase 1+2
+
+B. Display live status per protected field
+
+For each protected field, show:
+
+* status
+* status label
+* status explanation
+* blocking level
+* required action
+* missing dependencies
+* source document / Data Room link where available
+* Reconciliation link
+
+Statuses should reflect the existing reconciliation ladder:
+
+* missing
+* ai_extracted_only
+* accepted_document_value
+* accepted_not_promoted
+* candidate_only
+* active_fact
+* in_draft_baseline
+* in_active_baseline
+* superseded
+* mismatch
+* needs_review
+
+Do not collapse these into generic “Needs Review.”
+
+C. Value display rules
+
+For each protected field:
+
+* If active project_fact exists, display active fact value.
+* Else if accepted-not-promoted exists, display accepted document value with “Accepted, not promoted.”
+* Else if AI-extracted only exists, display AI value with “Review required.”
+* Else if only legacy/SAFL value exists, display value as “Legacy/display-only — not active project truth.”
+* Else show N/A with precise missing dependency and action.
+
+Do not display a legacy value as if it is current/project truth.
+
+D. Overview card behavior
+
+Update only the protected field rows/provenance footers in existing cards:
+
+* AssetOverview
+* KeyDates
+* SiteLevelDetails
+* any other card touched in Phase 1+2
+
+Keep ordinary metadata edit behavior unchanged.
+
+Use existing visual patterns:
+
+* InformationCardBase
+* MUI Chip/Tooltip
+* compact provenance notes
+* existing StatusCell-style vocabulary where possible
+* no new layout system
+
+E. Reconciliation/Data Room navigation
+
+For each protected field, provide:
+
+* Open Data Room link
+* View Reconciliation link when user has permission
+* if source document/file id exists, link as close as possible to the document detail/version surface
+* do not create mutation buttons
+* do not auto-promote facts
+
+F. Backend changes
+
+Prefer frontend-only changes using the existing reconciliation endpoint.
+
+Only add backend fields if the existing reconciliation response lacks required mapping information.
+
+If backend changes are needed, make them:
+
+* additive
+* nullable
+* read-only
+* covered by tests
+* no mutation
+* no baseline lifecycle changes
+
+G. Tests
+
+Run or add tests for:
+
+1. Overview protected field shows active_fact status when promoted project_fact exists.
+2. Overview protected field shows accepted_not_promoted when document value is accepted but not promoted.
+3. Overview protected field shows ai_extracted_only when only AI extraction exists.
+4. Overview protected field shows legacy/display-only when only SAFL value exists.
+5. Overview protected field shows missing with precise required action when no value exists.
+6. PTO protected field maps correctly to reconciliation row.
+7. Ohmic-loss fields map correctly to reconciliation rows.
+8. System size labels show reconciliation/project_facts status where available.
+9. View Reconciliation link respects permission gating.
+10. Open Data Room link renders.
+11. Protected fields remain read-only.
+12. Protected fields remain excluded from save payloads.
+13. Protected updates do not write SAFL.
+14. Protected updates do not trigger SiteCharacteristicsHandler.sync_to_bq.
+15. Ordinary metadata edits still save.
+16. Frontend typecheck/build passes.
+17. Backend starts cleanly if touched.
+18. Previously authored Phase 1+2 tests are run if environment permits.
+19. Architect review passes.
+
+H. Return
+
+Return:
+
+* files changed
+* mapping from Overview protected fields to reconciliation canonical fields
+* frontend status display behavior
+* value precedence behavior
+* links/navigation behavior
+* backend changes if any
+* tests run / tests skipped with reason
+* validation results
+* remaining risks
+* recommended next sprint
+
+Do not:
+
+* re-enable edits for protected fields
+* write protected values to SAFL
+* sync protected values to BigQuery
+* create new project_facts from Overview
+* auto-promote anything
+* create/activate baselines
+* reintroduce legacy data paths
+* redesign the Overview

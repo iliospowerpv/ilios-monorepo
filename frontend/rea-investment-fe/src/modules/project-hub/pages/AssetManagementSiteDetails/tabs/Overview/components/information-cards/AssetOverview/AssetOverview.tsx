@@ -19,7 +19,9 @@ import { ApiClient } from '../../../../../../../../../api';
 import { StyledSelectItem } from '../../../../../../DeviceDetails/tabs/Overview/components/TechnicalDetailCard/TechnicalDetail.styles';
 import FormHelperText from '@mui/material/FormHelperText';
 import formatFloatValue from '../../../../../../../../../utils/formatters/formatFloatValue';
-import { ProvenanceNote, BaselineNavLinks } from '../../provenance/BaselineProvenance';
+import type { ReconciliationValue } from '../../../../../../../../../api';
+import { BaselineNavLinks } from '../../provenance/BaselineProvenance';
+import { ProtectedField } from '../../provenance/ProtectedField';
 
 type AssetOverviewCardData = Exclude<
   Awaited<ReturnType<typeof ApiClient.assetManagement.siteInfo>>['asset_overview'],
@@ -32,6 +34,14 @@ type AssetOverviewCardData = Exclude<
 type AssetOverviewFormFields = Pick<AssetOverviewCardData, 'battery_storage' | 'mount_type'>;
 
 const inputStyles = { fontSize: '0.875rem', lineHeight: 1.43 };
+
+const formatLossValue = (value: ReconciliationValue): string => {
+  if (value === null || value === undefined || value === '') return '';
+  const numeric = Number(value);
+  // A live reconciliation value may be a non-numeric string (e.g. carries units).
+  // Never render literal "NaN" — show the raw value verbatim instead.
+  return Number.isFinite(numeric) ? formatFloatValue(numeric) : String(value);
+};
 
 const AssetOverviewForm = React.forwardRef<InformationCardFormRef, InformationCardFormProps<AssetOverviewCardData>>(
   ({ mode, setMode, siteId, data, reflectFormState }, ref) => {
@@ -118,8 +128,7 @@ const AssetOverviewForm = React.forwardRef<InformationCardFormRef, InformationCa
                 <TextBox fieldName>Module Quantity:</TextBox>
               </FieldCell>
               <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
-                <TextBox>{data.module_quantity}</TextBox>
-                <ProvenanceNote variant="source" />
+                <ProtectedField field="module_quantity" variant="source" fallback={data.module_quantity} />
               </FieldCell>
             </TableRow>
             <TableRow>
@@ -127,8 +136,7 @@ const AssetOverviewForm = React.forwardRef<InformationCardFormRef, InformationCa
                 <TextBox fieldName>Inverter Quantity:</TextBox>
               </FieldCell>
               <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
-                <TextBox>{data.inverter_quantity}</TextBox>
-                <ProvenanceNote variant="source" />
+                <ProtectedField field="inverter_quantity" variant="source" fallback={data.inverter_quantity} />
               </FieldCell>
             </TableRow>
             <TableRow>
@@ -136,8 +144,7 @@ const AssetOverviewForm = React.forwardRef<InformationCardFormRef, InformationCa
                 <TextBox fieldName>Project Type:</TextBox>
               </FieldCell>
               <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
-                <TextBox>{data.project_type}</TextBox>
-                <ProvenanceNote variant="source" />
+                <ProtectedField field="project_type" variant="source" fallback={data.project_type} />
               </FieldCell>
             </TableRow>
             <TableRow>
@@ -145,8 +152,12 @@ const AssetOverviewForm = React.forwardRef<InformationCardFormRef, InformationCa
                 <TextBox fieldName>DC Ohmic Wiring Loss, %</TextBox>
               </FieldCell>
               <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
-                <TextBox>{data.dc_wiring_loss !== null ? formatFloatValue(data.dc_wiring_loss) : ''}</TextBox>
-                <ProvenanceNote variant="baseline" />
+                <ProtectedField
+                  field="dc_wiring_loss"
+                  variant="baseline"
+                  fallback={data.dc_wiring_loss}
+                  format={formatLossValue}
+                />
               </FieldCell>
             </TableRow>
             <TableRow>
@@ -154,8 +165,12 @@ const AssetOverviewForm = React.forwardRef<InformationCardFormRef, InformationCa
                 <TextBox fieldName>AC Ohmic Wiring Loss, %</TextBox>
               </FieldCell>
               <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
-                <TextBox>{data.ac_wiring_loss !== null ? formatFloatValue(data.ac_wiring_loss) : ''}</TextBox>
-                <ProvenanceNote variant="baseline" />
+                <ProtectedField
+                  field="ac_wiring_loss"
+                  variant="baseline"
+                  fallback={data.ac_wiring_loss}
+                  format={formatLossValue}
+                />
               </FieldCell>
             </TableRow>
             <TableRow>
@@ -163,8 +178,12 @@ const AssetOverviewForm = React.forwardRef<InformationCardFormRef, InformationCa
                 <TextBox fieldName>Medium Voltage Transfo Loss, %</TextBox>
               </FieldCell>
               <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
-                <TextBox>{data.medium_voltage_loss !== null ? formatFloatValue(data.medium_voltage_loss) : ''}</TextBox>
-                <ProvenanceNote variant="baseline" />
+                <ProtectedField
+                  field="medium_voltage_loss"
+                  variant="baseline"
+                  fallback={data.medium_voltage_loss}
+                  format={formatLossValue}
+                />
               </FieldCell>
             </TableRow>
             <TableRow>
@@ -172,8 +191,12 @@ const AssetOverviewForm = React.forwardRef<InformationCardFormRef, InformationCa
                 <TextBox fieldName>MV Line Ohmic Loss, %</TextBox>
               </FieldCell>
               <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
-                <TextBox>{data.mv_line_loss !== null ? formatFloatValue(data.mv_line_loss) : ''}</TextBox>
-                <ProvenanceNote variant="baseline" />
+                <ProtectedField
+                  field="mv_line_loss"
+                  variant="baseline"
+                  fallback={data.mv_line_loss}
+                  format={formatLossValue}
+                />
               </FieldCell>
             </TableRow>
             <TableRow>

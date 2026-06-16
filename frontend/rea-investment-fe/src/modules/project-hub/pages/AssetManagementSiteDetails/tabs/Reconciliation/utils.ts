@@ -95,6 +95,21 @@ export const STATUS_META: Record<string, StatusMeta> = {
 export const statusMeta = (status: string): StatusMeta =>
   STATUS_META[status] || { label: status, color: 'default', description: 'Unrecognized status.' };
 
+/**
+ * Statuses whose next step (acceptance / promotion) is performed in the Data
+ * Room. Baseline-activation steps have no dedicated route, so callers show the
+ * required-action text without a link rather than pointing at a non-existent
+ * page. Shared by the Reconciliation table and the Overview ProtectedField note.
+ */
+export const ACTIONS_IN_DATA_ROOM = new Set<string>([
+  'missing',
+  'ai_extracted_only',
+  'accepted_document_value',
+  'candidate_only',
+  'accepted_not_promoted',
+  'superseded'
+]);
+
 export type BlockingColor = 'default' | 'info' | 'warning' | 'error';
 
 export interface BlockingMeta {

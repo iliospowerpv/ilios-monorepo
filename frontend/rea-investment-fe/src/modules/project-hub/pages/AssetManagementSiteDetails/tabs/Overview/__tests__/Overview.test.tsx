@@ -11,8 +11,18 @@ jest.mock('../../../../../../../api', () => ({
   ApiClient: {
     assetManagement: {
       siteInfo: jest.fn()
+    },
+    reconciliation: {
+      getSiteReconciliation: jest.fn()
     }
   }
+}));
+
+// OverviewTab now mounts OverviewProvenanceProvider, which calls useAuth. A
+// non-diligence user disables the reconciliation query, so the cards render their
+// existing static provenance labels and current values (zero behavioral change).
+jest.mock('../../../../../../../contexts/auth/auth', () => ({
+  useAuth: () => ({ user: { is_system_user: false, role: { permissions: {} } } })
 }));
 
 describe('OverviewTab component', () => {

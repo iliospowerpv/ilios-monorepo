@@ -19,6 +19,7 @@ import {
 import { useNotify } from '../../../../../../../../../contexts/notifications/notifications';
 
 import { ApiClient } from '../../../../../../../../../api';
+import type { ReconciliationValue } from '../../../../../../../../../api';
 import FormHelperText from '@mui/material/FormHelperText';
 import formFloatValue from '../../../../../../../../../utils/formatters/formatFloatValue';
 import formatPercentageValue from '../../../../../../../../../utils/formatters/formatPercentageValue';
@@ -27,7 +28,7 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import Visibility from '@mui/icons-material/Visibility';
 import Link from '@mui/material/Link';
 import { StyledSelectItem } from '../../../../../../DeviceDetails/tabs/Overview/components/GeneralDeviceInfoCard/GeneralDeviceInfoCard.styles';
-import { ProvenanceNote } from '../../provenance/BaselineProvenance';
+import { ProtectedField } from '../../provenance/ProtectedField';
 
 type SiteLevelDetailsData = Exclude<
   Awaited<ReturnType<typeof ApiClient.assetManagement.siteInfo>>['site_level_details'],
@@ -75,6 +76,14 @@ const HyperlinkField: React.FC<{ link: string | null | undefined }> = ({ link })
       </Link>
     </Box>
   ) : null;
+};
+
+// A live reconciliation value may be a non-numeric string (e.g. carries units).
+// Never render literal "NaN" — show the raw value verbatim instead.
+const formatSystemSize = (value: ReconciliationValue): string => {
+  if (value === null || value === undefined || value === '') return '';
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? formFloatValue(numeric) : String(value);
 };
 
 const SiteLevelDetailsForm = React.forwardRef<InformationCardFormRef, InformationCardFormProps<SiteLevelDetailsData>>(
@@ -350,8 +359,12 @@ const SiteLevelDetailsForm = React.forwardRef<InformationCardFormRef, Informatio
                 <TextBox fieldName>System Size kW DC:</TextBox>
               </FieldCell>
               <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
-                <TextBox>{formFloatValue(data.system_size_dc)}</TextBox>
-                <ProvenanceNote variant="baseline" />
+                <ProtectedField
+                  field="system_size_dc"
+                  variant="baseline"
+                  fallback={data.system_size_dc}
+                  format={formatSystemSize}
+                />
               </FieldCell>
             </TableRow>
             <TableRow>
@@ -359,8 +372,12 @@ const SiteLevelDetailsForm = React.forwardRef<InformationCardFormRef, Informatio
                 <TextBox fieldName>System Size kW AC:</TextBox>
               </FieldCell>
               <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
-                <TextBox>{formFloatValue(data.system_size_ac)}</TextBox>
-                <ProvenanceNote variant="baseline" />
+                <ProtectedField
+                  field="system_size_ac"
+                  variant="baseline"
+                  fallback={data.system_size_ac}
+                  format={formatSystemSize}
+                />
               </FieldCell>
             </TableRow>
             <TableRow>
@@ -736,8 +753,11 @@ const SiteLevelDetailsForm = React.forwardRef<InformationCardFormRef, Informatio
                 <TextBox fieldName>Year 1 Expected Production:</TextBox>
               </FieldCell>
               <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
-                <TextBox>{data.year_one_expected_production}</TextBox>
-                <ProvenanceNote variant="baseline" />
+                <ProtectedField
+                  field="year_one_expected_production"
+                  variant="baseline"
+                  fallback={data.year_one_expected_production}
+                />
               </FieldCell>
             </TableRow>
             <TableRow>
@@ -745,8 +765,7 @@ const SiteLevelDetailsForm = React.forwardRef<InformationCardFormRef, Informatio
                 <TextBox fieldName>Degradation Amount, %:</TextBox>
               </FieldCell>
               <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
-                <TextBox>{data.degradation_amount}</TextBox>
-                <ProvenanceNote variant="baseline" />
+                <ProtectedField field="degradation_amount" variant="baseline" fallback={data.degradation_amount} />
               </FieldCell>
             </TableRow>
             <TableRow>
