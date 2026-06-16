@@ -9,7 +9,7 @@ import logging
 from copy import deepcopy
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from fastapi_filter import FilterDepends
 from sqlalchemy.orm import Session
 
@@ -103,6 +103,7 @@ async def get_site_devices(
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     site: Site = Depends(get_authorized_site),
     device_filter: SearchDeviceByName = FilterDepends(SearchDeviceByName),
+    categories: Annotated[list[DeviceCategories] | None, Query()] = None,
     db_session: Session = Depends(get_session),
 ):
     require_module_permission(
@@ -115,7 +116,7 @@ async def get_site_devices(
     )
     skip, limit, order_by, order_direction = query_params
     total, devices = DeviceCRUD(db_session).get_site_devices(
-        site.id, device_filter, skip, limit, order_by, order_direction
+        site.id, device_filter, skip, limit, order_by, order_direction, categories=categories
     )
 
     return {"items": devices, "skip": skip, "limit": limit, "total": total}

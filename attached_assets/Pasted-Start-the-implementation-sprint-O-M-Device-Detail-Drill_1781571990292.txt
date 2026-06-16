@@ -1,0 +1,289 @@
+Start the implementation sprint: O&M / Device-Detail Drill-Down V2 Rebinding — Reuse First.
+
+Context:
+A read-only audit was completed for legacy O&M / Asset Management drill-down recovery. The audit found that most previous functionality still exists in the repository, but some pieces are migrated, redirected, unlinked, or partially orphaned.
+
+Critical audit findings:
+
+* The current primary site O&M experience is the Project Hub / Asset Management site detail area.
+* The standalone O&M widgets are still reused by Project Hub OM.
+* The actual production gauge, past performance, actual-vs-projected chart, and inverter heatmap are alive and mostly V2-first.
+* The old O&M Device Details page is orphaned because its routes are commented out.
+* The active Project Hub Device Details page already has the metadata/service/technical cards from the older inverter detail screen.
+* The old orphaned O&M Device Details page contains useful performance chart and alerts components that should be harvested, not directly re-linked.
+* The Project Hub Devices table exists but lacks the prior category filters, CSV behavior, and richer status/diagnostic chips.
+* The old unified Asset Management All Sites / Pipeline / Schedule / Input Form screen no longer exists as one screen; pieces exist across Project Hub, Acquisitions, and Overview cards.
+* The construction Schedule screen has no current equivalent and is out of scope for this sprint.
+
+Strategic objective:
+Recover the useful prior-version O&M/device drill-down experience by reusing existing components and rebinding them to V2-native data. Do not rebuild O&M, do not create new standalone screens, and do not reintroduce legacy data paths.
+
+Hard constraints:
+
+* Do not create new standalone pages.
+* Do not redesign the O&M experience.
+* Do not relink the old commented-out O&M Device Details route.
+* Do not reintroduce BigQuery, Firestore, or legacy telemetry.
+* Do not use SiteAdditionalFieldList as a V2 baseline source.
+* Do not change expected calculation math.
+* Do not change telemetry ingestion.
+* Do not change WeatherResolver behavior.
+* Do not change historical weather import behavior.
+* Do not change device eligibility classifier rules.
+* Do not create/approve/activate baselines.
+* Do not touch due diligence parsing/prompts.
+* Do not touch plaintext secrets.
+* Preserve the existing Ilios look and feel:
+
+  * Project Hub tabs
+  * MUI Cards/Paper/Chips/Alerts
+  * BaseTable / AG Grid
+  * SearchAndActions
+  * ColumnsModal
+  * existing chart styles
+  * existing spacing/typography/theme
+  * reconciliation StatusCell-style indicator grammar
+
+Scope:
+
+A. Project Hub Devices table recovery
+
+Target:
+modules/project-hub/pages/AssetManagementSiteDetails/tabs/Devices/Devices.tsx
+
+Use the active Project Hub Devices table as the canonical surface. Do not relink the old standalone O&M Devices route.
+
+Add/recover:
+
+* category filter controls matching the old experience:
+
+  * All
+  * Inverters
+  * Production meters
+  * Weather station / weather devices
+  * Gateways / DAS loggers
+  * Data captures
+* search behavior should remain consistent with existing SearchAndActions.
+* enable CSV/download behavior only if existing SearchAndActions/export support can be used safely.
+* add eligibility/mapping/status chips using the Device Eligibility diagnostics output:
+
+  * is_mappable
+  * drives_expected
+  * weather_source_capable
+  * production_meter_capable
+  * gateway_capable
+  * mapped/unmapped
+  * metric supported/unsupported
+  * stale/no telemetry
+* preserve AG Grid / BaseTable styling.
+* preserve server-side paging behavior.
+* do not introduce a new table library.
+
+Data sources:
+
+* V2 device/project device records
+* telemetry_readings for last-reported/liveness where available
+* telemetry_device_interval_rollups where appropriate
+* device_eligibility_diagnostics_service
+* no BigQuery/Firestore/legacy telemetry
+
+If a value has no V2 source, show N/A or “Unavailable” with a reason, never 0.
+
+B. Project Hub Device Details performance section
+
+Target:
+modules/project-hub/pages/DeviceDetails/
+
+Use the active Project Hub Device Details page as the canonical screen.
+
+Do not relink:
+modules/operations-and-maintenance/pages/DeviceDetails/ routes.
+
+Harvest/reuse only the useful visual shell from:
+modules/operations-and-maintenance/pages/DeviceDetails/tabs/Overview/components/Performance.tsx
+
+Add a Performance section/card to the active Project Hub Device Details Overview tab.
+
+Bind actual performance to V2-native data:
+
+* GET /api/telemetry/v2/sites/{site_id}/device-series, or existing V2 device rollup endpoint if more appropriate
+* telemetry_device_interval_rollups
+
+Projected/per-device expected behavior:
+
+* Do not fabricate projected values.
+* Do not compute per-device expected if no per-device baseline exists.
+* Show “Projected unavailable — no per-device expected baseline” or equivalent.
+* Actual-only chart is acceptable if clearly labeled.
+* Never display projected as 0.
+
+Preserve visual style:
+
+* existing Project Hub Device Details cards
+* existing chart style from the orphaned component if reusable
+* existing MUI card spacing and typography
+
+C. Device Alerts recovery
+
+Audit the orphaned O&M Device Details Alerts tab:
+modules/operations-and-maintenance/pages/DeviceDetails/tabs/Alerts/Alerts.tsx
+
+If it can be safely reused:
+
+* add an Alerts tab or Alerts section to active Project Hub Device Details
+* bind to existing V2/current alerts data
+* preserve permissions
+* do not use legacy telemetry or BigQuery
+
+If safe reuse is not possible:
+
+* document why
+* add a follow-up task
+* do not create a new alerts system
+
+D. Honest unavailable states
+
+For device detail and device table values that do not yet have V2-native sources, render explicit unavailable states.
+
+Required examples:
+
+* per-device projected unavailable
+* per-device baseline unavailable
+* MTBF/MTTR unavailable
+* meter present but not used for site actual
+* mapped device but no telemetry
+* metric catalog unsupported
+* weather-capable device but semantics unknown
+* gateway present but child devices unmapped
+
+Never render null/missing values as 0.
+
+E. Missing-dependency indicators
+
+Use the same indicator clarity standard established in Reconciliation.
+
+For each indicator, show:
+
+* label
+* plain-language explanation
+* required next action
+* blocking level:
+
+  * blocks expected
+  * blocks baseline
+  * blocks reporting
+  * lowers confidence
+  * informational
+
+Required indicators:
+
+* Device exists but not mapped
+* Device mapped but no usable telemetry
+* Metric catalog unsupported
+* Gateway present but child devices unmapped
+* Meter present but not used for site actual
+* Weather source device present but irradiance plane unknown
+* Temperature device present but temperature type unknown
+* Calibration status unknown/expired
+* Projected unavailable because no per-device expected baseline exists
+* Expected available but weather source unverified
+* Historical weather imported but not approved
+
+Reuse the reconciliation StatusCell-style grammar where possible:
+
+* status chip
+* blocking chip
+* “Next: …” caption
+* missing-dependency chips
+* tooltip/help text
+
+Do not invent a new visual language.
+
+F. O&M heatmap/gauge N/A verification
+
+Verify:
+
+* InvertersPerformance heatmap does not imply 0% when performance is unavailable.
+* ActualProduction does not render null expected/projected as 0.
+* no fabricated zeros remain on these surfaces.
+
+If a small frontend formatter fix is needed, make it surgical.
+
+G. All Sites / lifecycle columns — audit only unless trivial
+
+Do not attempt to rebuild the old unified All Sites / Pipeline / Schedule / Input Form screen in this sprint.
+
+For Project Hub All Sites:
+
+* confirm whether lifecycle/milestone columns come from Site model, site_additional_fields, deals, or project_facts
+* document authoritative source
+* only make a trivial display-source correction if safe
+* do not create a construction Schedule tab
+* do not change lifecycle data model
+
+H. Tests
+
+Add/update tests for:
+
+1. Project Hub Devices table loads with V2-native data.
+2. Device category filters work for inverter/meter/weather/gateway/data capture roles.
+3. CSV/download uses existing export mechanism and respects filters, if enabled.
+4. Device status/eligibility chips render.
+5. Device mapped but no telemetry shows explicit indicator.
+6. Metric unsupported shows explicit indicator.
+7. Weather-capable device with unknown semantics shows required action.
+8. Active Project Hub Device Details renders existing metadata/service/technical cards unchanged.
+9. Device Details Performance section renders actual data from V2 device series/rollups.
+10. Projected unavailable state renders when no per-device baseline exists.
+11. Projected/unavailable values are not rendered as 0.
+12. Orphaned O&M Device Details route remains unmounted/not relinked.
+13. Device Alerts reuse works if implemented; otherwise follow-up is documented.
+14. No BigQuery/Firestore/legacy telemetry calls are added to recovered surfaces.
+15. Existing O&M widgets still load.
+16. Site 4 / 110 Shawmut smoke test passes.
+17. Frontend typecheck/build passes.
+18. Backend starts cleanly if touched.
+19. Existing telemetry/weather/device eligibility/reconciliation tests remain green.
+20. Architect review passes.
+
+Do not:
+
+* implement construction Schedule view
+* relink old O&M Device Details route
+* create new standalone O&M pages
+* redesign Project Hub
+* change expected math
+* change telemetry ingestion
+* change WeatherResolver
+* change device eligibility classifier rules
+* make meters/loggers/gateways drive site actual or expected
+* create per-device expected baseline
+* use BigQuery/Firestore/legacy telemetry
+* use SAFL as a V2 baseline source
+* touch plaintext secrets
+
+Validation:
+
+* Backend starts cleanly if backend touched.
+* Frontend builds/typechecks.
+* Site 4 Project Hub Devices tab loads.
+* Site 4 Project Hub Device Detail loads for an inverter.
+* Actual-only device performance displays correctly.
+* Projected unavailable is explicit and not shown as zero.
+* Device diagnostics indicators render.
+* No old legacy route is reactivated.
+* Architect review passes.
+
+Return:
+
+* files changed
+* components reused
+* orphaned components harvested
+* routes intentionally not relinked
+* V2 data sources used
+* unavailable/N/A handling
+* indicators implemented
+* tests added/updated
+* validation results
+* remaining gaps
+* recommended next sprint

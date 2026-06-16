@@ -590,6 +590,12 @@ const router = createBrowserRouter(
             element={<PHDeviceDetails.Component tabId="tasks" />}
           />
           <Route
+            path="/project-hub/companies/:companyId/sites/:siteId/devices/:deviceId/alerts"
+            handle={PHDeviceDetails.createHandle()}
+            loader={withAuthControl(PHDeviceDetails.createLoader(queryClient))}
+            element={<PHDeviceDetails.Component tabId="alerts" />}
+          />
+          <Route
             path="/project-hub/companies/:companyId/sites/:siteId/tasks/:taskId"
             element={<DeprecatedRouteRedirect targetTab="tasks" />}
           />

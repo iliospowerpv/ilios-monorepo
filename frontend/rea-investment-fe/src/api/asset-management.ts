@@ -134,6 +134,10 @@ interface Devices {
   items: Device[];
 }
 
+interface DeviceListParams extends Params {
+  categories?: string[];
+}
+
 interface SiteDetailedInfo {
   name: string;
   address: string;
@@ -1017,8 +1021,13 @@ export const buildAssetManagementApi = (httpClient: AxiosInstance) => {
     return response.data;
   };
 
-  const devices = async (siteId: number, params: Params): Promise<Devices> => {
-    const response = await httpClient.get<Devices>(`/api/sites/${siteId}/devices/`, { params });
+  const devices = async (siteId: number, params: DeviceListParams): Promise<Devices> => {
+    // `indexes: null` serialises array params in repeat form (`categories=A&categories=B`)
+    // which is what FastAPI's `categories: list[DeviceCategories] = Query()` expects.
+    const response = await httpClient.get<Devices>(`/api/sites/${siteId}/devices/`, {
+      params,
+      paramsSerializer: { indexes: null }
+    });
     return response.data;
   };
 

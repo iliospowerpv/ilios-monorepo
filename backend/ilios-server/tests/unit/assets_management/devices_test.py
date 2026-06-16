@@ -229,6 +229,132 @@ class TestDevices:
         assert len(response_json["items"]) == 1
         assert response_json["items"][0]["name"] == samples.TEST_INVERTER_DEVICE_NAME
 
+    @staticmethod
+    def _seed_mixed_category_devices(db_session, site_id):
+        """Create devices spanning several categories for category-filter tests."""
+        crud = DeviceCRUD(db_session)
+        specs = [
+            ("Inv One", DeviceCategories.inverter),
+            ("Inv Two", DeviceCategories.inverter),
+            ("Meter One", DeviceCategories.meter),
+            ("Weather One", DeviceCategories.weather_station),
+            ("MBOD Gateway One", DeviceCategories.mbod_gateway),
+            ("Network Gateway One", DeviceCategories.network_gateway),
+            ("Modem One", DeviceCategories.modem),
+        ]
+        return [
+            crud.create_item(
+                {
+                    "name": name,
+                    "category": category,
+                    "site_id": site_id,
+                    "status": DeviceStatuses.available_inventory,
+                }
+            )
+            for name, category in specs
+        ]
+
+    def test_get_site_devices_filter_single_category(
+        self, client, site_id, company_member_user_auth_header, db_session
+    ):
+        """A single category value restricts the result set to that category only."""
+        self._seed_mixed_category_devices(db_session, site_id)
+
+        response = client.get(
+            self._generate_device_endpoint(site_id),
+            params={"categories": ["Meter"]},
+            headers=company_member_user_auth_header,
+        )
+        response_json = response.json()
+
+        assert response.status_code == 200
+        assert response_json["total"] == 1
+        assert {item["name"] for item in response_json["items"]} == {"Meter One"}
+
+    def test_get_site_devices_filter_multiple_categories(
+        self, client, site_id, company_member_user_auth_header, db_session
+    ):
+        """Multiple category values are OR-ed together (Gateways / DAS group)."""
+        self._seed_mixed_category_devices(db_session, site_id)
+
+        response = client.get(
+            self._generate_device_endpoint(site_id),
+            params={"categories": ["MBOD Gateway", "Network Gateway"]},
+            headers=company_member_user_auth_header,
+        )
+        response_json = response.json()
+
+        assert response.status_code == 200
+        assert response_json["total"] == 2
+        assert {item["name"] for item in response_json["items"]} == {
+            "MBOD Gateway One",
+            "Network Gateway One",
+        }
+
+    def test_get_site_devices_no_category_returns_all(
+        self, client, site_id, company_member_user_auth_header, db_session
+    ):
+        """Omitting the categories param returns every device on the site (no filter)."""
+        seeded = self._seed_mixed_category_devices(db_session, site_id)
+
+        response = client.get(
+            self._generate_device_endpoint(site_id),
+            headers=company_member_user_auth_header,
+        )
+        response_json = response.json()
+
+        assert response.status_code == 200
+        assert response_json["total"] == len(seeded)
+
+    def test_get_site_devices_category_combined_with_search(
+        self, client, site_id, company_member_user_auth_header, db_session
+    ):
+        """Category filter and name search are applied together (AND)."""
+        self._seed_mixed_category_devices(db_session, site_id)
+
+        response = client.get(
+            self._generate_device_endpoint(site_id),
+            params={"categories": ["Inverter"], "search": "Inv One"},
+            headers=company_member_user_auth_header,
+        )
+        response_json = response.json()
+
+        assert response.status_code == 200
+        assert response_json["total"] == 1
+        assert {item["name"] for item in response_json["items"]} == {"Inv One"}
+
+    def test_get_site_devices_category_filter_pagination_total(
+        self, client, site_id, company_member_user_auth_header, db_session
+    ):
+        """Total reflects the filtered count while limit still bounds the page."""
+        self._seed_mixed_category_devices(db_session, site_id)
+
+        response = client.get(
+            self._generate_device_endpoint(site_id),
+            params={"categories": ["Inverter"], "limit": 1},
+            headers=company_member_user_auth_header,
+        )
+        response_json = response.json()
+
+        assert response.status_code == 200
+        assert response_json["total"] == 2
+        assert response_json["limit"] == 1
+        assert len(response_json["items"]) == 1
+
+    def test_get_site_devices_invalid_category_returns_422(
+        self, client, site_id, company_member_user_auth_header, db_session
+    ):
+        """An unknown category value is rejected by request validation."""
+        self._seed_mixed_category_devices(db_session, site_id)
+
+        response = client.get(
+            self._generate_device_endpoint(site_id),
+            params={"categories": ["NotARealCategory"]},
+            headers=company_member_user_auth_header,
+        )
+
+        assert response.status_code == 422
+
     def test_get_device_by_id_404(self, client, site_id, device_id, company_member_user_auth_header):
         response = client.get(
             f"{self._generate_device_endpoint(site_id)}/{device_id+100}",

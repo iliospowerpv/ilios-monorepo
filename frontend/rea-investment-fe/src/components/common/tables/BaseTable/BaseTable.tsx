@@ -23,6 +23,7 @@ interface BaseTableProps {
   disableRowHover?: boolean;
   rowModelType?: RowModelType;
   serverSideDatasource?: any;
+  gridContext?: any;
   tableRowHeight?: number;
   defaultColDefOverrides?: ColDef;
   allowMultilineHeader?: boolean;
@@ -43,6 +44,7 @@ const BaseTable = forwardRef((props: BaseTableProps, ref) => {
     rowModelType,
     getRowStyle,
     serverSideDatasource,
+    gridContext,
     disableRowHover,
     onSelectionChanged,
     onRowClicked,
@@ -166,6 +168,7 @@ const BaseTable = forwardRef((props: BaseTableProps, ref) => {
         maxBlocksInCache={0}
         rowData={!isServerSide ? rowData : null}
         rowModelType={rowModelType}
+        context={gridContext}
         getRowStyle={getRowStyle}
         onSortChanged={onSortChanged}
         onPaginationChanged={onPaginationChanged}

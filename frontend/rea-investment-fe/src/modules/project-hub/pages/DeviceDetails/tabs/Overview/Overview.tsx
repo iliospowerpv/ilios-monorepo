@@ -11,6 +11,7 @@ import { DeviceActionsPanel } from './components/DeviceActionsPanel';
 import { GeneralDeviceInfoCard } from './components/GeneralDeviceInfoCard';
 import ServiceDetailCard from './components/ServiceDetailCard/ServiceDetailCard';
 import TechnicalDetailCard from './components/TechnicalDetailCard/TechnicalDetailCard';
+import { DevicePerformanceCard } from './components/DevicePerformanceCard';
 import DocumentList from './components/DocumentList';
 
 export const OverviewTab: React.FC<DeviceDetailsTabProps> = ({ deviceDetails, deviceId, siteId, companyId }) => {
@@ -43,6 +44,9 @@ export const OverviewTab: React.FC<DeviceDetailsTabProps> = ({ deviceDetails, de
               </Paper>
               <Paper elevation={0}>
                 <ServiceDetailCard serviceDetailData={service_detail} siteId={siteId} deviceId={deviceId} />
+              </Paper>
+              <Paper elevation={0}>
+                <DevicePerformanceCard siteId={siteId} deviceId={deviceId} />
               </Paper>
             </Masonry>
           </Grid>

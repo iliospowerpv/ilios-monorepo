@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 import app.static as static
 from app.db.base import Device
-from app.models.device import DeviceStatuses
+from app.models.device import DeviceCategories, DeviceStatuses
 
 from .base_crud import BaseCRUD
 
@@ -24,8 +24,14 @@ class DeviceCRUD(BaseCRUD):
         limit: int = static.DEFAULT_PAGINATION_LIMIT,
         order_by: Optional[str] = None,
         order_direction: Optional[str] = None,
+        categories: Optional[list[DeviceCategories]] = None,
     ):
         query = self.db_session.query(self.model).filter(self.model.site_id == site_id)
+        # Additive, read-only category filter. Each UI category group maps to a set of
+        # DeviceCategories on the frontend; here we simply restrict by category. This does
+        # NOT touch the telemetry eligibility classifier or what can drive expected.
+        if categories:
+            query = query.filter(self.model.category.in_(categories))
         if search_filter is not None:
             query = search_filter.filter(query)
         query = self._add_order_by(query, order_by, order_direction)

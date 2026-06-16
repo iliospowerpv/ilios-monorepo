@@ -21,54 +21,13 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 
 import { ApiClient } from '../../../../../../api';
-import type {
-  DeviceEligibilityDiagnostic,
-  DeviceEligibilityDiagnosticsResponse,
-  DiagnosticBlockingLevel,
-  DiagnosticIndicator
-} from '../../../../../../types/telemetryV2';
-
-const blockingMeta: Record<
-  DiagnosticBlockingLevel,
-  { label: string; color: ChipProps['color']; severity: 'error' | 'warning' | 'info' }
-> = {
-  blocks_calculation: { label: 'Blocks calculation', color: 'error', severity: 'error' },
-  lowers_confidence: { label: 'Lowers confidence', color: 'warning', severity: 'warning' },
-  informational: { label: 'Informational', color: 'default', severity: 'info' }
-};
-
-const IndicatorChip: React.FC<{ indicator: DiagnosticIndicator }> = ({ indicator }) => {
-  const meta = blockingMeta[indicator.blocking_level] ?? blockingMeta.informational;
-  const tooltip = indicator.recommended_action
-    ? `${indicator.explanation} — Next: ${indicator.recommended_action}`
-    : indicator.explanation;
-  return (
-    <Tooltip title={tooltip} arrow>
-      <Chip size="small" color={meta.color} variant="outlined" label={indicator.label} sx={{ mr: 0.5, mb: 0.5 }} />
-    </Tooltip>
-  );
-};
-
-const roleLabel = (device: DeviceEligibilityDiagnostic): string => {
-  if (device.can_drive_expected) return 'Expected driver';
-  if (device.weather_source_capable) return 'Weather source';
-  if (device.production_meter_capable) return 'Meter (inspection-only)';
-  if (device.gateway_capable) return 'Gateway / logger';
-  if (device.virtual_device) return 'Virtual aggregation';
-  if (device.mappable) return 'Mappable';
-  return 'Not eligible';
-};
-
-const weatherSemanticsLabel = (device: DeviceEligibilityDiagnostic): string | null => {
-  const s = device.weather_semantics;
-  if (!s) return null;
-  if (!s.has_declaration) return 'Semantics undeclared';
-  const parts: string[] = [];
-  if (s.irradiance_plane && s.irradiance_plane !== 'unknown') parts.push(`plane: ${s.irradiance_plane}`);
-  if (s.temperature_type && s.temperature_type !== 'unknown') parts.push(`temp: ${s.temperature_type}`);
-  if (s.calibration_status && s.calibration_status !== 'unknown') parts.push(`cal: ${s.calibration_status}`);
-  return parts.length ? parts.join(', ') : 'Semantics unknown';
-};
+import type { DeviceEligibilityDiagnosticsResponse } from '../../../../../../types/telemetryV2';
+import {
+  blockingMeta,
+  IndicatorChip,
+  roleLabel,
+  weatherSemanticsLabel
+} from '../../../../../../utils/telemetry/deviceDiagnostics';
 
 interface SummaryStripProps {
   data: DeviceEligibilityDiagnosticsResponse;

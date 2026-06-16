@@ -52,3 +52,11 @@ description: How to actually run the FastAPI backend pytest suite and the gotcha
   company** (`CompanyDASProviderCRUD.has_provider`). Nothing assigns it, so the
   fixture 403s ("provider not assigned"). Assign it first with
   `CompanyDASProviderCRUD(db).assign_provider(company_id, provider)`.
+- **A whole-file `devices_test.py` run reports failures that PASS in isolation.**
+  Several tests 403 with `no_applicable_grant`/`entity_access_denied` — the test-DB
+  access-grant seeding is order/state dependent, so the very same GET endpoint that
+  fails in the full run passes under a targeted `-k` subset. Combined with the
+  `mocker`/`das_connection` errors above, the full-file pass count is misleading.
+  **Verify a change with a targeted `-k` subset, not the whole file**, and treat the
+  whole-file permission/mocker/provider failures as harness noise unless a `-k`
+  subset reproduces them against your diff.

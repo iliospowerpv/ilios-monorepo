@@ -7,10 +7,12 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import SpaceDashboardIcon from '@mui/icons-material/SpaceDashboard';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import { deviceDetailsQuery } from './loader';
 import type { DeviceDetailsTabProps } from './tabs/types';
 import Overview from './tabs/Overview/Overview';
 import Tasks from './tabs/Tasks/Tasks';
+import Alerts from './tabs/Alerts/Alerts';
 
 interface TabData {
   id: string;
@@ -21,7 +23,7 @@ interface TabData {
   content: React.FC<DeviceDetailsTabProps> | null;
 }
 
-type TabType = 'overview' | 'tasks';
+type TabType = 'overview' | 'tasks' | 'alerts';
 
 interface DeviceDetailsProps {
   tabId?: TabType;
@@ -43,6 +45,14 @@ const tabsData: TabData[] = [
     disabled: false,
     icon: <TaskAltIcon />,
     content: Tasks
+  },
+  {
+    id: 'alerts',
+    label: 'Alerts',
+    link: '/project-hub/companies/:companyId/sites/:siteId/devices/:deviceId/alerts',
+    disabled: false,
+    icon: <NotificationsActiveIcon />,
+    content: Alerts
   }
 ];
 
