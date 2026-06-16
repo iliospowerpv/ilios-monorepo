@@ -53,3 +53,9 @@ id = "6qT1eO3qqvFpfolVWt6hc"
 uri = "file://ILIOS_STYLE_GUIDE.md"
 type = "text"
 title = "iliOS Visual Style Guide"
+
+[[outputs]]
+id = "tUQ7r7wjthFd8ywztM_jB"
+uri = "file://docs/om_v2_alignment_audit.md"
+type = "text"
+title = "O&M Existing Screens + V2 Data Alignment Audit (v1.0)"

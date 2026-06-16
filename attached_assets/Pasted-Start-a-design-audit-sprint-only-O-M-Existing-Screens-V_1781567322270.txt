@@ -1,0 +1,297 @@
+Start a design/audit sprint only: O&M Existing Screens + V2 Data Alignment Audit.
+
+Do not implement code, migrations, new screens, new routes, or UI redesigns in this sprint.
+
+Context:
+The O&M screens already exist in the codebase. They predate several major V2 upgrades and may point to old data structures or partial/legacy endpoints.
+
+Recent platform foundations now complete:
+
+* V2 telemetry ingestion, readings, site rollups, device rollups, scheduler, and O&M actuals
+* V2 expected baseline lifecycle
+* project_facts-based due diligence truth model
+* facts→draft-baseline bridge
+* design-estimate points producer
+* reconciliation endpoint and read-only Reconciliation tab
+* DD→BigQuery write removed
+* SiteAdditionalFieldList deprecated as V2 baseline source
+* Weather W0/W1/W2 provenance, resolver, and historical import/backfill
+* Device Eligibility Expansion with broad is_mappable vs controlled drives_expected classifier
+* Path-B-style missing dependency indicators are now a product requirement
+
+Objective:
+Audit the existing O&M screens and related Project Hub/Asset Management navigation to identify exactly what should be modernized to V2-native data, while preserving the existing Ilios look and feel.
+
+This is not a build sprint. Produce a detailed implementation plan and dependency map.
+
+Hard constraints:
+
+* Do not create new screens.
+* Do not redesign O&M.
+* Do not change code.
+* Do not modify data models.
+* Do not change expected calculation math.
+* Do not change telemetry ingestion.
+* Do not change device eligibility.
+* Do not change WeatherResolver behavior.
+* Do not add external weather providers.
+* Do not touch plaintext secrets.
+* Do not reintroduce BigQuery, Firestore, or legacy telemetry.
+* Respect existing Ilios UI style, routes, components, spacing, tables, cards, tabs, chips, and navigation patterns.
+* Recommend surgical changes to existing screens/components only.
+* If a new panel is needed, identify the existing screen/section where it should be inserted rather than inventing a new standalone page.
+
+Audit areas:
+
+A. Existing O&M screen inventory
+
+Identify all frontend routes/components/files related to O&M, including but not limited to:
+
+* O&M overview pages
+* Actual vs Expected charts
+* Past Performance
+* Losses
+* Device status/device health
+* telemetry health/readiness
+* weather/expected-state displays
+* site detail views
+* links from Asset Management / Project Hub into O&M
+* links from O&M back to Asset Management / Project Hub
+
+For each component/route, document:
+
+* file path
+* route path
+* parent component
+* current purpose
+* user role/permission gating
+* current data sources/API calls
+* current state handling
+* current UI pattern used
+
+B. Backend/API inventory
+
+Identify all backend endpoints used by existing O&M screens.
+
+For each endpoint, document:
+
+* route
+* router file
+* service/helper used
+* models/tables queried
+* whether it is V2-native, legacy, mixed, or unknown
+* whether it reads BigQuery, Firestore, SiteAdditionalFieldList, old telemetry, legacy project fields, or deprecated assumptions
+* whether it reads:
+
+  * telemetry_site_interval_rollups
+  * telemetry_device_interval_rollups
+  * telemetry_readings
+  * telemetry_expected_baselines
+  * telemetry_expected_baseline_points
+  * project_facts
+  * reconciliation endpoint
+  * WeatherResolver / weather provenance
+  * device eligibility diagnostics
+
+C. Old-model dependency audit
+
+Flag every usage of:
+
+* BigQuery
+* Firestore
+* legacy telemetry modules
+* SiteAdditionalFieldList as baseline source
+* old project summary fields
+* old due diligence characteristics
+* legacy expected/performance calculations
+* direct assumptions that bypass project_facts
+* hardcoded expected values
+* fabricated zeroes for missing expected/losses/performance
+* old device eligibility assumptions
+
+For each, identify:
+
+* whether it is active runtime code or dead/unused code
+* whether it appears in O&M UI, Project Hub, or shared services
+* what V2-native replacement should be used
+* whether replacement can be surgical or requires a separate sprint
+
+D. Existing look-and-feel / design system audit
+
+Document the current O&M visual patterns:
+
+* page layout
+* tab structure
+* card pattern
+* table pattern
+* chart pattern
+* chips/badges
+* alert/empty-state pattern
+* typography
+* icon usage
+* spacing conventions
+* loading/error states
+* route/navigation pattern
+
+Then recommend how future V2 enhancements should fit the existing style.
+
+Explicitly call out:
+
+* components that should be reused
+* components that should not be replaced
+* where a new section can be inserted without visual drift
+* where Replit must not invent a new layout
+
+E. V2 alignment plan by existing screen
+
+For each existing O&M screen/component, propose:
+
+* keep as-is
+* replace data source only
+* add metadata badges only
+* add missing-dependency indicators
+* add navigation link
+* add read-only drill-down section
+* defer to later sprint
+
+Map each proposed change to V2-native data:
+
+* V2 actual production
+* expected_state
+* active TelemetryExpectedBaseline
+* WeatherResolver weather_provenance
+* design-estimate points, if relevant
+* device eligibility diagnostics
+* meter/logger/gateway visibility
+* reconciliation readiness
+* project_facts current assumptions
+
+F. Missing dependency indicator audit
+
+For O&M, identify where users need explicit indicators for:
+
+* baseline not available
+* active baseline missing
+* draft baseline exists but not active
+* accepted value not promoted
+* design points missing
+* weather profile missing
+* weather source unapproved
+* missing irradiance
+* missing cell/module temperature
+* irradiance plane unknown
+* temperature type unknown
+* calibration status unknown/expired
+* device exists but not mapped
+* device mapped but no usable telemetry
+* metric catalog unsupported
+* gateway present but child devices unmapped
+* meter present but not used for site actual
+* expected available but weather source unverified
+* historical weather imported but not approved
+
+For each indicator, recommend:
+
+* exact existing screen/component where it should appear
+* user-facing label
+* short explanation
+* recommended action/navigation
+* blocking level:
+
+  * blocks expected
+  * blocks baseline
+  * blocks reporting
+  * lowers confidence
+  * informational
+
+G. Navigation audit
+
+Specifically verify:
+
+* whether O&M has a clear link/breadcrumb back to Asset Management / Project Hub
+* whether Project Hub has a clear link into O&M
+* whether route parameters are consistent
+* whether deep links preserve site/project context
+* whether permission failures are explicit
+* whether navigation behavior matches existing app patterns
+
+Do not implement navigation changes in this sprint; only document the needed fix.
+
+H. Weather and device readiness placement
+
+Using the existing screens only, recommend where to show:
+
+* weather provenance
+* weather missing-input reasons
+* semantics verified vs legacy_das_unverified
+* device eligibility diagnostics
+* mappable but non-driving devices
+* meter/logger/gateway diagnostics
+* weather-capable device semantics
+* calibration status
+
+Do not propose a new standalone weather page unless no existing O&M surface can reasonably contain it.
+
+I. Testing plan
+
+Return a concrete test plan for the future implementation sprint:
+
+* frontend component tests
+* route/navigation tests
+* backend endpoint tests
+* no-mutation tests for read-only panels
+* V2-native data source tests
+* old-model regression tests
+* visual/look-and-feel guardrails where possible
+* site 4 smoke test
+* permission tests
+
+J. Implementation sequencing
+
+Return a proposed phased plan:
+
+1. no-regret navigation fix
+2. data-source replacement where old models are still used
+3. missing-dependency indicators
+4. weather provenance badges
+5. device diagnostics insertion
+6. meter/logger/gateway read-only visibility
+7. O&M drill-down expansion
+8. reporting/export follow-up
+
+For each phase, identify:
+
+* risk level
+* files likely touched
+* tests needed
+* whether backend is required
+* whether frontend only
+* what must not change
+
+Return:
+
+1. frontend screen inventory
+2. backend/API inventory
+3. old-model dependency findings
+4. look-and-feel/design-system findings
+5. V2 alignment plan by screen
+6. missing-dependency indicator placement plan
+7. navigation findings
+8. weather/device readiness placement
+9. testing plan
+10. recommended implementation sprint prompt
+11. risks and non-goals
+
+Do not:
+
+* implement code
+* create new screens
+* redesign existing screens
+* change expected math
+* change ingestion
+* change device eligibility
+* change WeatherResolver
+* change baselines
+* touch due diligence parsing
+* touch plaintext secrets
+* reintroduce BigQuery/Firestore/legacy telemetry
