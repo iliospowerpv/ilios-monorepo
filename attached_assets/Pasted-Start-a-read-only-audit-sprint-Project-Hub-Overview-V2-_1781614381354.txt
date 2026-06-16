@@ -1,0 +1,315 @@
+Start a read-only audit sprint: Project Hub Overview V2 Data Alignment Audit.
+
+Do not implement code, migrations, route changes, UI changes, data-model changes, or refactors in this sprint.
+
+Context:
+The O&M / Device-Detail Drill-Down V2 Rebinding sprint is complete:
+
+* Project Hub Devices grid now has category filters, V2 liveness/eligibility chips, and safe CSV export
+* Project Hub Device Details now has a V2 actual-only performance card and Alerts tab
+* old orphaned O&M device route was not relinked
+* no BigQuery/Firestore/legacy/SAFL baseline path was reintroduced
+* projected unavailable states are explicit and not fabricated
+
+Previous concern:
+The Project Hub Overview page appears to read old data models. It may still rely on SiteAdditionalFieldList, legacy project summary fields, old due diligence characteristics, or old assumptions. We need to audit it before changing anything.
+
+Objective:
+Audit the existing Project Hub Overview tab and all related information cards to determine which fields are V2-native, which are legacy/display-only, which should be rebound to project_facts or V2 telemetry/baseline data, and which should remain as ordinary site metadata.
+
+Hard constraints:
+
+* Do not implement changes.
+* Do not create new screens.
+* Do not redesign the Overview page.
+* Do not remove existing cards.
+* Do not change route structure.
+* Do not change expected calculation math.
+* Do not change telemetry ingestion.
+* Do not change WeatherResolver.
+* Do not change device eligibility.
+* Do not change baseline lifecycle.
+* Do not touch due diligence parsing/prompts.
+* Do not touch plaintext secrets.
+* Do not reintroduce BigQuery/Firestore/legacy telemetry.
+* Preserve the existing Project Hub look and feel:
+
+  * current Overview layout
+  * information cards
+  * draggable layout if present
+  * MUI cards/tables/chips
+  * existing typography/spacing/theme
+
+Audit areas:
+
+A. Frontend inventory
+
+Identify all frontend components used by the Project Hub Overview tab, including:
+
+* Overview host component
+* draggable layout components
+* all information cards
+* Key Dates card
+* Ownership card
+* Asset Overview card
+* any performance, finance, diligence, document, construction, or metadata cards
+* edit/save controls
+* field renderers
+* API clients used
+
+For each component:
+
+* file path
+* parent component
+* displayed fields
+* API call/data source
+* whether editable
+* permissions/gates
+* whether it appears active/reachable
+* whether it uses old/legacy naming
+* whether it should stay unchanged, be rebound, or be marked display-only
+
+B. Backend/API inventory
+
+Identify backend endpoints/services used by the Overview tab and info cards.
+
+For each endpoint/service:
+
+* route
+* router file
+* service/helper
+* models/tables queried
+* whether data is V2-native, legacy, mixed, or ordinary site metadata
+* whether it reads:
+
+  * SiteAdditionalFieldList
+  * project_facts
+  * telemetry_expected_baselines
+  * telemetry_expected_baseline_points
+  * telemetry rollups/readings
+  * due diligence document keys
+  * reconciliation endpoint
+  * deals/acquisitions
+  * entity_relationships
+  * old BigQuery/Firestore/legacy telemetry
+* whether it writes to old data structures on edit/save
+
+C. Field classification
+
+Classify every Overview field into one of these categories:
+
+1. Ordinary site metadata
+   Examples:
+
+* site name
+* address
+* county/state
+* coordinates
+* ownership entity
+* lender
+* operator
+* interconnection info
+* ordinary administrative metadata
+
+2. Lifecycle/construction metadata
+   Examples:
+
+* NTP
+* LNTP
+* mechanical completion
+* PTO
+* construction stage
+* pipeline stage
+* commercial operation date
+
+3. Project assumption / diligence-derived fact
+   Examples:
+
+* system size DC/AC
+* module type/count/wattage
+* inverter type/count/wattage
+* degradation
+* losses
+* soiling
+* CEC efficiency
+* contractual production
+* PVsyst/design production
+
+4. Telemetry/baseline-derived operational value
+   Examples:
+
+* actual production
+* expected production
+* weather-adjusted expected
+* active baseline status
+* design estimate points
+* telemetry readiness
+* device readiness
+
+5. Legacy/display-only field
+   Examples:
+
+* old SAFL values that are not yet replaced
+* old project summary fields
+* old diligence characteristics
+
+D. V2 source recommendation
+
+For each field:
+
+* current source
+* recommended source
+* whether change is required now, later, or not at all
+* whether project_facts should become source of truth
+* whether telemetry/baseline should become source of truth
+* whether existing site metadata should remain source of truth
+* whether SAFL should remain display-only temporarily
+* whether a reconciliation indicator is needed
+
+Rules:
+
+* Baseline-driving assumptions should come from promoted project_facts, not SAFL.
+* Operational values should come from V2 telemetry/baselines, not old summaries.
+* Ordinary administrative metadata can remain in the existing site/entity models.
+* Lifecycle fields may remain in site/deal metadata unless they are also baseline-driving assumptions, in which case reconciliation must show the distinction.
+* Do not collapse design estimate, weather-adjusted expected, and actual production.
+
+E. Edit/save behavior audit
+
+For each editable field/card:
+
+* where does it write today?
+* is that still the correct target?
+* could editing it accidentally bypass project_facts/reconciliation?
+* should editing be disabled, relabeled, or routed through Data Room/project_facts for baseline-driving fields?
+* should a warning appear when editing a field that is display-only or legacy?
+* should a field become read-only because source-backed promotion is now required?
+
+F. Reconciliation linkage
+
+Identify where the Overview should show links/indicators to:
+
+* Reconciliation tab
+* Data Room document detail
+* accepted-not-promoted facts
+* missing baseline-driving facts
+* active baseline status
+* draft baseline status
+* design points status
+* telemetry/weather/device readiness
+
+Do not implement these links yet; identify placement only.
+
+G. Missing dependency indicators
+
+For Project Hub Overview, identify indicators needed when related data is missing:
+
+* accepted value not promoted
+* project_fact missing
+* draft baseline missing
+* active baseline missing
+* design points missing
+* telemetry not connected
+* device mappings missing
+* weather profile missing
+* missing irradiance/cell temperature
+* lifecycle date missing
+* source document missing
+* value exists only in legacy/display-only source
+
+For each:
+
+* label
+* explanation
+* recommended action/navigation
+* blocking level:
+
+  * blocks baseline
+  * blocks expected
+  * blocks reporting
+  * lowers confidence
+  * informational
+
+H. Look-and-feel preservation
+
+Document the current Overview visual system:
+
+* layout
+* card styles
+* draggable behavior
+* field labels
+* edit/save affordances
+* empty-state style
+* warning/chip style
+* spacing/typography
+* how future V2 indicators should be inserted without redesigning the page
+
+I. Implementation plan
+
+Return a phased implementation recommendation:
+
+1. no-regret labeling/display-only clarification
+2. disable or redirect unsafe edits for baseline-driving fields
+3. rebind assumption fields to promoted project_facts
+4. rebind operational fields to V2 telemetry/baselines
+5. add reconciliation/data-room links
+6. add missing dependency indicators
+7. preserve ordinary metadata edit behavior
+8. defer lifecycle schedule modeling if no authoritative source exists
+
+For each phase:
+
+* files likely touched
+* backend required yes/no
+* frontend required yes/no
+* tests required
+* risk level
+* non-goals
+
+J. Testing plan
+
+Return test plan for future implementation:
+
+* frontend rendering tests
+* edit/save routing tests
+* no unsafe writes to SAFL for baseline-driving fields
+* project_facts source tests
+* telemetry/baseline source tests
+* missing indicator tests
+* permission tests
+* site 4 smoke test
+* no BigQuery/Firestore/legacy telemetry usage
+* no fabricated zeros/nulls
+* frontend build/typecheck
+* backend targeted tests
+
+Return:
+
+1. frontend component inventory
+2. backend/API inventory
+3. field-by-field source classification
+4. old-model dependency findings
+5. unsafe edit/save findings
+6. V2 source recommendations
+7. reconciliation/missing-indicator placement plan
+8. look-and-feel preservation notes
+9. phased implementation plan
+10. testing plan
+11. risks and non-goals
+12. recommended next implementation prompt
+
+Do not:
+
+* implement code
+* modify UI
+* modify routes
+* modify APIs
+* modify database schema
+* change expected math
+* change telemetry ingestion
+* change WeatherResolver
+* change device eligibility
+* change baseline lifecycle
+* change due diligence parsing
+* touch plaintext secrets
+* reintroduce BigQuery/Firestore/legacy telemetry
