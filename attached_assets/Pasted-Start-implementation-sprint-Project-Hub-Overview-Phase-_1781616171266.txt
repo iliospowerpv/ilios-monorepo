@@ -1,0 +1,205 @@
+Start implementation sprint: Project Hub Overview Phase 1+2 — Safe Labeling and Edit Guarding.
+
+Context:
+The Project Hub Overview V2 Data Alignment Audit confirmed that the current Overview tab is backed mostly by SiteAdditionalFieldList plus a raw Due Diligence DocumentKey overlay. It does not read promoted project_facts, telemetry_expected_baselines, or telemetry rollups. Saving Asset Overview or Key Dates currently writes to SAFL and can trigger SiteCharacteristicsHandler.sync_to_bq.
+
+This creates a truth-store problem:
+
+* baseline-driving values edited in Overview bypass project_facts
+* they do not go through Data Room review/promotion
+* they do not update the V2 expected baseline
+* they can silently diverge from Reconciliation and active baselines
+
+Objective:
+Make the Project Hub Overview safe by clearly labeling baseline-driving fields and preventing unsafe edits/writes from Overview. Do not rebind reads to project_facts yet unless a small read-only indicator requires it. This sprint is primarily guardrails and clarity.
+
+Hard constraints:
+
+* Do not redesign the Overview page.
+* Do not remove cards.
+* Do not change draggable layout behavior or localStorage keys.
+* Do not create new screens.
+* Do not change routes.
+* Do not change database schema.
+* Do not change expected calculation math.
+* Do not change telemetry ingestion.
+* Do not change WeatherResolver.
+* Do not change device eligibility.
+* Do not change baseline lifecycle.
+* Do not change due diligence parsing/prompts.
+* Do not touch plaintext secrets.
+* Do not reintroduce BigQuery, Firestore, or legacy telemetry.
+* Do not use SAFL as a V2 baseline source.
+* Preserve the existing Project Hub look and feel:
+
+  * existing information cards
+  * MUI styling
+  * draggable card layout
+  * existing typography/spacing/theme
+  * existing edit/save affordances for ordinary metadata
+
+Scope:
+
+A. Identify baseline-driving fields in Overview
+
+In the current Project Hub Overview cards, identify fields that are baseline-driving or diligence-derived assumptions.
+
+At minimum include:
+
+* module quantity
+* inverter quantity
+* module/inverter equipment assumptions where present
+* system size DC/AC where used as an assumption
+* PVsyst / year-one expected production
+* degradation amount
+* DC wiring loss
+* AC wiring loss
+* MV transformer loss
+* MV line loss
+* soiling / loss fields if present
+* CEC efficiency if present
+* PTO only where it is baseline/effective-date relevant
+
+Confirm exact field keys from:
+
+* Overview card components
+* /api/sites/{id}/details payload
+* reconciliation catalog
+* baseline_from_facts_service required fields
+* baseline_points_service production fields
+
+B. Make baseline-driving fields read-only in Overview
+
+For the identified baseline-driving fields:
+
+* render as read-only values, not editable inputs
+* show clear source/provenance label:
+  “Source: Data Room / promoted project facts”
+  or
+  “Baseline-driving value — manage through Data Room”
+* show if the current displayed value is legacy/display-only, raw document value, accepted-not-promoted, promoted fact, or missing, where this can be inferred safely
+* do not allow saving these fields through the Overview edit form
+* do not silently write these fields to SAFL
+
+Ordinary metadata remains editable exactly as today.
+
+C. Prevent unsafe SAFL writes for baseline-driving fields
+
+Ensure PUT /api/sites/{id}/details?section_name=... cannot update the protected baseline-driving keys from Overview.
+
+Implementation options:
+
+* frontend removes protected fields from update payload
+* backend defensively ignores/rejects protected keys
+* both, if low risk
+
+Return structured warning/error if a protected field update is attempted, such as:
+“Baseline-driving fields must be updated through Data Room review and project fact promotion.”
+
+Do not block ordinary metadata updates in the same card.
+
+D. Prevent legacy BigQuery sync from protected Overview edits
+
+For Asset Overview / Key Dates saves:
+
+* ensure no SiteCharacteristicsHandler.sync_to_bq is triggered solely because protected baseline-driving fields were present in the UI
+* if the section still contains ordinary metadata that currently triggers sync, document whether that sync remains and why
+* ideally gate/remove the BigQuery sync for protected baseline-driving fields
+* do not add any new BigQuery path
+
+E. Add Data Room / Reconciliation affordances
+
+For protected fields/cards, add lightweight links or indicators:
+
+* View in Reconciliation
+* Manage in Data Room
+* Accepted, not promoted
+* No promoted value
+* Legacy/display-only value
+* Active fact exists
+* Draft baseline uses this value
+* Active baseline uses this value
+
+Use existing route conventions.
+Do not create mutation buttons.
+Navigation links only.
+
+F. Preserve ordinary metadata editing
+
+Verify these still work:
+
+* site name/address/admin metadata
+* ownership/entity pickers
+* contacts
+* lease/admin/vendor/operator fields
+* other non-baseline descriptive metadata
+
+Do not make the entire card read-only if only some fields are protected.
+
+G. UI / look-and-feel
+
+Use existing Overview visual patterns:
+
+* InformationCardBase
+* MUI Box/Card styling
+* existing key-value row layout
+* existing chip style
+* reconciliation StatusCell-style vocabulary where useful
+* compact helper text / tooltip, not a new design system
+
+Do not introduce a new layout, table, chart, color palette, or standalone warning panel.
+
+H. Tests
+
+Add/update tests for:
+
+1. Protected baseline-driving fields render read-only in Overview.
+2. Protected fields show clear source/provenance labels.
+3. Protected fields are excluded from Overview save payloads.
+4. Backend rejects or ignores protected baseline-driving updates defensively.
+5. Protected field update attempt does not write SAFL.
+6. Protected field update attempt does not trigger SiteCharacteristicsHandler.sync_to_bq.
+7. Ordinary metadata fields remain editable and save successfully.
+8. Entity picker fields still work.
+9. Data Room / Reconciliation links render where available.
+10. Missing protected value shows a clear next action.
+11. Legacy/display-only value is labeled as legacy/display-only.
+12. No BigQuery/Firestore/legacy telemetry paths are added.
+13. No baseline lifecycle changes.
+14. Frontend typecheck/build passes.
+15. Backend targeted tests pass.
+16. Site 4 Overview smoke test passes.
+17. Architect review passes.
+
+I. Required return
+
+Return:
+
+* files changed
+* exact protected field list
+* frontend guard behavior
+* backend defensive behavior
+* BigQuery sync behavior after change
+* ordinary metadata edit regression results
+* Data Room/Reconciliation link behavior
+* tests added/updated
+* validation results
+* remaining risks
+* recommended Phase 3 rebind prompt
+
+Do not:
+
+* rebind all Overview values to project_facts yet
+* create new cards
+* redesign Overview
+* remove cards
+* change routes
+* change schemas
+* change expected math
+* change telemetry ingestion
+* change WeatherResolver
+* change device eligibility
+* change baseline lifecycle
+* change DD parsing
+* touch plaintext secrets
+* reintroduce BigQuery/Firestore/legacy telemetry

@@ -59,10 +59,13 @@ class SiteLevelDetailsViewSchema(SiteLevelDetailsUpdateSchema, BaseSiteSchema):
 class AssetOverviewUpdateSchema(BaseModel):
     battery_storage: Optional[str] = Field(None, examples=["Yes"])
     mount_type: Optional[MountTypes] = Field(None, examples=["Fixed Tilt Ground Mount"])
-    dc_wiring_loss: float = Field(examples=[0.58])
-    ac_wiring_loss: float = Field(examples=[-0.71])
-    medium_voltage_loss: float = Field(examples=[-1.35])
-    mv_line_loss: float = Field(examples=[-0.01])
+    # Baseline-driving losses are read-only in the Project Hub Overview (Phase 1+2) and are
+    # stripped from the persisted payload by the update_site_details endpoint. They are optional
+    # here so clients that omit them do not 422 (existing values are preserved, never overwritten).
+    dc_wiring_loss: Optional[float] = Field(None, examples=[0.58])
+    ac_wiring_loss: Optional[float] = Field(None, examples=[-0.71])
+    medium_voltage_loss: Optional[float] = Field(None, examples=[-1.35])
+    mv_line_loss: Optional[float] = Field(None, examples=[-0.01])
 
     @field_validator("battery_storage")
     @classmethod

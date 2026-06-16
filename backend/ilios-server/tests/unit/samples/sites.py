@@ -305,13 +305,21 @@ TEST_SITE_DETAILS_ASSET_OVERVIEW_SECTION_UPDATE_PAYLOAD = {
     "mv_line_loss": -0.01,
 }
 TEST_SITE_DETAILS_ASSET_OVERVIEW_SECTION_UPDATED = deepcopy(TEST_SITE_DETAILS_ASSET_OVERVIEW_SECTION)
-TEST_SITE_DETAILS_ASSET_OVERVIEW_SECTION_UPDATED.update(TEST_SITE_DETAILS_ASSET_OVERVIEW_SECTION_UPDATE_PAYLOAD)
+# Project Hub Overview Phase 1+2: the baseline-driving losses are read-only and stripped from the
+# write payload, so only the editable ordinary fields persist; the losses keep their stored values.
+TEST_SITE_DETAILS_ASSET_OVERVIEW_SECTION_UPDATED.update(
+    {
+        "battery_storage": TEST_SITE_DETAILS_ASSET_OVERVIEW_SECTION_UPDATE_PAYLOAD["battery_storage"],
+        "mount_type": TEST_SITE_DETAILS_ASSET_OVERVIEW_SECTION_UPDATE_PAYLOAD["mount_type"],
+    }
+)
 TEST_SITE_DETAILS_ASSET_OVERVIEW_SECTION_UPDATE_PAYLOAD_INVALID = {
     "battery_storage": "something",
 }
+# Losses are now Optional[float] (read-only, stripped on write), so they no longer raise
+# "Field required"; only the battery_storage value error remains.
 TEST_SITE_DETAILS_ASSET_OVERVIEW_SECTION_UPDATE_PAYLOAD_VALIDATION_ERROR = (
-    "Validation error: battery_storage - Value error, Expected 'Yes' or 'No'; dc_wiring_loss - Field required; "
-    "ac_wiring_loss - Field required; medium_voltage_loss - Field required; mv_line_loss - Field required"
+    "Validation error: battery_storage - Value error, Expected 'Yes' or 'No'"
 )
 
 TEST_SITE_DETAILS_OWNERSHIP_SECTION_UPDATE_PAYLOAD = {
@@ -370,7 +378,14 @@ TEST_SITE_DETAILS_KEY_DATES_SECTION_UPDATE_PAYLOAD = {
     "financial_close_date": "2025-01-07",
 }
 TEST_SITE_DETAILS_KEY_DATES_SECTION_SECTION_UPDATED = deepcopy(TEST_SITE_DETAILS_KEY_DATES_SECTION)
-TEST_SITE_DETAILS_KEY_DATES_SECTION_SECTION_UPDATED.update(TEST_SITE_DETAILS_KEY_DATES_SECTION_UPDATE_PAYLOAD)
+# Project Hub Overview Phase 1+2: permission_to_operate is read-only and stripped from the write
+# payload, so only the editable dates persist; PTO keeps its stored value.
+TEST_SITE_DETAILS_KEY_DATES_SECTION_SECTION_UPDATED.update(
+    {
+        "placed_in_service_date": TEST_SITE_DETAILS_KEY_DATES_SECTION_UPDATE_PAYLOAD["placed_in_service_date"],
+        "financial_close_date": TEST_SITE_DETAILS_KEY_DATES_SECTION_UPDATE_PAYLOAD["financial_close_date"],
+    }
+)
 TEST_SITE_DETAILS_KEY_DATES_SECTION_UPDATE_PAYLOAD_INVALID = {
     "permission_to_operate": True,
     "placed_in_service_date": "not-a-date",

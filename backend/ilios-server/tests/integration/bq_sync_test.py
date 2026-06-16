@@ -9,14 +9,16 @@ from tests.unit import samples
 class TestBQSyncProcess:
     """Validates the flow when some platform data should be synced into BigQuery for further calculation.
 
-    There are two scenarios when we still pass data to BQ (device/site profile edits):
-    1. Module/Inverter devices technical details has been updated.
-    2. Asset Overview/Key Dates cards of the site details has been updated.
+    There is now a single scenario where platform data is still pushed to BQ (device profile edits):
+    1. Module/Inverter devices technical details has been updated. Updates go to the device
+       characteristics table. Valuable fields are described in the
+       BQDeviceCharacteristicsUpdateSchema/BQDeviceCharacteristicsCreateSchema models.
 
-    For the case 1, updates go to the device characteristics table. Valuable fields are described in the
-    BQDeviceCharacteristicsUpdateSchema/BQDeviceCharacteristicsCreateSchema models.
-    For the case 2, updates go to the site characteristics table. Valuable fields are described in the
-    BQSiteCharacteristicsUpdateSchema/BQSiteCharacteristicsCreateSchema models.
+    Project Hub Overview Phase 1+2 note: editing the site Asset Overview / Key Dates cards no longer
+    syncs to BigQuery. The baseline-driving fields those cards used to push (DC/AC/MV losses,
+    permission_to_operate) are now read-only and stripped from the update payload before persistence,
+    so the site-characteristics diff is empty and no BigQuery query is issued. See
+    test_site_cards_no_longer_sync_to_bq below.
 
     DD V2 Phase 5B note: the Due Diligence (As-built PV Syst) key -> BigQuery sync was removed; those
     scenarios (former cases 3 & 4) no longer exist and reviewed DD values flow into project_facts instead.
@@ -107,37 +109,13 @@ class TestBQSyncProcess:
         )
 
     @pytest.mark.parametrize(
-        "section_name,section_payload,is_update,upsert_template",
+        "section_name,section_payload",
         (
-            # insert cases
-            (
-                "asset_overview",
-                samples.SITE_ASSET_OVERVIEW_CARD_BQ_REQUIRED_FIELDS_PAYLOAD,
-                False,
-                samples.BQ_INSERT_SITE_ASSET_OVERVIEW_CARD_DETAILS_STATEMENT_TEMPLATE,
-            ),
-            (
-                "key_dates",
-                samples.SITE_KEY_DATES_CARD_BQ_REQUIRED_FIELDS_PAYLOAD,
-                False,
-                samples.BQ_INSERT_SITE_KEY_DATES_CARD_DETAILS_STATEMENT_TEMPLATE,
-            ),
-            # update cases
-            (
-                "asset_overview",
-                samples.SITE_ASSET_OVERVIEW_CARD_BQ_REQUIRED_FIELDS_PAYLOAD,
-                True,
-                samples.BQ_UPDATE_SITE_ASSET_OVERVIEW_CARD_DETAILS_STATEMENT_TEMPLATE,
-            ),
-            (
-                "key_dates",
-                samples.SITE_KEY_DATES_CARD_BQ_REQUIRED_FIELDS_PAYLOAD,
-                True,
-                samples.BQ_UPDATE_SITE_KEY_DATES_CARD_DETAILS_STATEMENT_TEMPLATE,
-            ),
+            ("asset_overview", samples.SITE_ASSET_OVERVIEW_CARD_BQ_REQUIRED_FIELDS_PAYLOAD),
+            ("key_dates", samples.SITE_KEY_DATES_CARD_BQ_REQUIRED_FIELDS_PAYLOAD),
         ),
     )
-    def test_site_cards_sync(
+    def test_site_cards_no_longer_sync_to_bq(
         self,
         client,
         site_id,
@@ -145,13 +123,15 @@ class TestBQSyncProcess:
         bq_client_mock,
         section_name,
         section_payload,
-        is_update,
-        upsert_template,
     ):
-        template_substitution_params = {"table_name": self.SITE_TABLE_NAME}
-        if is_update:
-            bq_client_mock().query.side_effect = samples.conditional_bq_side_effect
-            template_substitution_params = template_substitution_params | {"site_id": site_id}
+        """Project Hub Overview Phase 1+2 guard.
+
+        Editing the Asset Overview / Key Dates cards must NOT sync to BigQuery anymore. Even when the
+        request still carries the (now read-only) baseline-driving fields, they are stripped from the
+        update payload before persistence, so the site-characteristics diff is empty and no BigQuery
+        query (neither the existence SELECT nor an upsert) is ever issued.
+        """
+        bq_client_mock().query.side_effect = samples.conditional_bq_side_effect
 
         response = client.put(
             self._generate_site_details_endpoint(site_id),
@@ -161,12 +141,4 @@ class TestBQSyncProcess:
         )
 
         assert response.status_code == 202
-        bq_client_mock().query.assert_any_call(
-            samples.fill_string_template(
-                samples.BQ_SELECT_SITE_STATEMENT_TEMPLATE, site_id=site_id, table_name=self.SITE_TABLE_NAME
-            ),
-            job_id_prefix=ANY,
-        )
-        bq_client_mock().query.assert_any_call(
-            samples.fill_string_template(upsert_template, **template_substitution_params), job_config=ANY
-        )
+        bq_client_mock().query.assert_not_called()

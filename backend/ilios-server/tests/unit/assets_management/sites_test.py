@@ -1,7 +1,7 @@
 import copy
 import logging
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 import pytest
 
@@ -647,6 +647,90 @@ class TestAssetManagementSites:
         assert put_response.status_code == 202
         assert get_response.status_code == 200
         assert get_response.json()[section_name] == expected_updated_section
+
+    @pytest.mark.parametrize(
+        "section_name, seed_protected, write_payload, expected_protected, ordinary_field, ordinary_value",
+        (
+            (
+                SiteDetailsSections.asset_overview.value,
+                {
+                    "dc_wiring_loss": 1.5,
+                    "ac_wiring_loss": 2.5,
+                    "medium_voltage_loss": 3.5,
+                    "mv_line_loss": 4.5,
+                },
+                {
+                    "battery_storage": "Yes",
+                    "dc_wiring_loss": 99,
+                    "ac_wiring_loss": 99,
+                    "medium_voltage_loss": 99,
+                    "mv_line_loss": 99,
+                },
+                {
+                    "dc_wiring_loss": 1.5,
+                    "ac_wiring_loss": 2.5,
+                    "medium_voltage_loss": 3.5,
+                    "mv_line_loss": 4.5,
+                },
+                "battery_storage",
+                "Yes",
+            ),
+            (
+                SiteDetailsSections.key_dates.value,
+                {"permission_to_operate": date(2030, 1, 1)},
+                {
+                    "permission_to_operate": "1999-01-01",
+                    "placed_in_service_date": "2020-01-04",
+                    "financial_close_date": "2025-01-07",
+                },
+                {"permission_to_operate": "2030-01-01"},
+                "placed_in_service_date",
+                "2020-01-04",
+            ),
+        ),
+    )
+    def test_update_site_details_preserves_protected_baseline_fields(
+        self,
+        client,
+        company_member_user_auth_header,
+        site,
+        db_session,
+        all_site_documents,
+        ignore_bq_sync,
+        section_name,
+        seed_protected,
+        write_payload,
+        expected_protected,
+        ordinary_field,
+        ordinary_value,
+    ):
+        """Project Hub Overview Phase 1+2 guard: baseline-driving fields (asset_overview losses,
+        key_dates permission_to_operate) are read-only. A PUT that still carries them is ignored —
+        pre-existing stored values are preserved (never overwritten or blanked), while ordinary
+        metadata in the same section still persists, and the request still returns 202.
+        """
+        # Seed pre-existing protected values directly. In production these originate from the
+        # Data Room / promoted project-facts provenance chain, never the Overview edit form.
+        site_details_crud = SiteAdditionalFieldListCRUD(db_session)
+        site_details_crud.create_item({"site_id": site.id, **seed_protected})
+
+        put_response = client.put(
+            self._generate_details_endpoint(site.id),
+            headers=company_member_user_auth_header,
+            params={"section_name": section_name},
+            json=write_payload,
+        )
+        get_response = client.get(self._generate_details_endpoint(site.id), headers=company_member_user_auth_header)
+
+        assert put_response.status_code == 202
+        assert get_response.status_code == 200
+
+        section = get_response.json()[section_name]
+        # Ordinary metadata in the same section still persisted.
+        assert section[ordinary_field] == ordinary_value
+        # Protected baseline-driving fields retained their seeded values; the payload was ignored.
+        for field, expected_value in expected_protected.items():
+            assert section[field] == expected_value
 
     @pytest.mark.parametrize(
         "section_name,section_payload,expected_error_message",

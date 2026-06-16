@@ -19,13 +19,16 @@ import {
 import { useNotify } from '../../../../../../../../../contexts/notifications/notifications';
 
 import { ApiClient } from '../../../../../../../../../api';
+import { ProvenanceNote, BaselineNavLinks } from '../../provenance/BaselineProvenance';
 
 dayjs.extend(CustomParseFormatPlugin);
 
 type KeyDatesCardData = Exclude<Awaited<ReturnType<typeof ApiClient.assetManagement.siteInfo>>['key_dates'], null>;
 
+// Phase 1+2: Permission to Operate (PTO) is baseline / effective-date relevant and is
+// managed through the Data Room / project-facts promotion workflow, so it is read-only
+// here. The remaining completion dates stay editable as ordinary metadata.
 interface KeyDatesFormFields {
-  permission_to_operate: Dayjs | null;
   placed_in_service_date: Dayjs | null;
   financial_close_date: Dayjs | null;
 }
@@ -42,9 +45,6 @@ const KeyDatesForm = React.forwardRef<InformationCardFormRef, InformationCardFor
       criteriaMode: 'all',
       reValidateMode: 'onChange',
       defaultValues: {
-        permission_to_operate: data.permission_to_operate
-          ? dayjs(data.permission_to_operate, 'YYYY-MM-DD', true)
-          : null,
         placed_in_service_date: data.placed_in_service_date
           ? dayjs(data.placed_in_service_date, 'YYYY-MM-DD', true)
           : null,
@@ -59,9 +59,6 @@ const KeyDatesForm = React.forwardRef<InformationCardFormRef, InformationCardFor
           siteId,
           section: 'key_dates',
           data: {
-            permission_to_operate: attributes.permission_to_operate
-              ? attributes.permission_to_operate.format('YYYY-MM-DD')
-              : null,
             placed_in_service_date: attributes.placed_in_service_date
               ? attributes.placed_in_service_date.format('YYYY-MM-DD')
               : null,
@@ -82,9 +79,6 @@ const KeyDatesForm = React.forwardRef<InformationCardFormRef, InformationCardFor
 
     React.useEffect(() => {
       reset({
-        permission_to_operate: data.permission_to_operate
-          ? dayjs(data.permission_to_operate, 'YYYY-MM-DD', true)
-          : null,
         placed_in_service_date: data.placed_in_service_date
           ? dayjs(data.placed_in_service_date, 'YYYY-MM-DD', true)
           : null,
@@ -154,59 +148,15 @@ const KeyDatesForm = React.forwardRef<InformationCardFormRef, InformationCardFor
               <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
                 <TextBox fieldName>Permission to Operate:</TextBox>
               </FieldCell>
-              <FieldCell component="th" scope="row" align={mode === 'view' ? 'right' : 'left'}>
-                {mode === 'view' ? (
-                  <TextBox>
-                    {data.permission_to_operate
-                      ? dayjs(data.permission_to_operate, 'YYYY-MM-DD', true).format('MM/DD/YYYY')
-                      : null}
-                  </TextBox>
-                ) : (
-                  <Controller
-                    name="permission_to_operate"
-                    control={control}
-                    rules={{
-                      validate: value => {
-                        if (!value) return true;
-                        return dayjs(value).isValid() || 'Please enter correct Permission to Operate.';
-                      }
-                    }}
-                    render={({ field: { ref, value, onChange, onBlur, ...field } }) => (
-                      <DatePicker
-                        {...field}
-                        value={value}
-                        format="MM/DD/YYYY"
-                        inputRef={ref}
-                        onChange={val => onChange(val)}
-                        slotProps={{
-                          textField: {
-                            onBlur,
-                            disabled: isSubmitting,
-                            error: !!errors.permission_to_operate,
-                            size: 'small',
-                            fullWidth: true,
-                            InputProps: { sx: inputStyles },
-                            variant: 'outlined'
-                          }
-                        }}
-                      />
-                    )}
-                  />
-                )}
+              <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
+                <TextBox>
+                  {data.permission_to_operate
+                    ? dayjs(data.permission_to_operate, 'YYYY-MM-DD', true).format('MM/DD/YYYY')
+                    : null}
+                </TextBox>
+                <ProvenanceNote variant="baseline" />
               </FieldCell>
             </TableRow>
-            {errors.permission_to_operate?.message && (
-              <TableRow>
-                <FieldCell component="th" scope="row" width="40%" />
-                <FieldCell component="th" scope="row" align="right">
-                  <TextBox>
-                    <FormHelperText sx={{ margin: 0 }} error>
-                      {errors.permission_to_operate?.message}
-                    </FormHelperText>
-                  </TextBox>
-                </FieldCell>
-              </TableRow>
-            )}
             <TableRow>
               <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
                 <TextBox fieldName>Placed in Service Date:</TextBox>
@@ -323,6 +273,7 @@ const KeyDatesForm = React.forwardRef<InformationCardFormRef, InformationCardFor
             )}
           </TableBody>
         </Table>
+        <BaselineNavLinks siteId={siteId} />
       </Box>
     );
   }

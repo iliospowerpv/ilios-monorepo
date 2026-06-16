@@ -59,7 +59,12 @@ from app.schema.site_details import SiteFullDetailsSchema
 from app.schema.user import CurrentUserSchema
 from app.static import HTTP_403_RESPONSE, HTTP_404_RESPONSE, SiteMessages
 from app.static.permissions import PermissionsModules
-from app.static.sites import SITE_AM_SECTIONS_SCHEMAS, SiteDetailsSections, site_am_sections_doc
+from app.static.sites import (
+    PROTECTED_BASELINE_DRIVING_FIELDS,
+    SITE_AM_SECTIONS_SCHEMAS,
+    SiteDetailsSections,
+    site_am_sections_doc,
+)
 
 logger = logging.getLogger(__name__)
 sites_router = APIRouter()
@@ -328,13 +333,35 @@ async def update_site_details(
         raise HTTPException(status_code=422, detail=f"Validation error: {msg}")
 
     updated_site_details_payload = validated_data.model_dump()
-    site_details_crud.update_by_id(site.additional_fields.id, updated_site_details_payload)
+
+    # Phase 1+2 safety guard: baseline-driving fields are owned by the Data Room / promoted
+    # project-facts provenance chain and are rendered read-only in the Project Hub Overview.
+    # Strip them from the persisted payload (defense-in-depth, even if a client still sends them)
+    # so existing SiteAdditionalFieldList values are preserved and never blanked.
+    protected_fields = PROTECTED_BASELINE_DRIVING_FIELDS.get(section_name, set())
+    blocked_fields = [field for field in protected_fields if field in updated_site_details_payload]
+    if blocked_fields:
+        logger.warning(
+            "Ignoring write to protected baseline-driving field(s) %s on site %s section '%s'; "
+            "these values are managed through the Data Room provenance chain.",
+            sorted(blocked_fields),
+            site.id,
+            section_name.value,
+        )
+    persisted_payload = {
+        key: value for key, value in updated_site_details_payload.items() if key not in protected_fields
+    }
+    site_details_crud.update_by_id(site.additional_fields.id, persisted_payload)
 
     if section_name in [SiteDetailsSections.asset_overview, SiteDetailsSections.key_dates]:
+        # Protected baseline-driving fields are stripped above, so the site-characteristics diff
+        # surfaces no BigQuery-mapped changes and this sync is a guaranteed no-op for these
+        # sections. The mechanism is intentionally left in place (unchanged) for any future,
+        # non-protected site characteristic.
         background_tasks.add_task(
             SiteCharacteristicsHandler(site).sync_to_bq,
             old_record=additional_fields_before_update,
-            new_record=updated_site_details_payload,
+            new_record=persisted_payload,
         )
 
     return {"code": status.HTTP_202_ACCEPTED, "message": SiteMessages.site_update_success}

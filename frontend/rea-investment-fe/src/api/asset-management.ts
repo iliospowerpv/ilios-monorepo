@@ -811,10 +811,13 @@ interface UpdateSiteInfoAssetOverviewParams extends UpdateSiteInfoBaseParams {
   data: {
     battery_storage: string | null;
     mount_type: string | null;
-    dc_wiring_loss: number | null;
-    ac_wiring_loss: number | null;
-    medium_voltage_loss: number | null;
-    mv_line_loss: number | null;
+    // Baseline-driving losses are read-only in the UI (managed via the Data Room /
+    // project-facts promotion workflow) and are stripped server-side, so the card
+    // omits them. Kept optional for backward compatibility with any other callers.
+    dc_wiring_loss?: number | null;
+    ac_wiring_loss?: number | null;
+    medium_voltage_loss?: number | null;
+    mv_line_loss?: number | null;
   };
 }
 
@@ -843,7 +846,10 @@ interface UpdateSiteInfoTaxEquityParams extends UpdateSiteInfoBaseParams {
 interface UpdateSiteInfoKeyDatesParams extends UpdateSiteInfoBaseParams {
   section: 'key_dates';
   data: {
-    permission_to_operate: string | null;
+    // Permission to Operate is baseline / effective-date relevant: read-only in the
+    // UI and stripped server-side, so the card omits it. Kept optional for backward
+    // compatibility with any other callers.
+    permission_to_operate?: string | null;
     placed_in_service_date: string | null;
     financial_close_date: string | null;
   };

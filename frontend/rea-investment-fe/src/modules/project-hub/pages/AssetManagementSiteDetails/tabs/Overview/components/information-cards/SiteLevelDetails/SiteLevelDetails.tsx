@@ -27,6 +27,7 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import Visibility from '@mui/icons-material/Visibility';
 import Link from '@mui/material/Link';
 import { StyledSelectItem } from '../../../../../../DeviceDetails/tabs/Overview/components/GeneralDeviceInfoCard/GeneralDeviceInfoCard.styles';
+import { ProvenanceNote } from '../../provenance/BaselineProvenance';
 
 type SiteLevelDetailsData = Exclude<
   Awaited<ReturnType<typeof ApiClient.assetManagement.siteInfo>>['site_level_details'],
@@ -348,16 +349,18 @@ const SiteLevelDetailsForm = React.forwardRef<InformationCardFormRef, Informatio
               <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
                 <TextBox fieldName>System Size kW DC:</TextBox>
               </FieldCell>
-              <FieldCell component="th" scope="row" align="right">
+              <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
                 <TextBox>{formFloatValue(data.system_size_dc)}</TextBox>
+                <ProvenanceNote variant="baseline" />
               </FieldCell>
             </TableRow>
             <TableRow>
               <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
                 <TextBox fieldName>System Size kW AC:</TextBox>
               </FieldCell>
-              <FieldCell component="th" scope="row" align="right">
+              <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
                 <TextBox>{formFloatValue(data.system_size_ac)}</TextBox>
+                <ProvenanceNote variant="baseline" />
               </FieldCell>
             </TableRow>
             <TableRow>
@@ -732,16 +735,18 @@ const SiteLevelDetailsForm = React.forwardRef<InformationCardFormRef, Informatio
               <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
                 <TextBox fieldName>Year 1 Expected Production:</TextBox>
               </FieldCell>
-              <FieldCell component="th" scope="row" align="right">
+              <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
                 <TextBox>{data.year_one_expected_production}</TextBox>
+                <ProvenanceNote variant="baseline" />
               </FieldCell>
             </TableRow>
             <TableRow>
               <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
                 <TextBox fieldName>Degradation Amount, %:</TextBox>
               </FieldCell>
-              <FieldCell component="th" scope="row" align="right">
+              <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
                 <TextBox>{data.degradation_amount}</TextBox>
+                <ProvenanceNote variant="baseline" />
               </FieldCell>
             </TableRow>
             <TableRow>

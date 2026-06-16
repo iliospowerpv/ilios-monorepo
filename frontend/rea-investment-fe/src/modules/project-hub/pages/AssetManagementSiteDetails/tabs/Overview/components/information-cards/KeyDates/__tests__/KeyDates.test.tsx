@@ -9,19 +9,23 @@ jest.mock('../../../../../../../../../../contexts/notifications/notifications', 
   useNotify: jest.fn()
 }));
 
+jest.mock('../../../../../../../../../../contexts/auth/auth', () => ({
+  useAuth: () => ({ user: { is_system_user: true } })
+}));
+
 describe('KeyDatesCard form component', () => {
   const queryClient = new QueryClient();
 
-  it('renders and functions correctly', async () => {
-    const data = {
-      mechanical_completion_date: null,
-      substantial_completion_date: null,
-      final_completion_date: null,
-      permission_to_operate: '2025-01-07',
-      placed_in_service_date: '2020-04-01',
-      financial_close_date: '2025-07-01'
-    };
+  const data = {
+    mechanical_completion_date: null,
+    substantial_completion_date: null,
+    final_completion_date: null,
+    permission_to_operate: '2025-01-07',
+    placed_in_service_date: '2020-04-01',
+    financial_close_date: '2025-07-01'
+  };
 
+  const renderCard = () =>
     render(
       <BrowserRouter>
         <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -32,12 +36,23 @@ describe('KeyDatesCard form component', () => {
       </BrowserRouter>
     );
 
-    const editBtn = screen.getByTestId('key_dates-edit-btn');
+  it('renders Permission to Operate read-only with a provenance label and a Data Room link', () => {
+    renderCard();
 
-    fireEvent.click(editBtn);
+    // Only PTO is baseline-driving / read-only in this card.
+    expect(screen.getAllByText(/Baseline-driving/i).length).toBe(1);
+    expect(screen.getByRole('link', { name: /open data room/i })).toBeTruthy();
+  });
 
+  it('keeps the other two dates editable while PTO stays read-only in edit mode', async () => {
+    renderCard();
+
+    fireEvent.click(screen.getByTestId('key_dates-edit-btn'));
+
+    // Placed in Service and Financial Close remain editable date inputs; PTO does not.
     await waitFor(() => {
-      expect(screen.getAllByRole('textbox').length).toBe(3);
+      expect(screen.getAllByRole('textbox').length).toBe(2);
     });
+    expect(screen.getAllByText(/Baseline-driving/i).length).toBe(1);
   });
 });

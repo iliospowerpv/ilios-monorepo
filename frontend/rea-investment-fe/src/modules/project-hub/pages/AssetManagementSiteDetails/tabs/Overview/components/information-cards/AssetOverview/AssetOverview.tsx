@@ -19,16 +19,17 @@ import { ApiClient } from '../../../../../../../../../api';
 import { StyledSelectItem } from '../../../../../../DeviceDetails/tabs/Overview/components/TechnicalDetailCard/TechnicalDetail.styles';
 import FormHelperText from '@mui/material/FormHelperText';
 import formatFloatValue from '../../../../../../../../../utils/formatters/formatFloatValue';
-import FormattedNumericInputWithMinus from '../../../../../../../../../components/common/FormattedNumericInput/FormattedNumericInputWithMinus';
+import { ProvenanceNote, BaselineNavLinks } from '../../provenance/BaselineProvenance';
 
 type AssetOverviewCardData = Exclude<
   Awaited<ReturnType<typeof ApiClient.assetManagement.siteInfo>>['asset_overview'],
   null
 >;
-type AssetOverviewFormFields = Pick<
-  AssetOverviewCardData,
-  'battery_storage' | 'mount_type' | 'dc_wiring_loss' | 'ac_wiring_loss' | 'medium_voltage_loss' | 'mv_line_loss'
->;
+
+// Phase 1+2: baseline-driving fields (module/inverter quantities, project type and
+// the four ohmic-loss values) are read-only and managed through the Data Room /
+// project-facts promotion workflow. Only ordinary metadata stays editable here.
+type AssetOverviewFormFields = Pick<AssetOverviewCardData, 'battery_storage' | 'mount_type'>;
 
 const inputStyles = { fontSize: '0.875rem', lineHeight: 1.43 };
 
@@ -43,11 +44,7 @@ const AssetOverviewForm = React.forwardRef<InformationCardFormRef, InformationCa
       reValidateMode: 'onChange',
       defaultValues: {
         battery_storage: data.battery_storage,
-        mount_type: data.mount_type,
-        dc_wiring_loss: data.dc_wiring_loss,
-        ac_wiring_loss: data.ac_wiring_loss,
-        medium_voltage_loss: data.medium_voltage_loss,
-        mv_line_loss: data.mv_line_loss
+        mount_type: data.mount_type
       }
     });
 
@@ -59,11 +56,7 @@ const AssetOverviewForm = React.forwardRef<InformationCardFormRef, InformationCa
           section: 'asset_overview',
           data: {
             battery_storage: attributes.battery_storage || null,
-            mount_type: attributes.mount_type || null,
-            dc_wiring_loss: attributes.dc_wiring_loss || null,
-            ac_wiring_loss: attributes.ac_wiring_loss || null,
-            medium_voltage_loss: attributes.medium_voltage_loss || null,
-            mv_line_loss: attributes.mv_line_loss || null
+            mount_type: attributes.mount_type || null
           }
         })
     });
@@ -79,11 +72,7 @@ const AssetOverviewForm = React.forwardRef<InformationCardFormRef, InformationCa
     React.useEffect(() => {
       reset({
         battery_storage: data.battery_storage,
-        mount_type: data.mount_type,
-        dc_wiring_loss: data.dc_wiring_loss,
-        ac_wiring_loss: data.ac_wiring_loss,
-        medium_voltage_loss: data.medium_voltage_loss,
-        mv_line_loss: data.mv_line_loss
+        mount_type: data.mount_type
       });
     }, [data, reset]);
 
@@ -94,11 +83,7 @@ const AssetOverviewForm = React.forwardRef<InformationCardFormRef, InformationCa
           notify(response.message || `Asset Overview information was successfully updated.`);
           reset({
             battery_storage: data.battery_storage,
-            mount_type: data.mount_type,
-            dc_wiring_loss: data.dc_wiring_loss,
-            ac_wiring_loss: data.ac_wiring_loss,
-            medium_voltage_loss: data.medium_voltage_loss,
-            mv_line_loss: data.mv_line_loss
+            mount_type: data.mount_type
           });
           await queryClient.invalidateQueries({ queryKey: ['sites'] });
           setMode('view');
@@ -132,272 +117,65 @@ const AssetOverviewForm = React.forwardRef<InformationCardFormRef, InformationCa
               <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
                 <TextBox fieldName>Module Quantity:</TextBox>
               </FieldCell>
-              <FieldCell component="th" scope="row" align="right">
+              <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
                 <TextBox>{data.module_quantity}</TextBox>
+                <ProvenanceNote variant="source" />
               </FieldCell>
             </TableRow>
             <TableRow>
               <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
                 <TextBox fieldName>Inverter Quantity:</TextBox>
               </FieldCell>
-              <FieldCell component="th" scope="row" align="right">
+              <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
                 <TextBox>{data.inverter_quantity}</TextBox>
+                <ProvenanceNote variant="source" />
               </FieldCell>
             </TableRow>
             <TableRow>
               <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
                 <TextBox fieldName>Project Type:</TextBox>
               </FieldCell>
-              <FieldCell component="th" scope="row" align="right">
+              <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
                 <TextBox>{data.project_type}</TextBox>
+                <ProvenanceNote variant="source" />
               </FieldCell>
             </TableRow>
             <TableRow>
-              <FieldCell component="th" scope="row" width="40%">
+              <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
                 <TextBox fieldName>DC Ohmic Wiring Loss, %</TextBox>
               </FieldCell>
-              <FieldCell component="th" scope="row" align={mode === 'view' ? 'right' : 'left'}>
-                {mode === 'view' ? (
-                  <TextBox>{data.dc_wiring_loss !== null ? formatFloatValue(data.dc_wiring_loss) : ''}</TextBox>
-                ) : (
-                  <Controller
-                    name="dc_wiring_loss"
-                    control={control}
-                    rules={{
-                      validate: value => {
-                        if (!value) return 'DC Ohmic Wiring Loss is required field.';
-                        if ((value as unknown as string).length > 100)
-                          return 'DC Ohmic Wiring Loss length should not exceed 100 characters.';
-                        const withoutThousandSeparators = value.toString().replaceAll(',', '');
-                        return Number.isNaN(Number.parseFloat(withoutThousandSeparators))
-                          ? 'Invalid number provided as a value for DC Ohmic Wiring Loss'
-                          : true;
-                      }
-                    }}
-                    render={({ field: { ref, value, onChange, ...field } }) => (
-                      <TextField
-                        {...field}
-                        fullWidth
-                        size="small"
-                        placeholder=""
-                        error={!!errors.dc_wiring_loss}
-                        multiline
-                        required
-                        minRows={1}
-                        maxRows={3}
-                        disabled={isSubmitting}
-                        inputRef={ref}
-                        value={value || ''}
-                        onChange={e => onChange(e.target.value || null)}
-                        variant="outlined"
-                        InputProps={{
-                          inputComponent: FormattedNumericInputWithMinus as any,
-                          ref: ref,
-                          sx: inputStyles
-                        }}
-                      />
-                    )}
-                  />
-                )}
+              <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
+                <TextBox>{data.dc_wiring_loss !== null ? formatFloatValue(data.dc_wiring_loss) : ''}</TextBox>
+                <ProvenanceNote variant="baseline" />
               </FieldCell>
             </TableRow>
-            {errors.dc_wiring_loss?.message && (
-              <TableRow>
-                <FieldCell component="th" scope="row" width="40%" />
-                <FieldCell component="th" scope="row" align="right">
-                  <TextBox>
-                    <FormHelperText sx={{ margin: 0 }} error>
-                      {errors.dc_wiring_loss?.message}
-                    </FormHelperText>
-                  </TextBox>
-                </FieldCell>
-              </TableRow>
-            )}
             <TableRow>
-              <FieldCell component="th" scope="row" width="40%">
+              <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
                 <TextBox fieldName>AC Ohmic Wiring Loss, %</TextBox>
               </FieldCell>
-              <FieldCell component="th" scope="row" align={mode === 'view' ? 'right' : 'left'}>
-                {mode === 'view' ? (
-                  <TextBox>{data.ac_wiring_loss !== null ? formatFloatValue(data.ac_wiring_loss) : ''}</TextBox>
-                ) : (
-                  <Controller
-                    name="ac_wiring_loss"
-                    control={control}
-                    rules={{
-                      validate: value => {
-                        if (!value) return 'AC Ohmic Wiring Loss is required field.';
-                        if ((value as unknown as string).length > 100)
-                          return 'AC Ohmic Wiring Loss length should not exceed 100 characters.';
-                        const withoutThousandSeparators = value.toString().replaceAll(',', '');
-                        return Number.isNaN(Number.parseFloat(withoutThousandSeparators))
-                          ? 'Invalid number provided as a value for AC Ohmic Wiring Loss'
-                          : true;
-                      }
-                    }}
-                    render={({ field: { ref, value, onChange, ...field } }) => (
-                      <TextField
-                        {...field}
-                        fullWidth
-                        size="small"
-                        placeholder=""
-                        error={!!errors.ac_wiring_loss}
-                        multiline
-                        required
-                        minRows={1}
-                        maxRows={3}
-                        disabled={isSubmitting}
-                        inputRef={ref}
-                        value={value || ''}
-                        onChange={e => onChange(e.target.value || null)}
-                        variant="outlined"
-                        InputProps={{
-                          inputComponent: FormattedNumericInputWithMinus as any,
-                          ref: ref,
-                          sx: inputStyles
-                        }}
-                      />
-                    )}
-                  />
-                )}
+              <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
+                <TextBox>{data.ac_wiring_loss !== null ? formatFloatValue(data.ac_wiring_loss) : ''}</TextBox>
+                <ProvenanceNote variant="baseline" />
               </FieldCell>
             </TableRow>
-            {errors.ac_wiring_loss?.message && (
-              <TableRow>
-                <FieldCell component="th" scope="row" width="40%" />
-                <FieldCell component="th" scope="row" align="right">
-                  <TextBox>
-                    <FormHelperText sx={{ margin: 0 }} error>
-                      {errors.ac_wiring_loss?.message}
-                    </FormHelperText>
-                  </TextBox>
-                </FieldCell>
-              </TableRow>
-            )}
             <TableRow>
-              <FieldCell component="th" scope="row" width="40%">
+              <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
                 <TextBox fieldName>Medium Voltage Transfo Loss, %</TextBox>
               </FieldCell>
-              <FieldCell component="th" scope="row" align={mode === 'view' ? 'right' : 'left'}>
-                {mode === 'view' ? (
-                  <TextBox>
-                    {data.medium_voltage_loss !== null ? formatFloatValue(data.medium_voltage_loss) : ''}
-                  </TextBox>
-                ) : (
-                  <Controller
-                    name="medium_voltage_loss"
-                    control={control}
-                    rules={{
-                      validate: value => {
-                        if (!value) return 'Medium Voltage Transfo Loss is required field.';
-                        if ((value as unknown as string).length > 100)
-                          return 'Medium Voltage Transfo Loss length should not exceed 100 characters.';
-                        const withoutThousandSeparators = value.toString().replaceAll(',', '');
-                        return Number.isNaN(Number.parseFloat(withoutThousandSeparators))
-                          ? 'Invalid number provided as a value for Medium Voltage Transfo Loss'
-                          : true;
-                      }
-                    }}
-                    render={({ field: { ref, value, onChange, ...field } }) => (
-                      <TextField
-                        {...field}
-                        fullWidth
-                        size="small"
-                        placeholder=""
-                        error={!!errors.medium_voltage_loss}
-                        multiline
-                        required
-                        minRows={1}
-                        maxRows={3}
-                        disabled={isSubmitting}
-                        inputRef={ref}
-                        value={value || ''}
-                        onChange={e => onChange(e.target.value || null)}
-                        variant="outlined"
-                        InputProps={{
-                          inputComponent: FormattedNumericInputWithMinus as any,
-                          ref: ref,
-                          sx: inputStyles
-                        }}
-                      />
-                    )}
-                  />
-                )}
+              <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
+                <TextBox>{data.medium_voltage_loss !== null ? formatFloatValue(data.medium_voltage_loss) : ''}</TextBox>
+                <ProvenanceNote variant="baseline" />
               </FieldCell>
             </TableRow>
-            {errors.medium_voltage_loss?.message && (
-              <TableRow>
-                <FieldCell component="th" scope="row" width="40%" />
-                <FieldCell component="th" scope="row" align="right">
-                  <TextBox>
-                    <FormHelperText sx={{ margin: 0 }} error>
-                      {errors.medium_voltage_loss?.message}
-                    </FormHelperText>
-                  </TextBox>
-                </FieldCell>
-              </TableRow>
-            )}
             <TableRow>
-              <FieldCell component="th" scope="row" width="40%">
+              <FieldCell mode={mode} fieldName component="th" scope="row" width="40%">
                 <TextBox fieldName>MV Line Ohmic Loss, %</TextBox>
               </FieldCell>
-              <FieldCell component="th" scope="row" align={mode === 'view' ? 'right' : 'left'}>
-                {mode === 'view' ? (
-                  <TextBox>{data.mv_line_loss !== null ? formatFloatValue(data.mv_line_loss) : ''}</TextBox>
-                ) : (
-                  <Controller
-                    name="mv_line_loss"
-                    control={control}
-                    rules={{
-                      validate: value => {
-                        if (!value) return 'MV Line Ohmic Loss is required field.';
-                        if ((value as unknown as string).length > 100)
-                          return 'MV Line Ohmic Loss length should not exceed 100 characters.';
-                        const withoutThousandSeparators = value.toString().replaceAll(',', '');
-                        return Number.isNaN(Number.parseFloat(withoutThousandSeparators))
-                          ? 'Invalid number provided as a value for MV Line Ohmic Loss'
-                          : true;
-                      }
-                    }}
-                    render={({ field: { ref, value, onChange, ...field } }) => (
-                      <TextField
-                        {...field}
-                        fullWidth
-                        size="small"
-                        placeholder=""
-                        error={!!errors.mv_line_loss}
-                        multiline
-                        required
-                        minRows={1}
-                        maxRows={3}
-                        disabled={isSubmitting}
-                        inputRef={ref}
-                        value={value || ''}
-                        onChange={e => onChange(e.target.value || null)}
-                        variant="outlined"
-                        InputProps={{
-                          inputComponent: FormattedNumericInputWithMinus as any,
-                          ref: ref,
-                          sx: inputStyles
-                        }}
-                      />
-                    )}
-                  />
-                )}
+              <FieldCell mode={mode} fieldName component="th" scope="row" align="right">
+                <TextBox>{data.mv_line_loss !== null ? formatFloatValue(data.mv_line_loss) : ''}</TextBox>
+                <ProvenanceNote variant="baseline" />
               </FieldCell>
             </TableRow>
-            {errors.mv_line_loss?.message && (
-              <TableRow>
-                <FieldCell component="th" scope="row" width="40%" />
-                <FieldCell component="th" scope="row" align="right">
-                  <TextBox>
-                    <FormHelperText sx={{ margin: 0 }} error>
-                      {errors.mv_line_loss?.message}
-                    </FormHelperText>
-                  </TextBox>
-                </FieldCell>
-              </TableRow>
-            )}
             <TableRow>
               <FieldCell component="th" scope="row" width="40%">
                 <TextBox fieldName>Mount Type:</TextBox>
@@ -486,6 +264,7 @@ const AssetOverviewForm = React.forwardRef<InformationCardFormRef, InformationCa
             </TableRow>
           </TableBody>
         </Table>
+        <BaselineNavLinks siteId={siteId} />
       </Box>
     );
   }

@@ -57,6 +57,24 @@ SITE_AM_SECTIONS_MAPPING = {
 
 SITE_AM_SECTIONS_SCHEMAS = SITE_AM_SECTIONS_MAPPING.values()
 
+# Baseline-driving fields that must never be written through the site-details edit form.
+# These values are owned by the Data Room / promoted project-facts provenance chain and are
+# rendered read-only in the Project Hub Overview (Phase 1+2). The update_site_details endpoint
+# strips them from the update payload before persistence (preserving existing values, never
+# blanking them) and, because the site-characteristics BigQuery handler maps only these fields,
+# stripping them makes that sync a guaranteed no-op for these sections.
+PROTECTED_BASELINE_DRIVING_FIELDS = {
+    SiteDetailsSections.asset_overview: {
+        "dc_wiring_loss",
+        "ac_wiring_loss",
+        "medium_voltage_loss",
+        "mv_line_loss",
+    },
+    SiteDetailsSections.key_dates: {
+        "permission_to_operate",
+    },
+}
+
 site_am_sections_doc = "\n\n".join(
     [
         f"{index}. {section_name}: {section_schema.__name__}"
