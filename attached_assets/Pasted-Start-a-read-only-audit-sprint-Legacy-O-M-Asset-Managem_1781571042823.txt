@@ -1,0 +1,330 @@
+Start a read-only audit sprint: Legacy O&M / Asset Management Drill-Down Recovery + V2 Rebinding Audit.
+
+Do not implement code, migrations, new routes, UI changes, data model changes, or refactors in this sprint.
+
+Context:
+We have screenshots from a prior Ilios version showing O&M and Asset Management drill-down functionality that appears to have existed previously and may still exist somewhere in the repository/Replit codebase, but is currently not fully linked in the UI/UX or connected to the new V2-native data models.
+
+Recent platform foundations now complete:
+
+* V2 telemetry ingestion, readings, site rollups, device rollups, scheduler, and O&M actuals
+* V2 expected baseline lifecycle
+* DD V2 project_facts truth model
+* facts→draft-baseline bridge
+* design-estimate baseline points producer
+* reconciliation endpoint and Reconciliation UI
+* DD→BigQuery write removed
+* SiteAdditionalFieldList deprecated as V2 baseline source
+* Weather W0/W1/W2 provenance, WeatherResolver, and historical import/backfill
+* Device Eligibility Expansion with broad is_mappable vs controlled drives_expected
+* DD/Reconciliation Workflow Hardening with precise status ladder and missing-dependency indicators
+
+Strategic objective:
+Recover and modernize existing O&M / Asset Management drill-down functionality by locating existing repository code and rebinding it to V2-native data. Do not reinvent the screens, visual style, or routes if legacy components already exist.
+
+Screenshots to match:
+
+1. O&M company/site dashboard:
+
+   * company/site drill-down with Overview, Devices, Alerts, Settings
+   * Actual production gauge
+   * Past performance chart
+   * Devices summary table
+   * Actual vs projected power and irradiance chart
+   * Inverters performance heatmap/grid
+
+2. Inverter detail screen:
+
+   * inverter title, overview/alerts/tasks tabs
+   * device details card
+   * service details card
+   * performance chart with actual/projected bars
+   * metadata such as last communication, main metric, manufacturer/model, warranty, availability, next scheduled service
+
+3. Site devices table:
+
+   * site-level Devices tab
+   * filters for inverters, production meters, weather station, gateways, data captures
+   * device rows with status, performance, type, capacity, last reported, lifetime, warranty period
+   * search, download CSV, grouped device behavior
+
+4. Asset Management All Sites / Pipeline / Schedule screens:
+
+   * all sites table
+   * pipeline/schedule/input-form tabs
+   * filters/search/export/add new site
+   * lifecycle columns such as status, stage, ownership, system size, mechanical completion month/date, construction milestones, NTP/LNTP, etc.
+
+Audit goals:
+
+A. Locate existing frontend code matching the screenshots
+
+Search the repository for components/routes/files that correspond to:
+
+* prior O&M company/site dashboard
+* prior O&M site details
+* prior O&M inverter/device detail page
+* prior O&M devices table
+* prior Asset Management All Sites table
+* prior pipeline / schedule / input-form tables
+* prior heatmap/inverter performance grid
+* prior actual production gauge
+* prior actual vs projected power/irradiance chart
+* prior device/service details cards
+
+For each candidate component/file:
+
+* file path
+* route path if any
+* parent component
+* whether it is currently linked/reachable
+* whether it is dead/unreferenced
+* screenshot match confidence: high / medium / low
+* visual match notes
+* dependencies/API calls
+* permissions/gates
+* current compile/build status if obvious
+* reason it may no longer appear in UI
+
+B. Locate existing backend/API code supporting these screens
+
+Search backend routes/services/helpers/models used by the old screens.
+
+For each endpoint/helper:
+
+* route
+* file path
+* models/tables queried
+* whether it uses V2-native telemetry/project_facts/baselines/weather/device eligibility
+* whether it uses old models:
+
+  * BigQuery
+  * Firestore
+  * legacy telemetry modules
+  * SiteAdditionalFieldList as baseline source
+  * old due diligence characteristics
+  * old project summary fields
+  * hardcoded expected/performance values
+  * fabricated zeroes
+* whether it is currently active, gated, deprecated, or dead
+* V2 replacement target
+
+C. Route and navigation audit
+
+Determine why the old functionality is not currently visible:
+
+* removed route
+* route exists but no nav link
+* route redirects elsewhere
+* permissions hide it
+* parent tab removed
+* component imported but not mounted
+* feature flag disabled
+* broken route params
+* mismatch between projectId/siteId/companyId params
+* old scoped route replaced by Project Hub route
+
+Document exact relinking options using existing route conventions.
+
+D. V2 rebinding map
+
+For each recovered screen/component, map old data dependencies to new V2-native sources.
+
+Use these target sources where appropriate:
+
+* telemetry_site_interval_rollups
+* telemetry_device_interval_rollups
+* telemetry_readings
+* telemetry_expected_baselines
+* telemetry_expected_baseline_points
+* WeatherResolver weather_provenance
+* weather_observations / weather_source_profiles for historical weather readiness
+* project_facts active/current assumptions
+* reconciliation endpoint/status ladder
+* device eligibility diagnostics
+* devices/project device mappings
+* telemetry health/readiness endpoints
+* existing O&M V2 endpoints where already available
+
+Do not propose BigQuery/Firestore/legacy telemetry as a replacement.
+
+E. Screen-by-screen recovery plan
+
+For each screenshot/surface, provide:
+
+1. Whether matching code exists.
+2. Whether it should be restored by relinking, rebinding, or rebuilding.
+3. Exact existing components to reuse.
+4. Exact existing visual patterns to preserve.
+5. Required V2 data binding changes.
+6. Missing endpoints, if any.
+7. Minimal implementation steps.
+8. Risks.
+9. Test plan.
+
+Screens to cover:
+
+* O&M company overview
+* O&M site overview
+* O&M actual production
+* O&M past performance
+* O&M actual vs projected power/irradiance
+* O&M inverter performance grid/heatmap
+* O&M site devices table
+* O&M inverter/device detail page
+* Asset Management All Sites table
+* Asset Management Pipeline tab
+* Asset Management Schedule tab
+* Asset Management Input Form tab
+
+F. Look-and-feel preservation
+
+Document the visual system used by the existing/legacy screens:
+
+* layout structure
+* tabs
+* cards
+* tables
+* chart style
+* heatmap style
+* device status icons
+* filters/search/export controls
+* typography
+* spacing
+* navigation/breadcrumbs
+* side navigation
+* top action area
+
+Hard requirement for future implementation:
+
+* Do not create new screen designs if matching legacy components exist.
+* Preserve the Ilios look and feel from the existing components.
+* Reuse current design system components where legacy components are stale.
+* Do not introduce a new chart library, table library, color palette, route pattern, or standalone screen unless no existing component exists.
+
+G. Missing dependency / next action indicators
+
+For restored screens, identify where the user needs clear indicators when prior/related data is required but missing.
+
+Include indicators for:
+
+* baseline not available
+* draft baseline exists but not active
+* accepted DD value not promoted
+* design points missing
+* weather profile missing
+* weather source unapproved
+* missing irradiance
+* missing cell/module temperature
+* irradiance plane unknown
+* temperature type unknown
+* calibration status unknown/expired
+* device exists but not mapped
+* device mapped but no usable telemetry
+* metric catalog unsupported
+* gateway present but child devices unmapped
+* meter present but not used for site actual
+* expected available but weather source unverified
+* historical weather imported but not approved
+* document exists but no accepted values
+* accepted values exist but not promoted to project_facts
+* project_facts exist but not used in draft baseline
+
+For each indicator:
+
+* label
+* explanation
+* recommended action/navigation target
+* blocking level:
+
+  * blocks expected
+  * blocks baseline
+  * blocks reporting
+  * lowers confidence
+  * informational
+
+H. Existing code reuse priority
+
+Classify each found component as:
+
+* reuse as-is
+* reuse with V2 data binding
+* reuse visual shell only
+* deprecated but useful reference
+* do not reuse
+
+Explain why.
+
+I. Testing plan for future implementation
+
+Produce a detailed test plan:
+
+* route reachability tests
+* permissions tests
+* screenshot/surface smoke tests
+* V2 data binding tests
+* no BigQuery/Firestore usage tests
+* no fabricated zero tests
+* missing dependency indicator tests
+* device table filter/search/export tests
+* inverter detail data tests
+* Asset Management pipeline/schedule table tests
+* frontend typecheck/build
+* backend targeted tests
+* site 4 smoke tests
+
+J. Recommended implementation phases
+
+Return a phased recovery plan, for example:
+
+1. Relink existing routes/tabs with no data behavior change.
+2. Rebind O&M site overview widgets to existing V2 endpoints.
+3. Restore site devices table using new device eligibility diagnostics and V2 device data.
+4. Restore inverter/device detail page using V2 device rollups/readings.
+5. Restore Asset Management All Sites/Pipeline/Schedule tables with V2/project_facts-backed fields.
+6. Add missing dependency indicators.
+7. Add weather provenance and device diagnostics.
+8. Add export/download behavior if existing code supports it.
+9. Defer unsupported legacy-only fields to a later data modeling sprint.
+
+For each phase:
+
+* risk level
+* files likely touched
+* backend required yes/no
+* frontend required yes/no
+* expected tests
+* non-goals
+
+Return:
+
+1. matched legacy/existing components by screenshot
+2. frontend route/component inventory
+3. backend/API inventory
+4. active vs dead/unlinked code findings
+5. old data model dependency findings
+6. V2 rebinding map
+7. screen-by-screen recovery plan
+8. look-and-feel preservation requirements
+9. missing dependency indicator plan
+10. reuse classification
+11. implementation phase plan
+12. risks and non-goals
+13. recommended next sprint prompt
+
+Do not:
+
+* implement code
+* add routes
+* relink routes
+* create new screens
+* redesign UI
+* change data models
+* change expected math
+* change telemetry ingestion
+* change WeatherResolver
+* change device eligibility
+* change baseline lifecycle
+* touch due diligence parsing/prompts
+* touch plaintext secrets
+* reintroduce BigQuery/Firestore/legacy telemetry

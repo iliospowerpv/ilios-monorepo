@@ -59,3 +59,9 @@ id = "tUQ7r7wjthFd8ywztM_jB"
 uri = "file://docs/om_v2_alignment_audit.md"
 type = "text"
 title = "O&M Existing Screens + V2 Data Alignment Audit (v1.0)"
+
+[[outputs]]
+id = "qG7D-0Cn_tz-q56tgnr6m"
+uri = "file://docs/legacy_om_recovery_v2_rebinding_audit.md"
+type = "text"
+title = "Legacy O&M / Asset Mgmt Drill-Down Recovery + V2 Rebinding Audit (v1.0)"
