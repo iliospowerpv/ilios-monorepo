@@ -111,7 +111,18 @@ export const Reconciliation: React.FC<AssetManagementSiteDetailsTabProps> = ({ s
         <Typography variant="h5" sx={{ fontWeight: 600 }}>
           Assumptions Reconciliation
         </Typography>
-        <Chip icon={<LockOutlinedIcon />} label="Read-only" size="small" variant="outlined" sx={{ ml: 1 }} />
+        {canEdit ? (
+          <Chip
+            icon={<FactCheckOutlinedIcon />}
+            label="Promote enabled"
+            color="primary"
+            size="small"
+            variant="outlined"
+            sx={{ ml: 1 }}
+          />
+        ) : (
+          <Chip icon={<LockOutlinedIcon />} label="Read-only" size="small" variant="outlined" sx={{ ml: 1 }} />
+        )}
       </Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         {siteDetails.name} · Generated {formatDateTime(data.generated_at)}
@@ -119,8 +130,17 @@ export const Reconciliation: React.FC<AssetManagementSiteDetailsTabProps> = ({ s
 
       <Alert severity="info" sx={{ mb: 3 }} data-testid="reconciliation-disclaimer">
         <AlertTitle>How to read this view</AlertTitle>
-        This is an audit of how source-backed diligence facts flow into current assumptions and baselines. It is
-        strictly read-only — nothing here is edited, accepted, promoted, or activated.
+        This is an audit of how source-backed diligence facts flow into current assumptions and baselines.{' '}
+        {canEdit ? (
+          <>
+            Values are never edited, accepted, or overridden here — acceptance stays in the Data Room — and baselines
+            are never activated here. The only actions available are <strong>Promote</strong> (move an already-accepted
+            value to an active assumption — file-version-scoped and all-or-nothing, never a single field) and{' '}
+            <strong>Create Task</strong> to hand a row off.
+          </>
+        ) : (
+          <>It is strictly read-only — nothing here is edited, accepted, promoted, or activated.</>
+        )}
         <Box component="ul" sx={{ pl: 3, mb: 0, mt: 1 }}>
           <li>
             <strong>AI value</strong> is what the model first read — it is not yet truth.
