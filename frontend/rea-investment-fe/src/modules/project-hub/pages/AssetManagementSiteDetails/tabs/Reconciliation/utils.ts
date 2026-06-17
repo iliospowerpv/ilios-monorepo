@@ -1,5 +1,6 @@
 import type {
   ReconciliationCategory,
+  ReconciliationRow,
   ReconciliationStatus,
   ReconciliationValue,
   ReconciliationWarning
@@ -226,6 +227,50 @@ export const formatDateTime = (value: string | null): string => {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
   return parsed.toLocaleString();
+};
+
+/**
+ * The single status from which an in-place Promote action is genuinely the next
+ * step. Acceptance/override still happen in the Data Room — Reconciliation only
+ * ever offers the promote step, and only for an accepted-but-unpromoted value.
+ */
+export const PROMOTABLE_STATUS = 'accepted_not_promoted';
+
+/**
+ * Whether a row may launch the (file-version-scoped) Promote flow. Requires the
+ * accepted-not-promoted status AND both ids the promote endpoint needs
+ * (`document_id` + `document_version_id` → the source File). The caller must
+ * still hold `Diligence:edit`; this predicate is permission-agnostic.
+ */
+export const canPromoteRow = (row: ReconciliationRow): boolean =>
+  row.status === PROMOTABLE_STATUS && row.document_id != null && row.document_version_id != null;
+
+/**
+ * Whether a row can hand its next step off as a tracked task. Offered more
+ * broadly than Promote — on any row that has a real next step (`required_action`
+ * present), regardless of status. Permission-agnostic (caller gates on edit).
+ */
+export const canCreateTaskRow = (row: ReconciliationRow): boolean => Boolean(row.required_action);
+
+/**
+ * Map a failed promote request to an honest, user-facing message. The backend
+ * raises every `PromotionError` as HTTP 400 with a human `detail` string (not a
+ * code), so we match on status + message text. Validation mismatches mean the
+ * version is stale; everything else means the atomic promotion rolled back and
+ * nothing changed.
+ */
+export const promotionErrorMessage = (error: unknown): string => {
+  const axiosError = error as { response?: { status?: number; data?: { detail?: string } } };
+  const status = axiosError?.response?.status;
+  const detail = axiosError?.response?.data?.detail ?? '';
+
+  if (status === 403) {
+    return 'You do not have permission to promote assumptions for this project.';
+  }
+  if (status === 404 || /file not found/i.test(detail) || /does not belong/i.test(detail)) {
+    return 'This version is no longer valid for promotion; refresh and try again.';
+  }
+  return 'Promotion failed and nothing was changed.';
 };
 
 export type { ReconciliationStatus, ReconciliationWarning };

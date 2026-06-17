@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { buildReconciliationApi } from '../../../../../../../api/reconciliation';
@@ -14,6 +15,13 @@ jest.mock('../../../../../../../api', () => ({
       getSiteReconciliation: (...args: unknown[]) => mockGetSiteReconciliation(...args)
     }
   }
+}));
+
+// useAuth() throws without an AuthProvider, so mock it. A jest.fn lets each test
+// flip between a permitted user and a read-only one to assert action gating.
+const mockUseAuth = jest.fn();
+jest.mock('../../../../../../../contexts/auth/auth', () => ({
+  useAuth: () => mockUseAuth()
 }));
 
 // Imported after jest.mock so the component picks up the mocked ApiClient.
@@ -124,6 +132,20 @@ const nullProvenanceRow: SiteReconciliationResponse['rows'][number] = {
   warnings: []
 };
 
+// An accepted-not-promoted row with both document ids and a required action —
+// the only shape that should surface BOTH the Promote and Create-task buttons.
+const promotableRow: SiteReconciliationResponse['rows'][number] = {
+  ...fullRow,
+  canonical_field: 'tilt_deg',
+  display_label: 'Tilt (deg)',
+  status: 'accepted_not_promoted',
+  status_label: 'Accepted, not promoted',
+  required_action: 'Promote this value to current assumptions',
+  blocking_level: 'blocks_baseline',
+  document_id: 5,
+  document_version_id: 9
+};
+
 const buildResponse = (overrides: Partial<SiteReconciliationResponse> = {}): SiteReconciliationResponse => ({
   site_id: 123,
   generated_at: '2026-06-12T08:00:00Z',
@@ -137,12 +159,22 @@ const buildResponse = (overrides: Partial<SiteReconciliationResponse> = {}): Sit
 
 const renderPanel = () => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  // MemoryRouter is required because actionable rows render a react-router
+  // <Link> to the Data Room.
   return render(
-    <QueryClientProvider client={queryClient}>
-      <Reconciliation siteDetails={siteDetails} />
-    </QueryClientProvider>
+    <MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <Reconciliation siteDetails={siteDetails} />
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 };
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  // Default to a system user (full access) unless a test overrides it.
+  mockUseAuth.mockReturnValue({ user: { is_system_user: true } });
+});
 
 describe('Reconciliation panel', () => {
   it('renders the panel with readiness, table, and rows for a permitted user', async () => {
@@ -208,6 +240,53 @@ describe('Reconciliation panel', () => {
     expect(screen.getAllByTestId('reconciliation-row')).toHaveLength(1);
     // A row with no warnings renders the placeholder rather than warning chips.
     expect(screen.queryByTestId('reconciliation-warning-chips')).not.toBeInTheDocument();
+  });
+
+  it('shows Promote and Create-task actions for a permitted user on an actionable row', async () => {
+    mockUseAuth.mockReturnValue({ user: { is_system_user: true } });
+    mockGetSiteReconciliation.mockResolvedValue(buildResponse({ rows: [promotableRow] }));
+
+    renderPanel();
+
+    expect(await screen.findByTestId('reconciliation-promote-btn')).toBeInTheDocument();
+    expect(screen.getByTestId('reconciliation-create-task-btn')).toBeInTheDocument();
+  });
+
+  it('grants actions to a non-system user holding Diligence edit rights', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { is_system_user: false, role: { permissions: { Diligence: { edit: true } } } }
+    });
+    mockGetSiteReconciliation.mockResolvedValue(buildResponse({ rows: [promotableRow] }));
+
+    renderPanel();
+
+    expect(await screen.findByTestId('reconciliation-promote-btn')).toBeInTheDocument();
+    expect(screen.getByTestId('reconciliation-create-task-btn')).toBeInTheDocument();
+  });
+
+  it('hides both actions from a read-only user even on an actionable row', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { is_system_user: false, role: { permissions: { Diligence: { edit: false } } } }
+    });
+    mockGetSiteReconciliation.mockResolvedValue(buildResponse({ rows: [promotableRow] }));
+
+    renderPanel();
+
+    expect(await screen.findByTestId('reconciliation-tab')).toBeInTheDocument();
+    expect(screen.queryByTestId('reconciliation-promote-btn')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('reconciliation-create-task-btn')).not.toBeInTheDocument();
+  });
+
+  it('never shows a Promote action on a non-promotable row', async () => {
+    mockUseAuth.mockReturnValue({ user: { is_system_user: true } });
+    // fullRow is in_active_baseline (already promoted); nullProvenanceRow is missing.
+    mockGetSiteReconciliation.mockResolvedValue(buildResponse());
+
+    renderPanel();
+
+    expect(await screen.findByTestId('reconciliation-tab')).toBeInTheDocument();
+    expect(screen.queryByTestId('reconciliation-promote-btn')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('reconciliation-create-task-btn')).not.toBeInTheDocument();
   });
 });
 

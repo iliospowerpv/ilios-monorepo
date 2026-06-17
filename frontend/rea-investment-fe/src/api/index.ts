@@ -24,6 +24,7 @@ import { financeIntegrations, financeData } from './financeIntegrations';
 import { buildProjectImportApi } from './project-import';
 import { buildTelemetryV2Api } from './telemetryV2';
 import { buildReconciliationApi } from './reconciliation';
+import { buildAssumptionsApi } from './assumptions';
 
 export const ApiClient = Object.freeze({
   _tokenManager: tokenManager,
@@ -52,7 +53,8 @@ export const ApiClient = Object.freeze({
   financeData,
   projectImport: buildProjectImportApi(httpClient),
   telemetryV2: buildTelemetryV2Api(httpClient),
-  reconciliation: buildReconciliationApi(httpClient)
+  reconciliation: buildReconciliationApi(httpClient),
+  assumptions: buildAssumptionsApi(httpClient)
 });
 
 export type {
@@ -216,3 +218,16 @@ export type {
   TelemetryReality,
   SiteReconciliationResponse
 } from './reconciliation';
+
+export type {
+  PromotionChangeType,
+  PromotionDiffChange,
+  PromotionDiffSummary,
+  PromotionDiff,
+  ProjectFact,
+  ActiveFactsResponse as AssumptionsActiveFactsResponse,
+  PromoteVersionPayload,
+  PromoteVersionResponse,
+  PromotionHistoryItem,
+  PromotionHistoryResponse
+} from './assumptions';

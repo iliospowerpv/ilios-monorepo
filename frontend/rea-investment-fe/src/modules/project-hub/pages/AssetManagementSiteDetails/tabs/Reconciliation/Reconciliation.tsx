@@ -17,6 +17,7 @@ import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import type { AssetManagementSiteDetailsTabProps } from '../types';
 import { ApiClient } from '../../../../../../api';
 import type { ReconciliationRow } from '../../../../../../api';
+import { useAuth } from '../../../../../../contexts/auth/auth';
 import ReadinessSummary from './components/ReadinessSummary';
 import ReconciliationTable from './components/ReconciliationTable';
 import { CATEGORY_ORDER, STATUS_META, categoryLabel, statusMeta, formatDateTime } from './utils';
@@ -31,6 +32,10 @@ const reconciliationQuery = (siteId: number, enabled: boolean) => ({
 export const Reconciliation: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDetails }) => {
   const siteId = siteDetails?.id;
   const isValidId = Number.isSafeInteger(siteId) && siteId > 0;
+
+  const { user } = useAuth();
+  // Promote/Create-Task require Diligence edit rights (system users always pass).
+  const canEdit = Boolean(user?.is_system_user) || Boolean(user?.role?.permissions?.Diligence?.edit);
 
   const { data, isLoading, error } = useQuery(reconciliationQuery(isValidId ? siteId : -1, isValidId));
 
@@ -220,7 +225,12 @@ export const Reconciliation: React.FC<AssetManagementSiteDetailsTabProps> = ({ s
               </Typography>
             </Paper>
           ) : (
-            <ReconciliationTable rows={filteredRows} helpTargets={data.help_targets} siteId={siteId} />
+            <ReconciliationTable
+              rows={filteredRows}
+              helpTargets={data.help_targets}
+              siteId={siteId}
+              canEdit={canEdit}
+            />
           )}
         </>
       )}

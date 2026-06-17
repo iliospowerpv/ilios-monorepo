@@ -1,5 +1,6 @@
 import React from 'react';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Table from '@mui/material/Table';
@@ -13,11 +14,15 @@ import MuiLink from '@mui/material/Link';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import PublishIcon from '@mui/icons-material/Publish';
+import AddTaskIcon from '@mui/icons-material/AddTask';
 import { Link as RouterLink } from 'react-router-dom';
 import { BootstrapTooltip } from '../../../../../../../components/common/BootstrapTooltip/BootstrapTooltip';
 import type { ReconciliationRow } from '../../../../../../../api';
 import StatusChip from './StatusChip';
 import WarningChips from './WarningChips';
+import PromoteVersionDialog from './PromoteVersionDialog';
+import CreateActionTaskDialog from './CreateActionTaskDialog';
 import {
   CATEGORY_ORDER,
   categoryLabel,
@@ -25,6 +30,8 @@ import {
   formatConfidence,
   blockingMeta,
   missingDependencyLabel,
+  canPromoteRow,
+  canCreateTaskRow,
   ACTIONS_IN_DATA_ROOM,
   PLACEHOLDER
 } from '../utils';
@@ -34,6 +41,11 @@ interface ReconciliationTableProps {
   helpTargets: Record<string, string>;
   /** Owning site id; used to build the read-only Data Room deep link. */
   siteId?: number | null;
+  /**
+   * Whether the viewer holds Diligence edit rights. Gates the in-place Promote
+   * and Create Task actions; when false the table is purely read-only.
+   */
+  canEdit?: boolean;
 }
 
 interface ValueColumn {
@@ -130,10 +142,18 @@ const SourceCell: React.FC<{ row: ReconciliationRow }> = ({ row }) => {
   );
 };
 
-const StatusCell: React.FC<{ row: ReconciliationRow; dataRoomPath: string | null }> = ({ row, dataRoomPath }) => {
+const StatusCell: React.FC<{
+  row: ReconciliationRow;
+  dataRoomPath: string | null;
+  canAct: boolean;
+  onPromote: (row: ReconciliationRow) => void;
+  onCreateTask: (row: ReconciliationRow) => void;
+}> = ({ row, dataRoomPath, canAct, onPromote, onCreateTask }) => {
   const blocking = row.blocking_level ? blockingMeta(row.blocking_level) : null;
   const showDataRoomLink =
     Boolean(row.required_action) && dataRoomPath !== null && ACTIONS_IN_DATA_ROOM.has(row.status);
+  const showPromote = canAct && canPromoteRow(row);
+  const showCreateTask = canAct && canCreateTaskRow(row);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 200 }}>
@@ -151,6 +171,42 @@ const StatusCell: React.FC<{ row: ReconciliationRow; dataRoomPath: string | null
           </BootstrapTooltip>
         )}
       </Box>
+
+      {(showPromote || showCreateTask) && (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+          {showPromote && (
+            <BootstrapTooltip
+              title="Promote this document version's accepted values into the project's current assumptions."
+              placement="top"
+            >
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<PublishIcon sx={{ fontSize: 14 }} />}
+                onClick={() => onPromote(row)}
+                data-testid="reconciliation-promote-btn"
+                sx={{ py: 0.25 }}
+              >
+                Promote
+              </Button>
+            </BootstrapTooltip>
+          )}
+          {showCreateTask && (
+            <BootstrapTooltip title="Create a Diligence follow-up task for this field's next step." placement="top">
+              <Button
+                size="small"
+                variant="text"
+                startIcon={<AddTaskIcon sx={{ fontSize: 14 }} />}
+                onClick={() => onCreateTask(row)}
+                data-testid="reconciliation-create-task-btn"
+                sx={{ py: 0.25 }}
+              >
+                Create task
+              </Button>
+            </BootstrapTooltip>
+          )}
+        </Box>
+      )}
 
       {row.required_action && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
@@ -198,7 +254,10 @@ const CategorySection: React.FC<{
   rows: ReconciliationRow[];
   helpTargets: Record<string, string>;
   dataRoomPath: string | null;
-}> = ({ category, rows, helpTargets, dataRoomPath }) => (
+  canAct: boolean;
+  onPromote: (row: ReconciliationRow) => void;
+  onCreateTask: (row: ReconciliationRow) => void;
+}> = ({ category, rows, helpTargets, dataRoomPath, canAct, onPromote, onCreateTask }) => (
   <Paper variant="outlined" sx={{ mb: 3, overflow: 'hidden' }} data-testid={`reconciliation-category-${category}`}>
     <Box sx={{ px: 2, py: 1.5, backgroundColor: 'action.hover' }}>
       <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
@@ -254,7 +313,13 @@ const CategorySection: React.FC<{
                 )}
               </TableCell>
               <TableCell>
-                <StatusCell row={row} dataRoomPath={dataRoomPath} />
+                <StatusCell
+                  row={row}
+                  dataRoomPath={dataRoomPath}
+                  canAct={canAct}
+                  onPromote={onPromote}
+                  onCreateTask={onCreateTask}
+                />
               </TableCell>
               {VALUE_COLUMNS.map(col => (
                 <TableCell key={String(col.key)} sx={{ whiteSpace: 'nowrap' }}>
@@ -275,9 +340,14 @@ const CategorySection: React.FC<{
   </Paper>
 );
 
-export const ReconciliationTable: React.FC<ReconciliationTableProps> = ({ rows, helpTargets, siteId }) => {
-  const dataRoomPath =
-    Number.isSafeInteger(siteId) && (siteId as number) > 0 ? `/project-hub/projects/${siteId}/data-room` : null;
+export const ReconciliationTable: React.FC<ReconciliationTableProps> = ({ rows, helpTargets, siteId, canEdit }) => {
+  const validSiteId = Number.isSafeInteger(siteId) && (siteId as number) > 0 ? (siteId as number) : null;
+  const dataRoomPath = validSiteId !== null ? `/project-hub/projects/${validSiteId}/data-room` : null;
+  // Actions need both edit rights and a real site id to target.
+  const canAct = Boolean(canEdit) && validSiteId !== null;
+
+  const [promoteRow, setPromoteRow] = React.useState<ReconciliationRow | null>(null);
+  const [taskRow, setTaskRow] = React.useState<ReconciliationRow | null>(null);
 
   const grouped = React.useMemo(() => {
     const map = new Map<string, ReconciliationRow[]>();
@@ -300,8 +370,24 @@ export const ReconciliationTable: React.FC<ReconciliationTableProps> = ({ rows, 
           rows={group.rows}
           helpTargets={helpTargets}
           dataRoomPath={dataRoomPath}
+          canAct={canAct}
+          onPromote={setPromoteRow}
+          onCreateTask={setTaskRow}
         />
       ))}
+
+      {validSiteId !== null && promoteRow && (
+        <PromoteVersionDialog
+          open
+          siteId={validSiteId}
+          row={promoteRow}
+          onClose={() => setPromoteRow(null)}
+        />
+      )}
+
+      {validSiteId !== null && taskRow && (
+        <CreateActionTaskDialog open siteId={validSiteId} row={taskRow} onClose={() => setTaskRow(null)} />
+      )}
     </Box>
   );
 };

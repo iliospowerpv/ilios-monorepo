@@ -1,0 +1,340 @@
+Start implementation sprint: Reconciliation Promote + Assignable Task Actions — Phase 1.
+
+Context:
+Audit #52 confirmed that promotion exists in the backend but is not exposed anywhere in the UI.
+
+Current state:
+
+* Backend promotion endpoints exist and are solid.
+* Data Room supports acceptance/override and candidate creation, but does not expose promotion.
+* Reconciliation is read-only and currently only links users to Data Room.
+* There are zero frontend callers of the promote/diff/facts/promotion-history endpoints.
+* Users can see accepted_not_promoted values but have no UI path to promote them into active project_facts/current assumptions.
+
+Important backend fact:
+Promotion is file-version-scoped and all-or-nothing. It is not field-scoped. Promoting a file version promotes every candidate fact attached to that file version and retires conflicting active facts for those canonical fields. There is no safe single-field promote endpoint today.
+
+Objective:
+Make promotion reachable from Reconciliation without changing backend promotion semantics, acceptance workflow, baseline workflow, or truth-store discipline.
+
+Implement:
+
+1. A permission-aware promote action on eligible Reconciliation rows.
+2. A full live diff confirmation dialog before promotion.
+3. A create-assignable-task action for rows requiring handoff.
+4. Query invalidation/refresh after successful promotion.
+5. Clear messaging that promotion creates active facts only and does not update baselines/O&M expected values directly.
+
+Hard constraints:
+
+* Do not move acceptance/override into Reconciliation.
+* Do not add AI review, acceptance, override, or reviewer-rationale capture to Reconciliation.
+* Do not create field-level promotion unless it already exists safely, which the audit says it does not.
+* Do not imply that one row equals one promoted field.
+* Do not update expected baselines.
+* Do not create draft baselines.
+* Do not activate baselines.
+* Do not regenerate design points.
+* Do not change expected math.
+* Do not change telemetry ingestion.
+* Do not change WeatherResolver.
+* Do not change device eligibility.
+* Do not change due diligence parsing/prompts.
+* Do not touch plaintext secrets.
+* Do not use SAFL as a baseline source.
+* Do not reintroduce BigQuery, Firestore, or legacy telemetry.
+* Do not change the backend Site entity. “Project” is UI terminology only.
+* Preserve existing Project Hub/Reconciliation look and feel.
+
+Scope A — Add assumptions API client
+
+Add typed frontend API client methods for existing backend endpoints:
+
+* GET /api/projects/{site_id}/assumptions/facts
+* GET /api/projects/{site_id}/assumptions/facts/candidates/{file_id}
+* POST /api/projects/{site_id}/assumptions/promotion/diff
+* POST /api/projects/{site_id}/assumptions/promote
+* GET /api/projects/{site_id}/assumptions/promotions
+
+Use existing API client conventions.
+
+Do not add or change backend endpoints.
+
+Scope B — Promote action on Reconciliation rows
+
+Target:
+frontend/rea-investment-fe/src/modules/project-hub/pages/AssetManagementSiteDetails/tabs/Reconciliation/components/ReconciliationTable.tsx
+
+Show a promote affordance only when:
+
+* row.status === accepted_not_promoted
+* row.document_id exists
+* row.document_version_id or source file id exists
+* user has Diligence:edit or equivalent permission used by the promote endpoint
+
+Do not show promote for:
+
+* missing
+* ai_extracted_only
+* candidate_only
+* accepted_document_value anomaly
+* active_fact
+* in_draft_baseline
+* in_active_baseline
+* superseded
+* mismatch
+* needs_review
+* legacy/display-only
+
+For non-promotable statuses, keep Data Room routing / required-action display.
+
+Suggested label:
+“Promote version”
+or
+“Promote accepted values”
+
+Do not label it:
+“Promote this field”
+
+Tooltip/copy:
+“Promotion applies to all accepted candidate values on this file version. You will review the full diff before confirming.”
+
+Scope C — Full live diff confirmation
+
+When user clicks Promote:
+
+1. Immediately call:
+   POST /api/projects/{site_id}/assumptions/promotion/diff
+   with:
+   { file_id: row.document_version_id }
+
+2. Show a confirmation dialog using the returned diff.
+
+Dialog must show:
+
+* document/file version being promoted
+* launched-from field label and canonical field
+* explicit warning:
+  “This promotes every accepted candidate value on this file version, not only this row.”
+* summary counts:
+  added
+  changed
+  removed
+* full changes table
+* current value
+* new value
+* field label/name
+* change type
+* conflict/retired active fact information where available
+* optional notes field
+* statement:
+  “Promotion creates active current assumptions only. It does not create or activate an expected baseline.”
+* next step after promotion:
+  “After promotion, create or update a draft baseline from active facts if these values should affect expected/O&M calculations.”
+
+Important diff semantics:
+
+* added and changed rows are real write effects.
+* removed rows are informational/anomaly signals only; the existing backend does not retire removed fields because it only promotes candidate facts present on the file version.
+* Label removed rows as:
+  “Informational — this version no longer carries this field”
+  not as deletion.
+
+If has_changes is false:
+
+* show no-op explanation
+* disable confirm
+
+Before executing promotion:
+
+* refetch or confirm the freshest diff.
+* If diff changed while the dialog was open, re-render the dialog and require the user to confirm again.
+
+On confirm:
+POST /api/projects/{site_id}/assumptions/promote
+with:
+{
+document_id: row.document_id,
+file_id: row.document_version_id,
+notes
+}
+
+On success:
+
+* invalidate/refetch Reconciliation query
+* invalidate/refetch facts/promotions queries if used
+* show success notification with facts_promoted count if returned
+* state that baseline is not updated automatically
+* provide link/next action to baseline workflow where appropriate, but do not run it
+
+On error:
+Map known backend promotion errors to user-readable messages:
+
+* FILE_NOT_FOUND
+* FILE_DOCUMENT_MISMATCH
+* DOCUMENT_SITE_MISMATCH
+* PROMOTION_FAILED
+
+Default message:
+“Promotion failed and nothing was changed.”
+
+Scope D — Create assignable task action
+
+Add a “Create Task” action for rows with a non-null required_action or actionable blocking state.
+
+Create Task should be available more broadly than Promote, including:
+
+* missing
+* ai_extracted_only
+* accepted_document_value
+* candidate_only
+* accepted_not_promoted
+* superseded
+* mismatch
+* needs_review
+* active_fact when downstream baseline action is required
+* in_draft_baseline when activation is required
+
+Gate task creation using the existing task permissions / Diligence:edit behavior.
+
+Use existing task tracker APIs:
+
+* GET /api/task-tracker/boards/?entity_type=site&entity_id={site_id}&module=Diligence
+* GET /api/task-tracker/boards/{board_id}/assignees?search=
+* POST /api/task-tracker/boards/{board_id}/tasks/
+
+Do not create document-level tasks if the backend prohibits document-level board task creation.
+
+Because the task payload does not currently support document_id, canonical field, or reconciliation-row FK, encode stable references in the task description.
+
+Task title template:
+[Action]: [Field Label] — [Site Name]
+
+Examples:
+
+* Promote accepted value: Module Quantity — 110 Shawmut
+* Review AI extraction: Year-One Production — 110 Shawmut
+* Create draft baseline after promotion — 110 Shawmut
+
+Task description template:
+Field: [display_label]
+Canonical field: [canonical_field]
+Current status: [status]
+Required action: [required_action]
+Blocking level: [blocking_level]
+Displayed value: [best available value]
+Accepted value: [accepted_value if available]
+Active fact value: [active_fact_value if available]
+Source document id: [document_id]
+Source file/version id: [document_version_id]
+Document key id: [document_key_id]
+AI run id: [source_run_id]
+Project fact id: [project_fact_id]
+Open Reconciliation: [deep link]
+Open Data Room: [deep link]
+
+Default due_date:
+Use a sensible default such as +7 days unless existing task UI has a better convention.
+
+Allow user to choose:
+
+* assignee
+* due date
+* priority
+* notes/description edits
+
+Scope E — Permission behavior
+
+Define and implement frontend affordance behavior:
+
+Diligence:view only:
+
+* can view reconciliation
+* can open Data Room if permitted
+* cannot promote
+* cannot create task if backend requires edit
+* show disabled/hidden promote with tooltip only if consistent with existing UX
+
+Diligence:edit:
+
+* can promote accepted_not_promoted rows
+* can create tasks
+* can open Data Room
+
+No Diligence access:
+
+* existing behavior remains unchanged
+
+Do not loosen backend permissions.
+
+Scope F — Preserve acceptance/Data Room boundary
+
+For statuses that need acceptance or override:
+
+* do not add inline accept/override
+* route to Data Room
+* Create Task may be offered
+
+Acceptance and override must remain in Data Room only.
+
+Scope G — Tests
+
+Add/update tests for:
+
+1. accepted_not_promoted row with Diligence:edit shows Promote action.
+2. accepted_not_promoted row without Diligence:edit does not show Promote action.
+3. non-promotable statuses do not show Promote action.
+4. clicking Promote calls diff endpoint with row.document_version_id.
+5. diff confirmation displays full blast radius.
+6. dialog copy says promotion applies to the whole file version, not just the row.
+7. removed diff rows are labeled informational, not deletions.
+8. has_changes=false disables confirm.
+9. confirm calls promote endpoint with document_id and file_id.
+10. successful promote invalidates/refetches reconciliation.
+11. success message states baseline is not updated automatically.
+12. promotion errors show user-readable messages.
+13. Create Task appears for actionable rows.
+14. Create Task prefill includes field label, canonical field, status, required action, document/file ids, and links.
+15. Create Task uses existing Diligence site board.
+16. no accept/override controls are added to Reconciliation.
+17. Data Room behavior remains unchanged.
+18. baseline endpoints are not called by promote flow.
+19. no backend endpoints or migrations are added.
+20. frontend typecheck/build passes.
+21. architect review passes.
+
+Scope H — Validation
+
+Run:
+
+* targeted frontend tests for Reconciliation actions/dialog/task creation
+* frontend compile/typecheck
+* backend startup if backend touched, though backend should not be touched
+* architect review
+
+Return:
+
+* files changed
+* assumptions API client methods added
+* promote action gating
+* diff dialog behavior
+* task creation behavior
+* permission behavior
+* tests run / skipped with reason
+* validation results
+* remaining risks
+* recommended next sprint
+
+Do not:
+
+* add field-level backend promotion
+* change promotion service
+* change reconciliation service ladder
+* add acceptance/override to Reconciliation
+* change baseline lifecycle
+* call create-draft-from-facts
+* call baseline activation
+* create new backend routes
+* add migrations
+* change task schema
+* reintroduce legacy data paths
