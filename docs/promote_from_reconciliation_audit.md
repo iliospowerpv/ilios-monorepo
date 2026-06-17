@@ -1,6 +1,6 @@
 # Promote from Reconciliation — Audit & Design
 
-**Status:** Audit & design only. No code, endpoints, migrations, or UI were changed by this task.
+**Status:** This document captured the original audit & design. **Phase 1 (frontend-only) has now been implemented per §10** — the Reconciliation tab can reach the existing promotion and create-task flows. No backend endpoints, migrations, schema, or task-payload changes were made; the implementation reuses the existing `promotion/diff`, `promote`, and task-tracker endpoints unchanged.
 **Scope:** Project Hub → Reconciliation tab, Due Diligence (Data Room), and the existing "Promote to Current Assumptions" backend.
 **Audience:** Engineering + product reviewers deciding whether/how to make promotion reachable from the Reconciliation screen.
 
@@ -33,9 +33,9 @@ Make the "promote" step reachable from the Reconciliation screen so a reviewer c
 - **Never drive a value into an active baseline in one click.** Promotion produces an *active fact*. Turning that into expected/O&M math is a separate, deliberate downstream action.
 - **Never change the backend "Site" entity.** "Project" is UI terminology only; all backend routes and models continue to use `site_id`/`Site`.
 
-### 1.3 Non-goals for this task
-- No new endpoints, no migrations, no schema changes, no UI changes were made.
-- No field-level promotion was designed into the backend (it does not exist today and adding it is explicitly out of scope for the first step — see §10).
+### 1.3 Non-goals (held to in the Phase 1 implementation)
+- No new endpoints, no migrations, no schema changes, no task-payload changes — Phase 1 is frontend-only and reuses existing endpoints.
+- No field-level promotion was added to the backend (it does not exist today and adding it is explicitly out of scope for the first step — see §10).
 - No change to acceptance, override, reconciliation, baselines, or expected math.
 
 ---
@@ -220,7 +220,7 @@ The Reconciliation UI may *inform* the user of these next stages (it already doe
 
 ## 10. Recommended Implementation Scope & Sequencing
 
-### Phase 1 — Minimum viable, no backend change (recommended first step)
+### Phase 1 — Minimum viable, no backend change (IMPLEMENTED)
 - Frontend-only. Reuse `promotion/diff` + `promote` exactly as they exist.
 - Add the **Promote** button to `accepted_not_promoted` rows, gated on `Diligence:edit`.
 - Add the **full-diff confirmation dialog** (live-refetched, blast-radius honest, optional notes).
