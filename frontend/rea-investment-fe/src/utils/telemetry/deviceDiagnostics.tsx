@@ -192,10 +192,7 @@ export const escapeCsvField = (field: string): string => {
  * diagnostics (Eligibility + Telemetry Status). Devices absent from `diagMap`
  * render an honest "Unavailable" for the diagnostics columns.
  */
-export const buildDevicesCsv = (
-  devices: DeviceCsvRow[],
-  diagMap: Map<number, DeviceEligibilityDiagnostic>
-): string => {
+export const buildDevicesCsv = (devices: DeviceCsvRow[], diagMap: Map<number, DeviceEligibilityDiagnostic>): string => {
   const header = DEVICE_CSV_COLUMNS.map(col => escapeCsvField(col.header)).join(',');
   const rows = devices.map(device => {
     const diag = diagMap.get(device.id);

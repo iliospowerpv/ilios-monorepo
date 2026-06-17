@@ -29,7 +29,12 @@ export const OVERVIEW_FIELD_TO_RECON: Record<string, string[]> = {
   // Asset Overview — baseline-driving ohmic losses
   dc_wiring_loss: ['dc_loss_pct', 'dc_wiring_loss', 'dc_ohmic_loss', 'dc_ohmic_wiring_loss'],
   ac_wiring_loss: ['ac_loss_pct', 'ac_wiring_loss', 'ac_ohmic_loss', 'ac_ohmic_wiring_loss'],
-  medium_voltage_loss: ['medium_voltage_loss_pct', 'medium_voltage_loss', 'mv_transfo_loss', 'medium_voltage_transfo_loss'],
+  medium_voltage_loss: [
+    'medium_voltage_loss_pct',
+    'medium_voltage_loss',
+    'mv_transfo_loss',
+    'medium_voltage_transfo_loss'
+  ],
   mv_line_loss: ['mv_line_loss_pct', 'mv_line_loss', 'mv_line_ohmic_loss'],
 
   // Asset Overview — source (Data Room) descriptive fields
@@ -156,7 +161,11 @@ export const resolveProtectedValue = (
     return { value: row.accepted_value, source: 'accepted', qualifier: PROTECTED_VALUE_QUALIFIERS.accepted };
   }
   if (isPresent(row.ai_extracted_value)) {
-    return { value: row.ai_extracted_value, source: 'ai_extracted', qualifier: PROTECTED_VALUE_QUALIFIERS.ai_extracted };
+    return {
+      value: row.ai_extracted_value,
+      source: 'ai_extracted',
+      qualifier: PROTECTED_VALUE_QUALIFIERS.ai_extracted
+    };
   }
   if (isPresent(row.legacy_value)) {
     return { value: row.legacy_value, source: 'legacy', qualifier: PROTECTED_VALUE_QUALIFIERS.legacy };

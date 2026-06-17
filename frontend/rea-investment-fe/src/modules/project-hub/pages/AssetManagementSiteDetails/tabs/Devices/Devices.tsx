@@ -57,8 +57,8 @@ const renderDerivedChip = (chip: DerivedChip) => (
  * placeholder; if a device is absent from the response the derive fn returns an
  * honest "Unavailable" chip — we never fabricate Mapped/eligible.
  */
-const diagnosticsCellRenderer =
-  (derive: (diag?: DeviceEligibilityDiagnostic) => DerivedChip) => (params: any) => {
+const diagnosticsCellRenderer = (derive: (diag?: DeviceEligibilityDiagnostic) => DerivedChip) =>
+  function DiagnosticsCell(params: any) {
     const ctx = params.context || {};
     if (ctx.diagLoading) {
       return <Chip label="…" size="small" variant="outlined" sx={{ marginTop: '-2px', height: '22px' }} />;

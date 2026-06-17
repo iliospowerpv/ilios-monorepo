@@ -77,9 +77,9 @@ const TIMEZONE_FALLBACK = [
 const getTimezoneOptions = (): SearchableSelectOption[] => {
   let zones: string[] = TIMEZONE_FALLBACK;
   try {
-    const supported = (
-      Intl as unknown as { supportedValuesOf?: (key: string) => string[] }
-    ).supportedValuesOf?.('timeZone');
+    const supported = (Intl as unknown as { supportedValuesOf?: (key: string) => string[] }).supportedValuesOf?.(
+      'timeZone'
+    );
     if (Array.isArray(supported) && supported.length) zones = supported;
   } catch {
     // keep fallback
