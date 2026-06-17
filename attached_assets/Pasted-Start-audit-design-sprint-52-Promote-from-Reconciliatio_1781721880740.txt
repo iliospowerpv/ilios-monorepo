@@ -1,0 +1,441 @@
+Start audit/design sprint: #52 — Promote from Reconciliation / Promote to Current Assumptions Workflow Audit.
+
+This is an audit and design task only. Do not implement code, migrations, endpoints, UI changes, route changes, or data-model changes.
+
+Context:
+Users can now see reconciliation truth-state in Project Hub Overview and in the Reconciliation tab, including values that are AI-extracted, accepted, accepted-not-promoted, active facts, draft baseline inputs, and active baseline inputs.
+
+However, there does not appear to be any obvious UI path today for a user to promote accepted information into usable current assumptions / active project_facts for expected baseline or O&M use. The Reconciliation tab is read-only and currently only routes users toward the Data Room. The Data Room may or may not expose a promotion UI. This must be verified.
+
+Strategic objective:
+Audit the existing backend and frontend to determine whether a “Promote to Current Assumptions” workflow already exists, whether it is reachable in the UI, how it works if present, and what the safest UX should be for allowing users to act from Reconciliation.
+
+Important user decisions already made:
+
+* Acceptance and override must remain in the Data Room.
+* Reconciliation must not perform AI review, acceptance, override, or reviewer rationale capture.
+* Reconciliation may only ever offer the promote step after a value has already been accepted/overridden.
+* Reconciliation should support both:
+
+  1. promote-myself, when the user is permitted and the row is eligible
+  2. create an assignable task, when someone else must act
+* Reconciliation must not drive a value all the way into an active expected baseline in one click.
+* Baseline creation, baseline rebuild, design-point generation, and baseline activation remain separate downstream workflows.
+* The backend Site entity must not be renamed or changed. “Project” is UI terminology only.
+
+Core audit questions:
+
+1. Does promotion functionality exist in the backend?
+2. Does promotion functionality exist in the frontend?
+3. Is promotion reachable from the Data Room today?
+4. Is promotion reachable from Reconciliation today?
+5. Is promotion file-version-scoped, candidate-scoped, or field-scoped?
+6. Is it all-or-nothing for a file version?
+7. What permissions are required?
+8. What audit trail is written?
+9. What exactly changes in project_facts?
+10. What does not change, especially expected baselines and O&M expected values?
+11. If no usable UI exists, what is the safest first UI design?
+
+Hard constraints:
+
+* Do not implement anything.
+* Do not add promote buttons.
+* Do not create endpoints.
+* Do not modify the Data Room.
+* Do not modify Reconciliation.
+* Do not create tasks.
+* Do not create or promote project_facts.
+* Do not create, rebuild, approve, or activate baselines.
+* Do not change due diligence parsing.
+* Do not change reconciliation ladder logic.
+* Do not change expected math.
+* Do not change telemetry ingestion.
+* Do not touch WeatherResolver.
+* Do not touch device eligibility.
+* Do not touch plaintext secrets.
+* Do not reintroduce BigQuery, Firestore, legacy telemetry, or SAFL as a baseline source.
+* Produce documentation only.
+
+Required deliverable:
+Create a single markdown document under docs/ for user review. The document must be plain-language, thorough, and implementation-ready, but must not include code changes.
+
+Required sections:
+
+1. Executive summary
+
+Explain:
+
+* whether a promotion workflow exists today
+* whether it is backend-only, frontend-visible, Data Room-visible, or unreachable
+* whether users currently have any practical UI path to promote accepted values
+* the safest recommended next step
+
+2. Existing promotion workflow audit
+
+Trace the current promotion workflow end to end.
+
+Inspect at minimum:
+
+* backend/ilios-server/app/services/promotion_service.py
+* backend/ilios-server/app/routers/project_assumptions.py
+* backend/ilios-server/app/crud/project_fact.py
+* backend/ilios-server/app/crud/assumption_promotion.py
+* backend/ilios-server/app/models/project_facts.py
+* backend/ilios-server/app/services/project_facts_service.py
+* backend/ilios-server/app/routers/due_diligence/files_parsing.py
+* frontend/rea-investment-fe/src/modules/project-hub/pages/AssetManagementSiteDetails/tabs/DataRoom/DataRoom.tsx
+* all frontend API clients related to project assumptions, promotion, Data Room, or project_facts
+
+For each backend endpoint/service found:
+
+* route
+* method
+* request schema
+* response schema
+* permission gate
+* whether it is used by the frontend
+* whether it promotes one field, one candidate, one file version, or many values
+* what project_facts rows it creates/updates/retires
+* what audit record it writes
+* whether it is transaction-safe
+* whether it supports preview/diff before execution
+
+For each frontend component/API found:
+
+* file path
+* route/screen
+* whether active/reachable
+* whether the UI exposes promotion
+* what button/action label is used
+* what endpoint it calls
+* what permission gating exists
+* why users may not see it
+
+If no promotion UI is found, say that explicitly.
+
+3. Promotion scope and blast radius
+
+Determine whether promotion is:
+
+* file-version-scoped and all-or-nothing
+* field-scoped
+* candidate-scoped
+* document-scoped
+* site-scoped
+* unclear
+
+If file-version-scoped, document clearly:
+
+* promoting one file version may promote every candidate value on that version
+* conflicting active facts may be retired
+* a row-level “Promote” button could be misleading unless the UX shows full diff/blast radius
+* Reconciliation cannot pretend to promote one field if the backend promotes many
+
+4. Current Data Room behavior
+
+Audit the Data Room specifically.
+
+Answer:
+
+* Does Data Room show accepted values?
+* Does Data Room show candidate facts?
+* Does Data Room show active facts?
+* Does Data Room expose any promote action?
+* Does Data Room expose a diff preview?
+* Does Data Room expose promotion history?
+* Does Data Room distinguish accepted-but-not-promoted from promoted?
+* If the functionality exists but is hidden by permission, document the permission.
+* If it exists but is not linked or visible, document why.
+* If it does not exist, document the missing UI.
+
+5. Reconciliation behavior audit
+
+Audit the Reconciliation tab.
+
+Answer:
+
+* what statuses it displays
+* what next actions it currently shows
+* what links it currently provides
+* whether it has enough row metadata to launch a promote flow
+* whether it has source document/file version id
+* whether it has candidate fact id
+* whether it has canonical field key
+* whether it has active project_fact id
+* what is missing for a safe promote action
+
+6. Baseline bridge explanation
+
+Explain in plain language how promoted facts later become expected/O&M-usable values.
+
+Document:
+
+* promotion only creates/updates active project_facts/current assumptions
+* promotion does not create a draft expected baseline
+* promotion does not activate an expected baseline
+* promotion does not regenerate design points
+* promotion does not immediately update O&M expected values
+* downstream path is separate:
+  active project_facts → create-draft-from-facts → review/approve/activate baseline → O&M expected can use active baseline
+
+Inspect at minimum:
+
+* backend/ilios-server/app/services/telemetry/baseline_from_facts_service.py
+* backend/ilios-server/app/routers/telemetry/v2.py create-draft-from-facts / baseline endpoints
+
+7. Status-to-action map
+
+For every Reconciliation status, define:
+
+* current meaning
+* primary action
+* where the action should happen:
+
+  * Reconciliation
+  * Data Room
+  * baseline workflow
+  * read-only/no action
+* whether Promote should be visible
+* whether Create Task should be visible
+* required permission
+* confirmation required yes/no
+* user-facing label
+
+Include statuses such as:
+
+* missing
+* ai_extracted_only
+* candidate_only
+* accepted_document_value
+* accepted_not_promoted
+* active_fact
+* in_draft_baseline
+* in_active_baseline
+* superseded
+* mismatch
+* needs_review
+* legacy_only/display_only if applicable
+
+Rules:
+
+* statuses requiring AI review, acceptance, override, or rationale must route to Data Room
+* only already accepted/overridden but not promoted values may be candidates for promote
+* active_fact and in_active_baseline should not show promote
+* draft/active baseline statuses should route to baseline workflow if action is needed
+* create task may be available more broadly than promote
+
+8. UX design options
+
+Provide at least two concrete UX options.
+
+Option A — Deep-link to existing promotion workflow with row context.
+Describe:
+
+* row-level action label
+* where user lands
+* how the relevant field is highlighted
+* how full file-version diff/blast radius is shown
+* confirmation behavior
+* permission behavior
+* pros/cons
+* implementation complexity
+* audit/compliance risk
+
+Option B — Narrow promote action from Reconciliation.
+Describe:
+
+* whether backend supports this today
+* whether it would be field-scoped, candidate-scoped, or file-version-scoped
+* what confirmation/diff preview must show
+* stale-data refetch requirement
+* permission behavior
+* pros/cons
+* implementation complexity
+* audit/compliance risk
+
+If backend does not safely support field-scoped promotion today, recommend against a one-click row-level promote.
+
+Recommendation:
+Recommend the safest first implementation. Preference is Option A unless the audit proves field/candidate-scoped promotion is already supported safely.
+
+9. Promote confirmation / diff-preview design
+
+Design the confirmation required before any promote action.
+
+It must show:
+
+* value being promoted
+* source document/file version
+* canonical field
+* all candidate values that will become active
+* all active facts that will be retired
+* conflicts
+* user performing the action
+* timestamp
+* statement that baseline is not updated automatically
+* next action after promotion
+
+Require implementation to re-fetch the latest diff immediately before executing promotion so stale Reconciliation rows cannot execute promotion without refreshed confirmation.
+
+10. Task-handoff design
+
+Audit the existing task system and propose how “Create assignable task” should work from a Reconciliation row.
+
+Inspect:
+
+* backend/ilios-server/app/models/task.py
+* backend/ilios-server/app/models/board.py
+* backend/ilios-server/app/routers/task_tracker/tasks.py
+* backend/ilios-server/app/routers/task_tracker/boards.py
+* frontend/rea-investment-fe/src/api/task-management.ts
+* frontend/rea-investment-fe/src/components/clusters/TasksCluster/internal/AddTaskForm
+* frontend/rea-investment-fe/src/components/forms/TaskDetails
+* frontend/rea-investment-fe/src/components/forms/AssigneeSearchField
+
+Document:
+
+* which board/task module should receive the task
+* whether site/project context can be attached
+* how assignee selection works
+* whether tasks can link to a document, Data Room file, Reconciliation row, or field
+* whether the task model supports metadata/custom fields
+* if not, how to encode stable references safely in title/description
+* any schema gap that should be deferred
+
+Task creation should be available for cases such as:
+
+* review AI extraction
+* accept/override in Data Room
+* promote accepted value
+* resolve mismatch
+* upload missing source document
+* create draft baseline
+* activate baseline
+* approve missing dependency
+
+Provide task title/description templates.
+
+Example title:
+Promote accepted value: [Field Label] — [Site Name]
+
+Example description:
+Field: [canonical field]
+Current status: [status]
+Displayed value: [value]
+Source document/file: [document/file/version]
+Required action: [required action]
+Blocking level: [blocking level]
+Open Reconciliation: [link]
+Open Data Room: [link]
+
+11. Permission model
+
+Document separate permissions for:
+
+* view Reconciliation
+* open Data Room
+* accept/override values
+* promote current assumptions / project_facts
+* create tasks
+* assign tasks to others
+* create draft baseline
+* activate baseline
+
+For each action:
+
+* backend permission gate if known
+* frontend gate if known
+* recommended UI behavior when user lacks permission:
+
+  * hidden
+  * disabled with tooltip
+  * create task fallback
+  * open Data Room only
+  * no action
+
+12. Risk register
+
+List concrete risks and mitigations.
+
+At minimum include:
+
+* row-level promote misleading users if backend promotion is file-version-wide
+* all-or-nothing promotion blast radius
+* stale reconciliation status
+* promoting values that were accepted but later superseded
+* permission mismatch between Reconciliation and Data Room
+* bypassing Data Room audit trail
+* creating a parallel promotion mechanism
+* users thinking promotion updates expected/O&M immediately
+* task handoff missing stable references
+* duplicated/conflicting actions across Data Room and Reconciliation
+* baseline not rebuilt after promotion
+* active facts changing while user has confirmation open
+
+For each:
+
+* severity
+* mitigation
+* implementation requirement
+
+13. Open questions for user
+
+List decisions the user must confirm before implementation.
+
+At minimum:
+
+* Should first implementation deep-link to existing Data Room promotion, if it exists?
+* If no UI exists, should Reconciliation become the first visible promote entry point?
+* Is file-version-wide promotion acceptable if clearly disclosed?
+* Do we need true field-level promotion before exposing row-level promote?
+* Which users/roles may promote?
+* Which users/roles may create assignable tasks?
+* Which board should reconciliation tasks land on?
+* Should tasks be required instead of direct promotion for non-admin users?
+* Should baseline rebuild prompts appear immediately after promotion?
+* Should Reconciliation show promote actions only for Diligence users or also asset managers with task-only permissions?
+
+14. Recommended follow-up implementation scope
+
+Propose a safe first implementation sprint.
+
+Do not build it now.
+
+The recommendation should include:
+
+* frontend files likely touched
+* backend files likely touched
+* endpoints reused or needed
+* tests required
+* rollout approach
+* non-goals
+
+Preferred safe implementation if audit supports it:
+
+* add row-level “Promote via Data Room” action for accepted-not-promoted rows
+* deep-link to existing promotion/diff flow if present
+* if no Data Room promotion UI exists, add a Reconciliation action that opens a confirmation using the existing backend diff/preview before execution
+* add “Create Task” action for rows requiring handoff
+* do not add acceptance/override to Reconciliation
+* do not update baselines in this workflow
+
+15. Deliverable format
+
+Create a single markdown document under docs/.
+
+Return:
+
+* document path
+* summary of findings
+* whether promotion UI exists today
+* whether backend promotion exists today
+* recommended UX option
+* open questions
+* recommended implementation prompt
+
+No production code changes.
+No behavior changes.
+No UI changes.
+No endpoints.
+No migrations.
