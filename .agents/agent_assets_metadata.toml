@@ -65,3 +65,9 @@ id = "qG7D-0Cn_tz-q56tgnr6m"
 uri = "file://docs/legacy_om_recovery_v2_rebinding_audit.md"
 type = "text"
 title = "Legacy O&M / Asset Mgmt Drill-Down Recovery + V2 Rebinding Audit (v1.0)"
+
+[[outputs]]
+id = "ySSsAWyUnWWf0IV5fAmWe"
+uri = "file://docs/promote_from_reconciliation_audit.md"
+type = "text"
+title = "Promote from Reconciliation — Audit & Design"
