@@ -1,0 +1,171 @@
+Start implementation sprint: O&M / Investor Sites Table V2 Data Fill + Honest N/A Cleanup.
+
+Context:
+The Project Hub Overview safety sequence is complete:
+
+* Phase 1+2 made protected baseline-driving fields read-only and prevented SAFL/BigQuery writes.
+* Phase 3 added live reconciliation truth-state display for users with Diligence access.
+* Overview now degrades cleanly for asset-only users.
+* No backend mutation or truth-store changes were introduced.
+
+Recent O&M audits found a remaining read-path coverage gap:
+
+* O&M Company Sites table and Investor Dashboard Sites table use extend_company_sites_with_energy_attributes.
+* This helper is gated by legacy_telemetry_enabled and defaults to honest N/A when legacy BigQuery is off.
+* It does not yet have a V2 rollup/baseline fallback.
+* As a result, energy columns can show N/A even for sites that have V2 telemetry rollups.
+
+Objective:
+Add a V2-native data fill for company/investor sites-table energy attributes while preserving response shape, existing UI, and honest missing-data behavior.
+
+Hard constraints:
+
+* Do not redesign screens.
+* Do not create new routes.
+* Do not change expected calculation math.
+* Do not change telemetry ingestion.
+* Do not change WeatherResolver behavior.
+* Do not change historical weather import behavior.
+* Do not change device eligibility.
+* Do not change baseline lifecycle.
+* Do not change due diligence parsing/prompts.
+* Do not modify Project Hub Overview protected-field behavior.
+* Do not touch plaintext secrets.
+* Do not reintroduce BigQuery, Firestore, or legacy telemetry as an operational dependency.
+* Do not fabricate production, expected, performance, or losses.
+* Preserve existing API response shape.
+
+Scope:
+
+A. Audit current helper usage
+
+Locate and confirm all call sites of:
+extend_company_sites_with_energy_attributes
+
+Expected call sites include:
+
+* O&M company sites table
+* Investor Dashboard sites table
+
+For each call site:
+
+* route
+* response schema
+* frontend consumer
+* displayed fields
+* current fallback behavior
+* legacy flag behavior
+
+B. Add V2-native data fill
+
+Update the helper or add a V2-specific helper so site-table energy attributes can be filled from:
+
+* telemetry_site_interval_rollups
+* telemetry_expected_baselines
+* existing company/site aggregation helpers where appropriate
+
+Fields to populate only where defensible:
+
+* latest actual production / power
+* actual energy for period, if existing response expects it
+* expected energy / expected_state where active baseline supports it
+* performance percentage only when both actual and expected are available
+* last data timestamp, if existing response expects it
+
+Rules:
+
+* If V2 rollups exist, use Postgres V2 rollups and never call BigQuery.
+* If V2 rollups do not exist, return honest N/A/null unless legacy fallback is explicitly enabled.
+* If active expected baseline is missing, expected/performance should be null/N/A with expected_state=baseline_not_available where response supports it.
+* If weather inputs are missing, expected/performance should be null/N/A with expected_state=missing_inputs or partial where response supports it.
+* Never zero-fill missing expected/actual/performance.
+
+C. Preserve response shape
+
+Do not break frontend consumers.
+
+Requirements:
+
+* Keep existing field names.
+* Keep existing pagination/sorting/search behavior.
+* Add nullable metadata only if safe.
+* Do not require frontend redesign.
+* If frontend displays null badly, fix formatter to show — / N/A.
+
+D. Honest N/A / fabricated-zero cleanup
+
+Find and fix any residual fabricated-zero behavior related to these tables or shared O&M formatters:
+
+* null actual shown as 0
+* null expected shown as 0
+* null performance shown as 0%
+* BigQuery exception branch returning 0.0
+* inverter/device performance unavailable shown as 0%
+
+Replace with:
+
+* null
+* N/A
+* “Unavailable”
+* expected_state reason where available
+
+E. Legacy behavior
+
+Keep legacy_telemetry_enabled behavior safe:
+
+* default off: no BigQuery call, honest N/A/null when no V2 data
+* V2 rollups present: V2 data wins, no BigQuery call
+* legacy enabled and no V2 data: existing legacy fallback may remain if explicitly intended
+* legacy exception: do not fabricate 0
+
+F. Tests
+
+Add/update tests for:
+
+1. O&M company sites table uses V2 rollups when present.
+2. Investor Dashboard sites table uses V2 rollups when present.
+3. V2 rollups present means BigQuery is not called.
+4. No V2 data + legacy disabled returns honest N/A/null.
+5. Active baseline missing returns expected/performance N/A, not 0.
+6. Actual present + expected missing does not compute performance.
+7. Actual and expected present computes performance correctly, if existing helper supports it.
+8. Legacy BigQuery exception does not return fabricated 0.
+9. Frontend formatter renders null as — / N/A, not 0.
+10. Response shape remains backward compatible.
+11. Existing O&M site charts remain unchanged.
+12. Project Hub Overview protected-field behavior remains unchanged.
+13. Backend starts cleanly.
+14. Frontend typecheck/build passes if touched.
+15. Architect review passes.
+
+G. Validation
+
+Run targeted backend tests for helper and routes.
+Run targeted frontend formatter/table tests if frontend touched.
+Confirm site 4 table rows show V2 data where available.
+Confirm no BigQuery calls happen for V2 sites.
+Confirm no fabricated zeroes.
+Confirm backend boots clean.
+Confirm frontend compiles clean if touched.
+
+Return:
+
+* files changed
+* helper/call-site audit
+* V2 data fill logic
+* response shape compatibility notes
+* honest N/A cleanup details
+* tests run / skipped with reason
+* validation results
+* risks
+* recommended next sprint
+
+Do not:
+
+* touch Project Hub Overview read/write behavior
+* touch O&M/device-detail drill-down behavior except shared formatters if necessary
+* touch weather/domain resolver
+* touch due diligence/reconciliation
+* add external weather provider
+* use SAFL as baseline source
+* reintroduce legacy operational dependencies

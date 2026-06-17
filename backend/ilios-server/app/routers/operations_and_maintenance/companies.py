@@ -125,7 +125,7 @@ async def get_company_sites(
     sites_alerts = AlertCRUD(db_session).get_site_alerts_overview({site.id for site in sites})
     for site in sites:
         site.alerts_overview = get_alerts_overview(site.id, sites_alerts, AssetType.site)
-    extend_company_sites_with_energy_attributes(sites)
+    extend_company_sites_with_energy_attributes(db_session, sites)
     return {"items": sites, **pagination_details(skip, limit, total)}
 
 

@@ -15,8 +15,17 @@ import { BootstrapTooltip } from '../../../../../../components/common/BootstrapT
 import WeatherIndicator from '../../../../../../components/common/WeatherIndicator/WeatherIndicator';
 
 const efficiencyBarCellRenderer = (params: any) => {
-  const value = typeof params?.value === 'number' ? params?.value : 0;
-  return <EfficiencyRateBar percentage={value} />;
+  // Honest N/A: only render a percentage bar for a real number (including a
+  // genuine 0). A null/undefined value means the metric is unavailable, so show
+  // a neutral "N/A" instead of fabricating a 0% bar.
+  if (typeof params?.value !== 'number') {
+    return (
+      <Box component="span" sx={{ color: 'text.disabled' }}>
+        N/A
+      </Box>
+    );
+  }
+  return <EfficiencyRateBar percentage={params.value} />;
 };
 
 const statusCellRenderer = (params: any) => {

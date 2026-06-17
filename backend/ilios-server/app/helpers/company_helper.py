@@ -1,10 +1,19 @@
 from concurrent.futures import ThreadPoolExecutor
 
+from sqlalchemy.orm import Session
+
 from app.crud.company import CompanyCRUD
 from app.helpers.telemetry.bigquery import TelemetrySiteBigQuery
 from app.helpers.telemetry.legacy_flag import legacy_telemetry_enabled
-from app.helpers.telemetry.v2_company_data import aggregate_company_actuals, get_sites_latest_power
+from app.helpers.telemetry.v2_company_data import (
+    aggregate_company_actuals,
+    compute_sites_expected_today,
+    get_active_baselines,
+    get_sites_latest_power,
+    get_sites_today_power,
+)
 from app.models.site import Site
+from app.schema.common import calculate_actual_vs_expected
 
 
 # TODO potentially can be reused in other methods
@@ -78,27 +87,28 @@ def get_company_actual_vs_expected_production_section_with_telemetry(company, si
     return company_sites
 
 
-def extend_company_sites_with_energy_attributes(sites: list[Site]):
-    """Extend site object with energy data fetched from telemetry.
+def extend_company_sites_with_energy_attributes(db_session: Session, sites: list[Site]):
+    """Extend each site with its energy attributes for the sites tables.
 
-    NOTE: This still reads BigQuery and is intentionally OUT OF SCOPE for the
-    Phase-2 V2 company/portfolio actuals migration (it backs the company
-    ``/{company_id}/sites`` table, not the company/investor dashboards). It is
-    deferred to a later phase rather than partially migrated here.
+    Backs the company ``/{company_id}/sites`` and investor ``/sites`` tables. The
+    legacy flag selects the data source:
+
+    * flag ON  → the original BigQuery-backed values (unchanged).
+    * flag OFF (default) → V2-native PostgreSQL rollups + active baselines
+      (:func:`_extend_with_v2_telemetry`). Honest-or-null throughout: a value is
+      filled only when the underlying V2 data genuinely supports it, otherwise it
+      stays ``None`` (rendered as N/A) — never a fabricated zero.
+
+    The five energy attributes are: ``actual_kw``, ``expected_kw``,
+    ``cumulative_vs_expected`` (today %), and ``cumulative_7/30_days_vs_expected``.
+    The response shape is identical on both paths.
     """
     if not sites:
         return
-    # Legacy BigQuery-backed energy attributes. Gated behind the legacy flag (off
-    # by default): when off, surface honest N/A (None) for every site instead of
-    # querying a decommissioned BigQuery. The dedicated V2 company/investor
-    # dashboards are computed elsewhere and are unaffected by this fallback.
+    # V2-native fill (off by default). The decommissioned BigQuery is only used
+    # when the legacy flag is explicitly enabled.
     if not legacy_telemetry_enabled():
-        for site in sites:
-            site.actual_kw = None
-            site.expected_kw = None
-            site.cumulative_vs_expected = None
-            site.cumulative_7_days_vs_expected = None
-            site.cumulative_30_days_vs_expected = None
+        _extend_with_v2_telemetry(db_session, sites)
         return
     user_site_ids = {site.id for site in sites}
     telemetry_bq = TelemetrySiteBigQuery()
@@ -115,3 +125,84 @@ def extend_company_sites_with_energy_attributes(sites: list[Site]):
         site.cumulative_vs_expected, site.cumulative_7_days_vs_expected, site.cumulative_30_days_vs_expected = (
             telemetry_sites_cumulative.get(site.id)
         )
+
+
+def _extend_with_v2_telemetry(db_session: Session, sites: list[Site]):
+    """Fill the sites-table energy attributes from V2-native PostgreSQL data.
+
+    Read-only. Shares the V2 source-of-truth with the single-site dashboard
+    (``apply_v2_actual_production``) and the company aggregation
+    (``aggregate_company_actuals``). The instantaneous ``expected_kw`` uses the
+    exact same strict latest-actual-bucket alignment as the dashboard's
+    ``_expected_power_for_bucket`` (so the table cell matches the drill-down), but
+    the cumulative today % is INTENTIONALLY STRICTER than the dashboard: it sums
+    expected over only the comparable (``ok`` AND actual-present) buckets, whereas
+    the dashboard sums expected over all ``ok`` buckets against actual over all
+    power buckets. In gappy data the two can differ; this table has no
+    ``expected_state``/coverage caption to explain an approximation, so it reports
+    a like-for-like ratio over actual-covered intervals only rather than a looser
+    partial-day figure. Field-by-field:
+
+    * ``actual_kw`` — the site's LATEST TODAY power bucket (``None`` when the site
+      has no today readings). Today-only — never the most recent bucket of a prior
+      day — so it is always aligned to today's ``expected_kw`` and a stale value is
+      never compared against today's expected.
+    * ``expected_kw`` — expected power at the SAME bucket as the latest ACTUAL
+      power bucket, but only when that bucket is ``ok`` (strict, no cross-bucket
+      borrowing); else ``None``. Anchoring to the latest actual bucket (not the
+      power∪weather union's latest, which can be a later weather-only bucket)
+      guarantees that when both ``actual_kw`` and ``expected_kw`` are present they
+      refer to the same interval, so the schema-computed ``actual_vs_expected`` is
+      an honest like-for-like ratio.
+    * ``cumulative_vs_expected`` (today %) — actual-vs-expected of today's energy
+      summed over ONLY the comparable buckets (``ok`` AND with an actual power
+      reading), so the ratio compares the same intervals on both sides. Computed
+      only when at least one comparable bucket exists. A genuine zero (real
+      coverage, 0 production) yields ``0``; "no comparable readings" yields
+      ``None`` — the two are never conflated.
+    * ``cumulative_7/30_days_vs_expected`` — honest ``None``. There is no
+      defensible batched V2 multi-day expected, so these stay N/A rather than
+      fabricating a value (out of scope: no expected-math changes).
+
+    Uses only batched helpers (one windowed power query + one baseline query + one
+    windowed expected query) — no N+1, no BigQuery, no provider/credential calls.
+    """
+    site_ids = [site.id for site in sites]
+    power_by_site = get_sites_today_power(db_session, sites)
+    baselines_by_site = get_active_baselines(db_session, site_ids)
+
+    # Compute expected only for sites with real today power AND an active baseline
+    # (a baseline-less or readings-less site can only ever be honest N/A here).
+    sites_to_compute = [
+        site
+        for site in sites
+        if (power := power_by_site.get(site.id))
+        and power.bucket_count > 0
+        and site.id in baselines_by_site
+    ]
+    expected_by_site = compute_sites_expected_today(db_session, sites_to_compute, baselines_by_site)
+
+    for site in sites:
+        power = power_by_site.get(site.id)
+        has_today_power = bool(power and power.bucket_count > 0)
+        expected = expected_by_site.get(site.id)
+
+        site.actual_kw = power.latest_power_kw if has_today_power else None
+        # Strict alignment: expected power at the SAME bucket as actual_kw (the
+        # latest actual power bucket), only when that bucket is ``ok`` — never the
+        # union's latest (possibly later, weather-only) bucket. So when both are
+        # present the schema-computed ``actual_vs_expected`` compares like-for-like.
+        site.expected_kw = expected.expected_power_at_latest_actual_kw if expected else None
+        if expected is not None:
+            # Like-for-like today %: actual and expected summed over the SAME
+            # comparable buckets (``ok`` AND with an actual power reading). None-safe:
+            # None when there is no comparable bucket (no real coverage) or when
+            # expected is 0; a genuine zero (real coverage, 0 actual) yields 0.
+            site.cumulative_vs_expected = calculate_actual_vs_expected(
+                expected.comparable_actual_energy_kwh,
+                expected.comparable_expected_energy_kwh,
+            )
+        else:
+            site.cumulative_vs_expected = None
+        site.cumulative_7_days_vs_expected = None
+        site.cumulative_30_days_vs_expected = None

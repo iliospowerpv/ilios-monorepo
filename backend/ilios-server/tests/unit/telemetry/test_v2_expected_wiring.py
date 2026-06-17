@@ -551,6 +551,83 @@ def test_summarize_site_expected_incomplete_baseline_is_missing_inputs(monkeypat
     assert out.expected_energy_kwh is None
 
 
+def test_summarize_site_expected_aligns_to_latest_actual_and_comparable_set(monkeypatch):
+    """Sites-table fields anchor to ACTUAL coverage, never the union's latest bucket.
+
+    Two early ``ok`` buckets WITH actual power, then a later ``ok`` weather-only
+    bucket (no actual power). The union-latest expected power anchors to the
+    weather-only bucket (the company-aggregate field, unchanged), but the table
+    fields must anchor to the latest ACTUAL power bucket and sum only over
+    comparable (``ok`` + actual-present) buckets.
+    """
+    from app.services.telemetry.expected_service import BucketStatus, ExpectedBucket
+
+    t1 = datetime(2026, 6, 11, 9)
+    t2 = datetime(2026, 6, 11, 10)  # latest ACTUAL power bucket
+    t3 = datetime(2026, 6, 11, 11)  # later, weather-only (no actual power)
+    buckets = [
+        ExpectedBucket(t1, BucketStatus.ok, 6.0, 6.0, 4.0, 600.0, 95.0, 1),
+        ExpectedBucket(t2, BucketStatus.ok, 8.0, 8.0, 5.0, 600.0, 95.0, 1),
+        ExpectedBucket(t3, BucketStatus.ok, 10.0, 10.0, None, 600.0, 95.0, 1),
+    ]
+    monkeypatch.setattr(vc.BaselineParams, "from_baseline", staticmethod(lambda _b: object()))
+    monkeypatch.setattr(vc, "compute_expected_buckets", lambda _p, _i, _h: buckets)
+
+    out = vc._summarize_site_expected(
+        site_id=1,
+        baseline=object(),
+        metric_maps={
+            vc.SITE_POWER_METRIC: {t1: 4.0, t2: 5.0},  # no t3 power
+            vc.IRRADIANCE_METRIC: {t1: 600.0, t2: 600.0, t3: 600.0},
+            vc.CELL_TEMPERATURE_METRIC: {t1: 95.0, t2: 95.0, t3: 95.0},
+        },
+        bucket_hours=1.0,
+        bucket_size="1h",
+        window_start=datetime(2026, 6, 11),
+        window_end=datetime(2026, 6, 11, 12),
+    )
+    # Union-latest field (company aggregate) still anchors to the weather-only bucket.
+    assert out.expected_power_latest_kw == 10.0
+    # Table field anchors to the latest ACTUAL power bucket (t2), not t3.
+    assert out.expected_power_at_latest_actual_kw == 8.0
+    # Comparable sums cover ONLY the ok buckets WITH actual power (t1, t2).
+    assert out.comparable_actual_energy_kwh == 9.0  # 4 + 5
+    assert out.comparable_expected_energy_kwh == 14.0  # 6 + 8
+
+
+def test_summarize_site_expected_latest_actual_bucket_not_ok_yields_none(monkeypatch):
+    """When the latest ACTUAL power bucket is not ``ok``, the aligned expected power
+    is None (no cross-bucket borrowing), and the comparable set excludes it."""
+    from app.services.telemetry.expected_service import BucketStatus, ExpectedBucket
+
+    t1 = datetime(2026, 6, 11, 9)
+    t2 = datetime(2026, 6, 11, 10)  # latest actual power bucket, but missing_inputs
+    buckets = [
+        ExpectedBucket(t1, BucketStatus.ok, 6.0, 6.0, 4.0, 600.0, 95.0, 1),
+        ExpectedBucket(t2, BucketStatus.missing_inputs, None, None, 5.0, None, None, 1),
+    ]
+    monkeypatch.setattr(vc.BaselineParams, "from_baseline", staticmethod(lambda _b: object()))
+    monkeypatch.setattr(vc, "compute_expected_buckets", lambda _p, _i, _h: buckets)
+
+    out = vc._summarize_site_expected(
+        site_id=1,
+        baseline=object(),
+        metric_maps={
+            vc.SITE_POWER_METRIC: {t1: 4.0, t2: 5.0},
+            vc.IRRADIANCE_METRIC: {t1: 600.0},
+            vc.CELL_TEMPERATURE_METRIC: {t1: 95.0},
+        },
+        bucket_hours=1.0,
+        bucket_size="1h",
+        window_start=datetime(2026, 6, 11),
+        window_end=datetime(2026, 6, 11, 12),
+    )
+    assert out.expected_power_at_latest_actual_kw is None  # latest actual bucket not ok
+    # Only t1 is ok AND has actual power.
+    assert out.comparable_actual_energy_kwh == 4.0
+    assert out.comparable_expected_energy_kwh == 6.0
+
+
 # ---------------------------------------------------------------------------
 # compute_sites_expected_today — windowed query, per-site local-day attribution
 # ---------------------------------------------------------------------------

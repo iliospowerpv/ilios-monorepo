@@ -37,5 +37,5 @@ async def get_company_sites(
     site_crud = SiteCRUD(db_session)
 
     total, sites = site_crud.filter(current_user.get_limited_sites_ids(), skip=skip, limit=limit)
-    extend_company_sites_with_energy_attributes(sites)
+    extend_company_sites_with_energy_attributes(db_session, sites)
     return {"items": sites, **pagination_details(skip, limit, total)}

@@ -149,19 +149,116 @@ def get_sites_today_energy(
 
 
 @dataclass(frozen=True)
+class SiteTodayPower:
+    """Per-site today SITE_POWER summary for the sites tables.
+
+    * ``energy_kwh`` — today's energy (``Σ avg_kw × bucket_hours``) over the
+      site's local day.
+    * ``bucket_count`` — number of today power buckets. This distinguishes a
+      genuine zero (``energy_kwh == 0`` with ``bucket_count > 0`` — a real "no
+      production right now") from "no readings at all" (``bucket_count == 0``),
+      so a missing reading is never turned into a fabricated 0%.
+    * ``latest_power_kw`` — avg power at the LATEST today bucket (``None`` when
+      there are no today buckets). Using today's latest (not the most recent of
+      any day) keeps ``actual_kw`` aligned to today's expected power, never
+      comparing a stale prior-day actual against today's expected.
+    """
+
+    energy_kwh: float
+    bucket_count: int
+    latest_power_kw: Optional[float]
+
+
+def get_sites_today_power(
+    db_session: Session, sites, *, bucket_size: str = CHART_BUCKET_SIZE
+) -> dict[int, SiteTodayPower]:
+    """Per-site today SITE_POWER summary in ONE windowed query (no N+1).
+
+    Mirrors :func:`get_sites_today_energy`'s windowed, per-site-local-day
+    attribution, but additionally returns the today bucket count and the
+    latest-today power so the sites tables can fill ``actual_kw`` honestly (today
+    only, aligned to today's expected) and gate the today percentage on real
+    actual coverage. Returns an entry for EVERY passed site.
+    """
+    sites = list(sites)
+    if not sites:
+        return {}
+    now = datetime.utcnow()
+    hours = _bucket_hours(bucket_size)
+    day_start_by_site = {site.id: _site_local_day_start_utc(site) for site in sites}
+    window_start = min(day_start_by_site.values())
+
+    rows = (
+        db_session.query(TelemetrySiteIntervalRollup)
+        .filter(
+            TelemetrySiteIntervalRollup.site_id.in_(list(day_start_by_site.keys())),
+            TelemetrySiteIntervalRollup.normalized_metric == SITE_POWER_METRIC,
+            TelemetrySiteIntervalRollup.bucket_size == bucket_size,
+            TelemetrySiteIntervalRollup.bucket_start >= window_start,
+            TelemetrySiteIntervalRollup.bucket_start <= now,
+        )
+        .all()
+    )
+
+    energy: dict[int, float] = {site.id: 0.0 for site in sites}
+    counts: dict[int, int] = {site.id: 0 for site in sites}
+    latest_ts: dict[int, Optional[datetime]] = {site.id: None for site in sites}
+    latest_val: dict[int, Optional[float]] = {site.id: None for site in sites}
+    for row in rows:
+        site_day_start = day_start_by_site.get(row.site_id)
+        if site_day_start is None or row.bucket_start < site_day_start:
+            continue
+        value = float(row.value)
+        energy[row.site_id] += value * hours
+        counts[row.site_id] += 1
+        if latest_ts[row.site_id] is None or row.bucket_start > latest_ts[row.site_id]:
+            latest_ts[row.site_id] = row.bucket_start
+            latest_val[row.site_id] = value
+    return {
+        site.id: SiteTodayPower(
+            energy_kwh=energy[site.id],
+            bucket_count=counts[site.id],
+            latest_power_kw=latest_val[site.id],
+        )
+        for site in sites
+    }
+
+
+@dataclass(frozen=True)
 class SiteExpectedToday:
     """Per-site today expected summary fed into the company aggregate.
 
     * ``state`` — the per-site :class:`ExpectedState` over today's site-local day.
     * ``expected_energy_kwh`` — Σ of the ``ok`` buckets' expected energy (``None``
       when no bucket could be computed). Never zero-filled for missing buckets.
-    * ``expected_power_latest_kw`` — expected power at the latest bucket, but only
-      when that bucket is ``ok`` (strict, no cross-bucket borrowing); else ``None``.
+    * ``expected_power_latest_kw`` — expected power at the latest bucket of the
+      power∪weather union, but only when that bucket is ``ok`` (strict, no
+      cross-bucket borrowing); else ``None``. Consumed by the COMPANY AGGREGATE.
+
+    The following are additive and consumed ONLY by the sites tables
+    (:func:`app.helpers.company_helper._extend_with_v2_telemetry`); the company
+    aggregate ignores them, so they change no aggregate behavior. They exist
+    because the union-latest field above can anchor to a later weather-only bucket
+    than the latest ACTUAL power bucket the table shows — comparing those would mix
+    intervals. These line everything up to the actual power instead:
+
+    * ``expected_power_at_latest_actual_kw`` — expected power at the SAME bucket as
+      the latest ACTUAL power bucket, only when that bucket is ``ok``; else
+      ``None``. Mirrors ``v2_chart_data._expected_power_for_bucket`` so the table's
+      instantaneous actual-vs-expected compares like-for-like.
+    * ``comparable_actual_energy_kwh`` / ``comparable_expected_energy_kwh`` — today
+      energy summed over ONLY the buckets that are ``ok`` AND have an actual power
+      reading, so a today percentage is a true same-interval ratio (never
+      expected-over-more-buckets-than-actual). Both ``None`` when no such bucket
+      exists, so a missing reading is never turned into a fabricated 0%.
     """
 
     state: ExpectedState
     expected_energy_kwh: Optional[float]
     expected_power_latest_kw: Optional[float]
+    expected_power_at_latest_actual_kw: Optional[float] = None
+    comparable_actual_energy_kwh: Optional[float] = None
+    comparable_expected_energy_kwh: Optional[float] = None
 
 
 def get_active_baselines(db_session: Session, site_ids) -> dict:
@@ -268,6 +365,34 @@ def _summarize_site_expected(
         latest.expected_power_kw if latest is not None and latest.status == BucketStatus.ok else None
     )
 
+    # --- Sites-table alignment (additive; the company aggregate ignores these) ---
+    # Instantaneous: expected power at the SAME bucket as the latest ACTUAL power
+    # bucket, only if that bucket is ``ok`` — strict, no cross-bucket borrowing, so
+    # it never anchors to a later weather-only bucket. Mirrors
+    # ``v2_chart_data._expected_power_for_bucket``.
+    latest_actual_bucket_start = max(power_map) if power_map else None
+    expected_power_at_latest_actual = None
+    if latest_actual_bucket_start is not None:
+        for b in buckets:
+            if b.bucket_start == latest_actual_bucket_start:
+                if b.status == BucketStatus.ok:
+                    expected_power_at_latest_actual = b.expected_power_kw
+                break
+    # Cumulative: sum actual AND expected over ONLY the buckets that are ``ok`` AND
+    # have an actual power reading, so the today ratio compares the same intervals
+    # (never expected-over-more-buckets-than-actual). ``None`` when no such bucket
+    # exists, so a missing reading never becomes a fabricated 0%.
+    comparable_buckets = [b for b in ok_buckets if b.actual_power_kw is not None]
+    comparable_actual_energy = None
+    comparable_expected_energy = None
+    if comparable_buckets:
+        comparable_actual_energy = sum(
+            b.actual_power_kw * bucket_hours for b in comparable_buckets
+        )
+        comparable_expected_energy = sum(
+            b.expected_energy_kwh for b in comparable_buckets
+        )
+
     result = ExpectedResult(
         overall_status=OverallStatus.ok,
         baseline_id=getattr(baseline, "id", None),
@@ -288,6 +413,9 @@ def _summarize_site_expected(
         state=derive_expected_state(result),
         expected_energy_kwh=expected_energy,
         expected_power_latest_kw=expected_power_latest,
+        expected_power_at_latest_actual_kw=expected_power_at_latest_actual,
+        comparable_actual_energy_kwh=comparable_actual_energy,
+        comparable_expected_energy_kwh=comparable_expected_energy,
     )
 
 
