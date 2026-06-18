@@ -39,6 +39,18 @@ interface SectionOption {
   name: string;
 }
 
+const findDocumentById = (items: DiligenceItem[], id: number): DiligenceDocument | null => {
+  for (const section of items) {
+    const match = section.documents?.find(doc => doc.id === id);
+    if (match) return match;
+    if (section.related_sections?.length) {
+      const nested = findDocumentById(section.related_sections, id);
+      if (nested) return nested;
+    }
+  }
+  return null;
+};
+
 export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDetails }) => {
   const { siteId } = useParams<{ siteId: string }>();
   const { focusState } = useFocusHighlight();
@@ -72,6 +84,16 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
   const handleBackToList = () => {
     setSelectedDocument(null);
   };
+
+  const handleViewDocumentDetails = useCallback(
+    (documentId: number) => {
+      const doc = data?.items ? findDocumentById(data.items, documentId) : null;
+      if (doc) {
+        setSelectedDocument(doc);
+      }
+    },
+    [data]
+  );
 
   const extractSections = useCallback((items: DiligenceItem[]): SectionOption[] => {
     const sections: SectionOption[] = [];
@@ -242,7 +264,7 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
         </Alert>
       )}
 
-      <ProjectSummaryPanel siteId={numericSiteId} companyId={siteDetails.company.id} />
+      <ProjectSummaryPanel siteId={numericSiteId} onViewDocumentDetails={handleViewDocumentDetails} />
 
       <Box display="flex" alignItems="center" gap={1} mb={3}>
         <FolderOpenIcon color="primary" />

@@ -42,7 +42,7 @@ interface DiligenceDocument {
 
 interface ProjectSummaryPanelProps {
   siteId: number;
-  companyId: number;
+  onViewDocumentDetails?: (documentId: number) => void;
 }
 
 const STORAGE_KEY_PREFIX = 'project-summary-expanded-';
@@ -59,7 +59,7 @@ interface SummaryItem {
   count: number;
 }
 
-export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId, companyId }) => {
+export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId, onViewDocumentDetails }) => {
   const notify = useNotify();
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -444,12 +444,7 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
                           component="button"
                           variant="caption"
                           underline="hover"
-                          onClick={() =>
-                            window.open(
-                              `/due-diligence/companies/${companyId}/sites/${siteId}/due-diligence/${selectedDocument.id}`,
-                              '_blank'
-                            )
-                          }
+                          onClick={() => onViewDocumentDetails?.(selectedDocument.id)}
                         >
                           View Details
                         </Link>
