@@ -1,0 +1,379 @@
+Start audit/design sprint: Data Room Parse / Acceptance / Promotion Transactional Integrity.
+
+This is an audit and design task first. Do not implement code, migrations, endpoints, or UI changes unless explicitly asked in a follow-up implementation sprint.
+
+Context:
+A recent Data Room fix correctly scoped accepted values to the viewed file version. A newly uploaded document version no longer inherits accepted values from an older version.
+
+However, a remaining integrity issue was identified:
+If a user accepts values on a file version and then reprocesses/reparses that same version, the earlier acceptance does not automatically reset or become stale. Acceptance is tracked per file version, not per parse run or extraction lineage.
+
+This is a governance issue for Ilios because accepted values, candidate facts, promoted project_facts, baselines, expected values, and O&M analytics must remain transactionally and historically correct.
+
+Strategic objective:
+Audit and design a durable transactional integrity model for Data Room parsing, acceptance, candidate facts, promotion, baselines, and downstream O&M analytics.
+
+Hard invariant:
+If the source basis changes, downstream review/promotion state must not silently remain valid.
+
+Source basis changes include:
+
+* document reparse
+* reprocessing
+* OCR/preprocessing change
+* AI extraction rerun
+* extraction schema version change
+* prompt version change
+* canonical field mapping change
+* parser/model change
+* manual correction to extracted value
+* accepted value change
+* override value change
+* document file version replacement
+* candidate fact regeneration
+* promotion/supersession
+
+Hard constraints:
+
+* Do not delete historical accepted values.
+* Do not delete historical project_facts.
+* Do not rewrite historical baselines.
+* Do not rewrite historical O&M analytics.
+* Do not make reparsed values automatically active.
+* Do not auto-promote reparsed values.
+* Do not auto-create or auto-activate baselines.
+* Do not use SiteAdditionalFieldList as a baseline source.
+* Do not reintroduce BigQuery/Firestore/legacy telemetry.
+* Do not change expected calculation math.
+* Do not change telemetry ingestion.
+* Do not change WeatherResolver.
+* Do not change device eligibility.
+* Do not touch plaintext secrets.
+* Preserve auditability, effective dates, supersession, and provenance.
+
+Audit areas:
+
+A. Current parse lineage audit
+
+Trace the current lifecycle:
+
+upload document/file version
+→ preprocess/OCR if applicable
+→ AI parse run
+→ DocumentKeys / extracted values
+→ accept/override
+→ candidate fact creation
+→ promote to active project_fact
+→ create draft baseline from facts
+→ approve/activate baseline
+→ O&M expected/actual comparison
+
+For each step, document:
+
+* table/model involved
+* primary key / identity boundary
+* whether state is scoped to document, file version, parse run, field, canonical field, or project/site
+* whether it is mutable or immutable
+* whether it has created_at/updated_at/effective dates
+* whether it has supersession/stale markers
+* what happens today if a parse run is replaced
+* what happens today if extracted values change
+* what happens today if accepted values already exist
+
+Inspect at minimum:
+
+* AI parsing result models
+* document/file/version models
+* document_keys
+* files_parsing router/service
+* project_facts models/services
+* promotion_service
+* reconciliation_service
+* baseline_from_facts_service
+* telemetry expected baseline lifecycle
+* Data Room frontend acceptance/override flow
+* Reconciliation status ladder
+
+B. Reparse behavior audit
+
+Answer specifically:
+
+1. What happens if a user reparses the same file version after values were accepted?
+2. What happens if a reparse returns identical values?
+3. What happens if a reparse changes one extracted value?
+4. What happens if a reparse removes a previously extracted field?
+5. What happens if a reparse adds a new field?
+6. What happens if a canonical mapping changes?
+7. What happens if a parser schema version changes?
+8. What happens if accepted values already created candidate facts?
+9. What happens if those candidate facts were promoted?
+10. What happens if promoted facts are already used in a draft baseline?
+11. What happens if promoted facts are already used in an active baseline?
+12. What happens if active baseline values have already produced O&M analytics?
+
+C. Transactional integrity design
+
+Design the correct future behavior.
+
+Required principles:
+
+* Parse runs should have lineage identity.
+* Accepted/overridden values should be tied to a specific source basis.
+* If the source basis changes, accepted state should become stale, invalidated, or superseded unless the value can be proven unchanged.
+* Candidate facts should be tied to the accepted source basis.
+* Promotion should promote a specific accepted/candidate lineage.
+* Project facts should preserve effective history.
+* Baselines should preserve effective history.
+* O&M analytics should preserve the baseline/provenance used at the time.
+
+Define terms:
+
+* current parse run
+* stale parse run
+* accepted value
+* stale accepted value
+* candidate fact
+* active fact
+* superseded fact
+* draft baseline
+* active baseline
+* superseded baseline
+* historical analytics period
+* source basis fingerprint
+
+D. Source-basis fingerprint design
+
+Propose how to detect whether a reparse materially changes the source basis.
+
+Consider a fingerprint/hash over:
+
+* file_id
+* document_id
+* file version id
+* parser/schema version
+* prompt version
+* AI model/parser identifier
+* extracted canonical field key
+* normalized extracted value
+* evidence page/snippet/bounding box if available
+* accepted/override value
+* document_key id
+* parse run id
+
+Design options:
+
+1. strict invalidation on any new parse run
+2. field-level fingerprint comparison
+3. hybrid approach:
+
+   * identical canonical value + same evidence → retain accepted state
+   * changed value/evidence/schema → stale/review required
+   * removed field → stale/missing review required
+   * added field → new unreviewed value
+
+Recommend the safest practical option.
+
+E. State transition design
+
+For each event, define expected state transitions:
+
+Event: same file version reparsed with no material changes
+Expected behavior:
+
+* accepted values may remain valid only if fingerprint matches
+* audit log records reparse and validation result
+
+Event: same file version reparsed with changed value
+Expected behavior:
+
+* old accepted value remains historically accepted but becomes stale for current run
+* new value requires review/acceptance
+* candidate fact should not silently update
+* promoted fact should not silently change
+
+Event: same file version reparsed with removed field
+Expected behavior:
+
+* prior accepted value becomes stale/missing in current parse context
+* Reconciliation should show source no longer present or stale source
+* no automatic retirement unless explicitly promoted/superseded
+
+Event: new file version uploaded
+Expected behavior:
+
+* new version starts unaccepted
+* old version’s accepted values remain historical
+* promotion can promote the chosen version only with full diff
+
+Event: accepted value changed/overridden
+Expected behavior:
+
+* old accepted value is historical
+* new accepted/override value creates a new candidate lineage
+* promotion required to become active fact
+
+Event: promoted active fact superseded
+Expected behavior:
+
+* old fact gets effective_to / superseded_by
+* new active fact gets effective_from
+* historical baseline/analytics remain tied to old fact for prior periods
+
+Event: baseline rebuilt after new facts
+Expected behavior:
+
+* new draft baseline created
+* old active baseline remains active until explicitly superseded/activated
+* old analytics remain historical
+
+F. Reconciliation display design
+
+Design how Reconciliation should show stale/reparse states.
+
+Possible new or refined statuses:
+
+* stale_accepted_value
+* accepted_from_previous_parse
+* source_changed_review_required
+* source_removed_review_required
+* candidate_stale
+* active_fact_from_stale_source
+* baseline_uses_superseded_fact
+* historical_only
+
+For each status:
+
+* label
+* explanation
+* required action
+* blocking level
+* whether promote is allowed
+* whether Data Room review is required
+* whether create task is available
+
+Rule:
+If the accepted source basis is stale, promotion should be blocked until re-reviewed.
+
+G. Data Room UX design
+
+Design how Data Room should behave after reparse/preprocess changes.
+
+Include:
+
+* show prior accepted values as historical
+* show current parse values separately
+* clearly label stale accepted values
+* provide re-review action
+* do not silently mark stale values accepted
+* accept all should operate only on the current file version and current parse run/source basis
+* promote should only operate on current accepted candidate lineage
+* if values changed, require explicit accept/override again
+* if values are identical and fingerprint matches, optionally preserve accepted state with audit note
+
+H. Promotion behavior design
+
+Promotion must verify freshness before executing.
+
+Design requirement:
+Before promoting, backend should validate that candidate facts are still tied to the current accepted source basis / current parse run or a valid unchanged fingerprint.
+
+If stale:
+
+* block promotion
+* return structured error
+* user must re-review in Data Room
+
+Promotion confirmation must show:
+
+* file version
+* parse run/source basis version
+* whether accepted values are current or stale
+* full diff
+* downstream baseline not automatically updated
+
+I. Baseline and O&M historical integrity
+
+Design how active facts and baselines should respect history.
+
+Rules:
+
+* Promoted facts are effective-dated.
+* Rebuilt baselines create new baseline versions.
+* Activating a new baseline must not rewrite historical baseline outputs unless explicitly requested by a controlled backfill.
+* O&M analytics before the effective date should remain tied to the then-active baseline/facts/weather inputs.
+* O&M analytics after new activation should use the new active baseline.
+* Any backfill/recalculation must be explicit, audited, and period-scoped.
+
+Document whether the current system already satisfies this and where gaps exist.
+
+J. Hard general Replit constraint
+
+Add this as a durable platform constraint in the audit/design document and recommended future prompts:
+
+“Never allow accepted, promoted, baseline, or O&M state to silently survive upstream source changes. Upstream changes must create a new lineage, mark dependent state stale, require re-review, or create explicit supersession. Historical data must remain preserved and auditable.”
+
+K. Implementation recommendation
+
+Return a phased implementation plan.
+
+Suggested phases:
+
+1. audit-only lineage map and risk register
+2. parse-run/source-basis fingerprint model
+3. stale-state detection on reparse
+4. Data Room stale accepted value UI
+5. Reconciliation stale-status ladder
+6. promotion freshness guard
+7. candidate fact lineage enforcement
+8. baseline effective-date / historical analytics confirmation
+9. tests and regression suite
+10. documentation and hard constraint updates
+
+For each phase:
+
+* risk level
+* backend files likely touched
+* frontend files likely touched
+* tests required
+* non-goals
+
+L. Tests to design
+
+Design tests for:
+
+* new file version does not inherit accepted values
+* same file reparse with changed value invalidates current accepted state
+* same file reparse with identical value preserves or validates state according to chosen policy
+* removed field becomes stale/missing
+* added field becomes unreviewed
+* accept all uses current parse run only
+* promote blocks stale candidates
+* promote allows current candidates
+* promoted fact supersession preserves historical facts
+* draft baseline does not update automatically after reparse
+* active baseline does not update automatically after promotion
+* O&M historical analytics remain tied to prior active baseline
+* no fabricated values
+* no legacy data path
+* no SAFL-as-baseline
+* full architect review
+
+Deliverable:
+Create a markdown document under docs/ with:
+
+1. executive summary
+2. current workflow audit
+3. reparse/preprocess behavior audit
+4. transactional integrity risks
+5. recommended lineage/fingerprint model
+6. required state transitions
+7. Data Room UX design
+8. Reconciliation UX design
+9. promotion freshness guard design
+10. baseline/O&M historical integrity design
+11. durable hard constraints for future prompts
+12. phased implementation plan
+13. test plan
+14. open questions for user
+
+No production code changes in this sprint.

@@ -71,3 +71,9 @@ id = "ySSsAWyUnWWf0IV5fAmWe"
 uri = "file://docs/promote_from_reconciliation_audit.md"
 type = "text"
 title = "Promote from Reconciliation — Audit & Design"
+
+[[outputs]]
+id = "HR2p3aWLhJZX0QxJa-w0q"
+uri = "file://docs/data_room_transactional_integrity_audit.md"
+type = "text"
+title = "Data Room Transactional Integrity — Audit & Design"
