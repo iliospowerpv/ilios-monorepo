@@ -29,6 +29,9 @@ export interface DocumentTermUserInputFieldProps {
   termKey: string;
   isBaselineDriving?: boolean;
   aiValue?: string | null;
+  // Fired after a value is successfully accepted/overridden so the parent can
+  // refresh promotion eligibility (accepting a value creates a candidate fact).
+  onValuePersisted?: () => void;
 }
 
 export interface DocumentTermUserInputFieldRef {
@@ -39,7 +42,7 @@ export const DocumentTermUserInputField = React.forwardRef<
   DocumentTermUserInputFieldRef,
   DocumentTermUserInputFieldProps
 >((props, ref) => {
-  const { text, siteId, documentId, termKey, isBaselineDriving = false, aiValue = null } = props;
+  const { text, siteId, documentId, termKey, isBaselineDriving = false, aiValue = null, onValuePersisted } = props;
   const notify = useNotify();
   const queryClient = useQueryClient();
   const MAX_LENGTH = 2000;
@@ -78,6 +81,7 @@ export const DocumentTermUserInputField = React.forwardRef<
       const response = await updateDocumentKeyValue(params);
       reset({ text: data.text, overrideNotes: '' });
       queryClient.invalidateQueries({ queryKey: ['document-terms'] });
+      onValuePersisted?.();
       notify(response.message || `Document key has been successfully updated.`);
     } catch (e: any) {
       notify(e.response?.data?.message || 'Something went wrong when updating a document key...');

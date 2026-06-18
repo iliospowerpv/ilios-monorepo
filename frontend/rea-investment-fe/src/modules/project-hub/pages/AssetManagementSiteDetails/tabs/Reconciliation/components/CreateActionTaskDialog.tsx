@@ -18,19 +18,25 @@ import TextField from '@mui/material/TextField';
 import { ApiClient } from '../../../../../../../api';
 import type { Assignee, ReconciliationRow } from '../../../../../../../api';
 import { useNotify } from '../../../../../../../contexts/notifications/notifications';
-import { statusMeta } from '../utils';
+import { statusMeta, blockingMeta } from '../utils';
 
 interface CreateActionTaskDialogProps {
   open: boolean;
   siteId: number;
   row: ReconciliationRow;
+  /** Project name, woven into the description so the task reads standalone. */
+  siteName?: string;
   onClose: () => void;
 }
 
 const PRIORITIES = ['Low', 'Medium', 'High'];
 
 const defaultPriority = (blockingLevel: string | null): string => {
-  if (blockingLevel === 'blocks_baseline' || blockingLevel === 'blocks_expected' || blockingLevel === 'blocks_reporting') {
+  if (
+    blockingLevel === 'blocks_baseline' ||
+    blockingLevel === 'blocks_expected' ||
+    blockingLevel === 'blocks_reporting'
+  ) {
     return 'High';
   }
   if (blockingLevel === 'lowers_confidence') return 'Medium';
@@ -46,23 +52,58 @@ const defaultDueDate = (): string => {
 
 const defaultName = (row: ReconciliationRow): string => `Diligence: ${row.display_label}`.slice(0, 250);
 
-const buildDescription = (row: ReconciliationRow): string => {
+const formatTaskValue = (value: ReconciliationRow['accepted_value']): string =>
+  value === null || value === undefined || value === '' ? '—' : String(value);
+
+const buildDescription = (row: ReconciliationRow, siteId: number, siteName?: string): string => {
+  // Most-advanced known value wins: active fact > accepted > AI-extracted.
+  const bestValue = row.active_fact_value ?? row.accepted_value ?? row.ai_extracted_value;
+  const reconciliationLink = `/project-hub/projects/${siteId}/reconciliation`;
+  const dataRoomLink = `/project-hub/projects/${siteId}/data-room`;
   const lines: (string | null)[] = [
     `Reconciliation follow-up for "${row.display_label}" (${row.canonical_field}).`,
-    row.required_action ? `Next step: ${row.required_action}` : null,
+    siteName ? `Project: ${siteName}.` : null,
+    row.source_document_type ? `Document type: ${row.source_document_type}.` : null,
     `Current status: ${row.status_label || statusMeta(row.status).label}.`,
-    row.blocking_level ? `Impact: ${row.blocking_level.replace(/_/g, ' ')}.` : null,
-    'Action this from the project Reconciliation tab / Data Room — there is no direct document link on the task.',
+    row.blocking_level
+      ? `Impact: ${blockingMeta(row.blocking_level).label} (${row.blocking_level.replace(/_/g, ' ')}).`
+      : null,
+    row.required_action ? `Next step: ${row.required_action}` : null,
+    '',
+    'Values (read-only snapshot):',
+    `• Best current value: ${formatTaskValue(bestValue)}`,
+    `• Accepted: ${formatTaskValue(row.accepted_value)}`,
+    `• Active fact: ${formatTaskValue(row.active_fact_value)}`,
+    `• AI extracted: ${formatTaskValue(row.ai_extracted_value)}`,
+    '',
+    'Provenance / IDs:',
     row.document_id != null && row.document_version_id != null
-      ? `Source provenance — document #${row.document_id}, version #${row.document_version_id}.`
-      : null
+      ? `• Source provenance — document #${row.document_id}, version #${row.document_version_id}.`
+      : null,
+    row.document_key_id != null ? `• Document key #${row.document_key_id}.` : null,
+    row.project_fact_id != null ? `• Project fact #${row.project_fact_id}.` : null,
+    row.fact_id != null ? `• Active fact id #${row.fact_id}.` : null,
+    row.ai_run_id != null ? `• AI run #${row.ai_run_id}.` : null,
+    '',
+    'Where to act:',
+    `• Reconciliation: ${reconciliationLink}`,
+    `• Data Room: ${dataRoomLink}`,
+    '',
+    'Acceptance / override happens in the Data Room. Promotion is file-version-scoped and all-or-nothing ' +
+      '(never a single field). There is no direct document link on the task.'
   ];
-  return lines.filter((line): line is string => Boolean(line)).join('\n');
+  return lines.filter((line): line is string => line !== null).join('\n');
 };
 
 const assigneeLabel = (assignee: Assignee): string => `${assignee.first_name} ${assignee.last_name}`.trim();
 
-export const CreateActionTaskDialog: React.FC<CreateActionTaskDialogProps> = ({ open, siteId, row, onClose }) => {
+export const CreateActionTaskDialog: React.FC<CreateActionTaskDialogProps> = ({
+  open,
+  siteId,
+  row,
+  siteName,
+  onClose
+}) => {
   const notify = useNotify();
   const queryClient = useQueryClient();
 
@@ -76,12 +117,12 @@ export const CreateActionTaskDialog: React.FC<CreateActionTaskDialogProps> = ({ 
   React.useEffect(() => {
     if (open) {
       setName(defaultName(row));
-      setDescription(buildDescription(row));
+      setDescription(buildDescription(row, siteId, siteName));
       setPriority(defaultPriority(row.blocking_level));
       setDueDate(defaultDueDate());
       setAssignee(null);
     }
-  }, [open, row]);
+  }, [open, row, siteId, siteName]);
 
   const {
     data: boardsData,

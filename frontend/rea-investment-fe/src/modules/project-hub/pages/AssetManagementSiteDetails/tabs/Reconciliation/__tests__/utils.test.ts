@@ -11,7 +11,7 @@ const row = (overrides: Partial<ReconciliationRow>): ReconciliationRow =>
     document_id: 5,
     document_version_id: 9,
     ...overrides
-  } as ReconciliationRow);
+  }) as ReconciliationRow;
 
 describe('canPromoteRow', () => {
   it('is true for an accepted-not-promoted row with both document ids', () => {

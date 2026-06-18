@@ -1,0 +1,281 @@
+Start implementation sprint: Data Room Promotion Entry Point + Promotion Context Polish.
+
+Context:
+The Reconciliation Promote + Create Task sprint is complete and merged:
+
+* Promote and Create Task actions are reachable from the Reconciliation tab.
+* Promote is gated to Diligence edit users.
+* Promotion uses the existing backend diff/promote endpoints.
+* Promotion is correctly shown as file-version-scoped and all-or-nothing.
+* The dialog re-fetches live diff before confirming.
+* Removed rows are informational.
+* Success messaging states that baselines/O&M expected values are not updated automatically.
+* Acceptance/override remains in Data Room.
+* No backend endpoints, migrations, task schema, or Site entity changes were made.
+
+Problem:
+Promotion now works from Reconciliation, but there is still no visible promotion option in the Data Room. This interrupts the normal due diligence workflow. Users review and accept/override values in Data Room, then must leave Data Room and go to Reconciliation to promote accepted values into active project_facts/current assumptions.
+
+Objective:
+Add a promotion entry point inside the existing Data Room flow so users can complete the normal diligence sequence without leaving Data Room:
+accept/override → promote accepted values from the file version → Reconciliation verifies state.
+
+Keep the Reconciliation promote action in place as a safety catch. Do not remove or regress it.
+
+Hard constraints:
+
+* Do not move acceptance/override out of Data Room.
+* Do not add acceptance/override to Reconciliation.
+* Do not create field-level promotion.
+* Do not imply that promotion is single-field.
+* Do not change backend promotion semantics.
+* Do not add backend endpoints unless absolutely necessary.
+* Do not change database schema.
+* Do not create or activate baselines.
+* Do not call create-draft-from-facts.
+* Do not regenerate design points.
+* Do not change expected math.
+* Do not change telemetry ingestion.
+* Do not change WeatherResolver.
+* Do not change device eligibility.
+* Do not change due diligence parsing/prompts.
+* Do not touch plaintext secrets.
+* Do not use SAFL as a baseline source.
+* Do not reintroduce BigQuery, Firestore, or legacy telemetry.
+* Preserve existing Data Room and Reconciliation look and feel.
+
+Scope A — Audit current Data Room accepted/candidate UI
+
+Inspect:
+
+* frontend/rea-investment-fe/src/modules/project-hub/pages/AssetManagementSiteDetails/tabs/DataRoom/DataRoom.tsx
+* related Data Room document/detail/version/review components
+* frontend API clients used by Data Room
+* current accept/override flow
+* current accepted/candidate/promoted count display
+
+Determine the best existing location for a promote entry point:
+
+* document row
+* file version row
+* accepted-values section
+* parsing/review result section
+* action menu
+* toolbar
+* detail drawer
+
+Do not create a new Data Room screen.
+
+Scope B — Add Data Room promote action for eligible file versions
+
+Add a Promote action in Data Room only when:
+
+* the file version has accepted/overridden candidate facts ready for promotion
+* the user has Diligence:edit
+* document_id and file_id are available
+* promotion diff endpoint returns has_changes=true, or the UI can fetch diff before showing confirmation
+
+Suggested labels:
+
+* “Promote accepted values”
+* “Promote this version”
+* “Promote to current assumptions”
+
+Avoid:
+
+* “Promote this field”
+* “Promote value”
+* any wording that implies field-level promotion
+
+Tooltip/copy:
+“Promotion applies to all accepted candidate values on this file version. You will review the full diff before confirming.”
+
+If no candidates are promotable:
+
+* hide or disable the action
+* show clear explanation if disabled:
+  “No accepted candidate values are ready to promote.”
+
+Scope C — Reuse the existing promotion dialog
+
+Reuse the promotion diff confirmation logic built for Reconciliation.
+
+The Data Room promote action must:
+
+1. Call POST /api/projects/{site_id}/assumptions/promotion/diff with { file_id }.
+2. Display the full file-version diff.
+3. Explicitly state:
+   “This promotes every accepted candidate value on this file version, not only one field.”
+4. Show added/changed/removed groups.
+5. Treat removed rows as informational only:
+   “Informational — this version no longer carries this field.”
+6. Allow optional notes.
+7. Re-fetch latest diff before final confirm or ensure the existing dialog’s stale-diff protection is reused.
+8. Call POST /api/projects/{site_id}/assumptions/promote with { document_id, file_id, notes }.
+9. On success, invalidate/refetch:
+
+   * Data Room document/version state
+   * Reconciliation query
+   * project assumptions/facts/promotions queries if cached
+10. Show success message:
+    “Promoted to current assumptions. Baseline/O&M expected values are not updated automatically.”
+
+Do not duplicate dialog logic if it can be extracted into a shared component/hook.
+
+Suggested shared component/hook names:
+
+* PromoteVersionDialog
+* usePromotionDiff
+* usePromoteVersion
+* PromotionDiffTable
+
+Scope D — Show document version clearly in the promote dialog
+
+Implement the suggested improvement:
+Show which document version is being promoted directly in the confirmation dialog.
+
+Include where available:
+
+* document name/title
+* file name
+* version number or version label
+* upload date
+* current/actual version marker if available
+* document_id
+* file_id in smaller technical text or tooltip
+
+The user should never have to infer which version is being promoted.
+
+Apply this to both:
+
+* Reconciliation-launched promotion dialog
+* Data Room-launched promotion dialog
+
+Scope E — Improve assignable task background context
+
+Implement the suggested task-handoff improvement if it can be done frontend-only using the existing task payload.
+
+Do not change task schema.
+
+Enhance the Create Task description so teammates can act without digging.
+
+Include:
+
+* site/project name
+* Data Room document title/name
+* file/version label
+* canonical field
+* field display label
+* reconciliation status
+* blocking level
+* required action
+* best displayed value
+* accepted value if available
+* active fact value if available
+* document_id
+* file_id / document_version_id
+* document_key_id if available
+* project_fact_id if available
+* Reconciliation deep link
+* Data Room deep link
+* note that promotion, if applicable, is file-version-scoped
+
+Apply this improvement to the Reconciliation Create Task flow already shipped.
+
+If Data Room also has a task action and can reuse this context safely, reuse it there too. If not, leave Data Room tasking out of scope and document the gap.
+
+Scope F — Keep Reconciliation promote intact
+
+Do not remove or weaken the Reconciliation promote action.
+
+Verify:
+
+* accepted_not_promoted rows still show promote for Diligence:edit users
+* Reconciliation still uses the shared full-diff dialog
+* Reconciliation still does not accept/override
+* Reconciliation still does not trigger baselines
+
+Scope G — Permission behavior
+
+Diligence:view:
+
+* may view Data Room/Reconciliation as currently allowed
+* does not see promote action, or sees disabled action with tooltip consistent with existing UX
+* does not create tasks if task creation requires edit
+
+Diligence:edit:
+
+* can accept/override in Data Room as already allowed
+* can promote eligible file versions in Data Room
+* can promote eligible accepted_not_promoted rows in Reconciliation
+* can create tasks where already supported
+
+No Diligence access:
+
+* unchanged
+
+Do not loosen backend permissions.
+
+Scope H — Tests
+
+Add/update tests for:
+
+1. Data Room shows Promote action for eligible file version and Diligence:edit user.
+2. Data Room hides/disables Promote for Diligence:view-only user.
+3. Data Room hides/disables Promote when no accepted candidate facts are available.
+4. Clicking Data Room Promote opens the shared live diff dialog.
+5. Dialog shows document title/file/version information.
+6. Dialog copy states promotion applies to the file version, not one field.
+7. Removed rows are labeled informational.
+8. Confirm calls existing promote endpoint with document_id and file_id.
+9. Success invalidates/refetches Data Room and Reconciliation state.
+10. Success message says baseline/O&M expected values are not updated automatically.
+11. Reconciliation promote still works after shared-dialog extraction.
+12. Reconciliation accepted_not_promoted gating remains unchanged.
+13. Reconciliation does not gain accept/override controls.
+14. Enhanced task description includes full context and stable IDs.
+15. Data Room acceptance/override behavior remains unchanged.
+16. No backend endpoints/migrations/schema changes are added.
+17. No baseline endpoints are called.
+18. Frontend compile/typecheck passes.
+19. Existing Reconciliation action tests remain green.
+20. Architect review passes.
+
+Scope I — Validation
+
+Run:
+
+* targeted frontend tests for Data Room promote action
+* targeted frontend tests for shared promotion dialog
+* targeted frontend tests for Reconciliation regression
+* targeted task handoff tests
+* frontend compile/typecheck
+* backend startup only if backend touched, though backend should not be touched
+* architect review
+
+Return:
+
+* files changed
+* Data Room promote placement
+* shared promotion dialog/hook details
+* document version display behavior
+* task handoff context changes
+* Reconciliation regression results
+* tests run/skipped with reason
+* validation results
+* remaining risks
+* recommended next sprint
+
+Do not:
+
+* change backend promotion service
+* create field-level promotion
+* create new endpoints
+* modify task schema
+* move acceptance out of Data Room
+* add accept/override to Reconciliation
+* trigger baseline workflows
+* change due diligence parsing
+* touch O&M expected math
+* touch telemetry/weather/device systems
+* reintroduce legacy dependencies

@@ -46,8 +46,18 @@ const renderDialog = (props: Partial<React.ComponentProps<typeof CreateActionTas
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockBoards.mockResolvedValue({ skip: 0, limit: 10, total: 1, items: [{ id: 77, name: 'Diligence', description: null, is_active: true }] });
-  mockGetStatuses.mockResolvedValue({ items: [{ id: 5, name: 'Done' }, { id: 1, name: 'To Do' }] });
+  mockBoards.mockResolvedValue({
+    skip: 0,
+    limit: 10,
+    total: 1,
+    items: [{ id: 77, name: 'Diligence', description: null, is_active: true }]
+  });
+  mockGetStatuses.mockResolvedValue({
+    items: [
+      { id: 5, name: 'Done' },
+      { id: 1, name: 'To Do' }
+    ]
+  });
   mockAssignees.mockResolvedValue({ items: [{ id: 3, first_name: 'Ada', last_name: 'Lovelace' }] });
 });
 
@@ -112,5 +122,45 @@ describe('CreateActionTaskDialog', () => {
 
     await screen.findByTestId('create-task-board-error');
     expect(screen.getByTestId('create-task-submit')).toBeDisabled();
+  });
+
+  it('weaves the project name, document type, and value snapshot into the description', async () => {
+    const enrichedRow = {
+      ...row,
+      source_document_type: 'PPA',
+      accepted_value: '120',
+      active_fact_value: '125',
+      ai_extracted_value: '118'
+    } as any;
+    renderDialog({ siteName: '110 Shawmut', row: enrichedRow });
+
+    const description = (await screen.findByTestId('create-task-description')) as HTMLTextAreaElement;
+    expect(description.value).toContain('Project: 110 Shawmut.');
+    expect(description.value).toContain('Document type: PPA.');
+    expect(description.value).toContain('Best current value: 125');
+    expect(description.value).toContain('Accepted: 120');
+    expect(description.value).toContain('Active fact: 125');
+    expect(description.value).toContain('AI extracted: 118');
+  });
+
+  it('includes provenance IDs, both deep links, and the file-version promotion note', async () => {
+    const enrichedRow = {
+      ...row,
+      document_key_id: 11,
+      project_fact_id: 22,
+      fact_id: 33,
+      ai_run_id: 44
+    } as any;
+    renderDialog({ siteName: '110 Shawmut', row: enrichedRow });
+
+    const description = (await screen.findByTestId('create-task-description')) as HTMLTextAreaElement;
+    expect(description.value).toContain('document #5, version #9');
+    expect(description.value).toContain('Document key #11');
+    expect(description.value).toContain('Project fact #22');
+    expect(description.value).toContain('Active fact id #33');
+    expect(description.value).toContain('AI run #44');
+    expect(description.value).toContain('/project-hub/projects/123/reconciliation');
+    expect(description.value).toContain('/project-hub/projects/123/data-room');
+    expect(description.value).toContain('all-or-nothing');
   });
 });

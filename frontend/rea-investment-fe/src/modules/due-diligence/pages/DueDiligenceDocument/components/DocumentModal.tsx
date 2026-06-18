@@ -27,6 +27,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
+import PublishIcon from '@mui/icons-material/Publish';
 import { ApiClient, FileItem } from '../../../../../api';
 import {
   SubHeader,
@@ -47,6 +48,8 @@ import DocumentPoisonPill from './DocumentPoisonPill';
 import { BootstrapTooltip } from '../../../../../components/common/BootstrapTooltip/BootstrapTooltip';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNotify } from '../../../../../contexts/notifications/notifications';
+import { useAuth } from '../../../../../contexts/auth/auth';
+import { PromoteVersionDialog } from '../../../../../components/promotion';
 import DocumentModalComments from './DocumentModalComments';
 import {
   ParsingStatusBadge,
@@ -259,6 +262,11 @@ const CollapsibleDocumentTermRenderer: React.FC<CollapsibleDocumentTermRenderer>
             text={userValue}
             isBaselineDriving={isBaselineDriving}
             aiValue={aiValue}
+            onValuePersisted={() =>
+              queryClient.invalidateQueries({
+                queryKey: ['site', 'assumptions', 'candidates', { siteId, fileId }]
+              })
+            }
           />
           <DocumentModalComments
             termId={id}
@@ -288,6 +296,38 @@ const DocumentModal: React.FC<DocumentModal> = props => {
   const [showAcceptDialog, setShowAcceptDialog] = useState(false);
   const queryClient = useQueryClient();
   const notify = useNotify();
+
+  const { user } = useAuth();
+  // Promotion requires Diligence edit rights; system users always pass. Mirrors
+  // the gate used by the Reconciliation tab so both launchers stay consistent.
+  const canPromote = Boolean(user?.is_system_user) || Boolean(user?.role?.permissions?.Diligence?.edit);
+  const [promoteOpen, setPromoteOpen] = useState(false);
+
+  // Eligibility: promotion is offered only when this version has at least one
+  // accepted (candidate) value ready to move into current assumptions. Acceptance
+  // and overrides still happen in this Data Room view — promotion never edits them.
+  const { data: candidateFacts, isLoading: isCandidatesLoading } = useQuery({
+    queryFn: () => ApiClient.assumptions.getCandidateFacts(siteId, fileId),
+    queryKey: ['site', 'assumptions', 'candidates', { siteId, fileId }],
+    enabled: open && canPromote && fileId !== -1,
+    staleTime: 0,
+    retry: false as const
+  });
+  const candidateTotal = candidateFacts?.total ?? 0;
+  const showPromote = canPromote && fileId !== -1;
+  const promoteDisabled = isCandidatesLoading || candidateTotal === 0;
+  const promoteTooltip = isCandidatesLoading
+    ? 'Checking for accepted values that can be promoted…'
+    : candidateTotal === 0
+      ? 'No accepted values are ready to promote yet. Accept or override values in this document first.'
+      : "Promote this version's accepted values into the project's current assumptions (file-version-scoped, all-or-nothing).";
+
+  // After a successful promotion, refresh this document's terms and the
+  // eligibility count (the candidates flip to promoted).
+  const handlePromoted = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['document-terms', { siteId, documentId, fileId }] });
+    queryClient.invalidateQueries({ queryKey: ['site', 'assumptions', 'candidates', { siteId, fileId }] });
+  }, [queryClient, siteId, documentId, fileId]);
 
   const {
     data: fileTermKeysData,
@@ -382,6 +422,9 @@ const DocumentModal: React.FC<DocumentModal> = props => {
     onSuccess: response => {
       notify(response.message);
       queryClient.invalidateQueries({ queryKey: ['document-terms'] });
+      // Accepting values creates candidate facts; refresh promotion eligibility
+      // so the Data Room Promote button reflects the new candidates immediately.
+      queryClient.invalidateQueries({ queryKey: ['site', 'assumptions', 'candidates', { siteId, fileId }] });
       setShowAcceptDialog(false);
     },
     onError: (error: AxiosError<{ detail?: string }>) => {
@@ -705,33 +748,59 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                             <span>Document Details</span>
                             {documentStatus && <ParsingStatusBadge status={parsingStatus} />}
                           </Box>
-                          {hasCompleted && fieldsToAccept.length > 0 && (
-                            <BootstrapTooltip
-                              title={
-                                !canAcceptFromSelectedRun
-                                  ? !isSelectedRunSucceeded
-                                    ? 'Cannot accept from a non-succeeded run'
-                                    : 'Cannot accept from a non-latest run'
-                                  : ''
-                              }
-                            >
-                              <span>
-                                <Button
-                                  variant="contained"
-                                  size="small"
-                                  color="success"
-                                  onClick={handleAcceptAll}
-                                  disabled={isBulkAccepting || !canAcceptFromSelectedRun || !selectedRunId}
-                                  startIcon={
-                                    isBulkAccepting ? <CircularProgress size={16} color="inherit" /> : <DoneAllIcon />
-                                  }
-                                  sx={{ fontSize: '12px' }}
-                                >
-                                  Accept All ({fieldsToAccept.length})
-                                </Button>
-                              </span>
-                            </BootstrapTooltip>
-                          )}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {showPromote && (
+                              <BootstrapTooltip title={promoteTooltip}>
+                                <span>
+                                  <Button
+                                    variant="contained"
+                                    size="small"
+                                    color="secondary"
+                                    onClick={() => setPromoteOpen(true)}
+                                    disabled={promoteDisabled}
+                                    startIcon={
+                                      isCandidatesLoading ? (
+                                        <CircularProgress size={16} color="inherit" />
+                                      ) : (
+                                        <PublishIcon />
+                                      )
+                                    }
+                                    sx={{ fontSize: '12px' }}
+                                    data-testid="dataroom-promote-btn"
+                                  >
+                                    Promote
+                                  </Button>
+                                </span>
+                              </BootstrapTooltip>
+                            )}
+                            {hasCompleted && fieldsToAccept.length > 0 && (
+                              <BootstrapTooltip
+                                title={
+                                  !canAcceptFromSelectedRun
+                                    ? !isSelectedRunSucceeded
+                                      ? 'Cannot accept from a non-succeeded run'
+                                      : 'Cannot accept from a non-latest run'
+                                    : ''
+                                }
+                              >
+                                <span>
+                                  <Button
+                                    variant="contained"
+                                    size="small"
+                                    color="success"
+                                    onClick={handleAcceptAll}
+                                    disabled={isBulkAccepting || !canAcceptFromSelectedRun || !selectedRunId}
+                                    startIcon={
+                                      isBulkAccepting ? <CircularProgress size={16} color="inherit" /> : <DoneAllIcon />
+                                    }
+                                    sx={{ fontSize: '12px' }}
+                                  >
+                                    Accept All ({fieldsToAccept.length})
+                                  </Button>
+                                </span>
+                              </BootstrapTooltip>
+                            )}
+                          </Box>
                         </DialogTitle>
                         <Box
                           sx={{
@@ -950,6 +1019,21 @@ const DocumentModal: React.FC<DocumentModal> = props => {
           </Button>
         </DialogActions>
       </Dialog>
+      {showPromote && promoteOpen && (
+        <PromoteVersionDialog
+          open={promoteOpen}
+          siteId={siteId}
+          context={{
+            documentId,
+            fileId,
+            fileName: file?.filename,
+            uploadedAt: file?.created_at,
+            isActual: file?.is_actual
+          }}
+          onClose={() => setPromoteOpen(false)}
+          onPromoted={handlePromoted}
+        />
+      )}
     </>
   );
 };

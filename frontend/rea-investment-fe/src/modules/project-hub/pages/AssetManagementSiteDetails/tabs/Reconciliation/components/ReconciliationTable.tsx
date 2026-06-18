@@ -19,9 +19,9 @@ import AddTaskIcon from '@mui/icons-material/AddTask';
 import { Link as RouterLink } from 'react-router-dom';
 import { BootstrapTooltip } from '../../../../../../../components/common/BootstrapTooltip/BootstrapTooltip';
 import type { ReconciliationRow } from '../../../../../../../api';
+import { PromoteVersionDialog } from '../../../../../../../components/promotion';
 import StatusChip from './StatusChip';
 import WarningChips from './WarningChips';
-import PromoteVersionDialog from './PromoteVersionDialog';
 import CreateActionTaskDialog from './CreateActionTaskDialog';
 import {
   CATEGORY_ORDER,
@@ -41,6 +41,8 @@ interface ReconciliationTableProps {
   helpTargets: Record<string, string>;
   /** Owning site id; used to build the read-only Data Room deep link. */
   siteId?: number | null;
+  /** Project name, threaded into the Create Task description. */
+  siteName?: string | null;
   /**
    * Whether the viewer holds Diligence edit rights. Gates the in-place Promote
    * and Create Task actions; when false the table is purely read-only.
@@ -340,7 +342,13 @@ const CategorySection: React.FC<{
   </Paper>
 );
 
-export const ReconciliationTable: React.FC<ReconciliationTableProps> = ({ rows, helpTargets, siteId, canEdit }) => {
+export const ReconciliationTable: React.FC<ReconciliationTableProps> = ({
+  rows,
+  helpTargets,
+  siteId,
+  siteName,
+  canEdit
+}) => {
   const validSiteId = Number.isSafeInteger(siteId) && (siteId as number) > 0 ? (siteId as number) : null;
   const dataRoomPath = validSiteId !== null ? `/project-hub/projects/${validSiteId}/data-room` : null;
   // Actions need both edit rights and a real site id to target.
@@ -380,13 +388,24 @@ export const ReconciliationTable: React.FC<ReconciliationTableProps> = ({ rows, 
         <PromoteVersionDialog
           open
           siteId={validSiteId}
-          row={promoteRow}
+          context={{
+            documentId: promoteRow.document_id as number,
+            fileId: promoteRow.document_version_id as number,
+            launchedFieldLabel: promoteRow.display_label,
+            documentTypeLabel: promoteRow.source_document_type
+          }}
           onClose={() => setPromoteRow(null)}
         />
       )}
 
       {validSiteId !== null && taskRow && (
-        <CreateActionTaskDialog open siteId={validSiteId} row={taskRow} onClose={() => setTaskRow(null)} />
+        <CreateActionTaskDialog
+          open
+          siteId={validSiteId}
+          row={taskRow}
+          siteName={siteName ?? undefined}
+          onClose={() => setTaskRow(null)}
+        />
       )}
     </Box>
   );

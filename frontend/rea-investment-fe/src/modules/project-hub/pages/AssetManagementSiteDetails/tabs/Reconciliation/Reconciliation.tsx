@@ -249,6 +249,7 @@ export const Reconciliation: React.FC<AssetManagementSiteDetailsTabProps> = ({ s
               rows={filteredRows}
               helpTargets={data.help_targets}
               siteId={siteId}
+              siteName={siteDetails.name}
               canEdit={canEdit}
             />
           )}
