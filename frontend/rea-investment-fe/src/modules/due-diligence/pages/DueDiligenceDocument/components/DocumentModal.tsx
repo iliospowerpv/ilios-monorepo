@@ -28,6 +28,9 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import PublishIcon from '@mui/icons-material/Publish';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
+import { useTheme } from '@mui/material/styles';
 import { ApiClient, FileItem } from '../../../../../api';
 import {
   SubHeader,
@@ -285,6 +288,72 @@ const CollapsibleDocumentTermRenderer: React.FC<CollapsibleDocumentTermRenderer>
   );
 };
 
+type ActionStatus = 'actionable' | 'completed' | 'unavailable' | 'loading';
+
+/**
+ * A primary action rendered as an always-visible health indicator. Instead of
+ * conditionally unmounting (which is inconsistent with the rest of the app and
+ * confuses users), the button stays on screen in every state. When it is not
+ * actionable it greys out and swaps its icon to a green check (completed) or a
+ * muted ✗ (unavailable), mirroring the status icons used elsewhere
+ * (e.g. ProjectSummaryPanel) so the Data Room reads consistently.
+ */
+const ActionStatusButton: React.FC<{
+  status: ActionStatus;
+  label: string;
+  completedLabel: string;
+  activeColor: 'success' | 'secondary';
+  activeIcon: React.ReactNode;
+  tooltip: string;
+  onClick: () => void;
+  testId: string;
+  busy?: boolean;
+}> = ({ status, label, completedLabel, activeColor, activeIcon, tooltip, onClick, testId, busy = false }) => {
+  const theme = useTheme();
+  const goodColor = theme.efficiencyColors?.good || '#4CAF50';
+  const naColor = '#00000042';
+  const isActionable = status === 'actionable';
+  const isCompleted = status === 'completed';
+  const isLoading = status === 'loading';
+  const disabledIconColor = isCompleted ? goodColor : naColor;
+
+  const startIcon =
+    isLoading || busy ? (
+      <CircularProgress size={16} color="inherit" />
+    ) : isCompleted ? (
+      <CheckCircleIcon />
+    ) : isActionable ? (
+      activeIcon
+    ) : (
+      <CancelIcon />
+    );
+
+  return (
+    <BootstrapTooltip title={tooltip}>
+      <span>
+        <Button
+          variant="contained"
+          size="small"
+          color={activeColor}
+          onClick={onClick}
+          disabled={!isActionable || busy}
+          startIcon={startIcon}
+          sx={{
+            fontSize: '12px',
+            // Preserve the status icon's semantic color even while the button is
+            // greyed out, so completed (green ✓) and unavailable (muted ✗) stay
+            // legible — consistent with the app's other health indicators.
+            '&.Mui-disabled .MuiButton-startIcon': { color: disabledIconColor }
+          }}
+          data-testid={testId}
+        >
+          {isCompleted ? completedLabel : label}
+        </Button>
+      </span>
+    </BootstrapTooltip>
+  );
+};
+
 const DocumentModal: React.FC<DocumentModal> = props => {
   const { open, file, fileUrl, onClose, documentId, siteId, boardId, taskId } = props;
   const fileId = file?.id ?? -1;
@@ -315,12 +384,42 @@ const DocumentModal: React.FC<DocumentModal> = props => {
   });
   const candidateTotal = candidateFacts?.total ?? 0;
   const showPromote = canPromote && fileId !== -1;
-  const promoteDisabled = isCandidatesLoading || candidateTotal === 0;
-  const promoteTooltip = isCandidatesLoading
-    ? 'Checking for accepted values that can be promoted…'
-    : candidateTotal === 0
-      ? 'No accepted values are ready to promote yet. Accept or override values in this document first.'
-      : "Promote this version's accepted values into the project's current assumptions (file-version-scoped, all-or-nothing).";
+
+  // Promotion audit trail for this site, used only to distinguish an already-
+  // promoted version (completed ✓) from one that simply has nothing to promote
+  // yet (unavailable ✗) once its candidate count is zero. Read-only.
+  const { data: promotionHistory, isLoading: isHistoryLoading } = useQuery({
+    queryFn: () => ApiClient.assumptions.getPromotionHistory(siteId),
+    queryKey: ['site', 'assumptions', 'promotions', { siteId }],
+    enabled: open && showPromote,
+    staleTime: 0,
+    retry: false as const
+  });
+  const versionWasPromoted = useMemo(
+    () => (promotionHistory?.promotions ?? []).some(promotion => promotion.file_id === fileId),
+    [promotionHistory, fileId]
+  );
+
+  // Three-state health-indicator model so the Promote button stays visible
+  // regardless of state (actionable / completed / unavailable) instead of
+  // conditionally disappearing.
+  const promoteStatus: ActionStatus = isCandidatesLoading
+    ? 'loading'
+    : candidateTotal > 0
+      ? 'actionable'
+      : isHistoryLoading
+        ? 'loading'
+        : versionWasPromoted
+          ? 'completed'
+          : 'unavailable';
+  const promoteTooltip =
+    promoteStatus === 'loading'
+      ? 'Checking for accepted values that can be promoted…'
+      : promoteStatus === 'actionable'
+        ? "Promote this version's accepted values into the project's current assumptions (file-version-scoped, all-or-nothing)."
+        : promoteStatus === 'completed'
+          ? "This version's accepted values have already been promoted to current assumptions."
+          : 'No accepted values are ready to promote yet. Accept or override values in this document first.';
 
   // After a successful promotion, refresh this document's terms and the
   // eligibility count (the candidates flip to promoted).
@@ -487,6 +586,43 @@ const DocumentModal: React.FC<DocumentModal> = props => {
   const parsingStatus = documentStatus?.status?.toLowerCase().replace(/\s+/g, '_') || 'not_started';
   const hasFailed = parsingStatus === 'processing_failed' || parsingStatus === 'failed';
   const hasCompleted = parsingStatus === 'completed' || parsingStatus === 'succeeded';
+
+  // Same always-visible health-indicator model for Accept All: actionable when
+  // the latest successful run still has values to accept, completed when they are
+  // all accepted, and unavailable when there is no acceptable latest-run value.
+  const acceptStatus: ActionStatus = useMemo(() => {
+    if (!hasCompleted || !selectedRunId) return 'unavailable';
+    if (!canAcceptFromSelectedRun) return 'unavailable';
+    // Never claim "completed" until the run's terms have actually loaded — an
+    // absent/failed term fetch leaves fieldsToAccept empty and would otherwise
+    // show a false green check while pending values are simply not yet known.
+    if (fileTermKeysDataLoadingError) return 'unavailable';
+    if (isLoadingFileTermKeysData || !fileTermKeysData?.keys) return 'loading';
+    if (fieldsToAccept.length === 0) return 'completed';
+    return 'actionable';
+  }, [
+    hasCompleted,
+    selectedRunId,
+    canAcceptFromSelectedRun,
+    fileTermKeysDataLoadingError,
+    isLoadingFileTermKeysData,
+    fileTermKeysData,
+    fieldsToAccept.length
+  ]);
+  const acceptTooltip =
+    acceptStatus === 'completed'
+      ? 'All extracted values from the latest parse have been accepted.'
+      : acceptStatus === 'actionable'
+        ? 'Accept all extracted values from the latest successful parse.'
+        : acceptStatus === 'loading'
+          ? 'Loading extracted values…'
+          : fileTermKeysDataLoadingError
+            ? 'Could not load extracted values. Reopen the document to try again.'
+            : !hasCompleted || !selectedRunId
+              ? 'Parse this document with AI to extract values before accepting.'
+              : !isSelectedRunSucceeded
+                ? 'Cannot accept from a non-succeeded run.'
+                : 'Cannot accept from a non-latest run.';
 
   React.useEffect(() => {
     if (fileTermKeysDataLoadingError) {
@@ -750,55 +886,29 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                           </Box>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             {showPromote && (
-                              <BootstrapTooltip title={promoteTooltip}>
-                                <span>
-                                  <Button
-                                    variant="contained"
-                                    size="small"
-                                    color="secondary"
-                                    onClick={() => setPromoteOpen(true)}
-                                    disabled={promoteDisabled}
-                                    startIcon={
-                                      isCandidatesLoading ? (
-                                        <CircularProgress size={16} color="inherit" />
-                                      ) : (
-                                        <PublishIcon />
-                                      )
-                                    }
-                                    sx={{ fontSize: '12px' }}
-                                    data-testid="dataroom-promote-btn"
-                                  >
-                                    Promote
-                                  </Button>
-                                </span>
-                              </BootstrapTooltip>
+                              <ActionStatusButton
+                                status={promoteStatus}
+                                label="Promote"
+                                completedLabel="Promoted"
+                                activeColor="secondary"
+                                activeIcon={<PublishIcon />}
+                                tooltip={promoteTooltip}
+                                onClick={() => setPromoteOpen(true)}
+                                testId="dataroom-promote-btn"
+                              />
                             )}
-                            {hasCompleted && fieldsToAccept.length > 0 && (
-                              <BootstrapTooltip
-                                title={
-                                  !canAcceptFromSelectedRun
-                                    ? !isSelectedRunSucceeded
-                                      ? 'Cannot accept from a non-succeeded run'
-                                      : 'Cannot accept from a non-latest run'
-                                    : ''
-                                }
-                              >
-                                <span>
-                                  <Button
-                                    variant="contained"
-                                    size="small"
-                                    color="success"
-                                    onClick={handleAcceptAll}
-                                    disabled={isBulkAccepting || !canAcceptFromSelectedRun || !selectedRunId}
-                                    startIcon={
-                                      isBulkAccepting ? <CircularProgress size={16} color="inherit" /> : <DoneAllIcon />
-                                    }
-                                    sx={{ fontSize: '12px' }}
-                                  >
-                                    Accept All ({fieldsToAccept.length})
-                                  </Button>
-                                </span>
-                              </BootstrapTooltip>
+                            {fileId !== -1 && (
+                              <ActionStatusButton
+                                status={acceptStatus}
+                                label={`Accept All${fieldsToAccept.length > 0 ? ` (${fieldsToAccept.length})` : ''}`}
+                                completedLabel="Accepted"
+                                activeColor="success"
+                                activeIcon={<DoneAllIcon />}
+                                tooltip={acceptTooltip}
+                                busy={isBulkAccepting}
+                                onClick={handleAcceptAll}
+                                testId="dataroom-accept-all-btn"
+                              />
                             )}
                           </Box>
                         </DialogTitle>

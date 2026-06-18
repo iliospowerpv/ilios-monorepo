@@ -6,6 +6,7 @@ const mockGetFileParsingResult = jest.fn();
 const mockDocumentParsingStatus = jest.fn();
 const mockGetParseRunHistory = jest.fn();
 const mockGetCandidateFacts = jest.fn();
+const mockGetPromotionHistory = jest.fn();
 jest.mock('../../../../../../api', () => ({
   ApiClient: {
     dueDiligence: {
@@ -17,7 +18,8 @@ jest.mock('../../../../../../api', () => ({
       togglePoisonPill: jest.fn()
     },
     assumptions: {
-      getCandidateFacts: (...args: unknown[]) => mockGetCandidateFacts(...args)
+      getCandidateFacts: (...args: unknown[]) => mockGetCandidateFacts(...args),
+      getPromotionHistory: (...args: unknown[]) => mockGetPromotionHistory(...args)
     }
   }
 }));
@@ -124,6 +126,7 @@ beforeEach(() => {
   mockDocumentParsingStatus.mockResolvedValue({ status: 'completed' });
   mockGetParseRunHistory.mockResolvedValue({ runs: [] });
   mockGetCandidateFacts.mockResolvedValue({ total: 3 });
+  mockGetPromotionHistory.mockResolvedValue({ promotions: [] });
   mockUseAuth.mockReturnValue({ user: { is_system_user: true } });
 });
 
@@ -139,6 +142,53 @@ describe('DocumentModal — Data Room promote entry point', () => {
     mockGetCandidateFacts.mockResolvedValue({ total: 0 });
     renderModal(makeClient());
     await waitFor(() => expect(screen.getByTestId('dataroom-promote-btn')).toBeDisabled());
+  });
+
+  it('shows the Promote button as completed (disabled) when this version was already promoted', async () => {
+    mockGetCandidateFacts.mockResolvedValue({ total: 0 });
+    mockGetPromotionHistory.mockResolvedValue({ promotions: [{ id: 1, document_id: 2, file_id: 9 }] });
+    renderModal(makeClient());
+    const button = await screen.findByTestId('dataroom-promote-btn');
+    await waitFor(() => expect(button).toHaveTextContent('Promoted'));
+    expect(button).toBeDisabled();
+  });
+
+  it('always renders the Accept All button, disabled when there is nothing to accept', async () => {
+    renderModal(makeClient());
+    await waitFor(() => expect(screen.getByTestId('dataroom-accept-all-btn')).toBeDisabled());
+  });
+
+  it('shows Accept All as completed when the latest successful run has no pending values', async () => {
+    mockGetParseRunHistory.mockResolvedValue({ runs: [{ id: 50, is_latest: true, status: 'completed' }] });
+    mockGetFileParsingResult.mockResolvedValue({
+      keys: [
+        {
+          id: 201,
+          name: 'ppa_rate',
+          value: '0.12',
+          ai_value: '0.12',
+          is_poison_pill: false,
+          poison_pill_detailed: null,
+          legal_term: null,
+          comments: null,
+          evidence: null,
+          is_baseline_driving: false
+        }
+      ]
+    });
+    renderModal(makeClient());
+    const acceptBtn = await screen.findByTestId('dataroom-accept-all-btn');
+    await waitFor(() => expect(acceptBtn).toHaveTextContent('Accepted'));
+    expect(acceptBtn).toBeDisabled();
+  });
+
+  it('does not show Accept All as completed when extracted values fail to load', async () => {
+    mockGetParseRunHistory.mockResolvedValue({ runs: [{ id: 50, is_latest: true, status: 'completed' }] });
+    mockGetFileParsingResult.mockRejectedValue(new Error('boom'));
+    renderModal(makeClient());
+    const acceptBtn = await screen.findByTestId('dataroom-accept-all-btn');
+    await waitFor(() => expect(acceptBtn).toBeDisabled());
+    expect(acceptBtn).not.toHaveTextContent('Accepted');
   });
 
   it('hides the Promote button when the user lacks Diligence edit rights', async () => {
