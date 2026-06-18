@@ -1,0 +1,180 @@
+Start implementation sprint: Promotion Freshness Guard — Fail Closed.
+
+Context:
+The Data Room Transactional Integrity Audit is complete. It found the system is closer to the desired invariant than expected, but three real gaps remain:
+
+G1 — document_keys has no link to the parse run/source basis it accepted, so after a reparse the Data Room can still show an old accepted value as trustworthy.
+
+G2 — promotion is unguarded: promotion can push existing candidate facts for a file version into active assumptions without re-checking freshness against the current parse/source basis. Candidate facts may carry source_run_id only on the bulk-accept path; single-key/manual accepts can leave it NULL.
+
+G3 — historical analytics drift: weather-adjusted expected is recomputed on read against the current active baseline, so activating a new baseline can silently change the expected line for past periods.
+
+Strategic objective for this sprint:
+Implement the cheapest high-leverage safety guard first: promotion must fail closed when candidate facts / accepted values cannot be proven current against the file version’s current parse/source basis.
+
+Do not attempt the full 10-phase transactional integrity roadmap in this sprint.
+
+Durable platform invariant:
+Never allow accepted, promoted, baseline, or O&M state to silently survive upstream source changes. Upstream changes must create a new lineage, mark dependent state stale, require re-review, or create explicit supersession. Historical data must remain preserved and auditable.
+
+Hard constraints:
+
+* Do not delete historical accepted values.
+* Do not delete historical project_facts.
+* Do not rewrite historical baselines.
+* Do not rewrite historical O&M analytics.
+* Do not auto-accept reparsed values.
+* Do not auto-promote reparsed values.
+* Do not auto-create or auto-activate baselines.
+* Do not change expected calculation math.
+* Do not change telemetry ingestion.
+* Do not change WeatherResolver.
+* Do not change device eligibility.
+* Do not touch plaintext secrets.
+* Do not use SiteAdditionalFieldList as a baseline source.
+* Do not reintroduce BigQuery, Firestore, or legacy telemetry.
+* Do not change the promotion blast-radius semantics; promotion remains file-version-scoped and all-or-nothing.
+* Do not add field-level promotion.
+* Do not redesign Data Room or Reconciliation.
+* Do not implement historical analytics period-effective baseline selection in this sprint.
+
+Scope:
+
+A. Add promotion freshness validation
+
+Before promotion executes, validate that every candidate fact being promoted is tied to a current, non-stale accepted source basis for the file version.
+
+Promotion must fail closed if:
+
+* candidate fact has no source_run_id and no accepted source-basis fingerprint
+* candidate fact points to a parse run that is not the current parse run for that file version
+* document_key acceptance cannot be tied to the current parse/source basis
+* accepted source value differs from current extracted value for the same canonical field
+* current parse no longer contains the field
+* canonical mapping changed and the candidate cannot be verified
+* parser/schema/prompt version changed and no matching fingerprint confirms equivalence
+
+If freshness cannot be proven, block promotion.
+
+Return a structured error that the frontend can display:
+
+* error_code: STALE_CANDIDATE_FACT or PROMOTION_SOURCE_STALE
+* field/canonical field where possible
+* reason
+* required_action: “Re-review this value in Data Room before promotion.”
+
+Do not silently skip stale candidates.
+
+Because promotion is file-version-scoped, one stale candidate should block the entire promotion and rollback/no-op.
+
+B. Source-basis comparison strategy
+
+Use the best available source-basis data already present in the system.
+
+Design preference:
+
+* If candidate fact has source_run_id, compare it to the current parse run for the file version.
+* If candidate fact lacks source_run_id, fail closed for baseline-driving fields.
+* If document_key has enough accepted/extracted value data, compare normalized accepted value to current extracted value for the same canonical field.
+* If the value and canonical field match but parse-run lineage is missing, treat as warning for non-baseline fields but fail closed for baseline-driving fields.
+* Do not infer equivalence from display labels alone.
+* Do not accept stale values based only on same file_id.
+
+If exact source-basis fingerprint does not exist yet, implement a conservative validator using current available fields and document the gaps.
+
+C. Backend touch points
+
+Inspect and update only the minimum necessary backend files, likely:
+
+* backend/ilios-server/app/services/promotion_service.py
+* backend/ilios-server/app/crud/project_fact.py
+* backend/ilios-server/app/services/project_facts_service.py
+* backend/ilios-server/app/routers/project_assumptions.py if response/error mapping is needed
+* any helper needed to determine current parse run / current document_key state
+
+Do not change Data Room acceptance behavior in this sprint unless absolutely required for the guard to work.
+
+D. Frontend error handling
+
+If promotion fails due to stale source:
+
+* Reconciliation promote dialog should show a clear error.
+* Data Room promote action should show the same clear error if currently present.
+* Message:
+  “This accepted value is stale because the document was reparsed or the source basis changed. Re-review the value in Data Room before promotion.”
+* Provide link/action to open the Data Room file/version.
+* Do not imply promotion partially succeeded.
+
+If frontend changes are not needed because existing error display is sufficient, document that.
+
+E. Logging and audit
+
+Add safe structured logging for blocked promotions:
+
+* site_id
+* document_id
+* file_id
+* canonical field if available
+* reason
+* user id
+* timestamp
+
+Do not write a successful AssumptionPromotion audit record for blocked promotions.
+
+If there is an existing audit/error logging pattern, use it.
+
+F. Tests
+
+Add/update backend tests for:
+
+1. Promotion succeeds when candidate facts are tied to current parse/source basis.
+2. Promotion fails when candidate source_run_id points to an old parse run.
+3. Promotion fails when candidate fact source_run_id is NULL for baseline-driving field.
+4. Promotion fails when current parse no longer contains the candidate’s canonical field.
+5. Promotion fails when current extracted value differs from the accepted/candidate value.
+6. Promotion fails when canonical mapping changed and equivalence cannot be proven.
+7. One stale candidate blocks entire file-version promotion.
+8. Failed stale promotion does not promote any facts.
+9. Failed stale promotion does not retire any active facts.
+10. Failed stale promotion does not create AssumptionPromotion audit record.
+11. Failed stale promotion returns structured error.
+12. Existing clean promotion path still works.
+13. Diff preview remains read-only and does not mutate.
+14. Promotion remains file-version-scoped/all-or-nothing.
+15. Existing Reconciliation/Data Room UI promote tests still pass if frontend touched.
+16. Backend boots clean.
+17. Architect review passes.
+
+G. Validation
+
+Run targeted backend tests for promotion freshness.
+Run existing promotion tests.
+Run frontend compile if frontend touched.
+Confirm no migrations unless unavoidable.
+Confirm no endpoint shape breaking change except additive structured error.
+Confirm no baseline/O&M/telemetry behavior changed.
+
+H. Return
+
+Return:
+
+* files changed
+* freshness validation approach
+* exact fail-closed rules implemented
+* structured error shape
+* tests added/updated
+* tests run/skipped with reason
+* validation results
+* known remaining gaps
+* recommended next sprint
+
+Do not:
+
+* implement document_keys fingerprint schema yet unless absolutely required
+* implement Data Room stale-state UI
+* implement Reconciliation stale statuses
+* implement period-effective baseline selection
+* implement field-level promotion
+* implement baseline rebuild/activation
+* change acceptance/override workflow
+* rewrite historical analytics

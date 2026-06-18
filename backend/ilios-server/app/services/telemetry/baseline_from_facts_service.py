@@ -55,6 +55,13 @@ FACT_FIELD_TO_COLUMN: dict[str, str] = {
     "inverter_quantity": "inverter_quantity",
 }
 
+# The authoritative set of canonical field NAMES whose promoted facts drive the
+# expected/baseline math (see ``FACT_FIELD_TO_COLUMN``). Exposed as a frozen set
+# so callers (e.g. the promotion freshness guard) can classify a fact as
+# baseline-driving without coupling to the column-mapping dict or inventing a
+# broader set. This is the ONLY canonical set that feeds the draft baseline today.
+BASELINE_DRIVING_FACT_FIELDS: frozenset[str] = frozenset(FACT_FIELD_TO_COLUMN)
+
 # The single fact used as the header ``source_project_fact_id`` (the full fact
 # list always lives in ``model_parameters_json['source_facts']``).
 PRIMARY_FACT_FIELD = "module_wattage"

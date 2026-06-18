@@ -11,6 +11,7 @@ import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -23,11 +24,19 @@ from app.crud.assumption_promotion import AssumptionPromotionCRUD
 from app.models.site import Site
 from app.schema.user import CurrentUserSchema
 from app.services.project_facts_service import ProjectFactsService
-from app.services.promotion_service import PromotionService, PromotionError
+from app.services.promotion_service import (
+    PromotionService,
+    PromotionError,
+    PROMOTION_SOURCE_STALE_CODE,
+)
 from app.static import HTTP_403_RESPONSE, HTTP_404_RESPONSE
 
 logger = logging.getLogger(__name__)
 assumptions_router = APIRouter()
+
+# PromotionError codes that map to HTTP 409 (fail-closed freshness conflict)
+# with a structured body. ``STALE_CANDIDATE_FACT`` is a forward-compatible alias.
+STALE_PROMOTION_ERROR_CODES = {PROMOTION_SOURCE_STALE_CODE, "STALE_CANDIDATE_FACT"}
 
 
 class PromotionRequest(BaseModel):
@@ -224,6 +233,24 @@ async def promote_version(
         )
         return result
     except PromotionError as e:
+        # Freshness-guard failures are a fail-closed conflict, not a bad request:
+        # surface a machine-readable 409 body (error_code + per-field stale list)
+        # so the client can route the user back to the Data Room to re-review.
+        # Every other PromotionError keeps the legacy 400 string contract.
+        #
+        # NOTE: the app's ``http_exception_handler`` collapses an HTTPException
+        # ``detail`` to ``str(detail)``, which would destroy a structured dict.
+        # Return a ``JSONResponse`` directly (mirroring the bulk-accept
+        # guardrail) so the machine-readable body reaches the client intact.
+        if e.error_code in STALE_PROMOTION_ERROR_CODES:
+            return JSONResponse(
+                status_code=status.HTTP_409_CONFLICT,
+                content={
+                    "error_code": e.error_code,
+                    "message": e.message,
+                    **e.details,
+                },
+            )
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=e.message)
 
 

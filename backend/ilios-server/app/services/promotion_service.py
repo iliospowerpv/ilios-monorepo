@@ -24,11 +24,27 @@ from app.models.document import Document
 
 logger = logging.getLogger(__name__)
 
+# Umbrella error_code for a promotion blocked by the freshness guard. Per-field
+# ``reason`` values carry the specifics. The router maps this code (and the
+# legacy alias ``STALE_CANDIDATE_FACT``) to HTTP 409 with a structured body;
+# every other PromotionError stays HTTP 400.
+PROMOTION_SOURCE_STALE_CODE = "PROMOTION_SOURCE_STALE"
+
+# Human-facing remediation surfaced on every stale field.
+STALE_REQUIRED_ACTION = "Re-review this value in Data Room before promotion."
+
 
 class PromotionError(Exception):
-    def __init__(self, message: str, error_code: str = "PROMOTION_ERROR"):
+    def __init__(
+        self,
+        message: str,
+        error_code: str = "PROMOTION_ERROR",
+        details: Optional[dict] = None,
+    ):
         self.message = message
         self.error_code = error_code
+        # Machine-readable, additive payload (e.g. {"stale_fields": [...]}).
+        self.details = details or {}
         super().__init__(message)
 
 
@@ -137,6 +153,14 @@ class PromotionService:
 
         diff = self.compute_promotion_diff(site_id, file_id)
 
+        # Freshness guard (fail-closed). Runs BEFORE any writes and BEFORE the
+        # write transaction's try/except (which wraps everything as
+        # PROMOTION_FAILED), so a stale source raises PROMOTION_SOURCE_STALE
+        # with structured per-field details that the router can surface as 409.
+        # No promotion, no fact transitions, and no audit record are written
+        # when a single candidate is stale (all-or-nothing).
+        self.validate_promotion_freshness(site_id, file_id, promoted_by_id)
+
         try:
             self._set_previous_version_not_actual(document_id, file_id)
 
@@ -176,6 +200,165 @@ class PromotionService:
             self.db_session.rollback()
             logger.error(f"Promotion failed: {str(e)}")
             raise PromotionError(f"Promotion failed: {str(e)}", "PROMOTION_FAILED")
+
+    def validate_promotion_freshness(
+        self,
+        site_id: int,
+        file_id: int,
+        promoted_by_id: Optional[int] = None,
+    ) -> list[dict]:
+        """Fail-closed preflight: prove every candidate fact is current.
+
+        A candidate fact may only be promoted when its accepted *source basis*
+        can be proven current against the file version's CURRENT parse run (the
+        latest run by ``extraction_run_number`` — the same anchor
+        ``bulk_accept_ai_values`` uses). This is a PURE read: it performs NO DB
+        writes and NO commits. It either returns a (possibly empty) list of
+        non-blocking warnings, or raises :class:`PromotionError`
+        (``PROMOTION_SOURCE_STALE``) carrying ``details['stale_fields']`` when
+        ANY candidate is stale — one stale candidate blocks the whole promotion.
+
+        Per-candidate decision matrix:
+
+        * No usable current parse for the version (no run, latest run not
+          ``completed``, or latest run has no parseable result) -> every
+          candidate is stale (``no_current_parse`` / ``latest_parse_not_completed``
+          / ``latest_parse_unusable``). Promotion is refused while a reparse is
+          in flight or the latest attempt failed.
+        * ``source_run_id`` present and == current run id -> FRESH by lineage
+          (override-safe: an override legitimately differs from the AI value, so
+          no value comparison is made). A corruption guard still requires the
+          field to be readable in the current run (``source_basis_unreadable``).
+        * ``source_run_id`` present and != current run id -> STALE
+          (``source_run_outdated``): accepted from a superseded parse.
+        * ``source_run_id`` NULL (manual / single-key / legacy acceptance):
+            - field absent from the current parse -> STALE (``field_removed``).
+            - baseline-driving field -> STALE (``no_lineage_baseline_field``)
+              even when the value matches: a value that feeds expected/baseline
+              math may never be promoted without provable parse lineage.
+            - non-baseline field whose normalized value matches the current
+              extracted value -> ALLOWED (warning ``no_lineage_value_match``).
+            - non-baseline field whose value diverged -> STALE
+              (``value_diverged_no_lineage``).
+        """
+        candidate_facts = self.fact_crud.get_candidate_facts_for_file(file_id)
+        if not candidate_facts:
+            # Nothing to promote -> nothing to prove. Preserves the existing
+            # (no-op) behavior of promoting a version with no candidate facts.
+            return []
+
+        # Local imports keep this guard self-contained and avoid any import-cycle
+        # / heavy-module load at PromotionService import time.
+        from app.crud.ai_parsing_result import AIParsingResultCRUD
+        from app.helpers.due_diligence.override_guardrail import normalize_term
+        from app.models.file import FileParsingStatuses
+        from app.services.project_facts_service import ProjectFactsService
+        from app.services.telemetry.baseline_from_facts_service import (
+            BASELINE_DRIVING_FACT_FIELDS,
+        )
+
+        current_run = AIParsingResultCRUD(self.db_session).get_latest_run_for_file(
+            file_id
+        )
+
+        # Version-level gate: with no usable current parse basis, EVERY candidate
+        # is unprovable. Classify the reason (fail-closed; never fall back to an
+        # older completed run).
+        run_level_reason: Optional[str] = None
+        if current_run is None:
+            run_level_reason = "no_current_parse"
+        elif current_run.status != FileParsingStatuses.completed:
+            run_level_reason = "latest_parse_not_completed"
+        elif not isinstance(getattr(current_run, "parsed_result", None), dict) or not current_run.parsed_result:
+            run_level_reason = "latest_parse_unusable"
+
+        stale_fields: list[dict] = []
+        warnings: list[dict] = []
+
+        for candidate in candidate_facts:
+            canonical = candidate.canonical_field
+            field_name = canonical.name if canonical else None
+            display_name = (
+                canonical.display_name if canonical else (field_name or "Unknown")
+            )
+            item = {
+                "canonical_field": field_name,
+                "field_display_name": display_name,
+                "canonical_field_id": candidate.canonical_field_id,
+                "fact_id": candidate.id,
+                "required_action": STALE_REQUIRED_ACTION,
+            }
+
+            if run_level_reason is not None:
+                stale_fields.append({**item, "reason": run_level_reason})
+                continue
+
+            field_data = (
+                ProjectFactsService._find_field_in_run(current_run, field_name)
+                if field_name
+                else {}
+            )
+            current_extracted = field_data.get("value")
+            field_present = current_extracted is not None
+            is_baseline_driving = field_name in BASELINE_DRIVING_FACT_FIELDS
+
+            if candidate.source_run_id is not None:
+                if candidate.source_run_id == current_run.id:
+                    # Lineage proves freshness. Corruption guard only: the field
+                    # must still be readable in the (immutable) current run.
+                    if not field_present:
+                        stale_fields.append({**item, "reason": "source_basis_unreadable"})
+                    # else: FRESH (no value-vs-AI comparison — override-safe).
+                else:
+                    stale_fields.append({**item, "reason": "source_run_outdated"})
+            else:
+                # No parse-run lineage (manual / single-key / legacy acceptance).
+                if not field_present:
+                    stale_fields.append({**item, "reason": "field_removed"})
+                elif is_baseline_driving:
+                    stale_fields.append({**item, "reason": "no_lineage_baseline_field"})
+                else:
+                    candidate_value = self._extract_value(candidate.value)
+                    if normalize_term(candidate_value) == normalize_term(current_extracted):
+                        warnings.append({**item, "reason": "no_lineage_value_match"})
+                    else:
+                        stale_fields.append({**item, "reason": "value_diverged_no_lineage"})
+
+        if stale_fields:
+            for s in stale_fields:
+                logger.warning(
+                    "Promotion blocked (stale source): site_id=%s file_id=%s "
+                    "canonical_field=%s fact_id=%s reason=%s user_id=%s ts=%s",
+                    site_id,
+                    file_id,
+                    s["canonical_field"],
+                    s["fact_id"],
+                    s["reason"],
+                    promoted_by_id,
+                    datetime.now(timezone.utc).isoformat(),
+                )
+            raise PromotionError(
+                (
+                    f"Promotion blocked: {len(stale_fields)} value(s) cannot be "
+                    "proven current against the latest parse of this version. "
+                    "Re-review them in the Data Room before promoting."
+                ),
+                error_code=PROMOTION_SOURCE_STALE_CODE,
+                details={"stale_fields": stale_fields},
+            )
+
+        for w in warnings:
+            logger.info(
+                "Promotion freshness warning: site_id=%s file_id=%s "
+                "canonical_field=%s fact_id=%s reason=%s user_id=%s",
+                site_id,
+                file_id,
+                w["canonical_field"],
+                w["fact_id"],
+                w["reason"],
+                promoted_by_id,
+            )
+        return warnings
 
     def _set_previous_version_not_actual(self, document_id: int, new_file_id: int):
         files = self.db_session.query(File).filter(

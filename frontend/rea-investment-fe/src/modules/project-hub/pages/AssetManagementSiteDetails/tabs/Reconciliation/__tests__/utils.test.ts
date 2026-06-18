@@ -63,6 +63,28 @@ describe('promotionErrorMessage', () => {
     expect(promotionErrorMessage({ response: { status: 404 } })).toMatch(/no longer valid/i);
   });
 
+  it('surfaces the backend message for a 409 fail-closed freshness block', () => {
+    const msg = promotionErrorMessage({
+      response: {
+        status: 409,
+        data: {
+          error_code: 'PROMOTION_SOURCE_STALE',
+          message: 'Promotion blocked: 2 value(s) cannot be proven current. Re-review them in the Data Room.',
+          stale_fields: [{ canonical_field: 'module_wattage', reason: 'source_run_outdated' }]
+        }
+      }
+    });
+    expect(msg).toMatch(/Promotion blocked/);
+    expect(msg).toMatch(/Data Room/i);
+  });
+
+  it('falls back to a generic stale message when a 409 omits the backend message', () => {
+    const msg = promotionErrorMessage({
+      response: { status: 409, data: { error_code: 'PROMOTION_SOURCE_STALE' } }
+    });
+    expect(msg).toMatch(/Data Room/i);
+  });
+
   it('maps any other failure to a nothing-changed message', () => {
     const msg = promotionErrorMessage({ response: { status: 400, data: { detail: 'Promotion failed: boom' } } });
     expect(msg).toMatch(/nothing was changed/i);
