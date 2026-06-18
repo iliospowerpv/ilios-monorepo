@@ -41,6 +41,29 @@ def combine_user_ai_parsing_results(
     # Build reverse mapping: display_name -> canonical name
     display_to_name = {v: k for k, v in name_to_display.items()}
 
+    # DD file-versioning: acceptance is persisted per file version
+    # (document_keys.file_id), while legacy keys are document-level (file_id IS
+    # NULL). When the caller is viewing a specific file version, only that
+    # version's keys — plus legacy NULL-file keys — should be treated as the
+    # user-accepted values. Otherwise a newer file version inherits an older
+    # version's accepted values via the shared Document.keys relationship and
+    # falsely appears already-accepted (Accept All shows "Accepted") even though
+    # nothing on the new version was accepted and no candidate facts exist.
+    # File-specific keys take precedence over legacy NULL-file keys for the same
+    # field, so we sort NULL-file keys first and let the dict comprehension keep
+    # the last (file-specific) assignment per field name.
+    if due_diligence_file is not None:
+        scoped_keys = sorted(
+            (
+                key
+                for key in document.keys
+                if key.file_id is None or key.file_id == due_diligence_file.id
+            ),
+            key=lambda key: 0 if key.file_id is None else 1,
+        )
+    else:
+        scoped_keys = list(document.keys)
+
     existing_user_keys = {
         key.name: {
             "value": key.value,
@@ -49,7 +72,7 @@ def combine_user_ai_parsing_results(
             "is_poison_pill": key.is_poison_pill,
             "poison_pill_detailed": key.poison_pill_notes,
         }
-        for key in document.keys
+        for key in scoped_keys
     }
     # ensure parsing record exists, parsing status is 'completed' and result is not empty
     ai_parsing_result = []
