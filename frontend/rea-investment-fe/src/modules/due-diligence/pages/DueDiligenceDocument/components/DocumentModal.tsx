@@ -311,11 +311,14 @@ const ActionStatusButton: React.FC<{
 }> = ({ status, label, completedLabel, activeColor, activeIcon, tooltip, onClick, testId, busy = false }) => {
   const theme = useTheme();
   const goodColor = theme.efficiencyColors?.good || '#4CAF50';
-  const naColor = '#00000042';
+  // Muted grey that stays visible on the modal header in BOTH theme modes
+  // (header bgcolor is primary.main — solid black in light mode, white in dark
+  // mode — against which MUI's near-transparent default disabled grey vanishes).
+  const naColor = '#9e9e9e';
   const isActionable = status === 'actionable';
   const isCompleted = status === 'completed';
   const isLoading = status === 'loading';
-  const disabledIconColor = isCompleted ? goodColor : naColor;
+  const disabledColor = isCompleted ? goodColor : naColor;
 
   const startIcon =
     isLoading || busy ? (
@@ -340,10 +343,20 @@ const ActionStatusButton: React.FC<{
           startIcon={startIcon}
           sx={{
             fontSize: '12px',
-            // Preserve the status icon's semantic color even while the button is
-            // greyed out, so completed (green ✓) and unavailable (muted ✗) stay
-            // legible — consistent with the app's other health indicators.
-            '&.Mui-disabled .MuiButton-startIcon': { color: disabledIconColor }
+            // Reserve the disabled border space so the active/disabled swap never shifts layout.
+            border: '1px solid transparent',
+            // The header (primary.main) is solid black in light mode and white in
+            // dark mode; MUI's default faint disabled text + fill are invisible
+            // against it. Render the disabled states as a legible outlined chip so
+            // completed (green ✓ + "Promoted"/"Accepted") and unavailable (muted ✗)
+            // stay readable — consistent with the app's other health indicators.
+            '&.Mui-disabled': {
+              opacity: 1,
+              color: disabledColor,
+              backgroundColor: 'transparent',
+              borderColor: disabledColor
+            },
+            '&.Mui-disabled .MuiButton-startIcon': { color: disabledColor }
           }}
           data-testid={testId}
         >
