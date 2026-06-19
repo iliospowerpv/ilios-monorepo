@@ -188,8 +188,8 @@ FIELD_METADATA: dict[str, _FieldMeta] = {
         "Optional — defaults to 1.0 (no soiling) when not supplied.", 1.0,
     ),
     "pto_date": _FieldMeta(
-        "PTO Date", "date", None, False,
-        "Optional — without PTO, expected production is NULL before PTO.",
+        "PTO Date", "date", None, True,
+        "Enter the permission-to-operate date — required; expected production is NULL before PTO.",
     ),
 }
 
@@ -781,6 +781,7 @@ def _evaluate(
 
     pto_meta = FIELD_METADATA["pto_date"]
     pto = reviewer_values.get("pto_date")
+    pto_required = baseline_type == TelemetryBaselineType.weather_adjusted_model
     if isinstance(pto, date):
         column_values["pto_date"] = pto
         field_sources["pto_date"] = {"source": "reviewer_supplied"}
@@ -788,7 +789,7 @@ def _evaluate(
             FieldBlocker(
                 field="pto_date",
                 display_label=pto_meta.display_label,
-                required=False,
+                required=pto_required,
                 expected_type=pto_meta.expected_type,
                 expected_unit=pto_meta.expected_unit,
                 source_status=SourceStatus.SATISFIED,
@@ -796,7 +797,31 @@ def _evaluate(
                 current_raw_value=str(pto),
             )
         )
+    elif pto_required:
+        # PTO is REQUIRED for the weather-adjusted model: without it the expected
+        # curve is suppressed (NULL) for EVERY bucket, so the draft would be unable
+        # to drive any O&M comparison. Block creation rather than silently produce
+        # an empty baseline.
+        missing_fields.append("pto_date")
+        warnings.append(
+            "No PTO date supplied — it is required for a weather-adjusted "
+            "baseline (expected production is NULL before PTO; never fabricated)."
+        )
+        field_blockers.append(
+            FieldBlocker(
+                field="pto_date",
+                display_label=pto_meta.display_label,
+                required=True,
+                expected_type=pto_meta.expected_type,
+                expected_unit=pto_meta.expected_unit,
+                source_status=SourceStatus.REVIEWER_SUPPLIED_NEEDED,
+                blocking_level=BlockingLevel.BLOCKS_DRAFT,
+                reason="No PTO date — required; expected production is NULL before PTO.",
+                recommended_action=pto_meta.recommended_action,
+            )
+        )
     else:
+        # Other baseline types keep the informational pre-PTO handling.
         warnings.append(
             "No PTO date supplied — expected production is NULL before PTO "
             "(honest pre-PTO handling, never fabricated)."

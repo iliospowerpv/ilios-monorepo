@@ -19,7 +19,7 @@ tests drive the FastAPI app via the shared ``client`` + system-user auth.
 """
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 
 import pytest
 
@@ -37,14 +37,33 @@ from app.services.telemetry.expected_service import REQUIRED_PHYSICS_FIELDS
 
 WAM = TelemetryBaselineType.weather_adjusted_model
 
-# Reviewer-supplied datasheet constants (no fact source exists today).
+# Reviewer-supplied inputs that have no project_fact source today: the five
+# module/inverter datasheet constants PLUS the PTO date, which is now REQUIRED for
+# the weather-adjusted model (without it the expected curve is NULL for every
+# bucket). Service-path tests pass these straight through (the ``date`` object is
+# fine); endpoint tests must JSON-encode ``pto_date`` (see ``_json_payload``).
 REVIEWER_CONSTANTS = {
     "thermal_coefficient_pct": -0.35,
     "power_tolerance_min_pct": 0.0,
     "year_1_degradation_pct": 2.0,
     "annual_degradation_pct": 0.5,
     "cec_efficiency_pct": 98.5,
+    "pto_date": date(2025, 1, 1),
 }
+
+
+def _json_payload(**overrides):
+    """``REVIEWER_CONSTANTS`` as a JSON-safe POST body (``pto_date`` as ISO str)."""
+    payload = {k: v for k, v in REVIEWER_CONSTANTS.items() if k != "pto_date"}
+    payload["pto_date"] = REVIEWER_CONSTANTS["pto_date"].isoformat()
+    payload.update(overrides)
+    return payload
+
+
+def _constants_without_pto():
+    """The datasheet constants only — used to assert the PTO requirement."""
+    return {k: v for k, v in REVIEWER_CONSTANTS.items() if k != "pto_date"}
+
 
 # Unit-plausible fact values (modules in W, inverters in kW).
 FACT_VALUES = {
@@ -131,8 +150,9 @@ def test_readiness_no_facts_reports_all_required_missing(db_session, site_id):
     assert res.ready is False
     assert res.fields_used == []
     assert res.source_fact_ids == []
-    # Every required physics field is outstanding (4 fact cols + 5 constants).
-    assert set(res.missing_fields) == set(REQUIRED_PHYSICS_FIELDS)
+    # Every required physics field is outstanding (4 fact cols + 5 constants),
+    # plus the now-required PTO date for the weather-adjusted model.
+    assert set(res.missing_fields) == set(REQUIRED_PHYSICS_FIELDS) | {"pto_date"}
 
 
 def test_readiness_with_facts_only_constants_missing(db_session, site_id):
@@ -494,7 +514,7 @@ def test_endpoint_create_draft_success_then_idempotent(
     client, system_user_auth_header, db_session, site_id
 ):
     _seed_physics_facts(db_session, site_id)
-    payload = dict(REVIEWER_CONSTANTS)
+    payload = _json_payload()
 
     first = client.post(
         _create_url(site_id), json=payload, headers=system_user_auth_header
@@ -583,12 +603,13 @@ def test_readiness_field_blockers_cover_every_input(db_session, site_id):
     assert blockers["dc_loss_pct"].default_value == 0.0
     assert blockers["soiling_factor"].default_value == 1.0
 
-    # Missing PTO suppresses pre-PTO expected (blocks expected, never the draft).
+    # PTO is REQUIRED for the weather-adjusted model: a missing PTO blocks the
+    # draft itself (the expected curve would be NULL for every bucket without it).
     assert (
         blockers["pto_date"].source_status
-        == svc.SourceStatus.PRE_PTO_EXPECTED_SUPPRESSED
+        == svc.SourceStatus.REVIEWER_SUPPLIED_NEEDED
     )
-    assert blockers["pto_date"].blocking_level == svc.BlockingLevel.BLOCKS_EXPECTED
+    assert blockers["pto_date"].blocking_level == svc.BlockingLevel.BLOCKS_DRAFT
 
 
 def test_missing_fact_blocker_recommends_promotion(db_session, site_id):
@@ -910,7 +931,8 @@ def test_endpoint_readiness_includes_field_blockers(
     assert len(blockers) == 15
     assert blockers["module_wattage"]["source_status"] == "active_fact"
     assert blockers["cec_efficiency_pct"]["blocking_level"] == "blocks_draft_baseline"
-    assert blockers["pto_date"]["source_status"] == "pre_pto_expected_suppressed"
+    assert blockers["pto_date"]["source_status"] == "reviewer_supplied_needed"
+    assert blockers["pto_date"]["blocking_level"] == "blocks_draft_baseline"
 
 
 def test_endpoint_create_with_normalization(
@@ -920,15 +942,16 @@ def test_endpoint_create_with_normalization(
     values["module_wattage"] = "340 Wp"
     facts = _seed_physics_facts(db_session, site_id, values=values)
 
-    payload = dict(REVIEWER_CONSTANTS)
-    payload["normalizations"] = {
-        "module_wattage": {
-            "confirmed_value": 340.0,
-            "raw_value": "340 Wp",
-            "source_fact_id": facts["module_wattage"].id,
-            "allow_conversion": False,
+    payload = _json_payload(
+        normalizations={
+            "module_wattage": {
+                "confirmed_value": 340.0,
+                "raw_value": "340 Wp",
+                "source_fact_id": facts["module_wattage"].id,
+                "allow_conversion": False,
+            }
         }
-    }
+    )
 
     resp = client.post(
         _create_url(site_id), json=payload, headers=system_user_auth_header
@@ -950,15 +973,16 @@ def test_endpoint_create_with_bad_normalization_returns_422(
     values["module_wattage"] = "340 Wp"
     facts = _seed_physics_facts(db_session, site_id, values=values)
 
-    payload = dict(REVIEWER_CONSTANTS)
-    payload["normalizations"] = {
-        "module_wattage": {
-            "confirmed_value": 999.0,  # mismatch -> rejected
-            "raw_value": "340 Wp",
-            "source_fact_id": facts["module_wattage"].id,
-            "allow_conversion": False,
+    payload = _json_payload(
+        normalizations={
+            "module_wattage": {
+                "confirmed_value": 999.0,  # mismatch -> rejected
+                "raw_value": "340 Wp",
+                "source_fact_id": facts["module_wattage"].id,
+                "allow_conversion": False,
+            }
         }
-    }
+    )
 
     resp = client.post(
         _create_url(site_id), json=payload, headers=system_user_auth_header
@@ -1010,3 +1034,174 @@ def test_legacy_create_baseline_endpoint_is_deprecated_and_warns(
     assert all(
         getattr(r, "deprecated", False) for r in legacy_routes
     ), "legacy create-baseline route must be marked deprecated=True"
+
+
+# ===========================================================================
+# PTO is REQUIRED for the weather-adjusted model (DD V2 — Site 4 fix)
+# ===========================================================================
+# Background: without a PTO date the weather-adjusted expected curve is NULL for
+# every bucket (production is suppressed before PTO), so the draft is useless.
+# PTO is therefore a hard requirement for ``weather_adjusted_model`` — never a
+# silent "optional adjustment". Other baseline types keep PTO informational.
+def test_pto_required_blocks_create_for_weather_adjusted_model(
+    db_session, company_id, site_id
+):
+    """All datasheet constants present but no PTO -> WAM draft is blocked, nothing
+    is written, and ``pto_date`` is the sole outstanding field."""
+    _seed_physics_facts(db_session, site_id)
+
+    result = svc.create_draft_from_facts(
+        db_session,
+        company_id=company_id,
+        site_id=site_id,
+        site_timezone="UTC",
+        baseline_type=WAM,
+        reviewer_values=_constants_without_pto(),
+    )
+
+    assert result.created is False
+    assert result.readiness.ready is False
+    assert result.readiness.missing_fields == ["pto_date"]
+    assert _baselines_for(db_session, site_id) == []
+
+
+def test_pto_present_creates_draft_carrying_pto_date(
+    db_session, company_id, site_id
+):
+    """Facts + datasheet constants + PTO -> a draft is created and it carries the
+    reviewer-supplied PTO date verbatim."""
+    _seed_physics_facts(db_session, site_id)
+
+    result = svc.create_draft_from_facts(
+        db_session,
+        company_id=company_id,
+        site_id=site_id,
+        site_timezone="UTC",
+        baseline_type=WAM,
+        reviewer_values=dict(REVIEWER_CONSTANTS),  # includes the required pto_date
+    )
+
+    assert result.created is True
+    assert result.readiness.ready is True
+    assert result.baseline.status == TelemetryBaselineStatus.draft
+    assert result.baseline.pto_date == REVIEWER_CONSTANTS["pto_date"]
+
+
+def test_pto_not_required_for_non_weather_adjusted_types(db_session, site_id):
+    """The required-PTO rule is specific to the WAM. For ``design_estimate`` PTO
+    stays informational (pre-PTO suppressed), never in ``missing_fields`` and
+    never blocking the draft."""
+    _seed_physics_facts(db_session, site_id)
+
+    res = svc.evaluate_readiness(
+        db_session, site_id, TelemetryBaselineType.design_estimate
+    )
+
+    blockers = {b.field: b for b in res.field_blockers}
+    assert "pto_date" not in res.missing_fields
+    assert (
+        blockers["pto_date"].source_status
+        == svc.SourceStatus.PRE_PTO_EXPECTED_SUPPRESSED
+    )
+    assert blockers["pto_date"].blocking_level == svc.BlockingLevel.BLOCKS_EXPECTED
+
+
+def test_endpoint_create_missing_pto_returns_422_review_required(
+    client, system_user_auth_header, db_session, site_id
+):
+    """The HTTP create endpoint rejects a WAM draft with no PTO: 422,
+    ``review_required``, ``pto_date`` the only outstanding field, nothing written."""
+    _seed_physics_facts(db_session, site_id)
+
+    resp = client.post(
+        _create_url(site_id),
+        json=_constants_without_pto(),  # all numeric -> JSON-safe, no pto_date
+        headers=system_user_auth_header,
+    )
+
+    assert resp.status_code == 422
+    body = resp.json()
+    assert body["status"] == "review_required"
+    assert body["ready"] is False
+    assert body.get("draft_baseline_id") is None
+    assert body["missing_fields"] == ["pto_date"]
+    assert _baselines_for(db_session, site_id) == []
+
+
+# ===========================================================================
+# Activation effective-from semantics (DD V2 — Site 4 fix)
+# ===========================================================================
+# First activation of a weather-adjusted baseline (no prior active) backdates
+# ``active_from`` to the PTO date so the trailing O&M window is covered. A
+# replacement activation instead takes effect at ``now`` and closes the prior
+# row at ``now`` (history is never rewritten).
+def _make_baseline(db_session, company_id, site_id, **overrides):
+    fields = dict(
+        company_id=company_id,
+        site_id=site_id,
+        baseline_name="wam-test",
+        baseline_type=WAM,
+        status=TelemetryBaselineStatus.approved,
+        version=1,
+        pto_date=date(2026, 5, 11),
+    )
+    fields.update(overrides)
+    baseline = TelemetryExpectedBaseline(**fields)
+    db_session.add(baseline)
+    db_session.commit()
+    db_session.refresh(baseline)
+    return baseline
+
+
+def test_first_activation_backdates_active_from_to_pto(
+    db_session, company_id, site_id, system_user_id
+):
+    crud = TelemetryExpectedBaselineCRUD(db_session)
+    baseline = _make_baseline(db_session, company_id, site_id)
+
+    activated = crud.activate(baseline, user_id=system_user_id)
+
+    assert activated.status == TelemetryBaselineStatus.active
+    # date -> naive-UTC midnight; covers the whole post-PTO O&M window.
+    assert activated.active_from == datetime(2026, 5, 11)
+    assert activated.active_to is None
+    assert activated.supersedes_baseline_id is None
+
+
+def test_replacement_activation_uses_now_and_closes_prior(
+    db_session, company_id, site_id, system_user_id
+):
+    crud = TelemetryExpectedBaselineCRUD(db_session)
+    prior = _make_baseline(
+        db_session,
+        company_id,
+        site_id,
+        baseline_name="prior",
+        status=TelemetryBaselineStatus.active,
+        version=1,
+        active_from=datetime(2026, 5, 11),
+    )
+    prior_id = prior.id
+    replacement = _make_baseline(
+        db_session,
+        company_id,
+        site_id,
+        baseline_name="replacement",
+        status=TelemetryBaselineStatus.approved,
+        version=2,
+    )
+
+    before = datetime.utcnow()
+    activated = crud.activate(replacement, user_id=system_user_id)
+    after = datetime.utcnow()
+
+    assert activated.status == TelemetryBaselineStatus.active
+    # A replacement takes effect at *now*, never backdated to PTO.
+    assert activated.active_from != datetime(2026, 5, 11)
+    assert before <= activated.active_from <= after
+    assert activated.supersedes_baseline_id == prior_id
+
+    db_session.refresh(prior)
+    assert prior.status == TelemetryBaselineStatus.superseded
+    assert prior.active_to is not None
+    assert before <= prior.active_to <= after

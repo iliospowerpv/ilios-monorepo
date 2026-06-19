@@ -23,9 +23,11 @@ import type {
   BaselineReadinessFieldStatus,
   CreateDraftFromFactsRequest,
   CreateDraftFromFactsResponse,
+  ExpectedBaselineListResponse,
   NormalizationConfirmationRequest,
   ReadinessFromFactsResponse
 } from '../../../../../../../types/telemetryV2';
+import { formatDateTime } from '../utils';
 
 interface BaselineFromFactsPanelProps {
   siteId: number;
@@ -59,6 +61,13 @@ const USABLE_STATUSES = new Set<string>([
 ]);
 
 const readinessQueryKey = (siteId: number) => ['site', 'baseline-readiness-from-facts', { siteId }] as const;
+// Shared with DraftBaselineReviewPanel so React Query dedupes the single fetch
+// (keep this tuple identical to that panel's baselinesQueryKey).
+const baselinesQueryKey = (siteId: number) => ['site', 'expected-baselines', { siteId }] as const;
+
+// Only the weather-adjusted model drives the live expected calc (design-estimate
+// is a separate track), so existing-baseline awareness is scoped to it.
+const WEATHER_ADJUSTED = 'weather_adjusted_model';
 
 const sourceStatusChip = (
   status: string
@@ -127,6 +136,15 @@ export const BaselineFromFactsPanel: React.FC<BaselineFromFactsPanelProps> = ({ 
     retry: false
   });
 
+  // Existing-baseline awareness: shares the review panel's query key so this is a
+  // single cached fetch, not a duplicate request.
+  const { data: baselinesData } = useQuery<ExpectedBaselineListResponse>({
+    queryKey: baselinesQueryKey(siteId),
+    queryFn: () => ApiClient.telemetryV2.listExpectedBaselines(siteId),
+    enabled: canDraft && Number.isSafeInteger(siteId) && siteId > 0,
+    retry: false
+  });
+
   const [values, setValues] = useState<Record<string, string>>({});
   const [ptoDate, setPtoDate] = useState('');
   const [confirmedNorm, setConfirmedNorm] = useState<Record<string, boolean>>({});
@@ -141,6 +159,7 @@ export const BaselineFromFactsPanel: React.FC<BaselineFromFactsPanelProps> = ({ 
     mutationFn: payload => ApiClient.telemetryV2.createDraftFromFacts(siteId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: readinessQueryKey(siteId) });
+      queryClient.invalidateQueries({ queryKey: baselinesQueryKey(siteId) });
       queryClient.invalidateQueries({ queryKey: ['site', 'reconciliation', { siteId }] });
     }
   });
@@ -189,6 +208,13 @@ export const BaselineFromFactsPanel: React.FC<BaselineFromFactsPanelProps> = ({ 
 
   if (!data) return null;
 
+  // Existing weather-adjusted baselines for honest status messaging.
+  const baselines = baselinesData?.baselines ?? [];
+  const activeBaseline = baselines.find(b => b.baseline_type === WEATHER_ADJUSTED && b.status === 'active') ?? null;
+  const pendingDrafts = baselines.filter(
+    b => b.baseline_type === WEATHER_ADJUSTED && (b.status === 'draft' || b.status === 'in_review')
+  );
+
   const numField = (field: NumericField) => values[field] ?? '';
   const parseEntered = (raw: string): number | null | undefined => {
     const trimmed = raw.trim();
@@ -214,8 +240,16 @@ export const BaselineFromFactsPanel: React.FC<BaselineFromFactsPanelProps> = ({ 
       !(b.normalization && !b.normalization.blocked && confirmedNorm[b.field])
   );
 
+  // PTO is required for the weather-adjusted model: without it the backend
+  // suppresses the entire expected curve, so the draft would be unusable.
+  const ptoMissing = ptoDate.trim() === '';
+
   const canSubmit =
-    invalidFields.length === 0 && missingRequired.length === 0 && factNeedsAction.length === 0 && !mutation.isPending;
+    invalidFields.length === 0 &&
+    missingRequired.length === 0 &&
+    factNeedsAction.length === 0 &&
+    !ptoMissing &&
+    !mutation.isPending;
 
   const handleSubmit = () => {
     const normalizations: Record<string, NormalizationConfirmationRequest> = {};
@@ -358,10 +392,20 @@ export const BaselineFromFactsPanel: React.FC<BaselineFromFactsPanelProps> = ({ 
         <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
           Create weather-adjusted draft baseline
         </Typography>
-        {data.ready ? (
+        {activeBaseline ? (
+          <Chip
+            size="small"
+            color="success"
+            variant="outlined"
+            icon={<CheckCircleOutlineIcon />}
+            label={`Active baseline #${activeBaseline.id}`}
+          />
+        ) : pendingDrafts.length > 0 ? (
+          <Chip size="small" color="info" variant="outlined" label={`Draft #${pendingDrafts[0].id} pending`} />
+        ) : data.ready ? (
           <Chip size="small" color="success" variant="outlined" icon={<CheckCircleOutlineIcon />} label="Facts ready" />
         ) : (
-          <Chip size="small" color="warning" variant="outlined" label="Needs reviewer input" />
+          <Chip size="small" color="warning" variant="outlined" label="New draft inputs needed" />
         )}
       </Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
@@ -369,6 +413,23 @@ export const BaselineFromFactsPanel: React.FC<BaselineFromFactsPanelProps> = ({ 
         <strong>draft</strong> baseline — it is never auto-activated, and existing facts and active baselines are never
         changed.
       </Typography>
+
+      {activeBaseline && (
+        <Alert severity="info" sx={{ mb: 1.5 }} data-testid="baseline-active-exists">
+          <AlertTitle>An active weather-adjusted baseline already exists</AlertTitle>
+          Baseline #{activeBaseline.id}
+          {activeBaseline.baseline_name ? ` (${activeBaseline.baseline_name})` : ''} is active
+          {activeBaseline.active_from ? ` from ${formatDateTime(activeBaseline.active_from)}` : ''}. The fields below
+          are not pre-filled from it — creating a new draft here leaves the active baseline unchanged until you review
+          and activate the new one.
+        </Alert>
+      )}
+      {!activeBaseline && pendingDrafts.length > 0 && (
+        <Alert severity="info" sx={{ mb: 1.5 }} data-testid="baseline-draft-exists">
+          {pendingDrafts.length} draft weather-adjusted baseline(s) already await review or activation. Submitting
+          identical inputs returns the existing draft rather than creating a duplicate.
+        </Alert>
+      )}
 
       <Typography variant="overline" color="text.secondary">
         From promoted facts
@@ -393,23 +454,31 @@ export const BaselineFromFactsPanel: React.FC<BaselineFromFactsPanelProps> = ({ 
       </Grid>
 
       <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mt: 2 }}>
-        Optional adjustments
+        Operation date (required)
       </Typography>
       <Grid container spacing={2} sx={{ mt: 0 }}>
-        {OPTIONAL_NUMS.map(renderNumberField)}
         <Grid item xs={12} sm={6} md={4}>
           <TextField
             fullWidth
             size="small"
             type="date"
+            required
             label="PTO Date"
             value={ptoDate}
             onChange={e => setPtoDate(e.target.value)}
+            error={ptoMissing}
             InputLabelProps={{ shrink: true }}
-            helperText="Optional — expected production is NULL before PTO"
+            helperText="Required — expected production is suppressed before PTO"
             inputProps={{ 'data-testid': 'input-pto_date' }}
           />
         </Grid>
+      </Grid>
+
+      <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mt: 2 }}>
+        Optional adjustments
+      </Typography>
+      <Grid container spacing={2} sx={{ mt: 0 }}>
+        {OPTIONAL_NUMS.map(renderNumberField)}
       </Grid>
 
       {factNeedsAction.length > 0 && (
@@ -455,9 +524,11 @@ export const BaselineFromFactsPanel: React.FC<BaselineFromFactsPanelProps> = ({ 
           title={
             missingRequired.length > 0
               ? 'Fill in all required datasheet constants first.'
-              : factNeedsAction.length > 0
-                ? 'Resolve the equipment facts that need attention first.'
-                : ''
+              : ptoMissing
+                ? 'Set the PTO date — it is required for a weather-adjusted baseline.'
+                : factNeedsAction.length > 0
+                  ? 'Resolve the equipment facts that need attention first.'
+                  : ''
           }
         >
           <span>

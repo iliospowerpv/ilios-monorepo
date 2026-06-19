@@ -29,6 +29,29 @@ from app.models.telemetry_expected import (
     TelemetryExpectedBaselinePoint,
 )
 
+
+def _first_active_from(
+    baseline: TelemetryExpectedBaseline, now: datetime
+) -> datetime:
+    """Effective ``active_from`` for the FIRST active baseline of a site.
+
+    A weather-adjusted baseline carrying a PTO date is effective from that date
+    (naive-UTC midnight, matching how readings/rollups are persisted) so the
+    expected curve covers telemetry recorded before activation. Without a PTO date
+    — or for any other baseline type — the baseline takes effect at ``now``
+    (forward-only). Callers apply this ONLY when no prior active baseline exists;
+    replacement activations always use ``now`` so historical periods are never
+    rewritten.
+    """
+    if (
+        baseline.baseline_type == TelemetryBaselineType.weather_adjusted_model
+        and baseline.pto_date is not None
+    ):
+        pto = baseline.pto_date
+        return datetime(pto.year, pto.month, pto.day)
+    return now
+
+
 # Scalar columns a create payload may set directly (snapshot/audit columns and
 # the approval state are managed by this CRUD, not the caller).
 _CREATE_FIELDS = (
@@ -291,13 +314,18 @@ class TelemetryExpectedBaselineCRUD(BaseCRUD):
             .with_for_update()
             .one_or_none()
         )
-        if prior is not None and prior.id != baseline.id:
+        has_prior = prior is not None and prior.id != baseline.id
+        if has_prior:
             prior.status = TelemetryBaselineStatus.superseded
             prior.active_to = now
             baseline.supersedes_baseline_id = prior.id
 
         baseline.status = TelemetryBaselineStatus.active
-        baseline.active_from = now
+        # First active baseline for the site: a weather-adjusted baseline carrying
+        # a PTO date is "effective from PTO" so the expected curve covers telemetry
+        # recorded before activation (initial onboarding). A replacement baseline
+        # always takes effect at ``now`` and never rewrites historical periods.
+        baseline.active_from = now if has_prior else _first_active_from(baseline, now)
         baseline.active_to = None
         self.db_session.commit()
         self.db_session.refresh(baseline)

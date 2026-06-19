@@ -32,9 +32,21 @@ baseline not ready", "no active baseline", "design-estimate points 0/12") collap
   normalization; a `Wac`-on-an-inverter value would need a W→kW conversion and must be
   confirmed, never auto-applied.
 - **PTO None ⇒ the ENTIRE expected curve is suppressed** (every bucket `pre_pto`,
-  `expected=None`), not just "before PTO". PTO is NOT a draft blocker (warning only).
+  `expected=None`), not just "before PTO". **PTO is now REQUIRED for
+  `weather_adjusted_model`** — missing `pto_date` ⇒ not ready, listed in `missing_fields`,
+  blocker `REVIEWER_SUPPLIED_NEEDED`/`BLOCKS_DRAFT` (so a WAM draft can never be created
+  with a NULL PTO that would suppress the whole curve). Other baseline types keep PTO
+  informational (`PRE_PTO_EXPECTED_SUPPRESSED`/`BLOCKS_EXPECTED`, non-blocking). **Why:** a
+  WAM baseline with no PTO is useless (expected is NULL for every bucket) yet used to look
+  "active" — the perpetual "needs reviewer input" / empty-O&M symptom on Site 4.
   Also a naming gap: EPC config extracts `PTO`→canonical `pto`, but the bridge expects a
   reviewer-supplied `pto_date` — extracted PTO does not flow to the baseline today.
+- **Activation effective-from is PTO-anchored on FIRST activation only.** When a WAM
+  baseline is activated and there is NO prior active row AND `pto_date` is set, `active_from`
+  is backdated to PTO (date→naive-UTC midnight) so the trailing O&M window is covered;
+  a *replacement* activation instead uses `now` and closes the prior row at `active_to=now`
+  (history is never rewritten). **Why:** `active_from=now` on a freshly-activated baseline
+  left the post-PTO comparison window uncovered, so O&M showed no expected/comparison data.
 - **Optional losses default to 0% and soiling to 1.0** (optimistic) with only a free-text
   warning — no structured "default applied" indicator anywhere.
 - **Design-estimate points 0/12 is a SEPARATE pipeline** (`baseline_points_service`), driven
