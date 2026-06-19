@@ -1,0 +1,255 @@
+Start validation sprint: End-to-End Weather-Adjusted Expected Baseline Workflow.
+
+This is a validation-only sprint. Do not implement code, migrations, endpoints, UI changes, or data-model changes unless a failure is found and a follow-up implementation prompt is approved.
+
+Context:
+The weather-adjusted expected baseline workflow is now implemented across the full safe path:
+
+Completed:
+
+* Data Room approve/accept/promote flow
+* Reconciliation action-state visibility and diagnostics
+* Promotion freshness guard
+* Baseline Readiness Actionability
+
+  * structured blockers
+  * reviewer-confirmed normalization
+  * reviewer-supplied physics constants
+  * optional-default labels
+  * PTO warning
+  * draft creation
+* Draft Baseline Review Panel
+
+  * provenance display
+  * normalized raw→numeric values
+  * reviewer-supplied values
+  * optional defaults
+  * PTO warning
+  * active/draft/approved/superseded summaries
+* Period-effective baseline selection
+
+  * historical expected uses the baseline active during the relevant bucket
+  * no silent historical rewrite
+* Expected Baseline Approve / Activate UX
+
+  * approve and activate are separate actions
+  * confirmation dialogs
+  * permission-gated buttons
+  * O&M expected/chart cache invalidation after activation
+
+Objective:
+Validate the complete user path on a real site and identify any remaining blocker before declaring weather-adjusted expected/comparative performance production-ready.
+
+Hard constraints:
+
+* Do not modify code.
+* Do not create migrations.
+* Do not alter schemas.
+* Do not change expected math.
+* Do not change telemetry ingestion.
+* Do not change WeatherResolver.
+* Do not change device eligibility.
+* Do not mutate project_facts except through intentional UI workflow actions being validated.
+* Do not mutate accepted values except through intentional UI workflow actions being validated.
+* Do not use SAFL as a baseline source.
+* Do not reintroduce BigQuery, Firestore, or legacy telemetry.
+* Do not fabricate values.
+* Do not backfill historical expected values.
+* Do not generate design-estimate points unless explicitly testing the separate design-estimate flow.
+* Preserve the distinction between weather-adjusted expected and design-estimate points.
+
+Durable platform invariant:
+Never allow accepted, promoted, baseline, or O&M state to silently survive upstream source changes. Upstream changes must create a new lineage, mark dependent state stale, require re-review, or create explicit supersession. Historical data must remain preserved and auditable.
+
+Validation site:
+Use the known site that previously showed:
+
+* module_wattage = “340 Wp”
+* inverter_wattage = “66 kWac”
+* missing reviewer constants
+* no active baseline
+* design-estimate points 0/12
+
+If that site is unavailable, choose a site with:
+
+* V2 telemetry actuals
+* promoted project_facts for equipment values
+* no active weather-adjusted expected baseline yet
+
+Validation steps:
+
+1. Data Room state
+   Confirm:
+
+* relevant documents are uploaded
+* values are parsed
+* values can be accepted/overridden
+* approve all state is correct per file version/source basis
+* promote action is visible with consistent action-state styling
+* promotion uses full-file/version blast-radius confirmation
+* promotion succeeds only for fresh/current accepted values
+* stale/reparse guard blocks stale promotion if applicable
+
+Record:
+
+* document_id
+* file_id/version
+* promoted facts
+* any stale/missing values
+
+2. Reconciliation state
+   Confirm:
+
+* promoted values show as active facts
+* missing values show correct status/action
+* non-baseline-usable values show appropriate blockers
+* action states are visible, not hidden
+* task handoff still works
+* design-estimate points are shown as separate/non-blocking
+
+Record:
+
+* remaining blocking rows
+* required actions
+* whether row labels are understandable
+
+3. Baseline Readiness
+   Confirm:
+
+* module_wattage “340 Wp” is recognized as needing normalization
+* inverter_wattage “66 kWac” is recognized as needing normalization
+* normalization requires confirmation
+* raw project_facts are not mutated
+* normalized values are anchored to source_fact_id + raw_value
+* missing/stale/drifted anchor is rejected
+* five reviewer-required constants can be supplied:
+
+  * thermal_coefficient_pct
+  * power_tolerance_min_pct
+  * year_1_degradation_pct
+  * annual_degradation_pct
+  * cec_efficiency_pct
+* optional defaults are labeled:
+
+  * dc_loss_pct
+  * ac_loss_pct
+  * medium_voltage_loss_pct
+  * mv_line_loss_pct
+  * soiling_factor
+* PTO warning appears if PTO is missing
+* design-estimate points remain separate
+
+4. Create draft weather-adjusted baseline
+   Confirm:
+
+* draft can be created only after required inputs are usable
+* no active baseline is created automatically
+* draft contains:
+
+  * source facts
+  * reviewer-supplied values
+  * normalized raw→numeric values
+  * optional defaults
+  * warnings
+  * provenance
+
+Record:
+
+* draft baseline id
+* status
+* model_parameters_json summary
+* source_fact_ids
+* warnings
+
+5. Draft Baseline Review
+   Confirm:
+
+* draft appears in selector
+* review panel shows provenance
+* normalized raw→numeric values display correctly
+* reviewer-supplied constants display correctly
+* optional defaults display as defaults, not facts
+* PTO warning displays correctly
+* approved-not-active and active baseline sections behave correctly
+* no design-estimate conflation
+
+6. Approve baseline
+   As permitted user:
+
+* confirm approve button/action state
+* approve dialog shows correct summary
+* approve does not activate
+* approve success updates baseline status to approved
+* no O&M expected is turned on solely by approval
+
+As unpermitted user, if possible:
+
+* confirm action disabled or 403 handled clearly
+
+7. Activate baseline
+   As permitted user:
+
+* confirm activation action only appears for approved baseline
+* activation dialog includes:
+
+  * prior active baseline if any
+  * supersession behavior
+  * period-effective history language
+  * design-estimate separation language
+* activate baseline
+* confirm active baseline summary updates
+* confirm prior active baseline, if any, becomes superseded
+* confirm O&M expected/chart queries invalidate/refetch
+
+8. O&M expected/comparative performance
+   Confirm:
+
+* expected values appear after activation
+* actuals remain visible
+* expected is not shown as 0 when unavailable
+* missing weather still yields honest missing_inputs/null
+* pre-PTO yields honest null/pre_pto
+* current expected uses active baseline
+* historical expected uses period-effective baseline selection
+* if chart window spans baseline boundary, buckets before and after boundary use correct baseline
+* O&M labels indicate expected source/baseline where available
+
+9. Historical integrity
+   Confirm:
+
+* activation did not rewrite historical periods before the new active_from boundary
+* periods before any baseline remain expected gaps/null
+* actuals remain visible in pre-baseline periods
+* no backfill occurred automatically
+
+10. Regression checks
+    Confirm:
+
+* project_facts unchanged except intended promotion
+* accepted values unchanged except intended acceptance/override
+* no SAFL values used for baseline
+* no legacy telemetry path used
+* no BigQuery/Firestore dependency
+* no expected formula change
+* no telemetry ingestion change
+* no WeatherResolver change
+* no device eligibility change
+
+Deliverable:
+Return a validation report with:
+
+1. site tested
+2. user role used
+3. workflow result by step
+4. screenshots or logs if available
+5. baseline ids and statuses
+6. promoted fact ids used
+7. normalized input confirmations
+8. reviewer-supplied inputs
+9. O&M expected result
+10. historical period-effective result
+11. issues found
+12. severity of each issue
+13. recommended follow-up tasks
+
+Do not implement fixes in this sprint unless explicitly approved.
