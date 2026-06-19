@@ -1,0 +1,432 @@
+Start audit/design sprint: Expected Baseline Readiness Input Resolution Audit.
+
+This is an audit and design task first. Do not implement code, migrations, endpoints, UI changes, or data-model changes unless a follow-up implementation sprint is approved.
+
+Context:
+Approve All and Promote now work as designed. Reconciliation is proving valuable as both a user tool and a development/testing tool.
+
+However, expected production and comparative performance still do not work because the Baseline Readiness panel shows that a draft weather-adjusted baseline is not ready, no active baseline exists, and design-estimate points are missing.
+
+Current observed blockers include:
+
+* Missing required physics fields:
+
+  * module_wattage
+  * inverter_wattage
+  * thermal_coefficient_pct
+  * power_tolerance_min_pct
+  * year_1_degradation_pct
+  * annual_degradation_pct
+  * cec_efficiency_pct
+* Non-numeric promoted active facts:
+
+  * module_wattage active fact value “340 Wp” is not numeric
+  * inverter_wattage active fact value “66 kWac” is not numeric
+* Optional loss fields missing:
+
+  * dc_loss_pct
+  * ac_loss_pct
+  * medium_voltage_loss_pct
+  * mv_line_loss_pct
+    These currently default to 0% in the calculation, but should still be surfaced honestly.
+* soiling_factor missing:
+
+  * currently defaulting to 1.0
+* PTO date missing:
+
+  * expected production is NULL before PTO by design
+* No active baseline exists.
+* No design-estimate baseline exists.
+* Design-estimate points show 0/12 months present.
+
+Strategic objective:
+Determine exactly where each required expected-baseline input should come from, whether it already exists anywhere in the diligence/document/project_facts chain, why it is not usable today, and what the right user experience should be to resolve it.
+
+Do not guess values.
+Do not fabricate missing physics inputs.
+Do not normalize values silently unless the source/units are explicit and the transformation is auditable.
+
+Hard constraints:
+
+* Do not create or activate baselines in this audit.
+* Do not change expected calculation math.
+* Do not change telemetry ingestion.
+* Do not change WeatherResolver.
+* Do not change device eligibility.
+* Do not alter historical O&M analytics.
+* Do not rewrite historical project_facts.
+* Do not mutate accepted values.
+* Do not auto-promote anything.
+* Do not auto-normalize values without an auditable rule.
+* Do not use SAFL as a V2 baseline source.
+* Do not reintroduce BigQuery, Firestore, or legacy telemetry.
+* Do not touch plaintext secrets.
+* Preserve the distinction between:
+
+  * raw extracted value
+  * accepted value
+  * promoted project_fact
+  * normalized baseline input
+  * draft baseline
+  * active baseline
+  * design-estimate baseline points
+  * weather-adjusted expected
+  * actual telemetry
+
+Durable platform invariant:
+Never allow accepted, promoted, baseline, or O&M state to silently survive upstream source changes. Upstream changes must create a new lineage, mark dependent state stale, require re-review, or create explicit supersession. Historical data must remain preserved and auditable.
+
+Audit areas:
+
+A. Required baseline input inventory
+
+Identify every required and optional input needed by:
+
+* create-draft-from-facts
+* baseline_from_facts_service
+* expected baseline physics model
+* design-estimate points generator
+* O&M expected/comparative performance displays
+
+For each input, document:
+
+* canonical field key
+* display label
+* required/optional
+* expected data type
+* expected unit
+* whether value must be numeric
+* whether text-with-unit is currently accepted or rejected
+* whether it can be reviewer-supplied
+* whether it must be source-backed from a document
+* whether it can have a default
+* whether default is safe and already approved
+* what happens if missing
+
+At minimum cover:
+
+* module_wattage
+* inverter_wattage
+* thermal_coefficient_pct
+* power_tolerance_min_pct
+* year_1_degradation_pct
+* annual_degradation_pct
+* cec_efficiency_pct
+* dc_loss_pct
+* ac_loss_pct
+* medium_voltage_loss_pct
+* mv_line_loss_pct
+* soiling_factor
+* permission_to_operate / PTO
+* system_size_dc
+* system_size_ac
+* module quantity
+* inverter quantity
+* annual production
+* monthly production
+* design-estimate production points
+
+B. Source tracing
+
+For each required baseline input, trace whether the value exists in any of the following:
+
+* uploaded document
+* parsed AI result
+* document_key
+* accepted value
+* overridden value
+* candidate project_fact
+* active project_fact
+* draft baseline model_parameters_json
+* active baseline model_parameters_json
+* design-estimate baseline header
+* design-estimate baseline points
+* site metadata
+* SAFL display-only field
+* legacy field
+
+For each source found:
+
+* value
+* units if present
+* source document id
+* file version id
+* parse run id
+* document key id
+* project_fact id
+* confidence/evidence if available
+* accepted/promoted status
+* stale/current source basis status if available
+* whether the source is authoritative or display-only
+* whether it can be used for baseline creation today
+
+C. Non-numeric value analysis
+
+Specifically analyze:
+
+* module_wattage = “340 Wp”
+* inverter_wattage = “66 kWac”
+
+Determine:
+
+* where these values came from
+* whether the parser extracted text-with-unit
+* whether the canonical field expects a bare numeric value
+* whether unit metadata is stored separately anywhere
+* whether there is a normalization helper already available
+* whether “340 Wp” can safely normalize to 340
+* whether “66 kWac” can safely normalize to 66 or requires unit conversion
+* whether inverter_wattage should be watts, kilowatts, AC kW, or another unit
+* whether the baseline engine expects W, kW, percentage, or decimal
+* whether this should be solved in parsing, acceptance, promotion, or baseline-readiness normalization
+
+Recommendation must distinguish:
+
+* safe normalization with explicit unit
+* unsafe normalization requiring user confirmation
+* missing unit
+* ambiguous unit
+* wrong canonical mapping
+
+D. Missing input source recommendations
+
+For each missing field, determine the expected source of truth.
+
+Examples:
+
+* module_wattage: likely module datasheet / PVsyst / equipment schedule
+* inverter_wattage: inverter datasheet / PVsyst / equipment schedule
+* thermal_coefficient_pct: module datasheet
+* power_tolerance_min_pct: module datasheet
+* year_1_degradation_pct: warranty / PVsyst / diligence assumption
+* annual_degradation_pct: warranty / PVsyst / diligence assumption
+* cec_efficiency_pct: inverter datasheet / CEC listing
+* PTO: utility/interconnection/commercial operations source
+* monthly production: PVsyst/design estimate
+* annual production: PVsyst/design estimate
+
+For each:
+
+* expected document type
+* current parser coverage yes/no
+* current extraction registry field yes/no
+* whether generic parser can extract it
+* whether specialized schema exists
+* whether Data Room should ask user to upload a missing document
+* whether reviewer-supplied value is acceptable
+* whether baseline readiness should provide a “supply value” action
+
+E. Reconciliation status review
+
+For each required baseline input:
+
+* find corresponding Reconciliation row if any
+* record current status
+* record required action
+* record blocking level
+* determine whether the row correctly explains the baseline blocker
+* determine whether the row should be enhanced to show “baseline-required input”
+* determine whether the Reconciliation status needs a new stale/non-normalized/needs-normalization state
+
+Possible new statuses or indicators:
+
+* value_present_but_not_numeric
+* unit_normalization_required
+* source_document_missing
+* active_fact_exists_but_not_baseline_usable
+* reviewer_supplied_input_needed
+* source_value_ambiguous
+* baseline_required_missing
+* default_applied_optional_input
+* pre_pto_expected_suppressed
+
+Do not implement statuses in this audit; recommend only.
+
+F. Baseline Readiness UX design
+
+Design the final user experience for resolving these blockers.
+
+The Baseline Readiness panel should show, for each blocker:
+
+* field label
+* required/optional
+* current value if any
+* why it is not usable
+* source status:
+
+  * missing
+  * AI-extracted
+  * accepted-not-promoted
+  * active fact
+  * active fact but non-numeric
+  * stale source
+  * optional default applied
+  * pre-PTO
+* exact next action:
+
+  * Open Data Room
+  * Accept value
+  * Promote value
+  * Normalize/confirm unit
+  * Upload source document
+  * Add reviewer-supplied baseline input
+  * Create draft baseline
+  * Activate baseline
+* permission needed
+* blocking level:
+
+  * blocks draft baseline
+  * blocks active baseline
+  * blocks expected
+  * lowers confidence
+  * informational
+
+G. Normalization UX design
+
+Design how users should handle values like “340 Wp” and “66 kWac.”
+
+Options to compare:
+
+1. Normalize during parsing:
+
+   * parser separates numeric_value and unit
+   * accepted value stores both
+   * project_fact has normalized_value + display_value
+2. Normalize during acceptance:
+
+   * Data Room shows extracted raw value and asks user to confirm numeric/unit
+3. Normalize during promotion:
+
+   * promotion blocks or requires normalization confirmation before active fact
+4. Normalize during baseline readiness:
+
+   * active fact remains raw, baseline readiness asks for normalized baseline input
+5. No normalization; require exact numeric values from parser/reviewer
+
+For each option:
+
+* pros
+* cons
+* auditability
+* user effort
+* engineering risk
+* impact on existing facts
+* whether it preserves history
+
+Recommend the safest practical first implementation.
+
+H. Design-estimate points audit
+
+Determine why design-estimate points are 0/12.
+
+Trace:
+
+* whether monthly production values exist in PVsyst/documents
+* whether annual production exists
+* whether design estimate baseline exists
+* whether generate-design-points was run
+* whether required facts are missing
+* whether points generator blocked due to missing/non-numeric values
+* whether this is a separate action after draft baseline readiness
+
+Document the required user flow:
+uploaded PVsyst/design document
+→ extract monthly/annual production
+→ accept/promote design facts
+→ create design-estimate baseline
+→ generate design points
+→ compare to actual/weather-adjusted expected as separate concepts
+
+I. PTO / pre-PTO behavior audit
+
+PTO missing currently suppresses expected production before PTO.
+
+Audit:
+
+* where PTO should come from
+* whether PTO exists in documents
+* whether it is accepted/promoted
+* whether it is protected in Overview
+* whether it is in Reconciliation
+* whether baseline readiness should block draft baseline or allow draft with pre-PTO expected suppression
+* whether final activation should require PTO
+
+Recommend final behavior:
+
+* draft baseline can/cannot be created without PTO
+* active baseline can/cannot be activated without PTO
+* expected chart before PTO behavior
+* user-facing label
+
+J. Historical analytics and baseline activation caution
+
+Document how the eventual baseline activation should respect historical analytics:
+
+* new active baseline should not rewrite prior periods silently
+* historical O&M analytics should preserve which baseline/facts/weather were active at the time
+* any backfill/recalculation should be explicit, period-scoped, and audited
+
+No implementation in this audit.
+
+K. Implementation recommendation
+
+Return a phased implementation plan.
+
+Suggested phases:
+
+1. Baseline readiness source trace and user-facing blocker details
+2. Unit/normalization guard for numeric baseline inputs
+3. Data Room/acceptance normalization UX for text-with-unit values
+4. Reconciliation indicators for non-numeric active facts
+5. Create-draft-from-facts blocker links/actions
+6. Design-estimate points flow repair
+7. PTO readiness behavior
+8. Optional defaults labeling
+9. Period-effective baseline selection later
+
+For each phase:
+
+* risk level
+* backend files likely touched
+* frontend files likely touched
+* tests required
+* non-goals
+
+L. Tests to design
+
+Design tests for:
+
+* active fact with “340 Wp” is shown as value_present_but_not_numeric
+* active fact with “66 kWac” is shown as value_present_but_not_numeric
+* missing thermal coefficient blocks draft baseline
+* optional losses default to 0 only when explicitly labeled as default
+* missing soiling defaults to 1.0 only when explicitly labeled
+* PTO missing shows pre-PTO suppression and correct blocker/action
+* design points 0/12 shows exact missing source/action
+* normalization never silently changes project_facts
+* normalized baseline input preserves raw source value
+* create-draft-from-facts never guesses
+* no SAFL baseline source
+* no fabricated expected/performance
+* no historical rewrite
+* architect review
+
+Deliverable:
+Create a markdown document under docs/ with:
+
+1. executive summary
+2. required baseline input inventory
+3. source trace for each missing/non-usable input
+4. non-numeric value analysis
+5. missing source recommendations
+6. Reconciliation status review
+7. Baseline Readiness UX design
+8. normalization UX options and recommendation
+9. design-estimate points audit
+10. PTO/pre-PTO audit
+11. historical analytics caution
+12. phased implementation plan
+13. test plan
+14. open questions for user
+
+No production code changes in this sprint.

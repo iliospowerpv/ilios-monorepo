@@ -77,3 +77,9 @@ id = "HR2p3aWLhJZX0QxJa-w0q"
 uri = "file://docs/data_room_transactional_integrity_audit.md"
 type = "text"
 title = "Data Room Transactional Integrity — Audit & Design"
+
+[[outputs]]
+id = "mVBYpPVhpmDdWFc4G3ZoO"
+uri = "file://docs/expected_baseline_readiness_input_audit.md"
+type = "text"
+title = "Expected Baseline Readiness Input Resolution Audit"
