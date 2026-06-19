@@ -54,7 +54,7 @@ acceptance-time confirm. Never auto-normalize in `_coerce_number`; never auto-co
   stays MISSING (no draft). **Why:** you must prove the reviewer confirmed the *current* fact's
   *current* text; an unanchored confirmation could silently apply against a fact that changed
   underneath them. **How to apply:** any new normalizable field or new caller MUST send both
-  anchors; tests `test_missing_{source_fact_id,raw_value}_confirmation_is_rejected` lock this.
+  anchors, and the rejection-on-missing-anchor path is covered by tests — keep it that way.
 - **Facts are never mutated.** Normalization is recorded only in the baseline's effective value
   + provenance (`project_fact_normalized` source: raw/normalized/from→to unit/method/fact_id/
   confirmed_by/at). `project_facts` rows are read-only here; no auto-promote, no auto-activate.
