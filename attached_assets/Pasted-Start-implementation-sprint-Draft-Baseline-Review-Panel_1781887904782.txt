@@ -1,0 +1,271 @@
+Start implementation sprint: Draft Baseline Review Panel — Read-Only.
+
+Context:
+Baseline Readiness Actionability is complete:
+
+* users can create a draft weather-adjusted baseline from promoted project_facts, reviewer-supplied physics constants, and reviewer-confirmed unit normalization
+* project_facts are not mutated
+* _coerce_number remains strict
+* no active baseline is created automatically
+* no baseline activation occurs
+
+The Expected Baseline Draft Review & Activation UX audit is complete. It found:
+
+* backend approval and activation endpoints already exist
+* draft → approved → active lifecycle exists
+* activation supersedes the prior active baseline
+* the data model includes active_from, active_to, and supersedes_baseline_id
+* however, O&M expected currently reads the single current active baseline without effective-date filtering
+* therefore activating a new baseline can silently rewrite the expected line for historical periods
+
+Strategic decision for this sprint:
+Do not expose activation yet. Build a read-only draft review surface first so users can inspect the draft safely.
+
+Objective:
+Create a read-only Draft Baseline Review panel in the existing Project Hub Reconciliation / Baseline Readiness area.
+
+The panel should let users inspect:
+
+* draft baseline identity
+* source facts
+* reviewer-supplied values
+* reviewer-confirmed normalized values
+* optional defaults
+* warnings
+* PTO behavior
+* model parameters/provenance
+* design-estimate separation
+* active baseline status
+
+Hard constraints:
+
+* Do not add approve or activate buttons in this sprint.
+* Do not call approve endpoint.
+* Do not call activate endpoint.
+* Do not create active baselines.
+* Do not change baseline lifecycle.
+* Do not change expected calculation math.
+* Do not change telemetry ingestion.
+* Do not change WeatherResolver.
+* Do not change device eligibility.
+* Do not mutate project_facts.
+* Do not mutate accepted values.
+* Do not silently normalize values.
+* Do not rewrite historical O&M analytics.
+* Do not use SAFL as a baseline source.
+* Do not reintroduce BigQuery, Firestore, or legacy telemetry.
+* Do not touch plaintext secrets.
+* Do not conflate weather-adjusted expected baseline with design-estimate points.
+* Preserve existing Reconciliation / Baseline Readiness look and feel.
+
+Durable platform invariant:
+Never allow accepted, promoted, baseline, or O&M state to silently survive upstream source changes. Upstream changes must create a new lineage, mark dependent state stale, require re-review, or create explicit supersession. Historical data must remain preserved and auditable.
+
+Scope A — Baseline list/detail access
+
+Use existing backend read endpoints where possible:
+
+* GET /api/telemetry/v2/sites/{site_id}/expected-baselines
+* GET /api/telemetry/v2/sites/{site_id}/expected-baselines/active
+
+If there is no single-baseline detail endpoint, use list and filter client-side for this sprint unless a small read-only detail endpoint is clearly safer.
+
+Do not create mutation endpoints.
+
+Add frontend API client methods/types if missing:
+
+* listExpectedBaselines(site_id)
+* getActiveExpectedBaseline(site_id)
+
+Scope B — Draft selection
+
+In the existing Baseline Readiness / Reconciliation surface:
+
+* show draft weather-adjusted baselines if present
+* allow opening the most recent draft baseline review panel
+* if multiple drafts exist, show a small selector or list with created date/status
+* show approved-but-not-active baselines if present
+* show active baseline summary separately
+
+Do not create a new standalone page.
+
+Scope C — Draft review content
+
+For a selected draft baseline, show:
+
+Identity:
+
+* baseline id
+* baseline name
+* baseline type
+* status
+* version
+* created at
+* created by if available
+* source document id if available
+* source project fact id if available
+* supersedes_baseline_id if available
+
+Inputs/provenance:
+For each driving field, show:
+
+* field label
+* value used
+* unit
+* origin type:
+
+  * promoted project_fact
+  * reviewer-supplied
+  * reviewer-confirmed normalized
+  * optional default
+* raw source value if normalized
+* normalized numeric value if applicable
+* source fact id
+* source document id
+* source file/version id if present
+* confidence if present
+* notes/warnings if present
+
+Required sections:
+
+* project_fact-backed values
+* reviewer-supplied constants
+* reviewer-confirmed normalized values
+* optional defaults applied
+* PTO/pre-PTO behavior
+* warnings
+* model_parameters_json summary
+
+D. Optional defaults display
+
+Show optional defaults distinctly:
+
+* dc_loss_pct
+* ac_loss_pct
+* medium_voltage_loss_pct
+* mv_line_loss_pct
+* soiling_factor
+
+Labels:
+
+* “Default applied — not source-backed”
+* “0% loss default”
+* “1.0 no-soiling default”
+
+Do not present these as facts.
+
+E. PTO behavior display
+
+If PTO is missing:
+
+* show warning:
+  “PTO missing — expected production is suppressed until PTO is supplied.”
+* explain:
+  “With no PTO date, expected is NULL across the expected curve.”
+  If PTO is present:
+* show PTO date
+* explain expected will be suppressed before PTO
+
+Do not change PTO math.
+
+F. Design-estimate separation
+
+Show a clear note:
+
+* “This review is for the weather-adjusted expected baseline.”
+* “Design-estimate points are separate and are not created or changed by this draft.”
+
+If design-estimate points are missing, show them only as a separate readiness track, not as a blocker for this draft review.
+
+G. Historical activation warning
+
+Because activation is not exposed yet, show an informational warning:
+“Activation is intentionally not available here yet. Historical-safe activation requires period-effective baseline selection so past expected values are not silently rewritten.”
+
+Do not include an activation button.
+
+H. Expected preview
+
+Do not implement full expected preview unless the existing preview endpoint can safely preview draft baselines without mutation.
+
+If draft preview is not currently supported:
+
+* show “Expected preview not available for draft baseline yet.”
+* document follow-up
+  If approved/active preview exists:
+* do not use it to imply draft preview
+
+Do not change preview backend behavior in this sprint unless explicitly necessary and read-only.
+
+I. UI / look and feel
+
+Use existing Project Hub/Reconciliation patterns:
+
+* MUI cards/panels
+* chips
+* compact tables
+* existing Baseline Readiness styling
+* no new route
+* no standalone page
+* no new design system
+
+J. Tests
+
+Add/update tests for:
+
+1. Draft baseline list loads from existing endpoint.
+2. Most recent draft can be opened in review panel.
+3. Review panel shows baseline identity/status.
+4. Review panel shows project_fact-backed source fields.
+5. Review panel shows reviewer-supplied constants.
+6. Review panel shows reviewer-confirmed normalized raw→numeric values.
+7. Review panel shows optional defaults as defaults, not facts.
+8. PTO missing warning appears.
+9. Design-estimate separation note appears.
+10. No approve button appears.
+11. No activate button appears.
+12. approve endpoint is not called.
+13. activate endpoint is not called.
+14. No project_facts mutation.
+15. No accepted value mutation.
+16. No expected math changes.
+17. No SAFL baseline source usage.
+18. Frontend compile/typecheck passes.
+19. Backend boots clean if touched.
+20. Architect review passes.
+
+K. Validation
+
+Run:
+
+* targeted frontend tests for draft review panel
+* frontend compile/typecheck
+* backend startup only if backend touched
+* architect review
+
+Return:
+
+* files changed
+* API client methods added
+* review panel placement
+* fields displayed
+* provenance behavior
+* optional default display
+* PTO behavior
+* design-estimate separation behavior
+* tests run/skipped with reason
+* validation results
+* remaining gaps
+* recommended next sprint
+
+Do not:
+
+* approve baselines
+* activate baselines
+* add activation UI
+* change preview semantics
+* implement period-effective baseline reads
+* implement design-estimate point generation
+* mutate project_facts
+* mutate accepted values
+* rewrite historical analytics

@@ -707,3 +707,131 @@ export interface CreateDraftFromFactsResponse {
   field_blockers: BaselineReadinessFieldStatus[];
   baseline: ExpectedBaselineSummary | null;
 }
+
+// ---------------------------------------------------------------------------
+// DD V2 — Expected baseline READ shapes (Draft Baseline Review panel)
+//
+// Mirrors backend `ExpectedBaselineResponse` / `ExpectedBaselineListResponse`
+// (app/schema/telemetry_v2.py). These are READ-ONLY view models: the Draft
+// Baseline Review panel renders provenance from them and never mutates.
+// ---------------------------------------------------------------------------
+
+/** Approval lifecycle of an expected baseline (backend TelemetryBaselineStatus). */
+export type TelemetryBaselineStatus =
+  | 'draft'
+  | 'in_review'
+  | 'approved'
+  | 'active'
+  | 'superseded'
+  | 'rejected'
+  | string;
+
+/** Where a baseline's assumptions came from (backend TelemetryBaselineSource). */
+export type TelemetryBaselineSource =
+  | 'pvsyst'
+  | 'design_document'
+  | 'diligence_ai_parse'
+  | 'manual_entry'
+  | 'imported_8760'
+  | 'legacy_formula'
+  | string;
+
+/**
+ * One entry of `model_parameters_json.field_sources` (keyed by physics column).
+ * Intentionally loose — the backend records different keys per origin
+ * (`project_fact`, `project_fact_normalized`, `reviewer_supplied`). Read
+ * defensively; never assume a key is present.
+ */
+export interface BaselineFieldSource {
+  source?: string;
+  fact_id?: number | null;
+  document_id?: number | null;
+  ai_confidence?: number | null;
+  normalization?: {
+    raw_value?: string | number | null;
+    normalized_value?: number | null;
+    from_unit?: string | null;
+    to_unit?: string | null;
+    method?: string | null;
+    factor?: number | null;
+  } | null;
+  [key: string]: unknown;
+}
+
+/** One source-fact summary from `model_parameters_json.source_facts`. */
+export interface BaselineSourceFact {
+  canonical_name?: string;
+  column?: string;
+  fact_id?: number | null;
+  value?: unknown;
+  document_id?: number | null;
+  ai_confidence?: number | null;
+}
+
+/** Loosely-typed `model_parameters_json` provenance payload. */
+export interface BaselineModelParameters {
+  source?: string;
+  created_from?: string;
+  source_fact_signature?: string;
+  version?: number;
+  field_sources?: Record<string, BaselineFieldSource>;
+  source_facts?: BaselineSourceFact[];
+  warnings?: string[];
+  [key: string]: unknown;
+}
+
+/** Full read view of one expected baseline row (newest-first in the list). */
+export interface ExpectedBaselineResponse {
+  id: number;
+  company_id: number;
+  site_id: number;
+  baseline_name: string;
+  baseline_type: TelemetryBaselineType;
+  status: TelemetryBaselineStatus;
+  source_type?: TelemetryBaselineSource | null;
+  source_document_id?: number | null;
+  source_project_fact_id?: number | null;
+
+  timezone?: string | null;
+  system_size_ac_kw?: number | null;
+  system_size_dc_kw?: number | null;
+  degradation_rate?: number | null;
+
+  module_wattage?: number | null;
+  module_quantity?: number | null;
+  inverter_wattage?: number | null;
+  inverter_quantity?: number | null;
+  thermal_coefficient_pct?: number | null;
+  power_tolerance_min_pct?: number | null;
+  year_1_degradation_pct?: number | null;
+  annual_degradation_pct?: number | null;
+  cec_efficiency_pct?: number | null;
+  soiling_factor?: number | null;
+  dc_loss_pct?: number | null;
+  ac_loss_pct?: number | null;
+  medium_voltage_loss_pct?: number | null;
+  mv_line_loss_pct?: number | null;
+  pto_date?: string | null;
+
+  loss_assumptions_json?: Record<string, number | null> | null;
+  model_parameters_json?: BaselineModelParameters | null;
+  ai_confidence_json?: Record<string, number | null> | null;
+
+  version: number;
+  reviewed_by?: number | null;
+  reviewed_at?: string | null;
+  approved_by?: number | null;
+  approved_at?: string | null;
+  active_from?: string | null;
+  active_to?: string | null;
+  supersedes_baseline_id?: number | null;
+  created_by_user_id?: number | null;
+  notes?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface ExpectedBaselineListResponse {
+  site_id: number;
+  baselines: ExpectedBaselineResponse[];
+}

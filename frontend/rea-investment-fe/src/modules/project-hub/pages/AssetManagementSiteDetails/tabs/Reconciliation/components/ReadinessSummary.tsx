@@ -10,6 +10,7 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import type { ReconciliationReadiness } from '../../../../../../../api';
 import { PLACEHOLDER, formatDateTime } from '../utils';
 import BaselineFromFactsPanel from './BaselineFromFactsPanel';
+import DraftBaselineReviewPanel from './DraftBaselineReviewPanel';
 
 interface ReadinessSummaryProps {
   readiness: ReconciliationReadiness;
@@ -129,6 +130,7 @@ export const ReadinessSummary: React.FC<ReadinessSummaryProps> = ({ readiness, s
       </Grid>
 
       {hasSite && <BaselineFromFactsPanel siteId={siteId as number} canDraft={canDraft} />}
+      {hasSite && <DraftBaselineReviewPanel siteId={siteId as number} />}
     </Box>
   );
 };

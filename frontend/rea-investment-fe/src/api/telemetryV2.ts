@@ -9,6 +9,8 @@ import type {
   DeviceEligibilityDiagnosticsResponse,
   DeviceMappingBulkPayload,
   DeviceMappingBulkResponse,
+  ExpectedBaselineListResponse,
+  ExpectedBaselineResponse,
   ExternalDeviceListResponse,
   ExternalSiteListResponse,
   LicenseCreatePayload,
@@ -348,6 +350,33 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     return data;
   };
 
+  /**
+   * READ-ONLY: list every expected-performance baseline for a site, newest
+   * first (any status/type). Never triggers a provider/credential call and
+   * never mutates. Consumed by the read-only Draft Baseline Review panel to
+   * render draft / approved-not-active / active baselines with provenance.
+   */
+  const listExpectedBaselines = async (siteId: number): Promise<ExpectedBaselineListResponse> => {
+    const { data } = await httpClient.get<ExpectedBaselineListResponse>(`${V2}/sites/${siteId}/expected-baselines`);
+    return data;
+  };
+
+  /**
+   * READ-ONLY: the single active baseline of a type (defaults to
+   * `weather_adjusted_model`), or `null` when none is active. Read-only audit
+   * surface only — it never approves or activates anything.
+   */
+  const getActiveExpectedBaseline = async (
+    siteId: number,
+    baselineType?: string
+  ): Promise<ExpectedBaselineResponse | null> => {
+    const { data } = await httpClient.get<ExpectedBaselineResponse | null>(
+      `${V2}/sites/${siteId}/expected-baselines/active`,
+      baselineType ? { params: { baseline_type: baselineType } } : undefined
+    );
+    return data;
+  };
+
   return {
     getCatalog,
     listLicensedProviders,
@@ -376,7 +405,9 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     getSiteEligibilityDiagnostics,
     backfillSiteReadings,
     getReadinessFromFacts,
-    createDraftFromFacts
+    createDraftFromFacts,
+    listExpectedBaselines,
+    getActiveExpectedBaseline
   };
 };
 
