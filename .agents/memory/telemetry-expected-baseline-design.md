@@ -87,3 +87,29 @@ parser is built — never synthesize hourly from monthly (that is fabrication).
   None-safe and used by BOTH V2 and legacy paths, so legacy now also emits None
   (instead of 0/None÷100) for missing/undefined expected — an intentional honesty
   improvement; every consuming schema field is already Optional so no 500 risk.
+
+# Activation lifecycle + the historical-rewrite gap (audit)
+Full design + phased plan: `docs/expected_baseline_draft_review_activation_ux_audit.md`.
+- The server-side ladder ALREADY EXISTS end-to-end: `draft → approve → activate`
+  (activate supersedes the prior active row, preserves it, sets the
+  single-active partial index + a self-referential supersession chain). There is
+  **no frontend** to review / preview / approve / activate a draft yet — that is
+  the UX gap, not a missing backend.
+- **Historical-rewrite gap (highest severity):** O&M reads the SINGLE current
+  `active` baseline (status-only select; the chart binding has no effective-date
+  filter), so activating a new baseline **silently recomputes expected for ALL
+  historical periods**. **Why it matters:** violates the never-silent-rewrite
+  invariant. **The fix is read-only, not a schema change** — the header already
+  carries `active_from`/`active_to` + the supersession chain (the model was
+  explicitly designed for effective-dated history); only the read path must
+  become window-aware (pick the baseline whose period covers each bucket).
+- The expected **preview** endpoint refuses `draft` status (previewable =
+  approved/active/superseded), so a reviewer cannot see a draft's curve before
+  approving unless preview is extended to drafts (read-only, persist nothing).
+- **Permission asymmetry:** approve + activate also require company-admin
+  (stricter than create-draft's telemetry-admin); the FE `useTelemetryAdminPermission`
+  gate omits company-admin → a telemetry-admin-only user passes the FE gate but
+  gets 403. Gate approve/activate on a company-admin-aware predicate.
+- **Attribution gap:** activation persists only `active_from` (timestamp), no
+  `activated_by`; approve persists `reviewed_by`/`approved_by`. `in_review` and
+  `rejected` statuses exist in the enum but no endpoint transitions into them.

@@ -1,0 +1,279 @@
+Start audit/design sprint: Expected Baseline Draft Review and Activation UX.
+
+This is an audit and design task first. Do not implement code, migrations, endpoints, UI changes, or data-model changes unless a follow-up implementation sprint is approved.
+
+Context:
+Baseline Readiness Actionability is complete and merged:
+
+* Baseline Readiness now exposes structured blockers.
+* Reviewer can confirm unit normalization for values such as “340 Wp” and “66 kWac.”
+* Normalization is confirm-only and anchor-protected with source_fact_id + raw_value.
+* project_facts are not mutated.
+* _coerce_number remains strict.
+* Reviewer can supply required physics constants.
+* Optional defaults are labeled.
+* PTO warning is shown.
+* Design-estimate points are shown as a separate non-blocking track.
+* User can create a draft weather-adjusted baseline from promoted facts + reviewer inputs.
+* No active baseline is created automatically.
+* No baseline activation occurs.
+* Expected math, telemetry ingestion, WeatherResolver, device eligibility, and historical analytics were not changed.
+
+Strategic objective:
+Design the safest user experience for reviewing, approving, and activating a draft weather-adjusted expected baseline so O&M expected/comparative performance can become active without compromising provenance, historical integrity, or user understanding.
+
+Hard constraints:
+
+* Do not implement changes in this sprint.
+* Do not auto-activate draft baselines.
+* Do not auto-approve baselines.
+* Do not create active baselines without explicit user confirmation.
+* Do not change expected calculation math.
+* Do not change telemetry ingestion.
+* Do not change WeatherResolver.
+* Do not change device eligibility.
+* Do not mutate project_facts.
+* Do not mutate accepted values.
+* Do not silently normalize values.
+* Do not rewrite historical O&M analytics.
+* Do not use SAFL as a baseline source.
+* Do not reintroduce BigQuery, Firestore, or legacy telemetry.
+* Do not touch plaintext secrets.
+* Preserve the distinction between:
+
+  * raw extracted value
+  * accepted value
+  * promoted project_fact
+  * reviewer-supplied baseline input
+  * reviewer-confirmed normalized baseline input
+  * optional default
+  * draft baseline
+  * active baseline
+  * design-estimate points
+  * weather-adjusted expected
+  * actual telemetry
+
+Durable platform invariant:
+Never allow accepted, promoted, baseline, or O&M state to silently survive upstream source changes. Upstream changes must create a new lineage, mark dependent state stale, require re-review, or create explicit supersession. Historical data must remain preserved and auditable.
+
+Audit areas:
+
+A. Current draft baseline lifecycle audit
+
+Trace the current lifecycle:
+
+* create draft baseline from facts
+* inspect draft baseline
+* approve draft baseline
+* activate draft baseline
+* supersede previous active baseline
+* O&M reads active baseline for expected values
+
+For each step:
+
+* endpoint
+* router/service
+* permissions
+* tables/models touched
+* audit/provenance written
+* transaction behavior
+* whether previous active baseline is preserved/superseded
+* whether activation effective date is explicit
+* whether historical expected analytics are affected
+* whether frontend UI exists and where
+
+Inspect at minimum:
+
+* telemetry expected baseline routers in backend/ilios-server/app/routers/telemetry/v2.py
+* backend/ilios-server/app/services/telemetry/baseline_from_facts_service.py
+* backend/ilios-server/app/services/telemetry/expected_service.py
+* telemetry_expected_baselines model
+* telemetry_expected_baseline_points model
+* O&M expected/chart services
+* frontend Telemetry / Reconciliation / Baseline Readiness components
+
+B. Draft baseline review requirements
+
+Determine what a user must see before approving/activating a draft baseline.
+
+At minimum:
+
+* baseline type
+* baseline status
+* source facts
+* reviewer-supplied values
+* normalized values
+* raw source values
+* optional defaults applied
+* PTO/pre-PTO behavior
+* missing/low-confidence warnings
+* source document links
+* source fact ids
+* normalized input anchors
+* model_parameters_json summary
+* expected calculation preview
+* weather source/provenance readiness
+* design-estimate points readiness, clearly separate
+* impact statement:
+  “Activation affects expected/comparative performance going forward, subject to baseline effective date.”
+
+C. Activation safety and historical integrity
+
+Audit whether baseline activation today:
+
+* supersedes prior active baseline
+* preserves prior baseline record
+* has effective_from / effective_to semantics
+* has activation timestamp
+* has activated_by user
+* can backdate activation
+* can change expected output for historical periods
+* causes O&M charts to recompute old expected lines using the new baseline
+* has any audit record beyond baseline status fields
+
+Design the safe activation behavior:
+
+* explicit confirmation
+* effective date selection or display
+* warning about historical analytics
+* no silent historical rewrite
+* any backfill/recalculation must be separate, explicit, period-scoped, and audited
+
+D. User-facing activation UX design
+
+Design the activation flow.
+
+Possible steps:
+
+1. Draft created.
+2. User opens Draft Baseline Review.
+3. System shows full source/provenance table.
+4. System shows warnings/defaults/normalizations.
+5. System shows expected preview.
+6. User confirms approval.
+7. User confirms activation.
+8. System marks previous active baseline superseded, if any.
+9. System marks new baseline active.
+10. O&M expected becomes available.
+
+Recommend whether approval and activation should be:
+
+* one combined confirm
+* two separate actions
+* role-separated
+* admin-only
+* telemetry-admin only
+* company-admin only
+
+E. Expected preview design
+
+Determine how the user should preview expected/comparative performance before activation.
+
+Include:
+
+* actual telemetry overlay if available
+* weather-adjusted expected preview
+* missing weather indication
+* pre-PTO suppression
+* expected unavailable states
+* optional default labels
+* normalized input labels
+* no fabricated values
+* no design-estimate conflation
+
+F. Role and permission model
+
+Document who can:
+
+* create draft baseline
+* review draft baseline
+* approve baseline
+* activate baseline
+* supersede active baseline
+* view expected preview
+* run historical backfill if ever added
+
+Compare frontend and backend permission gates.
+Identify mismatches or stale labels.
+
+G. Reconciliation and Baseline Readiness integration
+
+Design how Reconciliation and Baseline Readiness should reflect:
+
+* draft baseline exists
+* draft uses active facts
+* draft uses reviewer-supplied constants
+* draft uses normalized values
+* active baseline exists
+* active baseline is stale because source facts changed
+* design-estimate points missing
+* expected ready / not ready
+
+H. Design-estimate separation
+
+Ensure the UX clearly separates:
+
+* weather-adjusted expected baseline
+* design-estimate baseline
+* design-estimate monthly points
+* actual telemetry
+
+Do not allow users to think activating weather-adjusted expected baseline also creates design-estimate points.
+
+I. Implementation recommendation
+
+Return phased implementation plan:
+
+1. draft baseline review panel
+2. activation confirmation and permission audit
+3. expected preview before activation
+4. active baseline status integration into O&M
+5. stale baseline indicators when source facts change
+6. historical analytics period-effective baseline selection later
+7. design-estimate points flow later
+
+For each:
+
+* risk level
+* backend files likely touched
+* frontend files likely touched
+* tests required
+* non-goals
+
+J. Tests to design
+
+Design tests for:
+
+* draft review shows project_fact sources
+* draft review shows reviewer-supplied values
+* draft review shows normalized raw→numeric values
+* optional defaults shown as defaults, not facts
+* PTO warning appears
+* activation requires explicit confirmation
+* previous active baseline is preserved/superseded
+* no project_facts are mutated during activation
+* no accepted values are mutated during activation
+* O&M expected uses active baseline after activation
+* historical expected periods are not silently rewritten, or gap is flagged if current behavior rewrites
+* permissions enforced
+* no SAFL baseline source
+* no BigQuery/Firestore/legacy path
+* architect review
+
+Deliverable:
+Create a markdown document under docs/ with:
+
+1. executive summary
+2. current baseline lifecycle audit
+3. draft baseline review requirements
+4. activation safety/historical integrity audit
+5. UX design recommendation
+6. expected preview design
+7. permission model
+8. Reconciliation/Baseline Readiness integration
+9. design-estimate separation
+10. phased implementation plan
+11. test plan
+12. open questions for user
+
+No production code changes in this sprint.

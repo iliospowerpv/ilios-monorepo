@@ -83,3 +83,9 @@ id = "mVBYpPVhpmDdWFc4G3ZoO"
 uri = "file://docs/expected_baseline_readiness_input_audit.md"
 type = "text"
 title = "Expected Baseline Readiness Input Resolution Audit"
+
+[[outputs]]
+id = "HJtwOG7Eit_Ll2WJ3DAsI"
+uri = "file://docs/expected_baseline_draft_review_activation_ux_audit.md"
+type = "text"
+title = "Expected Baseline Draft Review & Activation UX — Audit & Design"
