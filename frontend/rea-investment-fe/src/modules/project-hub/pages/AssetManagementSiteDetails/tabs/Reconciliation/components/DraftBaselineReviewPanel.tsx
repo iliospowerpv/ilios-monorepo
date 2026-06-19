@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
@@ -11,8 +11,15 @@ import Divider from '@mui/material/Divider';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Tooltip from '@mui/material/Tooltip';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
 import CircularProgress from '@mui/material/CircularProgress';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
 
 import { ApiClient } from '../../../../../../../api';
 import type {
@@ -20,6 +27,8 @@ import type {
   ExpectedBaselineListResponse,
   ExpectedBaselineResponse
 } from '../../../../../../../types/telemetryV2';
+import { useTelemetryAdminPermission } from '../../../../../../../hooks/useTelemetryAdminPermission';
+import { useNotify } from '../../../../../../../contexts/notifications/notifications';
 import { PLACEHOLDER, formatConfidence, formatDateTime } from '../utils';
 
 interface DraftBaselineReviewPanelProps {
@@ -29,6 +38,11 @@ interface DraftBaselineReviewPanelProps {
 // Only the weather-adjusted model drives the live expected calc; the review
 // panel is intentionally scoped to it (design-estimate is a separate track).
 const WEATHER_ADJUSTED = 'weather_adjusted_model';
+
+// Frontend mirror of the (stricter) backend approve/activate gate. The server
+// still enforces telemetry_admin + company-admin + company visibility, so a user
+// who slips past this check just gets a graceful 403 — never a silent mutation.
+const PERMISSION_TOOLTIP = 'You need telemetry-admin (or company admin) access to approve or activate baselines.';
 
 interface FieldDef {
   col: keyof ExpectedBaselineResponse;
@@ -65,6 +79,17 @@ const OPTIONAL_DEFAULT_FIELDS: (FieldDef & { defaultLabel: string })[] = [
 
 const baselinesQueryKey = (siteId: number) => ['site', 'expected-baselines', { siteId }] as const;
 const activeBaselineQueryKey = (siteId: number) => ['site', 'expected-baseline-active', { siteId }] as const;
+const reconciliationQueryKey = (siteId: number) => ['site', 'reconciliation', { siteId }] as const;
+
+// O&M site-level queries whose expected/comparative series depend on the active
+// weather-adjusted baseline. Activation must let them refetch (Scope G); we only
+// invalidate (never recompute) — chart logic is untouched.
+const omExpectedQueryKeys = (siteId: number) =>
+  [
+    ['telemetry-readiness', siteId],
+    ['sites', 'past-performance', { siteId }],
+    ['sites', 'actual-vs-projected-power', { siteId }]
+  ] as const;
 
 const statusChipColor = (status: string): 'default' | 'info' | 'primary' | 'success' | 'warning' | 'error' => {
   switch (status) {
@@ -106,18 +131,59 @@ const originChip = (source: string | undefined): { label: string; color: 'succes
   }
 };
 
+const numFieldOf = (b: ExpectedBaselineResponse, col: keyof ExpectedBaselineResponse): number | null => {
+  const v = b[col];
+  return typeof v === 'number' ? v : null;
+};
+
+// Map a backend failure to a clear, action-specific message (Scope I).
+const actionErrorMessage = (action: 'approve' | 'activate', err: unknown): string => {
+  const status = (err as { response?: { status?: number } })?.response?.status;
+  if (status === 401 || status === 403) return `You do not have permission to ${action} this baseline.`;
+  if (status === 404) return 'Baseline not found. It may have been removed — refresh and try again.';
+  if (status === 409) {
+    return action === 'activate'
+      ? 'This baseline must be approved before activation. The baseline state changed — refresh and try again.'
+      : 'The baseline state changed. Refresh and try again.';
+  }
+  return `Couldn't ${action} the baseline. Please try again.`;
+};
+
+// The design-estimate separation language required on every approve/activate
+// confirmation (Scope H).
+const DesignEstimateSeparationNote: React.FC = () => (
+  <Alert severity="info" sx={{ mt: 1.5 }} data-testid="confirm-design-estimate-note">
+    <Box component="ul" sx={{ pl: 3, mb: 0 }}>
+      <li>
+        <Typography variant="caption">This affects the weather-adjusted expected baseline only.</Typography>
+      </li>
+      <li>
+        <Typography variant="caption">It does not create or change design-estimate points.</Typography>
+      </li>
+      <li>
+        <Typography variant="caption">Design-estimate points remain a separate track.</Typography>
+      </li>
+    </Box>
+  </Alert>
+);
+
 /**
- * READ-ONLY review of weather-adjusted expected baselines for a site.
+ * Review + (permission-gated) approve / activate of weather-adjusted expected
+ * baselines for a site.
  *
- * Surfaces draft, approved-not-active, and active baselines with full
- * provenance (promoted facts, reviewer constants, applied defaults, PTO
- * behavior, and `model_parameters_json` sources). It exposes NO approve /
- * activate controls and performs ZERO mutations — every query is a GET. It also
- * never previews a draft's expected curve: the preview endpoint refuses drafts,
- * so the panel only states that preview is unavailable for drafts.
+ * Surfaces draft, approved-not-active, active, and superseded baselines with
+ * full provenance (promoted facts, reviewer constants, applied defaults, PTO
+ * behavior, and `model_parameters_json` sources). Approve and Activate are two
+ * SEPARATE explicit actions — each behind its own confirmation dialog. The panel
+ * never previews a draft's expected curve (the preview endpoint refuses drafts),
+ * never mutates project_facts / accepted values, never triggers a historical
+ * backfill, and never touches design-estimate points.
  */
 export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> = ({ siteId }) => {
   const enabled = Number.isSafeInteger(siteId) && siteId > 0;
+  const canManage = useTelemetryAdminPermission();
+  const notify = useNotify();
+  const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery<ExpectedBaselineListResponse>({
     queryKey: baselinesQueryKey(siteId),
@@ -137,7 +203,10 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
   });
 
   const drafts = useMemo(
-    () => (data?.baselines ?? []).filter(b => b.baseline_type === WEATHER_ADJUSTED && b.status === 'draft'),
+    () =>
+      (data?.baselines ?? []).filter(
+        b => b.baseline_type === WEATHER_ADJUSTED && (b.status === 'draft' || b.status === 'in_review')
+      ),
     [data]
   );
   const approvedNotActive = useMemo(
@@ -146,6 +215,10 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
   );
   const listActive = useMemo(
     () => (data?.baselines ?? []).find(b => b.baseline_type === WEATHER_ADJUSTED && b.status === 'active') ?? null,
+    [data]
+  );
+  const superseded = useMemo(
+    () => (data?.baselines ?? []).filter(b => b.baseline_type === WEATHER_ADJUSTED && b.status === 'superseded'),
     [data]
   );
   const active = activeBaseline ?? listActive;
@@ -162,6 +235,44 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
   }, [drafts]);
 
   const selectedDraft = useMemo(() => drafts.find(d => d.id === selectedDraftId) ?? null, [drafts, selectedDraftId]);
+
+  // Confirmation targets — approve and activate are intentionally separate.
+  const [approveTarget, setApproveTarget] = useState<ExpectedBaselineResponse | null>(null);
+  const [activateTarget, setActivateTarget] = useState<ExpectedBaselineResponse | null>(null);
+
+  const approveMutation = useMutation<ExpectedBaselineResponse, unknown, number>({
+    mutationFn: (baselineId: number) => ApiClient.telemetryV2.approveExpectedBaseline(baselineId),
+    onSuccess: () => {
+      // Approval only confirms inputs; it never activates. Refresh the baseline
+      // list + readiness so the row moves to "approved (not yet active)".
+      queryClient.invalidateQueries({ queryKey: baselinesQueryKey(siteId) });
+      queryClient.invalidateQueries({ queryKey: reconciliationQueryKey(siteId) });
+      notify('Baseline approved. It is not active yet.');
+      setApproveTarget(null);
+    },
+    onError: err => {
+      notify(actionErrorMessage('approve', err));
+      setApproveTarget(null);
+    }
+  });
+
+  const activateMutation = useMutation<ExpectedBaselineResponse, unknown, number>({
+    mutationFn: (baselineId: number) => ApiClient.telemetryV2.activateExpectedBaseline(baselineId),
+    onSuccess: () => {
+      // Let the active read, the list, readiness, and the expected-bearing O&M
+      // site charts refetch. We invalidate only — no recompute / backfill.
+      queryClient.invalidateQueries({ queryKey: baselinesQueryKey(siteId) });
+      queryClient.invalidateQueries({ queryKey: activeBaselineQueryKey(siteId) });
+      queryClient.invalidateQueries({ queryKey: reconciliationQueryKey(siteId) });
+      omExpectedQueryKeys(siteId).forEach(key => queryClient.invalidateQueries({ queryKey: key }));
+      notify('Baseline activated. O&M expected values now use this baseline from its activation boundary forward.');
+      setActivateTarget(null);
+    },
+    onError: err => {
+      notify(actionErrorMessage('activate', err));
+      setActivateTarget(null);
+    }
+  });
 
   if (!enabled) return null;
 
@@ -202,9 +313,39 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
       <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
         Draft Baseline Review
       </Typography>
-      <Chip size="small" variant="outlined" color="default" icon={<LockOutlinedIcon />} label="Read-only" />
+      {!canManage && (
+        <Chip size="small" variant="outlined" color="default" icon={<LockOutlinedIcon />} label="View only" />
+      )}
     </Box>
   );
+
+  // A button that stays visible-but-disabled (with a tooltip) when the user
+  // can't act, so lifecycle state is never fully hidden (Scope B).
+  const renderActionButton = (props: { testId: string; label: string; onClick: () => void; disabled?: boolean }) => {
+    const blockedByPermission = !canManage;
+    const isDisabled = blockedByPermission || props.disabled;
+    const button = (
+      <Button
+        size="small"
+        variant="contained"
+        color="primary"
+        disabled={isDisabled}
+        onClick={props.onClick}
+        data-testid={props.testId}
+        startIcon={blockedByPermission ? <LockOutlinedIcon /> : undefined}
+      >
+        {props.label}
+      </Button>
+    );
+    if (blockedByPermission) {
+      return (
+        <Tooltip title={PERMISSION_TOOLTIP}>
+          <span data-testid={`${props.testId}-disabled-wrap`}>{button}</span>
+        </Tooltip>
+      );
+    }
+    return button;
+  };
 
   const renderProvenanceRow = (
     def: FieldDef,
@@ -253,10 +394,8 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
     const params = draft.model_parameters_json ?? {};
     const fieldSources = params.field_sources ?? {};
     const warnings = params.warnings ?? [];
-    const numField = (col: keyof ExpectedBaselineResponse): number | null => {
-      const v = draft[col];
-      return typeof v === 'number' ? v : null;
-    };
+    const numField = (col: keyof ExpectedBaselineResponse): number | null => numFieldOf(draft, col);
+    const approvable = draft.status === 'draft' || draft.status === 'in_review';
 
     return (
       <Box data-testid="draft-baseline-detail">
@@ -391,6 +530,21 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
           Expected preview not available for draft baseline yet. Preview is limited to approved, active, or superseded
           baselines so a never-approved draft can&apos;t render an expected curve.
         </Alert>
+
+        {/* Approve action (separate from activation) */}
+        {approvable && (
+          <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+            {renderActionButton({
+              testId: 'approve-baseline-button',
+              label: 'Approve',
+              onClick: () => setApproveTarget(draft),
+              disabled: approveMutation.isPending
+            })}
+            <Typography variant="caption" color="text.secondary">
+              Approval confirms the draft inputs. It does not make this baseline active.
+            </Typography>
+          </Box>
+        )}
       </Box>
     );
   };
@@ -398,7 +552,12 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
   const renderSummaryLine = (b: ExpectedBaselineResponse) => (
     <Box key={b.id} sx={{ py: 0.5 }} data-testid={`baseline-summary-${b.id}`}>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
-        <Chip size="small" color={statusChipColor(b.status)} label={statusLabel(b.status)} />
+        <Chip
+          size="small"
+          color={statusChipColor(b.status)}
+          icon={b.status === 'active' ? <CheckCircleOutlineIcon /> : undefined}
+          label={statusLabel(b.status)}
+        />
         <Typography variant="body2">
           {b.baseline_name} (#{b.id}, v{b.version})
         </Typography>
@@ -411,26 +570,28 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
     </Box>
   );
 
-  const nothingToShow = drafts.length === 0 && approvedNotActive.length === 0 && active == null;
+  const nothingToShow =
+    drafts.length === 0 && approvedNotActive.length === 0 && superseded.length === 0 && active == null;
 
   return (
     <Paper variant="outlined" sx={{ p: 2, mt: 2 }} data-testid="draft-baseline-review-panel">
       {headerRow}
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-        A strictly read-only view of weather-adjusted expected baselines and their provenance. Nothing here is approved,
-        activated, or changed.
+        Review weather-adjusted expected baselines and their provenance, then approve and activate them in two
+        deliberate steps. Nothing changes until you confirm.
       </Typography>
 
-      <Alert severity="info" sx={{ mb: 1.5 }} data-testid="draft-baseline-activation-note">
-        <AlertTitle>Activation is intentionally not available here</AlertTitle>
-        Activating a baseline can silently rewrite historical expected values, because O&amp;M reads a single active
-        baseline without an effective-date filter. Activation will return once period-effective baseline selection
-        exists — for now this panel only reviews baselines.
+      <Alert severity="info" sx={{ mb: 1.5 }} data-testid="draft-baseline-lifecycle-note">
+        <AlertTitle>Approve and activate are separate steps</AlertTitle>
+        Approving a draft only confirms its inputs — it does not make the baseline active. Activating an approved
+        baseline drives weather-adjusted expected/comparative performance from its activation boundary forward, while
+        historical periods continue to use the baseline that was active during those periods (period-effective
+        selection).
       </Alert>
 
       {nothingToShow ? (
         <Typography variant="body2" color="text.secondary" data-testid="draft-baseline-review-empty">
-          No draft, approved, or active weather-adjusted baseline exists for this project yet.
+          No draft, approved, active, or superseded weather-adjusted baseline exists for this project yet.
         </Typography>
       ) : (
         <>
@@ -474,7 +635,23 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
           </Typography>
           <Box sx={{ mb: 1 }} data-testid="draft-baseline-approved-list">
             {approvedNotActive.length > 0 ? (
-              approvedNotActive.map(renderSummaryLine)
+              approvedNotActive.map(b => (
+                <Box
+                  key={b.id}
+                  sx={{ py: 0.5, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}
+                  data-testid={`approved-row-${b.id}`}
+                >
+                  {renderSummaryLine(b)}
+                  <Box sx={{ flexShrink: 0, pt: 0.5 }}>
+                    {renderActionButton({
+                      testId: `activate-baseline-button-${b.id}`,
+                      label: 'Activate',
+                      onClick: () => setActivateTarget(b),
+                      disabled: activateMutation.isPending
+                    })}
+                  </Box>
+                </Box>
+              ))
             ) : (
               <Typography variant="body2" color="text.secondary">
                 No approved-but-inactive baselines.
@@ -490,7 +667,23 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
           </Typography>
           <Box data-testid="draft-baseline-active-summary">
             {active ? (
-              renderSummaryLine(active)
+              <>
+                {renderSummaryLine(active)}
+                <Typography variant="caption" display="block" color="text.secondary">
+                  Type: {active.baseline_type}
+                  {active.supersedes_baseline_id != null
+                    ? ` · Supersedes baseline #${active.supersedes_baseline_id}`
+                    : ''}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  display="block"
+                  color="text.secondary"
+                  data-testid="active-period-effective-note"
+                >
+                  Historical expected uses period-effective baseline selection.
+                </Typography>
+              </>
             ) : (
               <Tooltip title="No active weather-adjusted baseline drives expected output for this project yet.">
                 <Typography variant="body2" color="text.secondary">
@@ -499,6 +692,39 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
               </Tooltip>
             )}
           </Box>
+
+          {superseded.length > 0 && (
+            <>
+              <Divider sx={{ my: 1.5 }} />
+              <Typography variant="overline" color="text.secondary">
+                Superseded (historical)
+              </Typography>
+              <Box data-testid="draft-baseline-superseded-list">
+                {superseded.map(b => (
+                  <Box
+                    key={b.id}
+                    sx={{ py: 0.5, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}
+                    data-testid={`baseline-superseded-${b.id}`}
+                  >
+                    <Chip
+                      size="small"
+                      variant="outlined"
+                      color="default"
+                      icon={<HistoryOutlinedIcon />}
+                      label="Superseded · historical"
+                    />
+                    <Typography variant="body2">
+                      {b.baseline_name} (#{b.id}, v{b.version})
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {b.active_from ? `Active ${formatDateTime(b.active_from)}` : ''}
+                      {b.active_to ? ` → ${formatDateTime(b.active_to)}` : ''}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </>
+          )}
         </>
       )}
 
@@ -506,8 +732,254 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
       <Alert severity="info" sx={{ mt: 1.5 }} data-testid="draft-baseline-design-estimate-note">
         Design-estimate baselines are a separate track and are neither reviewed nor changed here.
       </Alert>
+
+      {/* Approve confirmation dialog */}
+      <Dialog
+        open={approveTarget != null}
+        onClose={() => !approveMutation.isPending && setApproveTarget(null)}
+        maxWidth="sm"
+        fullWidth
+        data-testid="approve-confirm-dialog"
+      >
+        <DialogTitle>Approve expected baseline</DialogTitle>
+        <DialogContent dividers>
+          {approveTarget && <ApproveConfirmationSummary baseline={approveTarget} />}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setApproveTarget(null)}
+            disabled={approveMutation.isPending}
+            data-testid="approve-confirm-cancel"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => approveTarget && approveMutation.mutate(approveTarget.id)}
+            disabled={approveMutation.isPending}
+            data-testid="approve-confirm-submit"
+          >
+            {approveMutation.isPending ? 'Approving…' : 'Approve baseline'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Activate confirmation dialog */}
+      <Dialog
+        open={activateTarget != null}
+        onClose={() => !activateMutation.isPending && setActivateTarget(null)}
+        maxWidth="sm"
+        fullWidth
+        data-testid="activate-confirm-dialog"
+      >
+        <DialogTitle>Activate expected baseline</DialogTitle>
+        <DialogContent dividers>
+          {activateTarget && <ActivateConfirmationSummary baseline={activateTarget} priorActive={active} />}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setActivateTarget(null)}
+            disabled={activateMutation.isPending}
+            data-testid="activate-confirm-cancel"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => activateTarget && activateMutation.mutate(activateTarget.id)}
+            disabled={activateMutation.isPending}
+            data-testid="activate-confirm-submit"
+          >
+            {activateMutation.isPending ? 'Activating…' : 'Activate baseline'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 };
+
+/**
+ * Approve dialog body — summarizes the exact inputs the reviewer is confirming
+ * (Scope C) plus the design-estimate separation language (Scope H). Read-only;
+ * it computes nothing and changes nothing.
+ */
+const ApproveConfirmationSummary: React.FC<{ baseline: ExpectedBaselineResponse }> = ({ baseline }) => {
+  const params = baseline.model_parameters_json ?? {};
+  const fieldSources = params.field_sources ?? {};
+  const warnings = params.warnings ?? [];
+
+  const normalizedEntries = Object.entries(fieldSources).filter(
+    ([, src]) => src?.normalization?.raw_value != null && src?.normalization?.normalized_value != null
+  );
+  const appliedDefaults = OPTIONAL_DEFAULT_FIELDS.filter(def => numFieldOf(baseline, def.col) == null);
+
+  return (
+    <Box data-testid="approve-confirm-summary">
+      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+        {baseline.baseline_name} (baseline #{baseline.id}, v{baseline.version})
+      </Typography>
+      <Typography variant="caption" display="block" color="text.secondary">
+        Type: {baseline.baseline_type} · Status: {statusLabel(baseline.status)}
+      </Typography>
+      <Typography variant="caption" display="block" color="text.secondary">
+        Source: document {baseline.source_document_id != null ? `#${baseline.source_document_id}` : PLACEHOLDER} · fact{' '}
+        {baseline.source_project_fact_id != null ? `#${baseline.source_project_fact_id}` : PLACEHOLDER}
+        {params.source_fact_signature ? ` · signature ${params.source_fact_signature}` : ''}
+      </Typography>
+
+      <Divider sx={{ my: 1 }} />
+
+      <Typography variant="overline" color="text.secondary">
+        From promoted facts
+      </Typography>
+      <Box sx={{ mb: 1 }}>
+        {FACT_FIELDS.map(def => (
+          <Typography variant="caption" display="block" key={String(def.col)}>
+            {def.label}: {fmtWithUnit(numFieldOf(baseline, def.col), def.unit)}
+          </Typography>
+        ))}
+      </Box>
+
+      <Typography variant="overline" color="text.secondary">
+        Reviewer-supplied inputs
+      </Typography>
+      <Box sx={{ mb: 1 }}>
+        {REVIEWER_REQUIRED_FIELDS.map(def => (
+          <Typography variant="caption" display="block" key={String(def.col)}>
+            {def.label}: {fmtWithUnit(numFieldOf(baseline, def.col), def.unit)}
+          </Typography>
+        ))}
+      </Box>
+
+      <Typography variant="overline" color="text.secondary">
+        Normalized values
+      </Typography>
+      <Box sx={{ mb: 1 }} data-testid="approve-confirm-normalized">
+        {normalizedEntries.length > 0 ? (
+          normalizedEntries.map(([col, src]) => (
+            <Typography variant="caption" display="block" key={col}>
+              {col}: {String(src?.normalization?.raw_value)} → {src?.normalization?.normalized_value}
+              {src?.normalization?.to_unit ? ` ${src.normalization.to_unit}` : ''}
+            </Typography>
+          ))
+        ) : (
+          <Typography variant="caption" color="text.secondary">
+            No unit normalization was applied.
+          </Typography>
+        )}
+      </Box>
+
+      <Typography variant="overline" color="text.secondary">
+        Optional defaults
+      </Typography>
+      <Box sx={{ mb: 1 }} data-testid="approve-confirm-defaults">
+        {appliedDefaults.length > 0 ? (
+          appliedDefaults.map(def => (
+            <Typography variant="caption" display="block" key={String(def.col)}>
+              {def.label}: {def.defaultLabel} — default applied, not source-backed.
+            </Typography>
+          ))
+        ) : (
+          <Typography variant="caption" color="text.secondary">
+            All optional adjustments were supplied by the reviewer.
+          </Typography>
+        )}
+      </Box>
+
+      {baseline.pto_date ? (
+        <Typography variant="caption" display="block" color="text.secondary">
+          PTO date: {baseline.pto_date} — expected production is suppressed before this date.
+        </Typography>
+      ) : (
+        <Alert severity="warning" sx={{ mt: 1 }} data-testid="approve-confirm-pto-warning">
+          No PTO date is set — expected production stays suppressed (NULL) until a PTO date is provided.
+        </Alert>
+      )}
+
+      {warnings.length > 0 && (
+        <Alert severity="info" sx={{ mt: 1 }} data-testid="approve-confirm-warnings">
+          <AlertTitle>Persisted build notes</AlertTitle>
+          <Box component="ul" sx={{ pl: 3, mb: 0 }}>
+            {warnings.map(w => (
+              <li key={w}>
+                <Typography variant="caption">{w}</Typography>
+              </li>
+            ))}
+          </Box>
+        </Alert>
+      )}
+
+      <Alert severity="info" sx={{ mt: 1.5 }} data-testid="approve-confirm-statement">
+        Approval confirms the draft inputs, but does not make this baseline active.
+      </Alert>
+
+      <Typography
+        variant="caption"
+        display="block"
+        color="text.secondary"
+        sx={{ mt: 1 }}
+        data-testid="approve-confirm-period-effective"
+      >
+        Approval changes no O&amp;M output and backfills no history. Only a later, separate activation applies this
+        baseline from its activation boundary forward; historical periods keep using the baseline active during those
+        periods (period-effective selection).
+      </Typography>
+
+      <DesignEstimateSeparationNote />
+    </Box>
+  );
+};
+
+/**
+ * Activate dialog body — explains the forward-only effect, supersession, and the
+ * period-effective history guarantee (Scope D) plus design-estimate separation
+ * (Scope H).
+ */
+const ActivateConfirmationSummary: React.FC<{
+  baseline: ExpectedBaselineResponse;
+  priorActive: ExpectedBaselineResponse | null;
+}> = ({ baseline, priorActive }) => (
+  <Box data-testid="activate-confirm-summary">
+    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+      {baseline.baseline_name} (baseline #{baseline.id}, v{baseline.version})
+    </Typography>
+    <Typography variant="caption" display="block" color="text.secondary">
+      Type: {baseline.baseline_type} · Status: {statusLabel(baseline.status)}
+    </Typography>
+
+    <Divider sx={{ my: 1 }} />
+
+    <Box component="ul" sx={{ pl: 3, mb: 0 }}>
+      <li>
+        <Typography variant="caption">
+          Activation stamps <strong>active_from</strong> at the activation moment; the baseline drives expected output
+          from that boundary forward.
+        </Typography>
+      </li>
+      <li>
+        <Typography variant="caption" data-testid="activate-confirm-prior-active">
+          {priorActive
+            ? `The current active baseline (${priorActive.baseline_name}, #${priorActive.id}) will be superseded and kept for audit.`
+            : 'There is no current active baseline; this will become the first active one.'}
+        </Typography>
+      </li>
+      <li>
+        <Typography variant="caption" data-testid="activate-confirm-period-effective">
+          Historical periods continue to use the baseline active during those periods (period-effective selection); no
+          historical expected values are backfilled or regenerated.
+        </Typography>
+      </li>
+    </Box>
+
+    <Alert severity="info" sx={{ mt: 1.5 }} data-testid="activate-confirm-statement">
+      From activation forward, this baseline will drive weather-adjusted expected/comparative performance. Historical
+      periods continue to use the baseline active during those periods.
+    </Alert>
+
+    <DesignEstimateSeparationNote />
+  </Box>
+);
 
 export default DraftBaselineReviewPanel;

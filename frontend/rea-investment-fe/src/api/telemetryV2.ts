@@ -377,6 +377,32 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     return data;
   };
 
+  /**
+   * Stamp reviewer/approver and move a `draft`/`in_review` baseline to
+   * `approved`. Explicit and separate from activation — approval NEVER makes a
+   * baseline active and NEVER mutates project_facts / accepted values. The
+   * backend gate is stricter than draft creation (telemetry_admin + company-admin
+   * + company visibility): 403 = no permission, 404 = baseline gone, 409 = the
+   * baseline is not in an approvable state.
+   */
+  const approveExpectedBaseline = async (baselineId: number): Promise<ExpectedBaselineResponse> => {
+    const { data } = await httpClient.post<ExpectedBaselineResponse>(`${V2}/expected-baselines/${baselineId}/approve`);
+    return data;
+  };
+
+  /**
+   * Make an `approved` baseline the single `active` weather-adjusted baseline for
+   * its site, superseding the prior active one (kept for audit). Explicit and
+   * separate from approval — it triggers NO historical backfill and regenerates
+   * NO expected values: from its activation boundary forward O&M reads this
+   * baseline, while historical periods stay period-effective. 409 when the
+   * baseline is not `approved`.
+   */
+  const activateExpectedBaseline = async (baselineId: number): Promise<ExpectedBaselineResponse> => {
+    const { data } = await httpClient.post<ExpectedBaselineResponse>(`${V2}/expected-baselines/${baselineId}/activate`);
+    return data;
+  };
+
   return {
     getCatalog,
     listLicensedProviders,
@@ -407,7 +433,9 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     getReadinessFromFacts,
     createDraftFromFacts,
     listExpectedBaselines,
-    getActiveExpectedBaseline
+    getActiveExpectedBaseline,
+    approveExpectedBaseline,
+    activateExpectedBaseline
   };
 };
 

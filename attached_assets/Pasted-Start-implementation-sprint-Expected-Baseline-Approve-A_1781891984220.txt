@@ -1,0 +1,294 @@
+Start implementation sprint: Expected Baseline Approve / Activate UX.
+
+Context:
+The baseline workflow is now ready for a safe activation UI.
+
+Completed foundation:
+
+* Baseline Readiness Actionability is complete:
+
+  * reviewer-confirmed unit normalization
+  * reviewer-supplied physics constants
+  * draft baseline creation
+  * no project_fact mutation
+  * no auto-activation
+* Draft Baseline Review Panel is complete:
+
+  * read-only draft selector
+  * provenance display
+  * optional-default labels
+  * PTO warning
+  * approved-not-active list
+  * active baseline summary
+  * no approve/activate controls
+* Period-Effective Baseline Selection is complete:
+
+  * historical expected buckets use the baseline active during the bucket’s effective period
+  * boundary buckets belong to the new baseline
+  * pre-baseline gaps remain honest null/gaps
+  * actuals remain visible
+  * genuine 0 remains genuine 0
+  * expected math unchanged
+  * apply_v2_actual_production intentionally remains current-active for live today/now fields
+
+Objective:
+Add an explicit, permission-gated approve/activate UX for weather-adjusted expected baselines using the existing backend lifecycle.
+
+The user should be able to:
+
+1. review a draft baseline,
+2. approve it,
+3. activate an approved baseline,
+4. see which baseline is active,
+5. understand that activation affects expected/comparative performance from the activation boundary forward, while historical periods remain period-effective.
+
+Hard constraints:
+
+* Do not combine approve and activate into one silent action.
+* Do not auto-approve.
+* Do not auto-activate.
+* Do not mutate project_facts.
+* Do not mutate accepted values.
+* Do not silently normalize values.
+* Do not change expected calculation math.
+* Do not change telemetry ingestion.
+* Do not change WeatherResolver.
+* Do not change device eligibility.
+* Do not rewrite historical O&M analytics.
+* Do not backfill expected values automatically.
+* Do not create design-estimate points.
+* Do not conflate weather-adjusted expected with design-estimate points.
+* Do not use SAFL as a baseline source.
+* Do not reintroduce BigQuery, Firestore, or legacy telemetry.
+* Do not touch plaintext secrets.
+* Preserve existing Project Hub/Reconciliation/Baseline Review look and feel.
+
+Durable platform invariant:
+Never allow accepted, promoted, baseline, or O&M state to silently survive upstream source changes. Upstream changes must create a new lineage, mark dependent state stale, require re-review, or create explicit supersession. Historical data must remain preserved and auditable.
+
+Scope A — API client methods
+
+Add frontend API client methods for existing endpoints if not already present:
+
+* approveExpectedBaseline(baselineId)
+* activateExpectedBaseline(baselineId)
+
+Use existing backend endpoints:
+
+* POST /api/telemetry/v2/expected-baselines/{baseline_id}/approve
+* POST /api/telemetry/v2/expected-baselines/{baseline_id}/activate
+
+Do not add backend endpoints unless absolutely required.
+
+Scope B — Permission-aware action visibility
+
+Backend approve/activate gates are stricter than draft creation:
+
+* telemetry_admin required
+* company-admin / company visibility required
+
+Frontend must not show active approve/activate buttons to users who cannot execute them.
+
+Implement or reuse a company-admin-aware permission check.
+
+If permission cannot be fully known on frontend:
+
+* show disabled state with tooltip
+* handle 403 gracefully
+* do not show a misleading enabled button
+
+Action states should be visible and consistent:
+
+* Approved: checkmark / complete
+* Activate available: clear primary action
+* Unavailable: x or disabled state with reason
+* No permission: locked/disabled state with tooltip
+* Already active: checkmark / active chip
+* Superseded: historical chip
+
+Do not fully hide important lifecycle state.
+
+Scope C — Approve action
+
+In the Draft Baseline Review Panel:
+
+* show Approve action only for status=draft or status=in_review if supported
+* confirmation dialog required
+* confirmation must summarize:
+
+  * baseline id/name
+  * baseline type
+  * source/project_facts
+  * reviewer-supplied inputs
+  * normalized values
+  * optional defaults
+  * PTO warning
+  * persisted warnings
+  * statement: “Approval confirms the draft inputs, but does not make this baseline active.”
+
+On confirm:
+
+* call approve endpoint
+* refetch/list baselines
+* update UI to approved-not-active
+* show success message:
+  “Baseline approved. It is not active yet.”
+
+Do not activate after approval.
+
+Scope D — Activate action
+
+For approved-not-active baselines:
+
+* show Activate action only when user has permission
+* activation confirmation required
+* confirmation must summarize:
+
+  * baseline id/name
+  * active_from behavior
+  * prior active baseline, if any
+  * supersession behavior
+  * period-effective history behavior
+  * statement:
+    “From activation forward, this baseline will drive weather-adjusted expected/comparative performance. Historical periods continue to use the baseline active during those periods.”
+
+On confirm:
+
+* call activate endpoint
+* refetch/list baselines
+* refetch active baseline
+* invalidate/refetch O&M expected/chart queries where applicable
+* show success message:
+  “Baseline activated. O&M expected values now use this baseline from its activation boundary forward.”
+
+Do not trigger any historical backfill.
+Do not regenerate expected values.
+Do not alter actual telemetry.
+
+Scope E — Approved-not-active list
+
+The existing DraftBaselineReviewPanel already shows approved-not-active baselines.
+
+Enhance it so users can:
+
+* review approved baseline provenance
+* see activate availability
+* see why activation is unavailable
+* activate if permitted
+
+Scope F — Active baseline summary
+
+Enhance active baseline summary to show:
+
+* active baseline id
+* baseline name
+* active_from
+* supersedes_baseline_id if present
+* status active
+* type weather_adjusted_model
+* provenance link/review details
+* note:
+  “Historical expected uses period-effective baseline selection.”
+
+Do not show active baseline as editable.
+
+Scope G — O&M integration refresh
+
+After activation:
+
+* Reconciliation/Baseline Readiness should reflect active baseline exists.
+* O&M expected/comparative charts should pick up active baseline through existing query refetch.
+* If frontend cache invalidation is needed, add it.
+* Do not change O&M chart logic.
+
+Scope H — Design-estimate separation
+
+Every approve/activate confirmation should include:
+
+* “This affects the weather-adjusted expected baseline only.”
+* “It does not create or change design-estimate points.”
+* “Design-estimate points remain a separate track.”
+
+Scope I — Error handling
+
+Handle:
+
+* 403 permission error
+* 404 baseline not found
+* 409 invalid state, such as activating non-approved baseline
+* backend validation errors
+* active baseline race/supersession conflict if surfaced
+
+Messages should be clear:
+
+* “You do not have permission to activate this baseline.”
+* “This baseline must be approved before activation.”
+* “The baseline state changed. Refresh and try again.”
+
+Scope J — Tests
+
+Add/update tests for:
+
+1. Draft review shows Approve action for permitted user.
+2. Draft review does not show enabled Approve for unpermitted user.
+3. Approve confirmation includes provenance/default/PTO/normalization summary.
+4. Approve calls approve endpoint only.
+5. Approve does not call activate endpoint.
+6. Approve success refetches baselines.
+7. Approved-not-active baseline shows Activate action for permitted user.
+8. Activate unavailable/disabled for unpermitted user.
+9. Activate confirmation shows period-effective historical behavior.
+10. Activate calls activate endpoint.
+11. Activate does not trigger backfill.
+12. Activate does not mutate project_facts.
+13. Activate does not mutate accepted values.
+14. Activate success refetches active baseline and O&M expected queries where applicable.
+15. Active baseline summary shows active_from and baseline id.
+16. Already-active baseline shows checkmark/active chip.
+17. Superseded baseline shows historical chip.
+18. Invalid state/409 displays clear error.
+19. Permission/403 displays clear error.
+20. Design-estimate separation language appears.
+21. No design-estimate points endpoints are called.
+22. No expected math changes.
+23. No telemetry ingestion changes.
+24. No SAFL baseline source.
+25. No BigQuery/Firestore/legacy path.
+26. Frontend compile/typecheck passes.
+27. Backend targeted tests pass if backend touched.
+28. Architect review passes.
+
+Scope K — Validation
+
+Run:
+
+* targeted frontend tests for approve/activate UI
+* existing DraftBaselineReviewPanel tests
+* frontend compile/typecheck
+* backend startup if backend touched
+* architect review
+
+Return:
+
+* files changed
+* API client methods added
+* permission behavior
+* approve flow behavior
+* activate flow behavior
+* active baseline summary behavior
+* cache invalidation behavior
+* tests run/skipped with reason
+* validation results
+* remaining risks
+* recommended next sprint
+
+Do not:
+
+* add period-effective logic; it already exists
+* add draft preview in this sprint
+* change activation backend semantics unless necessary
+* add effective-date selection
+* add historical backfill
+* create design-estimate points
+* mutate facts or accepted values
+* redesign Reconciliation
