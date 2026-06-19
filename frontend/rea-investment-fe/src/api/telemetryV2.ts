@@ -4,6 +4,8 @@ import type {
   BackfillReadingsPayload,
   BackfillReadingsResponse,
   CompanySchedulerStatusList,
+  CreateDraftFromFactsRequest,
+  CreateDraftFromFactsResponse,
   DeviceEligibilityDiagnosticsResponse,
   DeviceMappingBulkPayload,
   DeviceMappingBulkResponse,
@@ -17,6 +19,7 @@ import type {
   ProviderAccountList,
   ProviderAccountUpdatePayload,
   ProviderCatalogList,
+  ReadinessFromFactsResponse,
   RefreshReadingsPayload,
   RefreshReadingsResponse,
   SchedulerState,
@@ -312,6 +315,39 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     return data;
   };
 
+  /**
+   * Read-only readiness for building a weather-adjusted DRAFT baseline from a
+   * site's PROMOTED `project_facts`. Never writes and never fabricates: the
+   * reviewer-only datasheet constants are always reported as `missing_fields`
+   * here (they are supplied on the create request), and `field_blockers` carries
+   * the per-input readiness ladder for the panel.
+   */
+  const getReadinessFromFacts = async (siteId: number, baselineType?: string): Promise<ReadinessFromFactsResponse> => {
+    const { data } = await httpClient.get<ReadinessFromFactsResponse>(
+      `${V2}/sites/${siteId}/expected-baseline/readiness-from-facts`,
+      baselineType ? { params: { baseline_type: baselineType } } : undefined
+    );
+    return data;
+  };
+
+  /**
+   * Create a `draft` baseline from promoted facts ∪ reviewer-supplied constants.
+   * 201 = newly created, 200 = idempotent reuse, 422 = `review_required` (nothing
+   * created). The draft is NEVER auto-approved/activated and `project_facts` are
+   * NEVER mutated. A 422 surfaces as an axios error whose `response.data` is the
+   * `CreateDraftFromFactsResponse` body, so callers can read `field_blockers`.
+   */
+  const createDraftFromFacts = async (
+    siteId: number,
+    payload: CreateDraftFromFactsRequest
+  ): Promise<CreateDraftFromFactsResponse> => {
+    const { data } = await httpClient.post<CreateDraftFromFactsResponse>(
+      `${V2}/sites/${siteId}/expected-baseline/create-draft-from-facts`,
+      payload
+    );
+    return data;
+  };
+
   return {
     getCatalog,
     listLicensedProviders,
@@ -338,7 +374,9 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     updateSiteScheduler,
     getCompanySchedulerStatus,
     getSiteEligibilityDiagnostics,
-    backfillSiteReadings
+    backfillSiteReadings,
+    getReadinessFromFacts,
+    createDraftFromFacts
   };
 };
 

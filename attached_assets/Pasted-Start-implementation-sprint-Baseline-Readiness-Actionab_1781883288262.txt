@@ -1,0 +1,321 @@
+Start implementation sprint: Baseline Readiness Actionability — Normalization + Reviewer Inputs.
+
+Context:
+The Expected Baseline Readiness Input Resolution Audit is complete. It found that the “draft weather-adjusted baseline not ready,” “no active baseline,” and “design-estimate points 0/12” symptoms collapse to two mechanical causes plus one UX gap.
+
+Root cause A:
+Some required active project_facts exist but are not baseline-usable numeric values:
+
+* module_wattage = “340 Wp”
+* inverter_wattage = “66 kWac”
+
+The readiness evaluator currently uses bare float() parsing and treats those unit-bearing values as missing/non-numeric.
+
+Root cause B:
+Five required physics constants have no source/fact path today and are reviewer-supplied only:
+
+* thermal_coefficient_pct
+* power_tolerance_min_pct
+* year_1_degradation_pct
+* annual_degradation_pct
+* cec_efficiency_pct
+
+UX gap:
+Baseline Readiness is facts-only and shows missing/non-numeric blockers, but there is no in-panel way to normalize unit-bearing values, supply reviewer-required constants, or label optional defaults.
+
+Strategic objective:
+Make the Baseline Readiness panel actionable enough to create a draft weather-adjusted baseline without guessing or mutating historical facts.
+
+Implement the smallest safe path:
+
+1. expose structured per-field readiness blockers;
+2. allow explicit reviewer-confirmed normalization for unit-bearing numeric facts;
+3. allow reviewer-supplied baseline inputs for required constants;
+4. label optional defaults clearly;
+5. preserve raw project_facts and historical provenance.
+
+Hard constraints:
+
+* Do not mutate existing project_facts.
+* Do not rewrite accepted values.
+* Do not silently normalize values.
+* Do not auto-promote anything.
+* Do not create or activate an active baseline automatically.
+* Do not change expected calculation math.
+* Do not change telemetry ingestion.
+* Do not change WeatherResolver.
+* Do not change device eligibility.
+* Do not alter historical O&M analytics.
+* Do not use SAFL as a baseline source.
+* Do not reintroduce BigQuery, Firestore, or legacy telemetry.
+* Do not touch plaintext secrets.
+* Do not fabricate missing values.
+* Do not treat defaults as facts.
+* Do not collapse design-estimate points and weather-adjusted expected into one concept.
+* Preserve distinction among raw extracted value, accepted value, promoted project_fact, normalized baseline input, draft baseline, active baseline, design-estimate points, weather-adjusted expected, and actual telemetry.
+
+Durable platform invariant:
+Never allow accepted, promoted, baseline, or O&M state to silently survive upstream source changes. Upstream changes must create a new lineage, mark dependent state stale, require re-review, or create explicit supersession. Historical data must remain preserved and auditable.
+
+Scope A — Structured readiness response
+
+Enhance the readiness-from-facts response with structured per-field blockers.
+
+For each baseline input, include:
+
+* canonical field key
+* display label
+* required/optional
+* expected type
+* expected unit
+* current raw value if any
+* current normalized value if any
+* source status:
+
+  * missing
+  * active_fact
+  * active_fact_but_non_numeric
+  * reviewer_supplied_needed
+  * optional_default_applied
+  * pre_pto_expected_suppressed
+  * design_points_missing
+* source ids where available:
+
+  * project_fact_id
+  * document_id
+  * file_id / document_version_id
+  * parse run/source_run_id where available
+* reason not usable
+* recommended action
+* blocking level:
+
+  * blocks_draft_baseline
+  * blocks_active_baseline
+  * blocks_expected
+  * lowers_confidence
+  * informational
+
+Do not remove or break existing fields in the readiness response. Add fields only.
+
+Scope B — Unit-bearing numeric normalization confirmation
+
+Support reviewer-confirmed normalized baseline inputs for text-with-unit values such as:
+
+* “340 Wp” → 340 W
+* “66 kWac” → 66 kW
+
+Rules:
+
+* Do not mutate the project_fact.
+* Do not mutate the accepted value.
+* Do not silently strip units inside _coerce_number.
+* Keep _coerce_number strict.
+* Store or pass normalized values as reviewer-confirmed baseline inputs/provenance for draft baseline creation.
+* Preserve raw source value in provenance.
+* Record reviewer identity, timestamp, raw value, normalized numeric value, unit, and normalization method where possible.
+* Unit stripping is allowed only when unit token matches expected field unit:
+
+  * Wp/W for module_wattage expected W
+  * kWac/kW for inverter_wattage expected kW
+* Unit conversion, such as Wac → kW, requires explicit confirmation and must show the conversion.
+* Ambiguous or missing units must block and ask the user to provide/confirm.
+* Implausible magnitudes should warn and block unless explicitly confirmed.
+
+Preferred first implementation:
+Normalize at Baseline Readiness / create-draft input layer, not by rewriting project_facts.
+
+Scope C — Reviewer-supplied physics constants
+
+Add a controlled reviewer-supplied input path in Baseline Readiness for the five required constants:
+
+* thermal_coefficient_pct
+* power_tolerance_min_pct
+* year_1_degradation_pct
+* annual_degradation_pct
+* cec_efficiency_pct
+
+For each:
+
+* show label and expected unit
+* numeric input only
+* show why required
+* show suggested source document type:
+
+  * module datasheet
+  * inverter datasheet
+  * warranty
+  * PVsyst / diligence assumptions
+  * CEC listing
+* show provenance label:
+  “Reviewer supplied”
+* require reviewer notes/source note where appropriate
+* pass values to the existing create-draft-from-facts path
+* ensure they are stored in draft baseline model_parameters_json field_sources as reviewer_supplied or equivalent
+
+Do not create active project_facts for these reviewer-supplied constants in this sprint unless the existing design already supports it and it is explicitly approved.
+
+Scope D — Optional defaults labeling
+
+For optional defaults:
+
+* dc_loss_pct
+* ac_loss_pct
+* medium_voltage_loss_pct
+* mv_line_loss_pct
+* soiling_factor
+
+Show structured indicators:
+
+* “Default applied: 0%”
+* “Default applied: 1.0 no-soiling factor”
+* “Optional — confirm or override”
+
+Do not present defaults as source-backed facts.
+Do not change the default values in this sprint.
+Allow override only if already supported safely through create-draft reviewer input. If not supported, document the gap.
+
+Scope E — Create draft baseline action
+
+Once all required inputs are usable:
+
+* allow user to create a draft weather-adjusted baseline using the existing create-draft-from-facts endpoint/path
+* do not activate it automatically
+* do not approve it automatically
+* do not change baseline lifecycle
+* show success as “Draft baseline created”
+* next action should be review/approve/activate baseline through the existing baseline workflow
+
+If the create endpoint already accepts reviewer_values, reuse it.
+If a frontend form is needed, add it only inside the existing Baseline Readiness area, preserving look and feel.
+
+Scope F — UI placement
+
+Use the existing Baseline Readiness panel/surface.
+
+For each blocker row, show:
+
+* field label
+* current value
+* reason
+* action
+* blocking level chip
+* source/provenance chip
+
+Actions:
+
+* Normalize / confirm unit
+* Add reviewer-supplied input
+* Confirm optional default
+* Open Data Room
+* Promote value
+* Upload source document
+* Create draft baseline
+
+Only show actions that are valid for that field/state.
+If action is unavailable, show unavailable state with reason. Do not hide all context.
+
+Use consistent status styling:
+
+* ready/check
+* unavailable/x
+* needs input/warning
+* informational/default
+
+Do not create a new standalone screen.
+
+Scope G — PTO handling
+
+Do not make PTO a blocker for draft creation in this sprint unless already enforced.
+
+Show a structured warning:
+
+* “PTO missing — expected production will be suppressed until PTO is supplied.”
+* Explain that with no PTO, expected is NULL across the expected curve.
+* Provide action:
+
+  * supply PTO date if existing path supports reviewer input
+  * otherwise link to Data Room / Key Dates source
+
+Do not change PTO math.
+
+Scope H — Design-estimate points separation
+
+Keep design-estimate points separate from weather-adjusted baseline readiness.
+
+If design points are 0/12:
+
+* show as separate readiness track:
+  “Design-estimate points missing”
+* explain:
+  “This requires monthly production facts and the design-estimate points generator. It is separate from the weather-adjusted baseline.”
+* do not block weather-adjusted draft creation because design points are missing
+* do not fabricate monthly points from annual production
+
+Scope I — Tests
+
+Add/update tests for:
+
+1. Readiness response includes structured per-field blockers.
+2. module_wattage “340 Wp” is classified as active_fact_but_non_numeric, not ordinary missing.
+3. inverter_wattage “66 kWac” is classified as active_fact_but_non_numeric.
+4. Safe unit normalization proposal for “340 Wp” is 340 W and requires confirmation.
+5. Safe unit normalization proposal for “66 kWac” is 66 kW and requires confirmation.
+6. Unit conversion case requires explicit confirmation.
+7. Ambiguous/no-unit value blocks normalization.
+8. Raw project_fact is not mutated by normalization.
+9. Normalized reviewer-confirmed value is passed to draft baseline creation.
+10. Five reviewer-required constants appear as reviewer_supplied_needed.
+11. Draft creation remains blocked until five constants are supplied.
+12. Draft creation succeeds when required facts are numeric/normalized and five constants are supplied.
+13. Optional loss defaults are labeled default_applied_optional_input.
+14. Soiling default is labeled default_applied_optional_input.
+15. PTO missing shows pre_pto_expected_suppressed and does not fabricate expected.
+16. Design points 0/12 shown separately and does not block weather-adjusted draft.
+17. No active baseline is created automatically.
+18. No baseline activation is triggered.
+19. No project_facts are mutated.
+20. No SAFL baseline source is used.
+21. No expected math changed.
+22. Frontend compile/typecheck passes.
+23. Backend targeted tests pass.
+24. Architect review passes.
+
+Scope J — Validation
+
+Run:
+
+* targeted backend tests for readiness and draft creation
+* targeted frontend tests for Baseline Readiness UI
+* backend startup
+* frontend compile/typecheck
+* architect review
+
+Return:
+
+* files changed
+* readiness response additions
+* UI behavior
+* normalization behavior
+* reviewer-supplied input behavior
+* draft creation behavior
+* defaults/PTO/design-points behavior
+* tests run/skipped with reason
+* validation results
+* remaining gaps
+* recommended next sprint
+
+Do not:
+
+* implement parser-level normalization yet
+* implement acceptance-time normalization yet
+* mutate project_facts
+* rewrite accepted values
+* create active baseline
+* activate baseline
+* implement design-estimate points generator changes
+* implement period-effective historical baseline selection
+* change expected math
+* change WeatherResolver
+* change telemetry ingestion
+* change device eligibility
+* reintroduce legacy paths

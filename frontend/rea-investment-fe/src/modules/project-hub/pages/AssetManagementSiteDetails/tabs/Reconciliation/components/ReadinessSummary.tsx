@@ -9,9 +9,14 @@ import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import type { ReconciliationReadiness } from '../../../../../../../api';
 import { PLACEHOLDER, formatDateTime } from '../utils';
+import BaselineFromFactsPanel from './BaselineFromFactsPanel';
 
 interface ReadinessSummaryProps {
   readiness: ReconciliationReadiness;
+  /** Site whose promoted facts feed the actionable draft-baseline panel. */
+  siteId?: number;
+  /** Telemetry-admin (or system user) — gates the actionable create form. */
+  canDraft?: boolean;
 }
 
 const BoolPill: React.FC<{ value: boolean | null; trueLabel: string; falseLabel: string; unknownLabel?: string }> = ({
@@ -39,7 +44,8 @@ const StatTile: React.FC<{ title: string; children: React.ReactNode }> = ({ titl
   </Paper>
 );
 
-export const ReadinessSummary: React.FC<ReadinessSummaryProps> = ({ readiness }) => {
+export const ReadinessSummary: React.FC<ReadinessSummaryProps> = ({ readiness, siteId, canDraft = false }) => {
+  const hasSite = Number.isSafeInteger(siteId) && (siteId as number) > 0;
   return (
     <Box sx={{ mb: 3 }} data-testid="reconciliation-readiness">
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 1.5 }}>
@@ -121,6 +127,8 @@ export const ReadinessSummary: React.FC<ReadinessSummaryProps> = ({ readiness })
           </StatTile>
         </Grid>
       </Grid>
+
+      {hasSite && <BaselineFromFactsPanel siteId={siteId as number} canDraft={canDraft} />}
     </Box>
   );
 };

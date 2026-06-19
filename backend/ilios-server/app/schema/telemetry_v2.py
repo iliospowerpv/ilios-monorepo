@@ -785,12 +785,81 @@ class BaselineFactFieldUsage(BaseModel):
     """One physics input that fed (or could feed) a facts-based draft."""
 
     field: str
-    source: str  # 'project_fact' | 'reviewer_supplied'
+    source: str  # 'project_fact' | 'reviewer_supplied' | 'project_fact_normalized'
     value: float
     canonical_name: Optional[str] = None
     fact_id: Optional[int] = None
     document_id: Optional[int] = None
     ai_confidence: Optional[float] = None
+
+
+class BaselineFieldNormalization(BaseModel):
+    """A PROPOSED (never auto-applied) unit normalization for a fact value.
+
+    Mirrors the service ``NormalizationProposal``. ``blocked`` means the value
+    cannot be normalized (ambiguous/unknown unit, unparseable) and stays missing;
+    a non-blocked proposal is only applied when the reviewer confirms it (and,
+    for a real unit conversion, sets ``allow_conversion``).
+    """
+
+    field: str
+    raw_value: str
+    target_unit: str
+    blocked: bool
+    reason: str
+    proposed_value: Optional[float] = None
+    from_unit: Optional[str] = None
+    method: Optional[str] = None  # 'unit_strip' | 'unit_convert'
+    factor: float = 1.0
+    requires_confirmation: bool = False
+    requires_conversion_confirmation: bool = False
+
+
+class BaselineReadinessFieldStatus(BaseModel):
+    """One baseline input's true position on the readiness ladder (descriptive).
+
+    Additive — it never changes ``ready`` semantics. The panel uses it to show
+    what is usable, what needs a reviewer value or a normalization confirmation,
+    and what the next step is.
+    """
+
+    field: str
+    display_label: str
+    required: bool
+    expected_type: str  # 'number' | 'count' | 'percent' | 'factor' | 'date'
+    expected_unit: Optional[str] = None
+    source_status: str
+    blocking_level: str
+    current_raw_value: Optional[str] = None
+    current_normalized_value: Optional[float] = None
+    default_value: Optional[float] = None
+    reason: Optional[str] = None
+    recommended_action: Optional[str] = None
+    fact_id: Optional[int] = None
+    document_id: Optional[int] = None
+    ai_confidence: Optional[float] = None
+    normalization: Optional[BaselineFieldNormalization] = None
+
+
+class NormalizationConfirmationRequest(BaseModel):
+    """A reviewer's explicit confirmation of a proposed unit normalization.
+
+    The server NEVER trusts ``confirmed_value`` as the value to store — it
+    recomputes the normalization from the current active fact and only applies it
+    when its own ``proposed_value`` matches ``confirmed_value`` (integrity check),
+    the confirmation is not stale (``source_fact_id`` / ``raw_value`` match the
+    current fact), and — for a real unit conversion — ``allow_conversion`` is set.
+    """
+
+    confirmed_value: float
+    unit: Optional[str] = None
+    allow_conversion: bool = False
+    # Both anchors are REQUIRED. A normalization is applied only when the
+    # confirmation can be proven current against the live fact, so omitting
+    # either anchor is rejected outright — the server never applies an
+    # unanchored (unprovable) normalization.
+    source_fact_id: int
+    raw_value: str
 
 
 class ReadinessFromFactsResponse(BaseModel):
@@ -810,6 +879,8 @@ class ReadinessFromFactsResponse(BaseModel):
     warnings: list[str] = Field(default_factory=list)
     source_fact_ids: list[int] = Field(default_factory=list)
     source_document_ids: list[int] = Field(default_factory=list)
+    # Additive: per-field readiness ladder (descriptive; never changes ``ready``).
+    field_blockers: list[BaselineReadinessFieldStatus] = Field(default_factory=list)
 
 
 class CreateDraftFromFactsRequest(BaseModel):
@@ -842,6 +913,12 @@ class CreateDraftFromFactsRequest(BaseModel):
     mv_line_loss_pct: Optional[float] = None
     pto_date: Optional[date] = None
 
+    # Reviewer-confirmed unit normalizations for unit-qualified facts, keyed by
+    # canonical column (``module_wattage`` / ``inverter_wattage``). Each entry is
+    # re-verified server-side against a fresh recompute; the front end's value is
+    # never trusted blindly. Facts are never mutated.
+    normalizations: Optional[dict[str, NormalizationConfirmationRequest]] = None
+
 
 class CreateDraftFromFactsResponse(BaseModel):
     """Result of a create-draft-from-facts attempt.
@@ -863,6 +940,8 @@ class CreateDraftFromFactsResponse(BaseModel):
     warnings: list[str] = Field(default_factory=list)
     source_fact_ids: list[int] = Field(default_factory=list)
     source_document_ids: list[int] = Field(default_factory=list)
+    # Additive: per-field readiness ladder (descriptive; never changes ``ready``).
+    field_blockers: list[BaselineReadinessFieldStatus] = Field(default_factory=list)
     baseline: Optional[ExpectedBaselineResponse] = None
 
 

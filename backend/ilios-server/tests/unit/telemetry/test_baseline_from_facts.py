@@ -543,6 +543,434 @@ def test_endpoint_requires_telemetry_admin(
     assert resp.status_code in (401, 403, 404)
 
 
+# ===========================================================================
+# Structured field blockers (Scope A) — descriptive, never change `ready`
+# ===========================================================================
+def _blockers_by_field(res):
+    return {b.field: b for b in res.field_blockers}
+
+
+def test_readiness_field_blockers_cover_every_input(db_session, site_id):
+    _seed_physics_facts(db_session, site_id)
+
+    res = svc.evaluate_readiness(db_session, site_id, WAM)
+    blockers = _blockers_by_field(res)
+
+    # All 4 facts + 5 reviewer constants + 4 losses + soiling + pto = 15 inputs.
+    assert len(res.field_blockers) == 15
+
+    # Fact-backed numeric inputs are satisfied + informational.
+    assert blockers["module_wattage"].source_status == svc.SourceStatus.ACTIVE_FACT
+    assert blockers["module_wattage"].blocking_level == svc.BlockingLevel.INFORMATIONAL
+    assert blockers["module_wattage"].current_normalized_value == 400.0
+
+    # Reviewer constants are needed (not yet supplied here) and block the draft.
+    assert (
+        blockers["cec_efficiency_pct"].source_status
+        == svc.SourceStatus.REVIEWER_SUPPLIED_NEEDED
+    )
+    assert (
+        blockers["cec_efficiency_pct"].blocking_level
+        == svc.BlockingLevel.BLOCKS_DRAFT
+    )
+
+    # Optional losses carry their default, never blocking.
+    assert (
+        blockers["dc_loss_pct"].source_status
+        == svc.SourceStatus.OPTIONAL_DEFAULT_APPLIED
+    )
+    assert blockers["dc_loss_pct"].blocking_level == svc.BlockingLevel.INFORMATIONAL
+    assert blockers["dc_loss_pct"].default_value == 0.0
+    assert blockers["soiling_factor"].default_value == 1.0
+
+    # Missing PTO suppresses pre-PTO expected (blocks expected, never the draft).
+    assert (
+        blockers["pto_date"].source_status
+        == svc.SourceStatus.PRE_PTO_EXPECTED_SUPPRESSED
+    )
+    assert blockers["pto_date"].blocking_level == svc.BlockingLevel.BLOCKS_EXPECTED
+
+
+def test_missing_fact_blocker_recommends_promotion(db_session, site_id):
+    res = svc.evaluate_readiness(db_session, site_id, WAM)
+    blockers = _blockers_by_field(res)
+
+    mw = blockers["module_wattage"]
+    assert mw.source_status == svc.SourceStatus.MISSING
+    assert mw.blocking_level == svc.BlockingLevel.BLOCKS_DRAFT
+    assert mw.recommended_action and "Promote" in mw.recommended_action
+
+
+def test_non_numeric_wattage_blocker_carries_normalization_proposal(
+    db_session, site_id
+):
+    values = dict(FACT_VALUES)
+    values["module_wattage"] = "340 Wp"
+    _seed_physics_facts(db_session, site_id, values=values)
+
+    res = svc.evaluate_readiness(db_session, site_id, WAM)
+    mw = _blockers_by_field(res)["module_wattage"]
+
+    assert mw.source_status == svc.SourceStatus.ACTIVE_FACT_NON_NUMERIC
+    assert mw.blocking_level == svc.BlockingLevel.BLOCKS_DRAFT
+    assert mw.current_raw_value == "340 Wp"
+    # A non-blocked proposal is surfaced so the reviewer can confirm it.
+    assert mw.normalization is not None
+    assert mw.normalization.blocked is False
+    assert mw.normalization.proposed_value == 400.0 or mw.normalization.proposed_value == 340.0
+
+
+def test_non_numeric_quantity_is_never_normalizable(db_session, site_id):
+    values = dict(FACT_VALUES)
+    values["module_quantity"] = "lots"
+    _seed_physics_facts(db_session, site_id, values=values)
+
+    res = svc.evaluate_readiness(db_session, site_id, WAM)
+    mq = _blockers_by_field(res)["module_quantity"]
+
+    assert mq.source_status == svc.SourceStatus.ACTIVE_FACT_NON_NUMERIC
+    assert mq.blocking_level == svc.BlockingLevel.BLOCKS_DRAFT
+    assert mq.normalization is None  # counts are unitless — never normalized
+    assert "module_quantity" in res.missing_fields
+
+
+# ===========================================================================
+# Reviewer-confirmed unit normalization (Scope B/C) — never silent, facts intact
+# ===========================================================================
+def _norm_payload(fact, raw, confirmed, *, allow_conversion=False):
+    return {
+        "module_wattage": {
+            "confirmed_value": confirmed,
+            "raw_value": raw,
+            "source_fact_id": fact.id,
+            "allow_conversion": allow_conversion,
+        }
+    }
+
+
+def test_confirmed_strip_creates_draft_and_leaves_fact_untouched(
+    db_session, company_id, site_id, file, system_user_id
+):
+    values = dict(FACT_VALUES)
+    values["module_wattage"] = "340 Wp"
+    facts = _seed_physics_facts(db_session, site_id, source_file_id=file.id, values=values)
+    mw_fact = facts["module_wattage"]
+
+    reviewer = dict(REVIEWER_CONSTANTS)
+    reviewer["normalizations"] = _norm_payload(mw_fact, "340 Wp", 340.0)
+
+    result = svc.create_draft_from_facts(
+        db_session,
+        company_id=company_id,
+        site_id=site_id,
+        site_timezone="UTC",
+        reviewer_values=reviewer,
+        created_by_user_id=system_user_id,
+    )
+
+    assert result.created is True
+    b = result.baseline
+    assert float(b.module_wattage) == pytest.approx(340.0)
+
+    # Provenance records the normalized source explicitly.
+    src = b.model_parameters_json["field_sources"]["module_wattage"]
+    assert src["source"] == "project_fact_normalized"
+    assert src["normalization"]["from_unit"] == "wp"
+    assert src["normalization"]["to_unit"] == "W"
+    assert src["normalization"]["method"] == "unit_strip"
+    assert src["normalization"]["normalized_value"] == pytest.approx(340.0)
+    assert src["normalization"]["confirmed_by_user_id"] == system_user_id
+
+    # The project_fact row itself is NEVER mutated.
+    db_session.refresh(mw_fact)
+    assert mw_fact.value == {"v": "340 Wp"}
+
+
+def test_normalization_without_confirmation_stays_missing(
+    db_session, company_id, site_id
+):
+    values = dict(FACT_VALUES)
+    values["module_wattage"] = "340 Wp"
+    _seed_physics_facts(db_session, site_id, values=values)
+
+    result = svc.create_draft_from_facts(
+        db_session,
+        company_id=company_id,
+        site_id=site_id,
+        site_timezone="UTC",
+        reviewer_values=dict(REVIEWER_CONSTANTS),  # no normalizations
+    )
+
+    assert result.created is False
+    assert "module_wattage" in result.readiness.missing_fields
+    assert _baselines_for(db_session, site_id) == []
+
+
+def test_conversion_requires_explicit_allow_conversion(
+    db_session, company_id, site_id
+):
+    values = dict(FACT_VALUES)
+    values["module_wattage"] = "0.34 kW"  # needs W<-kW conversion
+    facts = _seed_physics_facts(db_session, site_id, values=values)
+    mw_fact = facts["module_wattage"]
+
+    # Without allow_conversion the proposal is rejected -> stays missing.
+    reviewer = dict(REVIEWER_CONSTANTS)
+    reviewer["normalizations"] = _norm_payload(
+        mw_fact, "0.34 kW", 340.0, allow_conversion=False
+    )
+    blocked = svc.create_draft_from_facts(
+        db_session,
+        company_id=company_id,
+        site_id=site_id,
+        site_timezone="UTC",
+        reviewer_values=reviewer,
+    )
+    assert blocked.created is False
+    assert "module_wattage" in blocked.readiness.missing_fields
+
+    # With explicit conversion confirmation it applies.
+    reviewer["normalizations"] = _norm_payload(
+        mw_fact, "0.34 kW", 340.0, allow_conversion=True
+    )
+    ok = svc.create_draft_from_facts(
+        db_session,
+        company_id=company_id,
+        site_id=site_id,
+        site_timezone="UTC",
+        reviewer_values=reviewer,
+    )
+    assert ok.created is True
+    assert float(ok.baseline.module_wattage) == pytest.approx(340.0)
+
+
+def test_stale_source_fact_id_confirmation_is_rejected(
+    db_session, company_id, site_id
+):
+    values = dict(FACT_VALUES)
+    values["module_wattage"] = "340 Wp"
+    facts = _seed_physics_facts(db_session, site_id, values=values)
+
+    reviewer = dict(REVIEWER_CONSTANTS)
+    reviewer["normalizations"] = {
+        "module_wattage": {
+            "confirmed_value": 340.0,
+            "raw_value": "340 Wp",
+            "source_fact_id": facts["module_wattage"].id + 9999,  # stale
+            "allow_conversion": False,
+        }
+    }
+
+    result = svc.create_draft_from_facts(
+        db_session,
+        company_id=company_id,
+        site_id=site_id,
+        site_timezone="UTC",
+        reviewer_values=reviewer,
+    )
+    assert result.created is False
+    assert "module_wattage" in result.readiness.missing_fields
+
+
+def test_stale_raw_value_confirmation_is_rejected(db_session, company_id, site_id):
+    values = dict(FACT_VALUES)
+    values["module_wattage"] = "340 Wp"
+    facts = _seed_physics_facts(db_session, site_id, values=values)
+
+    reviewer = dict(REVIEWER_CONSTANTS)
+    reviewer["normalizations"] = _norm_payload(
+        facts["module_wattage"], "999 Wp", 340.0  # raw drifted from the fact
+    )
+
+    result = svc.create_draft_from_facts(
+        db_session,
+        company_id=company_id,
+        site_id=site_id,
+        site_timezone="UTC",
+        reviewer_values=reviewer,
+    )
+    assert result.created is False
+    assert "module_wattage" in result.readiness.missing_fields
+
+
+def test_missing_source_fact_id_confirmation_is_rejected(db_session, company_id, site_id):
+    """A confirmation without its source-fact anchor can't be proven current → rejected."""
+    values = dict(FACT_VALUES)
+    values["module_wattage"] = "340 Wp"
+    _seed_physics_facts(db_session, site_id, values=values)
+
+    reviewer = dict(REVIEWER_CONSTANTS)
+    reviewer["normalizations"] = {
+        "module_wattage": {
+            "confirmed_value": 340.0,
+            "raw_value": "340 Wp",
+            # source_fact_id intentionally omitted
+            "allow_conversion": False,
+        }
+    }
+
+    result = svc.create_draft_from_facts(
+        db_session,
+        company_id=company_id,
+        site_id=site_id,
+        site_timezone="UTC",
+        reviewer_values=reviewer,
+    )
+    assert result.created is False
+    assert "module_wattage" in result.readiness.missing_fields
+    assert _baselines_for(db_session, site_id) == []
+
+
+def test_missing_raw_value_confirmation_is_rejected(db_session, company_id, site_id):
+    """A confirmation without the original raw value it was based on → rejected."""
+    values = dict(FACT_VALUES)
+    values["module_wattage"] = "340 Wp"
+    facts = _seed_physics_facts(db_session, site_id, values=values)
+
+    reviewer = dict(REVIEWER_CONSTANTS)
+    reviewer["normalizations"] = {
+        "module_wattage": {
+            "confirmed_value": 340.0,
+            # raw_value intentionally omitted
+            "source_fact_id": facts["module_wattage"].id,
+            "allow_conversion": False,
+        }
+    }
+
+    result = svc.create_draft_from_facts(
+        db_session,
+        company_id=company_id,
+        site_id=site_id,
+        site_timezone="UTC",
+        reviewer_values=reviewer,
+    )
+    assert result.created is False
+    assert "module_wattage" in result.readiness.missing_fields
+    assert _baselines_for(db_session, site_id) == []
+
+
+def test_confirmed_value_mismatch_is_rejected(db_session, company_id, site_id):
+    values = dict(FACT_VALUES)
+    values["module_wattage"] = "340 Wp"
+    facts = _seed_physics_facts(db_session, site_id, values=values)
+
+    reviewer = dict(REVIEWER_CONSTANTS)
+    reviewer["normalizations"] = _norm_payload(
+        facts["module_wattage"], "340 Wp", 999.0  # disagrees with server recompute
+    )
+
+    result = svc.create_draft_from_facts(
+        db_session,
+        company_id=company_id,
+        site_id=site_id,
+        site_timezone="UTC",
+        reviewer_values=reviewer,
+    )
+    assert result.created is False
+    assert "module_wattage" in result.readiness.missing_fields
+
+
+def test_identical_normalized_inputs_are_idempotent(
+    db_session, company_id, site_id
+):
+    values = dict(FACT_VALUES)
+    values["module_wattage"] = "340 Wp"
+    facts = _seed_physics_facts(db_session, site_id, values=values)
+    reviewer = dict(REVIEWER_CONSTANTS)
+    reviewer["normalizations"] = _norm_payload(facts["module_wattage"], "340 Wp", 340.0)
+    kwargs = dict(
+        company_id=company_id,
+        site_id=site_id,
+        site_timezone="UTC",
+        reviewer_values=reviewer,
+    )
+
+    first = svc.create_draft_from_facts(db_session, **kwargs)
+    second = svc.create_draft_from_facts(db_session, **kwargs)
+
+    assert first.created is True
+    assert second.created is False
+    assert second.idempotent_existing is True
+    assert len(_baselines_for(db_session, site_id)) == 1
+
+
+# ===========================================================================
+# Endpoints — field_blockers + normalization payload
+# ===========================================================================
+def test_endpoint_readiness_includes_field_blockers(
+    client, system_user_auth_header, db_session, site_id
+):
+    _seed_physics_facts(db_session, site_id)
+
+    resp = client.get(_readiness_url(site_id), headers=system_user_auth_header)
+
+    assert resp.status_code == 200
+    body = resp.json()
+    blockers = {b["field"]: b for b in body["field_blockers"]}
+    assert len(blockers) == 15
+    assert blockers["module_wattage"]["source_status"] == "active_fact"
+    assert blockers["cec_efficiency_pct"]["blocking_level"] == "blocks_draft_baseline"
+    assert blockers["pto_date"]["source_status"] == "pre_pto_expected_suppressed"
+
+
+def test_endpoint_create_with_normalization(
+    client, system_user_auth_header, db_session, site_id
+):
+    values = dict(FACT_VALUES)
+    values["module_wattage"] = "340 Wp"
+    facts = _seed_physics_facts(db_session, site_id, values=values)
+
+    payload = dict(REVIEWER_CONSTANTS)
+    payload["normalizations"] = {
+        "module_wattage": {
+            "confirmed_value": 340.0,
+            "raw_value": "340 Wp",
+            "source_fact_id": facts["module_wattage"].id,
+            "allow_conversion": False,
+        }
+    }
+
+    resp = client.post(
+        _create_url(site_id), json=payload, headers=system_user_auth_header
+    )
+
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["status"] == "draft"
+    assert body["ready"] is True
+    mw = next(f for f in body["fields_used"] if f["field"] == "module_wattage")
+    assert mw["source"] == "project_fact_normalized"
+    assert mw["value"] == pytest.approx(340.0)
+
+
+def test_endpoint_create_with_bad_normalization_returns_422(
+    client, system_user_auth_header, db_session, site_id
+):
+    values = dict(FACT_VALUES)
+    values["module_wattage"] = "340 Wp"
+    facts = _seed_physics_facts(db_session, site_id, values=values)
+
+    payload = dict(REVIEWER_CONSTANTS)
+    payload["normalizations"] = {
+        "module_wattage": {
+            "confirmed_value": 999.0,  # mismatch -> rejected
+            "raw_value": "340 Wp",
+            "source_fact_id": facts["module_wattage"].id,
+            "allow_conversion": False,
+        }
+    }
+
+    resp = client.post(
+        _create_url(site_id), json=payload, headers=system_user_auth_header
+    )
+
+    assert resp.status_code == 422
+    body = resp.json()
+    assert body["status"] == "review_required"
+    assert "module_wattage" in body["missing_fields"]
+    assert _baselines_for(db_session, site_id) == []
+
+
 def test_legacy_create_baseline_endpoint_is_deprecated_and_warns(
     client, system_user_auth_header, db_session, site_id, caplog
 ):

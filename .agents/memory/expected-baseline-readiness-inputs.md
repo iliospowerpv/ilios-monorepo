@@ -45,3 +45,20 @@ baseline not ready", "no active baseline", "design-estimate points 0/12") collap
 **Recommended fix order (audit Section K):** Phase 1 actionable readiness trace; Phase 2
 normalize-at-readiness (smallest blast radius, raw fact never mutated); durable home =
 acceptance-time confirm. Never auto-normalize in `_coerce_number`; never auto-convert units.
+
+**As-built invariants (the actionable Baseline Readiness panel — keep these true):**
+- **Confirm-only normalization needs BOTH anchors.** A reviewer normalization confirmation is
+  only honored when it carries `source_fact_id` AND `raw_value` (both schema-REQUIRED and
+  re-checked in the service). Missing either, or a stale `source_fact_id`/drifted `raw_value`,
+  or a `confirmed_value` that disagrees with the server recompute → the field is rejected and
+  stays MISSING (no draft). **Why:** you must prove the reviewer confirmed the *current* fact's
+  *current* text; an unanchored confirmation could silently apply against a fact that changed
+  underneath them. **How to apply:** any new normalizable field or new caller MUST send both
+  anchors; tests `test_missing_{source_fact_id,raw_value}_confirmation_is_rejected` lock this.
+- **Facts are never mutated.** Normalization is recorded only in the baseline's effective value
+  + provenance (`project_fact_normalized` source: raw/normalized/from→to unit/method/fact_id/
+  confirmed_by/at). `project_facts` rows are read-only here; no auto-promote, no auto-activate.
+- **FE draft gate = `useTelemetryAdminPermission()`** (platform-bypass OR `Telemetry.admin` OR
+  legacy `Settings Page`.edit), kept in lockstep with the backend `telemetry_admin_required`
+  dependency. Don't hand-roll the permission check in the panel/Reconciliation — drift from the
+  backend gate is the bug. Non-admins get a graceful read-only note, not a hard error.

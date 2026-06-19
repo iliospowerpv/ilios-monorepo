@@ -18,6 +18,7 @@ import type { AssetManagementSiteDetailsTabProps } from '../types';
 import { ApiClient } from '../../../../../../api';
 import type { ReconciliationRow } from '../../../../../../api';
 import { useAuth } from '../../../../../../contexts/auth/auth';
+import { useTelemetryAdminPermission } from '../../../../../../hooks/useTelemetryAdminPermission';
 import ReadinessSummary from './components/ReadinessSummary';
 import ReconciliationTable from './components/ReconciliationTable';
 import { CATEGORY_ORDER, STATUS_META, categoryLabel, statusMeta, formatDateTime } from './utils';
@@ -36,6 +37,12 @@ export const Reconciliation: React.FC<AssetManagementSiteDetailsTabProps> = ({ s
   const { user } = useAuth();
   // Promote/Create-Task require Diligence edit rights (system users always pass).
   const canEdit = Boolean(user?.is_system_user) || Boolean(user?.role?.permissions?.Diligence?.edit);
+  // Drafting a weather-adjusted baseline is a telemetry-admin action. Reuse the
+  // canonical FE gate (platform-bypass OR Telemetry.admin OR the legacy
+  // Settings-Page.edit fallback) so it stays in lockstep with the backend
+  // telemetry_admin_required dependency. The backend still enforces the real
+  // check, so a non-admin sees a graceful read-only note instead of a hard error.
+  const canDraftBaseline = useTelemetryAdminPermission();
 
   const { data, isLoading, error } = useQuery(reconciliationQuery(isValidId ? siteId : -1, isValidId));
 
@@ -162,7 +169,7 @@ export const Reconciliation: React.FC<AssetManagementSiteDetailsTabProps> = ({ s
         </Box>
       </Alert>
 
-      <ReadinessSummary readiness={data.readiness} />
+      <ReadinessSummary readiness={data.readiness} siteId={siteId} canDraft={canDraftBaseline} />
 
       {data.schema_expansion_recommended && (
         <Alert severity="info" sx={{ mb: 2 }} data-testid="reconciliation-schema-note">

@@ -74,6 +74,8 @@ from app.static import PermissionsActions
 from app.schema.device_eligibility import DeviceEligibilityDiagnosticsResponse
 from app.schema.telemetry_v2 import (
     BaselineFactFieldUsage,
+    BaselineFieldNormalization,
+    BaselineReadinessFieldStatus,
     CreateDraftFromFactsRequest,
     CreateDraftFromFactsResponse,
     DesignPointsReadinessResponse,
@@ -2735,6 +2737,47 @@ def _field_usage_schema(usage) -> BaselineFactFieldUsage:
     )
 
 
+def _normalization_schema(proposal) -> Optional[BaselineFieldNormalization]:
+    """Map a service ``NormalizationProposal`` (or ``None``) to its schema."""
+    if proposal is None:
+        return None
+    return BaselineFieldNormalization(
+        field=proposal.field,
+        raw_value=proposal.raw_value,
+        target_unit=proposal.target_unit,
+        blocked=proposal.blocked,
+        reason=proposal.reason,
+        proposed_value=proposal.proposed_value,
+        from_unit=proposal.from_unit,
+        method=proposal.method,
+        factor=proposal.factor,
+        requires_confirmation=proposal.requires_confirmation,
+        requires_conversion_confirmation=proposal.requires_conversion_confirmation,
+    )
+
+
+def _field_blocker_schema(blocker) -> BaselineReadinessFieldStatus:
+    """Map a service ``FieldBlocker`` dataclass to its response schema."""
+    return BaselineReadinessFieldStatus(
+        field=blocker.field,
+        display_label=blocker.display_label,
+        required=blocker.required,
+        expected_type=blocker.expected_type,
+        expected_unit=blocker.expected_unit,
+        source_status=blocker.source_status,
+        blocking_level=blocker.blocking_level,
+        current_raw_value=blocker.current_raw_value,
+        current_normalized_value=blocker.current_normalized_value,
+        default_value=blocker.default_value,
+        reason=blocker.reason,
+        recommended_action=blocker.recommended_action,
+        fact_id=blocker.fact_id,
+        document_id=blocker.document_id,
+        ai_confidence=blocker.ai_confidence,
+        normalization=_normalization_schema(blocker.normalization),
+    )
+
+
 @telemetry_v2_router.get(
     "/v2/sites/{site_id}/expected-baseline/readiness-from-facts",
     response_model=ReadinessFromFactsResponse,
@@ -2766,6 +2809,7 @@ def expected_baseline_readiness_from_facts(
         warnings=readiness.warnings,
         source_fact_ids=readiness.source_fact_ids,
         source_document_ids=readiness.source_document_ids,
+        field_blockers=[_field_blocker_schema(b) for b in readiness.field_blockers],
     )
 
 
@@ -2832,6 +2876,7 @@ def create_expected_baseline_draft_from_facts(
             warnings=readiness.warnings,
             source_fact_ids=readiness.source_fact_ids,
             source_document_ids=readiness.source_document_ids,
+            field_blockers=[_field_blocker_schema(b) for b in readiness.field_blockers],
             baseline=None,
         )
     baseline = result.baseline
@@ -2858,6 +2903,7 @@ def create_expected_baseline_draft_from_facts(
         warnings=readiness.warnings,
         source_fact_ids=readiness.source_fact_ids,
         source_document_ids=readiness.source_document_ids,
+        field_blockers=[_field_blocker_schema(b) for b in readiness.field_blockers],
         baseline=ExpectedBaselineResponse.model_validate(baseline),
     )
 
