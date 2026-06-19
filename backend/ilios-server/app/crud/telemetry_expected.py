@@ -16,6 +16,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.crud.base_crud import BaseCRUD
@@ -134,6 +135,54 @@ class TelemetryExpectedBaselineCRUD(BaseCRUD):
             .all()
         )
         return {row.site_id: row for row in rows}
+
+    def get_baselines_effective_in_window(
+        self,
+        site_id: int,
+        start: datetime,
+        end: datetime,
+        baseline_type: TelemetryBaselineType = TelemetryBaselineType.weather_adjusted_model,
+    ) -> list[TelemetryExpectedBaseline]:
+        """Active + superseded baselines whose effective period overlaps ``[start, end]``.
+
+        Period-effective selection (read-only): a baseline drives the buckets in
+        ``[active_from, active_to)`` (``active_to`` NULL = still current). A baseline
+        overlaps the window when ``active_from <= end`` (``end`` is INCLUSIVE, matching
+        the rollup ``get_series`` bounds the caller computes over) AND
+        (``active_to`` IS NULL OR ``active_to > start``).
+
+        Only ``active``/``superseded`` rows of ``baseline_type`` participate — drafts,
+        in-review, approved-but-not-activated, rejected, and other baseline types never
+        drive a historical expected line. Rows are returned ascending by ``active_from``
+        so the caller can walk the supersede chain in order.
+
+        Legacy compatibility: a row with NULL ``active_from`` (predating period stamping)
+        is treated as open-start (covers from ``-inf``) and therefore always overlaps;
+        the orchestrator that consumes this logs a warning when it relies on the fallback.
+        """
+        return (
+            self.db_session.query(TelemetryExpectedBaseline)
+            .filter(
+                TelemetryExpectedBaseline.site_id == site_id,
+                TelemetryExpectedBaseline.baseline_type == baseline_type,
+                TelemetryExpectedBaseline.status.in_(
+                    (
+                        TelemetryBaselineStatus.active,
+                        TelemetryBaselineStatus.superseded,
+                    )
+                ),
+                or_(
+                    TelemetryExpectedBaseline.active_from.is_(None),
+                    TelemetryExpectedBaseline.active_from <= end,
+                ),
+                or_(
+                    TelemetryExpectedBaseline.active_to.is_(None),
+                    TelemetryExpectedBaseline.active_to > start,
+                ),
+            )
+            .order_by(TelemetryExpectedBaseline.active_from.asc().nullsfirst())
+            .all()
+        )
 
     # ------------------------------------------------------------------
     # Writes / lifecycle

@@ -169,6 +169,9 @@ class OMSitePastPerformanceSchema(BaseModel):
     expected_baseline_available: bool = True
     # Additive V2 metadata (None on the legacy BigQuery path) — see ``ExpectedState``.
     expected_state: Optional[str] = None
+    # Additive (period-effective): "active" (single current baseline) vs
+    # "period_effective" (per-period stitched). None on the legacy BigQuery path.
+    baseline_selection_mode: Optional[str] = None
 
 
 class SiteActualVSExpectedPerformance(BaseModel):
@@ -178,6 +181,10 @@ class SiteActualVSExpectedPerformance(BaseModel):
     # points leave this unset. BigQuery-driven points still supply a float.
     expected: Optional[float] = None
     irradiance: float
+    # Additive (period-effective): the baseline that produced this point's
+    # ``expected`` (``None`` on the legacy BigQuery path AND on V2 gap points whose
+    # period had no active baseline — so ``expected`` is null there, not fabricated).
+    baseline_id: Optional[int] = None
 
 
 class SiteActualVSExpectedPerformanceListSchema(BaseModel):
@@ -188,6 +195,9 @@ class SiteActualVSExpectedPerformanceListSchema(BaseModel):
     expected_baseline_available: bool = True
     # Additive V2 metadata (None on the legacy BigQuery path) — see ``ExpectedState``.
     expected_state: Optional[str] = None
+    # Additive (period-effective): "active" (single current baseline) vs
+    # "period_effective" (per-period stitched). None on the legacy BigQuery path.
+    baseline_selection_mode: Optional[str] = None
 
 
 class OMSiteSchema(BaseModel):

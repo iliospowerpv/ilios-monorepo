@@ -52,6 +52,7 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
+from app.crud.telemetry_expected import TelemetryExpectedBaselineCRUD
 from app.crud.telemetry_native import TelemetrySiteRollupCRUD
 from app.services.weather.weather_resolver import (
     ResolvedWeatherProvenance,
@@ -206,6 +207,10 @@ class ExpectedBucket:
     irradiance_wm2: Optional[float]
     cell_temperature_f: Optional[float]
     age_years: Optional[int]
+    # Additive (period-effective): the baseline that produced this bucket. Stamped
+    # by ``compute_site_expected`` so the period-effective orchestrator can dedupe
+    # stitched segments by bucket-start ownership. ``None`` from the pure calc core.
+    baseline_id: Optional[int] = None
 
 
 @dataclass
@@ -228,6 +233,29 @@ class ExpectedResult:
     # ``None`` when no baseline was available (no weather was resolved) — the
     # field defaults at the end so existing constructors stay valid.
     weather_provenance: Optional[ResolvedWeatherProvenance] = None
+    # Additive (period-effective): how the baseline(s) were selected for the window.
+    # ``"active"`` = the legacy single-current-active path (``compute_site_expected``);
+    # ``"period_effective"`` = stitched per-period selection (the orchestrator below).
+    baseline_selection_mode: str = "active"
+    # Per-segment provenance of the stitched result (``None`` on the single-baseline
+    # path). Each entry records which baseline drove which clipped sub-window.
+    baseline_segments: Optional[list["BaselineSegment"]] = None
+
+
+@dataclass(frozen=True)
+class BaselineSegment:
+    """One baseline's clipped effective sub-window inside a period-effective result.
+
+    ``segment_start``/``segment_end`` are the baseline's effective period clipped to
+    the requested window (``active_from``/``active_to`` may extend beyond it). A NULL
+    ``active_from`` means the baseline was treated as open-start (legacy compat).
+    """
+
+    baseline_id: int
+    active_from: Optional[datetime]
+    active_to: Optional[datetime]
+    segment_start: datetime
+    segment_end: datetime
 
 
 # ---------------------------------------------------------------------------
@@ -462,6 +490,11 @@ def compute_site_expected(
     bucket_hours = BUCKET_SIZE_TO_HOURS.get(bucket_size, 1.0)
     params = BaselineParams.from_baseline(baseline)
     buckets = compute_expected_buckets(params, bucket_inputs, bucket_hours)
+    # Stamp provenance: every bucket records the baseline that produced it so the
+    # period-effective orchestrator can dedupe stitched segments by bucket-start
+    # ownership (the pure calc core stays baseline-agnostic).
+    for b in buckets:
+        b.baseline_id = baseline.id
 
     ok_buckets = [b for b in buckets if b.status == BucketStatus.ok]
     actual_buckets = [b for b in buckets if b.actual_power_kw is not None]
@@ -524,3 +557,172 @@ def derive_expected_state(result: ExpectedResult) -> ExpectedState:
     if result.missing_inputs_bucket_count >= result.pre_pto_bucket_count:
         return ExpectedState.missing_inputs
     return ExpectedState.pre_pto
+
+
+# ---------------------------------------------------------------------------
+# Period-effective orchestrator (historical expected vs. actual)
+# ---------------------------------------------------------------------------
+
+
+def _effective_baseline_at(baselines, ts: datetime):
+    """The baseline that was ACTIVE at instant ``ts`` per ``active_from``/``active_to``.
+
+    A baseline covers ``[active_from, active_to)`` — ``active_from`` inclusive,
+    ``active_to`` exclusive (NULL = open) — so a bucket exactly at a supersede
+    boundary (``prior.active_to == next.active_from``) belongs to the NEW baseline.
+    A NULL ``active_from`` is treated as open-start (``-inf``). When more than one
+    baseline covers ``ts`` (only possible with overlapping/legacy rows) the one with
+    the LATEST ``active_from`` wins, so a precisely-stamped row always beats an
+    open-start legacy fallback.
+    """
+    best = None
+    best_key: Optional[datetime] = None
+    for b in baselines:
+        active_from = b.active_from
+        active_to = b.active_to
+        if active_from is not None and ts < active_from:
+            continue
+        if active_to is not None and ts >= active_to:
+            continue
+        key = active_from or datetime.min
+        if best is None or key >= best_key:
+            best = b
+            best_key = key
+    return best
+
+
+def compute_site_expected_period_effective(
+    db: Session,
+    *,
+    site,
+    start: datetime,
+    end: datetime,
+    bucket_size: str = "1h",
+    weather_resolver: Optional[WeatherResolver] = None,
+) -> ExpectedResult:
+    """Weather-adjusted expected vs. actual using the baseline ACTIVE in each period.
+
+    Unlike :func:`compute_site_expected` (which applies a single current-active
+    baseline across the whole window), this stitches together every baseline whose
+    effective period (``active_from``..``active_to``) overlaps ``[start, end]`` so a
+    HISTORICAL bucket is computed with the baseline that was actually active then —
+    activating a new baseline never silently rewrites prior periods.
+
+    The physics is unchanged: each overlapping baseline's clipped sub-window is run
+    through :func:`compute_site_expected` verbatim (same reads, same WeatherResolver),
+    and the resulting buckets are deduped by bucket-start ownership against
+    :func:`_effective_baseline_at` (so the inclusive ``get_series`` boundary bucket is
+    counted once, owned by the new baseline). Buckets in periods BEFORE the earliest
+    ``active_from`` have no covering baseline and are simply absent from the result —
+    the caller renders those as honest gaps (expected ``None``), never fabricated.
+
+    No baseline overlaps the window -> ``baseline_not_available`` with no buckets
+    (``baseline_selection_mode="period_effective"``, empty ``baseline_segments``).
+    """
+    crud = TelemetryExpectedBaselineCRUD(db)
+    baselines = crud.get_baselines_effective_in_window(site.id, start, end)
+
+    if any(b.active_from is None for b in baselines):
+        logger.warning(
+            "period_effective_null_active_from site_id=%s — treating NULL active_from "
+            "baseline(s) as open-start (legacy compat)",
+            getattr(site, "id", None),
+        )
+
+    if not baselines:
+        return ExpectedResult(
+            overall_status=OverallStatus.baseline_not_available,
+            baseline_id=None,
+            baseline_type=None,
+            bucket_size=bucket_size,
+            window_start=start,
+            window_end=end,
+            buckets=[],
+            expected_energy_kwh=None,
+            actual_energy_kwh=None,
+            ok_bucket_count=0,
+            missing_inputs_bucket_count=0,
+            pre_pto_bucket_count=0,
+            weather_provenance=None,
+            baseline_selection_mode="period_effective",
+            baseline_segments=[],
+        )
+
+    segments: list[BaselineSegment] = []
+    buckets_by_ts: dict[datetime, ExpectedBucket] = {}
+    baseline_type_value: Optional[str] = None
+    for baseline in baselines:
+        active_from = baseline.active_from
+        active_to = baseline.active_to
+        seg_start = start if active_from is None else max(start, active_from)
+        seg_end = end if active_to is None else min(end, active_to)
+        if seg_start > seg_end:
+            # No overlap inside the window (defensive — the CRUD filter should
+            # already exclude this); skip without a segment.
+            continue
+        seg_result = compute_site_expected(
+            db,
+            site=site,
+            baseline=baseline,
+            start=seg_start,
+            end=seg_end,
+            bucket_size=bucket_size,
+            weather_resolver=weather_resolver,
+        )
+        baseline_type_value = seg_result.baseline_type or baseline_type_value
+        segments.append(
+            BaselineSegment(
+                baseline_id=baseline.id,
+                active_from=active_from,
+                active_to=active_to,
+                segment_start=seg_start,
+                segment_end=seg_end,
+            )
+        )
+        for bucket in seg_result.buckets:
+            owner = _effective_baseline_at(baselines, bucket.bucket_start)
+            # Keep a bucket only from the segment whose baseline actually owns that
+            # timestamp — this discards the duplicate boundary bucket the inclusive
+            # ``get_series`` returns to the PRIOR segment.
+            if owner is not None and owner.id == baseline.id:
+                buckets_by_ts[bucket.bucket_start] = bucket
+
+    stitched = [buckets_by_ts[ts] for ts in sorted(buckets_by_ts)]
+    ok_buckets = [b for b in stitched if b.status == BucketStatus.ok]
+    actual_buckets = [b for b in stitched if b.actual_power_kw is not None]
+    bucket_hours = BUCKET_SIZE_TO_HOURS.get(bucket_size, 1.0)
+    expected_energy = (
+        sum(b.expected_energy_kwh for b in ok_buckets) if ok_buckets else None
+    )
+    actual_energy = (
+        sum(b.actual_power_kw * bucket_hours for b in actual_buckets)
+        if actual_buckets
+        else None
+    )
+
+    distinct_baseline_ids = {s.baseline_id for s in segments}
+    result_baseline_id = (
+        next(iter(distinct_baseline_ids)) if len(distinct_baseline_ids) == 1 else None
+    )
+
+    return ExpectedResult(
+        overall_status=OverallStatus.ok,
+        baseline_id=result_baseline_id,
+        baseline_type=baseline_type_value,
+        bucket_size=bucket_size,
+        window_start=start,
+        window_end=end,
+        buckets=stitched,
+        expected_energy_kwh=expected_energy,
+        actual_energy_kwh=actual_energy,
+        ok_bucket_count=len(ok_buckets),
+        missing_inputs_bucket_count=sum(
+            1 for b in stitched if b.status == BucketStatus.missing_inputs
+        ),
+        pre_pto_bucket_count=sum(
+            1 for b in stitched if b.status == BucketStatus.pre_pto
+        ),
+        weather_provenance=None,
+        baseline_selection_mode="period_effective",
+        baseline_segments=segments,
+    )

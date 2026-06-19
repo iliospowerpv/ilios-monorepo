@@ -1,0 +1,235 @@
+Start implementation sprint: Period-Effective Baseline Selection for Historical Expected Values.
+
+Context:
+Draft Baseline Review Panel is complete and merged:
+
+* frontend-only
+* read-only
+* GET-only baseline list/active APIs
+* draft selector
+* full provenance display
+* optional-default labels
+* PTO warning
+* approved-not-active list
+* active baseline summary
+* no approve/activate controls
+* no lifecycle/expected-math/preview/ingestion/resolver/eligibility/project_facts/SAFL/legacy changes
+
+The Expected Baseline Draft Review & Activation UX audit found a critical historical integrity issue:
+
+* the backend already has draft → approved → active lifecycle
+* active_from, active_to, and supersedes_baseline_id exist on telemetry_expected_baselines
+* activating a new baseline supersedes the prior active baseline and sets active_to/active_from
+* however, O&M expected currently reads the single current active baseline without effective-date filtering
+* therefore activating a new baseline can silently rewrite historical expected/comparative performance for prior periods
+
+Objective:
+Fix the expected read path so historical expected values are selected from the baseline that was active during the relevant period, rather than always using the current active baseline.
+
+This is the prerequisite for safely exposing baseline activation.
+
+Hard constraints:
+
+* Do not expose approve/activate UI in this sprint.
+* Do not add activation buttons.
+* Do not change baseline lifecycle states.
+* Do not change the expected physics formula.
+* Do not change telemetry ingestion.
+* Do not change WeatherResolver.
+* Do not change device eligibility.
+* Do not mutate project_facts.
+* Do not mutate accepted values.
+* Do not silently normalize values.
+* Do not rewrite historical analytics.
+* Do not backfill expected values automatically.
+* Do not create or activate baselines.
+* Do not use SAFL as a baseline source.
+* Do not reintroduce BigQuery, Firestore, or legacy telemetry.
+* Do not touch plaintext secrets.
+* Preserve honest null behavior:
+
+  * no active/effective baseline → baseline_not_available / expected null
+  * pre-PTO → expected null
+  * missing weather inputs → expected null
+  * never fabricate zero expected
+
+Durable platform invariant:
+Never allow accepted, promoted, baseline, or O&M state to silently survive upstream source changes. Upstream changes must create a new lineage, mark dependent state stale, require re-review, or create explicit supersession. Historical data must remain preserved and auditable.
+
+Scope A — Audit current active baseline selection
+
+Identify all places where expected values are computed from an active weather-adjusted baseline.
+
+Inspect at minimum:
+
+* backend/ilios-server/app/helpers/telemetry/v2_chart_data.py
+* backend/ilios-server/app/services/telemetry/expected_service.py
+* backend/ilios-server/app/crud/telemetry_expected.py
+* O&M site chart endpoints
+* company/investor table V2 expected helpers
+* expected-preview endpoint
+* losses/performance helpers
+* any aggregation that calls compute_site_expected or get_active
+
+For each call site:
+
+* whether it should remain current-active only
+* whether it needs period-effective selection
+* whether it is a preview/current-state view
+* whether it covers a historical window
+* expected behavior after this sprint
+
+B. Add period-effective baseline lookup
+
+Add a read-only helper that selects the correct baseline for a site, baseline_type, and timestamp/window.
+
+Rules:
+
+* For a bucket timestamp T, select the baseline where:
+
+  * baseline_type = weather_adjusted_model
+  * status in active or superseded, as appropriate
+  * active_from <= T
+  * active_to is null OR T < active_to
+* Current active baseline has active_to null.
+* Superseded baselines may cover historical periods via active_from / active_to.
+* If no baseline covers T, expected is null with baseline_not_available.
+* Do not use draft or approved baselines for O&M expected.
+* Do not use design_estimate baselines for weather-adjusted expected.
+
+If a chart window spans multiple baseline effective periods:
+
+* split computation by baseline period, or
+* compute per bucket using the baseline effective at that bucket
+* preserve baseline_id/provenance per bucket if response schema can support it additively
+
+Do not change the physics formula. Only change which immutable baseline snapshot is selected for each timestamp.
+
+C. O&M expected/comparative charts
+
+Update O&M expected read path so:
+
+* historical periods use the baseline that was active during that period
+* current/future periods use the current active baseline
+* periods before any active baseline return expected null / baseline_not_available
+* chart does not fabricate expected 0
+* if the window crosses baseline activation, expected may change from one baseline to another at the activation boundary
+
+Where response schemas allow, include additive metadata:
+
+* baseline_id used
+* baseline_active_from
+* baseline_active_to
+* baseline_selection_mode = period_effective
+* baseline_gap flag if no baseline covered the bucket
+
+If schema cannot safely include per-bucket metadata yet, include summary metadata where possible and document the limitation.
+
+D. Company / investor / portfolio aggregations
+
+Review company/investor site-table expected helpers that were recently made V2-native.
+
+Determine whether they:
+
+* use latest actual bucket only
+* compare current values only
+* sum historical windows
+* need period-effective selection
+
+Rules:
+
+* latest/current-point views may use the baseline effective at the latest actual bucket.
+* cumulative historical comparisons must use period-effective baselines over the comparable buckets.
+* do not regress the prior strict alignment fix:
+
+  * expected_kw anchored to latest actual bucket
+  * cumulative summed over comparable ok + actual-present set
+  * genuine 0 preserved
+  * missing remains None
+
+E. Expected preview endpoint
+
+Do not change preview semantics for drafts in this sprint unless required.
+
+For preview of active/superseded baselines:
+
+* explicit baseline_id preview should continue to compute using that selected baseline for preview purposes
+* preview should not accidentally switch to period-effective selection when user intentionally previews a specific baseline
+* document distinction:
+
+  * explicit baseline preview = use selected baseline
+  * O&M historical expected = period-effective baseline selection
+
+F. Baseline activation audit metadata
+
+Do not add activation UI.
+
+If backend can add read-only/additive metadata safely:
+
+* expose baseline_id used in chart/expected response
+* expose active_from/active_to
+* expose supersedes_baseline_id where useful
+
+Do not add migrations unless absolutely necessary.
+
+G. Tests
+
+Add/update backend tests for:
+
+1. Current active baseline still used for current bucket.
+2. Superseded baseline used for bucket inside its active_from/active_to period.
+3. Current active baseline used for bucket after its active_from.
+4. No baseline covering bucket returns expected null / baseline_not_available.
+5. Window spanning two baselines uses baseline A before boundary and baseline B after boundary.
+6. Physics formula output unchanged for a given baseline.
+7. Pre-PTO remains expected null.
+8. Missing weather inputs remain expected null.
+9. Draft and approved baselines are not used for O&M expected.
+10. Design-estimate baselines are not used for weather-adjusted expected.
+11. Company/investor cumulative comparison uses period-effective baseline where historical.
+12. Latest expected_kw remains anchored to latest actual bucket.
+13. Genuine 0 actual/expected is preserved where valid.
+14. Missing expected remains None, not 0.
+15. Existing expected-preview with explicit baseline_id remains unchanged.
+16. O&M site chart tests still pass.
+17. Backend boots clean.
+18. Frontend compile passes if touched.
+19. Architect review passes.
+
+H. Validation
+
+Run:
+
+* targeted backend telemetry expected tests
+* targeted O&M chart tests
+* targeted company/investor V2 table tests if touched
+* backend startup
+* frontend compile/typecheck if touched
+* architect review
+
+Return:
+
+* files changed
+* call-site audit
+* period-effective lookup behavior
+* chart behavior
+* aggregation behavior
+* preview behavior
+* metadata added
+* tests run/skipped with reason
+* validation results
+* remaining risks
+* recommended next sprint
+
+Do not:
+
+* expose activation UI
+* approve or activate baselines
+* implement draft preview
+* implement design-estimate points flow
+* change formulas
+* backfill or rewrite historical analytics
+* mutate project_facts
+* mutate baselines beyond read path
+* create new baseline rows
+* use legacy paths

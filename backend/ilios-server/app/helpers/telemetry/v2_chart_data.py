@@ -6,13 +6,19 @@ provider/credential call. Used to give the O&M charts V2-first precedence: when
 a site has any V2 rollups, the charts render from V2 and never fall back to
 stale BigQuery.
 
-Expected values come ONLY from an active ``weather_adjusted_model`` baseline run
-through :func:`compute_site_expected`. If the site has no active baseline (or the
-baseline has no computable inputs for the window), ``expected`` is left ``None``
-and the section is flagged accordingly — the actual series is always rendered, we
-never fabricate an expected line or collapse a missing expected to 0. The
-additive ``expected_state`` metadata lets the frontend distinguish fully
-available vs partial vs the specific missing reason (see ``ExpectedState``).
+Expected values come ONLY from ``weather_adjusted_model`` baselines. The HISTORICAL
+sections (actual-vs-expected + past-performance) use
+:func:`compute_site_expected_period_effective`, which stitches together the baseline
+that was ACTIVE during each bucket's period (via ``active_from``/``active_to``) so
+activating a new baseline never rewrites prior periods; the live "today/now" fields
+(:func:`apply_v2_actual_production`) stay on the current-active baseline. If no
+baseline covers a bucket's period (or the baseline has no computable inputs for the
+window), ``expected`` is left ``None`` and the section is flagged accordingly — the
+actual series is always rendered (including across uncovered pre-baseline gaps), we
+never fabricate an expected line or collapse a missing expected to 0. The additive
+``expected_state``/``baseline_selection_mode``/per-point ``baseline_id`` metadata lets
+the frontend distinguish fully available vs partial vs the specific missing reason
+(see ``ExpectedState``).
 """
 from __future__ import annotations
 
@@ -32,8 +38,10 @@ from app.services.telemetry.expected_service import (
     BucketStatus,
     ExpectedResult,
     ExpectedState,
+    OverallStatus,
     _site_local_date,
     compute_site_expected,
+    compute_site_expected_period_effective,
     derive_expected_state,
 )
 
@@ -180,60 +188,94 @@ def _expected_power_for_bucket(
 
 
 def build_actual_vs_expected_section(db_session: Session, site) -> dict:
-    """Hourly actual power + irradiance (+ expected when a baseline exists).
+    """Hourly actual power + irradiance (+ period-effective expected).
 
     Returns the full section payload (``data`` + the additive metadata) for the
-    ``SiteActualVSExpectedPerformanceListSchema``:
+    ``SiteActualVSExpectedPerformanceListSchema``. Expected is selected
+    PERIOD-EFFECTIVELY: each historical bucket uses the baseline that was active
+    during that bucket's period (see
+    :func:`compute_site_expected_period_effective`), so activating a new baseline
+    never silently rewrites the prior expected line.
 
-    * No active baseline -> ``data`` is the actual power + irradiance series with
-      every point's ``expected`` = ``None`` (kept visible, no expected line);
-      ``expected_baseline_available`` False, state ``baseline_not_available``.
-    * Active baseline -> ``data`` is built from the calc buckets; each point's
-      ``expected`` is the computed expected power (``None`` for a
-      missing-inputs/pre-PTO bucket — never fabricated). ``actual``/``irradiance``
-      are non-optional in the schema, so a bucket missing that metric is 0.0-filled.
+    * No baseline overlaps the window -> ``data`` is the actual power + irradiance
+      series with every point's ``expected`` = ``None`` (kept visible, no expected
+      line); ``expected_baseline_available`` False, state ``baseline_not_available``.
+    * Baseline(s) overlap -> ``data`` is the stitched calc buckets (each point's
+      ``expected`` is the computed expected power, ``None`` for a
+      missing-inputs/pre-PTO bucket — never fabricated) PLUS the GAP regions:
+      timestamps that have actual/irradiance data but fall in a period NO baseline
+      covered, rendered with ``expected``/``baseline_id`` = ``None`` so the actual
+      line stays continuous and honest. ``actual``/``irradiance`` are non-optional
+      in the schema, so a bucket missing that metric is 0.0-filled. Each point
+      carries the ``baseline_id`` that produced its expected.
     """
     end = datetime.utcnow()
     start = end - timedelta(days=_ACTUAL_VS_EXPECTED_DAYS)
-    baseline = _active_baseline(db_session, site.id)
-    if baseline is None:
-        return {
-            "data": _actual_irradiance_series(db_session, site.id, start, end),
-            "expected_baseline_available": False,
-            "expected_state": ExpectedState.baseline_not_available.value,
-        }
-    result = compute_site_expected(
+    result = compute_site_expected_period_effective(
         db_session,
         site=site,
-        baseline=baseline,
         start=start,
         end=end,
         bucket_size=CHART_BUCKET_SIZE,
     )
+    if result.overall_status == OverallStatus.baseline_not_available:
+        return {
+            "data": _actual_irradiance_series(db_session, site.id, start, end),
+            "expected_baseline_available": False,
+            "expected_state": ExpectedState.baseline_not_available.value,
+            "baseline_selection_mode": result.baseline_selection_mode,
+        }
     data = [
         {
             "period": b.bucket_start,
             "actual": b.actual_power_kw if b.actual_power_kw is not None else 0.0,
             "expected": b.expected_power_kw,  # None for missing_inputs / pre_pto
             "irradiance": b.irradiance_wm2 if b.irradiance_wm2 is not None else 0.0,
+            "baseline_id": b.baseline_id,
         }
         for b in result.buckets
     ]
+    # Gap regions: timestamps with actual/irradiance data in a period no baseline
+    # covered. Render them so the actual line stays continuous, but with
+    # ``expected``/``baseline_id`` = ``None`` (never a fabricated expected).
+    covered_ts = {b.bucket_start for b in result.buckets}
+    power_by_ts, irradiance_by_ts = _power_irradiance_maps(
+        db_session, site.id, start, end
+    )
+    gap_ts = (set(power_by_ts) | set(irradiance_by_ts)) - covered_ts
+    gap_with_actual = any(ts in power_by_ts for ts in gap_ts)
+    for ts in gap_ts:
+        data.append(
+            {
+                "period": ts,
+                "actual": power_by_ts.get(ts, 0.0),
+                "expected": None,
+                "irradiance": irradiance_by_ts.get(ts, 0.0),
+                "baseline_id": None,
+            }
+        )
+    data.sort(key=lambda p: p["period"])
+
+    state = derive_expected_state(result)
+    if gap_with_actual and state == ExpectedState.available:
+        # Real production exists in a period with no covering baseline: the
+        # expected line cannot be complete, so the section is partial, not full.
+        state = ExpectedState.partial
     return {
         "data": data,
         "expected_baseline_available": True,
-        "expected_state": derive_expected_state(result).value,
+        "expected_state": state.value,
+        "baseline_selection_mode": result.baseline_selection_mode,
     }
 
 
-def _actual_irradiance_series(
+def _power_irradiance_maps(
     db_session: Session, site_id: int, start: datetime, end: datetime
-) -> list[dict]:
-    """Actual power + irradiance points (expected ``None``) for the no-baseline path.
+) -> tuple[dict[datetime, float], dict[datetime, float]]:
+    """``(power_by_ts, irradiance_by_ts)`` site rollup maps over ``[start, end]``.
 
-    Union of the power and irradiance buckets, aligned on ``bucket_start``; a
-    metric missing for a given bucket is 0.0-filled so the response always
-    satisfies the (non-optional) ``actual``/``irradiance`` schema fields.
+    Shared by the no-baseline actual-only series and the period-effective gap-fill
+    so both read the SAME power/irradiance window.
     """
     crud = TelemetrySiteRollupCRUD(db_session)
     power_rows = crud.get_series(
@@ -252,6 +294,21 @@ def _actual_irradiance_series(
     )
     power_by_ts = {row.bucket_start: float(row.value) for row in power_rows}
     irradiance_by_ts = {row.bucket_start: float(row.value) for row in irradiance_rows}
+    return power_by_ts, irradiance_by_ts
+
+
+def _actual_irradiance_series(
+    db_session: Session, site_id: int, start: datetime, end: datetime
+) -> list[dict]:
+    """Actual power + irradiance points (expected ``None``) for the no-baseline path.
+
+    Union of the power and irradiance buckets, aligned on ``bucket_start``; a
+    metric missing for a given bucket is 0.0-filled so the response always
+    satisfies the (non-optional) ``actual``/``irradiance`` schema fields.
+    """
+    power_by_ts, irradiance_by_ts = _power_irradiance_maps(
+        db_session, site_id, start, end
+    )
     all_buckets = sorted(set(power_by_ts) | set(irradiance_by_ts))
     return [
         {
@@ -259,6 +316,7 @@ def _actual_irradiance_series(
             "actual": power_by_ts.get(bucket, 0.0),
             "expected": None,
             "irradiance": irradiance_by_ts.get(bucket, 0.0),
+            "baseline_id": None,
         }
         for bucket in all_buckets
     ]
@@ -269,36 +327,52 @@ def build_past_performance_section(db_session: Session, site) -> dict:
 
     Mirrors the legacy daily past-performance chart but from V2:
 
-    * No active baseline -> empty ``data`` flagged ``baseline_not_available`` (the
-      frontend shows a no-baseline message rather than empty bars).
-    * Active baseline -> hourly ``ok`` buckets are aggregated to SITE-LOCAL days;
-      each day's percent is ``Σ actual_kwh / Σ expected_kwh`` over that day's
-      ``ok`` buckets only. A day with no ``ok`` bucket (or zero expected energy)
-      maps to ``None`` so the frontend shows an honest gap, never a fabricated 0%.
+    * No baseline overlaps the window -> empty ``data`` flagged
+      ``baseline_not_available`` (the frontend shows a no-baseline message).
+    * Baseline(s) overlap -> expected is selected PERIOD-EFFECTIVELY (each bucket
+      uses the baseline active during its period), then hourly ``ok`` buckets are
+      aggregated to SITE-LOCAL days; each day's percent is
+      ``Σ actual_kwh / Σ expected_kwh`` over that day's ``ok`` buckets only. A day
+      with no ``ok`` bucket (or zero expected energy) maps to ``None`` so the
+      frontend shows an honest gap, never a fabricated 0%. ``days_seen`` is seeded
+      from the FULL power∪irradiance window so a day that falls in a period with no
+      covering baseline still appears (with an honest ``None`` percent), rather than
+      silently vanishing from the chart.
     """
     end = datetime.utcnow()
     start = end - timedelta(days=_PAST_PERFORMANCE_DAYS)
-    baseline = _active_baseline(db_session, site.id)
-    if baseline is None:
-        return {
-            "data": {},
-            "expected_baseline_available": False,
-            "expected_state": ExpectedState.baseline_not_available.value,
-        }
-    result = compute_site_expected(
+    result = compute_site_expected_period_effective(
         db_session,
         site=site,
-        baseline=baseline,
         start=start,
         end=end,
         bucket_size=CHART_BUCKET_SIZE,
     )
+    if result.overall_status == OverallStatus.baseline_not_available:
+        return {
+            "data": {},
+            "expected_baseline_available": False,
+            "expected_state": ExpectedState.baseline_not_available.value,
+            "baseline_selection_mode": result.baseline_selection_mode,
+        }
     tz_name = getattr(site, "timezone", None) or "UTC"
     bucket_hours = BUCKET_SIZE_TO_HOURS.get(CHART_BUCKET_SIZE, 1.0)
 
     actual_kwh_by_day: dict[date, float] = defaultdict(float)
     expected_kwh_by_day: dict[date, float] = defaultdict(float)
     days_seen: set[date] = set()
+    # Seed days from the FULL power∪irradiance window so days in uncovered periods
+    # still show (as honest ``None``); also detect production in a gap period.
+    covered_ts = {b.bucket_start for b in result.buckets}
+    power_by_ts, irradiance_by_ts = _power_irradiance_maps(
+        db_session, site.id, start, end
+    )
+    gap_with_actual = False
+    for ts in set(power_by_ts) | set(irradiance_by_ts):
+        days_seen.add(_site_local_date(ts, tz_name))
+        if ts not in covered_ts and ts in power_by_ts:
+            gap_with_actual = True
+
     for b in result.buckets:
         local_day = _site_local_date(b.bucket_start, tz_name)
         days_seen.add(local_day)
@@ -319,10 +393,16 @@ def build_past_performance_section(db_session: Session, site) -> dict:
             data[day_key] = calculate_actual_vs_expected(
                 actual_kwh_by_day.get(day, 0.0), expected_kwh
             )
+
+    state = derive_expected_state(result)
+    if gap_with_actual and state == ExpectedState.available:
+        # Real production exists in a period with no covering baseline: incomplete.
+        state = ExpectedState.partial
     return {
         "data": data,
         "expected_baseline_available": True,
-        "expected_state": derive_expected_state(result).value,
+        "expected_state": state.value,
+        "baseline_selection_mode": result.baseline_selection_mode,
     }
 
 

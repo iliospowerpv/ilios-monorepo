@@ -44,7 +44,14 @@ def _bucket(ts, status, *, exp_p=None, exp_e=None, act=None, irr=None):
     )
 
 
-def _result(buckets, *, overall=OverallStatus.ok, baseline_id=7, exp_energy=None):
+def _result(
+    buckets,
+    *,
+    overall=OverallStatus.ok,
+    baseline_id=7,
+    exp_energy=None,
+    selection_mode="active",
+):
     return ExpectedResult(
         overall_status=overall,
         baseline_id=baseline_id,
@@ -60,6 +67,7 @@ def _result(buckets, *, overall=OverallStatus.ok, baseline_id=7, exp_energy=None
             1 for b in buckets if b.status == BucketStatus.missing_inputs
         ),
         pre_pto_bucket_count=sum(1 for b in buckets if b.status == BucketStatus.pre_pto),
+        baseline_selection_mode=selection_mode,
     )
 
 
@@ -315,52 +323,94 @@ def test_apply_actual_production_baseline_latest_bucket_missing(monkeypatch):
 # build_actual_vs_expected_section
 # ---------------------------------------------------------------------------
 def test_actual_vs_expected_section_no_baseline(monkeypatch):
-    monkeypatch.setattr(v2, "_active_baseline", lambda _db, _sid: None)
-    sentinel = [{"period": datetime(2026, 6, 10), "actual": 1.0, "expected": None, "irradiance": 2.0}]
+    no_baseline = _result(
+        [],
+        overall=OverallStatus.baseline_not_available,
+        baseline_id=None,
+        selection_mode="period_effective",
+    )
+    monkeypatch.setattr(
+        v2, "compute_site_expected_period_effective", lambda *a, **k: no_baseline
+    )
+    sentinel = [
+        {
+            "period": datetime(2026, 6, 10),
+            "actual": 1.0,
+            "expected": None,
+            "irradiance": 2.0,
+            "baseline_id": None,
+        }
+    ]
     monkeypatch.setattr(v2, "_actual_irradiance_series", lambda *a, **k: sentinel)
 
     out = v2.build_actual_vs_expected_section(None, SimpleNamespace(id=1, timezone="UTC"))
     assert out["data"] is sentinel
     assert out["expected_baseline_available"] is False
     assert out["expected_state"] == ExpectedState.baseline_not_available.value
+    assert out["baseline_selection_mode"] == "period_effective"
 
 
 def test_actual_vs_expected_section_with_baseline_passthrough_and_fill(monkeypatch):
-    monkeypatch.setattr(v2, "_active_baseline", lambda _db, _sid: object())
     result = _result(
         [
             # ok bucket: expected passes through, actual/irradiance present
             _bucket(datetime(2026, 6, 10, 10), BucketStatus.ok, exp_p=8.0, act=7.0, irr=600.0),
             # missing bucket: expected None, actual/irradiance None -> 0.0-filled
             _bucket(datetime(2026, 6, 10, 11), BucketStatus.missing_inputs),
-        ]
+        ],
+        selection_mode="period_effective",
     )
-    monkeypatch.setattr(v2, "compute_site_expected", lambda *a, **k: result)
+    monkeypatch.setattr(
+        v2, "compute_site_expected_period_effective", lambda *a, **k: result
+    )
+    # No extra power/irradiance beyond the computed buckets -> no gap fill.
+    monkeypatch.setattr(v2, "_power_irradiance_maps", lambda *a, **k: ({}, {}))
 
     out = v2.build_actual_vs_expected_section(None, SimpleNamespace(id=1, timezone="UTC"))
     assert out["expected_baseline_available"] is True
     assert out["expected_state"] == ExpectedState.partial.value
+    assert out["baseline_selection_mode"] == "period_effective"
     p0, p1 = out["data"]
-    assert p0 == {"period": datetime(2026, 6, 10, 10), "actual": 7.0, "expected": 8.0, "irradiance": 600.0}
+    assert p0 == {
+        "period": datetime(2026, 6, 10, 10),
+        "actual": 7.0,
+        "expected": 8.0,
+        "irradiance": 600.0,
+        "baseline_id": None,
+    }
     # missing-inputs bucket: expected stays None (never fabricated), others 0.0-filled
-    assert p1 == {"period": datetime(2026, 6, 10, 11), "actual": 0.0, "expected": None, "irradiance": 0.0}
+    assert p1 == {
+        "period": datetime(2026, 6, 10, 11),
+        "actual": 0.0,
+        "expected": None,
+        "irradiance": 0.0,
+        "baseline_id": None,
+    }
 
 
 # ---------------------------------------------------------------------------
 # build_past_performance_section
 # ---------------------------------------------------------------------------
 def test_past_performance_no_baseline(monkeypatch):
-    monkeypatch.setattr(v2, "_active_baseline", lambda _db, _sid: None)
+    no_baseline = _result(
+        [],
+        overall=OverallStatus.baseline_not_available,
+        baseline_id=None,
+        selection_mode="period_effective",
+    )
+    monkeypatch.setattr(
+        v2, "compute_site_expected_period_effective", lambda *a, **k: no_baseline
+    )
     out = v2.build_past_performance_section(None, SimpleNamespace(id=1, timezone="UTC"))
     assert out == {
         "data": {},
         "expected_baseline_available": False,
         "expected_state": ExpectedState.baseline_not_available.value,
+        "baseline_selection_mode": "period_effective",
     }
 
 
 def test_past_performance_daily_aggregation(monkeypatch):
-    monkeypatch.setattr(v2, "_active_baseline", lambda _db, _sid: object())
     result = _result(
         [
             # Day 2026-06-09: two ok buckets -> Σactual 20 / Σexpected 20 = 100%
@@ -370,12 +420,18 @@ def test_past_performance_daily_aggregation(monkeypatch):
             _bucket(datetime(2026, 6, 10, 10), BucketStatus.missing_inputs),
             # Day 2026-06-11: ok bucket, zero actual vs real expected -> genuine 0%
             _bucket(datetime(2026, 6, 11, 10), BucketStatus.ok, exp_e=10.0, act=0.0),
-        ]
+        ],
+        selection_mode="period_effective",
     )
-    monkeypatch.setattr(v2, "compute_site_expected", lambda *a, **k: result)
+    monkeypatch.setattr(
+        v2, "compute_site_expected_period_effective", lambda *a, **k: result
+    )
+    # No extra power/irradiance beyond the computed buckets -> no gap days.
+    monkeypatch.setattr(v2, "_power_irradiance_maps", lambda *a, **k: ({}, {}))
 
     out = v2.build_past_performance_section(None, SimpleNamespace(id=1, timezone="UTC"))
     assert out["expected_baseline_available"] is True
+    assert out["baseline_selection_mode"] == "period_effective"
     assert out["data"] == {
         datetime(2026, 6, 9): 100,
         datetime(2026, 6, 10): None,
