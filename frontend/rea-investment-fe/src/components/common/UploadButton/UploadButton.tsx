@@ -25,11 +25,14 @@ interface UploadButtonProps {
 }
 
 const isFileAccepted = (file: File, acceptAttr: string): boolean => {
-  if (!acceptAttr || acceptAttr.trim() === '') return true;
-  const tokens = acceptAttr.split(',').map(t => t.trim().toLowerCase());
+  const normalized = (acceptAttr || '').trim();
+  // An empty or wildcard accept means "all file types" (mirrors formatAcceptLabel).
+  if (normalized === '' || normalized === '*' || normalized === '*/*') return true;
+  const tokens = normalized.split(',').map(t => t.trim().toLowerCase());
   const ext = ('.' + (file.name.split('.').pop() || '')).toLowerCase();
   const mime = file.type.toLowerCase();
   return tokens.some(token => {
+    if (token === '*' || token === '*/*') return true;
     if (token.startsWith('.')) return ext === token;
     if (token.endsWith('/*')) return mime.startsWith(token.replace('/*', '/'));
     return mime === token;
@@ -51,15 +54,25 @@ const UploadButton: React.FC<UploadButtonProps> = props => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
 
-  const triggerUpload = useCallback((file: File) => {
-    const input = fileInputRef.current;
-    if (!input) return;
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    input.files = dt.files;
-    const event = new Event('change', { bubbles: true });
-    input.dispatchEvent(event);
-  }, []);
+  const processFile = useCallback(
+    (file: File) => {
+      const input = fileInputRef.current;
+      if (!input) return;
+      // Route dropped files through the same parent handler the native picker
+      // uses, but invoke it directly instead of re-dispatching a DOM "change"
+      // event. A synthesized change is unreliable in React 18 and can deliver a
+      // multipart part with an empty filename, which the backend rejects (400).
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+      handleFileChange({
+        target: input,
+        currentTarget: input
+      } as unknown as React.ChangeEvent<HTMLInputElement>);
+      input.value = '';
+    },
+    [handleFileChange]
+  );
 
   const handleDragEnter = useCallback(
     (e: React.DragEvent) => {
@@ -98,9 +111,9 @@ const UploadButton: React.FC<UploadButtonProps> = props => {
       if (files.length === 0) return;
       const file = files[0];
       if (!isFileAccepted(file, allowedFileTypes)) return;
-      triggerUpload(file);
+      processFile(file);
     },
-    [isUploading, allowedFileTypes, triggerUpload]
+    [isUploading, allowedFileTypes, processFile]
   );
 
   const handleBrowseClick = useCallback(() => {
