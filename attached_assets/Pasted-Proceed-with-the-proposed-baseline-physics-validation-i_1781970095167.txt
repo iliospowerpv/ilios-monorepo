@@ -1,0 +1,95 @@
+Proceed with the proposed baseline physics validation implementation, with the following required refinements.
+
+The approach is approved in principle:
+
+1. Add an additive validation matrix classifying physics inputs as:
+
+   * plausible
+   * warning
+   * hard_invalid
+
+2. Add a deterministic computation smoke test that validates the resulting physics behavior without changing the expected formula.
+
+3. Wire validation fail-closed at activation first.
+
+4. Add a read-time `baseline_invalid` state so O&M does not render a corrupt expected/comparative curve from an invalid active baseline.
+
+5. Correct Site 4 only through a new replacement baseline lifecycle. Never edit baseline #3 in place.
+
+Required refinements and hard constraints:
+
+* “Read-only-respecting” means validation must not mutate any existing baseline, project_fact, accepted value, baseline history, or O&M history.
+* A failed activation validation must leave the draft unchanged and must not alter any existing active baseline.
+* Do not auto-deactivate an invalid active baseline.
+* Do not auto-correct, auto-convert, or silently normalize values.
+* Do not change expected calculation math.
+* Do not change telemetry ingestion, WeatherResolver, device eligibility, SAFL behavior, BigQuery, Firestore, or legacy telemetry paths.
+* Do not backfill or rewrite historical expected values automatically.
+* Preserve period-effective baseline selection.
+
+Smoke-test requirements:
+
+Do not use only “negative expected at cold temperature” as the validator. Validate at least:
+
+* non-finite output values;
+* negative derate factors;
+* negative expected power or energy where not physically valid;
+* impossible temperature-response behavior;
+* invalid or impossible loss/efficiency combinations;
+* physically implausible pre-clipping power;
+* ordinary AC-nameplate clipping remains valid and must not be treated as an error;
+* PTO/pre-PTO and missing-weather null states remain valid honest states, not validation failures.
+
+Validation semantics:
+
+* Hard-invalid inputs or smoke-test failures block activation.
+* Warning-range inputs may allow activation only with explicit reviewer acknowledgement and source note.
+* Draft creation should eventually surface the same findings, but activation is the first mandatory fail-closed gate.
+* Approval should receive a pre-approval gate after activation validation is proven stable.
+* Every validation result must return:
+
+  * field
+  * entered value
+  * expected unit
+  * classification
+  * reason
+  * source/provenance where available
+  * validation policy/version
+  * required action
+
+Active invalid baseline behavior:
+
+If an active baseline fails validation:
+
+* expose `baseline_invalid` on expected/O&M responses;
+* preserve actual telemetry display;
+* return expected as null/unavailable, never zero;
+* show a clear O&M warning:
+  “Expected comparison unavailable: active baseline requires replacement.”
+* provide a deep link to Draft Baseline Review / replacement workflow;
+* do not silently deactivate the baseline;
+* do not alter historical baseline records.
+
+Validation versioning:
+
+Persist or otherwise expose the validation-policy version used for a baseline validation result. A later policy change must not silently reinterpret historical baseline validity without indicating the policy/version change.
+
+Site 4 replacement flow:
+
+* Leave baseline #3 immutable.
+* Identify authoritative source values from module/inverter datasheets, warranty, PVsyst, or reviewer-confirmed source notes.
+* Create a corrected replacement draft.
+* Show side-by-side comparison against baseline #3:
+
+  * changed field
+  * old value
+  * new value
+  * source/provenance
+  * validation result
+  * expected impact where safely calculable
+* Approve and activate the replacement.
+* Supersede baseline #3 at the activation boundary.
+* Preserve period-effective historical behavior.
+* Do not automatically recalculate earlier historical periods.
+
+Before implementation, return the exact proposed validation matrix and smoke-test probes for approval. Do not invent engineering ranges without documenting their source or marking them as conservative platform guardrails.
