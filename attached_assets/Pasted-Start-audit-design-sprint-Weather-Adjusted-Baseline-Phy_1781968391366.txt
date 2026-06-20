@@ -1,0 +1,155 @@
+Start audit/design sprint: Weather-Adjusted Baseline Physics Validation and Replacement Lifecycle.
+
+This is an audit/design sprint first. Do not silently edit active baseline id 3, project_facts, accepted values, or historical O&M data. Do not implement production changes unless approved in a follow-up sprint.
+
+Context:
+Site 4 completed the intended workflow:
+
+* normalized source values selected
+* required reviewer fields entered
+* draft weather-adjusted baseline created
+* baseline approved
+* baseline activated
+
+A PTO/state propagation issue was fixed, and period-effective O&M now returns expected buckets.
+
+However, the active baseline now exposes invalid or questionable physics inputs:
+
+* thermal_coefficient_pct = 350, which is incompatible with the intended percent-per-degree-Celsius semantics
+* power_tolerance_min_pct = 5.0, requiring source confirmation
+* year_1_degradation_pct = 2.5, requiring source confirmation
+
+This makes expected/comparative output unreliable even though the baseline is technically active.
+
+Strategic objective:
+Define and implement the safe validation and replacement lifecycle required to prevent invalid weather-adjusted baselines from being approved or activated, while preserving baseline history and requiring authoritative source-backed corrections.
+
+Hard constraints:
+
+* Do not silently edit active baseline id 3.
+* Do not mutate project_facts.
+* Do not mutate accepted values.
+* Do not rewrite historical O&M analytics.
+* Do not backfill expected values automatically.
+* Do not change expected physics formula.
+* Do not change telemetry ingestion, WeatherResolver, device eligibility, or period-effective baseline selection.
+* Do not use SAFL as a baseline source.
+* Do not reintroduce BigQuery, Firestore, or legacy telemetry.
+* Preserve the existing lifecycle:
+  draft → approved → active → superseded.
+* Corrected values must produce a new replacement baseline, never mutate an existing active snapshot.
+
+Audit areas:
+
+1. Baseline input validation inventory
+   For every required and optional weather-adjusted baseline field, document:
+
+* expected unit
+* allowed numeric range
+* plausible warning range
+* hard-block range
+* whether negative values are expected
+* whether zero is acceptable
+* whether source confirmation should be required
+
+At minimum include:
+
+* module_wattage
+* module_quantity
+* inverter_wattage
+* inverter_quantity
+* thermal_coefficient_pct
+* power_tolerance_min_pct
+* year_1_degradation_pct
+* annual_degradation_pct
+* cec_efficiency_pct
+* loss fields
+* soiling_factor
+* PTO date
+
+2. Thermal coefficient semantics
+   Trace exactly how thermal_coefficient_pct is consumed by the expected formula.
+
+Determine:
+
+* expected stored unit and sign convention
+* expected example value representation
+* whether the intended value is expressed as -0.35, -0.0035, or another representation
+* whether a value of 350 could result from a decimal/percent/unit conversion error
+* how the UI should explain the accepted representation
+
+3. Existing Site 4 baseline audit
+   Read baseline id 3 only. Report:
+
+* all stored model parameters
+* provenance of each field
+* reviewer-supplied vs fact-backed vs normalized vs defaulted inputs
+* values outside plausible range
+* values requiring source confirmation
+* whether current expected output is negative, implausible, or otherwise unreliable
+* whether the baseline should show a visible “invalid / review required” warning pending replacement
+
+Do not change data in this audit.
+
+4. Approval/activation guard design
+   Design a validation gate that runs:
+
+* before draft creation where possible
+* before approval
+* before activation
+
+Rules:
+
+* hard-invalid values must block approval and activation
+* questionable but plausible values should require explicit reviewer acknowledgment and source note
+* baseline review must show the exact field, expected unit, entered value, and reason
+* no silent coercion or conversion
+* source-backed evidence should be linked where available
+
+5. Replacement baseline lifecycle
+   Design the correct user flow for Site 4:
+
+* upload/parse authoritative module and inverter datasheets
+* accept/normalize/promote source values
+* create replacement draft baseline
+* compare replacement draft against baseline 3
+* approve replacement
+* activate replacement
+* baseline 3 becomes superseded at the activation boundary
+* historical periods remain period-effective
+* no automatic historical backfill
+
+6. O&M safety behavior
+   Design what O&M should display when an active baseline is technically active but has failed plausibility validation:
+
+* clear warning state
+* expected/comparative output marked unreliable
+* never hide actual telemetry
+* never fabricate 0
+* no automatic deactivation without explicit policy
+
+7. Tests to design
+   Include:
+
+* thermal coefficient 350 blocks approval/activation
+* plausible thermal coefficient passes
+* ambiguous unit cannot bypass validation
+* questionable degradation requires acknowledgment/source note
+* corrected replacement baseline supersedes prior active baseline
+* no mutation of old baseline
+* historical period-effective behavior preserved
+* O&M warning appears for invalid active baseline
+* no formula, telemetry, weather, or legacy-path regressions
+
+Deliverable:
+Create docs/weather_adjusted_baseline_physics_validation_audit.md with:
+
+* validation matrix
+* Site 4 read-only assessment
+* lifecycle recommendation
+* UX design
+* replacement plan
+* test plan
+* exact follow-up implementation phases
+
+No production code changes in this sprint.
