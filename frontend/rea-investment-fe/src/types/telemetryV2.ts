@@ -835,3 +835,72 @@ export interface ExpectedBaselineListResponse {
   site_id: number;
   baselines: ExpectedBaselineResponse[];
 }
+
+// ---------------------------------------------------------------------------
+// Baseline physics validation + replacement diff (read-only)
+//
+// Mirrors the backend fail-closed validation report (`to_dict`) and the
+// replacement diff schemas. The validation report carries many fields; only the
+// ones the UI reads are typed, with an index signature for forward-compat.
+// ---------------------------------------------------------------------------
+export interface BaselinePhysicsValidation {
+  baseline_id: number | null;
+  is_blocking: boolean;
+  summary: string;
+  policy_version: string;
+  temperature_unit_contract?: string;
+  temperature_unit_contract_version?: string;
+  validation_timestamp?: string;
+  validation_source_mode?: string;
+  celsius_fahrenheit_equivalence_verified?: boolean;
+  blocking_field_count?: number;
+  warning_field_count?: number;
+  [key: string]: unknown;
+}
+
+export interface BaselineFieldDiff {
+  field: string;
+  label: string;
+  unit?: string | null;
+  old_value?: number | null;
+  new_value?: number | null;
+  old_display?: string | null;
+  new_display?: string | null;
+  changed: boolean;
+  // Documented provenance class: `project_facts`, `reviewer_constant`, `derived`.
+  source: string;
+  // The PROPOSED (`to`) baseline's per-field verdict (read-only).
+  new_validation_classification?: string | null;
+  new_validation_reason?: string | null;
+}
+
+export interface BaselineExpectedImpact {
+  reference_irradiance_wm2: number;
+  reference_cell_temperature_c: number;
+  reference_age_years: number;
+  // Null when a baseline lacks the physics fields needed to evaluate the point —
+  // never fabricated to 0.
+  old_expected_power_kw?: number | null;
+  new_expected_power_kw?: number | null;
+  delta_kw?: number | null;
+  delta_pct?: number | null;
+  note: string;
+}
+
+export interface BaselineDiffResponse {
+  site_id: number;
+  // `from` is the baseline being replaced (the site's current active one by
+  // default); `to` is the proposed replacement.
+  from_baseline_id?: number | null;
+  from_status?: string | null;
+  to_baseline_id: number;
+  to_status?: string | null;
+  changed_fields: BaselineFieldDiff[];
+  unchanged_fields: BaselineFieldDiff[];
+  // Full fail-closed verdict for BOTH baselines, so an invalid active baseline
+  // and a valid replacement are both visible. `from_validation` is null when
+  // there is no baseline to replace.
+  from_validation?: BaselinePhysicsValidation | null;
+  to_validation: BaselinePhysicsValidation;
+  expected_impact?: BaselineExpectedImpact | null;
+}

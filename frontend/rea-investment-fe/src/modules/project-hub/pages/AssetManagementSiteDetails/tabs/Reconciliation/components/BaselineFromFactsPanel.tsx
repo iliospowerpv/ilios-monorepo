@@ -52,6 +52,59 @@ const OPTIONAL_NUMS = ['dc_loss_pct', 'ac_loss_pct', 'medium_voltage_loss_pct', 
 
 type NumericField = (typeof REQUIRED_CONSTANTS)[number] | (typeof OPTIONAL_NUMS)[number];
 
+// Mirrors the backend fail-closed thermal-coefficient classifier
+// (`baseline_physics_validation._classify_thermal_coefficient`) so the reviewer
+// gets the SAME verdict inline before submitting. The canonical contract is
+// %/°C and crystalline-silicon coefficients are NEGATIVE (~ -0.35 %/°C). No
+// value is ever auto-converted; this only advises (warning) or blocks
+// (hard_invalid) — it never rewrites the entered number.
+type ThermalLevel = 'plausible' | 'warning' | 'hard_invalid';
+
+const classifyThermalCoefficientPct = (v: number): { level: ThermalLevel; message: string } => {
+  if (v >= 0) {
+    return {
+      level: 'hard_invalid',
+      message:
+        'A zero or positive thermal coefficient is non-physical for a crystalline-silicon baseline (expected ~ -0.35 %/°C).'
+    };
+  }
+  const av = Math.abs(v);
+  if (av < 0.01) {
+    return {
+      level: 'warning',
+      message: `Magnitude ${av} is near a decimal fraction per °C (e.g. -0.0035); confirm the value is %/°C, not a fraction.`
+    };
+  }
+  if (av < 0.2) {
+    return {
+      level: 'warning',
+      message: `Magnitude ${av} %/°C is unusually small for crystalline silicon; confirm against the module datasheet.`
+    };
+  }
+  if (av <= 0.5) {
+    return {
+      level: 'plausible',
+      message: `${v} %/°C is within the typical crystalline-silicon range (~ -0.20 to -0.50 %/°C).`
+    };
+  }
+  if (av <= 0.8) {
+    return {
+      level: 'warning',
+      message: `Magnitude ${av} %/°C resembles a %/°F coefficient copied into a %/°C field; confirm the unit (no automatic conversion is applied).`
+    };
+  }
+  return {
+    level: 'hard_invalid',
+    message: `Magnitude ${av} %/°C is implausibly large for a thermal coefficient.`
+  };
+};
+
+// Live derived temperature-factor preview at a hot operating point, using the
+// SAME formula production uses: factor = 1 + (tc/100) * (cell_C - 25). It shows
+// how the entered %/°C coefficient scales output away from the 25 °C reference.
+const THERMAL_PREVIEW_CELL_C = 45;
+const thermalFactorAt = (tcPct: number, cellC: number): number => 1 + (tcPct / 100) * (cellC - 25);
+
 // Source statuses where the input is already usable and needs no reviewer action.
 const USABLE_STATUSES = new Set<string>([
   'active_fact',
@@ -244,11 +297,20 @@ export const BaselineFromFactsPanel: React.FC<BaselineFromFactsPanelProps> = ({ 
   // suppresses the entire expected curve, so the draft would be unusable.
   const ptoMissing = ptoDate.trim() === '';
 
+  // Fail-closed inline guard: a hard_invalid thermal coefficient (e.g. positive,
+  // or a magnitude that is clearly a unit mistake) is non-physical, so block the
+  // draft before it is ever created. Warnings do NOT block. The entered value is
+  // never auto-converted.
+  const thermalParsed = parseEntered(numField('thermal_coefficient_pct'));
+  const thermalHardInvalid =
+    typeof thermalParsed === 'number' && classifyThermalCoefficientPct(thermalParsed).level === 'hard_invalid';
+
   const canSubmit =
     invalidFields.length === 0 &&
     missingRequired.length === 0 &&
     factNeedsAction.length === 0 &&
     !ptoMissing &&
+    !thermalHardInvalid &&
     !mutation.isPending;
 
   const handleSubmit = () => {
@@ -358,7 +420,63 @@ export const BaselineFromFactsPanel: React.FC<BaselineFromFactsPanelProps> = ({ 
     );
   };
 
+  // Thermal coefficient gets bespoke wording, a fail-closed inline verdict, and a
+  // live derived temperature-factor preview (the other constants reuse the
+  // generic renderer below).
+  const renderThermalField = () => {
+    const field: NumericField = 'thermal_coefficient_pct';
+    const b = blockersByField.get(field);
+    const raw = numField(field);
+    const parsed = parseEntered(raw);
+    const numericInvalid = parsed === null;
+    const verdict = typeof parsed === 'number' ? classifyThermalCoefficientPct(parsed) : null;
+    const isError = numericInvalid || verdict?.level === 'hard_invalid';
+    const label = `${b?.display_label ?? 'Thermal coefficient'} (% per °C)`;
+    const helper = numericInvalid
+      ? 'Enter a number'
+      : 'Negative for crystalline silicon, e.g. -0.35. Units are % per °C (not %/°F, not a decimal fraction); no conversion is applied.';
+    const verdictColor =
+      verdict?.level === 'hard_invalid'
+        ? 'error.main'
+        : verdict?.level === 'warning'
+          ? 'warning.main'
+          : 'success.main';
+    const previewFactor = typeof parsed === 'number' ? thermalFactorAt(parsed, THERMAL_PREVIEW_CELL_C) : null;
+    return (
+      <Grid item xs={12} sm={6} md={4} key={field}>
+        <TextField
+          fullWidth
+          size="small"
+          type="number"
+          required
+          label={label}
+          value={raw}
+          onChange={e => setValues(prev => ({ ...prev, [field]: e.target.value }))}
+          error={isError}
+          helperText={helper}
+          inputProps={{ 'data-testid': `input-${field}`, step: 'any' }}
+        />
+        {verdict && (
+          <Typography
+            variant="caption"
+            sx={{ color: verdictColor, display: 'block', mt: 0.5 }}
+            data-testid="thermal-verdict"
+          >
+            {verdict.message}
+          </Typography>
+        )}
+        {previewFactor != null && (
+          <Typography variant="caption" color="text.secondary" display="block" data-testid="thermal-preview">
+            Derived temperature factor at {THERMAL_PREVIEW_CELL_C} °C: {previewFactor.toFixed(4)}× (output ≈{' '}
+            {(previewFactor * 100).toFixed(1)}% of the 25 °C reference).
+          </Typography>
+        )}
+      </Grid>
+    );
+  };
+
   const renderNumberField = (field: NumericField) => {
+    if (field === 'thermal_coefficient_pct') return renderThermalField();
     const b = blockersByField.get(field);
     const isRequired = (REQUIRED_CONSTANTS as readonly string[]).includes(field);
     const invalid = parseEntered(numField(field)) === null;

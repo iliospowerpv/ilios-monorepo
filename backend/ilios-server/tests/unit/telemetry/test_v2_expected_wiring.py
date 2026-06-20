@@ -276,6 +276,10 @@ def test_apply_actual_production_baseline_latest_bucket_ok(monkeypatch):
     rows = [_Row(datetime(2026, 6, 10, 10), 4.0), _Row(latest_ts, 6.0)]
     monkeypatch.setattr(v2, "TelemetrySiteRollupCRUD", _fake_site_rollup_crud(rows))
     monkeypatch.setattr(v2, "_active_baseline", lambda _db, _sid: object())
+    # The fake object() baseline cannot pass physics validation; isolate this
+    # wiring test from the read-time gate (the baseline_invalid path has its own
+    # coverage) so the gate treats the active baseline as valid here.
+    monkeypatch.setattr(v2, "_evaluate_active_baseline", lambda _b: (False, None))
     result = _result(
         [
             _bucket(datetime(2026, 6, 10, 10), BucketStatus.ok, exp_p=5.0, exp_e=5.0),
@@ -300,6 +304,10 @@ def test_apply_actual_production_baseline_latest_bucket_missing(monkeypatch):
     rows = [_Row(datetime(2026, 6, 10, 10), 4.0), _Row(latest_ts, 6.0)]
     monkeypatch.setattr(v2, "TelemetrySiteRollupCRUD", _fake_site_rollup_crud(rows))
     monkeypatch.setattr(v2, "_active_baseline", lambda _db, _sid: object())
+    # The fake object() baseline cannot pass physics validation; isolate this
+    # wiring test from the read-time gate (the baseline_invalid path has its own
+    # coverage) so the gate treats the active baseline as valid here.
+    monkeypatch.setattr(v2, "_evaluate_active_baseline", lambda _b: (False, None))
     result = _result(
         [
             _bucket(datetime(2026, 6, 10, 10), BucketStatus.ok, exp_p=5.0, exp_e=5.0),
@@ -342,6 +350,7 @@ def test_actual_vs_expected_section_no_baseline(monkeypatch):
         }
     ]
     monkeypatch.setattr(v2, "_actual_irradiance_series", lambda *a, **k: sentinel)
+    monkeypatch.setattr(v2, "_active_baseline", lambda *a, **k: None)
 
     out = v2.build_actual_vs_expected_section(None, SimpleNamespace(id=1, timezone="UTC"))
     assert out["data"] is sentinel
@@ -365,6 +374,7 @@ def test_actual_vs_expected_section_with_baseline_passthrough_and_fill(monkeypat
     )
     # No extra power/irradiance beyond the computed buckets -> no gap fill.
     monkeypatch.setattr(v2, "_power_irradiance_maps", lambda *a, **k: ({}, {}))
+    monkeypatch.setattr(v2, "_active_baseline", lambda *a, **k: None)
 
     out = v2.build_actual_vs_expected_section(None, SimpleNamespace(id=1, timezone="UTC"))
     assert out["expected_baseline_available"] is True
@@ -401,6 +411,7 @@ def test_past_performance_no_baseline(monkeypatch):
     monkeypatch.setattr(
         v2, "compute_site_expected_period_effective", lambda *a, **k: no_baseline
     )
+    monkeypatch.setattr(v2, "_active_baseline", lambda *a, **k: None)
     out = v2.build_past_performance_section(None, SimpleNamespace(id=1, timezone="UTC"))
     assert out == {
         "data": {},
@@ -428,6 +439,7 @@ def test_past_performance_daily_aggregation(monkeypatch):
     )
     # No extra power/irradiance beyond the computed buckets -> no gap days.
     monkeypatch.setattr(v2, "_power_irradiance_maps", lambda *a, **k: ({}, {}))
+    monkeypatch.setattr(v2, "_active_baseline", lambda *a, **k: None)
 
     out = v2.build_past_performance_section(None, SimpleNamespace(id=1, timezone="UTC"))
     assert out["expected_baseline_available"] is True
@@ -568,7 +580,10 @@ def test_company_expected_ignores_non_telemetry_company_sites():
 # ---------------------------------------------------------------------------
 # _summarize_site_expected — per-site honesty at the metric-map seam
 # ---------------------------------------------------------------------------
-def test_summarize_site_expected_no_metric_maps_is_missing_inputs():
+def test_summarize_site_expected_no_metric_maps_is_missing_inputs(monkeypatch):
+    # object() cannot pass physics validation; isolate the metric-map seam from
+    # the read-time gate (the baseline_invalid path has its own coverage).
+    monkeypatch.setattr(vc, "is_active_baseline_blocking", lambda _b: False)
     out = vc._summarize_site_expected(
         site_id=1,
         baseline=object(),
@@ -590,6 +605,7 @@ def test_summarize_site_expected_incomplete_baseline_is_missing_inputs(monkeypat
         raise ValueError("incomplete")
 
     monkeypatch.setattr(vc.BaselineParams, "from_baseline", staticmethod(_raise))
+    monkeypatch.setattr(vc, "is_active_baseline_blocking", lambda _b: False)
     out = vc._summarize_site_expected(
         site_id=1,
         baseline=object(),
@@ -628,6 +644,7 @@ def test_summarize_site_expected_aligns_to_latest_actual_and_comparable_set(monk
     ]
     monkeypatch.setattr(vc.BaselineParams, "from_baseline", staticmethod(lambda _b: object()))
     monkeypatch.setattr(vc, "compute_expected_buckets", lambda _p, _i, _h: buckets)
+    monkeypatch.setattr(vc, "is_active_baseline_blocking", lambda _b: False)
 
     out = vc._summarize_site_expected(
         site_id=1,
@@ -664,6 +681,7 @@ def test_summarize_site_expected_latest_actual_bucket_not_ok_yields_none(monkeyp
     ]
     monkeypatch.setattr(vc.BaselineParams, "from_baseline", staticmethod(lambda _b: object()))
     monkeypatch.setattr(vc, "compute_expected_buckets", lambda _p, _i, _h: buckets)
+    monkeypatch.setattr(vc, "is_active_baseline_blocking", lambda _b: False)
 
     out = vc._summarize_site_expected(
         site_id=1,

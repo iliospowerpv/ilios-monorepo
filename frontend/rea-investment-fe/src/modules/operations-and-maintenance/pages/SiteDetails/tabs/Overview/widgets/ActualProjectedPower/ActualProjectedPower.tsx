@@ -10,6 +10,7 @@ import { formatFloatValue } from '../../../../../../../../utils/formatters/forma
 import { ApiClient } from '../../../../../../../../api';
 import { useSiteLatestTelemetry } from '../../../../../../../../hooks/telemetryV2';
 import { resolveExpectedState } from '../../../../../../../../utils/telemetry/expectedState';
+import BaselineInvalidBanner from '../../../../../../../../components/telemetry/BaselineInvalidBanner';
 
 interface ActualProjectedPowerProps {
   siteId: number;
@@ -137,14 +138,23 @@ const ActualProjectedPower: React.FC<ActualProjectedPowerProps> = ({ siteId }) =
       onClickRefetch={refetch}
     >
       <AgChartsReact options={options} />
-      {expectedState.reason && (
-        <Typography
-          variant="caption"
-          color={theme => theme.palette.text.secondary}
-          sx={{ display: 'block', mt: '4px' }}
-        >
-          {expectedState.reason}
-        </Typography>
+      {data?.baseline_invalid ? (
+        <BaselineInvalidBanner
+          siteId={siteId}
+          invalidBaselineId={data.invalid_baseline_id}
+          summary={data.baseline_validation_summary}
+          requiredAction={data.required_action}
+        />
+      ) : (
+        expectedState.reason && (
+          <Typography
+            variant="caption"
+            color={theme => theme.palette.text.secondary}
+            sx={{ display: 'block', mt: '4px' }}
+          >
+            {expectedState.reason}
+          </Typography>
+        )
       )}
       {dataAsOf && (
         <Typography

@@ -116,6 +116,12 @@ class ExpectedState(str, Enum):
     missing_inputs = "missing_inputs"  # baseline exists, no ``ok`` bucket; inputs absent
     pre_pto = "pre_pto"  # baseline exists, no ``ok`` bucket; window is before PTO
     baseline_not_available = "baseline_not_available"  # no approved/active baseline
+    # An active baseline EXISTS but is physically invalid (fail-closed physics
+    # validation, validated ON READ without mutation): the expected/comparison
+    # curve is SUPPRESSED (never fabricated, never 0) while actuals stay visible,
+    # and the UI steers the user to a source-backed replacement baseline. Distinct
+    # from ``baseline_not_available`` (no baseline at all).
+    baseline_invalid = "baseline_invalid"
 
 
 @dataclass(frozen=True)
@@ -293,9 +299,50 @@ def _age_years(local_d: date, pto: date) -> int:
     return age
 
 
-def _expected_power_kw(
+@dataclass(frozen=True)
+class ExpectedPowerBreakdown:
+    """Full intermediate breakdown of ONE ``_expected_power_kw`` evaluation.
+
+    Additive, read-only introspection. The physics-validation smoke test consumes
+    this so it asserts on the SAME canonical computation production uses — most
+    importantly the single Fahrenheit->Celsius conversion site
+    (``cell_temperature_c = (cell_temperature_f - 32) / 1.8``) and the ``%/°C``
+    temperature coefficient applied against the 25 °C reference. Producing the
+    breakdown never changes the expected value: ``_expected_power_kw`` returns
+    ``clipped_kw`` verbatim, so the existing formula output is byte-identical.
+    """
+
+    dc_nameplate_kw: float
+    ac_nameplate_kw: float
+    power_tolerance: float
+    soiling_factor: float
+    age_factor: float
+    dc_voltage_drop: float
+    inverter_efficiency: float
+    ac_voltage_drop: float
+    system_derate: float
+    irradiance_factor: float
+    cell_temperature_f: float
+    cell_temperature_c: float
+    reference_temperature_c: float
+    delta_c: float
+    thermal_coefficient_per_c: float
+    temperature_factor: float
+    total_derate: float
+    preclip_kw: float
+    clipped_kw: float
+    is_clipped: bool
+
+
+def _expected_power_breakdown(
     params: BaselineParams, irradiance_wm2: float, cell_temperature_f: float, age: int
-) -> float:
+) -> ExpectedPowerBreakdown:
+    """Compute the expected power AND every intermediate factor for one point.
+
+    This is the canonical computation; ``_expected_power_kw`` is a thin wrapper
+    that returns only ``clipped_kw``. The arithmetic and its ordering are
+    identical to the legacy formula — DO NOT change the math here.
+    """
     dc_nameplate_kw = params.module_wattage * params.module_quantity / 1000.0
     ac_nameplate_kw = params.inverter_wattage * params.inverter_quantity
 
@@ -323,15 +370,74 @@ def _expected_power_kw(
     )
 
     irradiance_factor = irradiance_wm2 / IRRADIANCE_BASELINE_WM2
+    # The ONE canonical Fahrenheit->Celsius conversion. The %/°C coefficient is
+    # applied against the 25 °C STC reference (never 25 °F).
     cell_temperature_c = (cell_temperature_f - 32.0) / 1.8
-    temperature_factor = 1.0 + thermal_coefficient * (
-        cell_temperature_c - CELL_TEMPERATURE_BASELINE_C
-    )
+    delta_c = cell_temperature_c - CELL_TEMPERATURE_BASELINE_C
+    temperature_factor = 1.0 + thermal_coefficient * delta_c
 
     total_derate = system_derate * irradiance_factor * temperature_factor
     expected = dc_nameplate_kw * total_derate
     # Legacy MIN clip: expected power can never exceed AC nameplate.
-    return ac_nameplate_kw if expected > ac_nameplate_kw else expected
+    is_clipped = expected > ac_nameplate_kw
+    clipped = ac_nameplate_kw if is_clipped else expected
+    return ExpectedPowerBreakdown(
+        dc_nameplate_kw=dc_nameplate_kw,
+        ac_nameplate_kw=ac_nameplate_kw,
+        power_tolerance=power_tolerance,
+        soiling_factor=params.soiling_factor,
+        age_factor=age_factor,
+        dc_voltage_drop=dc_voltage_drop,
+        inverter_efficiency=inverter_efficiency,
+        ac_voltage_drop=ac_voltage_drop,
+        system_derate=system_derate,
+        irradiance_factor=irradiance_factor,
+        cell_temperature_f=cell_temperature_f,
+        cell_temperature_c=cell_temperature_c,
+        reference_temperature_c=CELL_TEMPERATURE_BASELINE_C,
+        delta_c=delta_c,
+        thermal_coefficient_per_c=thermal_coefficient,
+        temperature_factor=temperature_factor,
+        total_derate=total_derate,
+        preclip_kw=expected,
+        clipped_kw=clipped,
+        is_clipped=is_clipped,
+    )
+
+
+def _expected_power_kw(
+    params: BaselineParams, irradiance_wm2: float, cell_temperature_f: float, age: int
+) -> float:
+    return _expected_power_breakdown(
+        params, irradiance_wm2, cell_temperature_f, age
+    ).clipped_kw
+
+
+def reference_expected_power_kw(
+    baseline,
+    *,
+    irradiance_wm2: float,
+    cell_temperature_f: float,
+    age: int,
+) -> Optional[float]:
+    """Expected AC power (kW) for a baseline at ONE fixed reference condition.
+
+    Additive, read-only introspection used by the replacement-diff endpoint to
+    illustrate how two parameter sets differ at the SAME reference operating
+    point. It runs the canonical breakdown production uses (no formula change) and
+    returns ``None`` when the baseline lacks the required physics fields. It is an
+    illustration, NOT a forecast and NOT a recompute of any stored curve.
+    """
+    try:
+        params = BaselineParams.from_baseline(baseline)
+    except (ValueError, TypeError):
+        return None
+    try:
+        return _expected_power_breakdown(
+            params, irradiance_wm2, cell_temperature_f, age
+        ).clipped_kw
+    except (ValueError, TypeError, ZeroDivisionError):
+        return None
 
 
 def compute_expected_buckets(

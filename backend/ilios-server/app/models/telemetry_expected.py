@@ -197,6 +197,14 @@ class TelemetryExpectedBaseline(Base):
     model_parameters_json = Column(JSONB, nullable=True)
     ai_confidence_json = Column(JSONB, nullable=True)
 
+    # Physics-validation verdict (additive, audit-only). Stamped by the activation
+    # gate (see ``baseline_physics_validation``) with the structured result + the
+    # policy version that judged it. Nullable: rows activated before this policy
+    # existed (and drafts/superseded rows) carry NULL — the live O&M read path
+    # validates on read regardless, so a NULL here never implies "valid".
+    validation_result_json = Column(JSONB, nullable=True)
+    validation_policy_version = Column(String(64), nullable=True)
+
     version = Column(Integer, nullable=False, default=1, server_default="1")
 
     reviewed_by = Column(

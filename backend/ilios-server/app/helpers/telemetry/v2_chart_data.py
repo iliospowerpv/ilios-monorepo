@@ -33,6 +33,7 @@ from sqlalchemy.orm import Session
 from app.crud.telemetry_expected import TelemetryExpectedBaselineCRUD
 from app.crud.telemetry_native import TelemetryDeviceRollupCRUD, TelemetrySiteRollupCRUD
 from app.schema.common import calculate_actual_vs_expected
+from app.services.telemetry.baseline_physics_validation import validate_baseline
 from app.services.telemetry.expected_service import (
     BUCKET_SIZE_TO_HOURS,
     BucketStatus,
@@ -76,6 +77,40 @@ def _active_baseline(db_session: Session, site_id: int):
     design-estimate baselines and approved-but-not-active baselines never do.
     """
     return TelemetryExpectedBaselineCRUD(db_session).get_active(site_id)
+
+
+def _evaluate_active_baseline(baseline):
+    """``(is_blocking, report)`` for an active baseline, validated ON READ.
+
+    Pure / read-only: runs the fail-closed physics validation against the row
+    WITHOUT mutating or persisting anything, so a still-active but physically
+    invalid baseline (e.g. the legacy Site-4 #3) surfaces as ``baseline_invalid``
+    on every read without a migration/backfill. ``report`` is ``None`` when there
+    is no active baseline.
+    """
+    if baseline is None:
+        return False, None
+    report = validate_baseline(baseline, validation_source_mode="read_time")
+    return report.is_blocking, report
+
+
+def _baseline_invalid_meta(baseline, report) -> dict:
+    """Additive response fields for a suppressed-because-invalid active baseline.
+
+    Surfaces WHY the expected curve is suppressed (the validation summary +
+    policy version) and the invalid baseline's id so the frontend can deep-link
+    to the Draft Baseline Review / replacement flow. Read-only — never mutates.
+    The expected curve itself is left ``None`` (never fabricated, never 0).
+    """
+    return {
+        "baseline_invalid": True,
+        "invalid_baseline_id": getattr(baseline, "id", None),
+        "baseline_validation_summary": report.summary if report else None,
+        "baseline_validation_policy_version": (
+            report.policy_version if report else None
+        ),
+        "required_action": "replace_baseline",
+    }
 
 
 def _bucket_actual_energy_kwh(bucket, bucket_hours: float) -> float:
@@ -151,6 +186,27 @@ def apply_v2_actual_production(db_session: Session, site) -> None:
         site.baseline_id = None
         return
 
+    is_blocking, report = _evaluate_active_baseline(baseline)
+    if is_blocking:
+        # Active baseline EXISTS but is physically invalid (validated ON READ,
+        # no mutation): suppress the expected comparison (None, never 0) while
+        # keeping actuals visible, and surface why + the invalid baseline id so
+        # the frontend can deep-link to the replacement flow.
+        site.expected_kw = None
+        site.cumulative_expected_kw = None
+        site.expected_baseline_available = False
+        site.expected_state = ExpectedState.baseline_invalid.value
+        site.baseline_id = baseline.id
+        meta = _baseline_invalid_meta(baseline, report)
+        site.baseline_invalid = meta["baseline_invalid"]
+        site.invalid_baseline_id = meta["invalid_baseline_id"]
+        site.baseline_validation_summary = meta["baseline_validation_summary"]
+        site.baseline_validation_policy_version = meta[
+            "baseline_validation_policy_version"
+        ]
+        site.required_action = meta["required_action"]
+        return
+
     result = compute_site_expected(
         db_session,
         site=site,
@@ -211,6 +267,20 @@ def build_actual_vs_expected_section(db_session: Session, site) -> dict:
     """
     end = datetime.utcnow()
     start = end - timedelta(days=_ACTUAL_VS_EXPECTED_DAYS)
+    active = _active_baseline(db_session, site.id)
+    is_blocking, report = _evaluate_active_baseline(active)
+    if is_blocking:
+        # Active baseline is physically INVALID: render actuals only (expected
+        # null per point, never fabricated/0) and flag ``baseline_invalid`` so the
+        # frontend shows the replacement banner. Mirrors the no-baseline branch;
+        # validated ON READ, the row is never mutated.
+        return {
+            "data": _actual_irradiance_series(db_session, site.id, start, end),
+            "expected_baseline_available": False,
+            "expected_state": ExpectedState.baseline_invalid.value,
+            "baseline_selection_mode": None,
+            **_baseline_invalid_meta(active, report),
+        }
     result = compute_site_expected_period_effective(
         db_session,
         site=site,
@@ -341,6 +411,19 @@ def build_past_performance_section(db_session: Session, site) -> dict:
     """
     end = datetime.utcnow()
     start = end - timedelta(days=_PAST_PERFORMANCE_DAYS)
+    active = _active_baseline(db_session, site.id)
+    is_blocking, report = _evaluate_active_baseline(active)
+    if is_blocking:
+        # Active baseline is physically INVALID: empty daily series flagged
+        # ``baseline_invalid`` (the frontend shows the replacement banner instead
+        # of a fabricated 0%). Mirrors the no-baseline branch; validated ON READ.
+        return {
+            "data": {},
+            "expected_baseline_available": False,
+            "expected_state": ExpectedState.baseline_invalid.value,
+            "baseline_selection_mode": None,
+            **_baseline_invalid_meta(active, report),
+        }
     result = compute_site_expected_period_effective(
         db_session,
         site=site,

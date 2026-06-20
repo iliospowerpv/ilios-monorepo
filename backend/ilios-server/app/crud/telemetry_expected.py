@@ -95,6 +95,30 @@ class BaselineActivationError(Exception):
     """Raised when an activation/approval transition is not allowed."""
 
 
+class BaselinePhysicsBlockedError(BaselineActivationError):
+    """Raised when the physics-validation gate blocks an activation.
+
+    ``reason`` distinguishes the three fail-closed cases so the endpoint can
+    return a structured 409 the UI can act on:
+
+    * ``hard_invalid`` — one or more fields/smoke-checks are physically invalid;
+      a source-backed replacement baseline is required (never auto-corrected).
+    * ``warnings_require_ack`` — only ``warning`` fields exist, but the caller
+      did not explicitly acknowledge them.
+    * ``source_note_required`` — warnings were acknowledged but no source note
+      was supplied to justify activating with them.
+
+    ``report`` is the full :class:`BaselineValidationReport` (carried as the
+    object so the endpoint can serialize ``report.to_dict()``). The draft and the
+    existing active baseline are left untouched whenever this is raised.
+    """
+
+    def __init__(self, *, reason: str, report) -> None:
+        self.reason = reason
+        self.report = report
+        super().__init__(f"Baseline activation blocked: {reason}")
+
+
 class TelemetryExpectedBaselineCRUD(BaseCRUD):
     def __init__(self, db_session: Session):
         super().__init__(model=TelemetryExpectedBaseline, db_session=db_session)
@@ -291,18 +315,47 @@ class TelemetryExpectedBaselineCRUD(BaseCRUD):
         return baseline
 
     def activate(
-        self, baseline: TelemetryExpectedBaseline, *, user_id: Optional[int]
+        self,
+        baseline: TelemetryExpectedBaseline,
+        *,
+        user_id: Optional[int],
+        acknowledge_warnings: bool = False,
+        activation_source_note: Optional[str] = None,
     ) -> TelemetryExpectedBaseline:
         """Activate an ``approved`` baseline, superseding the prior active one.
 
-        Enforces the approval gate (only ``approved`` may activate) and performs
-        the supersede + activate atomically with the prior active row locked.
+        Enforces, in order: the approval gate (only ``approved`` may activate);
+        the fail-closed PHYSICS gate (``validate_baseline`` runs BEFORE any
+        supersede — a ``hard_invalid`` baseline is blocked outright, and a
+        warning-only baseline must be explicitly acknowledged WITH a source
+        note); then the supersede + activate atomically with the prior active row
+        locked. The verdict + policy version are persisted on the row in the SAME
+        transaction as activation (audit). On any block, the draft and the
+        existing active baseline are left completely untouched (no commit runs).
         """
         if baseline.status != TelemetryBaselineStatus.approved:
             raise BaselineActivationError(
                 "Only an approved baseline can be activated "
                 f"(current status: '{baseline.status.value}')."
             )
+
+        # Lazy import: ``baseline_physics_validation`` -> ``expected_service`` ->
+        # this module, so importing it at module load would be circular.
+        from app.services.telemetry.baseline_physics_validation import validate_baseline
+
+        report = validate_baseline(baseline, validation_source_mode="activation_gate")
+        if report.is_blocking:
+            raise BaselinePhysicsBlockedError(reason="hard_invalid", report=report)
+        if report.has_warnings and not acknowledge_warnings:
+            raise BaselinePhysicsBlockedError(
+                reason="warnings_require_ack", report=report
+            )
+        note = (activation_source_note or "").strip()
+        if report.has_warnings and acknowledge_warnings and not note:
+            raise BaselinePhysicsBlockedError(
+                reason="source_note_required", report=report
+            )
+
         now = datetime.utcnow()
         prior = (
             self.db_session.query(TelemetryExpectedBaseline)
@@ -327,6 +380,20 @@ class TelemetryExpectedBaselineCRUD(BaseCRUD):
         # always takes effect at ``now`` and never rewrites historical periods.
         baseline.active_from = now if has_prior else _first_active_from(baseline, now)
         baseline.active_to = None
+
+        # Persist the verdict + policy version in the SAME transaction (audit).
+        # ``acknowledge_warnings``/``activation_source_note`` are stamped onto the
+        # stored result so a later reviewer can see exactly what was waived.
+        result_dict = report.to_dict()
+        result_dict["activation"] = {
+            "acknowledged_warnings": bool(acknowledge_warnings),
+            "source_note": note or None,
+            "activated_by_user_id": user_id,
+            "activated_at": now.isoformat(),
+        }
+        baseline.validation_result_json = result_dict
+        baseline.validation_policy_version = report.policy_version
+
         self.db_session.commit()
         self.db_session.refresh(baseline)
         return baseline

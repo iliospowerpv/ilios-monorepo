@@ -10,12 +10,20 @@
 //   missing_inputs         -> N/A, weather inputs were missing
 //   pre_pto                -> N/A, period predates the PTO date
 //   baseline_not_available -> N/A, no active baseline
+//   baseline_invalid       -> N/A, an active baseline EXISTS but failed fail-closed
+//                             physics validation and must be replaced
 //
 // `expected_state` may be absent on older / non-V2 responses, so we fall back to
 // the boolean (present + true -> available, present + false ->
 // baseline_not_available). Honest N/A is always preferred over a fabricated 0.
 
-export type ExpectedState = 'available' | 'partial' | 'missing_inputs' | 'pre_pto' | 'baseline_not_available';
+export type ExpectedState =
+  | 'available'
+  | 'partial'
+  | 'missing_inputs'
+  | 'pre_pto'
+  | 'baseline_not_available'
+  | 'baseline_invalid';
 
 export interface ExpectedStateSource {
   expected_state?: ExpectedState | string | null;
@@ -34,14 +42,22 @@ export interface ExpectedStateDisplay {
   reason: string;
 }
 
-const KNOWN_STATES: ExpectedState[] = ['available', 'partial', 'missing_inputs', 'pre_pto', 'baseline_not_available'];
+const KNOWN_STATES: ExpectedState[] = [
+  'available',
+  'partial',
+  'missing_inputs',
+  'pre_pto',
+  'baseline_not_available',
+  'baseline_invalid'
+];
 
 const TERMS: Record<ExpectedState, string> = {
   available: 'Available',
   partial: 'Partial',
   missing_inputs: 'Missing inputs',
   pre_pto: 'Pre-PTO',
-  baseline_not_available: 'Baseline not available'
+  baseline_not_available: 'Baseline not available',
+  baseline_invalid: 'Baseline invalid'
 };
 
 // Scope-neutral wording so the same captions read correctly for both per-site
@@ -52,7 +68,9 @@ const REASONS: Record<ExpectedState, string> = {
     'Expected could be computed for only part of this period; the value shown covers the available intervals only.',
   missing_inputs: 'Weather inputs needed to compute expected were unavailable for this period, so expected is N/A.',
   pre_pto: 'This period predates the permission-to-operate date, so no expected is shown yet.',
-  baseline_not_available: 'Expected baseline is not available, so expected production is shown as N/A.'
+  baseline_not_available: 'Expected baseline is not available, so expected production is shown as N/A.',
+  baseline_invalid:
+    'Expected comparison unavailable: the active baseline requires replacement before expected production can be shown.'
 };
 
 export const resolveExpectedState = (source?: ExpectedStateSource | null): ExpectedStateDisplay => {

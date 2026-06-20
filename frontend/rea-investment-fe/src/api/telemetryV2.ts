@@ -3,6 +3,7 @@ import type { AxiosInstance } from 'axios';
 import type {
   BackfillReadingsPayload,
   BackfillReadingsResponse,
+  BaselineDiffResponse,
   CompanySchedulerStatusList,
   CreateDraftFromFactsRequest,
   CreateDraftFromFactsResponse,
@@ -397,9 +398,47 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
    * NO expected values: from its activation boundary forward O&M reads this
    * baseline, while historical periods stay period-effective. 409 when the
    * baseline is not `approved`.
+   *
+   * The fail-closed physics gate also returns a STRUCTURED 409: a `hard_invalid`
+   * verdict can never be waived, while a warning-only verdict activates only when
+   * `acknowledgeWarnings=true` AND a non-empty `activationSourceNote` are passed
+   * (the server records exactly what was waived, by whom, and why).
    */
-  const activateExpectedBaseline = async (baselineId: number): Promise<ExpectedBaselineResponse> => {
-    const { data } = await httpClient.post<ExpectedBaselineResponse>(`${V2}/expected-baselines/${baselineId}/activate`);
+  const activateExpectedBaseline = async (
+    baselineId: number,
+    opts?: { acknowledgeWarnings?: boolean; activationSourceNote?: string }
+  ): Promise<ExpectedBaselineResponse> => {
+    const body =
+      opts?.acknowledgeWarnings || opts?.activationSourceNote
+        ? {
+            acknowledge_warnings: opts?.acknowledgeWarnings ?? false,
+            activation_source_note: opts?.activationSourceNote ?? null
+          }
+        : undefined;
+    const { data } = await httpClient.post<ExpectedBaselineResponse>(
+      `${V2}/expected-baselines/${baselineId}/activate`,
+      body
+    );
+    return data;
+  };
+
+  /**
+   * Read-only side-by-side diff of a proposed (`to`) baseline vs the baseline it
+   * would replace (`from` — the site's current active one by default, or the
+   * explicit `againstBaselineId`). Returns every physics field's old→new value +
+   * which changed + its source, the FULL fail-closed validation verdict for BOTH
+   * baselines (so an invalid active baseline and a valid replacement are both
+   * visible), and a reference-condition expected-power impact. Performs ZERO
+   * writes; never mutates either baseline.
+   */
+  const getBaselineDiff = async (
+    baselineId: number,
+    againstBaselineId?: number
+  ): Promise<BaselineDiffResponse> => {
+    const { data } = await httpClient.get<BaselineDiffResponse>(
+      `${V2}/expected-baselines/${baselineId}/diff`,
+      againstBaselineId != null ? { params: { against_baseline_id: againstBaselineId } } : undefined
+    );
     return data;
   };
 
@@ -435,7 +474,8 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     listExpectedBaselines,
     getActiveExpectedBaseline,
     approveExpectedBaseline,
-    activateExpectedBaseline
+    activateExpectedBaseline,
+    getBaselineDiff
   };
 };
 

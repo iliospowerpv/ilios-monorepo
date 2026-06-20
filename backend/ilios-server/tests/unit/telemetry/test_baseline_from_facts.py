@@ -1144,6 +1144,22 @@ def _make_baseline(db_session, company_id, site_id, **overrides):
         status=TelemetryBaselineStatus.approved,
         version=1,
         pto_date=date(2026, 5, 11),
+        # Valid physics so the fail-closed activation gate passes — these tests
+        # assert activate()'s effective-from / supersede semantics, not physics.
+        module_wattage=340.0,
+        module_quantity=1900.0,
+        inverter_wattage=66.0,
+        inverter_quantity=7.0,
+        thermal_coefficient_pct=-0.35,
+        power_tolerance_min_pct=0.0,
+        year_1_degradation_pct=2.5,
+        annual_degradation_pct=0.73,
+        cec_efficiency_pct=97.0,
+        soiling_factor=1.0,
+        dc_loss_pct=2.0,
+        ac_loss_pct=1.0,
+        medium_voltage_loss_pct=0.0,
+        mv_line_loss_pct=0.0,
     )
     fields.update(overrides)
     baseline = TelemetryExpectedBaseline(**fields)

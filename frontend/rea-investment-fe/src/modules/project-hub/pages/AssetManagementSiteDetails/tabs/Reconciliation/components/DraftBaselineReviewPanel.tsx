@@ -23,7 +23,10 @@ import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
 
 import { ApiClient } from '../../../../../../../api';
 import type {
+  BaselineDiffResponse,
+  BaselineFieldDiff,
   BaselineFieldSource,
+  BaselinePhysicsValidation,
   ExpectedBaselineListResponse,
   ExpectedBaselineResponse
 } from '../../../../../../../types/telemetryV2';
@@ -136,12 +139,40 @@ const numFieldOf = (b: ExpectedBaselineResponse, col: keyof ExpectedBaselineResp
   return typeof v === 'number' ? v : null;
 };
 
-// Map a backend failure to a clear, action-specific message (Scope I).
+// Structured 409 body returned by the fail-closed physics activation gate. A
+// `hard_invalid` verdict can never be waived; the two `*_ack`/`*_note` reasons
+// are warning-only and become activatable once the user acknowledges them with a
+// source note.
+type BaselineBlockBody = {
+  reason?: string;
+  blocking?: boolean;
+  message?: string;
+  summary?: string;
+  warning_fields?: Array<{ field?: string; reason?: string }>;
+};
+
+// Returns the structured physics-block body ONLY when it is a warning-only,
+// acknowledgeable verdict (so the dialog can offer the ack + source-note path).
+// `hard_invalid` and non-physics 409s return null and fall through to a notify.
+const parseAcknowledgeableBlock = (err: unknown): BaselineBlockBody | null => {
+  const resp = (err as { response?: { status?: number; data?: unknown } })?.response;
+  if (resp?.status !== 409) return null;
+  const data = resp.data as BaselineBlockBody | undefined;
+  if (!data || typeof data !== 'object') return null;
+  if (data.reason !== 'warnings_require_ack' && data.reason !== 'source_note_required') return null;
+  return data;
+};
+
+// Map a backend failure to a clear, action-specific message (Scope I). Prefers
+// the structured physics-gate message (e.g. a `hard_invalid` explanation) when
+// the server provides one.
 const actionErrorMessage = (action: 'approve' | 'activate', err: unknown): string => {
-  const status = (err as { response?: { status?: number } })?.response?.status;
+  const resp = (err as { response?: { status?: number; data?: { message?: string } } })?.response;
+  const status = resp?.status;
   if (status === 401 || status === 403) return `You do not have permission to ${action} this baseline.`;
   if (status === 404) return 'Baseline not found. It may have been removed — refresh and try again.';
   if (status === 409) {
+    if (resp?.data?.message) return resp.data.message;
     return action === 'activate'
       ? 'This baseline must be approved before activation. The baseline state changed — refresh and try again.'
       : 'The baseline state changed. Refresh and try again.';
@@ -239,6 +270,30 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
   // Confirmation targets — approve and activate are intentionally separate.
   const [approveTarget, setApproveTarget] = useState<ExpectedBaselineResponse | null>(null);
   const [activateTarget, setActivateTarget] = useState<ExpectedBaselineResponse | null>(null);
+  // Warning-only activation gate: when the server blocks activation with an
+  // acknowledgeable verdict we keep the dialog open, surface the warnings, and
+  // require a source note before re-submitting with `acknowledge_warnings`.
+  const [activateWarnings, setActivateWarnings] = useState<BaselineBlockBody | null>(null);
+  const [activateNote, setActivateNote] = useState('');
+
+  // Replacement diff: compare the proposed replacement (the selected draft, or an
+  // approved-but-not-active baseline) against the current active baseline. The
+  // diff is read-only and carries the FULL fail-closed validation verdict for
+  // BOTH baselines, so an invalid active baseline AND a valid replacement are
+  // both visible. Skipped when there is no candidate or no active to compare.
+  const diffCandidateId = selectedDraft?.id ?? approvedNotActive[0]?.id ?? null;
+  const diffEnabled =
+    enabled && diffCandidateId != null && active != null && diffCandidateId !== active.id;
+  const {
+    data: diff,
+    isLoading: diffLoading,
+    error: diffError
+  } = useQuery<BaselineDiffResponse>({
+    queryKey: ['site', 'expected-baseline-diff', { siteId, to: diffCandidateId, from: active?.id ?? null }],
+    queryFn: () => ApiClient.telemetryV2.getBaselineDiff(diffCandidateId as number, active?.id),
+    enabled: diffEnabled,
+    retry: false
+  });
 
   const approveMutation = useMutation<ExpectedBaselineResponse, unknown, number>({
     mutationFn: (baselineId: number) => ApiClient.telemetryV2.approveExpectedBaseline(baselineId),
@@ -256,8 +311,22 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
     }
   });
 
-  const activateMutation = useMutation<ExpectedBaselineResponse, unknown, number>({
-    mutationFn: (baselineId: number) => ApiClient.telemetryV2.activateExpectedBaseline(baselineId),
+  const closeActivateDialog = () => {
+    setActivateTarget(null);
+    setActivateWarnings(null);
+    setActivateNote('');
+  };
+
+  const activateMutation = useMutation<
+    ExpectedBaselineResponse,
+    unknown,
+    { baselineId: number; acknowledgeWarnings?: boolean; activationSourceNote?: string }
+  >({
+    mutationFn: vars =>
+      ApiClient.telemetryV2.activateExpectedBaseline(vars.baselineId, {
+        acknowledgeWarnings: vars.acknowledgeWarnings,
+        activationSourceNote: vars.activationSourceNote
+      }),
     onSuccess: () => {
       // Let the active read, the list, readiness, and the expected-bearing O&M
       // site charts refetch. We invalidate only — no recompute / backfill.
@@ -266,11 +335,19 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
       queryClient.invalidateQueries({ queryKey: reconciliationQueryKey(siteId) });
       omExpectedQueryKeys(siteId).forEach(key => queryClient.invalidateQueries({ queryKey: key }));
       notify('Baseline activated. O&M expected values now use this baseline from its activation boundary forward.');
-      setActivateTarget(null);
+      closeActivateDialog();
     },
     onError: err => {
+      // A warning-only physics verdict is not a hard failure: keep the dialog
+      // open, surface the warnings, and require an acknowledgment + source note
+      // before re-submitting. Any other error (incl. `hard_invalid`) is final.
+      const block = parseAcknowledgeableBlock(err);
+      if (block) {
+        setActivateWarnings(block);
+        return;
+      }
       notify(actionErrorMessage('activate', err));
-      setActivateTarget(null);
+      closeActivateDialog();
     }
   });
 
@@ -570,6 +647,134 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
     </Box>
   );
 
+  // Compact fail-closed verdict chip for one baseline (proposed or active).
+  const validationChip = (v: BaselinePhysicsValidation | null | undefined, who: string) => {
+    if (!v) {
+      return <Chip size="small" variant="outlined" color="default" label={`${who}: not evaluated`} />;
+    }
+    if (v.is_blocking) {
+      return (
+        <Chip
+          size="small"
+          color="error"
+          label={`${who}: invalid${v.blocking_field_count ? ` (${v.blocking_field_count})` : ''}`}
+        />
+      );
+    }
+    if ((v.warning_field_count ?? 0) > 0) {
+      return <Chip size="small" color="warning" label={`${who}: valid with warnings (${v.warning_field_count})`} />;
+    }
+    return <Chip size="small" color="success" label={`${who}: valid`} />;
+  };
+
+  const renderDiffRow = (d: BaselineFieldDiff) => {
+    const oldText = d.old_display ?? fmtWithUnit(d.old_value, d.unit ?? undefined);
+    const newText = d.new_display ?? fmtWithUnit(d.new_value, d.unit ?? undefined);
+    const cls = d.new_validation_classification;
+    const clsColor: 'error' | 'warning' | 'success' | 'default' =
+      cls === 'hard_invalid'
+        ? 'error'
+        : cls === 'warning' || cls === 'implausible'
+          ? 'warning'
+          : cls === 'plausible'
+            ? 'success'
+            : 'default';
+    return (
+      <Box key={d.field} sx={{ py: 0.5 }} data-testid={`baseline-diff-row-${d.field}`}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {d.label}
+            {d.unit ? ` (${d.unit})` : ''}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {oldText} → {newText}
+          </Typography>
+          <Chip size="small" variant="outlined" color="default" label={d.source} />
+          {cls && <Chip size="small" color={clsColor} label={cls.replace(/_/g, ' ')} />}
+        </Box>
+        {d.new_validation_reason && (
+          <Typography variant="caption" color="text.secondary" display="block">
+            {d.new_validation_reason}
+          </Typography>
+        )}
+      </Box>
+    );
+  };
+
+  // Read-only side-by-side comparison of the proposed replacement vs the active
+  // baseline (changed physics fields, both fail-closed verdicts, and the expected
+  // impact at fixed reference conditions). Never fabricates expected values — a
+  // baseline that can't evaluate the reference point shows N/A, never 0.
+  const renderReplacementDiff = () => {
+    if (!diffEnabled) return null;
+    if (diffLoading) {
+      return (
+        <Box display="flex" alignItems="center" gap={1} sx={{ my: 1 }} data-testid="baseline-diff-loading">
+          <CircularProgress size={16} />
+          <Typography variant="body2" color="text.secondary">
+            Loading replacement comparison…
+          </Typography>
+        </Box>
+      );
+    }
+    if (diffError || !diff) {
+      return (
+        <Alert severity="warning" sx={{ my: 1 }} data-testid="baseline-diff-error">
+          Couldn&apos;t load the replacement comparison. The proposed and active baselines are unchanged.
+        </Alert>
+      );
+    }
+    const changed = diff.changed_fields ?? [];
+    const impact = diff.expected_impact;
+    return (
+      <Box sx={{ my: 1 }} data-testid="baseline-diff">
+        <Typography variant="overline" color="text.secondary">
+          Replacement comparison (proposed #{diff.to_baseline_id} vs active
+          {diff.from_baseline_id != null ? ` #${diff.from_baseline_id}` : ''})
+        </Typography>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+          {validationChip(diff.to_validation, 'Proposed')}
+          {validationChip(diff.from_validation, 'Active')}
+        </Box>
+        <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
+          Changed physics fields
+        </Typography>
+        {changed.length === 0 ? (
+          <Typography variant="body2" color="text.secondary" data-testid="baseline-diff-no-changes">
+            No physics fields differ between the proposed and active baselines.
+          </Typography>
+        ) : (
+          <Box data-testid="baseline-diff-changed">{changed.map(renderDiffRow)}</Box>
+        )}
+        {impact && (
+          <Box sx={{ mt: 1 }} data-testid="baseline-diff-impact">
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              Expected impact at reference conditions
+            </Typography>
+            <Typography variant="caption" color="text.secondary" display="block">
+              Reference: {impact.reference_irradiance_wm2} W/m² · {impact.reference_cell_temperature_c} °C · age{' '}
+              {impact.reference_age_years} yr
+            </Typography>
+            <Typography variant="body2">
+              Active: {fmtWithUnit(impact.old_expected_power_kw, 'kW')} → Proposed:{' '}
+              {fmtWithUnit(impact.new_expected_power_kw, 'kW')}
+              {impact.delta_kw != null && Number.isFinite(impact.delta_kw)
+                ? ` (${impact.delta_kw > 0 ? '+' : ''}${impact.delta_kw.toFixed(1)} kW${
+                    impact.delta_pct != null && Number.isFinite(impact.delta_pct)
+                      ? `, ${impact.delta_pct > 0 ? '+' : ''}${impact.delta_pct.toFixed(1)}%`
+                      : ''
+                  })`
+                : ''}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" display="block">
+              {impact.note}
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    );
+  };
+
   const nothingToShow =
     drafts.length === 0 && approvedNotActive.length === 0 && superseded.length === 0 && active == null;
 
@@ -588,6 +793,15 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
         historical periods continue to use the baseline that was active during those periods (period-effective
         selection).
       </Alert>
+
+      {diff?.from_validation?.is_blocking && (
+        <Alert severity="error" sx={{ mb: 1.5 }} data-testid="active-baseline-invalid-banner">
+          <AlertTitle>Expected comparison unavailable: active baseline requires replacement.</AlertTitle>
+          {diff.from_validation.summary ||
+            'The active expected baseline failed fail-closed physics validation, so O&M expected production is suppressed (shown as N/A, never 0).'}{' '}
+          Approve and activate a corrected, source-backed replacement below to restore the expected comparison.
+        </Alert>
+      )}
 
       {nothingToShow ? (
         <Typography variant="body2" color="text.secondary" data-testid="draft-baseline-review-empty">
@@ -626,6 +840,9 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
               {selectedDraft && renderDraftDetail(selectedDraft)}
             </>
           )}
+
+          {/* Read-only replacement comparison vs the active baseline */}
+          {renderReplacementDiff()}
 
           <Divider sx={{ my: 1.5 }} />
 
@@ -768,7 +985,7 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
       {/* Activate confirmation dialog */}
       <Dialog
         open={activateTarget != null}
-        onClose={() => !activateMutation.isPending && setActivateTarget(null)}
+        onClose={() => !activateMutation.isPending && closeActivateDialog()}
         maxWidth="sm"
         fullWidth
         data-testid="activate-confirm-dialog"
@@ -776,10 +993,45 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
         <DialogTitle>Activate expected baseline</DialogTitle>
         <DialogContent dividers>
           {activateTarget && <ActivateConfirmationSummary baseline={activateTarget} priorActive={active} />}
+          {activateWarnings && (
+            <Alert severity="warning" sx={{ mt: 2 }} data-testid="activate-warning-ack">
+              <AlertTitle>Confirmation required before activation</AlertTitle>
+              <Typography variant="caption" display="block">
+                {activateWarnings.message ??
+                  activateWarnings.summary ??
+                  'This baseline has values that need confirmation before it can be activated.'}
+              </Typography>
+              {Array.isArray(activateWarnings.warning_fields) && activateWarnings.warning_fields.length > 0 && (
+                <Box component="ul" sx={{ pl: 3, mt: 1, mb: 0 }}>
+                  {activateWarnings.warning_fields.map((w, i) => (
+                    <li key={`${w.field ?? 'field'}-${i}`}>
+                      <Typography variant="caption">
+                        {w.field ?? 'value'}
+                        {w.reason ? `: ${w.reason}` : ''}
+                      </Typography>
+                    </li>
+                  ))}
+                </Box>
+              )}
+              <TextField
+                label="Source note (required)"
+                helperText="Document the source / justification for activating despite these warnings."
+                value={activateNote}
+                onChange={e => setActivateNote(e.target.value)}
+                fullWidth
+                multiline
+                minRows={2}
+                required
+                sx={{ mt: 1.5 }}
+                inputProps={{ maxLength: 2000 }}
+                data-testid="activate-source-note"
+              />
+            </Alert>
+          )}
         </DialogContent>
         <DialogActions>
           <Button
-            onClick={() => setActivateTarget(null)}
+            onClick={() => closeActivateDialog()}
             disabled={activateMutation.isPending}
             data-testid="activate-confirm-cancel"
           >
@@ -788,11 +1040,28 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
           <Button
             variant="contained"
             color="primary"
-            onClick={() => activateTarget && activateMutation.mutate(activateTarget.id)}
-            disabled={activateMutation.isPending}
+            onClick={() =>
+              activateTarget &&
+              activateMutation.mutate(
+                activateWarnings
+                  ? {
+                      baselineId: activateTarget.id,
+                      acknowledgeWarnings: true,
+                      activationSourceNote: activateNote.trim()
+                    }
+                  : { baselineId: activateTarget.id }
+              )
+            }
+            disabled={
+              activateMutation.isPending || (activateWarnings != null && activateNote.trim().length === 0)
+            }
             data-testid="activate-confirm-submit"
           >
-            {activateMutation.isPending ? 'Activating…' : 'Activate baseline'}
+            {activateMutation.isPending
+              ? 'Activating…'
+              : activateWarnings
+                ? 'Acknowledge & activate'
+                : 'Activate baseline'}
           </Button>
         </DialogActions>
       </Dialog>

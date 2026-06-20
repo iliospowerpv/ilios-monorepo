@@ -62,6 +62,9 @@ from app.services.telemetry.expected_service import (
     compute_expected_buckets,
     derive_expected_state,
 )
+from app.services.telemetry.baseline_physics_validation import (
+    is_active_baseline_blocking,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -334,6 +337,16 @@ def _summarize_site_expected(
         expected_energy_kwh=None,
         expected_power_latest_kw=None,
     )
+    if is_active_baseline_blocking(baseline):
+        # Fail-closed physics: an active but physically INVALID baseline must
+        # NEVER drive expected — not even inside the company sum. Suppress like
+        # ``missing`` (expected None, never fabricated/zero) but surface the
+        # distinct ``baseline_invalid`` reason. Validated ON READ; never mutates.
+        return SiteExpectedToday(
+            state=ExpectedState.baseline_invalid,
+            expected_energy_kwh=None,
+            expected_power_latest_kw=None,
+        )
     try:
         params = BaselineParams.from_baseline(baseline)
     except ValueError:

@@ -920,6 +920,19 @@ class CreateDraftFromFactsRequest(BaseModel):
     normalizations: Optional[dict[str, NormalizationConfirmationRequest]] = None
 
 
+class BaselineActivateRequest(BaseModel):
+    """Optional body for the activate endpoint, carrying the warning-ack waiver.
+
+    Both fields default to the no-waiver case so an existing caller that POSTs no
+    body still works. ``acknowledge_warnings`` (with a non-empty
+    ``activation_source_note``) is REQUIRED only when the baseline has
+    ``warning``-level fields; it can never waive a ``hard_invalid`` verdict.
+    """
+
+    acknowledge_warnings: bool = False
+    activation_source_note: Optional[str] = Field(default=None, max_length=2000)
+
+
 class CreateDraftFromFactsResponse(BaseModel):
     """Result of a create-draft-from-facts attempt.
 
@@ -943,6 +956,72 @@ class CreateDraftFromFactsResponse(BaseModel):
     # Additive: per-field readiness ladder (descriptive; never changes ``ready``).
     field_blockers: list[BaselineReadinessFieldStatus] = Field(default_factory=list)
     baseline: Optional[ExpectedBaselineResponse] = None
+
+
+class BaselineFieldDiff(BaseModel):
+    """One physics field's old→new comparison between two baselines.
+
+    ``old_value`` / ``new_value`` are numeric (``None`` for the date-valued PTO,
+    whose values live in ``*_display``). ``source`` is the documented provenance
+    class (``project_facts`` for fact-backed module/inverter fields,
+    ``reviewer_constant`` for datasheet constants/losses/PTO, ``derived`` for the
+    system-size summaries). The validation fields carry the PROPOSED baseline's
+    per-field verdict (read-only).
+    """
+
+    field: str
+    label: str
+    unit: Optional[str] = None
+    old_value: Optional[float] = None
+    new_value: Optional[float] = None
+    old_display: Optional[str] = None
+    new_display: Optional[str] = None
+    changed: bool
+    source: str
+    new_validation_classification: Optional[str] = None
+    new_validation_reason: Optional[str] = None
+
+
+class BaselineExpectedImpact(BaseModel):
+    """Reference-condition illustration of the expected-power change.
+
+    Computed via the SAME canonical breakdown production uses, at a fixed
+    partial-load, hot operating point (below typical inverter clipping) where the
+    temperature coefficient is material and parameter differences stay visible. It
+    is an illustration of how the two parameter sets differ at that point — NOT a
+    forecast and NOT a recompute of any stored curve. ``None`` power values appear
+    when a baseline lacks the required physics fields.
+    """
+
+    reference_irradiance_wm2: float
+    reference_cell_temperature_c: float
+    reference_age_years: int
+    old_expected_power_kw: Optional[float] = None
+    new_expected_power_kw: Optional[float] = None
+    delta_kw: Optional[float] = None
+    delta_pct: Optional[float] = None
+    note: str
+
+
+class BaselineDiffResponse(BaseModel):
+    """Side-by-side diff of a proposed replacement vs the baseline it replaces.
+
+    ``from`` is the baseline being replaced (the site's current ACTIVE one by
+    default) and ``to`` is the proposed replacement. Carries the FULL fail-closed
+    validation verdict for BOTH so an invalid active baseline and a valid
+    replacement are both visible. Read-only — the endpoint performs zero writes.
+    """
+
+    site_id: int
+    from_baseline_id: Optional[int] = None
+    from_status: Optional[str] = None
+    to_baseline_id: int
+    to_status: Optional[str] = None
+    changed_fields: list[BaselineFieldDiff] = Field(default_factory=list)
+    unchanged_fields: list[BaselineFieldDiff] = Field(default_factory=list)
+    from_validation: Optional[dict[str, Any]] = None
+    to_validation: dict[str, Any] = Field(default_factory=dict)
+    expected_impact: Optional[BaselineExpectedImpact] = None
 
 
 # ---------------------------------------------------------------------------

@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
@@ -73,7 +74,11 @@ from app.models.telemetry_expected import (
 from app.static import PermissionsActions
 from app.schema.device_eligibility import DeviceEligibilityDiagnosticsResponse
 from app.schema.telemetry_v2 import (
+    BaselineActivateRequest,
+    BaselineDiffResponse,
+    BaselineExpectedImpact,
     BaselineFactFieldUsage,
+    BaselineFieldDiff,
     BaselineFieldNormalization,
     BaselineReadinessFieldStatus,
     CreateDraftFromFactsRequest,
@@ -135,11 +140,17 @@ from app.crud.telemetry_native import (
 )
 from app.crud.telemetry_expected import (
     BaselineActivationError,
+    BaselinePhysicsBlockedError,
     TelemetryExpectedBaselineCRUD,
 )
 from app.services.telemetry.expected_service import (
     BUCKET_SIZE_TO_HOURS,
     compute_site_expected,
+    reference_expected_power_kw,
+)
+from app.services.telemetry.baseline_physics_validation import (
+    EXPECTED_UNITS,
+    validate_baseline,
 )
 from app.services.telemetry import baseline_from_facts_service
 from app.services.telemetry import baseline_points_service
@@ -2908,6 +2919,219 @@ def create_expected_baseline_draft_from_facts(
     )
 
 
+# ---------------------------------------------------------------------------
+# Baseline replacement diff (read-only)
+# ---------------------------------------------------------------------------
+
+# Physics fields surfaced in a replacement diff: (column, human label, documented
+# provenance class, is_date). Module/inverter wattage+quantity come from promoted
+# ``project_facts``; the datasheet constants + losses + PTO are reviewer-supplied;
+# the system sizes are derived summaries. ``is_date`` marks the one non-numeric
+# field (PTO) so it is compared/displayed as a date, not a float.
+_BASELINE_DIFF_FIELDS: list[tuple[str, str, str, bool]] = [
+    ("module_wattage", "Module wattage", "project_facts", False),
+    ("module_quantity", "Module quantity", "project_facts", False),
+    ("inverter_wattage", "Inverter wattage", "project_facts", False),
+    ("inverter_quantity", "Inverter quantity", "project_facts", False),
+    ("thermal_coefficient_pct", "Thermal coefficient", "reviewer_constant", False),
+    ("power_tolerance_min_pct", "Power tolerance (min)", "reviewer_constant", False),
+    ("year_1_degradation_pct", "Year-1 degradation", "reviewer_constant", False),
+    ("annual_degradation_pct", "Annual degradation", "reviewer_constant", False),
+    ("cec_efficiency_pct", "CEC inverter efficiency", "reviewer_constant", False),
+    ("soiling_factor", "Soiling factor", "reviewer_constant", False),
+    ("dc_loss_pct", "DC loss", "reviewer_constant", False),
+    ("ac_loss_pct", "AC loss", "reviewer_constant", False),
+    ("medium_voltage_loss_pct", "Medium-voltage loss", "reviewer_constant", False),
+    ("mv_line_loss_pct", "MV line loss", "reviewer_constant", False),
+    ("system_size_ac_kw", "System size (AC)", "derived", False),
+    ("system_size_dc_kw", "System size (DC)", "derived", False),
+    ("pto_date", "PTO date", "reviewer_constant", True),
+]
+
+# Reference operating point for the expected-impact illustration: a HOT
+# (45 °C cell, where the temperature coefficient is material), PARTIAL-LOAD
+# (500 W/m², deliberately below typical inverter clipping so parameter
+# differences stay visible instead of both sides pinning to the AC rating),
+# age-0 (degradation removed) point so the parameter differences show cleanly.
+_DIFF_IMPACT_IRRADIANCE_WM2 = 500.0
+_DIFF_IMPACT_CELL_TEMP_C = 45.0
+_DIFF_IMPACT_CELL_TEMP_F = 113.0  # 45 °C in °F (45 * 1.8 + 32)
+_DIFF_IMPACT_AGE_YEARS = 0
+
+
+def _baseline_status_value(baseline) -> Optional[str]:
+    if baseline is None:
+        return None
+    status_value = getattr(baseline, "status", None)
+    return getattr(status_value, "value", status_value)
+
+
+def _diff_to_float(value) -> Optional[float]:
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _diff_values_differ(a: Optional[float], b: Optional[float]) -> bool:
+    if a is None and b is None:
+        return False
+    if (a is None) != (b is None):
+        return True
+    return abs(a - b) > 1e-9
+
+
+def _baseline_expected_impact(from_baseline, to_baseline) -> BaselineExpectedImpact:
+    old_kw = (
+        reference_expected_power_kw(
+            from_baseline,
+            irradiance_wm2=_DIFF_IMPACT_IRRADIANCE_WM2,
+            cell_temperature_f=_DIFF_IMPACT_CELL_TEMP_F,
+            age=_DIFF_IMPACT_AGE_YEARS,
+        )
+        if from_baseline is not None
+        else None
+    )
+    new_kw = reference_expected_power_kw(
+        to_baseline,
+        irradiance_wm2=_DIFF_IMPACT_IRRADIANCE_WM2,
+        cell_temperature_f=_DIFF_IMPACT_CELL_TEMP_F,
+        age=_DIFF_IMPACT_AGE_YEARS,
+    )
+    delta_kw = None
+    delta_pct = None
+    if old_kw is not None and new_kw is not None:
+        delta_kw = new_kw - old_kw
+        if old_kw != 0:
+            delta_pct = (delta_kw / old_kw) * 100.0
+    return BaselineExpectedImpact(
+        reference_irradiance_wm2=_DIFF_IMPACT_IRRADIANCE_WM2,
+        reference_cell_temperature_c=_DIFF_IMPACT_CELL_TEMP_C,
+        reference_age_years=_DIFF_IMPACT_AGE_YEARS,
+        old_expected_power_kw=old_kw,
+        new_expected_power_kw=new_kw,
+        delta_kw=delta_kw,
+        delta_pct=delta_pct,
+        note=(
+            "Reference-condition illustration at 500 W/m², 45 °C cell, age 0 — a "
+            "representative partial-load, hot operating point (below typical "
+            "inverter clipping) where parameter differences stay visible. Computed "
+            "via the canonical expected-power path; an illustration, NOT a forecast "
+            "and NOT a recompute of any stored curve."
+        ),
+    )
+
+
+def _build_baseline_diff(to_baseline, from_baseline) -> BaselineDiffResponse:
+    """Pure field-by-field diff + validation of both baselines. Zero writes."""
+    to_report = validate_baseline(
+        to_baseline, validation_source_mode="replacement_diff"
+    )
+    from_report = (
+        validate_baseline(from_baseline, validation_source_mode="replacement_diff")
+        if from_baseline is not None
+        else None
+    )
+    to_field_results = {f.field: f for f in to_report.fields}
+
+    changed: list[BaselineFieldDiff] = []
+    unchanged: list[BaselineFieldDiff] = []
+    for field_name, label, source, is_date in _BASELINE_DIFF_FIELDS:
+        old_raw = getattr(from_baseline, field_name, None) if from_baseline else None
+        new_raw = getattr(to_baseline, field_name, None)
+        if is_date:
+            old_display = old_raw.isoformat() if old_raw is not None else None
+            new_display = new_raw.isoformat() if new_raw is not None else None
+            is_changed = old_display != new_display
+            old_value = new_value = None
+        else:
+            old_value = _diff_to_float(old_raw)
+            new_value = _diff_to_float(new_raw)
+            is_changed = _diff_values_differ(old_value, new_value)
+            old_display = None if old_value is None else f"{old_value:g}"
+            new_display = None if new_value is None else f"{new_value:g}"
+        field_result = to_field_results.get(field_name)
+        diff = BaselineFieldDiff(
+            field=field_name,
+            label=label,
+            unit=EXPECTED_UNITS.get(field_name),
+            old_value=old_value,
+            new_value=new_value,
+            old_display=old_display,
+            new_display=new_display,
+            changed=is_changed,
+            source=source,
+            new_validation_classification=(
+                field_result.classification.value if field_result is not None else None
+            ),
+            new_validation_reason=(
+                field_result.reason if field_result is not None else None
+            ),
+        )
+        (changed if is_changed else unchanged).append(diff)
+
+    return BaselineDiffResponse(
+        site_id=to_baseline.site_id,
+        from_baseline_id=getattr(from_baseline, "id", None),
+        from_status=_baseline_status_value(from_baseline),
+        to_baseline_id=to_baseline.id,
+        to_status=_baseline_status_value(to_baseline),
+        changed_fields=changed,
+        unchanged_fields=unchanged,
+        from_validation=from_report.to_dict() if from_report is not None else None,
+        to_validation=to_report.to_dict(),
+        expected_impact=_baseline_expected_impact(from_baseline, to_baseline),
+    )
+
+
+@telemetry_v2_router.get(
+    "/v2/expected-baselines/{baseline_id}/diff",
+    response_model=BaselineDiffResponse,
+    summary="Diff a proposed replacement baseline against the one it replaces",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def diff_expected_baseline(
+    baseline_id: int,
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    against_baseline_id: Optional[int] = None,
+) -> BaselineDiffResponse:
+    """Read-only side-by-side comparison of a proposed (``to``) baseline vs the
+    baseline it would replace (``from`` — the site's current ACTIVE one by
+    default, or an explicit ``against_baseline_id``).
+
+    Surfaces every physics field's old→new value + which changed + its source, the
+    FULL fail-closed validation verdict for BOTH baselines (so an invalid active
+    baseline and a valid replacement are both visible), and a reference-condition
+    expected-power impact. Performs ZERO writes; never mutates either baseline and
+    never recomputes a stored curve.
+    """
+    crud = TelemetryExpectedBaselineCRUD(db)
+    to_baseline = crud.get(baseline_id)
+    if to_baseline is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Baseline not found")
+    get_authorized_site_with_company_admin(to_baseline.site_id, current_user, db)
+    _enforce_company_visibility(current_user, to_baseline.company_id)
+
+    if against_baseline_id is not None:
+        from_baseline = crud.get(against_baseline_id)
+        if from_baseline is None:
+            raise HTTPException(
+                status.HTTP_404_NOT_FOUND, "Comparison baseline not found"
+            )
+        if from_baseline.site_id != to_baseline.site_id:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                "Baselines belong to different sites and cannot be compared.",
+            )
+    else:
+        from_baseline = crud.get_active(to_baseline.site_id, to_baseline.baseline_type)
+
+    return _build_baseline_diff(to_baseline, from_baseline)
+
+
 def _load_design_baseline_or_raise(
     db: Session,
     site: Site,
@@ -3090,6 +3314,40 @@ def _generate_design_points_response(
     )
 
 
+_BASELINE_BLOCK_MESSAGES = {
+    "hard_invalid": (
+        "This baseline is physically invalid and cannot be activated. Create a "
+        "source-backed replacement baseline with corrected values."
+    ),
+    "warnings_require_ack": (
+        "This baseline has values that need confirmation. Re-submit with "
+        "acknowledge_warnings=true and a source note to activate it."
+    ),
+    "source_note_required": (
+        "A source note is required to activate a baseline with acknowledged "
+        "warnings."
+    ),
+}
+
+
+def _baseline_block_body(exc: "BaselinePhysicsBlockedError") -> dict:
+    """Structured 409 body for a physics-blocked activation (machine-readable)."""
+    report = exc.report
+    return {
+        "error": f"baseline_{exc.reason}",
+        "reason": exc.reason,
+        "blocking": exc.reason == "hard_invalid",
+        "message": _BASELINE_BLOCK_MESSAGES.get(
+            exc.reason, "Baseline activation was blocked by physics validation."
+        ),
+        "summary": report.summary,
+        "policy_version": report.policy_version,
+        "blocking_fields": [f.to_dict() for f in report.blocking_fields],
+        "warning_fields": [f.to_dict() for f in report.warning_fields],
+        "validation_result": report.to_dict(),
+    }
+
+
 @telemetry_v2_router.post(
     "/v2/expected-baselines/{baseline_id}/approve",
     response_model=ExpectedBaselineResponse,
@@ -3134,10 +3392,18 @@ def activate_expected_baseline(
     baseline_id: int,
     db: Annotated[Session, Depends(get_session)],
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
-) -> ExpectedBaselineResponse:
+    payload: Optional[BaselineActivateRequest] = None,
+):
     """Make an ``approved`` baseline the single ``active`` one for its
     site+type. The prior active baseline is superseded (kept for audit).
-    Returns 409 if the baseline is not in ``approved`` status.
+
+    Returns 409 if the baseline is not in ``approved`` status. The fail-closed
+    PHYSICS gate also returns 409 — but with a STRUCTURED body (via JSONResponse
+    so the global handler does not flatten it to a string) carrying the full
+    validation report. A ``hard_invalid`` verdict can never be waived; a
+    warning-only verdict is activated only when the body sets
+    ``acknowledge_warnings=true`` AND a non-empty ``activation_source_note``.
+    On any block, the draft and the existing active baseline are untouched.
     """
     crud = TelemetryExpectedBaselineCRUD(db)
     baseline = crud.get(baseline_id)
@@ -3145,8 +3411,26 @@ def activate_expected_baseline(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Baseline not found")
     get_authorized_site_with_company_admin(baseline.site_id, current_user, db)
     _enforce_company_visibility(current_user, baseline.company_id)
+    payload = payload or BaselineActivateRequest()
     try:
-        updated = crud.activate(baseline, user_id=getattr(current_user, "id", None))
+        updated = crud.activate(
+            baseline,
+            user_id=getattr(current_user, "id", None),
+            acknowledge_warnings=payload.acknowledge_warnings,
+            activation_source_note=payload.activation_source_note,
+        )
+    except BaselinePhysicsBlockedError as exc:
+        logger.info(
+            "telemetry_v2_expected_baseline_activation_blocked site_id=%s "
+            "baseline_id=%s reason=%s",
+            baseline.site_id,
+            baseline.id,
+            exc.reason,
+        )
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
+            content=_baseline_block_body(exc),
+        )
     except BaselineActivationError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
     logger.info(
@@ -3213,6 +3497,44 @@ def get_expected_preview(
         baseline = crud.get_active(
             site.id, TelemetryBaselineType.weather_adjusted_model
         )
+        # Read-time fail-closed guard (mirrors the O&M chart/company read paths):
+        # an active-but-physically-invalid baseline (e.g. the legacy Site-4 #3)
+        # must NOT render a corrupt expected curve through this default-active
+        # preview either. Validate ON READ (no mutation/persist) and, when
+        # blocking, surface the distinct ``baseline_invalid`` status with the
+        # expected curve suppressed (empty buckets, NULL energies — never 0).
+        # An explicitly-requested ``baseline_id`` is a deliberate inspection and
+        # is left untouched; the diff endpoint carries its full validation verdict.
+        if baseline is not None:
+            from app.services.telemetry.baseline_physics_validation import (
+                validate_baseline,
+            )
+            from app.services.telemetry.expected_service import ExpectedState
+
+            _report = validate_baseline(
+                baseline, validation_source_mode="read_time"
+            )
+            if _report.is_blocking:
+                return ExpectedPreviewResponse(
+                    site_id=site.id,
+                    overall_status=ExpectedState.baseline_invalid.value,
+                    baseline_id=baseline.id,
+                    baseline_type=(
+                        baseline.baseline_type.value
+                        if hasattr(baseline.baseline_type, "value")
+                        else baseline.baseline_type
+                    ),
+                    bucket_size=bucket_size,
+                    window_start=window_start,
+                    window_end=window_end,
+                    expected_energy_kwh=None,
+                    actual_energy_kwh=None,
+                    ok_bucket_count=0,
+                    missing_inputs_bucket_count=0,
+                    pre_pto_bucket_count=0,
+                    buckets=[],
+                    weather_provenance=None,
+                )
 
     try:
         result = compute_site_expected(

@@ -442,6 +442,9 @@ class TestChartGapHandling:
         monkeypatch.setattr(
             v2, "compute_site_expected_period_effective", lambda *a, **k: result
         )
+        # No active-baseline lookup hits the DB here (db_session is None); the
+        # gap/coverage behavior is under test, not the read-time gate.
+        monkeypatch.setattr(v2, "_active_baseline", lambda *a, **k: None)
         # The gap hour HAS real power (and irradiance) but no covering baseline.
         monkeypatch.setattr(
             v2,
@@ -495,6 +498,9 @@ class TestChartGapHandling:
         monkeypatch.setattr(
             v2, "compute_site_expected_period_effective", lambda *a, **k: result
         )
+        # No active-baseline lookup hits the DB here (db_session is None); the
+        # gap/coverage behavior is under test, not the read-time gate.
+        monkeypatch.setattr(v2, "_active_baseline", lambda *a, **k: None)
         # The earlier day has production but fell in an uncovered period.
         monkeypatch.setattr(
             v2,

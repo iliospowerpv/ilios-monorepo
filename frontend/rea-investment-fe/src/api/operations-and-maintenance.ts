@@ -376,6 +376,16 @@ interface OMSiteActualVsExpectedProductionResponse {
   expected_baseline_available: boolean;
   // Additive V2 metadata; absent on legacy responses (see resolveExpectedState).
   expected_state?: ExpectedState;
+  // Additive (fail-closed physics validation, validated ON READ): true when the
+  // active baseline EXISTS but is physically invalid, so per-point expected is
+  // null and the UI shows the replacement banner (actuals stay visible). The
+  // summary explains why and `invalid_baseline_id` deep-links to the replacement
+  // flow. All absent / no-op on legacy + valid-baseline responses.
+  baseline_invalid?: boolean;
+  invalid_baseline_id?: number | null;
+  baseline_validation_summary?: string | null;
+  baseline_validation_policy_version?: string | null;
+  required_action?: string | null;
 }
 
 interface OMSiteDevicesOverviewEntry {

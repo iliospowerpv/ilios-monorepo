@@ -1,7 +1,7 @@
 # Weather-Adjusted Baseline Physics Validation Audit
 
-**Type:** Audit & design sprint (no implementation)
-**Status:** Complete — design recommendations only. No code, migrations, endpoints, UI, or data was changed. No baseline was created, edited, approved, activated, or superseded; no `project_facts`, accepted values, or historical O&M were touched.
+**Type:** Audit & design sprint, followed by phased implementation
+**Status:** **Implemented.** Sections 1–9 are the original read-only audit and design (they changed no code). Their recommendations were subsequently built out **additively** per the session plan — see **[Section 10 — As-built implementation status](#10-as-built-implementation-status)** for exactly what shipped: the validation module + persisted policy-version fields, the fail-closed activation gate, the read-time `baseline_invalid` state, the replacement-diff endpoint, the Site 4 corrected replacement, the frontend surfaces, and the Fahrenheit/Celsius equivalence test results. The hard constraints below were honored end-to-end: Site 4's baseline **id 3 was never edited** (it was superseded by a corrected replacement, #4); no value was auto-corrected, converted, deactivated, or backfilled; the expected formula was unchanged (only a behavior-preserving breakdown extraction); period-effective selection was preserved; and no SAFL / BigQuery / Firestore / legacy path was introduced.
 **Scope of subject system:** The weather-adjusted expected-performance physics (`expected_service.py`), the promoted-facts → draft-baseline bridge (`baseline_from_facts_service.py`), the baseline lifecycle CRUD (`crud/telemetry_expected.py`), and the three lifecycle endpoints (`routers/telemetry/v2.py`).
 **Date:** 2026-06-20
 
@@ -175,6 +175,8 @@ Site 4's `350` is the worst case: **positive and ~1000× too large** (Section 4)
 - **Live derived preview** beside the input: "At a 45 °C cell, this derates expected power by **N%**" — recomputed from the entered value so a wrong magnitude is visible immediately (a +3.5 entry would show an absurd preview).
 
 These are presentation guards; the authoritative block is server-side (Section 5).
+
+> **As-built note (§10.2):** the shipped thermal-coefficient classifier refined these rough cutoffs into a graded ladder. The implemented bounds (server-authoritative, mirrored verbatim by the frontend for inline feedback) are: `≥ 0` → **hard-invalid** (non-physical sign); `|v| < 0.01` → **warning** (looks like a per-unit fraction); `0.01 ≤ |v| < 0.20` → **warning** (unusually small); `0.20 ≤ |v| ≤ 0.50` → **plausible**; `0.50 < |v| ≤ 0.80` → **warning** (possible °F-basis / out-of-band); `|v| > 0.80` → **hard-invalid** (implausibly large, e.g. a ×100 entry). No value is ever auto-converted — an ambiguous unit is surfaced as a warning, never silently reinterpreted.
 
 ---
 
@@ -371,3 +373,82 @@ Independently of the phases, Site 4's live curve is wrong now. The recommended o
 - Datasheet field conventions (thermal coeff example −0.35, min tolerance `le=0`, degradation examples): `app/schema/device_technical_detail/module.py:30-43`
 - Create request schema (reviewer constants): `app/schema/telemetry_v2.py:895-910`
 - Site 4 baseline id 3 stored row + provenance: live read-only DB inspection (Section 4).
+
+---
+
+## 10. As-built implementation status
+
+> This section records what was actually built on top of the Sections 1–9 design. It supersedes the "recommended" / "proposed" framing of those sections where they differ; the earlier sections are retained as the design rationale. Everything below is **additive** and honors every hard constraint in Section 0.
+
+### 10.1 What shipped (component map)
+
+| Area | As-built artifact | Notes |
+|------|-------------------|-------|
+| Validation module | `app/services/telemetry/baseline_physics_validation.py` | Pure, read-only, zero DB writes. `POLICY_VERSION = "baseline-physics-v1"`, `TEMPERATURE_UNIT_CONTRACT_VERSION = "tc-contract-v1"`. |
+| Breakdown extraction | `expected_service._expected_power_breakdown(...)`; `_expected_power_kw` returns `.clipped_kw` | Behavior-preserving — output byte-identical to before (regression test `test_clipped_kw_equals_expected_power_kw`). Single F→C site reused by the smoke test. |
+| Migration | `ff34_baseline_physics_validation` (down_revision `ff33_device_eligibility_classification`) | Adds nullable `validation_result_json` (JSONB) + `validation_policy_version` (String(64)) to `telemetry_expected_baselines`. Additive only; clean `downgrade`. |
+| Activation gate | `crud.telemetry_expected.activate(...)` | Fail-closed: validates BEFORE supersede; `hard_invalid` blocks; warnings require explicit ack + source note. Persists the result in the same transaction. |
+| Read-time state | `ExpectedState.baseline_invalid` + additive response fields | Validate-on-read; suppresses expected, preserves actuals, never fabricates 0. |
+| Replacement diff | `GET /api/telemetry/v2/expected-baselines/{id}/diff?against_baseline_id=` | Read-only; reference point 500 W/m² / 45 °C / age-0 (partial load, below clipping). |
+| Frontend | banner + deep link, thermal input wording/preview/inline verdict, side-by-side diff UI | See §10.7. |
+| Tests | `tests/unit/telemetry/baseline_physics_validation_test.py` (+ lifecycle/read-state suites) | **143 passed** (see §10.8). |
+
+### 10.2 As-built validation matrix (implemented classifiers)
+
+Each field returns the required structured keys (`field`, `entered_value`, `expected_unit`, `classification`, `reason`, `source`, `policy_version`, `required_action`). `hard_invalid` is the **only** blocking verdict; `warning` is permissive-at-draft / acknowledge-at-activation; `plausible` passes silently.
+
+- **`thermal_coefficient_pct`** (`% per °C`): graded ladder — see the §3.4 as-built note for the exact cutoffs (`≥0` and `|v|>0.80` block; `0.20–0.50` plausible; the rest warn). Negative-and-~0.20–0.50 is the only silent-pass band.
+- **`power_tolerance_min_pct`** (`%`): `v > 0` hard-invalid (a positive value belongs in `power_tolerance_max_pct`); `−5 … 0` plausible; `−10 … −5` warning (large negative — confirm against the datasheet); `v < −10` hard-invalid.
+- **Loss fields** (`dc_loss_pct`, `ac_loss_pct`, `medium_voltage_loss_pct`, `mv_line_loss_pct`): individually `< 0` hard-invalid; `0 … 15` plausible; `15 … 30` warning (high single-stage loss); `> 30` hard-invalid. Cross-field AC-loss-sum and DC/AC-ratio bands flagged per §2.3.
+- **`soiling_factor`** (dimensionless ≤ 1 expected): `≤ 0` or `> 1.05` hard-invalid; `> 1.00` warning (a gain, not a loss — allowed only with an explicit source ack); `0.90 … 1.00` plausible; `0.80 … 0.90` warning ("10–20% soiling — confirm"); `< 0.80` warning (">20% soiling — confirm").
+- **`module_wattage` / equipment counts**: must be positive (non-positive → hard-invalid).
+- **Compute smoke-test** (§10.3) contributes its own checks (reference unity, C/F equivalence, monotonicity, physical-range, unit-mismatch demonstration) and can independently mark the report blocking when the stored constants yield non-physical output.
+
+### 10.3 Smoke test, temperature probes, and F/C equivalence
+
+The smoke test drives the **canonical breakdown path** (the same `(f-32)/1.8` F→C conversion and `1 + (thermal_coefficient_pct/100)*(cell_C − 25)` factor used in production) over a probe grid, so it can never diverge from the live formula:
+
+- **Temperature probes** at STC irradiance, evaluated in **both origin units** using exact pairs: `(0 °C, 32 °F)`, `(25 °C, 77 °F)`, `(45 °C, 113 °F)`, `(65 °C, 149 °F)`, plus two irradiance probes at 25 °C.
+- **Checks:** `reference_factor_unity_25c_77f` (factor == 1.0 at the 25 °C / 77 °F reference in both origins); `cf_equivalence_{c}c_{f}f` per pair (identical canonical °C, temperature factor, and expected kW regardless of origin unit); `temperature_factor_monotonic_decreasing` + `temperature_factor_physical_range` for a negative coefficient; and a **unit-mismatch demonstration** that applies the `%/°C` coefficient to a RAW Fahrenheit delta to prove the classic bug yields a *different* factor (`mismatch_detected = True`) — documenting why the canonical path is required, without ever performing that wrong math in production.
+- The report exposes `celsius_fahrenheit_equivalence_verified` (true only when every pair matches), satisfying the first-class F↔C requirement.
+
+### 10.4 Persisted policy-version fields
+
+On a successful activation the gate stamps, in the same transaction as the supersede:
+
+- `validation_policy_version` ← `"baseline-physics-v1"`.
+- `validation_result_json` ← the full structured report (field verdicts, smoke checks/probes, `policy_version`, `temperature_unit_contract_version`, the C/F-equivalence flag, the validation source mode, acknowledgement metadata `acknowledged_warnings` / source note, and the validation timestamp).
+
+This makes every active/superseded baseline self-describing about *which policy validated it and what the verdict was* — auditable after the fact and forward-compatible (bump `POLICY_VERSION` if the bounds or the conversion contract ever change).
+
+### 10.5 Lifecycle gate (as-built)
+
+`activate` is the fail-closed safety net: it runs `validate_baseline` **before** the atomic supersede. A `hard_invalid` required field (or a blocking smoke-test result) raises the existing `BaselineActivationError` → structured **409** (returned via `JSONResponse` so the machine-readable body survives the global string-flattening handler). Warning-only baselines are blocked **unless** the caller passes `acknowledge_warnings = True` **and** a source note — both persisted. On any block, the draft and the existing active row are left completely untouched. There is no override that lets a `hard_invalid` baseline go live.
+
+### 10.6 Read-time `baseline_invalid` state
+
+The expected/O&M read path validates the active baseline at read time. When it is blocking, the overall state becomes `ExpectedState.baseline_invalid` (distinct from `baseline_not_available`): expected is returned **unavailable** (never 0, never a negative number), **actuals are preserved**, and additive response fields carry the reason/summary and steer the UI toward a source-backed replacement. This is what makes Site 4's already-active #3 surface as invalid **without mutating it**.
+
+### 10.7 Replacement diff endpoint + Site 4 verification
+
+`GET /api/telemetry/v2/expected-baselines/{id}/diff?against_baseline_id=` (telemetry-admin + company-visibility, **zero writes**) returns per-field changes (old, new, documented source), both baselines' validation verdicts, and the expected-power impact at the reference point **500 W/m² / 45 °C / age-0** (a partial-load point below inverter clipping, chosen so parameter differences stay visible instead of both sides pinning to the AC rating). Verified on **#4 vs #3**: `thermal_coefficient_pct` 350 → −0.35 and `power_tolerance_min_pct` 5 → 0; reference expected **462 → 291.4 kW (−36.9%)**; `from_validation` (the #3 side) blocking, `to_validation` (the #4 side) valid.
+
+### 10.8 Site 4 outcome (constraint-aligned)
+
+A corrected replacement draft (**#4**) was created by copying #3's clean numeric fields and correcting **only** `thermal_coefficient_pct` (−0.35) and `power_tolerance_min_pct` (0), with a documented source note and `model_parameters_json` provenance (the facts-bridge was not ready for site 4 because the module/inverter wattage facts carry units and correctly coerce to *missing* — never guessed). #4 was approved and activated **through the real gate**. Result: **#4 active** (`supersedes_baseline_id = 3`, `active_from = now`), **#3 superseded with its physics UNCHANGED** (thermal still 350.0, ptol still 5.0 — only `status` / `active_to` flipped). No historical window was recomputed; the 2026-05-11 → activation period stays attributed to #3 (forward-only correction, per §6.4).
+
+### 10.9 Frontend surfaces (as-built)
+
+- **O&M / Overview (`ActualProjectedPower`)**: when the active baseline is invalid, actuals render and expected is suppressed (unavailable — never 0), with a `BaselineInvalidBanner` reading *"Expected comparison unavailable: active baseline requires replacement."* and a deep link to the Draft Baseline Review panel.
+- **Create-draft / reviewer input (`BaselineFromFactsPanel`)**: thermal-coefficient field with the §3.4 wording, a **live derived preview** ("At a 45 °C cell, this derates expected power by N%"), and inline verdict chips mirroring the §10.2 backend bounds; a `hard_invalid` entry blocks submit client-side (the server remains authoritative).
+- **Draft Baseline Review (`DraftBaselineReviewPanel`)**: a side-by-side replacement **diff UI** (changed field, old → new, source, per-side validation chips, expected-impact row) plus an active-invalid `Alert` banner driven by `diff.from_validation.is_blocking`.
+
+### 10.10 Test results
+
+`tests/unit/telemetry/baseline_physics_validation_test.py` and the lifecycle/read-state suites: **143 passed** (`test_db_name=heliumdb_test`). F/C equivalence specifically confirmed by:
+
+- `test_reference_factor_is_unity_at_25c_and_77f` — temperature factor == 1.0 at 25 °C and 77 °F.
+- `test_same_physical_temp_identical_output_both_origins[(0,32),(25,77),(45,113),(65,149)]` — identical canonical °C, factor, and expected kW from either origin unit.
+- `test_minus_0_35_c_origin_equals_f_origin_end_to_end` — `celsius_fahrenheit_equivalence_verified is True` for the corrected −0.35 coefficient.
+- `test_unit_mismatch_fahrenheit_delta_is_demonstrably_different` — `mismatch_detected is True`; the Celsius-delta factor and the (wrong) Fahrenheit-delta factor are demonstrably different.
+- `test_temperature_factor_monotonic_and_physical_for_negative_coeff` — factor strictly decreasing and within the physical range across 0–65 °C.

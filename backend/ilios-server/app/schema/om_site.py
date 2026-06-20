@@ -141,6 +141,17 @@ class SiteDashboardActualProductionSection(OMSitesBaseExtendedSchema, Cumulative
     # ``ExpectedState``. ``baseline_id`` identifies the active baseline used.
     expected_state: Optional[str] = None
     baseline_id: Optional[int] = None
+    # Additive (fail-closed physics validation, validated ON READ without
+    # mutation): ``baseline_invalid`` is True when the active baseline EXISTS but
+    # is physically invalid, so the expected curve is suppressed (left None, never
+    # 0) while actuals stay visible. The summary + policy version explain why and
+    # ``invalid_baseline_id`` lets the frontend deep-link to the replacement flow.
+    # All default to the no-op values so every existing path is unchanged.
+    baseline_invalid: bool = False
+    invalid_baseline_id: Optional[int] = None
+    baseline_validation_summary: Optional[str] = None
+    baseline_validation_policy_version: Optional[str] = None
+    required_action: Optional[str] = None
 
     _round_system_sizes_to_scale_2 = field_validator("system_size_ac", "system_size_dc")(round_to_scale_2)
 
@@ -172,6 +183,14 @@ class OMSitePastPerformanceSchema(BaseModel):
     # Additive (period-effective): "active" (single current baseline) vs
     # "period_effective" (per-period stitched). None on the legacy BigQuery path.
     baseline_selection_mode: Optional[str] = None
+    # Additive (fail-closed physics validation, validated ON READ): True when the
+    # active baseline is physically invalid, so ``data`` is empty and the frontend
+    # shows the replacement banner instead of a fabricated 0%. Defaults no-op.
+    baseline_invalid: bool = False
+    invalid_baseline_id: Optional[int] = None
+    baseline_validation_summary: Optional[str] = None
+    baseline_validation_policy_version: Optional[str] = None
+    required_action: Optional[str] = None
 
 
 class SiteActualVSExpectedPerformance(BaseModel):
@@ -198,6 +217,14 @@ class SiteActualVSExpectedPerformanceListSchema(BaseModel):
     # Additive (period-effective): "active" (single current baseline) vs
     # "period_effective" (per-period stitched). None on the legacy BigQuery path.
     baseline_selection_mode: Optional[str] = None
+    # Additive (fail-closed physics validation, validated ON READ): True when the
+    # active baseline is physically invalid, so per-point ``expected`` is null and
+    # the frontend shows the replacement banner (actuals stay visible). No-op default.
+    baseline_invalid: bool = False
+    invalid_baseline_id: Optional[int] = None
+    baseline_validation_summary: Optional[str] = None
+    baseline_validation_policy_version: Optional[str] = None
+    required_action: Optional[str] = None
 
 
 class OMSiteSchema(BaseModel):
