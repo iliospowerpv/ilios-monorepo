@@ -1,0 +1,523 @@
+Start audit/design sprint: Equipment Datasheet Parsing + Governed Baseline Field Coverage.
+
+This is an audit/design sprint only. Do not implement production code, migrations, endpoints, parser rewrites, UI changes, data repairs, or baseline changes unless a later implementation sprint is approved.
+
+Context:
+The weather-adjusted expected baseline workflow is now functional and validated in the UI:
+
+* V2 telemetry actuals and O&M chart integrity are validated.
+* Draft weather-adjusted baselines can be created.
+* Reviewer-confirmed normalization and reviewer-supplied values work.
+* Draft review, approve, activate, period-effective historical selection, and invalid-baseline suppression are complete.
+* Site 4 has a corrected replacement baseline lifecycle.
+* Reconciliation is now a core user, testing, and development tool.
+
+The current product gap is document intelligence.
+
+A module/inverter specification sheet was uploaded and did not produce useful operational fields. It appears the parser used generic or contractual extraction behavior rather than equipment-specific document intelligence.
+
+Strategic objective:
+Design the source-backed equipment-document workflow so Ilios can intelligently parse module datasheets, inverter datasheets, warranties, PTO/interconnection documents, equipment schedules, and PVsyst/design reports into reviewable values that support baseline readiness, O&M comparative performance, and investor reporting.
+
+Critical workflow rule:
+
+AI extraction is never operational truth by itself.
+
+The required workflow is:
+
+Document upload
+→ document classification or user-selected type
+→ document-type-aware extraction
+→ raw extracted value + evidence + confidence
+→ parsed-document / Data Room review
+→ user accepts value as-is OR overrides/corrects it in the field
+→ override reason/source note/user/timestamp are logged
+→ optional task creation/escalation
+→ accepted or overridden candidate value
+→ promotion to active project_fact
+→ Reconciliation reflects current truth state
+→ Baseline Readiness consumes promoted approved value
+→ draft baseline / review / approval / activation
+
+Reviewer-entered values are not inferior “manual workaround” data. They are governed, auditable reviewer overrides or reviewer-supplied assumptions and must remain visibly distinct from source-extracted values.
+
+Hard constraints:
+
+* Do not fabricate equipment values.
+* Do not silently normalize or convert units.
+* Do not auto-accept, auto-override, auto-promote, auto-create baselines, or auto-activate baselines.
+* Do not mutate existing project_facts or accepted values in this audit.
+* Do not change expected calculation math.
+* Do not change telemetry ingestion, V2 rollups, WeatherResolver, device eligibility, or baseline lifecycle.
+* Do not use SAFL as a V2 baseline source.
+* Do not reintroduce BigQuery, Firestore, or legacy telemetry paths.
+* Do not touch plaintext secrets.
+* Preserve raw value, evidence, confidence, reviewer action, override details, task linkage, source lineage, and promotion lineage.
+* Preserve stale/reparse protections already implemented.
+* Do not create a separate parallel truth store.
+
+Durable platform invariant:
+Never allow accepted, promoted, baseline, or O&M state to silently survive upstream source changes. Upstream changes must create a new lineage, mark dependent state stale, require re-review, or create explicit supersession. Historical data must remain preserved and auditable.
+
+A. Failed specification-sheet parse investigation
+
+Trace the actual failed module/inverter specification-sheet attempt.
+
+Identify:
+
+* site id
+* document id
+* file id/version id
+* upload document type selected by the user
+* detected or classified document type
+* parser route used
+* extraction registry record used
+* prompt/schema used
+* AI response status
+* parse result status
+* raw parsed result if available
+* fields attempted
+* fields extracted
+* document_keys created, if any
+* Data Room behavior shown to the user
+* whether the UI showed error, empty result, false success, or no actionable output
+
+Answer specifically:
+
+1. Did parsing fail technically or succeed with no relevant fields?
+2. Was the document classified incorrectly?
+3. Did generic/contractual extraction run instead of equipment extraction?
+4. Is a specialized datasheet schema absent?
+5. Did table/specification layout prevent extraction?
+6. Did extracted values fail canonical mapping?
+7. Did document_keys/candidate facts fail to generate?
+8. Did Data Room fail to surface the parsed results?
+9. Was the failure visible and understandable to the user?
+
+B. Current parser and document coverage inventory
+
+Inventory current support across:
+
+* document type enum / SiteDocumentsEnum
+* extraction_registry
+* ai_parsing_config
+* parser routing/classification
+* generic fallback behavior
+* document_key generation
+* Data Room review flow
+* override behavior
+* task creation behavior
+* candidate fact generation
+* promotion
+* Reconciliation catalog
+* baseline readiness field bridge
+* design-estimate points producer
+
+For every current document type, report:
+
+* user-facing upload label
+* parser schema exists yes/no
+* generic fallback yes/no
+* app-critical fields extracted
+* canonical mappings
+* Data Room review support
+* override support
+* task support
+* Reconciliation support
+* downstream operational use
+* known gaps
+
+C. App-critical document taxonomy
+
+Design the target Ilios taxonomy.
+
+At minimum include:
+
+1. Module Datasheet
+2. Inverter Datasheet
+3. Equipment Schedule
+4. PVsyst / Design Estimate Report
+5. Production Estimate / Energy Model
+6. Interconnection / PTO / Permission to Operate
+7. Warranty Document
+8. EPC Agreement
+9. PPA / Revenue Contract
+10. O&M Agreement
+11. DAS / Telemetry Provider Documentation
+12. Weather Station / Sensor Specification
+13. Site Layout / One-Line / Electrical Drawing
+14. Revenue Meter Documentation
+15. Commissioning Report
+16. As-Built Package
+
+For each:
+
+* user-facing label
+* intended parser strategy
+* whether user can select type manually
+* whether classifier can suggest type
+* baseline-driving fields
+* operational fields
+* investor/reporting fields
+* required evidence level
+* review/override requirements
+* downstream modules affected
+
+D. Module Datasheet extraction schema
+
+Design the specialized extraction schema for a Module Datasheet.
+
+Include where available:
+
+* module_manufacturer
+* module_model
+* module_wattage
+* module_power_stc_w
+* module_power_ptc_w
+* module_efficiency_pct
+* thermal_coefficient_pct / temperature_coefficient_pmax_pct_per_c
+* voltage_temperature_coefficient_pct_per_c
+* current_temperature_coefficient_pct_per_c
+* power_tolerance_min_pct
+* power_tolerance_max_pct
+* open_circuit_voltage_voc
+* short_circuit_current_isc
+* voltage_at_max_power_vmp
+* current_at_max_power_imp
+* nominal_operating_cell_temperature_noct
+* module dimensions
+* module area
+* warranty term
+* year-one degradation if documented
+* annual degradation if documented
+
+For every field define:
+
+* canonical key
+* display label
+* raw extraction format
+* expected unit
+* normalized candidate policy
+* whether baseline-driving
+* whether reviewer confirmation required
+* whether source-backed override is allowed
+* required evidence/page/table/snippet
+* confidence rule
+* Reconciliation target
+* Baseline Readiness target
+
+E. Inverter Datasheet extraction schema
+
+Design the specialized schema for an Inverter Datasheet.
+
+Include where available:
+
+* inverter_manufacturer
+* inverter_model
+* inverter_wattage
+* inverter_ac_power_kw
+* inverter_dc_power_kw
+* CEC efficiency
+* Euro efficiency
+* max efficiency
+* maximum DC voltage
+* MPPT voltage range
+* nominal AC voltage
+* maximum AC current
+* power factor range
+* operating temperature range
+* cooling method
+* communications/monitoring capabilities where relevant
+
+For every field define:
+
+* canonical key
+* expected unit
+* raw-value preservation policy
+* normalized candidate policy
+* baseline-driving status
+* reviewer confirmation policy
+* evidence requirements
+* Reconciliation target
+* Baseline Readiness target
+
+Important:
+`inverter_wattage` for the current weather-adjusted baseline model is kW AC per inverter. Do not label it as W.
+
+F. Warranty, degradation, and design assumptions
+
+Design schemas and canonical mappings for:
+
+* year_1_degradation_pct
+* annual_degradation_pct
+* linear degradation rate
+* performance warranty terms
+* guaranteed production values
+* P50/P90 values
+* degradation schedule
+* warranty duration
+* performance ratio assumptions
+* loss assumptions where explicitly documented
+
+Rules:
+
+* do not derive year-one or annual degradation from ambiguous warranty wording without reviewer confirmation;
+* preserve original wording and source reference;
+* distinguish extracted value, derived candidate, reviewer override, and reviewer-supplied assumption.
+
+G. PTO and interconnection flow
+
+Audit and design source-backed PTO behavior for:
+
+* PTO date
+* permission to operate
+* commercial operation date
+* interconnection approval date
+* utility
+* meter approval date
+
+Determine:
+
+* current parser coverage
+* canonical naming mismatch, if any
+* why PTO may parse but fail to reach Baseline Readiness
+* Data Room review/override behavior
+* Reconciliation row/status/action
+* baseline draft/activation implications
+
+H. Baseline field coverage matrix
+
+Create a complete matrix for fields required by:
+
+* weather-adjusted baseline
+* design-estimate points
+* O&M expected/comparative performance
+* Reconciliation
+* Project Hub Overview
+* investor reporting
+
+Include at minimum:
+
+* module_wattage
+* module_quantity
+* module manufacturer/model
+* inverter_wattage
+* inverter_quantity
+* inverter manufacturer/model
+* thermal_coefficient_pct
+* power_tolerance_min_pct
+* year_1_degradation_pct
+* annual_degradation_pct
+* cec_efficiency_pct
+* dc_loss_pct
+* ac_loss_pct
+* medium_voltage_loss_pct
+* mv_line_loss_pct
+* soiling_factor
+* PTO date
+* system size DC
+* system size AC
+* monthly production
+* annual production
+* P50/P90
+* equipment warranty details
+
+For each field identify:
+
+* current source path
+* desired source document type
+* parser support today
+* canonical field today
+* Data Room review/override support
+* candidate/promotion path
+* Reconciliation row/status
+* baseline readiness use
+* current gap
+* recommended remedy
+
+I. Unit and normalization policy
+
+Audit current normalization handling and define the governed policy.
+
+The system must preserve:
+
+* raw extracted value
+* raw unit
+* normalized candidate value
+* normalized unit
+* normalization method
+* reviewer confirmation
+* source evidence
+* timestamp
+* user
+* override reason if changed
+
+Define policies for:
+
+* W
+* Wp
+* kW
+* kWac
+* Wac
+* %
+* %/°C
+* %/°F
+* °C
+* °F
+* V
+* A
+* kWh
+* MWh
+* kWh/m²
+
+Rules:
+
+* safe same-unit stripping may be suggested but not silently applied;
+* conversion requires explicit reviewer confirmation;
+* ambiguous units require review;
+* a reviewer override must retain the original raw value;
+* no normalization can silently mutate an existing accepted value or project_fact.
+
+J. Data Room parsed-document UX
+
+Design the user experience for equipment documents.
+
+The parsed-document view must support:
+
+* document classification display and correction;
+* raw extracted value;
+* source evidence/page/table/snippet;
+* confidence;
+* raw unit;
+* normalized suggestion where safe;
+* baseline-driving indicator;
+* operational/reporting impact indicator;
+* accept as-is;
+* override/correct in the field;
+* override reason/source note;
+* reviewer identity/timestamp;
+* task creation/escalation;
+* stale/reparse state;
+* promotion readiness;
+* useful parse-failed/no-fields state.
+
+For an overridden value, the UI must show:
+
+* extracted source value;
+* reviewer-approved value;
+* reason;
+* evidence/source note;
+* user and timestamp;
+* promotion status.
+
+K. Reconciliation UX
+
+Design additions so Reconciliation can show:
+
+* source document missing;
+* document uploaded but wrong type;
+* parse failed;
+* parsed but no usable fields;
+* parsed value awaiting review;
+* accepted source-backed value;
+* source-backed overridden value;
+* reviewer-supplied assumption;
+* accepted not promoted;
+* active fact;
+* active fact but not baseline usable;
+* normalization required;
+* stale after reparse;
+* baseline-ready;
+* source-backed value superseded by reviewer override.
+
+L. Parser intelligence requirements
+
+For every specialized parser:
+
+* explain document purpose to the model;
+* list app-critical fields and why they matter;
+* extract raw text first;
+* extract unit separately;
+* return normalized candidate only when safe;
+* identify table/page/evidence;
+* return confidence;
+* return `not_found` explicitly;
+* distinguish unclear from absent;
+* never infer equipment specifications from contracts or unrelated documents;
+* never hallucinate missing values;
+* never make a source value active automatically.
+
+M. Phased implementation recommendation
+
+Provide a phased roadmap after this audit:
+
+1. Failed-parse visibility and classification correction
+2. Module Datasheet document type + extraction schema
+3. Inverter Datasheet document type + extraction schema
+4. Data Room equipment review / override / normalization UX
+5. Warranty/degradation extraction support
+6. PTO/interconnection canonical alignment
+7. Canonical field and Reconciliation coverage expansion
+8. Source-backed Baseline Readiness integration
+9. Parser failure/no-fields UX
+10. Test suite, fixtures, and documentation
+
+For every phase include:
+
+* risk level
+* backend files likely touched
+* frontend files likely touched
+* config/registry files likely touched
+* tests required
+* non-goals
+* dependencies
+
+N. Test plan
+
+Design tests for:
+
+* module datasheet correctly classified and parsed;
+* inverter datasheet correctly classified and parsed;
+* parser returns raw value, unit, evidence, confidence, and not_found state;
+* no hallucinated field values;
+* tables/specification layout is handled or fails visibly;
+* Data Room shows source-backed parsed values;
+* user can accept source value;
+* user can override source value with audit record;
+* override retains original extracted value;
+* task creation retains contextual document/field information;
+* accepted/overridden values become candidates only through existing governed flow;
+* promotion creates active facts only after review;
+* Reconciliation reflects source-backed overridden value;
+* Baseline Readiness recognizes promoted source-backed values;
+* reparse marks old acceptance/override lineage stale as designed;
+* no SAFL source;
+* no BigQuery/Firestore/legacy path;
+* no auto-baseline or auto-activation;
+* architect review.
+
+Deliverable:
+Create:
+
+`docs/equipment_datasheet_parsing_and_governed_baseline_field_coverage_audit.md`
+
+Include:
+
+1. executive summary
+2. failed spec-sheet root-cause analysis
+3. parser/document coverage inventory
+4. target document taxonomy
+5. module datasheet schema
+6. inverter datasheet schema
+7. warranty/degradation schema
+8. PTO/interconnection flow
+9. baseline field coverage matrix
+10. unit/normalization policy
+11. Data Room review/override UX
+12. Reconciliation UX
+13. parser intelligence requirements
+14. phased implementation roadmap
+15. test plan
+16. open decisions for user
+
+No production code changes in this sprint.
