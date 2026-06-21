@@ -1,0 +1,271 @@
+Start audit sprint: V2 Actual Production Curve Integrity — Telemetry to O&M Chart Trace.
+
+This is an audit-only sprint. Do not implement code, migrations, endpoint changes, UI changes, data repairs, rollup backfills, or provider sync changes unless a follow-up implementation sprint is approved.
+
+Context:
+Site 4 now has an active corrected weather-adjusted baseline and expected values can compute. However, O&M actual production appears as an implausibly flat line. A solar generation series should vary by interval and fall to zero overnight.
+
+This raises concern that actual telemetry is being incorrectly ingested, normalized, rolled up, selected, transformed, time-bucketed, or rendered.
+
+Strategic objective:
+Trace Site 4 actual-production data end-to-end and determine exactly where the flat-line behavior originates.
+
+Hard constraints:
+
+* Do not alter raw telemetry readings.
+* Do not alter telemetry rollups.
+* Do not run backfills.
+* Do not change provider credentials.
+* Do not change telemetry ingestion.
+* Do not change expected formula math.
+* Do not change WeatherResolver.
+* Do not change baseline physics validation.
+* Do not change baseline lifecycle.
+* Do not mutate project_facts or accepted values.
+* Do not use BigQuery, Firestore, or legacy telemetry as an operational fallback.
+* Do not fabricate missing telemetry.
+* Preserve genuine zero values.
+* Preserve null as null; do not convert missing actuals to zero.
+* Preserve timezone semantics and document every conversion.
+
+Durable telemetry invariant:
+Actual production shown in Ilios must be traceable to V2 raw readings and V2 rollups, with metric semantics, interval boundaries, units, timezone, and aggregation method explicitly identified.
+
+Audit Site:
+
+* Site 4 / 110 Shawmut Road
+* company 6
+* use the same O&M chart/window where the flat actual line is visible
+
+A. Identify the exact frontend chart
+
+Trace:
+
+* route/page/component where the flat line appears
+* chart component name
+* API endpoint(s) called
+* request parameters:
+
+  * site id
+  * date range
+  * interval/granularity
+  * timezone
+  * metric selection
+* frontend transformation applied before chart rendering
+* whether gaps are filled
+* whether values are forward-filled, defaulted, repeated, rounded, or coerced
+* whether the chart is plotting:
+
+  * instantaneous power
+  * interval energy
+  * cumulative energy
+  * daily energy
+  * latest value repeated across buckets
+  * expected rather than actual by mistake
+
+B. Trace raw provider data
+
+For the same chart window, inspect:
+
+* provider account
+* external site
+* external device(s)
+* provider metric names
+* raw timestamps
+* raw values
+* raw units
+* provider aggregation semantics
+* whether data is instantaneous, interval-average, cumulative, or daily
+* whether provider data itself is flat
+* whether night values are zero, null, absent, or repeated
+
+Use a representative day with daylight and overnight hours.
+
+Return a time-series sample showing:
+
+* timestamp in provider/native timezone
+* timestamp UTC
+* metric name
+* raw value
+* unit
+* device/source
+* whether this is production power or energy
+
+C. Trace V2 normalized readings
+
+For the same raw records, inspect telemetry_readings:
+
+* normalized metric key
+* normalized value
+* normalized unit
+* source timestamp
+* stored timestamp
+* timezone assumptions
+* device mapping
+* whether values remain variable
+* whether readings are duplicated
+* whether a last-value or carry-forward behavior appears
+
+Compare raw provider sequence to normalized V2 sequence.
+
+D. Trace V2 rollups
+
+Inspect:
+
+* telemetry_site_interval_rollups
+* telemetry_device_interval_rollups
+* any intermediate rollup service/query
+* rollup interval length
+* aggregation function:
+
+  * sum
+  * average
+  * max
+  * last
+  * delta
+* handling of cumulative counters
+* handling of missing intervals
+* timezone/bucket boundary behavior
+* whether rollups are variable through day/night
+* whether nighttime values are correctly zero/null
+* whether one daily value is being copied into every intraday bucket
+
+Return a sample table for the same representative day:
+
+* bucket timestamp local
+* bucket timestamp UTC
+* actual_power_kw
+* actual_energy_kwh
+* source reading count
+* chosen aggregation method
+* rollup status / quality flags if any
+
+E. Metric-semantic audit
+
+Determine which metric is intended for the O&M actual curve:
+
+* instantaneous AC power
+* interval average AC power
+* interval energy
+* cumulative lifetime energy
+* daily energy
+
+For each candidate metric currently available:
+
+* provider source metric
+* V2 normalized metric
+* unit
+* monotonic versus variable behavior
+* correct aggregation rule
+* correct chart usage
+* whether it is being used correctly today
+
+Explicitly determine whether a cumulative-energy metric is being incorrectly rendered as power or copied across buckets.
+
+F. Timezone / daylight audit
+
+Audit timezone handling end-to-end:
+
+* provider timestamp timezone
+* raw reading timezone
+* database storage timezone
+* rollup bucket timezone
+* site timezone
+* frontend request timezone
+* frontend display timezone
+
+Test a daylight window and overnight window.
+
+Answer:
+
+* Are local overnight periods represented correctly?
+* Is UTC-to-local conversion shifting data into wrong hours?
+* Are buckets being grouped by UTC date instead of site-local date?
+* Does DST affect the chart path?
+
+G. Chart transformation audit
+
+Trace all frontend and backend transforms from rollup response to rendered points.
+
+Specifically check for:
+
+* `|| 0` or null-to-zero coercion
+* forward fill / last observation carried forward
+* fallback to latest actual value
+* map/reduce grouping that uses one value for all timestamps
+* chart labels disconnected from value timestamps
+* merge/join errors between actual and expected series
+* use of daily aggregates for hourly labels
+* repeated object references or stale cached arrays
+* incorrect memoization keys
+* date-range/cache invalidation issue after baseline activation
+
+H. Expected versus actual separation
+
+Confirm:
+
+* actual series comes from V2 telemetry rollups only
+* expected series comes from period-effective baseline computation only
+* actual does not inherit expected values
+* expected does not overwrite actual values
+* chart merge preserves nulls and genuine zeroes independently
+
+I. Root-cause classification
+
+Classify the flat-line origin as exactly one or more of:
+
+1. provider data issue
+2. raw ingestion issue
+3. normalized-reading issue
+4. rollup aggregation issue
+5. metric-semantic mismatch
+6. timezone/bucket issue
+7. backend chart-builder issue
+8. frontend transformation/rendering issue
+9. cache/query invalidation issue
+10. unknown / needs more data
+
+For every confirmed root cause:
+
+* exact file/service/query/component
+* evidence
+* severity
+* user-facing impact
+* recommended repair
+* whether historical backfill would eventually be needed
+* whether repair is read-only, data repair, or code change
+
+J. Required validation dataset
+
+Use at least:
+
+* one full local calendar day with daylight and nighttime
+* at least one daytime interval where production should vary
+* at least one nighttime interval where production should be zero or absent
+* one comparison of raw provider data versus final chart data
+
+K. Deliverable
+
+Create:
+
+`docs/telemetry/v2_actual_production_curve_integrity_audit.md`
+
+Include:
+
+1. executive summary
+2. exact chart and endpoint traced
+3. provider raw telemetry sample
+4. normalized V2 reading sample
+5. interval-rollup sample
+6. metric semantics analysis
+7. timezone audit
+8. backend chart-builder audit
+9. frontend transformation audit
+10. expected-versus-actual separation findings
+11. root cause classification
+12. repair options ranked by risk
+13. historical-data implications
+14. test plan
+15. recommended implementation sprint
+
+No production code changes in this sprint.

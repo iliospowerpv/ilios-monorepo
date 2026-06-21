@@ -89,3 +89,9 @@ id = "HJtwOG7Eit_Ll2WJ3DAsI"
 uri = "file://docs/expected_baseline_draft_review_activation_ux_audit.md"
 type = "text"
 title = "Expected Baseline Draft Review & Activation UX — Audit & Design"
+
+[[outputs]]
+id = "4Hcwvds_tXrCUNv9415dw"
+uri = "file://docs/telemetry/v2_actual_production_curve_integrity_audit.md"
+type = "text"
+title = "V2 Actual Production Curve Integrity Audit — Site 4 (110 Shawmut)"

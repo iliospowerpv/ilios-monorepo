@@ -39,3 +39,14 @@ are never edited and history is never recomputed.
   baseline; a superseded-but-invalid segment inside the window can still compute.
   This is intentional ("no historical recompute / preserve period-effective"),
   not a bug — revisit only if the product wants segment-level suppression.
+
+**Diagnostic symptom (non-obvious):** the visible symptom of the period-effective
+caveat above is an *implausibly FLAT ACTUAL line* on the O&M actual-vs-expected
+chart — NOT an obviously-wrong expected line. Both series share ONE auto-scaled
+AG-Charts Y-axis, so an invalid superseded segment emitting unclipped huge values
+(the formula has only an upper `min(expected, AC nameplate)` clip, no lower bound;
+thermal=350 + sub-25°C cell temps → expected ≈ −39,000 kW) blows up the domain and
+compresses the healthy actual curve into a flat sliver. So: a flat ACTUAL curve
+should first prompt checking expected magnitude / period-effective invalid segments,
+NOT the actual readings/rollup pipeline (which is fine). Full trace:
+`docs/telemetry/v2_actual_production_curve_integrity_audit.md`.
