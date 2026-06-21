@@ -113,6 +113,30 @@ def _baseline_invalid_meta(baseline, report) -> dict:
     }
 
 
+def _invalid_segments_payload(result) -> Optional[list[dict]]:
+    """Serialize a period-effective result's invalid baseline segments for the API.
+
+    Additive, read-only: each entry names a SUPERSEDED baseline whose physics
+    failed read-time validation and the clipped historical sub-window over which
+    its expected was suppressed (those buckets carry ``expected`` ``None`` while
+    the actual telemetry stays visible). ``None`` when no segment was invalid, so
+    the field is omitted on the healthy/active-invalid/no-baseline paths.
+    """
+    segments = getattr(result, "invalid_baseline_segments", None)
+    if not segments:
+        return None
+    return [
+        {
+            "baseline_id": s.baseline_id,
+            "segment_start": s.segment_start,
+            "segment_end": s.segment_end,
+            "validation_summary": s.validation_summary,
+            "policy_version": s.policy_version,
+        }
+        for s in segments
+    ]
+
+
 def _bucket_actual_energy_kwh(bucket, bucket_hours: float) -> float:
     """Actual energy (kWh) for one bucket from its avg power, 0.0 when missing."""
     if bucket.actual_power_kw is None:
@@ -336,6 +360,11 @@ def build_actual_vs_expected_section(db_session: Session, site) -> dict:
         "expected_baseline_available": True,
         "expected_state": state.value,
         "baseline_selection_mode": result.baseline_selection_mode,
+        # Additive: per-segment fail-closed metadata. Non-null only when a
+        # superseded baseline was invalid for part of the window (its expected was
+        # suppressed → ``state`` is ``partial``/``baseline_invalid``); the actual
+        # line for those periods stays visible.
+        "invalid_baseline_segments": _invalid_segments_payload(result),
     }
 
 
@@ -486,6 +515,11 @@ def build_past_performance_section(db_session: Session, site) -> dict:
         "expected_baseline_available": True,
         "expected_state": state.value,
         "baseline_selection_mode": result.baseline_selection_mode,
+        # Additive: per-segment fail-closed metadata. Non-null only when a
+        # superseded baseline was invalid for part of the window (those days are
+        # excluded from the ratio → an honest ``None`` percent); the days a valid
+        # baseline covered keep their percent.
+        "invalid_baseline_segments": _invalid_segments_payload(result),
     }
 
 

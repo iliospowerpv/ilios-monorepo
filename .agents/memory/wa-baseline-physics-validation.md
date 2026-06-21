@@ -35,18 +35,32 @@ are never edited and history is never recomputed.
   `db_session=None`; when you add/extend read-path validation, isolate such tests
   by monkeypatching those seams (or give a lifecycle-only fixture valid physics) —
   the canonical valid field set lives in `baseline_physics_validation_test._baseline()`.
-- Historical period-effective stitching validates only the CURRENT active
-  baseline; a superseded-but-invalid segment inside the window can still compute.
-  This is intentional ("no historical recompute / preserve period-effective"),
-  not a bug — revisit only if the product wants segment-level suppression.
+- Period-effective stitching now validates EVERY overlapping segment at read time,
+  not just the current active baseline. A superseded-but-invalid segment inside the
+  window is suppressed (per-bucket `baseline_invalid`: expected null, actual/weather
+  preserved verbatim, owning `baseline_id` stamped) instead of computing physics, so
+  an invalid history segment can no longer emit a garbage expected curve. Suppression
+  is fail-closed and read-only: it never mutates baseline rows/readings/facts, never
+  recomputes history, and ownership dedupe still goes through `_effective_baseline_at`
+  (the suppressed bucket of a non-owning segment is dropped at the boundary).
+  **Why:** the old "active-only" stitching let a superseded invalid baseline (Site 4
+  #3 thermal=350) compute and blow up the chart — see the diagnostic symptom below.
+- State semantics after suppression: valid+invalid segments coexisting →
+  `expected_state=partial`; all-invalid / no-ok-and-invalid-dominant →
+  `baseline_invalid`. The company active-only path (zero invalid segments) is
+  unchanged. Invalid-segment provenance is exposed additively as
+  `invalid_baseline_segments` (id + window + validation summary + policy version),
+  surfaced through both O&M chart section builders — additive, never replaces actual.
 
-**Diagnostic symptom (non-obvious):** the visible symptom of the period-effective
-caveat above is an *implausibly FLAT ACTUAL line* on the O&M actual-vs-expected
+**Diagnostic symptom (non-obvious), now MITIGATED:** before per-segment suppression,
+the visible symptom was an *implausibly FLAT ACTUAL line* on the O&M actual-vs-expected
 chart — NOT an obviously-wrong expected line. Both series share ONE auto-scaled
 AG-Charts Y-axis, so an invalid superseded segment emitting unclipped huge values
 (the formula has only an upper `min(expected, AC nameplate)` clip, no lower bound;
-thermal=350 + sub-25°C cell temps → expected ≈ −39,000 kW) blows up the domain and
-compresses the healthy actual curve into a flat sliver. So: a flat ACTUAL curve
-should first prompt checking expected magnitude / period-effective invalid segments,
-NOT the actual readings/rollup pipeline (which is fine). Full trace:
+thermal=350 + sub-25°C cell temps → expected ≈ −39,000 kW) blew up the domain and
+compressed the healthy actual curve into a flat sliver. Per-segment suppression now
+emits null (not a garbage magnitude) for such segments, and the FE `finiteOrNull`
+domain guard ignores non-finite/null expected — so a flat-actual chart should now be
+rare. If it recurs, still check expected magnitude / invalid segments FIRST, NOT the
+readings/rollup pipeline (which is fine). Full trace:
 `docs/telemetry/v2_actual_production_curve_integrity_audit.md`.

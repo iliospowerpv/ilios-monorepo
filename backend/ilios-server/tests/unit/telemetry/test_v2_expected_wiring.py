@@ -176,6 +176,60 @@ def test_derive_state_no_ok_dominant_reason():
 
 
 # ---------------------------------------------------------------------------
+# derive_expected_state — period-effective per-segment fail-closed semantics
+#
+# A ``baseline_invalid`` bucket (a superseded segment whose physics failed
+# read-time validation) is NOT ``ok``: a window mixing a valid segment with an
+# invalid one is ``partial``; when nothing computed and invalid is the dominant
+# reason it is ``baseline_invalid``; otherwise the existing missing/pre-PTO
+# dominance wins. The active-only path never emits this status (invalid_count 0),
+# so its behavior is unchanged (covered by the tests above).
+# ---------------------------------------------------------------------------
+def test_derive_state_valid_plus_invalid_segment_is_partial():
+    res = _result(
+        [
+            _bucket(datetime(2026, 6, 10, 10), BucketStatus.ok, exp_p=8, exp_e=8),
+            _bucket(datetime(2026, 6, 10, 11), BucketStatus.baseline_invalid),
+        ]
+    )
+    assert derive_expected_state(res) == ExpectedState.partial
+
+
+def test_derive_state_all_invalid_no_ok_is_baseline_invalid():
+    res = _result(
+        [
+            _bucket(datetime(2026, 6, 10, 10), BucketStatus.baseline_invalid),
+            _bucket(datetime(2026, 6, 10, 11), BucketStatus.baseline_invalid),
+        ]
+    )
+    assert derive_expected_state(res) == ExpectedState.baseline_invalid
+
+
+def test_derive_state_invalid_loses_to_dominant_missing_inputs():
+    # invalid_count (1) < missing_inputs_count (2): the dominant reason wins.
+    res = _result(
+        [
+            _bucket(datetime(2026, 6, 10, 10), BucketStatus.baseline_invalid),
+            _bucket(datetime(2026, 6, 10, 11), BucketStatus.missing_inputs),
+            _bucket(datetime(2026, 6, 10, 12), BucketStatus.missing_inputs),
+        ]
+    )
+    assert derive_expected_state(res) == ExpectedState.missing_inputs
+
+
+def test_derive_state_invalid_dominant_over_missing_is_baseline_invalid():
+    # invalid_count (2) >= missing_inputs_count (1) >= pre_pto (0): invalid wins.
+    res = _result(
+        [
+            _bucket(datetime(2026, 6, 10, 10), BucketStatus.baseline_invalid),
+            _bucket(datetime(2026, 6, 10, 11), BucketStatus.baseline_invalid),
+            _bucket(datetime(2026, 6, 10, 12), BucketStatus.missing_inputs),
+        ]
+    )
+    assert derive_expected_state(res) == ExpectedState.baseline_invalid
+
+
+# ---------------------------------------------------------------------------
 # Schema validators — None-safe, no fabricated 0
 # ---------------------------------------------------------------------------
 def _section(**overrides):

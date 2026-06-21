@@ -39,9 +39,19 @@ const ActualProjectedPower: React.FC<ActualProjectedPowerProps> = ({ siteId }) =
 
   // `expected` is null for V2-driven points (no projected baseline); the AG line
   // series simply skips null y-values, leaving the Actual line intact.
+  //
+  // Defense-in-depth: the backend already suppresses expected to null for any
+  // period whose baseline is invalid (per-segment fail-closed), so a corrupt
+  // negative/garbage expected should never arrive. Even so, coerce any non-finite
+  // expected (NaN/Infinity/non-number) back to null here so a single stray value
+  // can never blow out the SHARED Y-axis domain and flatten the healthy Actual
+  // curve. Genuine zeros and legitimate negatives (night tare) are finite and so
+  // are preserved untouched.
+  const finiteOrNull = (value: number | null | undefined): number | null =>
+    typeof value === 'number' && Number.isFinite(value) ? value : null;
   const formattedData = (data?.data ?? []).map(({ actual, expected, period }) => ({
     actual,
-    expected,
+    expected: finiteOrNull(expected),
     period: new Date(period)
   }));
 

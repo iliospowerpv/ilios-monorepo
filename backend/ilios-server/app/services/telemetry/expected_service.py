@@ -96,6 +96,13 @@ class BucketStatus(str, Enum):
     ok = "ok"
     missing_inputs = "missing_inputs"
     pre_pto = "pre_pto"
+    # Additive (period-effective per-segment fail-closed): the baseline that owns
+    # this bucket's period is physically INVALID (read-time physics validation),
+    # so its expected is SUPPRESSED (left ``None``, never fabricated/0/negative)
+    # while the actual telemetry is preserved verbatim. Only ever produced by the
+    # period-effective orchestrator's per-segment guard — the pure calc core
+    # (``compute_expected_buckets``) never emits this status.
+    baseline_invalid = "baseline_invalid"
 
 
 class OverallStatus(str, Enum):
@@ -246,6 +253,12 @@ class ExpectedResult:
     # Per-segment provenance of the stitched result (``None`` on the single-baseline
     # path). Each entry records which baseline drove which clipped sub-window.
     baseline_segments: Optional[list["BaselineSegment"]] = None
+    # Additive (period-effective per-segment fail-closed): the subset of segments
+    # whose baseline was physically INVALID and therefore had its expected
+    # suppressed for its period (buckets emitted as ``baseline_invalid`` with
+    # expected ``None``). ``None`` when no segment was invalid; the actual
+    # telemetry for those periods is preserved in ``buckets``.
+    invalid_baseline_segments: Optional[list["InvalidBaselineSegment"]] = None
 
 
 @dataclass(frozen=True)
@@ -262,6 +275,24 @@ class BaselineSegment:
     active_to: Optional[datetime]
     segment_start: datetime
     segment_end: datetime
+
+
+@dataclass(frozen=True)
+class InvalidBaselineSegment:
+    """One period-effective segment whose baseline failed read-time physics.
+
+    Additive, read-only provenance: records WHICH baseline was invalid, the clipped
+    sub-window over which its expected was suppressed, and the validation verdict
+    (summary + policy version) so the UI can explain the honest gap and steer the
+    user to a source-backed replacement. The actual telemetry for ``segment_start``
+    ..``segment_end`` is preserved verbatim — only the expected line is suppressed.
+    """
+
+    baseline_id: int
+    segment_start: datetime
+    segment_end: datetime
+    validation_summary: Optional[str]
+    policy_version: Optional[str]
 
 
 # ---------------------------------------------------------------------------
@@ -516,6 +547,64 @@ def compute_expected_buckets(
 # ---------------------------------------------------------------------------
 
 
+def _load_bucket_inputs(
+    db: Session,
+    *,
+    site,
+    start: datetime,
+    end: datetime,
+    bucket_size: str,
+    weather_resolver: Optional[WeatherResolver] = None,
+) -> tuple[list[BucketInput], "object"]:
+    """Read the site's actual-power + weather rollups for a window into BucketInputs.
+
+    Behavior-preserving extraction of the rollup/weather read block shared by
+    :func:`compute_site_expected` and the period-effective orchestrator's
+    per-segment suppression path. Reads the SAME V2 rollups (no transposition /
+    conversion / zero-fill), unions only the buckets actually present, and returns
+    ``(bucket_inputs, resolved)`` where ``resolved`` carries weather provenance.
+    The caller decides whether to run physics (valid baseline) or suppress
+    (invalid baseline) — this helper is baseline-agnostic.
+    """
+    crud = TelemetrySiteRollupCRUD(db)
+    power_rows = crud.get_series(
+        site_id=site.id,
+        normalized_metric=SITE_POWER_METRIC,
+        bucket_size=bucket_size,
+        start=start,
+        end=end,
+    )
+
+    power_map = {r.bucket_start: float(r.value) for r in power_rows}
+
+    # Resolve the weather physics inputs through the W1 resolver. It reads the
+    # same irradiance/cell-temp rollups as the legacy direct reads and returns
+    # identical float values (no transposition/conversion), so the numbers below
+    # are unchanged; it additionally carries provenance.
+    resolver = weather_resolver or WeatherResolver(db)
+    resolved = resolver.resolve_window(
+        site_id=site.id,
+        start=start,
+        end=end,
+        bucket_size=bucket_size,
+    )
+
+    # Union of buckets actually present — never invent buckets, never zero-fill.
+    bucket_starts = sorted(set(power_map) | set(resolved.buckets))
+    bucket_inputs = []
+    for bs in bucket_starts:
+        weather = resolved.buckets.get(bs)
+        bucket_inputs.append(
+            BucketInput(
+                bucket_start=bs,
+                irradiance_wm2=weather.irradiance_poa_wm2 if weather else None,
+                cell_temperature_f=weather.cell_temperature_f if weather else None,
+                actual_power_kw=power_map.get(bs),
+            )
+        )
+    return bucket_inputs, resolved
+
+
 def compute_site_expected(
     db: Session,
     *,
@@ -556,42 +645,14 @@ def compute_site_expected(
             weather_provenance=None,
         )
 
-    crud = TelemetrySiteRollupCRUD(db)
-    power_rows = crud.get_series(
-        site_id=site.id,
-        normalized_metric=SITE_POWER_METRIC,
-        bucket_size=bucket_size,
-        start=start,
-        end=end,
-    )
-
-    power_map = {r.bucket_start: float(r.value) for r in power_rows}
-
-    # Resolve the weather physics inputs through the W1 resolver. It reads the
-    # same irradiance/cell-temp rollups as the legacy direct reads and returns
-    # identical float values (no transposition/conversion), so the numbers below
-    # are unchanged; it additionally carries provenance.
-    resolver = weather_resolver or WeatherResolver(db)
-    resolved = resolver.resolve_window(
-        site_id=site.id,
+    bucket_inputs, resolved = _load_bucket_inputs(
+        db,
+        site=site,
         start=start,
         end=end,
         bucket_size=bucket_size,
+        weather_resolver=weather_resolver,
     )
-
-    # Union of buckets actually present — never invent buckets, never zero-fill.
-    bucket_starts = sorted(set(power_map) | set(resolved.buckets))
-    bucket_inputs = []
-    for bs in bucket_starts:
-        weather = resolved.buckets.get(bs)
-        bucket_inputs.append(
-            BucketInput(
-                bucket_start=bs,
-                irradiance_wm2=weather.irradiance_poa_wm2 if weather else None,
-                cell_temperature_f=weather.cell_temperature_f if weather else None,
-                actual_power_kw=power_map.get(bs),
-            )
-        )
 
     bucket_hours = BUCKET_SIZE_TO_HOURS.get(bucket_size, 1.0)
     params = BaselineParams.from_baseline(baseline)
@@ -645,7 +706,17 @@ def derive_expected_state(result: ExpectedResult) -> ExpectedState:
     ``baseline_not_available``; a baseline present but no telemetry buckets in the
     window (so nothing could be computed) is ``missing_inputs``; all buckets
     computed is ``available``; a mix is ``partial``; and when nothing computed but
-    buckets exist, the dominant failure reason (missing inputs vs pre-PTO) wins.
+    buckets exist, the dominant failure reason (missing inputs vs pre-PTO vs an
+    invalid baseline segment) wins.
+
+    Period-effective per-segment fail-closed: ``baseline_invalid`` buckets (a
+    superseded segment whose physics failed read-time validation) are NOT ``ok``,
+    so a window mixing a valid active segment with an invalid superseded segment
+    reports ``partial`` (some expected, some suppressed). When nothing computed and
+    the invalid-segment suppression is the dominant reason, the result is
+    ``baseline_invalid``. The active-only path (``compute_expected_buckets`` never
+    emits ``baseline_invalid`` and short-circuits an active-invalid baseline
+    upstream) sees ``invalid_count == 0`` here, so its behavior is unchanged.
     """
     if result.overall_status == OverallStatus.baseline_not_available:
         return ExpectedState.baseline_not_available
@@ -657,9 +728,23 @@ def derive_expected_state(result: ExpectedResult) -> ExpectedState:
     if result.ok_bucket_count == total:
         return ExpectedState.available
     if result.ok_bucket_count > 0:
+        # At least one bucket has a real expected — a mix of computed + suppressed/
+        # missing/pre-PTO (incl. invalid superseded segments) is honest ``partial``.
         return ExpectedState.partial
     # No bucket computed: surface the dominant reason so the UI shows the right
-    # honest N/A ("Missing inputs" vs "Pre-PTO") rather than a generic blank.
+    # honest N/A ("Missing inputs" / "Pre-PTO" / "Baseline invalid"), never a
+    # fabricated 0. Count invalid-segment buckets explicitly (the calc core never
+    # produces this status, so non-period-effective results score 0 and are
+    # unaffected).
+    invalid_count = sum(
+        1 for b in result.buckets if b.status == BucketStatus.baseline_invalid
+    )
+    if (
+        invalid_count > 0
+        and invalid_count >= result.missing_inputs_bucket_count
+        and invalid_count >= result.pre_pto_bucket_count
+    ):
+        return ExpectedState.baseline_invalid
     if result.missing_inputs_bucket_count >= result.pre_pto_bucket_count:
         return ExpectedState.missing_inputs
     return ExpectedState.pre_pto
@@ -695,6 +780,43 @@ def _effective_baseline_at(baselines, ts: datetime):
             best = b
             best_key = key
     return best
+
+
+def _suppressed_segment_buckets(
+    bucket_inputs: list[BucketInput], baseline_id: int
+) -> list[ExpectedBucket]:
+    """Build ``baseline_invalid`` buckets for an invalid segment's window.
+
+    Fail-closed: the owning baseline failed read-time physics validation, so its
+    expected MUST NOT be computed (no garbage curve, never 0/negative). Each bucket
+    preserves the ACTUAL telemetry + the resolved weather inputs verbatim and leaves
+    both expected fields ``None`` (honest gap). ``baseline_id`` is stamped so the
+    orchestrator's ownership dedupe and provenance stay consistent with the valid
+    path (where ``compute_site_expected`` stamps every bucket, ``ok`` or not).
+
+    Caveat (pre-existing, intentionally UNCHANGED): the ``actual`` value here is the
+    raw rollup — ``None`` when that bucket simply had no actual reading. The chart
+    builders 0.0-fill a ``None`` ``actual`` (for EVERY bucket status, not just this
+    one) to satisfy the non-optional ``actual`` schema field, so a suppressed bucket
+    with no actual renders as ``actual=0.0``. That is the legacy actual-missing
+    fill, deliberately left as-is by this fail-closed change; only the EXPECTED line
+    is suppressed here, and the genuine actual (incl. a real 0.0 or negative tare)
+    is always preserved exactly.
+    """
+    return [
+        ExpectedBucket(
+            bucket_start=bi.bucket_start,
+            status=BucketStatus.baseline_invalid,
+            expected_power_kw=None,
+            expected_energy_kwh=None,
+            actual_power_kw=bi.actual_power_kw,
+            irradiance_wm2=bi.irradiance_wm2,
+            cell_temperature_f=bi.cell_temperature_f,
+            age_years=None,
+            baseline_id=baseline_id,
+        )
+        for bi in bucket_inputs
+    ]
 
 
 def compute_site_expected_period_effective(
@@ -754,7 +876,13 @@ def compute_site_expected_period_effective(
             baseline_segments=[],
         )
 
+    # Lazy import avoids a module-level cycle: ``baseline_physics_validation``
+    # imports physics primitives FROM this module, so a top-level import here (run
+    # before ``BaselineParams`` etc. are defined) would fail.
+    from app.services.telemetry.baseline_physics_validation import validate_baseline
+
     segments: list[BaselineSegment] = []
+    invalid_segments: list[InvalidBaselineSegment] = []
     buckets_by_ts: dict[datetime, ExpectedBucket] = {}
     baseline_type_value: Optional[str] = None
     for baseline in baselines:
@@ -766,6 +894,53 @@ def compute_site_expected_period_effective(
             # No overlap inside the window (defensive — the CRUD filter should
             # already exclude this); skip without a segment.
             continue
+        segments.append(
+            BaselineSegment(
+                baseline_id=baseline.id,
+                active_from=active_from,
+                active_to=active_to,
+                segment_start=seg_start,
+                segment_end=seg_end,
+            )
+        )
+        # Per-segment fail-closed: validate THIS baseline's physics ON READ (no
+        # mutation). The active-only read paths already block an invalid ACTIVE
+        # baseline; here we extend the same guard to EVERY stitched segment so a
+        # superseded-but-invalid baseline (e.g. the legacy Site-4 #3) can never
+        # drive a corrupt expected curve for its historical period.
+        report = validate_baseline(baseline, validation_source_mode="read_time")
+        if report.is_blocking:
+            bt = baseline.baseline_type
+            baseline_type_value = (
+                (bt.value if hasattr(bt, "value") else bt) or baseline_type_value
+            )
+            # Suppress expected for this segment but preserve the ACTUAL telemetry:
+            # read the same rollups/weather and emit ``baseline_invalid`` buckets
+            # (expected ``None``) instead of running physics — never ``from_baseline``
+            # (which would raise on incomplete physics) and never a fabricated curve.
+            seg_inputs, _ = _load_bucket_inputs(
+                db,
+                site=site,
+                start=seg_start,
+                end=seg_end,
+                bucket_size=bucket_size,
+                weather_resolver=weather_resolver,
+            )
+            seg_buckets = _suppressed_segment_buckets(seg_inputs, baseline.id)
+            invalid_segments.append(
+                InvalidBaselineSegment(
+                    baseline_id=baseline.id,
+                    segment_start=seg_start,
+                    segment_end=seg_end,
+                    validation_summary=report.summary,
+                    policy_version=report.policy_version,
+                )
+            )
+            for bucket in seg_buckets:
+                owner = _effective_baseline_at(baselines, bucket.bucket_start)
+                if owner is not None and owner.id == baseline.id:
+                    buckets_by_ts[bucket.bucket_start] = bucket
+            continue
         seg_result = compute_site_expected(
             db,
             site=site,
@@ -776,15 +951,6 @@ def compute_site_expected_period_effective(
             weather_resolver=weather_resolver,
         )
         baseline_type_value = seg_result.baseline_type or baseline_type_value
-        segments.append(
-            BaselineSegment(
-                baseline_id=baseline.id,
-                active_from=active_from,
-                active_to=active_to,
-                segment_start=seg_start,
-                segment_end=seg_end,
-            )
-        )
         for bucket in seg_result.buckets:
             owner = _effective_baseline_at(baselines, bucket.bucket_start)
             # Keep a bucket only from the segment whose baseline actually owns that
@@ -831,4 +997,5 @@ def compute_site_expected_period_effective(
         weather_provenance=None,
         baseline_selection_mode="period_effective",
         baseline_segments=segments,
+        invalid_baseline_segments=invalid_segments or None,
     )

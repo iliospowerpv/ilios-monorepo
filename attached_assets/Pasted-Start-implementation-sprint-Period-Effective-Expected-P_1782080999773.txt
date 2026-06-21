@@ -1,0 +1,226 @@
+Start implementation sprint: Period-Effective Expected — Per-Segment Fail-Closed Validation.
+
+Context:
+The V2 Actual Production Curve Integrity audit is complete and architect-validated.
+
+Confirmed findings for Site 4:
+
+* Actual telemetry is healthy end-to-end:
+
+  * provider raw readings vary correctly through daylight and overnight;
+  * V2 normalized readings are correct;
+  * V2 hourly rollups are correct;
+  * the backend chart builder emits the actual series correctly.
+* The apparent flat actual line is caused by the expected series.
+* The default seven-day chart window spans the baseline supersede boundary.
+* Historical buckets are correctly assigned period-effectively to superseded baseline #3.
+* Baseline #3 is physically invalid because thermal_coefficient_pct is 350 rather than the intended approximately −0.35 %/°C.
+* The period-effective expected path computes baseline #3 without applying the fail-closed baseline-physics validation used for the current active baseline.
+* Invalid #3 emits extremely negative expected values, approximately −39,000 kW, which poisons the shared Y-axis and visually compresses the healthy actual curve.
+* Baseline #4 is valid and active. Baseline #3 must remain immutable and superseded.
+
+Objective:
+Apply the existing read-time baseline-physics validation to every baseline segment used by period-effective expected computation.
+
+For any historical segment whose baseline is hard-invalid:
+
+* do not compute expected;
+* return expected as null/unavailable for that segment;
+* preserve actual telemetry exactly;
+* expose an honest invalid-baseline-for-period state;
+* ensure chart expected state becomes partial when valid and invalid segments coexist.
+
+This is a read-only expected-path repair. It must not mutate baseline #3, baseline #4, telemetry readings, rollups, facts, documents, or historical records.
+
+Hard constraints:
+
+* Do not edit baseline #3.
+* Do not change expected physics formula math.
+* Do not add a lower bound such as max(0, expected) in this sprint.
+* Do not alter raw telemetry, normalized readings, rollups, ingestion, WeatherResolver, device eligibility, or provider configuration.
+* Do not run a backfill.
+* Do not regenerate historical data.
+* Do not alter period-effective ownership semantics.
+* Do not alter active baseline lifecycle.
+* Do not use BigQuery, Firestore, SAFL, or legacy telemetry as fallback.
+* Preserve actual values, including genuine zero and small negative nighttime tare values.
+* Preserve null expected values as null; never convert unavailable expected to zero.
+* Do not hide actual telemetry when expected is invalid.
+
+Scope A — Per-segment validation in period-effective computation
+
+Audit and update:
+
+* compute_site_expected_period_effective
+* any helper that obtains baseline segments effective in a requested window
+* expected chart builders using period-effective expected
+* past-performance builders using period-effective expected
+
+For each baseline segment:
+
+1. run the existing physics validation policy in read-time mode;
+2. if validation is non-blocking, compute expected normally;
+3. if validation is blocking:
+
+   * do not invoke expected calculation for that segment;
+   * return expected null for affected buckets;
+   * retain actual / irradiance values exactly as currently sourced;
+   * attach additive metadata identifying:
+
+     * baseline_id
+     * baseline_validation_status = invalid
+     * baseline_validation_policy_version
+     * baseline_invalid_reason or validation summary
+     * expected_unavailable_reason = baseline_invalid_for_period
+
+Do not validate only the currently active baseline. Validation must apply to every period-effective baseline segment used in the requested window.
+
+Scope B — Chart expected-state semantics
+
+For a chart window containing:
+
+* valid expected segments only: expected_state remains available;
+* invalid baseline segments only: expected_state becomes baseline_invalid;
+* both valid and invalid segments: expected_state becomes partial.
+
+Ensure:
+
+* the actual line remains complete and visible;
+* invalid expected segments are chart gaps, not zeroes;
+* valid expected segments still render;
+* frontend receives enough additive metadata to explain the gap.
+
+Scope C — O&M chart behavior
+
+Update the actual-vs-expected and past-performance paths.
+
+For Site 4 behavior after repair:
+
+* the portion of the window owned by baseline #3 should show expected unavailable / gap;
+* the portion owned by baseline #4 should show valid expected;
+* actual should render its genuine 0–307 kW solar curve;
+* chart axis should no longer be poisoned by negative expected values;
+* no historical telemetry or baseline row should change.
+
+Add a concise UI caption or tooltip for affected periods:
+“Expected unavailable for this period because the baseline active at that time is invalid and requires replacement.”
+
+Do not expose a misleading global error if only part of the window is affected.
+
+Scope D — Frontend defense-in-depth
+
+Do not make a large chart redesign.
+
+Add only minimal resilience where necessary:
+
+* preserve expected null gaps;
+* display partial expected availability clearly;
+* ensure negative expected values from an invalid baseline cannot silently dominate the shared chart axis after the backend repair;
+* do not clamp or alter valid expected values client-side;
+* do not create a second axis in this sprint unless required after backend repair.
+
+Scope E — Preserve active-invalid baseline behavior
+
+Do not regress existing behavior:
+
+* invalid current active baseline still returns baseline_invalid;
+* expected is suppressed;
+* actual telemetry remains visible;
+* no automatic deactivation occurs;
+* replacement workflow remains available.
+
+Scope F — Actual missing-value caveat
+
+Do not change the existing response-schema behavior that may render missing actual buckets as 0.0 in this sprint.
+
+However:
+
+* document it in the implementation summary;
+* confirm it does not affect Site 4 because rollup completeness is effectively full;
+* create no ambiguity between a measured zero and a missing bucket;
+* do not introduce any new null-to-zero conversion.
+
+Scope G — Tests
+
+Add/update tests for:
+
+1. A period-effective window with valid baseline A and invalid superseded baseline B:
+
+   * B-owned buckets return expected null;
+   * A-owned buckets compute expected normally;
+   * actual values remain unchanged.
+
+2. A window with only invalid baseline segments:
+
+   * expected_state = baseline_invalid;
+   * expected values are null;
+   * actual remains visible.
+
+3. A mixed window:
+
+   * expected_state = partial;
+   * valid expected values render;
+   * invalid baseline segment is a gap.
+
+4. Actual-vs-expected chart builder:
+
+   * no negative invalid expected values are emitted;
+   * actual solar curve remains variable;
+   * chart response identifies invalid baseline period.
+
+5. Past-performance builder:
+
+   * invalid historical expected periods produce honest unavailable/gap state;
+   * no negative or nonsensical performance ratio is emitted.
+
+6. Existing active-baseline invalid behavior remains unchanged.
+
+7. Baseline #3-like thermal coefficient 350 is blocked/suppressed under the same policy.
+
+8. Corrected baseline #4-like coefficient −0.35 computes normally.
+
+9. F/C equivalence tests remain passing.
+
+10. No raw telemetry, rollups, formulas, or lifecycle rows are modified.
+
+11. Site 4 regression:
+
+* expected has no approximately −39,000 kW values;
+* actual range remains approximately −0.1 to 307 kW;
+* expected state is partial for the seven-day window spanning #3 and #4.
+
+12. Architect review passes.
+
+Scope H — Validation
+
+Run:
+
+* targeted baseline physics validation tests;
+* period-effective expected tests;
+* actual-vs-expected chart builder tests;
+* past-performance chart tests;
+* Site 4 read-only smoke check;
+* backend startup;
+* frontend compile/typecheck if frontend touched;
+* architect review.
+
+Return:
+
+* files changed;
+* exact per-segment validation behavior;
+* response metadata added;
+* chart expected-state behavior;
+* Site 4 before/after ranges;
+* tests run and results;
+* confirmation that no data mutation/backfill occurred;
+* any remaining telemetry-display risks.
+
+Do not:
+
+* fix telemetry ingestion;
+* alter rollups;
+* change formula clipping;
+* mutate baseline #3;
+* backfill;
+* change baseline activation;
+* begin datasheet parser work in this sprint.

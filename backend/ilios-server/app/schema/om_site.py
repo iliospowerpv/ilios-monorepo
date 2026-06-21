@@ -168,6 +168,23 @@ class SiteDashboardActualProductionSection(OMSitesBaseExtendedSchema, Cumulative
         return None if ratio is None else ratio / 100
 
 
+class InvalidBaselineSegmentSchema(BaseModel):
+    """Additive (period-effective per-segment fail-closed) provenance.
+
+    Names a SUPERSEDED baseline whose physics failed read-time validation and the
+    clipped historical sub-window over which its expected was suppressed. Those
+    buckets carry ``expected`` null (never 0/negative) while the actual telemetry
+    stays visible, so the chart shows an honest gap, not a corrupt expected curve.
+    Present only when at least one segment was invalid; ``None`` otherwise.
+    """
+
+    baseline_id: int
+    segment_start: datetime
+    segment_end: datetime
+    validation_summary: Optional[str] = None
+    policy_version: Optional[str] = None
+
+
 class OMSitePastPerformanceSchema(BaseModel):
     # Per-day actual-vs-expected percent. The value is Optional: on the V2 path a
     # day with no computable expected (no ``ok`` buckets) is ``None`` so the
@@ -191,6 +208,12 @@ class OMSitePastPerformanceSchema(BaseModel):
     baseline_validation_summary: Optional[str] = None
     baseline_validation_policy_version: Optional[str] = None
     required_action: Optional[str] = None
+    # Additive (period-effective per-segment fail-closed): SUPERSEDED baselines
+    # that were invalid for part of the window. Those days are excluded from the
+    # ratio (honest ``None`` percent) while valid-baseline days keep theirs; the
+    # whole-section ``expected_state`` is ``partial`` when valid + invalid coexist.
+    # ``None`` when no segment was invalid (the no-op default for every prior path).
+    invalid_baseline_segments: Optional[list[InvalidBaselineSegmentSchema]] = None
 
 
 class SiteActualVSExpectedPerformance(BaseModel):
@@ -225,6 +248,12 @@ class SiteActualVSExpectedPerformanceListSchema(BaseModel):
     baseline_validation_summary: Optional[str] = None
     baseline_validation_policy_version: Optional[str] = None
     required_action: Optional[str] = None
+    # Additive (period-effective per-segment fail-closed): SUPERSEDED baselines
+    # that were invalid for part of the window. Their buckets render with per-point
+    # ``expected`` null (actual stays visible) and the whole-section
+    # ``expected_state`` is ``partial`` when valid + invalid segments coexist.
+    # ``None`` when no segment was invalid (the no-op default for every prior path).
+    invalid_baseline_segments: Optional[list[InvalidBaselineSegmentSchema]] = None
 
 
 class OMSiteSchema(BaseModel):
