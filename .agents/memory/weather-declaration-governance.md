@@ -70,6 +70,25 @@ commit; `SELECT … FOR UPDATE` on active rows). Preview/apply consistency hinge
 passing the pre-mutation `already_flagged` state explicitly into the divergence DTO
 (`would_flag` = pre-state, `needs_re_review` = final state).
 
+## Reconciliation consumer (the reviewer-facing read model)
+The reviewer UI does not re-derive verdicts. A strictly read-only
+`semantics_reconciliation_service` places every weather-source-capable device into an
+8-state taxonomy — states 1–5 are the declaration axis (from `declaration_policy`),
+overlaid by source-level states 6–8 (`weather_source_missing`/`_stale`/
+`coverage_incomplete`) ONLY when semantics are still undeclared — plus deduped
+site-level counts. Zero writes/commits. The frontend renders `state_label`,
+`state_explanation`, `required_action`, and `blocking_level` verbatim; never compute
+the state client-side or the two surfaces drift.
+**Why:** mirrors the inventory-reconciliation pattern — one backend source of truth
+for "what position is this in the provenance/governance chain", many read-only views.
+
+## Datetime gotcha (cost a 500 on every call)
+A Pydantic `datetime` response field must be populated from a real Python value
+(`datetime.utcnow()` / a naive-UTC helper), NOT from a SQLAlchemy `utcnow`
+*expression* (the column-default clause). Assigning the SQLAlchemy expression yields a
+non-serializable object and Pydantic raises on serialization → 500 on every request,
+not just at write time. Caught only at endpoint runtime, not import/unit time.
+
 ## Test-harness gotchas (each cost a reset)
 - The pytest harness builds schema with `Base.metadata.create_all` (not migrations)
   and the test DB persists between runs. **`create_all` will NOT add a new index to a

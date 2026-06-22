@@ -25,6 +25,7 @@ import { buildProjectImportApi } from './project-import';
 import { buildTelemetryV2Api } from './telemetryV2';
 import { buildReconciliationApi } from './reconciliation';
 import { buildAssumptionsApi } from './assumptions';
+import { buildWeatherApi } from './weather';
 
 export const ApiClient = Object.freeze({
   _tokenManager: tokenManager,
@@ -54,7 +55,8 @@ export const ApiClient = Object.freeze({
   projectImport: buildProjectImportApi(httpClient),
   telemetryV2: buildTelemetryV2Api(httpClient),
   reconciliation: buildReconciliationApi(httpClient),
-  assumptions: buildAssumptionsApi(httpClient)
+  assumptions: buildAssumptionsApi(httpClient),
+  weather: buildWeatherApi(httpClient)
 });
 
 export type {
@@ -235,3 +237,22 @@ export type {
   PromotionHistoryItem,
   PromotionHistoryResponse
 } from './assumptions';
+
+export type {
+  WeatherIrradiancePlane,
+  WeatherTemperatureType,
+  WeatherCalibrationStatus,
+  WeatherDeclarationBasis,
+  WeatherDeclarationStatus,
+  WeatherDeclarationState,
+  WeatherReconciliationState,
+  WeatherBlockingLevel,
+  WeatherDeviceMapping,
+  WeatherDeclareRequest,
+  WeatherActivateRequest,
+  WeatherReReviewRequest,
+  WeatherUpstreamMappingDivergence,
+  WeatherUpstreamReEvaluateResponse,
+  WeatherSemanticsReconciliationRow,
+  WeatherSemanticsReconciliationResponse
+} from '../types/weather';

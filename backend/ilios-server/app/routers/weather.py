@@ -55,6 +55,7 @@ from app.schema.weather import (
     WeatherProfileActionResponse,
     WeatherProfileResponse,
     WeatherReadinessResponse,
+    WeatherSemanticsReconciliationResponse,
     WeatherUpstreamReEvaluateResponse,
 )
 from app.services.telemetry.device_classification import classify_device
@@ -68,6 +69,9 @@ from app.services.weather.historical_weather_import_service import (
     WeatherImportValidationError,
     preview_import,
     run_historical_import,
+)
+from app.services.weather.semantics_reconciliation_service import (
+    build_site_semantics_reconciliation,
 )
 from app.services.weather.upstream_change_detector import (
     apply_re_review,
@@ -722,3 +726,30 @@ def re_evaluate_weather_upstream_changes(
         )
 
     return WeatherUpstreamReEvaluateResponse.from_report(report)
+
+
+@weather_router.get(
+    "/sites/{site_id}/semantics-reconciliation",
+    response_model=WeatherSemanticsReconciliationResponse,
+    summary="Read-only governed weather-semantics reconciliation (8-state taxonomy)",
+)
+def get_weather_semantics_reconciliation(
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> WeatherSemanticsReconciliationResponse:
+    """READ-ONLY 8-state weather-semantics reconciliation for a project/site.
+
+    For every weather-source-capable device this discloses its position in the
+    governed taxonomy — declaration states 1-5 (from the live eligibility verdict)
+    overlaid by source/profile states 6-8 when semantics are undeclared — plus
+    deduped site-level counts (states, blocking levels, eligible, needs-re-review).
+    It performs NO writes/commits, never infers or converts semantics (declaring
+    nothing leaves the value ``unknown``), never promotes or activates anything,
+    and never touches the WeatherResolver, the expected formula, ingestion,
+    rollups, the scheduler, baselines, ``expected_weather_provenance``, or O&M.
+    Visible to any user authorized for the site (asset-view + company-visibility);
+    reads never require admin.
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+    return build_site_semantics_reconciliation(db, site)

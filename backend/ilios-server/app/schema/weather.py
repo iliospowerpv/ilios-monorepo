@@ -607,3 +607,69 @@ class WeatherUpstreamReEvaluateResponse(BaseModel):
                 WeatherUpstreamMappingDivergence.from_dc(m) for m in report.mappings
             ],
         )
+
+
+class WeatherSemanticsReconciliationRow(BaseModel):
+    """One weather-source-capable device's position in the governed
+    weather-semantics taxonomy (WS.4).
+
+    Strictly DISCLOSURE: every field reports what the governance layer already
+    recorded. Semantics are NEVER inferred or converted here — when nothing is
+    declared the value stays ``unknown`` and the row simply says so.
+    """
+
+    device_id: int
+    device_name: Optional[str] = None
+    device_category: Optional[str] = None
+    metric: Optional[str] = None
+    mapping_id: Optional[int] = None
+
+    # The single headline state (one of the 8 taxonomy states).
+    reconciliation_state: str
+    state_label: str
+    state_explanation: str
+    required_action: Optional[str] = None
+    blocking_level: str
+
+    # The declaration-axis state (taxonomy states 1-5) for transparency; this can
+    # differ from ``reconciliation_state`` when a source-axis state (6-8) is
+    # overlaid because semantics are undeclared.
+    declaration_state: Optional[str] = None
+    source_state: str
+
+    declaration_status: Optional[str] = None
+    declaration_basis: Optional[str] = None
+    needs_re_review: bool = False
+    re_review_reason: Optional[str] = None
+    expected_model_eligible: bool = False
+    physics_usable_irradiance: bool = False
+    physics_usable_temperature: bool = False
+    irradiance_plane: Optional[str] = None
+    temperature_type: Optional[str] = None
+    calibration_status: Optional[str] = None
+    layer1_message: Optional[str] = None
+    eligibility_reason_codes: list[str] = Field(default_factory=list)
+
+
+class WeatherSemanticsReconciliationResponse(BaseModel):
+    """Site-level governed weather-semantics reconciliation rollup (WS.4).
+
+    Strictly READ-ONLY: it performs no writes/commits, never infers or converts
+    semantics, never promotes/activates anything, and never touches the
+    WeatherResolver, expected formula, ingestion, rollups, the scheduler,
+    baselines, ``expected_weather_provenance``, or O&M. It DISCLOSES each
+    weather-source-capable device's position in the 8-state taxonomy plus deduped
+    site-level counts so a reviewer can see what is declared, what is eligible,
+    and what still needs attention.
+    """
+
+    site_id: int
+    generated_at: datetime
+    total_weather_capable_devices: int
+    has_weather_source: bool
+    has_active_weather_profile: bool
+    eligible_count: int
+    needs_re_review_count: int
+    state_counts: dict[str, int] = Field(default_factory=dict)
+    blocking_counts: dict[str, int] = Field(default_factory=dict)
+    devices: list[WeatherSemanticsReconciliationRow] = Field(default_factory=list)
