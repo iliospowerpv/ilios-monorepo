@@ -1,0 +1,67 @@
+Phase A is accepted.
+
+Do not start Tasks #58, #59, or #60 yet. They should remain unstarted despite their current displayed status.
+
+The Phase A truth model is correct, including the Site 4 result:
+
+* documented inverter inventory is reconciled;
+* provider-discovered inverter inventory is reconciled;
+* Site 4 remains `needs_reconciliation` because active weather-adjusted expected relies on the IMT Reference Cell while irradiance plane, temperature type, and calibration/semantic status remain unresolved.
+
+The `project_facts.value` JSON-envelope correction was a valid correctness fix and should remain documented as part of this sprint.
+
+Next priority is not acknowledgements, shared surfacing, or task creation.
+
+Start a design/audit sprint for:
+
+Weather Device Semantics Review, Eligibility, and Governed Declaration.
+
+Objective:
+Define the governed workflow that allows an authorized reviewer to declare and maintain weather-device semantics required for weather-adjusted expected, including:
+
+* irradiance basis:
+
+  * POA
+  * GHI
+  * DNI
+  * DHI
+  * reference-cell unknown
+* temperature type:
+
+  * cell
+  * module-back
+  * ambient
+  * unknown
+* sensor role and model where available;
+* calibration status/date;
+* source document, provider metadata, reviewer source note, or explicitly reviewer-supplied assumption;
+* reviewer identity and timestamp;
+* effective date;
+* supersession/re-review when upstream telemetry device identity, configuration, or source evidence changes;
+* expected-model eligibility;
+* impact on active weather-adjusted baseline and O&M expected state.
+
+Hard rules:
+
+* Do not infer POA, cell temperature, or calibration merely from device name.
+* Do not silently change existing weather mappings.
+* Do not auto-clear Site 4’s blocking weather dependency.
+* Do not alter expected formula math, telemetry ingestion, rollups, baseline lifecycle, or device eligibility without explicit approved follow-up.
+* Preserve the current W0 rule: unknown semantics remain unknown.
+* A reviewer declaration must be auditable and distinct from provider-confirmed/source-backed metadata.
+* Any change must create new lineage or explicit supersession; it must not rewrite prior weather assumptions.
+
+Return:
+
+* current weather-device mapping and semantics model;
+* Site 4 IMT Reference Cell evidence inventory;
+* available provider metadata and document sources;
+* proposed declaration schema;
+* permission model;
+* relationship to `weather_device_mappings`;
+* expected/baseline impact rules;
+* Reconciliation state changes;
+* test plan;
+* implementation phases.
+
+No production code changes in this audit sprint.
