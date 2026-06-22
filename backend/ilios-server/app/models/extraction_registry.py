@@ -101,7 +101,7 @@ class ExtractionPromptTemplate(Base):
     is_active = Column(Boolean, nullable=False, default=False)
     system_prompt = Column(Text, nullable=True)
     extraction_prompt = Column(Text, nullable=False)
-    model_name = Column(String(100), nullable=False, default="claude-sonnet-4-5")
+    model_name = Column(String(100), nullable=False, default="gpt-5.2")
     temperature = Column(Float, nullable=False, default=0.0)
     max_tokens = Column(Integer, nullable=False, default=8000)
     notes = Column(Text, nullable=True)

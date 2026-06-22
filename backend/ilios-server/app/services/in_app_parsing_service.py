@@ -343,9 +343,21 @@ class InAppParsingService:
         
         # the newest OpenAI model is "gpt-5" which was released August 7, 2025.
         # do not change this unless explicitly requested by the user
-        model = model_name if model_name else "gpt-5.2"
-        if model.startswith("gpt-4") and not model.startswith("gpt-4.1"):
-            model = "gpt-5.2"
+        default_model = "gpt-5.2"
+        configured_model = model_name if model_name else default_model
+        # The Replit AI gateway only serves OpenAI models. Remap any unsupported or
+        # legacy model name (older gpt-4* variants, or claude-* names left in seeded
+        # prompt templates) to the supported default so a stale template never fails
+        # every parse run with 400 UNSUPPORTED_MODEL. Supported names (gpt-5*, gpt-4.1*)
+        # pass through unchanged.
+        model = configured_model
+        if not (model.startswith("gpt-5") or model.startswith("gpt-4.1")):
+            if configured_model != default_model:
+                logger.warning(
+                    f"Configured model '{configured_model}' is not supported by the AI "
+                    f"gateway; falling back to '{default_model}'"
+                )
+            model = default_model
         logger.info(f"Calling LLM with model: {model}")
         response = self.openai_client.chat.completions.create(
             model=model,

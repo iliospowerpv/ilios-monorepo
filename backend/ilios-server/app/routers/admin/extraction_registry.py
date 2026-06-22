@@ -137,7 +137,7 @@ class PromptTemplateSchema(BaseModel):
 class PromptTemplateCreateSchema(BaseModel):
     system_prompt: Optional[str] = None
     extraction_prompt: Optional[str] = None
-    model_name: str = "claude-sonnet-4-5"
+    model_name: str = "gpt-5.2"
     temperature: float = 0.0
     max_tokens: int = 8000
     notes: Optional[str] = None

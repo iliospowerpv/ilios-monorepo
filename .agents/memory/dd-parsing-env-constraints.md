@@ -19,16 +19,21 @@ environment/ops conditions, not code defects.
   and unrecoverable here — it is NOT a schema/prompt bug. Non-encrypted PDFs extract fine.
   Validate that fixture's expected shape with a deterministic unit test instead of a live parse.
 
-## 2. Seeded prompt templates use a gateway-unsupported model
-- Essentially every auto-seeded `extraction_prompt_templates` row declares
-  `model_name = "claude-sonnet-4-5"`. The current Replit AI gateway rejects it with
-  `UNSUPPORTED_MODEL`. This is **registry-wide**, not specific to any one document type.
-- `gpt-5.2` is accepted by the gateway and is also `in_app_parsing_service.call_llm`'s default.
-  `call_llm` only remaps `gpt-4*` (non-4.1) → `gpt-5.2`; a `claude-*` name passes through unchanged
-  and then 400s.
-- **Why:** so a "parse returns 400 UNSUPPORTED_MODEL" is an ops/config issue (seeded default vs
-  gateway availability), not a prompt/schema bug.
-- **How to apply:** for a one-off controlled validation run, force a supported model in the *script*
-  (monkeypatch `call_llm` to pass `model_name="gpt-5.2"`) WITHOUT mutating the seeded registry — that
-  still exercises the real prompt text, schema, and governed combine path. Changing the global default
-  model touches every doc type and is out of scope for a single-doc-type sprint.
+## 2. Seeded prompt templates used a gateway-unsupported model (now fixed + self-healing)
+- History: essentially every auto-seeded `extraction_prompt_templates` row declared
+  `model_name = "claude-sonnet-4-5"`, which the Replit AI gateway rejects with
+  `UNSUPPORTED_MODEL`. This was **registry-wide**, so nearly every document type failed every
+  parse run with `[llm_call_failed] ... 400 UNSUPPORTED_MODEL`, not just one doc type.
+- Fix applied (durable + registry-wide): `in_app_parsing_service.call_llm` now treats only
+  `gpt-5*`/`gpt-4.1*` as supported and remaps **anything else** (incl. `claude-*`, `gpt-4o`) →
+  `gpt-5.2` (logging a warning). So a stale/unsupported configured model can no longer 400 a run.
+  All source defaults were repointed to `gpt-5.2` (`GENERIC_MODEL_NAME`, the `model_name` column
+  default, the CRUD/router create defaults, the dev seed), and the live `extraction_prompt_templates`
+  rows were UPDATEd off `claude-sonnet-4-5` → `gpt-5.2`.
+- **Why:** model availability is a gateway/ops fact, so the parser must self-heal an unsupported
+  configured model name rather than hard-fail — config drift should never block parsing.
+- **How to apply:** if `UNSUPPORTED_MODEL` ever reappears, the gateway dropped a model the guard
+  still treats as supported — update the supported-prefix allowlist in `call_llm`, don't special-case
+  one template. Verified live: file 27 (PVSYST template 219, the original failure) and file 18
+  (SREC template 78) both complete. NOTE: the historical alembic `ff04` `server_default` still reads
+  `claude-sonnet-4-5`, but every insert path now sets `model_name` explicitly so it's never used.

@@ -192,7 +192,7 @@ def seed_extraction_registry():
                     is_active=True,
                     system_prompt=DEFAULT_SYSTEM_PROMPT,
                     extraction_prompt=DEFAULT_EXTRACTION_PROMPT,
-                    model_name="claude-sonnet-4-5",
+                    model_name="gpt-5.2",
                     temperature=0.0,
                     max_tokens=8000,
                     notes="Initial version from seed",

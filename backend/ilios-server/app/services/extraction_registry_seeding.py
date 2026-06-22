@@ -46,7 +46,7 @@ from app.static.due_diligence_bq_keys import DueDiligenceBQKeys
 GENERIC_SCHEMA_NOTES = "DD V2 Phase 1B generic extraction coverage (auto-seeded)"
 GENERIC_PROMPT_NOTES = "DD V2 Phase 1B generic extraction coverage (auto-seeded)"
 
-GENERIC_MODEL_NAME = "claude-sonnet-4-5"
+GENERIC_MODEL_NAME = "gpt-5.2"
 GENERIC_TEMPERATURE = 0.0
 GENERIC_MAX_TOKENS = 8000
 
