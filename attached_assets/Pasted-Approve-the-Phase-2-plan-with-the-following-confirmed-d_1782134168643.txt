@@ -1,0 +1,89 @@
+Approve the Phase 2 plan with the following confirmed decisions and refinements.
+
+Decision #1 approved:
+
+Reuse `module_wattage` as the single canonical field for module nameplate power at STC.
+
+* Canonical key: `module_wattage`
+* Canonical semantic: per-module STC/nameplate power
+* Canonical unit: W per module
+* UI label for this Module Datasheet context: “Module Nameplate Power at STC”
+* Do not create a competing `module_power_stc_w` canonical field or candidate fact.
+* A parser-level display alias may exist only inside parsed metadata if useful, but it must map to `module_wattage` before DocumentKey/candidate-fact creation.
+
+Reason:
+There must be one canonical, baseline-driving truth path for module per-unit nameplate power. Separate `module_wattage` and `module_power_stc_w` facts would create avoidable divergence and reconciliation conflicts.
+
+Required refinements:
+
+1. Multi-variant datasheets
+
+For AXIpremium 330–350 and Q-CELLS 405–415 documents:
+
+* Preserve all listed wattage variants/ranges in parsed metadata.
+* Mark the field status as `ambiguous`.
+* Do not populate a single accepted/candidate `module_wattage` automatically.
+* Do not create multiple competing candidate facts.
+* Require reviewer selection or field override before acceptance.
+* Preserve the original extracted range/table evidence and the reviewer’s chosen value/reason.
+
+2. `is_required` semantics
+
+Use `is_required` only for parse/review requirements where appropriate. Do not make a document parse fail simply because a datasheet does not contain a field such as degradation.
+
+Required field behavior:
+
+* explicitly absent → `not_found`
+* present but unclear/ambiguous → `unclear` or `ambiguous`
+* no hallucinated substitute
+* no parse failure merely because an optional specification is absent
+
+3. Non-current file versions
+
+Controlled parsing of file 17 and file 25 is approved.
+
+* Parsing may run on these non-current file versions.
+* Do not mark either version current.
+* Acceptance, override, candidate generation, promotion, and stale protection remain file-version-scoped.
+* The UI must visibly indicate that the parsed source is not the current document version.
+* Do not allow source lineage to be represented as current merely because a non-current version was parsed.
+
+4. Physics-field isolation
+
+The new canonical/reviewable module fields may be added:
+
+* thermal_coefficient_pct
+* power_tolerance_min_pct
+* power_tolerance_max_pct
+* year_1_degradation_pct
+* annual_degradation_pct
+
+However, do not add them to:
+
+* `BASELINE_DRIVING_FACT_FIELDS`
+* `FACT_FIELD_TO_COLUMN`
+* baseline-from-facts mappings
+* baseline creation defaults
+* expected calculation input logic
+
+This sprint ends at governed parse/review/accept/override/candidate/promotion/Reconciliation visibility. Source-backed Baseline Readiness integration is a separate later sprint.
+
+5. Raw and normalized metadata
+
+The proposed minimal metadata model is approved:
+
+* preserve raw value and raw unit;
+* preserve evidence, confidence, status, and variants in parse result metadata;
+* add only additive optional fields required to surface this safely;
+* do not migrate or rewrite historical DocumentKeys/project facts;
+* never silently convert units or percentage basis.
+
+Proceed in the P1 through P6 sequence exactly as proposed.
+
+Before final completion, report:
+
+* whether nested parsed-result metadata survives the existing parse → merge → Data Room flow unchanged;
+* whether file 17 and file 25 can be parsed without becoming current;
+* the exact ambiguous wattage output for each controlled fixture;
+* whether any field incorrectly attempted automatic normalization or candidate-fact creation;
+* confirmation that `module_wattage` is the only canonical STC nameplate-power fact.

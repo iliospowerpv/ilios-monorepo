@@ -503,6 +503,346 @@ def remove_pvsyst_specialized_schema_v2(connection: Connection) -> dict:
     return stats
 
 
+# --- DD V2 Phase 2: Module Datasheet specialized schema + equipment-aware prompt ---
+# Normalized name of the "Module Specs" document type (seeded generic in Phase 1B).
+MODULE_DOC_TYPE_NAME = "module_specs"
+MODULE_SCHEMA_NOTES = "DD V2 Phase 2 Module Datasheet specialized schema (equipment-aware, auto-seeded)"
+MODULE_PROMPT_NOTES = "DD V2 Phase 2 Module Datasheet specialized prompt (equipment-aware, auto-seeded)"
+
+# The Module Datasheet field set. Each entry is matched/created by its EXACT
+# canonical ``name`` (NOT derived from the display name) so the physics field keys
+# line up precisely with the reconciliation catalog and any future consumers.
+#
+# Design notes:
+#   * All fields are ``field_type="text"`` to match every existing module field and
+#     to preserve raw values+units verbatim (no numeric coercion that would strip a
+#     unit). ``expected_unit`` records the canonical unit as a DISPLAY/HINT only.
+#   * ``is_required`` here means "a reviewer should confirm this" — it is metadata
+#     for the schema/review surface. It is NOT enforced as a parse-failure anywhere,
+#     so a datasheet that omits an optional spec still parses cleanly (the field is
+#     simply reported ``not_found``).
+#   * ``module_wattage`` is the SINGLE canonical field for per-module STC/nameplate
+#     power. There is intentionally no ``module_power_stc_w``. ``module_quantity`` is
+#     deliberately excluded — quantity is a project/design fact, not a datasheet spec.
+MODULE_FIELDS: list[dict] = [
+    {"name": "module_manufacturer", "display_name": "Module Manufacturer", "field_type": "text", "expected_unit": None, "is_required": True},
+    {"name": "module_model", "display_name": "Module Model", "field_type": "text", "expected_unit": None, "is_required": True},
+    {"name": "module_wattage", "display_name": "Module Wattage", "field_type": "text", "expected_unit": "W", "is_required": True},
+    {"name": "module_efficiency_pct", "display_name": "Module Efficiency", "field_type": "text", "expected_unit": "%", "is_required": False},
+    {"name": "voc", "display_name": "Open-Circuit Voltage (Voc)", "field_type": "text", "expected_unit": "V", "is_required": False},
+    {"name": "isc", "display_name": "Short-Circuit Current (Isc)", "field_type": "text", "expected_unit": "A", "is_required": False},
+    {"name": "vmp", "display_name": "Voltage at Maximum Power (Vmp)", "field_type": "text", "expected_unit": "V", "is_required": False},
+    {"name": "imp", "display_name": "Current at Maximum Power (Imp)", "field_type": "text", "expected_unit": "A", "is_required": False},
+    {"name": "thermal_coefficient_pct", "display_name": "Temperature Coefficient of Pmax", "field_type": "text", "expected_unit": "%/°C", "is_required": False},
+    {"name": "noct", "display_name": "Nominal Operating Cell Temperature (NOCT)", "field_type": "text", "expected_unit": "°C", "is_required": False},
+    {"name": "power_tolerance_min_pct", "display_name": "Power Tolerance (Minimum)", "field_type": "text", "expected_unit": "%", "is_required": False},
+    {"name": "power_tolerance_max_pct", "display_name": "Power Tolerance (Maximum)", "field_type": "text", "expected_unit": "%", "is_required": False},
+    {"name": "year_1_degradation_pct", "display_name": "Year-1 Degradation", "field_type": "text", "expected_unit": "%", "is_required": False},
+    {"name": "annual_degradation_pct", "display_name": "Annual Degradation", "field_type": "text", "expected_unit": "%", "is_required": False},
+    {"name": "module_length_mm", "display_name": "Module Length", "field_type": "text", "expected_unit": "mm", "is_required": False},
+    {"name": "module_width_mm", "display_name": "Module Width", "field_type": "text", "expected_unit": "mm", "is_required": False},
+    {"name": "module_area_m2", "display_name": "Module Area", "field_type": "text", "expected_unit": "m²", "is_required": False},
+    {"name": "module_product_warranty_years", "display_name": "Product Warranty", "field_type": "text", "expected_unit": "years", "is_required": False},
+]
+
+MODULE_SYSTEM_PROMPT = """You are a solar PV module (panel) datasheet extraction specialist. You extract equipment specifications from manufacturer module datasheets. Follow these rules strictly:
+
+1. Extract ONLY the fields listed in the extraction request. Never invent fields.
+2. Return valid JSON exactly matching the schema provided in the request.
+3. Preserve the document's RAW values and units EXACTLY as printed. NEVER convert or normalize units — do not convert W to kW, Wp to kWp, V/A, mm to m, m to mm, °C to °F, and never change a percentage's basis or a coefficient's sign convention. If the datasheet prints "-0.34 %/°C", report value "-0.34" with unit "%/°C".
+4. A single module datasheet usually covers MULTIPLE power variants / SKUs / bins (e.g. 330 / 335 / 340 / 345 / 350 Wp). When a requested field differs across these variants, DO NOT pick one. Set "value" to null, set "status" to "ambiguous", and list every variant in the "variants" array with its label and raw value/unit. This is REQUIRED for module nameplate power whenever more than one wattage is offered.
+5. Do not infer which variant was actually installed at any site; the datasheet does not state that.
+6. If a field is absent from the datasheet, set "value" to null and "status" to "not_found". Do NOT guess or substitute a related number. A missing optional spec is normal and is never an error.
+7. If a field is present but you cannot determine it confidently, set "status" to "unclear" and explain in the evidence snippet.
+8. For every field that is found, include evidence: page number, the table or section name, a short text snippet, and the exact anchor text.
+9. Report a "confidence" of "high", "medium", or "low" for each field."""
+
+MODULE_EXTRACTION_PROMPT = """Extract the following solar module (panel) datasheet fields. Each line is "- field_key (expected unit): Description"; the unit is the canonical unit for reference only — always report the value and unit exactly as printed in the document and never convert.
+
+{{FIELD_LIST}}
+
+Document Type: {{DOC_TYPE}}
+
+Field guidance:
+- module_wattage is the per-module nameplate power at STC ("Module Nameplate Power at STC"), in watts (W / Wp) PER MODULE. Do NOT report array, string, or system power. If the datasheet lists multiple power classes/bins, this field is AMBIGUOUS: list every class in "variants" and leave "value" null with status "ambiguous".
+- voc, isc, vmp, imp are the STC electrical values. thermal_coefficient_pct is the temperature coefficient of Pmax. noct is the nominal operating cell temperature.
+- power_tolerance_min_pct / power_tolerance_max_pct are the printed negative/positive power tolerance bounds; report them exactly as printed.
+- year_1_degradation_pct is the first-year degradation; annual_degradation_pct is the subsequent annual degradation rate. Report each only if explicitly stated.
+
+=== DOCUMENT TEXT ===
+{{DOCUMENT_TEXT}}
+=== END DOCUMENT ===
+
+Return a JSON object with this EXACT structure:
+{
+  "fields": [
+    {
+      "field_key": "field_name_snake_case",
+      "value": "the single raw value exactly as printed, or null",
+      "raw_value": "the raw numeric/text value exactly as printed without the unit, or null",
+      "raw_unit": "the unit exactly as printed (e.g. W, V, A, %, %/°C, mm, °C, years), or null",
+      "status": "extracted | ambiguous | unclear | not_found",
+      "confidence": "high | medium | low",
+      "evidence": {
+        "page": 1,
+        "table_or_section": "section or table name",
+        "snippet": "relevant text from document",
+        "anchor_text": "exact matching phrase"
+      },
+      "variants": [
+        {"label": "variant or SKU name", "raw_value": "value as printed", "raw_unit": "unit as printed"}
+      ]
+    }
+  ]
+}
+
+Important:
+- field_key MUST exactly match the snake_case names in the field list above.
+- Include ALL requested fields, even when status is "not_found".
+- Use "variants" ONLY when a field genuinely differs across module variants; otherwise return an empty array [].
+- NEVER convert or normalize units. NEVER pick a single value for an ambiguous multi-variant field.
+- "value" MUST be null whenever status is "ambiguous", "unclear", or "not_found"."""
+
+
+def _get_or_create_canonical_field_by_name(
+    connection: Connection,
+    name: str,
+    display_name: str,
+    field_type: str = "text",
+    expected_unit: Optional[str] = None,
+) -> int:
+    """Get/create a canonical field by its EXACT ``name`` (not normalized).
+
+    Used by the Module Datasheet seeder so explicitly-named physics fields
+    (e.g. ``thermal_coefficient_pct``) get stable keys regardless of display name.
+
+    Additive on ``expected_unit``: for an existing field the unit is filled ONLY
+    when currently NULL — an operator-set unit is never overwritten. Existing
+    ``display_name``/``field_type`` are never mutated.
+    """
+    row = connection.execute(
+        sa.text("SELECT id, expected_unit FROM canonical_fields WHERE name = :name"),
+        {"name": name},
+    ).first()
+    if row:
+        field_id, existing_unit = row[0], row[1]
+        if expected_unit is not None and existing_unit is None:
+            connection.execute(
+                sa.text(
+                    "UPDATE canonical_fields SET expected_unit = :u "
+                    "WHERE id = :id AND expected_unit IS NULL"
+                ),
+                {"u": expected_unit, "id": field_id},
+            )
+        return field_id
+    return connection.execute(
+        sa.text(
+            "INSERT INTO canonical_fields (name, display_name, field_type, expected_unit, is_active) "
+            "VALUES (:name, :display_name, :field_type, :expected_unit, true) RETURNING id"
+        ),
+        {
+            "name": name,
+            "display_name": display_name,
+            "field_type": field_type,
+            "expected_unit": expected_unit,
+        },
+    ).scalar_one()
+
+
+def seed_module_specs_specialized_schema(connection: Connection) -> dict:
+    """DD V2 Phase 2 — replace the generic contractual stub for the "Module Specs"
+    document type with a specialized Module Datasheet schema + equipment-aware prompt.
+
+    Behavior:
+      * Ensures every Module Datasheet canonical field exists (created by exact name,
+        with its ``expected_unit`` hint), then creates a NEW schema version whose
+        field set is exactly :data:`MODULE_FIELDS` (the prior generic stub schema is
+        retained as inactive history — it is deactivated but never mutated).
+      * Adds a specialized prompt that extracts raw values+units, evidence,
+        confidence and per-variant data, and that NEVER converts units or auto-picks
+        a value for a multi-variant field.
+      * Flips ``is_active`` so the specialized schema/prompt become active.
+
+    Idempotent: if a marker-tagged schema/prompt already exists for the doc type it
+    is a no-op. Defensive no-op if the doc type does not exist.
+    """
+    stats = {
+        "schema_created": False,
+        "prompt_created": False,
+        "fields_linked": 0,
+        "canonical_fields_created": 0,
+    }
+
+    doc_type_row = connection.execute(
+        sa.text("SELECT id FROM extraction_document_types WHERE name = :name"),
+        {"name": MODULE_DOC_TYPE_NAME},
+    ).first()
+    if not doc_type_row:
+        return stats
+    doc_type_id = doc_type_row[0]
+
+    # --- Schema ---
+    already_seeded_schema = connection.execute(
+        sa.text(
+            "SELECT 1 FROM extraction_schema_versions "
+            "WHERE document_type_id = :id AND notes = :notes LIMIT 1"
+        ),
+        {"id": doc_type_id, "notes": MODULE_SCHEMA_NOTES},
+    ).first()
+
+    if not already_seeded_schema:
+        version = _next_version(connection, "extraction_schema_versions", doc_type_id)
+        new_schema_id = connection.execute(
+            sa.text(
+                "INSERT INTO extraction_schema_versions (document_type_id, version, is_active, notes) "
+                "VALUES (:id, :version, false, :notes) RETURNING id"
+            ),
+            {"id": doc_type_id, "version": version, "notes": MODULE_SCHEMA_NOTES},
+        ).scalar_one()
+
+        for priority, field in enumerate(MODULE_FIELDS, start=1):
+            existing = connection.execute(
+                sa.text("SELECT 1 FROM canonical_fields WHERE name = :n"),
+                {"n": field["name"]},
+            ).first()
+            canonical_field_id = _get_or_create_canonical_field_by_name(
+                connection,
+                name=field["name"],
+                display_name=field["display_name"],
+                field_type=field.get("field_type", "text"),
+                expected_unit=field.get("expected_unit"),
+            )
+            if not existing:
+                stats["canonical_fields_created"] += 1
+            connection.execute(
+                sa.text(
+                    "INSERT INTO extraction_schema_version_fields "
+                    "(schema_version_id, canonical_field_id, is_required, extraction_priority) "
+                    "VALUES (:s, :c, :req, :p)"
+                ),
+                {
+                    "s": new_schema_id,
+                    "c": canonical_field_id,
+                    "req": bool(field.get("is_required", False)),
+                    "p": priority * 10,
+                },
+            )
+            stats["fields_linked"] += 1
+
+        # Flip activation: deactivate prior (incl. the generic stub), activate new.
+        connection.execute(
+            sa.text(
+                "UPDATE extraction_schema_versions SET is_active = false WHERE document_type_id = :id"
+            ),
+            {"id": doc_type_id},
+        )
+        connection.execute(
+            sa.text("UPDATE extraction_schema_versions SET is_active = true WHERE id = :id"),
+            {"id": new_schema_id},
+        )
+        stats["schema_created"] = True
+
+    # --- Prompt ---
+    already_seeded_prompt = connection.execute(
+        sa.text(
+            "SELECT 1 FROM extraction_prompt_templates "
+            "WHERE document_type_id = :id AND notes = :notes LIMIT 1"
+        ),
+        {"id": doc_type_id, "notes": MODULE_PROMPT_NOTES},
+    ).first()
+
+    if not already_seeded_prompt:
+        version = _next_version(connection, "extraction_prompt_templates", doc_type_id)
+        new_prompt_id = connection.execute(
+            sa.text(
+                "INSERT INTO extraction_prompt_templates "
+                "(document_type_id, version, is_active, system_prompt, extraction_prompt, "
+                " model_name, temperature, max_tokens, notes) "
+                "VALUES (:id, :version, false, :system_prompt, :extraction_prompt, "
+                " :model_name, :temperature, :max_tokens, :notes) RETURNING id"
+            ),
+            {
+                "id": doc_type_id,
+                "version": version,
+                "system_prompt": MODULE_SYSTEM_PROMPT,
+                "extraction_prompt": MODULE_EXTRACTION_PROMPT,
+                "model_name": GENERIC_MODEL_NAME,
+                "temperature": GENERIC_TEMPERATURE,
+                "max_tokens": GENERIC_MAX_TOKENS,
+                "notes": MODULE_PROMPT_NOTES,
+            },
+        ).scalar_one()
+        connection.execute(
+            sa.text(
+                "UPDATE extraction_prompt_templates SET is_active = false WHERE document_type_id = :id"
+            ),
+            {"id": doc_type_id},
+        )
+        connection.execute(
+            sa.text("UPDATE extraction_prompt_templates SET is_active = true WHERE id = :id"),
+            {"id": new_prompt_id},
+        )
+        stats["prompt_created"] = True
+
+    return stats
+
+
+def remove_module_specs_specialized_schema(connection: Connection) -> dict:
+    """Best-effort reversal of :func:`seed_module_specs_specialized_schema`.
+
+    Deletes the marker-tagged schema/prompt and reactivates the highest remaining
+    (generic stub) schema/prompt so the doc type returns to its pre-Phase-2 state.
+    Canonical field catalog rows are intentionally left in place (additive entries).
+    """
+    stats = {"schema_deleted": 0, "prompt_deleted": 0}
+
+    doc_type_row = connection.execute(
+        sa.text("SELECT id FROM extraction_document_types WHERE name = :name"),
+        {"name": MODULE_DOC_TYPE_NAME},
+    ).first()
+    if not doc_type_row:
+        return stats
+    doc_type_id = doc_type_row[0]
+
+    result = connection.execute(
+        sa.text(
+            "DELETE FROM extraction_schema_versions "
+            "WHERE document_type_id = :id AND notes = :notes"
+        ),
+        {"id": doc_type_id, "notes": MODULE_SCHEMA_NOTES},
+    )
+    stats["schema_deleted"] = result.rowcount or 0
+
+    result = connection.execute(
+        sa.text(
+            "DELETE FROM extraction_prompt_templates "
+            "WHERE document_type_id = :id AND notes = :notes"
+        ),
+        {"id": doc_type_id, "notes": MODULE_PROMPT_NOTES},
+    )
+    stats["prompt_deleted"] = result.rowcount or 0
+
+    # Reactivate the highest remaining (generic stub) schema/prompt.
+    for table in ("extraction_schema_versions", "extraction_prompt_templates"):
+        latest = connection.execute(
+            sa.text(
+                f"SELECT id FROM {table} WHERE document_type_id = :id ORDER BY version DESC LIMIT 1"
+            ),
+            {"id": doc_type_id},
+        ).first()
+        if latest:
+            connection.execute(
+                sa.text(f"UPDATE {table} SET is_active = false WHERE document_type_id = :id"),
+                {"id": doc_type_id},
+            )
+            connection.execute(
+                sa.text(f"UPDATE {table} SET is_active = true WHERE id = :id"),
+                {"id": latest[0]},
+            )
+
+    return stats
+
+
 def run() -> dict:
     """Standalone re-runnable entrypoint (outside Alembic)."""
     from app.db.session import SessionFactory
@@ -512,6 +852,7 @@ def run() -> dict:
         connection = session.connection()
         stats = seed_generic_extraction_coverage(connection)
         stats["pvsyst"] = seed_pvsyst_specialized_schema_v2(connection)
+        stats["module_specs"] = seed_module_specs_specialized_schema(connection)
         session.commit()
         return stats
     except Exception:

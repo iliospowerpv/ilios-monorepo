@@ -21,6 +21,7 @@ import FactCheckIcon from '@mui/icons-material/FactCheck';
 import Backdrop from '@mui/material/Backdrop';
 import CircularProgress from '@mui/material/CircularProgress';
 import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
 import Fade from '@mui/material/Fade';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -30,6 +31,7 @@ import DoneAllIcon from '@mui/icons-material/DoneAll';
 import PublishIcon from '@mui/icons-material/Publish';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { useTheme } from '@mui/material/styles';
 import { ApiClient, FileItem } from '../../../../../api';
 import {
@@ -91,6 +93,17 @@ interface FileParsingEvidence {
   page?: number | null;
   snippet?: string | null;
   anchor_text?: string | null;
+  // Additive (DD V2 Phase 2): the datasheet table/section the value was read from.
+  table_or_section?: string | null;
+}
+
+// Additive (DD V2 Phase 2): one module variant/SKU row for an ambiguous,
+// multi-variant equipment field. Values are preserved exactly as printed and are
+// never converted; the reviewer must choose one before the field can be accepted.
+interface FileParsingVariant {
+  label?: string | null;
+  raw_value?: string | null;
+  raw_unit?: string | null;
 }
 
 interface CollapsibleDocumentTermRenderer {
@@ -109,6 +122,13 @@ interface CollapsibleDocumentTermRenderer {
   taskId: number;
   evidence?: FileParsingEvidence | null;
   isBaselineDriving?: boolean;
+  // --- DD V2 Phase 2: additive equipment-extraction metadata (all optional) ---
+  rawValue?: string | null;
+  rawUnit?: string | null;
+  expectedUnit?: string | null;
+  confidence?: string | null;
+  extractionStatus?: string | null;
+  variants?: FileParsingVariant[] | null;
   onViewInDocument?: (page: number, snippet?: string | null, anchorText?: string | null) => void;
 }
 
@@ -129,6 +149,12 @@ const CollapsibleDocumentTermRenderer: React.FC<CollapsibleDocumentTermRenderer>
     taskId,
     evidence,
     isBaselineDriving = false,
+    rawValue,
+    rawUnit,
+    expectedUnit,
+    confidence,
+    extractionStatus,
+    variants,
     onViewInDocument
   } = props;
   const userInputFormRef = React.useRef<DocumentTermUserInputFieldRef | null>(null);
@@ -170,11 +196,55 @@ const CollapsibleDocumentTermRenderer: React.FC<CollapsibleDocumentTermRenderer>
 
   const hasEvidence = evidence && evidence.page != null;
 
+  // --- DD V2 Phase 2: additive equipment-extraction metadata (display only) ---
+  // None of this converts units or auto-selects a value; it only surfaces what the
+  // parser reported so the reviewer can decide. Absent on contractual fields.
+  const statusLower = (extractionStatus || '').toLowerCase();
+  const isAmbiguous = statusLower === 'ambiguous';
+  const variantList = (variants ?? []).filter(v => !!v && (v.raw_value != null || v.label != null));
+  const hasVariants = variantList.length > 0;
+  const rawDisplay = [rawValue, rawUnit].filter(Boolean).join(' ').trim();
+  const showUnitHint = !!expectedUnit && (!rawUnit || rawUnit.toLowerCase() !== expectedUnit.toLowerCase());
+  const hasEquipmentMeta = !!(rawDisplay || confidence || extractionStatus || hasVariants || expectedUnit);
+  const confidenceLower = (confidence || '').toLowerCase();
+  const formatStatus = (s: string) => s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const statusChipColor: 'success' | 'warning' | 'default' =
+    statusLower === 'extracted'
+      ? 'success'
+      : statusLower === 'ambiguous' || statusLower === 'unclear'
+        ? 'warning'
+        : 'default';
+  const confidenceChipColor: 'success' | 'warning' | 'error' | 'default' =
+    confidenceLower === 'high'
+      ? 'success'
+      : confidenceLower === 'medium'
+        ? 'warning'
+        : confidenceLower === 'low'
+          ? 'error'
+          : 'default';
+
+  // Reviewer selects a variant -> populate the accepted-value field with the value
+  // exactly as printed. The reviewer must still click Save; nothing is auto-accepted.
+  const handleSelectVariant = (variant: FileParsingVariant) => {
+    if (variant.raw_value == null) return;
+    copyToTextField(variant.raw_value);
+  };
+
   return (
     <AccordionStyled expanded={expanded} onChange={() => setExpanded(prevExpanded => !prevExpanded)}>
       <AccordionSummaryStyled expandIcon={<ExpandMoreIcon />}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
           <TermName sx={{ flex: 1 }}>{termName}</TermName>
+          {extractionStatus && (
+            <Chip
+              label={formatStatus(statusLower)}
+              size="small"
+              color={statusChipColor}
+              variant={statusChipColor === 'default' ? 'outlined' : 'filled'}
+              sx={{ fontSize: '10px', height: '22px' }}
+              onClick={e => e.stopPropagation()}
+            />
+          )}
           {hasEvidence ? (
             <BootstrapTooltip
               title={
@@ -258,6 +328,76 @@ const CollapsibleDocumentTermRenderer: React.FC<CollapsibleDocumentTermRenderer>
               isLoading={flagLoading}
             />
           </AIResponseContainer>
+          {hasEquipmentMeta && (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', px: '12px', pt: 1 }}>
+              {rawDisplay && (
+                <Chip size="small" variant="outlined" label={`As printed: ${rawDisplay}`} sx={{ fontSize: '11px' }} />
+              )}
+              {showUnitHint && (
+                <BootstrapTooltip
+                  title="Canonical unit for this field. The printed value is shown exactly as found and is never converted."
+                  placement="top"
+                >
+                  <Chip
+                    size="small"
+                    variant="outlined"
+                    label={`Expected unit: ${expectedUnit}`}
+                    sx={{ fontSize: '11px' }}
+                  />
+                </BootstrapTooltip>
+              )}
+              {confidence && (
+                <Chip
+                  size="small"
+                  color={confidenceChipColor}
+                  variant={confidenceChipColor === 'default' ? 'outlined' : 'filled'}
+                  label={`Confidence: ${formatStatus(confidenceLower)}`}
+                  sx={{ fontSize: '11px' }}
+                />
+              )}
+              {evidence?.table_or_section && (
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={`Section: ${evidence.table_or_section}`}
+                  sx={{ fontSize: '11px' }}
+                />
+              )}
+            </Box>
+          )}
+          {hasVariants && (
+            <Box sx={{ px: '12px', pt: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                <WarningAmberIcon sx={{ fontSize: '16px', color: 'warning.main' }} />
+                <Typography variant="body2" fontWeight="600" color="warning.main">
+                  {isAmbiguous ? 'Multiple variants found — select one to accept' : 'Multiple variants found'}
+                </Typography>
+              </Box>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                This datasheet lists more than one value. No value was auto-selected. Choose the one that applies to
+                this project (or enter your own), then Save.
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {variantList.map((variant, idx) => {
+                  const variantValue = [variant.raw_value, variant.raw_unit].filter(Boolean).join(' ').trim();
+                  const label = [variant.label, variantValue].filter(Boolean).join(': ');
+                  return (
+                    <Chip
+                      key={`${variant.label ?? 'variant'}-${idx}`}
+                      label={label || 'Variant'}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                      clickable={variant.raw_value != null}
+                      disabled={variant.raw_value == null}
+                      onClick={() => handleSelectVariant(variant)}
+                      sx={{ fontSize: '11px' }}
+                    />
+                  );
+                })}
+              </Stack>
+            </Box>
+          )}
           <DocumentTermUserInputField
             ref={userInputFormRef}
             documentId={documentId}
@@ -1116,6 +1256,26 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                               </Typography>
                             </Box>
                           )}
+                          {file && file.is_actual === false && (
+                            <Box
+                              sx={{
+                                p: 1.5,
+                                mb: 2,
+                                bgcolor: 'info.light',
+                                borderRadius: 1,
+                                color: 'info.contrastText',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1
+                              }}
+                            >
+                              <WarningAmberIcon sx={{ fontSize: '18px' }} />
+                              <Typography variant="body2">
+                                This is not the current version of the document. Reviewing, accepting, or overriding
+                                values here applies only to this version and does not change the current assumptions.
+                              </Typography>
+                            </Box>
+                          )}
                           {fileTermKeysData &&
                             fileTermKeysData.keys.map(
                               ({
@@ -1128,7 +1288,13 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                                 legal_term,
                                 comments,
                                 evidence,
-                                is_baseline_driving
+                                is_baseline_driving,
+                                raw_value,
+                                raw_unit,
+                                expected_unit,
+                                confidence,
+                                extraction_status,
+                                variants
                               }) => (
                                 <CollapsibleDocumentTermRenderer
                                   key={name}
@@ -1147,6 +1313,12 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                                   taskId={taskId}
                                   evidence={evidence}
                                   isBaselineDriving={!!is_baseline_driving}
+                                  rawValue={raw_value}
+                                  rawUnit={raw_unit}
+                                  expectedUnit={expected_unit}
+                                  confidence={confidence}
+                                  extractionStatus={extraction_status}
+                                  variants={variants}
                                   onViewInDocument={handleViewInDocument}
                                 />
                               )

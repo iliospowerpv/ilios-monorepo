@@ -21,6 +21,12 @@ class CanonicalField(Base):
     name = Column(String(255), nullable=False, unique=True)
     display_name = Column(String(255), nullable=False)
     field_type = Column(String(50), nullable=False, default="text")
+    # Additive (DD V2 Phase 2): the canonical/expected unit for a field's value
+    # (e.g. "W", "%", "%/°C", "mm"). Informational only — it is surfaced to the
+    # extraction prompt as a hint and to the review/reconciliation UI for display.
+    # It NEVER triggers a unit conversion: raw extracted values and their printed
+    # units are always preserved as-is. Nullable; unset for non-equipment fields.
+    expected_unit = Column(String(50), nullable=True)
     validation_regex = Column(String(500), nullable=True)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)

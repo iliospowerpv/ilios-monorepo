@@ -27,9 +27,13 @@ def combine_user_ai_parsing_results(
     
     # Build mapping from canonical name to display_name, and prepare available keys
     name_to_display = {}
+    # DD V2 Phase 2: canonical name -> expected/canonical unit (display hint only;
+    # NULL for every contractual field, so non-equipment doc types are unaffected).
+    name_to_unit: dict[str, Optional[str]] = {}
     if config and config.get("fields"):
         for f in config["fields"]:
             name_to_display[f["name"]] = f["display_name"]
+            name_to_unit[f["name"]] = f.get("expected_unit")
     
     document_available_keys = [
         FileKeySchema(name=display_name).model_dump()
@@ -85,7 +89,13 @@ def combine_user_ai_parsing_results(
         # Check for new format (parsed_result with fields array) first
         if latest.parsed_result and isinstance(latest.parsed_result, dict):
             fields = latest.parsed_result.get("fields", [])
-            # Convert new format to old format for compatibility
+            # Convert new format to old format for compatibility.
+            # DD V2 Phase 2 (additive): carry the richer equipment-extraction
+            # metadata (raw value, printed unit, confidence, per-field status, and
+            # per-variant data) straight through verbatim. These are absent on
+            # contractual parse results (``.get`` -> None), so nothing changes for
+            # non-equipment document types. Variants are passed through untouched so
+            # the reviewer — never the system — selects a value for an ambiguous field.
             ai_parsing_result = [
                 {
                     "key_item": f.get("field_key", ""),
@@ -95,6 +105,11 @@ def combine_user_ai_parsing_results(
                     "is_poison_pill": False,
                     "legal_term": None,
                     "evidence": f.get("evidence"),  # preserve evidence for display
+                    "raw_value": f.get("raw_value"),
+                    "raw_unit": f.get("raw_unit"),
+                    "confidence": f.get("confidence"),
+                    "extraction_status": f.get("status"),
+                    "variants": f.get("variants"),
                 }
                 for f in fields
             ]
@@ -111,6 +126,12 @@ def combine_user_ai_parsing_results(
             "is_poison_pill": bool(key.get("is_poison_pill", False)),
             "legal_term": key.get("legal_term"),
             "evidence": key.get("evidence"),  # include evidence if available
+            # DD V2 Phase 2 additive equipment-extraction metadata (None when absent).
+            "raw_value": key.get("raw_value"),
+            "raw_unit": key.get("raw_unit"),
+            "confidence": key.get("confidence"),
+            "extraction_status": key.get("extraction_status"),
+            "variants": key.get("variants"),
         }
         for key in ai_parsing_result
     }
@@ -124,6 +145,12 @@ def combine_user_ai_parsing_results(
 
         if canonical_name and existing_ai_keys.get(canonical_name):
             available_key.update(existing_ai_keys.get(canonical_name))
+
+        # DD V2 Phase 2: surface the canonical/expected unit for this field (display
+        # hint only). NULL for every contractual field, so unchanged for non-equipment
+        # types. This never converts the raw value — it only labels the expected unit.
+        if canonical_name:
+            available_key["expected_unit"] = name_to_unit.get(canonical_name)
 
         user_data = existing_user_keys.get(display_name)
         if user_data and "is_poison_pill" in user_data:

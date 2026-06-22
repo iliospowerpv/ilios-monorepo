@@ -1,0 +1,318 @@
+Start implementation sprint: Phase 2 — Module Datasheet Schema, Equipment-Aware Parsing, and Governed Review.
+
+Context:
+Phase 1 Data Room Parse-State Visibility is complete.
+
+The Site 4 AXIpremium module datasheet now truthfully reports:
+
+* not_yet_parsed
+* equipment document type
+* generic contractual stub currently assigned
+* no equipment-specific schema yet
+
+The Phase 1 work is complete and must not be revisited or broadened in this sprint.
+
+Strategic objective:
+Replace the generic contractual extraction configuration for `module_specs` with a specialized Module Datasheet extraction schema and equipment-aware prompt, then enable the existing governed Data Room workflow for review, correction/override, task creation, candidate facts, promotion, Reconciliation, and future Baseline Readiness use.
+
+This sprint covers Module Datasheet only.
+
+Do not implement Inverter Datasheet, Warranty, PTO/Interconnection, Equipment Schedule, generic registry remediation, document classifier, or broad vision/table infrastructure in this sprint.
+
+Critical governance workflow:
+
+Upload / selected document type
+→ specialized Module Datasheet parse
+→ raw extracted value + raw unit + evidence + confidence
+→ Data Room parsed-document review
+→ user accepts as-is OR corrects/overrides in field
+→ override reason/source note/user/timestamp retained
+→ task creation where needed
+→ governed candidate fact
+→ existing promotion/freshness guard
+→ Reconciliation truth state
+→ later Baseline Readiness integration
+
+AI extraction is never active truth by itself.
+
+Hard constraints:
+
+* Do not auto-parse all historical module documents.
+* Do not automatically mark files current.
+* Do not automatically accept, override, normalize, promote, create a baseline, approve, or activate.
+* Do not mutate existing project_facts, accepted values, baselines, telemetry, rollups, or historical records.
+* Do not change expected formula math, baseline physics validation, WeatherResolver, device eligibility, or baseline lifecycle.
+* Do not use SAFL as a baseline source.
+* Do not use BigQuery, Firestore, or legacy telemetry.
+* Preserve file-version-scoped parse/review/override/promotion/staleness behavior.
+* Preserve raw extracted values and units.
+* Never silently convert W↔kW, Wp↔kWp, °F↔°C, or percentage basis.
+* Do not infer installed module variant from a multi-variant datasheet.
+* Never hallucinate absent specifications.
+* Do not alter unrelated registry types or clobber purpose-built schemas.
+
+Scope A — Specialized `module_specs` registry configuration
+
+Create a new active schema version and equipment-aware prompt for `module_specs`.
+
+Do not overwrite historical schema versions. Existing contractual-stub configuration must remain auditable as a prior version.
+
+The new schema must support, at minimum:
+
+Baseline-driving:
+
+* module_manufacturer
+* module_model
+* module_wattage
+* module_power_stc_w
+* thermal_coefficient_pct
+* power_tolerance_min_pct
+* power_tolerance_max_pct
+* year_1_degradation_pct
+* annual_degradation_pct
+
+Operational/informational:
+
+* module_power_ptc_w
+* module_efficiency_pct
+* open_circuit_voltage_voc
+* short_circuit_current_isc
+* voltage_at_max_power_vmp
+* current_at_max_power_imp
+* nominal_operating_cell_temperature_noct
+* module_length_mm
+* module_width_mm
+* module_area_m2
+* module_product_warranty_years
+
+For each field, configure:
+
+* canonical field key
+* display label
+* expected unit
+* field description for the model
+* whether baseline-driving
+* whether reviewer confirmation is mandatory
+* evidence requirement
+* confidence requirement
+* explicit not_found handling
+
+Scope B — Equipment-aware extraction prompt
+
+Replace the generic contractual prompt only for the new `module_specs` schema version.
+
+The prompt must clearly state:
+
+* This is a photovoltaic module datasheet, not a contract.
+* Extract electrical, thermal, mechanical, and warranty specifications only when explicitly stated.
+* Do not extract counterparties, governing law, fees, or contractual terms unless they are genuinely present and relevant to an explicitly requested field.
+* Return raw value and raw unit separately.
+* Capture page, table/section, and concise source snippet for every extracted value.
+* Return `not_found` when absent.
+* Return `unclear` when present but ambiguous.
+* Never estimate or infer values.
+* Never select one module variant from a multi-SKU datasheet.
+* When a document lists ranges or multiple wattage variants:
+
+  * return the candidate range/variants;
+  * identify the ambiguity;
+  * require reviewer selection or override;
+  * do not populate a single installed value automatically.
+
+Temperature-specific requirements:
+
+* Thermal coefficient must identify the metric basis, such as Pmax, Voc, or Isc.
+* Only Pmax/power coefficient may map to `thermal_coefficient_pct`.
+* Preserve whether the source unit is `%/°C` or `%/°F`.
+* Do not convert the basis automatically.
+* Missing coefficient basis must be `unclear`, not normalized.
+
+Tolerance-specific requirements:
+
+* Preserve sign and whether the source expresses a range.
+* Do not infer a minimum tolerance from a one-sided positive maximum.
+* A source such as `0 to +5%` must not automatically populate `power_tolerance_min_pct` as zero unless reviewer confirmation explicitly chooses that interpretation.
+
+Degradation-specific requirements:
+
+* Extract only when explicitly stated.
+* Do not derive year-one or annual degradation from broad warranty language in this sprint.
+* Preserve exact warranty wording and source evidence.
+
+Scope C — Canonical-field and registry safety
+
+Add only the canonical fields required for Module Datasheet parsing.
+
+Before adding:
+
+* inventory whether each canonical field already exists;
+* reuse existing canonical keys where semantically correct;
+* avoid duplicate keys such as `module_power_stc_w` versus `module_wattage` without a documented alias/reconciliation policy.
+
+For any new canonical field:
+
+* add it additively;
+* assign clear type/unit semantics;
+* mark baseline-driving status where applicable;
+* do not wire it into Baseline Readiness in this sprint;
+* do not alter existing project facts.
+
+The five baseline physics values may be added as canonical/reviewable fields now, but must not yet flow automatically into the baseline-from-facts bridge:
+
+* thermal_coefficient_pct
+* power_tolerance_min_pct
+* year_1_degradation_pct
+* annual_degradation_pct
+* cec_efficiency_pct is out of scope because it belongs to Inverter Datasheet Phase 3.
+
+Scope D — Data Room module-review experience
+
+Extend the existing parsed-document view only as necessary for Module Datasheet fields.
+
+For each extracted field show:
+
+* field label
+* raw extracted value
+* raw unit
+* evidence page/table/section/snippet
+* confidence
+* baseline-driving badge where applicable
+* ambiguity / not_found / unclear state
+* candidate normalized value only where safe
+* explicit reviewer-confirmation requirement
+* existing accept action
+* existing override/correct action
+* override reason/source note
+* task creation action where already supported
+* current promotion status
+
+For an override, preserve and visibly show:
+
+* extracted source value
+* extracted source unit
+* reviewer-approved replacement
+* reviewer unit
+* override reason
+* source note/evidence
+* reviewer identity and timestamp
+* promotion status
+
+Do not create a new alternate truth store or parallel review mechanism.
+
+Scope E — Unit behavior
+
+Implement only the minimum additive unit metadata necessary for Module Datasheet review.
+
+Required behavior:
+
+* W and Wp may be displayed as raw source units.
+* A normalized W candidate may be suggested only with explicit reviewer confirmation.
+* kW/kWp conversion may be suggested but never applied automatically.
+* `%` may be safely stripped only as a candidate suggestion.
+* `%/°C` versus `%/°F` is always reviewer-confirmed.
+* Bare numeric values without unit are ambiguous.
+* Preserve raw unit, normalized candidate unit, normalization method, and confirmation state where the current model can support it additively.
+* Do not migrate or mutate old document_keys/project_facts in place.
+
+Scope F — Controlled parse actions
+
+Use the two real uploaded module datasheets as controlled validation fixtures:
+
+1. Site 4 AXIpremium 72c 330–350 Mono datasheet.
+2. Site 1 Q-CELLS Q.PEAK DUO L-G8.3 405–415 datasheet.
+
+Requirements:
+
+* Do not auto-parse all historic documents.
+* Provide or use an explicit user-triggered parse action.
+* Do not mark either file current automatically.
+* Report the effect of `is_actual=false` on whether parsing/review is permitted.
+* If parsing cannot legally run for a non-current version, document the constraint and return a separate, minimal recommendation; do not bypass version rules.
+
+Expected fixture behavior:
+
+* AXIpremium 330–350 document must surface a wattage range / variant ambiguity, not one silently selected wattage.
+* Q-CELLS 405–415 document must surface a range / variant ambiguity, not one silently selected wattage.
+* Thermal coefficient, tolerance, and electrical fields should be extracted only where clearly supported by the document.
+* Missing fields must say not_found or unclear.
+* No value becomes accepted/promoted automatically.
+
+Scope G — Reconciliation
+
+Add only read-only/source-aware Reconciliation support for module fields that are newly canonical and baseline-driving.
+
+At minimum design/implement rows or appropriate coverage for:
+
+* module_wattage
+* thermal_coefficient_pct
+* power_tolerance_min_pct
+* year_1_degradation_pct
+* annual_degradation_pct
+
+States must remain consistent with existing truth ladder:
+
+* source document uploaded but not parsed
+* parsed value awaiting review
+* source-backed overridden
+* accepted not promoted
+* active fact
+* normalization required
+* stale after reparse
+* baseline usable / not baseline usable
+
+Do not alter baseline status or generate a draft baseline in this sprint.
+
+Scope H — Tests
+
+Add tests for:
+
+1. `module_specs` new schema is active and does not use contractual fields.
+2. Historical schema versions remain intact.
+3. Module prompt requests only module-equipment fields.
+4. Contractual fields are not produced as Module Datasheet outputs.
+5. Explicit `not_found` and `unclear` states work.
+6. No hallucinated field values.
+7. Raw value, raw unit, evidence, and confidence are persisted/surfaced.
+8. Multi-variant wattage ranges remain ambiguous and require review.
+9. No automatic module-wattage selection.
+10. Thermal Pmax coefficient maps only when basis is explicit.
+11. %/°F values are not silently converted to %/°C.
+12. Positive-only tolerance does not silently fill a minimum-tolerance field.
+13. No degradation derivation from ambiguous warranty prose.
+14. Reviewer override preserves original extracted value and unit.
+15. Existing accept/override/task/promotion freshness behavior remains intact.
+16. Reconciliation displays new source-aware module states without creating facts.
+17. Site 4 AXIpremium controlled parse has useful module outputs or an honest visible parse limitation.
+18. Site 1 Q-CELLS controlled parse has useful module outputs or an honest visible parse limitation.
+19. No telemetry, baseline, formula, lifecycle, SAFL, BigQuery, Firestore, or legacy regressions.
+20. Backend targeted tests pass.
+21. Frontend compile/typecheck passes if touched.
+22. Architect review passes.
+
+Validation and deliverable:
+
+Return:
+
+* exact schema version and prompt version created;
+* canonical fields added/reused;
+* fields intentionally deferred;
+* Data Room behavior;
+* unit/normalization behavior;
+* Site 1 and Site 4 controlled-parse results;
+* all ambiguity/not_found handling observed;
+* Reconciliation additions;
+* tests run and results;
+* confirmation of no automatic acceptance/promotion/baseline activity;
+* exact remaining work before Phase 3 Inverter Datasheet support.
+
+Do not:
+
+* implement Inverter Datasheet support;
+* add CEC efficiency support;
+* add Warranty parser support;
+* add PTO parser support;
+* modify baseline-from-facts mappings;
+* auto-repair `is_actual=false`;
+* broadly remediate the 201 generic registry types;
+* build a document classifier;
+* change expected math or telemetry.

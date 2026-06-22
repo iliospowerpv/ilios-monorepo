@@ -259,6 +259,17 @@ interface FileParsingEvidence {
   page?: number | null;
   snippet?: string | null;
   anchor_text?: string | null;
+  // Additive (DD V2 Phase 2): the datasheet table/section the value was read from.
+  table_or_section?: string | null;
+}
+
+// Additive (DD V2 Phase 2): one module variant/SKU row for an ambiguous,
+// multi-variant equipment field. Mirrors the backend variant dict verbatim;
+// values are preserved exactly as printed and are never converted.
+interface FileParsingVariant {
+  label?: string | null;
+  raw_value?: string | null;
+  raw_unit?: string | null;
 }
 
 interface FileParsingTermKeyResult {
@@ -274,6 +285,13 @@ interface FileParsingTermKeyResult {
   comments: FileParsingTermComment[] | null;
   evidence?: FileParsingEvidence | null;
   is_baseline_driving?: boolean;
+  // --- DD V2 Phase 2: additive equipment-extraction metadata (all optional) ---
+  raw_value?: string | null;
+  raw_unit?: string | null;
+  expected_unit?: string | null;
+  confidence?: string | null;
+  extraction_status?: string | null;
+  variants?: FileParsingVariant[] | null;
 }
 
 interface GetFileParsingResultQueryResponse {

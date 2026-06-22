@@ -169,7 +169,52 @@ _ANNUAL_FIELDS: list[ReconciliationField] = [
     ),
 ]
 
-# Ordered catalog: physics, then monthly + annual production, then GHI + scenarios.
+# DD V2 Phase 2 — Module Datasheet equipment specs. These are diligence-critical
+# (so they earn a labeled, read-only EQUIPMENT row instead of an anonymous
+# catch-all OTHER row) but are explicitly NOT baseline-driving: every entry uses
+# ``baseline_target=NONE`` and ``required_for_baseline=False``. None of these
+# canonical names appears in ``BASELINE_DRIVING_FACT_FIELDS``, ``FACT_FIELD_TO_COLUMN``,
+# the baseline-from-facts mappings, baseline creation defaults, or the expected
+# calculation — they never flow into a baseline header or point. ``module_wattage``
+# and ``module_quantity`` are intentionally absent here because they keep their
+# existing baseline-driving physics rows above.
+_MODULE_DATASHEET_FIELDS: list[ReconciliationField] = [
+    ReconciliationField("module_manufacturer", "Module Manufacturer", EQUIPMENT, NONE),
+    ReconciliationField("module_model", "Module Model", EQUIPMENT, NONE),
+    ReconciliationField("module_efficiency_pct", "Module Efficiency", EQUIPMENT, NONE),
+    ReconciliationField("voc", "Open-Circuit Voltage (Voc)", EQUIPMENT, NONE),
+    ReconciliationField("isc", "Short-Circuit Current (Isc)", EQUIPMENT, NONE),
+    ReconciliationField("vmp", "Voltage at Maximum Power (Vmp)", EQUIPMENT, NONE),
+    ReconciliationField("imp", "Current at Maximum Power (Imp)", EQUIPMENT, NONE),
+    ReconciliationField(
+        "thermal_coefficient_pct", "Temperature Coefficient of Pmax", EQUIPMENT, NONE
+    ),
+    ReconciliationField(
+        "noct", "Nominal Operating Cell Temperature (NOCT)", EQUIPMENT, NONE
+    ),
+    ReconciliationField(
+        "power_tolerance_min_pct", "Power Tolerance (Minimum)", EQUIPMENT, NONE
+    ),
+    ReconciliationField(
+        "power_tolerance_max_pct", "Power Tolerance (Maximum)", EQUIPMENT, NONE
+    ),
+    ReconciliationField(
+        "year_1_degradation_pct", "Year-1 Degradation", EQUIPMENT, NONE
+    ),
+    ReconciliationField(
+        "annual_degradation_pct", "Annual Degradation", EQUIPMENT, NONE
+    ),
+    ReconciliationField("module_length_mm", "Module Length", EQUIPMENT, NONE),
+    ReconciliationField("module_width_mm", "Module Width", EQUIPMENT, NONE),
+    ReconciliationField("module_area_m2", "Module Area", EQUIPMENT, NONE),
+    ReconciliationField(
+        "module_product_warranty_years", "Product Warranty", EQUIPMENT, NONE
+    ),
+]
+
+# Ordered catalog: physics, then monthly + annual production, then GHI + scenarios,
+# then the read-only Module Datasheet equipment specs (appended last so existing
+# row positions are unchanged).
 RECONCILIATION_CATALOG: tuple[ReconciliationField, ...] = tuple(
     _PHYSICS_FIELDS
     + _monthly_production_fields()
@@ -177,6 +222,7 @@ RECONCILIATION_CATALOG: tuple[ReconciliationField, ...] = tuple(
     + _monthly_ghi_fields()
     + [_ANNUAL_FIELDS[1]]
     + _SCENARIO_FIELDS
+    + _MODULE_DATASHEET_FIELDS
 )
 
 # Fast lookup + membership set for the service / catch-all dedupe.

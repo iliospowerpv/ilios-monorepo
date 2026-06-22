@@ -118,6 +118,9 @@ class ExtractionPipelineService:
                     "name": f.name,
                     "display_name": f.display_name,
                     "field_type": f.field_type,
+                    # Additive (DD V2 Phase 2): canonical/expected unit hint. May be
+                    # None for non-equipment fields. Never used to convert values.
+                    "expected_unit": getattr(f, "expected_unit", None),
                 }
                 for f in fields
             ],
@@ -136,10 +139,19 @@ class ExtractionPipelineService:
             return None
 
         # Build field list with exact field_key for LLM to use
-        # Format: "- field_key: Display Name" so LLM knows exact key to return
-        fields_list = "\n".join(
-            f"- {f['name']}: {f['display_name']}" for f in config["fields"]
-        )
+        # Format: "- field_key: Display Name" so LLM knows exact key to return.
+        # Additive (DD V2 Phase 2): when a canonical/expected unit is defined for a
+        # field, surface it as a hint — "- field_key (W): Display Name" — so the
+        # model knows the field's expected unit. This is a hint ONLY; the prompt
+        # still instructs the model to preserve the document's raw value and unit
+        # and never convert. Fields without an expected_unit are unchanged.
+        def _field_line(f: dict) -> str:
+            unit = f.get("expected_unit")
+            if unit:
+                return f"- {f['name']} ({unit}): {f['display_name']}"
+            return f"- {f['name']}: {f['display_name']}"
+
+        fields_list = "\n".join(_field_line(f) for f in config["fields"])
 
         # Use str.replace() instead of .format() to avoid conflicts with JSON braces
         # The prompt template uses {{PLACEHOLDER}} syntax

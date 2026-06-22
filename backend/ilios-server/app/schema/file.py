@@ -105,6 +105,11 @@ class FileParsingEvidence(BaseModel):
     page: Optional[int] = Field(None, examples=[1], description="Page number in the PDF where evidence was found")
     snippet: Optional[str] = Field(None, examples=["The lease agreement dated..."], description="Text snippet from the document")
     anchor_text: Optional[str] = Field(None, examples=["lease agreement"], description="Specific anchor text to highlight")
+    # Additive (DD V2 Phase 2): the datasheet table/section the value was read from
+    # (e.g. "Electrical Data (STC)"). Optional; older evidence payloads omit it.
+    table_or_section: Optional[str] = Field(
+        None, examples=["Electrical Data (STC)"], description="Table or section name the value was read from"
+    )
 
 
 class FileKeySchema(BaseModel):
@@ -124,6 +129,37 @@ class FileKeySchema(BaseModel):
         description=(
             "True if this field feeds the energy-production baseline; overriding it requires a "
             "documented rationale (DD V2 Phase 1D)."
+        ),
+    )
+    # --- DD V2 Phase 2: additive equipment-extraction metadata (all optional) ---
+    # These surface the richer parse output (raw value + printed unit, confidence,
+    # extraction status, and per-variant data) for equipment datasheets. They are
+    # purely additive and default to None, so contractual document types and older
+    # parse results are unaffected. None of these ever trigger a unit conversion or
+    # auto-select a value for an ambiguous field.
+    raw_value: Optional[str] = Field(
+        None, examples=["405"], description="The AI-extracted value exactly as printed, without the unit."
+    )
+    raw_unit: Optional[str] = Field(
+        None, examples=["W"], description="The unit exactly as printed in the document (never converted)."
+    )
+    expected_unit: Optional[str] = Field(
+        None, examples=["W"], description="The canonical/expected unit for this field (display hint only)."
+    )
+    confidence: Optional[str] = Field(
+        None, examples=["high"], description="AI-reported extraction confidence: high | medium | low."
+    )
+    extraction_status: Optional[str] = Field(
+        None,
+        examples=["ambiguous"],
+        description="AI-reported per-field status: extracted | ambiguous | unclear | not_found.",
+    )
+    variants: Optional[list[dict]] = Field(
+        None,
+        description=(
+            "When a datasheet field differs across module variants/SKUs (e.g. multiple power "
+            "classes), every variant is listed here verbatim. The reviewer must choose; the system "
+            "never auto-selects one and creates no candidate fact for an ambiguous field."
         ),
     )
 
