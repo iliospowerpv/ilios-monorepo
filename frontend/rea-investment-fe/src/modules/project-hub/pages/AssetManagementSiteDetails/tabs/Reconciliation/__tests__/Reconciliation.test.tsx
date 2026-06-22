@@ -87,7 +87,12 @@ const fullRow: SiteReconciliationResponse['rows'][number] = {
   supersedes_fact_id: null,
   candidate_count: 2,
   required_for_baseline: true,
-  warnings: ['fact_differs_from_legacy', 'draft_differs_from_active']
+  warnings: ['fact_differs_from_legacy', 'draft_differs_from_active'],
+  source_document_uploaded_not_parsed: null,
+  parse_failed: null,
+  parsed_no_usable_fields: null,
+  source_document_not_current_version: null,
+  source_document_type_lacks_operational_schema: null
 };
 
 // A row with every provenance/value field null to prove the panel never crashes
@@ -129,7 +134,12 @@ const nullProvenanceRow: SiteReconciliationResponse['rows'][number] = {
   supersedes_fact_id: null,
   candidate_count: 0,
   required_for_baseline: false,
-  warnings: []
+  warnings: [],
+  source_document_uploaded_not_parsed: null,
+  parse_failed: null,
+  parsed_no_usable_fields: null,
+  source_document_not_current_version: null,
+  source_document_type_lacks_operational_schema: null
 };
 
 // An accepted-not-promoted row with both document ids and a required action —

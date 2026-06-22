@@ -22,8 +22,9 @@ from app.helpers.files.file_helper import combine_user_ai_parsing_results
 from app.models.comment import CommentedEntityTypeEnum
 from app.models.file import File as FileModel
 from app.models.file import FileParsingStatuses, AIParsingResult
-from app.schema.file import FileKeysList, FileParseTriggerSuccess, FileParsingStatus
+from app.schema.file import FileKeysList, FileParseTriggerSuccess, FileParsingStatus, ParseStateSummary
 from app.schema.user import CurrentUserSchema
+from app.services.due_diligence.parse_state_service import build_parse_state_summary
 from app.services.extraction_pipeline_service import ExtractionPipelineService
 from app.services.in_app_parsing_service import InAppParsingService
 from app.settings import settings
@@ -438,6 +439,32 @@ async def file_parsing_status(
         action="view",
     )
     return file.latest_ai_result if file.latest_ai_result else {}
+
+
+@files_parsing_router.get(
+    "/parse-state/",
+    response_model=ParseStateSummary,
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
+    description=(
+        "Honest, read-only summary of where this file version sits in the parse -> review -> "
+        "accept/override -> promote lifecycle, plus document-type classification (generic "
+        "contractual stub / equipment type) and the recommended next action. Performs no writes."
+    ),
+)
+async def get_file_parse_state(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    file: FileModel = Depends(get_authorized_file),
+    db_session: Session = Depends(get_session),
+):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=file.document.site.company_id,
+        project_id=file.document.site_id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="view",
+    )
+    return build_parse_state_summary(file, db_session)
 
 
 @files_parsing_router.get(

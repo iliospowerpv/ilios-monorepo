@@ -1,0 +1,244 @@
+Start implementation sprint: Data Room Parse-State Visibility and Equipment Document Classification Correction.
+
+Context:
+The Equipment Datasheet Parsing + Governed Baseline Field Coverage audit is complete.
+
+Confirmed findings:
+
+* Two real module datasheets exist, including Site 4 AXIpremium modules.
+* Both have zero parse runs, zero extracted values, zero document_keys, and zero project_facts.
+* Both were uploaded with the correct `module_specs` type.
+* Both are `is_actual = false`.
+* The Data Room displayed a silent empty state with no parse status, no error, no “parse now” action, and no explanation.
+* `module_specs` and `inverter_specs` are registered as parsable but currently use the generic contractual 10-field schema.
+* 201 of 218 registered types share that contractual stub.
+* No specialized equipment schemas exist yet.
+
+Strategic objective:
+Eliminate silent-empty document behavior and make the parsed-document/Data Room workflow honest and actionable before introducing specialized equipment extraction schemas.
+
+This sprint is Phase 1 only. Do not implement Module Datasheet or Inverter Datasheet extraction schemas yet.
+
+Hard constraints:
+
+* Do not modify existing parsed values, accepted values, project_facts, baselines, telemetry, WeatherResolver, expected math, or baseline lifecycle.
+* Do not auto-parse every existing document.
+* Do not automatically mark old file versions as current.
+* Do not auto-classify or auto-change a user-selected document type.
+* Do not auto-accept, auto-override, auto-promote, auto-create baselines, or auto-activate baselines.
+* Do not use SAFL as a source of truth.
+* Do not reintroduce BigQuery, Firestore, or legacy telemetry.
+* Do not alter parsing schemas for `module_specs` or `inverter_specs` in this sprint.
+* Preserve file-version-scoped review, acceptance, override, task, promotion, and stale/reparse behavior.
+
+Scope A — Explicit parse states
+
+Implement a clear file-version parse-state model exposed to the Data Room UI.
+
+At minimum support:
+
+1. `not_yet_parsed`
+
+   * file exists
+   * no parse run exists
+   * user sees “Parse this document” action
+
+2. `parsing_in_progress`
+
+   * queued/running parse run exists
+   * user sees progress/pending state
+   * duplicate trigger behavior remains safe/idempotent
+
+3. `parse_failed`
+
+   * parse run failed technically
+   * show safe user-facing error summary
+   * provide retry action
+   * preserve technical diagnostics for authorized users/logs
+
+4. `parsed_no_usable_fields`
+
+   * parse completed but created zero mapped/reviewable fields
+   * distinguish from technical failure
+   * show why where determinable:
+
+     * no schema fields
+     * no fields found
+     * fields did not map
+     * wrong document type suspected
+
+5. `parsed_awaiting_review`
+
+   * usable document keys exist but are unreviewed
+
+6. `accepted_or_overridden`
+
+   * existing accepted/override state
+
+7. `promoted`
+
+   * current file version has promoted active facts
+
+Do not replace existing detailed states. Add an honest summary state only.
+
+Scope B — Data Room UI
+
+In the parsed-document view, add a compact parse-status card for every file version.
+
+Show:
+
+* selected document type
+* current file version
+* whether it is the current/actual version
+* parse state
+* last parse attempt timestamp
+* parse-run identifier/status where safely available
+* extracted/reviewable field count
+* accepted/overridden count
+* promoted count
+* clear next action
+
+For `not_yet_parsed`:
+
+* primary action: “Parse this document”
+* explanatory text:
+  “This file has not yet been processed. Uploading does not automatically make extracted values available.”
+
+For `parsed_no_usable_fields`:
+
+* show:
+  “Parsing completed, but no usable fields were produced for this document type.”
+* do not falsely say parsing failed.
+* if the selected type is currently known to use a generic contractual stub, show:
+  “This document type does not yet have an equipment-specific extraction schema.”
+* provide:
+
+  * “View document type”
+  * “Create task”
+  * “Retry parse” only where retry is meaningful
+* do not imply retry alone will create equipment fields before Phase 2.
+
+For `parse_failed`:
+
+* show a concise safe failure message and retry action.
+* never show raw stack traces to ordinary users.
+
+Scope C — Current-file/version handling
+
+Audit and correct the UI logic around `files.is_actual`.
+
+Requirements:
+
+* clearly identify which file version is current.
+* do not silently treat an older/non-current version as current.
+* if a document has only one file version but it is not marked current, surface a visible data-state warning rather than silently showing empty.
+* provide a controlled action only if an existing safe “set current” workflow already exists.
+* do not add a new mutation workflow in this sprint unless necessary and explicitly documented.
+
+For the Site 1 and Site 4 module datasheet files:
+
+* verify why their sole versions are `is_actual = false`.
+* report whether this is an upload bug, migration artifact, legacy state, or expected rule.
+* do not repair the records in this sprint without a separately approved data-repair decision.
+
+Scope D — Reconciliation visibility
+
+Add read-only Reconciliation indicators where appropriate:
+
+* source_document_uploaded_not_parsed
+* parse_failed
+* parsed_no_usable_fields
+* source_document_not_current_version
+* source_document_type_lacks_operational_schema
+
+These states should:
+
+* remain read-only;
+* not create facts;
+* provide precise next actions;
+* preserve the current truth ladder;
+* be shown only for document/field relationships that actually exist.
+
+Scope E — Task creation context
+
+Where a user creates a task from a parse-state failure/no-fields state, use the existing task payload and include:
+
+* site/project name
+* document title
+* document type
+* file/version id
+* parse state
+* parse run id if available
+* selected document type
+* visible reason
+* whether the document is current
+* suggested next action
+* stable identifiers
+* link/deep-link context where already supported
+
+Do not add new task schema or backend associations.
+
+Scope F — API/read model
+
+Use existing parsing/file/document endpoints where possible.
+
+Add only additive read fields/endpoints if needed to expose:
+
+* parse status summary
+* current version state
+* parse attempt metadata
+* usable field count
+* failure/no-fields reason classification
+
+Do not modify parse engine behavior in this sprint beyond safe status reporting.
+
+Scope G — Tests
+
+Add/update tests for:
+
+1. File with no parse run renders `not_yet_parsed`.
+2. Not-yet-parsed file shows Parse action.
+3. Parse action does not auto-accept, promote, or modify baseline state.
+4. Failed parse renders `parse_failed` with safe retry state.
+5. Completed parse with zero usable fields renders `parsed_no_usable_fields`.
+6. Generic contractual-stub equipment type receives clear “no equipment schema yet” explanation.
+7. User can see selected document type and current-version state.
+8. A sole non-current version shows a visible warning, not silent empty.
+9. Reconciliation surfaces applicable parse-state indicators without creating facts.
+10. Task created from parse-state issue includes document/version/parse context.
+11. Existing Data Room accept/override behavior is unchanged.
+12. Existing promotion freshness behavior is unchanged.
+13. Existing reparse/stale behavior is unchanged.
+14. No project_facts, accepted values, baselines, telemetry, or legacy paths are altered.
+15. Frontend compile/typecheck passes.
+16. Backend targeted tests pass if backend is touched.
+17. Architect review passes.
+
+Validation:
+
+* Test the Site 4 AXIpremium module datasheet through the UI.
+* Confirm the user sees a truthful parse state rather than a silent empty.
+* Do not attempt to make it extract equipment values yet.
+
+Return:
+
+* files changed
+* parse states implemented
+* UI states/screens affected
+* Site 1/Site 4 `is_actual=false` root-cause findings
+* API additions
+* Reconciliation indicators
+* task-context behavior
+* tests run/skipped
+* validation results
+* remaining blockers before Phase 2 Module Datasheet schema work
+
+Do not:
+
+* build specialized equipment schemas yet
+* alter extraction registry field definitions yet
+* alter canonical fields yet
+* parse all historical files
+* mark any files current automatically
+* mutate baseline/project_fact data
+* start warranty/PTO parser work

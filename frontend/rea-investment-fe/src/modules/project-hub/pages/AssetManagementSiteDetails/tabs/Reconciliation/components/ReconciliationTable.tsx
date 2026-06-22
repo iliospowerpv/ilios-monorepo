@@ -22,6 +22,7 @@ import type { ReconciliationRow } from '../../../../../../../api';
 import { PromoteVersionDialog } from '../../../../../../../components/promotion';
 import StatusChip from './StatusChip';
 import WarningChips from './WarningChips';
+import ParseStateIndicatorChips from './ParseStateIndicatorChips';
 import CreateActionTaskDialog from './CreateActionTaskDialog';
 import {
   CATEGORY_ORDER,
@@ -247,6 +248,8 @@ const StatusCell: React.FC<{
           ))}
         </Box>
       )}
+
+      <ParseStateIndicatorChips row={row} />
     </Box>
   );
 };

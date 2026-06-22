@@ -48,6 +48,10 @@ from app.schema.reconciliation import (
     SiteReconciliationResponse,
     TelemetryReality,
 )
+from app.services.due_diligence.parse_state_service import (
+    ParseStateIndicators,
+    compute_parse_state_indicators,
+)
 from app.services.telemetry import baseline_from_facts_service as facts_bridge
 from app.services.telemetry import baseline_points_service as points_svc
 from app.static.reconciliation_catalog import (
@@ -490,6 +494,32 @@ class _Ctx:
             getattr(self.wam_active, "created_at", None)
         )
 
+        # Per-source-file parse-state indicator cache. Computed lazily and only
+        # for rows carrying a source file; many rows share a source version, so
+        # caching keeps this read-only audit screen from recomputing per row.
+        self._parse_indicators: dict[int, Optional[ParseStateIndicators]] = {}
+
+    def parse_indicators_for_file(self, file_id: Optional[int]) -> Optional[ParseStateIndicators]:
+        """Read-only parse-state indicators for a source file version, or None when
+        there is no source file or it is not in scope for this site. Memoized per
+        file_id.
+
+        The file is required to belong to this site's (non-archived) document set
+        (``file_to_document``); a stale/cross-site ``source_file_id`` never yields
+        indicators, so this audit screen can't leak another site's parse state.
+        """
+        if file_id is None:
+            return None
+        if file_id in self._parse_indicators:
+            return self._parse_indicators[file_id]
+        indicators: Optional[ParseStateIndicators] = None
+        if file_id in self.file_to_document:
+            file = self.db.query(File).filter(File.id == file_id).first()
+            if file is not None:
+                indicators = compute_parse_state_indicators(file, self.db)
+        self._parse_indicators[file_id] = indicators
+        return indicators
+
 
 def _candidate_value(candidates: list[ProjectFact]) -> Optional[ProjectFact]:
     """Pick the candidate that represents the most-advanced rung on the ladder.
@@ -886,6 +916,11 @@ def _build_row(
 
     aliases_matched = sorted(ctx.aliases_by_canonical.get(canonical_name, set()))
 
+    # Additive, read-only parse-state indicators for the source document version
+    # (None when this row has no source file). These never influence status,
+    # blocking_level, needs_review, missing_dependencies, or baseline logic above.
+    parse_indicators = ctx.parse_indicators_for_file(source_file_id)
+
     return ReconciliationRow(
         canonical_field=canonical_name,
         display_label=display_label,
@@ -924,6 +959,21 @@ def _build_row(
         candidate_count=len(candidates),
         required_for_baseline=required,
         warnings=warnings,
+        source_document_uploaded_not_parsed=(
+            parse_indicators.source_document_uploaded_not_parsed if parse_indicators else None
+        ),
+        parse_failed=parse_indicators.parse_failed if parse_indicators else None,
+        parsed_no_usable_fields=(
+            parse_indicators.parsed_no_usable_fields if parse_indicators else None
+        ),
+        source_document_not_current_version=(
+            parse_indicators.source_document_not_current_version if parse_indicators else None
+        ),
+        source_document_type_lacks_operational_schema=(
+            parse_indicators.source_document_type_lacks_operational_schema
+            if parse_indicators
+            else None
+        ),
     )
 
 

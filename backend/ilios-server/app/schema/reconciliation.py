@@ -150,6 +150,34 @@ class ReconciliationRow(BaseModel):
         ),
     )
 
+    # --- Additive, read-only parse-state indicators (Phase 1) ---------------
+    # These are purely informational signals derived from the source document
+    # version's parse lifecycle. They NEVER feed status/blocking_level/
+    # needs_review/missing_dependencies/baseline logic and are populated ONLY for
+    # rows that already carry a source document version (document_version_id).
+    # Each is None when there is no source file or the signal does not apply.
+    source_document_uploaded_not_parsed: Optional[bool] = Field(
+        None,
+        description="Source document version exists but has never been parsed.",
+    )
+    parse_failed: Optional[bool] = Field(
+        None,
+        description="The most recent parse attempt on the source document version failed.",
+    )
+    parsed_no_usable_fields: Optional[bool] = Field(
+        None,
+        description="Source document version parsed but produced no reviewable fields.",
+    )
+    source_document_not_current_version: Optional[bool] = Field(
+        None,
+        description="The source document version is not marked as the current version.",
+    )
+    source_document_type_lacks_operational_schema: Optional[bool] = Field(
+        None,
+        description="The source document type's active schema is the generic contractual "
+        "stub (no specialized/operational fields).",
+    )
+
 
 class ReconciliationReadiness(BaseModel):
     facts_to_draft_ready: bool = Field(

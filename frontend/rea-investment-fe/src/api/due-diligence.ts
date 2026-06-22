@@ -398,6 +398,72 @@ interface ProjectSummaryStatsResponse {
   coterminus: CoTerminusStats;
 }
 
+type ParseState =
+  | 'not_yet_parsed'
+  | 'parsing_in_progress'
+  | 'parse_failed'
+  | 'parsed_no_usable_fields'
+  | 'parsed_awaiting_review'
+  | 'accepted_or_overridden'
+  | 'promoted';
+
+type NoUsableFieldsReason = 'no_schema_fields' | 'no_fields_found' | 'fields_did_not_map' | 'generic_contractual_schema';
+
+type ParseNextAction =
+  | 'parse_document'
+  | 'wait_for_parse'
+  | 'retry_parse'
+  | 'review_fields'
+  | 'review_or_promote'
+  | 'change_document_type'
+  | 'awaiting_equipment_schema'
+  | 'none';
+
+interface SelectedDocumentTypeInfo {
+  key: string | null;
+  display: string | null;
+  is_generic_contractual_stub: boolean;
+  is_equipment_type: boolean;
+}
+
+interface ParseStateFileVersionInfo {
+  id: number;
+  is_current_version: boolean;
+  is_sole_version: boolean;
+  version_display: string;
+}
+
+interface ParseStateLatestRunInfo {
+  id: number;
+  status: string;
+  extraction_run_number: number | null;
+  created_at: string | null;
+  start_time: string | null;
+  end_time: string | null;
+}
+
+interface ParseStateSummary {
+  file_id: number;
+  parse_state: ParseState;
+  selected_document_type: SelectedDocumentTypeInfo;
+  file_version: ParseStateFileVersionInfo;
+  last_parse_attempt_at: string | null;
+  latest_run: ParseStateLatestRunInfo | null;
+  reviewable_field_count: number;
+  accepted_overridden_count: number;
+  promoted_count: number;
+  no_usable_fields_reason: NoUsableFieldsReason | null;
+  next_action: ParseNextAction;
+  active_reprocess_in_progress: boolean;
+  warnings: string[];
+}
+
+interface GetParseStateArgs {
+  siteId: number;
+  documentId: number;
+  fileId: number;
+}
+
 export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
   const docInfo = async (siteId: number, documentId: number): Promise<DocumentDetails> => {
     const response = await httpClient.get<DocumentDetails>(`/api/due-diligence/${siteId}/documents/${documentId}`);
@@ -659,6 +725,14 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     return response.data;
   };
 
+  const getFileParseState = async (args: GetParseStateArgs): Promise<ParseStateSummary> => {
+    const { siteId, documentId, fileId } = args;
+    const response = await httpClient.get<ParseStateSummary>(
+      `/api/due-diligence/${siteId}/documents/${documentId}/files/${fileId}/parse-state/`
+    );
+    return response.data;
+  };
+
   const getAgreementTypes = async (siteId: number): Promise<AgreementTypes> => {
     const response = await httpClient.get<AgreementTypes>(`/api/due-diligence/${siteId}/agreements/`);
     return response.data;
@@ -811,6 +885,7 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     documentStartParsing,
     documentParsingStatus,
     getFileParsingResult,
+    getFileParseState,
     getAgreementTypes,
     getAgreementTerms,
     updateDocumentDetails,
@@ -840,5 +915,9 @@ export type {
   AgreementTerms,
   DiligenceDetailsList,
   DiligenceItem,
-  DiligenceDocument
+  DiligenceDocument,
+  ParseStateSummary,
+  ParseState,
+  ParseNextAction,
+  NoUsableFieldsReason
 };

@@ -1,3 +1,4 @@
+import enum
 from datetime import datetime
 from typing import Optional
 
@@ -137,3 +138,112 @@ class FileIsActual(BaseModel):
 
 class FileUpdateIsActualSuccess(SuccessUpdateSchema):
     message: str = Field(description="Success message", examples=["File is actual status has been updated successfully"])
+
+
+# ---------------------------------------------------------------------------
+# Data Room Parse-State Visibility (Phase 1) — additive, read-only summary.
+#
+# These schemas back the GET .../files/{file_id}/parse-state/ endpoint, which
+# provides an honest, single summary of where a file version sits in the
+# parse → review → accept/override → promote lifecycle. They DO NOT replace the
+# existing detailed FileParsingStatuses; they only add a higher-level summary so
+# the UI can stop rendering silently-empty documents. Computing this summary
+# performs zero writes and never mutates parsed/accepted values or facts.
+# ---------------------------------------------------------------------------
+
+
+class ParseState(str, enum.Enum):
+    """Most-advanced-stage-wins summary of a file version's parse lifecycle."""
+
+    not_yet_parsed = "not_yet_parsed"
+    parsing_in_progress = "parsing_in_progress"
+    parse_failed = "parse_failed"
+    parsed_no_usable_fields = "parsed_no_usable_fields"
+    parsed_awaiting_review = "parsed_awaiting_review"
+    accepted_or_overridden = "accepted_or_overridden"
+    promoted = "promoted"
+
+
+class NoUsableFieldsReason(str, enum.Enum):
+    """Why a completed parse produced nothing reviewable (set only for
+    parse_state == parsed_no_usable_fields)."""
+
+    no_schema_fields = "no_schema_fields"
+    no_fields_found = "no_fields_found"
+    fields_did_not_map = "fields_did_not_map"
+    generic_contractual_schema = "generic_contractual_schema"
+
+
+class ParseNextAction(str, enum.Enum):
+    """A hint for the single most useful next user action. The frontend renders
+    the actual control/copy; this only conveys intent."""
+
+    parse_document = "parse_document"
+    wait_for_parse = "wait_for_parse"
+    retry_parse = "retry_parse"
+    review_fields = "review_fields"
+    review_or_promote = "review_or_promote"
+    change_document_type = "change_document_type"
+    awaiting_equipment_schema = "awaiting_equipment_schema"
+    none = "none"
+
+
+class SelectedDocumentTypeSchema(BaseModel):
+    key: Optional[str] = Field(None, description="SiteDocumentsEnum member name", examples=["module_specs"])
+    display: Optional[str] = Field(None, description="Human-readable document type", examples=["Module Specs"])
+    is_generic_contractual_stub: bool = Field(
+        False,
+        description="True if this type's active schema is the shared generic contractual 10-field stub (no specialized fields).",
+    )
+    is_equipment_type: bool = Field(
+        False,
+        description="True if this is an equipment datasheet type (module/inverter/transformer/storage/battery/racking specs).",
+    )
+
+
+class ParseStateFileVersionSchema(BaseModel):
+    id: int = Field(examples=[25])
+    is_current_version: bool = Field(examples=[False])
+    is_sole_version: bool = Field(
+        False, description="True if this is the only non-deleted version of its document."
+    )
+    version_display: str = Field(examples=["Version 25"])
+
+
+class ParseStateLatestRunSchema(BaseModel):
+    id: int = Field(examples=[42])
+    status: str = Field(examples=["Completed"])
+    extraction_run_number: Optional[int] = Field(None, examples=[1])
+    created_at: Optional[datetime] = Field(None)
+    start_time: Optional[datetime] = Field(None)
+    end_time: Optional[datetime] = Field(None)
+
+
+class ParseStateSummary(BaseModel):
+    file_id: int = Field(examples=[25])
+    parse_state: ParseState = Field(examples=[ParseState.not_yet_parsed])
+    selected_document_type: SelectedDocumentTypeSchema
+    file_version: ParseStateFileVersionSchema
+    last_parse_attempt_at: Optional[datetime] = Field(
+        None, description="Timestamp of the most recent parse run attempt, if any."
+    )
+    latest_run: Optional[ParseStateLatestRunSchema] = Field(None)
+    reviewable_field_count: int = Field(
+        0, description="Count of latest-completed-run fields that map to the active schema and carry a value."
+    )
+    accepted_overridden_count: int = Field(
+        0, description="Count of this version's accepted/overridden document keys."
+    )
+    promoted_count: int = Field(
+        0, description="Count of active project facts promoted from this file version."
+    )
+    no_usable_fields_reason: Optional[NoUsableFieldsReason] = Field(None)
+    next_action: ParseNextAction = Field(examples=[ParseNextAction.parse_document])
+    active_reprocess_in_progress: bool = Field(
+        False,
+        description="True when durable data exists but a newer parse run is queued/processing; the durable state is preserved (not regressed).",
+    )
+    warnings: list[str] = Field(
+        default_factory=list,
+        description="Stable warning codes (e.g. not_current_version, sole_non_current_version, no_equipment_extraction_schema) the UI maps to copy.",
+    )

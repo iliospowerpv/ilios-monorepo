@@ -107,7 +107,11 @@ export type {
   AgreementTerms,
   DiligenceDetailsList,
   DiligenceItem,
-  DiligenceDocument
+  DiligenceDocument,
+  ParseStateSummary,
+  ParseState,
+  ParseNextAction,
+  NoUsableFieldsReason
 } from './due-diligence';
 
 export type { CompanySite, CompanySites, CompanyAttributes, ContractorCompany } from './companies';

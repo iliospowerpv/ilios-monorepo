@@ -85,6 +85,15 @@ export interface ReconciliationRow {
   required_for_baseline: boolean;
 
   warnings: (ReconciliationWarning | string)[];
+
+  // Additive, read-only parse-state indicators for the source document version.
+  // Null when the row has no source file or the signal does not apply. These are
+  // purely informational and never drive status/blocking/needs_review/baseline.
+  source_document_uploaded_not_parsed: boolean | null;
+  parse_failed: boolean | null;
+  parsed_no_usable_fields: boolean | null;
+  source_document_not_current_version: boolean | null;
+  source_document_type_lacks_operational_schema: boolean | null;
 }
 
 export interface ReconciliationReadiness {

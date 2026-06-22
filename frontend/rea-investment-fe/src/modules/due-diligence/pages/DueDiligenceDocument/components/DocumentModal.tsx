@@ -61,6 +61,7 @@ import {
   ParsingMetadata,
   ParsingProgressIndicator
 } from '../../../../../components/common/ParsingStatus';
+import ParseStatusCard from './ParseStatusCard';
 import PDFViewer from './PDFViewer';
 
 dayjs.extend(utc);
@@ -460,6 +461,7 @@ const DocumentModal: React.FC<DocumentModal> = props => {
       setCurrentCorrelationId(response.correlation_id);
       notify(`Parsing started. This may take a few minutes.`);
       setIsProcessing(true);
+      queryClient.invalidateQueries({ queryKey: ['parse-state', { siteId, documentId, fileId }] });
     },
     onError: () => {
       notify('Something went wrong, try again later.');
@@ -474,6 +476,47 @@ const DocumentModal: React.FC<DocumentModal> = props => {
     enabled: open && fileId !== -1,
     refetchInterval: isProcessing ? 5000 : false
   });
+
+  // Honest, read-only parse-state summary for this file version. Refreshes while a
+  // parse is in flight so the card reflects in_progress → done transitions live.
+  const {
+    data: parseState,
+    isLoading: isParseStateLoading,
+    isError: isParseStateError
+  } = useQuery({
+    queryFn: () => ApiClient.dueDiligence.getFileParseState({ siteId, documentId, fileId }),
+    queryKey: ['parse-state', { siteId, documentId, fileId }],
+    enabled: open && fileId !== -1,
+    refetchInterval: isProcessing ? 5000 : false,
+    retry: false as const
+  });
+
+  // Scope C: mark this version as the current ("actual") version. Reuses the
+  // existing set-current endpoint — never auto-applied; the user clicks the action
+  // surfaced by the parse-state card's sole/non-current warning.
+  const { mutateAsync: setCurrentVersion, isPending: isSettingCurrent } = useMutation({
+    mutationFn: () =>
+      ApiClient.dueDiligence.updateIsActualFile({
+        siteId,
+        documentId,
+        fileId,
+        attributes: { is_actual: true }
+      }),
+    onSuccess: () => {
+      notify('Marked as the current version.');
+      queryClient.invalidateQueries({ queryKey: ['files', { siteId, documentId }] });
+      queryClient.invalidateQueries({ queryKey: ['parse-state', { siteId, documentId, fileId }] });
+    },
+    onError: () => {
+      notify('Could not mark this version as current. Try again later.');
+    }
+  });
+
+  const handleSetCurrentVersion = useCallback(() => {
+    if (fileId !== -1) {
+      setCurrentVersion();
+    }
+  }, [fileId, setCurrentVersion]);
 
   const handleStartParsing = useCallback(
     async (fileIdToProcess: number, forceReprocess = false) => {
@@ -537,6 +580,7 @@ const DocumentModal: React.FC<DocumentModal> = props => {
       // Accepting values creates candidate facts; refresh promotion eligibility
       // so the Data Room Promote button reflects the new candidates immediately.
       queryClient.invalidateQueries({ queryKey: ['site', 'assumptions', 'candidates', { siteId, fileId }] });
+      queryClient.invalidateQueries({ queryKey: ['parse-state', { siteId, documentId, fileId }] });
       setShowAcceptDialog(false);
     },
     onError: (error: AxiosError<{ detail?: string }>) => {
@@ -587,6 +631,7 @@ const DocumentModal: React.FC<DocumentModal> = props => {
       if (isProcessing) {
         notify('Processing completed');
         queryClient.invalidateQueries({ queryKey: ['document-terms'] });
+        queryClient.invalidateQueries({ queryKey: ['parse-state', { siteId, documentId, fileId }] });
       }
       setIsProcessing(false);
     } else if (status === 'processing' || status === 'queued') {
@@ -934,6 +979,19 @@ const DocumentModal: React.FC<DocumentModal> = props => {
                             position: 'relative'
                           }}
                         >
+                          {fileId !== -1 && (
+                            <ParseStatusCard
+                              summary={parseState}
+                              isLoading={isParseStateLoading}
+                              isError={isParseStateError}
+                              onParse={() => handleStartParsing(fileId, false)}
+                              onRetry={handleReprocess}
+                              onSetCurrent={handleSetCurrentVersion}
+                              isParsing={isStartingParse || isProcessing}
+                              isSettingCurrent={isSettingCurrent}
+                              canSetCurrent={canPromote}
+                            />
+                          )}
                           {(isProcessing ||
                             isStartingParse ||
                             parsingStatus === 'queued' ||

@@ -316,6 +316,106 @@ def test_h3_active_fact_no_baseline(db_session, site, site_id):
 
 
 # ===========================================================================
+# PARSE-STATE INDICATORS — additive, read-only signals on each row.
+#
+# These guard that the parse-state indicator fields are surfaced ONLY for rows
+# that carry a source file, are None otherwise, and NEVER perturb the status
+# ladder / blocking level / required action / values (parity with H3). They are
+# derived from build_parse_state_summary, so derivation itself is covered in
+# parse_state_service_test.py — here we only assert the reconciliation wiring.
+# ===========================================================================
+def test_parse_indicators_not_parsed_and_none_for_no_source(db_session, site, site_id):
+    # A candidate fact (extracted, not accepted/promoted) sourced to a freshly
+    # uploaded file that has no parse runs: the row carries the source file, and
+    # its parse-state is honestly "not yet parsed".
+    doc = _add_document(db_session, site_id)
+    f = _add_file(db_session, doc.id)  # fresh file: not is_actual -> not current, no runs
+    _add_fact(
+        db_session,
+        site_id,
+        "module_wattage",
+        400.0,
+        status=FactStatus.candidate.value,
+        source_file_id=f.id,
+    )
+
+    resp = svc.build_site_reconciliation(db_session, site)
+    sourced = _row(resp, "module_wattage")
+
+    # Core ladder/values are computed exactly as in the no-indicator world
+    # (indicators never touch status/values) — matches the H2 candidate case.
+    assert sourced.status == "candidate_only"
+    assert sourced.accepted_value == 400.0
+
+    # Indicators populated for the source-file row.
+    assert sourced.source_file_id == f.id
+    assert sourced.source_document_uploaded_not_parsed is True
+    assert sourced.parse_failed is False
+    assert sourced.parsed_no_usable_fields is False
+    assert sourced.source_document_not_current_version is True  # file not marked actual
+    assert isinstance(sourced.source_document_type_lacks_operational_schema, bool)
+
+    # A row with no source file leaves every indicator None (additive, not False).
+    no_source = _row(resp, "module_quantity")
+    assert no_source.source_file_id is None
+    assert no_source.source_document_uploaded_not_parsed is None
+    assert no_source.parse_failed is None
+    assert no_source.parsed_no_usable_fields is None
+    assert no_source.source_document_not_current_version is None
+    assert no_source.source_document_type_lacks_operational_schema is None
+
+
+def test_parse_indicators_reflect_failed_parse(db_session, site, site_id):
+    doc = _add_document(db_session, site_id)
+    f = _add_file(db_session, doc.id)
+    _add_run(db_session, f.id, None, status=FileParsingStatuses.processing_failed)
+    _add_fact(
+        db_session,
+        site_id,
+        "module_wattage",
+        400.0,
+        status=FactStatus.candidate.value,
+        source_file_id=f.id,
+    )
+
+    resp = svc.build_site_reconciliation(db_session, site)
+    row = _row(resp, "module_wattage")
+
+    # Core ladder unchanged; only the parse-state indicators reflect the failure.
+    assert row.status == "candidate_only"
+    assert row.parse_failed is True
+    assert row.source_document_uploaded_not_parsed is False
+    assert row.parsed_no_usable_fields is False
+
+
+def test_parse_indicators_none_for_out_of_scope_source_file(db_session, site, site_id):
+    # A fact whose source_file_id points at a file outside this site's live
+    # document set (here: a file under an ARCHIVED document, which is excluded
+    # from file_to_document) must NOT surface any parse-state indicators — the
+    # row still carries the id, but every indicator stays None.
+    archived_doc = _add_document(db_session, site_id, is_archived=True)
+    f = _add_file(db_session, archived_doc.id)
+    _add_fact(
+        db_session,
+        site_id,
+        "module_wattage",
+        400.0,
+        status=FactStatus.candidate.value,
+        source_file_id=f.id,
+    )
+
+    resp = svc.build_site_reconciliation(db_session, site)
+    row = _row(resp, "module_wattage")
+
+    assert row.source_file_id == f.id  # the navigation handle is still surfaced
+    assert row.source_document_uploaded_not_parsed is None
+    assert row.parse_failed is None
+    assert row.parsed_no_usable_fields is None
+    assert row.source_document_not_current_version is None
+    assert row.source_document_type_lacks_operational_schema is None
+
+
+# ===========================================================================
 # H4 — header value present on DRAFT weather-adjusted baseline only
 # ===========================================================================
 def test_h4_in_draft_baseline_header(db_session, company_id, site, site_id):
