@@ -293,6 +293,77 @@ class TestInAppParsingServiceLLMCall:
             assert call_kwargs["model"] == "gpt-5.2"
 
 
+class TestModelSelectionGuard:
+    """Protects the call_llm model-selection fallback guard.
+
+    A stale extraction template can point at a model the Replit AI gateway no
+    longer serves (e.g. ``claude-*`` names, or older ``gpt-4*`` variants). That
+    previously failed every parse run with a 400 UNSUPPORTED_MODEL error. The
+    guard in ``call_llm`` must remap any unsupported/legacy name to the supported
+    default while leaving already-supported names (``gpt-5*``, ``gpt-4.1*``)
+    untouched. These tests monkeypatch the OpenAI client so they never hit the
+    real gateway and stay deterministic.
+    """
+
+    DEFAULT_MODEL = "gpt-5.2"
+
+    def _make_service(self):
+        """Build a service whose OpenAI client records the model it was called with."""
+        service = InAppParsingService(MagicMock())
+
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = '{"ok": true}'
+
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.return_value = mock_response
+        service._openai_client = mock_client
+        return service, mock_client
+
+    def _model_used(self, model_name):
+        service, mock_client = self._make_service()
+        service.call_llm("system prompt", "user prompt", model_name=model_name)
+        return mock_client.chat.completions.create.call_args[1]["model"]
+
+    @pytest.mark.parametrize(
+        "legacy_model",
+        [
+            "claude-3-5-sonnet-20241022",
+            "claude-3-opus",
+            "claude-sonnet-4-20250514",
+            "gpt-4",
+            "gpt-4o",
+            "gpt-4o-mini",
+            "gpt-4-turbo",
+            "gpt-3.5-turbo",
+            "text-davinci-003",
+            "some-unknown-model",
+        ],
+    )
+    def test_unsupported_models_fall_back_to_default(self, legacy_model):
+        """Any unsupported/legacy model name is remapped to the supported default."""
+        assert self._model_used(legacy_model) == self.DEFAULT_MODEL
+
+    @pytest.mark.parametrize(
+        "supported_model",
+        [
+            "gpt-5",
+            "gpt-5.2",
+            "gpt-5-mini",
+            "gpt-4.1",
+            "gpt-4.1-mini",
+        ],
+    )
+    def test_supported_models_pass_through_unchanged(self, supported_model):
+        """Already-supported model names are sent to the gateway unchanged."""
+        assert self._model_used(supported_model) == supported_model
+
+    @pytest.mark.parametrize("empty_model", ["", None])
+    def test_empty_model_uses_default(self, empty_model):
+        """A missing/empty configured model resolves to the supported default."""
+        assert self._model_used(empty_model) == self.DEFAULT_MODEL
+
+
 class TestDownloadFileBytes:
     """Tests for file download from storage."""
 
