@@ -1,0 +1,98 @@
+Add a mandatory Device Inventory Reconciliation Indicator.
+
+The Design-to-Telemetry Device Onboarding workflow must include a visible site-level reconciliation status that compares approved documented inventory against telemetry-discovered inventory.
+
+This must not be limited to a generic “unmapped devices” count.
+
+At the site level, expose one clear status:
+
+* Matched
+* Partially matched
+* Needs reconciliation
+* Documented inventory incomplete
+* Telemetry not connected
+* Telemetry connected, no devices discovered
+* Telemetry inventory incomplete or stale
+* Mapping complete with acknowledged exceptions
+
+The status must be visible from:
+
+* telemetry onboarding / mapping workspace;
+* Project Hub / site overview where appropriate;
+* Reconciliation;
+* O&M device context where appropriate.
+
+For every mismatch, show the exact category and affected equipment:
+
+1. Quantity mismatch
+
+   * documented inverter/module/device quantity versus telemetry-discovered quantity
+
+2. Missing telemetry counterpart
+
+   * approved documented equipment item has no mapped provider device
+
+3. Undocumented telemetry device
+
+   * provider-discovered device has no approved documented inventory counterpart
+
+4. Model or capacity mismatch
+
+   * documented manufacturer/model/rating differs from observed or mapped device metadata
+
+5. Mapping cardinality exception
+
+   * one documented asset maps to multiple provider devices;
+   * one provider device represents multiple documented devices;
+   * aggregate site meter intentionally represents a fleet
+
+6. Device-role mismatch
+
+   * provider device classified as inverter, meter, weather sensor, gateway, logger, UPS, or unknown does not match its documented operational role
+
+7. Weather/expected dependency mismatch
+
+   * required irradiance or cell-temperature telemetry is absent, unmapped, or has unknown semantics
+
+8. Telemetry freshness mismatch
+
+   * mapped provider device is no longer reporting or has materially changed identity/capability
+
+9. Design/as-built version mismatch
+
+   * a newer approved design/as-built inventory supersedes the version used for existing mappings
+
+Each mismatch record must include:
+
+* documented inventory item;
+* source document/version;
+* approved versus planned/installed/unknown status;
+* provider device and external identifier where applicable;
+* current Ilios mapping;
+* mismatch type;
+* evidence;
+* severity;
+* impact on O&M;
+* impact on baseline/expected;
+* impact on reporting;
+* recommended next action;
+* task creation context.
+
+Required behavior:
+
+* Never auto-correct a mismatch.
+* Never auto-map based on similarity alone.
+* Never treat an aggregate site meter as proof that every documented inverter is individually mapped.
+* Allow acknowledged exceptions, but require a reason, reviewer, timestamp, and audit trail.
+* Acknowledged exception does not erase the underlying mismatch; it changes the workflow state to “mapping complete with acknowledged exceptions.”
+
+Define a visible mismatch summary such as:
+
+Documented equipment: 7 inverters
+Telemetry-discovered production devices: 6
+Mapped: 5
+Unmapped documented: 2
+Undocumented telemetry devices: 1
+Status: Needs reconciliation
+
+This summary must remain truthful when telemetry is absent, provider sync fails, or documented inventory is incomplete.

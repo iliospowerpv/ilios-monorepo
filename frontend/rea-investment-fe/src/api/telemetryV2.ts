@@ -14,6 +14,7 @@ import type {
   ExpectedBaselineResponse,
   ExternalDeviceListResponse,
   ExternalSiteListResponse,
+  InventoryReconciliationResponse,
   LicenseCreatePayload,
   LicensedProvider,
   LicensedProviderList,
@@ -293,6 +294,23 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     return data;
   };
 
+  /**
+   * Read-only device inventory reconciliation indicator for a site. Compares the
+   * approved documented inventory (active project_facts) against the
+   * telemetry-discovered/observed inventory + reviewer-confirmed mappings and
+   * returns a deterministic headline (G1->G8 ladder), per-class counts, mismatch
+   * findings, and recommended next actions. Returns HTTP 200 for every valid
+   * reconciliation state; never mutates anything.
+   */
+  const getSiteInventoryReconciliation = async (
+    siteId: number
+  ): Promise<InventoryReconciliationResponse> => {
+    const { data } = await httpClient.get<InventoryReconciliationResponse>(
+      `${V2}/sites/${siteId}/inventory-reconciliation`
+    );
+    return data;
+  };
+
   /** List per-site scheduler status across a company's mapped telemetry sites. */
   const getCompanySchedulerStatus = async (companyId: number): Promise<CompanySchedulerStatusList> => {
     const { data } = await httpClient.get<CompanySchedulerStatusList>(`${V2}/companies/${companyId}/scheduler/status`);
@@ -468,6 +486,7 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     updateSiteScheduler,
     getCompanySchedulerStatus,
     getSiteEligibilityDiagnostics,
+    getSiteInventoryReconciliation,
     backfillSiteReadings,
     getReadinessFromFacts,
     createDraftFromFacts,

@@ -73,6 +73,7 @@ from app.models.telemetry_expected import (
 )
 from app.static import PermissionsActions
 from app.schema.device_eligibility import DeviceEligibilityDiagnosticsResponse
+from app.schema.inventory_reconciliation import InventoryReconciliationResponse
 from app.schema.telemetry_v2 import (
     BaselineActivateRequest,
     BaselineDiffResponse,
@@ -156,6 +157,9 @@ from app.services.telemetry import baseline_from_facts_service
 from app.services.telemetry import baseline_points_service
 from app.services.telemetry.device_eligibility_diagnostics_service import (
     compute_site_eligibility_diagnostics,
+)
+from app.services.telemetry.device_inventory_reconciliation_service import (
+    build_site_inventory_reconciliation,
 )
 from app.models.device import Device
 from app.services.telemetry.ingestion_service import (
@@ -1573,6 +1577,35 @@ def get_site_eligibility_diagnostics(
     """
     _enforce_company_visibility(current_user, site.company_id)
     return compute_site_eligibility_diagnostics(db, site=site)
+
+
+@telemetry_v2_router.get(
+    "/v2/sites/{site_id}/inventory-reconciliation",
+    response_model=InventoryReconciliationResponse,
+    summary="Read-only device inventory reconciliation indicator for a site",
+    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.view)))],
+)
+def get_site_inventory_reconciliation(
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> InventoryReconciliationResponse:
+    """Disclose the site's device-inventory reconciliation position (read-only).
+
+    Compares the approved documented inventory (active/promoted ``project_facts``)
+    against the telemetry-discovered/observed inventory and the reviewer-confirmed
+    device mappings, and returns a deterministic headline (the G1->G8 ladder),
+    per-equipment-class counts, mismatch findings, secondary flags, and recommended
+    next actions.
+
+    Strictly READ-ONLY: it performs NO writes/commits and never maps, creates,
+    acknowledges, converts, promotes, or deletes anything. It keeps
+    ``can_drive_expected`` frozen, never compares modules to per-device telemetry
+    counts, and returns HTTP 200 for every valid reconciliation state (4xx is
+    reserved for auth / invalid-site / malformed-request errors).
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+    return build_site_inventory_reconciliation(db, site)
 
 
 @telemetry_v2_router.post(

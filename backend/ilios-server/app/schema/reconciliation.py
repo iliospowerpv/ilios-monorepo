@@ -208,17 +208,39 @@ class ReconciliationReadiness(BaseModel):
 
 
 class TelemetryReality(BaseModel):
-    """Placeholder for telemetry-discovered deployed reality.
+    """Telemetry-discovered deployed reality (headline summary).
 
-    Device-level reconciliation is intentionally out of scope for this sprint;
-    this block reserves the shape without making any false claims.
+    The detailed device-inventory reconciliation lives at its own read-only
+    endpoint (``/api/telemetry/v2/sites/{id}/inventory-reconciliation``); this
+    block carries the compact headline so the DD reconciliation view and the
+    telemetry view can never disagree. The original ``available`` / ``note`` /
+    ``last_reading_at`` fields are retained (additive change only); the new summary
+    fields are all optional and default to ``None`` so any caller that cannot
+    compute them stays honest.
     """
 
-    available: bool = Field(False, description="Always False this sprint.")
+    available: bool = Field(
+        False,
+        description=(
+            "True once telemetry is connected for the site (i.e. an inventory "
+            "headline beyond 'telemetry not connected' is available)."
+        ),
+    )
     note: str = Field(
         "Telemetry-discovered device/capacity reconciliation is not implemented yet."
     )
     last_reading_at: Optional[datetime] = None
+
+    # --- Additive inventory-reconciliation headline (all optional) ----------
+    status: Optional[str] = Field(
+        None, description="Inventory reconciliation headline (G1->G8 ladder value)."
+    )
+    status_label: Optional[str] = None
+    status_explanation: Optional[str] = None
+    has_blocking_mismatch: Optional[bool] = None
+    weather_dependency_unsatisfied: Optional[bool] = None
+    open_actionable_mismatch_count: Optional[int] = None
+    informational_mismatch_count: Optional[int] = None
 
 
 class SiteReconciliationResponse(BaseModel):

@@ -42,6 +42,7 @@ from app.models.telemetry_expected import (
     TelemetryBaselineType,
     TelemetryExpectedBaseline,
 )
+from app.schema.inventory_reconciliation import InventoryReconciliationStatus
 from app.schema.reconciliation import (
     ReconciliationReadiness,
     ReconciliationRow,
@@ -54,6 +55,9 @@ from app.services.due_diligence.parse_state_service import (
 )
 from app.services.telemetry import baseline_from_facts_service as facts_bridge
 from app.services.telemetry import baseline_points_service as points_svc
+from app.services.telemetry.device_inventory_reconciliation_service import (
+    build_inventory_reconciliation_summary,
+)
 from app.static.reconciliation_catalog import (
     ABS_COMPARE_FIELDS,
     HEADER_COLUMN,
@@ -1096,7 +1100,38 @@ def build_site_reconciliation(db: Session, site) -> SiteReconciliationResponse:
         generated_at=datetime.utcnow(),
         rows=rows,
         readiness=readiness,
-        telemetry_reality=TelemetryReality(),
+        telemetry_reality=_build_telemetry_reality(db, site),
         help_targets=HELP_TARGETS,
         schema_expansion_recommended=schema_expansion,
+    )
+
+
+def _build_telemetry_reality(db: Session, site) -> TelemetryReality:
+    """Project the read-only inventory-reconciliation headline into the DD block.
+
+    Delegates to the same zero-write inventory service the telemetry endpoint uses,
+    so the two views can never disagree. Any failure degrades to the honest neutral
+    placeholder rather than breaking the DD reconciliation response.
+    """
+    try:
+        summary = build_inventory_reconciliation_summary(db, site)
+    except Exception:  # pragma: no cover - defensive: DD recon must never 500 here
+        logger.warning(
+            "reconciliation: inventory-reconciliation summary failed for site %s",
+            getattr(site, "id", None),
+            exc_info=True,
+        )
+        return TelemetryReality()
+
+    available = summary.status != InventoryReconciliationStatus.telemetry_not_connected
+    return TelemetryReality(
+        available=available,
+        note=summary.status_explanation,
+        status=summary.status.value,
+        status_label=summary.status_label,
+        status_explanation=summary.status_explanation,
+        has_blocking_mismatch=summary.has_blocking_mismatch,
+        weather_dependency_unsatisfied=summary.weather_dependency_unsatisfied,
+        open_actionable_mismatch_count=summary.open_actionable_mismatch_count,
+        informational_mismatch_count=summary.informational_mismatch_count,
     )

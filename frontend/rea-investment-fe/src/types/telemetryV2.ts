@@ -539,6 +539,176 @@ export interface DeviceEligibilityDiagnosticsResponse {
 }
 
 // ---------------------------------------------------------------------------
+// Device Inventory Reconciliation (read-only, Phase A)
+// ---------------------------------------------------------------------------
+
+/**
+ * Site-level reconciliation headline — the first G1->G8 gate that matches.
+ * Left open (`| string`) so backend ladder additions never break the build.
+ */
+export type InventoryReconciliationStatus =
+  | 'telemetry_not_connected'
+  | 'documented_inventory_incomplete'
+  | 'telemetry_connected_no_devices'
+  | 'telemetry_inventory_incomplete_or_stale'
+  | 'needs_reconciliation'
+  | 'mapping_complete_with_acknowledged_exceptions'
+  | 'partially_matched'
+  | 'matched'
+  | string;
+
+/** How (or whether) a mismatch can be acknowledged away. */
+export type InventoryAckPolicy =
+  | 'not_acknowledgeable_blocking'
+  | 'acknowledgeable_with_required_followup'
+  | 'acknowledgeable_non_blocking'
+  | 'informational'
+  | string;
+
+/** Reconciliation equipment class. Modules are counted, never device-compared. */
+export type EquipmentClass =
+  | 'inverter'
+  | 'module'
+  | 'production_meter'
+  | 'weather_sensor'
+  | 'gateway'
+  | 'comms'
+  | 'virtual'
+  | 'other'
+  | string;
+
+/** The nine mismatch categories of the severity x policy matrix. */
+export type MismatchCategory =
+  | 'quantity_mismatch'
+  | 'missing_telemetry_counterpart'
+  | 'undocumented_telemetry_device'
+  | 'model_capacity_mismatch'
+  | 'cardinality_exception'
+  | 'device_role_mismatch'
+  | 'weather_expected_dependency'
+  | 'telemetry_freshness'
+  | 'design_as_built_version'
+  | string;
+
+/** NON-definitive assessment of where a device row likely originated. */
+export type ReconciliationInference =
+  | 'telemetry_derived'
+  | 'design_derived'
+  | 'as_built_commissioning_derived'
+  | 'manually_created'
+  | 'legacy_unknown'
+  | string;
+
+/** Presence of the two anchor documented-inventory facts. */
+export type DocumentedInventoryState = 'complete' | 'partial' | 'missing' | string;
+
+/** How device-level reconciliation coverage is expressed for the site. */
+export type CoverageMode =
+  | 'device_level'
+  | 'approved_aggregate'
+  | 'undeclared_aggregate'
+  | 'none'
+  | string;
+
+/** Status of the site's weather dependency relative to an active WA expected. */
+export type WeatherDependencySubtype =
+  | 'not_applicable'
+  | 'satisfied'
+  | 'unknown_semantics'
+  | 'source_absent'
+  | string;
+
+/** Persisted device/mapping facts, read verbatim (never inferred). */
+export interface RecordedProvenance {
+  has_telemetry_mapping: boolean;
+  source_provider: string | null;
+  external_device_type: string | null;
+  external_device_id: string | null;
+}
+
+/** Per-equipment-class count summary. */
+export interface InventoryClassCount {
+  equipment_class: EquipmentClass;
+  documented_count: number | null;
+  ilios_row_count: number;
+  discovered_count: number | null;
+  mapped_count: number;
+  unmapped_documented_count: number;
+  undocumented_telemetry_count: number;
+  reconciliation_basis: string;
+  note: string | null;
+}
+
+/** One reconciliation finding with its acknowledgement policy + provenance. */
+export interface InventoryMismatch {
+  mismatch_signature: string;
+  category: MismatchCategory;
+  equipment_class: EquipmentClass | null;
+  acknowledgement_policy: InventoryAckPolicy;
+  blocking_level: DiagnosticBlockingLevel;
+  title: string;
+  detail: string;
+  recommended_action: string | null;
+  next_step_target: string | null;
+  device_id: number | null;
+  device_name: string | null;
+  recorded_provenance: RecordedProvenance | null;
+  reconciliation_inference: ReconciliationInference | null;
+  documented_value: string | null;
+  observed_value: string | null;
+  weather_subtype: WeatherDependencySubtype | null;
+  coverage_mode: CoverageMode | null;
+  active_fact_ids: number[];
+  candidate_fact_ids: number[];
+  external_device_id: string | null;
+  is_acknowledged: boolean;
+}
+
+/** A recommended, governed next step. Phase A never performs it. */
+export interface InventoryNextAction {
+  title: string;
+  detail: string;
+  blocking_level: DiagnosticBlockingLevel;
+  target: string | null;
+  related_mismatch_signatures: string[];
+}
+
+/**
+ * Full site-level inventory reconciliation payload (read-only). Strictly
+ * informational: it never maps, creates, acknowledges, converts, or promotes,
+ * and it returns HTTP 200 for every valid reconciliation state.
+ */
+export interface InventoryReconciliationResponse {
+  site_id: number;
+  generated_at: string;
+  status: InventoryReconciliationStatus;
+  status_label: string;
+  status_explanation: string;
+  telemetry_connected: boolean;
+  site_mapped: boolean;
+  documented_inventory_state: DocumentedInventoryState;
+  documented_inventory_incomplete: boolean;
+  discovery_stale: boolean;
+  discovery_last_synced_at: string | null;
+  has_blocking_mismatch: boolean;
+  weather_dependency_unsatisfied: boolean;
+  weather_dependency_subtype: WeatherDependencySubtype;
+  active_expected_baseline_id: number | null;
+  active_expected_baseline_requires_weather: boolean;
+  coverage_mode: CoverageMode;
+  total_ilios_devices: number;
+  total_discovered_devices: number;
+  class_counts: InventoryClassCount[];
+  mismatch_category_counts: Record<string, number>;
+  open_actionable_mismatch_count: number;
+  informational_mismatch_count: number;
+  acknowledged_exception_count: number;
+  mismatches: InventoryMismatch[];
+  next_actions: InventoryNextAction[];
+  notes: string[];
+}
+
+// ---------------------------------------------------------------------------
 // DD V2 — Baseline Readiness from promoted project_facts (+ reviewer inputs)
 // ---------------------------------------------------------------------------
 

@@ -21,6 +21,7 @@ import { useAuth } from '../../../../../../contexts/auth/auth';
 import { useTelemetryAdminPermission } from '../../../../../../hooks/useTelemetryAdminPermission';
 import ReadinessSummary from './components/ReadinessSummary';
 import ReconciliationTable from './components/ReconciliationTable';
+import InventoryReconciliationPanel from './components/InventoryReconciliationPanel';
 import { CATEGORY_ORDER, STATUS_META, categoryLabel, statusMeta, formatDateTime } from './utils';
 
 const reconciliationQuery = (siteId: number, enabled: boolean) => ({
@@ -263,12 +264,7 @@ export const Reconciliation: React.FC<AssetManagementSiteDetailsTabProps> = ({ s
         </>
       )}
 
-      <Alert severity="info" sx={{ mt: 3 }} data-testid="reconciliation-telemetry-note">
-        {data.telemetry_reality.note}
-        {data.telemetry_reality.last_reading_at
-          ? ` Last reading: ${formatDateTime(data.telemetry_reality.last_reading_at)}.`
-          : ''}
-      </Alert>
+      {isValidId ? <InventoryReconciliationPanel siteId={siteId} /> : null}
     </Box>
   );
 };
