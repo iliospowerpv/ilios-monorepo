@@ -1,6 +1,9 @@
 # Weather Device Semantics Review, Eligibility, and Governed Declaration — Design / Audit Sprint
 
-**Status:** Design & audit only. **No production code changes in this sprint.**
+**Status:** Audit **ACCEPTED / COMPLETE** (2026-06-22). Design & audit only — no production
+code changes were made in this sprint. Implementation now proceeds separately under the
+scoped **WS.1–WS.4** plan; **WS.5** (expected/baseline integration) remains explicitly
+deferred and gated for a later approval.
 **Scope:** Define the governed workflow that lets an authorized reviewer *declare and
 maintain* weather‑device measurement semantics required for the weather‑adjusted
 expected model — auditably, distinctly from provider/source metadata, and without

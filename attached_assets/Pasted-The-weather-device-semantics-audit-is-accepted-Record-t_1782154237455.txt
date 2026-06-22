@@ -1,0 +1,61 @@
+The weather-device semantics audit is accepted. Record the audit complete.
+
+Proceed next with a scoped implementation plan for WS.1 through WS.4 only:
+
+* WS.1 additive migration/enums
+* WS.2 governed declaration service and endpoints
+* WS.3 upstream-change / stale-re-review detection
+* WS.4 reviewer UI and Reconciliation visibility
+
+Do not begin WS.5 expected/baseline integration. That remains explicitly gated for a later approval.
+
+Required policy refinement:
+
+A weather declaration may clear a blocking weather dependency only when all of the following are true:
+
+1. The declaration is physics-usable for the active weather-adjusted model.
+2. The required metric semantics are complete:
+
+   * irradiance basis is appropriate, such as POA where the model requires POA;
+   * temperature type is appropriate, such as cell temperature where required;
+   * sensor role and coverage are established.
+3. The declaration basis is either:
+
+   * `provider_confirmed`, or
+   * `source_document`.
+4. The declaration is active, current, and not stale/re-review-required.
+5. Calibration/status meets the approved policy for that sensor type.
+
+`reviewer_source_note` and `reviewer_assumption` must remain valid governed records, but they should not automatically clear a production-grade weather dependency or make a weather source physics-usable unless a later policy explicitly authorizes that outcome.
+
+For Site 4 specifically:
+
+* Keep the IMT Reference Cell blocked as `source exists, semantics unknown`.
+* Do not infer POA, cell temperature, or calibration from:
+
+  * provider `functionCode = WS`;
+  * device name;
+  * device category;
+  * the ingestion metric catalog.
+* The reviewer UI should direct the user to attach or reference commissioning documentation, a sensor specification/calibration certificate, provider confirmation, or a documented reviewer source note.
+* If the evidence only supports an assumption, record it distinctly and leave the weather dependency unresolved under the current policy.
+
+Additional WS.1–WS.4 requirements:
+
+* Append-only lineage: never update a prior active declaration in place.
+* A changed device identity, metric identity, provider metadata, mapping, source document version, or declaration basis must mark the prior declaration `needs_re_review`.
+* Reconciliation must distinguish:
+
+  * source exists, semantics unknown;
+  * declaration draft;
+  * declared but not physics-usable;
+  * declared physics-usable;
+  * declaration stale / needs re-review;
+  * weather source missing;
+  * weather source stale;
+  * source coverage incomplete.
+* UI must show declaration basis, evidence, reviewer, timestamp, effective dates, supersession chain, and impact on expected/O&M.
+* No write from ingestion, scheduler, telemetry sync, parser, or device-name heuristics may create or activate a declaration.
+* Do not alter weather mappings, expected calculations, baseline status, O&M actuals, or baseline lifecycle in WS.1–WS.4.
+
+Return the detailed WS.1–WS.4 implementation plan, migration design, permission matrix, Site 4 remediation path, and tests before making production changes.

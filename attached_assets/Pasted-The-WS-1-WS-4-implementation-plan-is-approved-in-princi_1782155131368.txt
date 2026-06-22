@@ -1,0 +1,137 @@
+The WS.1–WS.4 implementation plan is approved in principle, subject to these required refinements before production changes begin.
+
+1. Separate Reconciliation status from expected/baseline behavior
+
+WS.1–WS.4 may update the read-only weather dependency and device-inventory Reconciliation state.
+
+However, even when a qualifying declaration becomes `declared_physics_usable`:
+
+* do not write `expected_weather_provenance`;
+* do not trigger baseline revalidation;
+* do not alter baseline status;
+* do not alter resolver behavior;
+* do not alter O&M expected output;
+* do not claim weather-adjusted expected has been operationally revalidated.
+
+Use precise UI wording:
+
+“Weather semantics declaration is complete and eligible for expected-model integration. Expected-model integration has not yet been applied.”
+
+WS.5 remains the only phase allowed to connect governed declarations to expected/baseline behavior.
+
+2. Append-only enforcement must include a DB-level guard
+
+Keep the ORM-level append-only guard, but add a narrow database-level trigger or equivalent enforcement for governed declaration rows.
+
+It must reject in-place updates to:
+
+* irradiance_plane;
+* temperature_type;
+* calibration_status;
+* calibrated_at;
+* calibration_reference;
+* declaration_basis;
+* evidence references;
+* reviewer note;
+* sensor role/model;
+* effective_from/effective_to;
+* provider metadata snapshot;
+* upstream identity fingerprint;
+* any semantic value used by the eligibility verdict.
+
+Permitted updates to a prior row are limited to:
+
+* declaration_status transition to `superseded`;
+* superseded_by_mapping_id;
+* needs_re_review;
+* re_review_reason;
+* audit timestamps required by those actions.
+
+Any semantic correction must create a new row and explicit supersession relationship.
+
+3. Declaration lifecycle must be explicit
+
+Do not default a create request directly to `active`.
+
+Use:
+
+draft
+→ validation review
+→ active
+→ superseded or needs_re_review
+
+Requirements:
+
+* A create request produces `draft` unless the caller explicitly requests activation.
+* Activation requires the same telemetry-admin plus site/company-admin permission.
+* Activation runs the full policy/verdict validation.
+* An invalid or incomplete declaration may remain draft/recorded-only but cannot become physics-usable.
+* A superseding declaration must not supersede the prior active declaration until the new declaration has passed activation validation.
+* Every transition receives a separate immutable ledger event:
+
+  * declare_draft
+  * activate
+  * supersede
+  * needs_re_review
+
+4. Calibration policy must be defined before blocker-clearing behavior exists
+
+Implement one explicit, testable policy function before allowing any declaration to clear the production-grade dependency.
+
+For an irradiance/reference-cell declaration to become `expected_model_eligible`, require at minimum:
+
+* declaration basis is `provider_confirmed` or `source_document`;
+* irradiance plane is `poa`;
+* sensor role is explicitly declared;
+* calibration status is `calibrated`;
+* calibration evidence/reference is present;
+* calibration date is present;
+* calibration remains within an explicit validity period or the source documentation explicitly states no periodic expiry;
+* effective period covers the required active-model window;
+* declaration is active and not `needs_re_review`.
+
+For temperature semantics, define separately whether calibration is mandatory for:
+
+* cell temperature;
+* module-back temperature;
+* modeled-cell temperature.
+
+Do not use a generic “calibrated” label without sensor-type-specific policy.
+
+5. Site 4 remediation wording
+
+For Site 4, the reviewer workflow should be:
+
+* create draft declaration for `irradiance_wm2`;
+* attach source-document or provider-confirmed evidence;
+* explicitly declare POA;
+* add calibration evidence/date/reference;
+* activate after policy validation;
+
+and separately:
+
+* create draft declaration for `cell_temperature_f`;
+* explicitly declare cell/module temperature semantics;
+* attach qualifying evidence;
+* activate after policy validation.
+
+A reviewer assumption or source note remains a valid governed record but stays recorded-only and does not clear the production-grade dependency.
+
+6. WS.3 detector boundary
+
+The stale detector is allowed to write only:
+
+* `needs_re_review = true`;
+* `re_review_reason`;
+* corresponding immutable ledger event.
+
+It must never:
+
+* create a declaration;
+* activate a declaration;
+* supersede a declaration;
+* clear a stale state;
+* modify semantic fields;
+* alter expected/baseline/O&M behavior.
+
+Proceed with the revised WS.1–WS.4 plan after incorporating these changes, and return the updated state-transition diagram, DB enforcement design, calibration-policy matrix, and exact Site 4 declaration workflow before implementation begins.
