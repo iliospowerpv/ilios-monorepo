@@ -101,6 +101,12 @@ export const WeatherDeclareDialog: React.FC<WeatherDeclareDialogProps> = ({
   const [plane, setPlane] = useState<WeatherIrradiancePlane>('unknown');
   const [temperature, setTemperature] = useState<WeatherTemperatureType>('unknown');
   const [calibration, setCalibration] = useState<WeatherCalibrationStatus>('unknown');
+  const [calibratedAt, setCalibratedAt] = useState('');
+  const [calibrationReference, setCalibrationReference] = useState('');
+  const [sensorRole, setSensorRole] = useState('');
+  const [sensorModel, setSensorModel] = useState('');
+  const [effectiveFrom, setEffectiveFrom] = useState('');
+  const [effectiveTo, setEffectiveTo] = useState('');
   const [weatherSourceId, setWeatherSourceId] = useState('');
   const [sourceDocumentId, setSourceDocumentId] = useState('');
   const [sourceFileId, setSourceFileId] = useState('');
@@ -116,6 +122,12 @@ export const WeatherDeclareDialog: React.FC<WeatherDeclareDialogProps> = ({
     setPlane('unknown');
     setTemperature('unknown');
     setCalibration('unknown');
+    setCalibratedAt('');
+    setCalibrationReference('');
+    setSensorRole('');
+    setSensorModel('');
+    setEffectiveFrom('');
+    setEffectiveTo('');
     setWeatherSourceId('');
     setSourceDocumentId('');
     setSourceFileId('');
@@ -135,6 +147,12 @@ export const WeatherDeclareDialog: React.FC<WeatherDeclareDialogProps> = ({
       const n = Number(trimmed);
       return Number.isFinite(n) ? n : undefined;
     };
+    const toIso = (raw: string): string | undefined => {
+      const trimmed = raw.trim();
+      if (!trimmed) return undefined;
+      const d = new Date(trimmed);
+      return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+    };
     return {
       device_id: deviceId,
       metric: metric.trim(),
@@ -142,6 +160,12 @@ export const WeatherDeclareDialog: React.FC<WeatherDeclareDialogProps> = ({
       irradiance_plane: plane,
       temperature_type: temperature,
       calibration_status: calibration,
+      calibrated_at: toIso(calibratedAt) ?? null,
+      calibration_reference: calibrationReference.trim() || null,
+      effective_from: toIso(effectiveFrom) ?? null,
+      effective_to: toIso(effectiveTo) ?? null,
+      sensor_role: sensorRole.trim() || null,
+      sensor_model: sensorModel.trim() || null,
       weather_source_id: parseId(weatherSourceId) ?? null,
       source_document_id: parseId(sourceDocumentId) ?? null,
       source_file_id: parseId(sourceFileId) ?? null,
@@ -173,7 +197,11 @@ export const WeatherDeclareDialog: React.FC<WeatherDeclareDialogProps> = ({
   }, [mutation.isError, mutation.error]);
 
   const metricValid = metric.trim().length > 0 && metric.trim().length <= 64;
-  const canContinue = metricValid;
+  const windowValid =
+    !effectiveFrom.trim() ||
+    !effectiveTo.trim() ||
+    new Date(effectiveTo).getTime() > new Date(effectiveFrom).getTime();
+  const canContinue = metricValid && windowValid;
   const assumptionBlocks = isAssumption && !assumptionConfirmed;
   const canSubmit = canContinue && !assumptionBlocks && !mutation.isPending;
 
@@ -202,7 +230,29 @@ export const WeatherDeclareDialog: React.FC<WeatherDeclareDialogProps> = ({
       <Typography variant="body2" color="text.secondary">
         Calibration
       </Typography>
-      <Typography variant="body2">{CALIBRATION_OPTIONS.find(o => o.value === calibration)?.label}</Typography>
+      <Typography variant="body2">
+        {CALIBRATION_OPTIONS.find(o => o.value === calibration)?.label}
+        {calibratedAt ? ` · ${calibratedAt}` : ''}
+        {calibrationReference ? ` · ${calibrationReference}` : ''}
+      </Typography>
+      {(sensorRole || sensorModel) && (
+        <>
+          <Typography variant="body2" color="text.secondary">
+            Sensor
+          </Typography>
+          <Typography variant="body2">{[sensorRole, sensorModel].filter(Boolean).join(' · ') || '—'}</Typography>
+        </>
+      )}
+      {(effectiveFrom || effectiveTo) && (
+        <>
+          <Typography variant="body2" color="text.secondary">
+            Effective window
+          </Typography>
+          <Typography variant="body2">
+            {effectiveFrom || '—'} → {effectiveTo || 'open-ended'}
+          </Typography>
+        </>
+      )}
     </Box>
   );
 
@@ -234,7 +284,11 @@ export const WeatherDeclareDialog: React.FC<WeatherDeclareDialogProps> = ({
               required
               size="small"
               error={metric.length > 0 && !metricValid}
-              helperText={metric.length > 0 && !metricValid ? 'Metric must be 1–64 characters.' : 'e.g. irradiance, module_temp'}
+              helperText={
+                metric.length > 0 && !metricValid
+                  ? 'Metric must be 1–64 characters.'
+                  : 'Normalized metric key, e.g. poa_irradiance, ghi_irradiance, module_temp, ambient_temp'
+              }
             />
             <TextField
               label="Declaration basis"
@@ -288,6 +342,64 @@ export const WeatherDeclareDialog: React.FC<WeatherDeclareDialogProps> = ({
                 </MenuItem>
               ))}
             </TextField>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                label="Calibration date"
+                value={calibratedAt}
+                onChange={e => setCalibratedAt(e.target.value)}
+                size="small"
+                type="date"
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+              />
+              <TextField
+                label="Calibration reference"
+                value={calibrationReference}
+                onChange={e => setCalibrationReference(e.target.value)}
+                size="small"
+                fullWidth
+                helperText="Cert / report no."
+              />
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                label="Sensor role"
+                value={sensorRole}
+                onChange={e => setSensorRole(e.target.value)}
+                size="small"
+                fullWidth
+                helperText="e.g. POA reference cell"
+              />
+              <TextField
+                label="Sensor model"
+                value={sensorModel}
+                onChange={e => setSensorModel(e.target.value)}
+                size="small"
+                fullWidth
+              />
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                label="Effective from"
+                value={effectiveFrom}
+                onChange={e => setEffectiveFrom(e.target.value)}
+                size="small"
+                type="datetime-local"
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+              />
+              <TextField
+                label="Effective to"
+                value={effectiveTo}
+                onChange={e => setEffectiveTo(e.target.value)}
+                size="small"
+                type="datetime-local"
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+                error={!windowValid}
+                helperText={!windowValid ? 'Must be after “Effective from”.' : 'Leave blank for open-ended.'}
+              />
+            </Box>
             <TextField
               label="Weather source ID (optional)"
               value={weatherSourceId}

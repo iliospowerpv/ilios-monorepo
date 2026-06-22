@@ -62,7 +62,7 @@ export const buildWeatherApi = (httpClient: AxiosInstance) => {
     return response.data;
   };
 
-  // Append-only declaration history for a single device (newest first).
+  // Append-only declaration history for a single device (oldest first).
   const listDeviceMappingHistory = async (
     siteId: number,
     deviceId: number
