@@ -47,18 +47,31 @@ from app.schema.weather import (
     HistoricalImportRequest,
     HistoricalImportResponse,
     HistoricalProfileCreateRequest,
+    WeatherDeclarationActivateRequest,
+    WeatherDeclarationReReviewRequest,
     WeatherDeviceMappingDeclareRequest,
     WeatherDeviceMappingResponse,
     WeatherProfileActionRequest,
     WeatherProfileActionResponse,
     WeatherProfileResponse,
     WeatherReadinessResponse,
+    WeatherUpstreamReEvaluateResponse,
 )
 from app.services.telemetry.device_classification import classify_device
+from app.services.weather.declaration_service import (
+    DeclarationServiceError,
+    activate_declaration,
+    create_declaration,
+    mark_needs_re_review,
+)
 from app.services.weather.historical_weather_import_service import (
     WeatherImportValidationError,
     preview_import,
     run_historical_import,
+)
+from app.services.weather.upstream_change_detector import (
+    apply_re_review,
+    detect_site,
 )
 from app.services.weather.weather_profile_service import (
     WeatherProfileActionError,
@@ -459,21 +472,16 @@ def declare_weather_device_mapping(
                 "accessible from this project/site",
             )
 
-    mapping = WeatherDeviceMappingCRUD(db).create(
-        site_id=site.id,
-        device_id=device.id,
-        external_device_id=payload.external_device_id,
-        weather_source_id=payload.weather_source_id,
-        metric=payload.metric,
-        provider_key=payload.provider_key,
-        irradiance_plane=payload.irradiance_plane,
-        temperature_type=payload.temperature_type,
-        calibration_status=payload.calibration_status,
-        calibrated_at=payload.calibrated_at,
-        calibration_reference=payload.calibration_reference,
-        effective_from=payload.effective_from,
-        effective_to=payload.effective_to,
-    )
+    try:
+        mapping = create_declaration(
+            db,
+            site=site,
+            device=device,
+            payload=payload,
+            actor_id=getattr(current_user, "id", None),
+        )
+    except DeclarationServiceError as exc:
+        raise HTTPException(exc.status_code, exc.detail) from exc
 
     try:
         _create_audit_log(
@@ -494,3 +502,223 @@ def declare_weather_device_mapping(
         )
 
     return WeatherDeviceMappingResponse.from_model(mapping)
+
+
+@weather_router.post(
+    "/sites/{site_id}/device-mappings/{mapping_id}/activate",
+    response_model=WeatherDeviceMappingResponse,
+    summary="Activate a draft weather-semantics declaration (atomic supersede)",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def activate_weather_device_mapping(
+    mapping_id: int,
+    payload: WeatherDeclarationActivateRequest,
+    request: Request,
+    site: Annotated[Site, Depends(get_authorized_site_with_company_admin)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> WeatherDeviceMappingResponse:
+    """Activate an existing draft declaration (``draft -> active``).
+
+    Runs full governance validation (basis evidence completeness) and, when the
+    draft carries a ``supersedes_mapping_id``, atomically flips the prior active
+    row to ``superseded`` in the SAME transaction (single-active is enforced). This
+    NEVER infers semantics and NEVER touches the resolver/expected math, ingestion,
+    rollups, the scheduler, baselines, or O&M — it only records that a governed
+    declaration is now in force. A structured 409 is returned for an illegal
+    transition or a single-active conflict; 422 for an incomplete basis.
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+
+    try:
+        mapping = activate_declaration(
+            db,
+            site=site,
+            mapping_id=mapping_id,
+            actor_id=getattr(current_user, "id", None),
+            rationale=payload.rationale,
+        )
+    except DeclarationServiceError as exc:
+        raise HTTPException(exc.status_code, exc.detail) from exc
+
+    try:
+        _create_audit_log(
+            request,
+            db,
+            "weather_device_mapping_activate",
+            (
+                f"Activated weather declaration {mapping.id} for device "
+                f"{mapping.device_id} on project/site {site.id} "
+                f"(metric {mapping.metric}, basis "
+                f"{WeatherDeviceMappingResponse._ev(mapping.declaration_basis)})"
+            ),
+            is_success=True,
+        )
+    except Exception:  # noqa: BLE001
+        logger.warning(
+            "weather_device_mapping_activate_audit_failed site_id=%s", site.id
+        )
+
+    return WeatherDeviceMappingResponse.from_model(mapping)
+
+
+@weather_router.post(
+    "/sites/{site_id}/device-mappings/{mapping_id}/re-review",
+    response_model=WeatherDeviceMappingResponse,
+    summary="Flag an active weather declaration as needing re-review",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def flag_weather_device_mapping_re_review(
+    mapping_id: int,
+    payload: WeatherDeclarationReReviewRequest,
+    request: Request,
+    site: Annotated[Site, Depends(get_authorized_site_with_company_admin)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> WeatherDeviceMappingResponse:
+    """Manually raise the monotonic ``needs_re_review`` flag on an ACTIVE declaration.
+
+    ``needs_re_review`` is a boolean flag (NOT a status) and is NEVER auto-cleared —
+    it clears only when a NEW activated declaration supersedes this row. This is a
+    Layer-1 governance signal: it changes no semantics and no expected/baseline. A
+    re-flag of an already-flagged row is rejected (409) rather than re-stamped.
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+
+    try:
+        mapping = mark_needs_re_review(
+            db,
+            site=site,
+            mapping_id=mapping_id,
+            actor_id=getattr(current_user, "id", None),
+            reason=payload.reason,
+        )
+    except DeclarationServiceError as exc:
+        raise HTTPException(exc.status_code, exc.detail) from exc
+
+    try:
+        _create_audit_log(
+            request,
+            db,
+            "weather_device_mapping_re_review",
+            (
+                f"Flagged weather declaration {mapping.id} for re-review on "
+                f"project/site {site.id} (metric {mapping.metric})"
+            ),
+            is_success=True,
+        )
+    except Exception:  # noqa: BLE001
+        logger.warning(
+            "weather_device_mapping_re_review_audit_failed site_id=%s", site.id
+        )
+
+    return WeatherDeviceMappingResponse.from_model(mapping)
+
+
+@weather_router.get(
+    "/sites/{site_id}/devices/{device_id}/device-mappings",
+    response_model=list[WeatherDeviceMappingResponse],
+    summary="Declaration history/lineage for a device (append-only, oldest-first)",
+)
+def list_weather_device_mapping_history(
+    device_id: int,
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> list[WeatherDeviceMappingResponse]:
+    """Full append-only declaration history for one device (oldest-first, read-only).
+
+    Visible to any user authorized for the site (asset-view + company-visibility);
+    reads never require admin. Each row discloses its governed lifecycle
+    (draft/active/superseded, basis, evidence, re-review flag) and its DERIVED
+    eligibility verdict (recomputed live). Nothing is converted into a value.
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+
+    device = (
+        db.query(Device)
+        .filter(Device.id == device_id, Device.site_id == site.id)
+        .one_or_none()
+    )
+    if device is None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            f"Device {device_id} not found on this project/site",
+        )
+
+    mappings = WeatherDeviceMappingCRUD(db).list_for_device(device_id)
+    return [WeatherDeviceMappingResponse.from_model(m) for m in mappings]
+
+
+@weather_router.get(
+    "/sites/{site_id}/device-mappings/upstream-changes",
+    response_model=WeatherUpstreamReEvaluateResponse,
+    summary="Preview upstream-change / stale status for a site's declarations",
+)
+def preview_weather_upstream_changes(
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> WeatherUpstreamReEvaluateResponse:
+    """READ-ONLY preview of upstream drift across a site's ACTIVE declarations.
+
+    For each active governed declaration this recomputes the device's current
+    upstream identity and compares it to the fingerprint snapshot taken at
+    declaration time, reporting which declarations have drifted (``diverged``) and
+    which WOULD be flagged for re-review (``would_flag``) by the admin re-evaluate
+    action. It performs NO writes/commits and never alters semantics, expected, or
+    baselines. Visible to any user authorized for the site (asset-view +
+    company-visibility); reads never require admin.
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+    report = detect_site(db, site=site)
+    return WeatherUpstreamReEvaluateResponse.from_report(report)
+
+
+@weather_router.post(
+    "/sites/{site_id}/device-mappings/re-evaluate",
+    response_model=WeatherUpstreamReEvaluateResponse,
+    summary="Re-evaluate upstream drift and flag stale declarations for re-review",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def re_evaluate_weather_upstream_changes(
+    request: Request,
+    site: Annotated[Site, Depends(get_authorized_site_with_company_admin)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> WeatherUpstreamReEvaluateResponse:
+    """Admin re-evaluation: raise the monotonic ``needs_re_review`` flag on drifted rows.
+
+    For every ACTIVE declaration whose device upstream identity diverged from its
+    declaration-time fingerprint AND that is not already flagged, this raises the
+    monotonic ``needs_re_review`` flag (+ ``re_review_reason`` + a ``needs_re_review``
+    ledger entry) — exactly the change the WS.1 append-only guard permits on an
+    active row. Already-flagged rows are SKIPPED so the action is idempotent. It
+    NEVER creates/activates/supersedes/clears a declaration, never edits semantics,
+    and never touches expected/baselines/``expected_weather_provenance``. The flag
+    clears only when a NEW activated declaration supersedes the row (WS.2).
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+    report = apply_re_review(
+        db, site=site, actor_id=getattr(current_user, "id", None)
+    )
+
+    try:
+        _create_audit_log(
+            request,
+            db,
+            "weather_device_mapping_re_evaluate",
+            (
+                f"Re-evaluated upstream drift on project/site {site.id}: "
+                f"{report.newly_flagged_count} declaration(s) newly flagged for "
+                f"re-review ({report.diverged_count} diverged of "
+                f"{report.total_active} active)"
+            ),
+            is_success=True,
+        )
+    except Exception:  # noqa: BLE001
+        logger.warning(
+            "weather_device_mapping_re_evaluate_audit_failed site_id=%s", site.id
+        )
+
+    return WeatherUpstreamReEvaluateResponse.from_report(report)

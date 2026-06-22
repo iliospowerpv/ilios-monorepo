@@ -49,12 +49,15 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     Enum,
+    event,
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm.attributes import get_history
 
 from app.db.base_class import Base
+from app.db.weather_declaration_guard import assert_governed_update_allowed
 from app.models.helpers import utcnow
 
 
@@ -144,11 +147,39 @@ class WeatherCalibrationStatus(str, enum.Enum):
     unknown = "unknown"
 
 
+class WeatherDeclarationBasis(str, enum.Enum):
+    """On what evidence a governed weather-semantics declaration rests (WS.1).
+
+    Only ``provider_confirmed`` and ``source_document`` can ever make a
+    declaration production-grade ``expected_model_eligible``; reviewer notes and
+    assumptions are valid governed records but stay *recorded-only*.
+    """
+
+    provider_confirmed = "provider_confirmed"
+    source_document = "source_document"
+    reviewer_source_note = "reviewer_source_note"
+    reviewer_assumption = "reviewer_assumption"
+
+
+class WeatherDeclarationStatus(str, enum.Enum):
+    """Lifecycle of a governed weather-semantics declaration (WS.1).
+
+    ``needs_re_review`` is intentionally NOT a status — it is a boolean flag (with
+    ``re_review_reason``) on an otherwise-``active`` row. A NULL status marks a
+    legacy/ungoverned mapping that predates this governance layer.
+    """
+
+    draft = "draft"
+    active = "active"
+    superseded = "superseded"
+
+
 class WeatherApprovalTargetType(str, enum.Enum):
     """What a weather approval ledger entry refers to."""
 
     profile = "profile"
     batch = "batch"
+    weather_device_mapping = "weather_device_mapping"
 
 
 class WeatherApprovalAction(str, enum.Enum):
@@ -158,6 +189,9 @@ class WeatherApprovalAction(str, enum.Enum):
     reject = "reject"
     revoke = "revoke"
     supersede = "supersede"
+    declare_draft = "declare_draft"
+    activate = "activate"
+    needs_re_review = "needs_re_review"
 
 
 # Postgres enum type names (kept in lockstep with the migration constants).
@@ -171,6 +205,8 @@ WEATHER_CONFIDENCE_ENUM_NAME = "weather_confidence_enum"
 WEATHER_CALIBRATION_STATUS_ENUM_NAME = "weather_calibration_status_enum"
 WEATHER_APPROVAL_TARGET_TYPE_ENUM_NAME = "weather_approval_target_type_enum"
 WEATHER_APPROVAL_ACTION_ENUM_NAME = "weather_approval_action_enum"
+WEATHER_DECLARATION_BASIS_ENUM_NAME = "weather_declaration_basis_enum"
+WEATHER_DECLARATION_STATUS_ENUM_NAME = "weather_declaration_status_enum"
 
 # Reusable SQLAlchemy Enum type objects. A single instance per named type is
 # shared across columns/tables so ``Base.metadata.create_all`` (tests) emits one
@@ -196,6 +232,12 @@ _APPROVAL_TARGET_TYPE_ENUM = Enum(
 )
 _APPROVAL_ACTION_ENUM = Enum(
     WeatherApprovalAction, name=WEATHER_APPROVAL_ACTION_ENUM_NAME
+)
+_DECLARATION_BASIS_ENUM = Enum(
+    WeatherDeclarationBasis, name=WEATHER_DECLARATION_BASIS_ENUM_NAME
+)
+_DECLARATION_STATUS_ENUM = Enum(
+    WeatherDeclarationStatus, name=WEATHER_DECLARATION_STATUS_ENUM_NAME
 )
 
 
@@ -512,6 +554,39 @@ class WeatherDeviceMapping(Base):
         Index("ix_weather_device_mappings_site", "site_id"),
         Index("ix_weather_device_mappings_device", "device_id"),
         Index("ix_weather_device_mappings_source", "weather_source_id"),
+        # WS.1: current-declaration resolution per (device, metric) by status.
+        Index(
+            "ix_weather_device_mappings_declaration",
+            "device_id",
+            "metric",
+            "declaration_status",
+        ),
+        Index("ix_weather_device_mappings_decl_status", "declaration_status"),
+        # WS.2: single-active enforcement per lineage at the DB level. A governed
+        # row may be ACTIVE for at most one (site, device|external_device, metric)
+        # lineage at a time. Partial so legacy (NULL-status), draft, and superseded
+        # rows are never constrained; split on ``device_id`` because the lineage is
+        # keyed by ``external_device_id`` when ``device_id`` is NULL.
+        Index(
+            "uq_weather_device_mappings_active_device",
+            "site_id",
+            "device_id",
+            "metric",
+            unique=True,
+            postgresql_where=text(
+                "declaration_status = 'active' AND device_id IS NOT NULL"
+            ),
+        ),
+        Index(
+            "uq_weather_device_mappings_active_external",
+            "site_id",
+            "external_device_id",
+            "metric",
+            unique=True,
+            postgresql_where=text(
+                "declaration_status = 'active' AND device_id IS NULL"
+            ),
+        ),
     )
 
     id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
@@ -550,6 +625,50 @@ class WeatherDeviceMapping(Base):
     effective_from = Column(DateTime, nullable=True)
     effective_to = Column(DateTime, nullable=True)
 
+    # -- WS.1 governance layer (additive, NULLable) --------------------------
+    # A NULL ``declaration_status`` marks a legacy/ungoverned row that predates
+    # this governance layer; such rows are exempt from the append-only guard.
+    declaration_status = Column(_DECLARATION_STATUS_ENUM, nullable=True)
+    declaration_basis = Column(_DECLARATION_BASIS_ENUM, nullable=True)
+    # Evidence backing the declaration (cross-tenant validated in the service).
+    source_document_id = Column(
+        Integer, ForeignKey("documents.id", ondelete="SET NULL"), nullable=True
+    )
+    source_file_id = Column(
+        Integer, ForeignKey("files.id", ondelete="SET NULL"), nullable=True
+    )
+    reviewer_note = Column(Text, nullable=True)
+    sensor_role = Column(String(128), nullable=True)
+    sensor_model = Column(String(255), nullable=True)
+    provider_metadata_json = Column(JSONB, nullable=True)
+    # Snapshot of the upstream device fingerprint at declaration time; WS.3
+    # compares it to the live fingerprint to flag stale declarations.
+    upstream_fingerprint_json = Column(JSONB, nullable=True)
+    # Lifecycle (set-once columns enforced by the append-only guard).
+    declared_by = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    declared_at = Column(DateTime, nullable=True)
+    activated_by = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    activated_at = Column(DateTime, nullable=True)
+    supersedes_mapping_id = Column(
+        Integer,
+        ForeignKey("weather_device_mappings.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    superseded_by_mapping_id = Column(
+        Integer,
+        ForeignKey("weather_device_mappings.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    # ``needs_re_review`` is a monotonic flag (false->true only), NOT a status.
+    needs_re_review = Column(Boolean, nullable=True)
+    re_review_reason = Column(Text, nullable=True)
+    # Audit-only snapshot of the eligibility verdict captured at activation.
+    eligibility_snapshot_json = Column(JSONB, nullable=True)
+
     created_at = Column(DateTime, nullable=False, server_default=utcnow())
     updated_at = Column(
         DateTime, nullable=False, server_default=utcnow(), onupdate=utcnow()
@@ -558,7 +677,8 @@ class WeatherDeviceMapping(Base):
     def __repr__(self) -> str:
         return (
             f"<WeatherDeviceMapping(id={self.id}, site_id={self.site_id}, "
-            f"metric={self.metric}, plane={self.irradiance_plane})>"
+            f"metric={self.metric}, plane={self.irradiance_plane}, "
+            f"status={self.declaration_status})>"
         )
 
 
@@ -614,3 +734,34 @@ class ExpectedWeatherProvenance(Base):
             f"<ExpectedWeatherProvenance(id={self.id}, site_id={self.site_id}, "
             f"source_id={self.weather_source_id})>"
         )
+
+
+# ---------------------------------------------------------------------------
+# WS.1 append-only ORM guard (defense in depth; the DB trigger is authoritative)
+# ---------------------------------------------------------------------------
+@event.listens_for(WeatherDeviceMapping, "before_update", propagate=True)
+def _enforce_weather_declaration_append_only(mapper, connection, target):  # noqa: U100
+    """Reject illegal in-place edits to a *governed* weather declaration.
+
+    Mirrors the ``enforce_weather_declaration_append_only`` DB trigger so app code
+    fails fast. Legacy/ungoverned rows (``declaration_status`` NULL) are exempt.
+    Builds null-safe old/new value maps from attribute history and delegates the
+    decision to the pure validator in ``app.db.weather_declaration_guard``.
+    """
+    old: dict = {}
+    new: dict = {}
+    for attr in mapper.column_attrs:
+        key = attr.key
+        new_val = getattr(target, key)
+        history = get_history(target, key)
+        if history.deleted:
+            old_val = history.deleted[0]
+        elif history.unchanged:
+            old_val = history.unchanged[0]
+        else:
+            # No recorded prior value (e.g. unchanged & not loaded) -> treat as
+            # equal to the new value so it is not flagged as a change.
+            old_val = new_val
+        old[key] = old_val
+        new[key] = new_val
+    assert_governed_update_allowed(old, new)

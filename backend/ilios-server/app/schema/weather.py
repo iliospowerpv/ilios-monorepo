@@ -29,6 +29,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from app.models.weather import (
     WeatherCalibrationStatus,
     WeatherConfidence,
+    WeatherDeclarationBasis,
+    WeatherDeclarationStatus,
     WeatherIrradiancePlane,
     WeatherObservationBatchKind,
     WeatherSourceProfileRole,
@@ -371,6 +373,9 @@ class WeatherDeviceMappingDeclareRequest(BaseModel):
 
     device_id: int
     metric: str = Field(min_length=1, max_length=64)
+    # WS.2 governance: every governed declaration MUST rest on a declared basis;
+    # the basis decides whether it can ever become ``expected_model_eligible``.
+    declaration_basis: WeatherDeclarationBasis
     weather_source_id: Optional[int] = None
     external_device_id: Optional[str] = Field(default=None, max_length=255)
     provider_key: Optional[str] = Field(default=None, max_length=128)
@@ -381,6 +386,22 @@ class WeatherDeviceMappingDeclareRequest(BaseModel):
     calibration_reference: Optional[str] = Field(default=None, max_length=255)
     effective_from: Optional[datetime] = None
     effective_to: Optional[datetime] = None
+    # WS.2 evidence + audit fields (cross-tenant resolvability validated in the
+    # service; shapes per declaration basis enforced server-side, never inferred).
+    source_document_id: Optional[int] = None
+    source_file_id: Optional[int] = None
+    reviewer_note: Optional[str] = None
+    sensor_role: Optional[str] = Field(default=None, max_length=128)
+    sensor_model: Optional[str] = Field(default=None, max_length=255)
+    provider_metadata_json: Optional[dict[str, Any]] = None
+    # Optional explicit supersession target (must share site/device/metric); the
+    # prior active row is only flipped to ``superseded`` on successful activation.
+    supersedes_mapping_id: Optional[int] = None
+    # ``reviewer_assumption`` basis requires an explicit operator confirmation so a
+    # bare assumption can never be declared without friction.
+    assumption_confirmed: bool = False
+    # When true the draft is created AND activated atomically (create + activate).
+    activate: bool = False
 
     @model_validator(mode="after")
     def _validate_window(self) -> "WeatherDeviceMappingDeclareRequest":
@@ -391,6 +412,29 @@ class WeatherDeviceMappingDeclareRequest(BaseModel):
         ):
             raise ValueError("effective_to must be after effective_from.")
         return self
+
+
+class WeatherDeclarationActivateRequest(BaseModel):
+    """Activate an existing draft declaration (full governance validation).
+
+    Activation never *infers* anything: it validates the stored basis/evidence is
+    complete and in-tenant, and — if the draft carries a ``supersedes_mapping_id``
+    — atomically flips the prior active row to ``superseded`` in the same
+    transaction. An optional rationale is recorded on the ledger event.
+    """
+
+    rationale: Optional[str] = None
+
+
+class WeatherDeclarationReReviewRequest(BaseModel):
+    """Manually flag an active declaration as needing re-review (monotonic flag).
+
+    ``needs_re_review`` is a boolean flag (NOT a status); it is set false->true
+    only and is NEVER auto-cleared — it clears only when a new activated
+    declaration supersedes the stale row.
+    """
+
+    reason: str = Field(min_length=1)
 
 
 class WeatherDeviceMappingResponse(BaseModel):
@@ -418,6 +462,29 @@ class WeatherDeviceMappingResponse(BaseModel):
     effective_to: Optional[datetime] = None
     physics_usable_irradiance: bool = False
     physics_usable_temperature: bool = False
+    # -- WS.2 governance (additive; NULL on legacy/ungoverned rows) ----------
+    declaration_status: Optional[str] = None
+    declaration_basis: Optional[str] = None
+    declared_by: Optional[int] = None
+    declared_at: Optional[datetime] = None
+    activated_by: Optional[int] = None
+    activated_at: Optional[datetime] = None
+    supersedes_mapping_id: Optional[int] = None
+    superseded_by_mapping_id: Optional[int] = None
+    needs_re_review: bool = False
+    re_review_reason: Optional[str] = None
+    source_document_id: Optional[int] = None
+    source_file_id: Optional[int] = None
+    reviewer_note: Optional[str] = None
+    sensor_role: Optional[str] = None
+    sensor_model: Optional[str] = None
+    # -- WS.2 derived verdict (read-only; never persisted, never converts) ---
+    expected_model_eligible: bool = False
+    declaration_state: Optional[str] = None
+    eligibility_reason_codes: list[str] = Field(default_factory=list)
+    eligibility_blocking_level: Optional[str] = None
+    eligibility_required_action: Optional[str] = None
+    layer1_message: Optional[str] = None
 
     @staticmethod
     def _ev(value: Any) -> Any:
@@ -425,8 +492,11 @@ class WeatherDeviceMappingResponse(BaseModel):
 
     @classmethod
     def from_model(cls, mapping: Any) -> "WeatherDeviceMappingResponse":
-        plane = mapping.irradiance_plane
-        temp = mapping.temperature_type
+        # Lazy import avoids a schema<->policy import cycle (the pure policy
+        # module imports the physics-usable sets from this schema module).
+        from app.services.weather.declaration_policy import evaluate_mapping
+
+        verdict = evaluate_mapping(mapping)
         return cls(
             id=mapping.id,
             site_id=mapping.site_id,
@@ -435,13 +505,105 @@ class WeatherDeviceMappingResponse(BaseModel):
             weather_source_id=mapping.weather_source_id,
             metric=mapping.metric,
             provider_key=mapping.provider_key,
-            irradiance_plane=cls._ev(plane),
-            temperature_type=cls._ev(temp),
+            irradiance_plane=cls._ev(mapping.irradiance_plane),
+            temperature_type=cls._ev(mapping.temperature_type),
             calibration_status=cls._ev(mapping.calibration_status),
             calibrated_at=mapping.calibrated_at,
             calibration_reference=mapping.calibration_reference,
             effective_from=mapping.effective_from,
             effective_to=mapping.effective_to,
-            physics_usable_irradiance=plane in _PHYSICS_USABLE_PLANES,
-            physics_usable_temperature=temp in _PHYSICS_USABLE_TEMPERATURES,
+            physics_usable_irradiance=verdict.physics_usable_irradiance,
+            physics_usable_temperature=verdict.physics_usable_temperature,
+            declaration_status=cls._ev(getattr(mapping, "declaration_status", None)),
+            declaration_basis=cls._ev(getattr(mapping, "declaration_basis", None)),
+            declared_by=getattr(mapping, "declared_by", None),
+            declared_at=getattr(mapping, "declared_at", None),
+            activated_by=getattr(mapping, "activated_by", None),
+            activated_at=getattr(mapping, "activated_at", None),
+            supersedes_mapping_id=getattr(mapping, "supersedes_mapping_id", None),
+            superseded_by_mapping_id=getattr(mapping, "superseded_by_mapping_id", None),
+            needs_re_review=bool(getattr(mapping, "needs_re_review", None)),
+            re_review_reason=getattr(mapping, "re_review_reason", None),
+            source_document_id=getattr(mapping, "source_document_id", None),
+            source_file_id=getattr(mapping, "source_file_id", None),
+            reviewer_note=getattr(mapping, "reviewer_note", None),
+            sensor_role=getattr(mapping, "sensor_role", None),
+            sensor_model=getattr(mapping, "sensor_model", None),
+            expected_model_eligible=verdict.expected_model_eligible,
+            declaration_state=verdict.declaration_state,
+            eligibility_reason_codes=list(verdict.reason_codes),
+            eligibility_blocking_level=verdict.blocking_level,
+            eligibility_required_action=verdict.required_action,
+            layer1_message=verdict.layer1_message,
+        )
+
+
+class WeatherUpstreamMappingDivergence(BaseModel):
+    """Per-declaration upstream-divergence row (WS.3, read-only description).
+
+    A verbatim projection of the detector's ``MappingDivergence`` dataclass. It
+    describes whether an ACTIVE declaration's device upstream identity has drifted
+    from the fingerprint snapshot taken at declaration time. It carries NO
+    semantics value and never implies a conversion.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    mapping_id: int
+    device_id: Optional[int] = None
+    metric: Optional[str] = None
+    needs_re_review: bool
+    has_stored_fingerprint: bool
+    diverged: bool
+    changed_keys: list[str] = Field(default_factory=list)
+    summary: Optional[str] = None
+    would_flag: bool
+    flagged: bool = False
+
+    @classmethod
+    def from_dc(cls, dc: Any) -> "WeatherUpstreamMappingDivergence":
+        return cls(
+            mapping_id=dc.mapping_id,
+            device_id=dc.device_id,
+            metric=dc.metric,
+            needs_re_review=dc.needs_re_review,
+            has_stored_fingerprint=dc.has_stored_fingerprint,
+            diverged=dc.diverged,
+            changed_keys=list(dc.changed_keys),
+            summary=dc.summary,
+            would_flag=dc.would_flag,
+            flagged=dc.flagged,
+        )
+
+
+class WeatherUpstreamReEvaluateResponse(BaseModel):
+    """Site-level upstream re-evaluation rollup (WS.3).
+
+    ``applied=False`` is the read-only preview (no writes occurred);
+    ``applied=True`` is returned by the admin re-evaluate action after monotonic
+    ``needs_re_review`` flags were raised on diverged, not-already-flagged rows.
+    """
+
+    site_id: int
+    applied: bool
+    total_active: int
+    diverged_count: int
+    would_flag_count: int
+    already_flagged_count: int
+    newly_flagged_count: int
+    mappings: list[WeatherUpstreamMappingDivergence] = Field(default_factory=list)
+
+    @classmethod
+    def from_report(cls, report: Any) -> "WeatherUpstreamReEvaluateResponse":
+        return cls(
+            site_id=report.site_id,
+            applied=report.applied,
+            total_active=report.total_active,
+            diverged_count=report.diverged_count,
+            would_flag_count=report.would_flag_count,
+            already_flagged_count=report.already_flagged_count,
+            newly_flagged_count=report.newly_flagged_count,
+            mappings=[
+                WeatherUpstreamMappingDivergence.from_dc(m) for m in report.mappings
+            ],
         )

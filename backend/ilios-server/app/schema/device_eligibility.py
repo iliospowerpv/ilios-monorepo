@@ -58,6 +58,13 @@ class DeviceWeatherSemantics(BaseModel):
     calibration_status: str
     physics_usable_irradiance: bool
     physics_usable_temperature: bool
+    # WS.3 — read-only stale / upstream-change disclosure. Never a status, never a
+    # gate: ``needs_re_review`` is the persisted monotonic flag;
+    # ``upstream_change_detected`` is a live (uncommitted) fingerprint comparison.
+    needs_re_review: bool = False
+    re_review_reason: Optional[str] = None
+    upstream_change_detected: bool = False
+    upstream_changed_keys: list[str] = []
 
 
 class DeviceEligibilityDiagnostic(BaseModel):

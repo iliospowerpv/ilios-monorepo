@@ -23,6 +23,7 @@ from app.models.weather import (
     ExpectedWeatherProvenance,
     WeatherApprovalAction,
     WeatherApprovalTargetType,
+    WeatherDeclarationStatus,
     WeatherDeviceMapping,
     WeatherObservation,
     WeatherObservationBatch,
@@ -310,16 +311,33 @@ class WeatherDeviceMappingCRUD(BaseCRUD):
     def get_current_for_device(
         self, device_id: int, *, metric: Optional[str] = None
     ) -> Optional[WeatherDeviceMapping]:
-        """The most recently declared mapping for a device (latest row wins).
+        """The current semantics for a device: prefer the ACTIVE governed row.
 
-        Declarations are versioned by NEW ROW, so the highest ``id`` is the current
-        semantics. Optionally narrows to a single ``metric``. Pure read."""
-        query = self.db_session.query(WeatherDeviceMapping).filter(
+        Resolution order (WS.2):
+          1. The ``active`` governed declaration (single-active is enforced by the
+             service on activation), highest ``id`` first as a defensive tie-break.
+          2. Fallback to the latest row by ``id`` — this covers legacy NULL-status
+             (ungoverned) rows and bare drafts, so pre-WS.2 behavior is preserved
+             when no governed declaration has been activated yet.
+
+        Optionally narrows to a single ``metric``. Pure read (no writes)."""
+        base = self.db_session.query(WeatherDeviceMapping).filter(
             WeatherDeviceMapping.device_id == device_id
         )
         if metric is not None:
-            query = query.filter(WeatherDeviceMapping.metric == metric)
-        return query.order_by(WeatherDeviceMapping.id.desc()).first()
+            base = base.filter(WeatherDeviceMapping.metric == metric)
+
+        active = (
+            base.filter(
+                WeatherDeviceMapping.declaration_status
+                == WeatherDeclarationStatus.active
+            )
+            .order_by(WeatherDeviceMapping.id.desc())
+            .first()
+        )
+        if active is not None:
+            return active
+        return base.order_by(WeatherDeviceMapping.id.desc()).first()
 
 
 class ExpectedWeatherProvenanceCRUD(BaseCRUD):

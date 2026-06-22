@@ -32,6 +32,10 @@ from app.schema.weather import (
     _PHYSICS_USABLE_TEMPERATURES,
 )
 from app.services.telemetry.device_classification import classify_device
+from app.services.weather.upstream_fingerprint import (
+    compare_fingerprint,
+    compute_upstream_fingerprint,
+)
 
 # --- Indicator glossary keys (FE renders these as "why" tips) ---------------
 IND_EXPECTED_DRIVER_UNMAPPED = "expected_driver_unmapped"
@@ -40,6 +44,7 @@ IND_WEATHER_SEMANTICS_UNDECLARED = "weather_semantics_undeclared"
 IND_WEATHER_SEMANTICS_UNKNOWN = "weather_semantics_unknown"
 IND_WEATHER_NOT_PHYSICS_USABLE = "weather_not_physics_usable"
 IND_WEATHER_CALIBRATION_UNKNOWN = "weather_calibration_unknown"
+IND_WEATHER_SEMANTICS_STALE = "weather_semantics_stale"
 IND_METER_INSPECTION_ONLY = "meter_inspection_only"
 IND_GATEWAY_INSPECTION_ONLY = "gateway_inspection_only"
 IND_VIRTUAL_AGGREGATION = "virtual_aggregation_device"
@@ -63,10 +68,17 @@ def _ind(
 
 
 def _current_weather_semantics(
-    db: Session, device_id: int
+    db: Session, device
 ) -> Optional[DeviceWeatherSemantics]:
-    """Latest declared weather mapping for the device, disclosed verbatim."""
-    mapping = WeatherDeviceMappingCRUD(db).get_current_for_device(device_id)
+    """Latest declared weather mapping for the device, disclosed verbatim.
+
+    Also surfaces the WS.3 stale signal (read-only): the persisted
+    ``needs_re_review`` flag plus a LIVE upstream-fingerprint comparison
+    (``upstream_change_detected``) so the UI can show "this declaration may be out
+    of date" without any write or inference. The comparison is pure — a missing
+    stored fingerprint never diverges (no baseline to compare against).
+    """
+    mapping = WeatherDeviceMappingCRUD(db).get_current_for_device(device.id)
     if mapping is None:
         return DeviceWeatherSemantics(
             has_declaration=False,
@@ -83,6 +95,11 @@ def _current_weather_semantics(
     def _ev(v):
         return v.value if hasattr(v, "value") else v
 
+    comparison = compare_fingerprint(
+        getattr(mapping, "upstream_fingerprint_json", None),
+        compute_upstream_fingerprint(device, mapping),
+    )
+
     return DeviceWeatherSemantics(
         has_declaration=True,
         metric=mapping.metric,
@@ -91,6 +108,10 @@ def _current_weather_semantics(
         calibration_status=_ev(mapping.calibration_status),
         physics_usable_irradiance=plane in _PHYSICS_USABLE_PLANES,
         physics_usable_temperature=temp in _PHYSICS_USABLE_TEMPERATURES,
+        needs_re_review=bool(getattr(mapping, "needs_re_review", False)),
+        re_review_reason=getattr(mapping, "re_review_reason", None),
+        upstream_change_detected=bool(comparison["diverged"]),
+        upstream_changed_keys=list(comparison["changed_keys"]),
     )
 
 
@@ -195,6 +216,34 @@ def _device_indicators(
                         "Record the calibration status / reference for this sensor.",
                     )
                 )
+            # WS.3 — read-only stale disclosure. Surface when the declaration was
+            # flagged for re-review (persisted) OR the device's live upstream
+            # identity diverges from the snapshot taken at declaration time. This is
+            # a confidence signal only: it never blocks, never converts, and never
+            # mutates anything from this read path.
+            if semantics.needs_re_review or semantics.upstream_change_detected:
+                changed = (
+                    f" Changed: {', '.join(semantics.upstream_changed_keys)}."
+                    if semantics.upstream_changed_keys
+                    else ""
+                )
+                reason = (
+                    f" {semantics.re_review_reason}"
+                    if semantics.needs_re_review and semantics.re_review_reason
+                    else ""
+                )
+                indicators.append(
+                    _ind(
+                        IND_WEATHER_SEMANTICS_STALE,
+                        "Weather semantics may be out of date",
+                        "The upstream device this declaration was authored against "
+                        "appears to have changed, so the declared semantics should be "
+                        "re-reviewed before they are trusted." + reason + changed,
+                        DiagnosticBlockingLevel.lowers_confidence,
+                        "Re-review the declared semantics; supersede with a new "
+                        "declaration if the device's identity changed.",
+                    )
+                )
 
     # Inspection-only descriptors (mappable but deliberately not expected drivers).
     if cls.production_meter_capable and not cls.can_drive_expected:
@@ -259,7 +308,7 @@ def compute_site_eligibility_diagnostics(
         is_mapped = getattr(device, "telemetry_mapping", None) is not None
 
         semantics = (
-            _current_weather_semantics(db, device.id)
+            _current_weather_semantics(db, device)
             if cls.weather_source_capable
             else None
         )
