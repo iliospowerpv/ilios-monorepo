@@ -1,0 +1,41 @@
+WS.1–WS.4 is accepted as merged.
+
+Do not begin WS.5. Expected-model integration, baseline revalidation, resolver provenance writes, and any change to O&M expected behavior remain explicitly gated.
+
+Please complete one narrow post-merge validation and documentation follow-up only:
+
+1. Clean CI-equivalent test validation
+
+* Run the full weather declaration suite in a clean environment where pytest output is captured.
+* Include migration application from the current deployed Alembic head through the new weather declaration migration.
+* Confirm upgrade and downgrade behavior.
+* Return exact commands, pass/fail counts, and any skipped tests.
+* Do not make code changes merely to satisfy the sandbox reviewer unless a reproducible failure is found.
+
+2. Migration lineage verification
+
+* Confirm the new migration is reachable from the currently deployed migration head.
+* Confirm there is no divergent Alembic branch created by the WS.1 migration.
+* Document the actual parent revision and why it is correct under the repository’s current linear migration policy.
+* Do not rewrite migration history unless a real deployment-path issue is found.
+
+3. Endpoint contract inventory
+
+* List all frontend callers and internal backend consumers of the weather declaration/history/reconciliation endpoints.
+* Confirm they use the implemented `device-mappings` routes.
+* Determine whether any external API consumer, documentation, or contract test requires the originally proposed `/declarations` path.
+* Do not add aliases unless an actual compatibility consumer exists.
+
+4. Site 4 readiness confirmation
+   Return a concise read-only status for Site 4:
+
+* IMT Reference Cell declaration state;
+* whether any governed declaration exists;
+* current reconciliation weather-dependency state;
+* expected-model eligibility verdict;
+* confirmation that WS.1–WS.4 did not alter expected output, baseline state, resolver math, telemetry mappings, or O&M actuals.
+
+No new product feature work in this follow-up.
+No WS.5.
+No data repair.
+No weather declaration should be created for Site 4 without approved evidence and a deliberate reviewer action.

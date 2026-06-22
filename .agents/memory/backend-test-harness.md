@@ -33,6 +33,14 @@ description: How to actually run the FastAPI backend pytest suite and the gotcha
   table must drop its FKs, needing ACCESS EXCLUSIVE on parent tables (sites/companies)
   the live backend keeps busy. Transactional DDL makes a killed downgrade roll back
   cleanly (DB stays at head), so to truly exercise downgrade live, stop the workflow first.
+- **`alembic upgrade head` from an EMPTY/base DB is broken in this repo and is NOT the
+  deploy path.** An early data migration (around `is_global_admin` / ff19) issues a live
+  ORM query (`SELECT users.* ...`) referencing columns added by *later* migrations, so a
+  from-base replay dies with `UndefinedColumn`. To validate a NEW migration's up/down in
+  isolation: `pg_dump --schema-only` the deployed DB into a fresh scratch DB (schema dump
+  carries the empty `alembic_version` table but NOT its row), `alembic stamp <deployed_head>`,
+  then `downgrade`/`upgrade` the target revisions. Prod deploys incrementally from the prior
+  head, so this never bites real deployments.
 
 # Auth gotchas in tests
 
