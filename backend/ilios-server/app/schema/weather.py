@@ -624,16 +624,16 @@ class WeatherSemanticsReconciliationRow(BaseModel):
     metric: Optional[str] = None
     mapping_id: Optional[int] = None
 
-    # The single headline state (one of the 8 taxonomy states).
+    # The single headline state (one of the 9 taxonomy states).
     reconciliation_state: str
     state_label: str
     state_explanation: str
     required_action: Optional[str] = None
     blocking_level: str
 
-    # The declaration-axis state (taxonomy states 1-5) for transparency; this can
-    # differ from ``reconciliation_state`` when a source-axis state (6-8) is
-    # overlaid because semantics are undeclared.
+    # The declaration-axis state for transparency; this can differ from
+    # ``reconciliation_state`` when semantics are undeclared — the headline is then
+    # the observed-device state (state 1) or a source-axis state (states 7-9).
     declaration_state: Optional[str] = None
     source_state: str
 
@@ -658,7 +658,7 @@ class WeatherSemanticsReconciliationResponse(BaseModel):
     semantics, never promotes/activates anything, and never touches the
     WeatherResolver, expected formula, ingestion, rollups, the scheduler,
     baselines, ``expected_weather_provenance``, or O&M. It DISCLOSES each
-    weather-source-capable device's position in the 8-state taxonomy plus deduped
+    weather-source-capable device's position in the 9-state taxonomy plus deduped
     site-level counts so a reviewer can see what is declared, what is eligible,
     and what still needs attention.
     """

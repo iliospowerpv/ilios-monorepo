@@ -72,15 +72,23 @@ passing the pre-mutation `already_flagged` state explicitly into the divergence 
 
 ## Reconciliation consumer (the reviewer-facing read model)
 The reviewer UI does not re-derive verdicts. A strictly read-only
-`semantics_reconciliation_service` places every weather-source-capable device into an
-8-state taxonomy — states 1–5 are the declaration axis (from `declaration_policy`),
-overlaid by source-level states 6–8 (`weather_source_missing`/`_stale`/
-`coverage_incomplete`) ONLY when semantics are still undeclared — plus deduped
-site-level counts. Zero writes/commits. The frontend renders `state_label`,
-`state_explanation`, `required_action`, and `blocking_level` verbatim; never compute
-the state client-side or the two surfaces drift.
+`semantics_reconciliation_service` places every weather-source-capable device into a
+9-state taxonomy — the declaration-axis states (from `declaration_policy`); for
+*undeclared* semantics the headline splits on whether the device is OBSERVED
+(telemetry-mapped via `device.telemetry_mapping` and/or has a `TelemetryReading`):
+an observed device is the dedicated state 1
+`observed_weather_device_no_governed_declaration` (gap = governance, "review
+evidence & declare"), an unobserved device takes the source-axis overlay (states
+7–9: `weather_source_missing`/`_stale`/`coverage_incomplete`, where
+`weather_source_missing` = nothing observed/mapped AND no source) — plus deduped
+site-level counts. Zero writes/commits (`_device_is_observed` is a relationship read
++ bounded `EXISTS`). The frontend renders `state_label`, `state_explanation`,
+`required_action`, and `blocking_level` verbatim; never compute the state
+client-side or the two surfaces drift.
 **Why:** mirrors the inventory-reconciliation pattern — one backend source of truth
 for "what position is this in the provenance/governance chain", many read-only views.
+Observation is NOT a declaration: an observed device still reports semantics
+`unknown` and `expected_model_eligible=False` (never inferred).
 
 ## Datetime gotcha (cost a 500 on every call)
 A Pydantic `datetime` response field must be populated from a real Python value

@@ -1,10 +1,13 @@
-"""WS.4 — read-only governed weather-semantics reconciliation (8-state taxonomy).
+"""WS.4 — read-only governed weather-semantics reconciliation (9-state taxonomy).
 
 This service is the "reconciliation consumer" referenced by ``declaration_policy``.
 For every weather-source-capable device on a site it resolves the device's current
-governed declaration verdict (taxonomy states 1-5) and OVERLAYS the
-source/profile-level states (6-8) when semantics are undeclared, producing a single
-per-device headline state plus deduped site-level counts.
+governed declaration verdict (declaration-axis states) and, when semantics are
+undeclared, resolves the headline by whether the device is OBSERVED — an observed
+device becomes the dedicated state 1
+(``observed_weather_device_no_governed_declaration``) while an unobserved device
+takes the source/profile-level overlay (states 7-9) — producing a single per-device
+headline state plus deduped site-level counts.
 
 It is STRICTLY READ-ONLY. It performs no writes/commits, never infers or converts
 semantics (declaring nothing leaves the value ``unknown``), never promotes or
@@ -12,22 +15,30 @@ activates anything, and never touches the WeatherResolver, the expected formula,
 ingestion, rollups, the scheduler, baselines, ``expected_weather_provenance``, or
 O&M. It only DISCLOSES what the governance layer already recorded.
 
-The taxonomy (most-advanced-declaration-wins, then source overlay):
-  1. ``source_exists_semantics_unknown``  (declaration axis — no governed value)
-  2. ``declaration_draft``                (declaration axis — recorded, not active)
-  3. ``declared_not_physics_usable``      (declaration axis — active, not usable)
-  4. ``declared_eligible_integration_pending`` (declaration axis — eligible)
-  5. ``declaration_stale_needs_re_review``     (declaration axis — flagged stale)
-  6. ``weather_source_missing``           (source axis — no site weather source)
-  7. ``weather_source_stale``             (source axis — source(s) but none active)
-  8. ``source_coverage_incomplete``       (source axis — active but not in-effect now)
+The taxonomy (most-advanced-declaration-wins, then observed/source overlay):
+  1. ``observed_weather_device_no_governed_declaration`` (the device IS observed —
+       telemetry-mapped and/or producing readings — but has no governed declaration)
+  2. ``source_exists_semantics_unknown``  (declaration axis — no governed value)
+  3. ``declaration_draft``                (declaration axis — recorded, not active)
+  4. ``declared_not_physics_usable``      (declaration axis — active, not usable)
+  5. ``declared_eligible_integration_pending`` (declaration axis — eligible)
+  6. ``declaration_stale_needs_re_review``     (declaration axis — flagged stale)
+  7. ``weather_source_missing``           (source axis — nothing observed/mapped, no source)
+  8. ``weather_source_stale``             (source axis — source(s) but none active)
+  9. ``source_coverage_incomplete``       (source axis — active but not in-effect now)
 
-States 6-8 are surfaced ONLY when the declaration axis is at state 1 (semantics
-undeclared) AND the source is not currently usable; a device that already has a
-draft / active / eligible / stale declaration keeps its declaration state as the
-headline (the deeper source gap is still reported via ``source_state``). Layer-1
-blocking is only ever ``lowers_confidence`` / ``informational`` — this layer never
-emits ``blocks_calculation``.
+When semantics are undeclared (declaration axis at ``source_exists_semantics_unknown``)
+the headline is resolved by whether the device is actually OBSERVED:
+  * an observed device (telemetry-mapped and/or producing readings) is state 1
+    ``observed_weather_device_no_governed_declaration`` — the gap is governance, not a
+    missing source, so the remediation is to review evidence and declare;
+  * otherwise the source-axis overlay (states 7-9) describes the gap, with
+    ``weather_source_missing`` meaning nothing is observed/mapped and no weather source
+    is registered for the site at all.
+A device that already has a draft / active / eligible / stale declaration keeps its
+declaration state as the headline (the deeper source gap is still reported via
+``source_state``). Layer-1 blocking is only ever ``lowers_confidence`` /
+``informational`` — this layer never emits ``blocks_calculation``.
 """
 from __future__ import annotations
 
@@ -44,6 +55,7 @@ from app.crud.weather import (
 )
 from app.models.device import Device
 from app.models.site import Site
+from app.models.telemetry import TelemetryReading
 from app.models.weather import WeatherSourceProfileStatus
 from app.schema.weather import (
     WeatherSemanticsReconciliationResponse,
@@ -61,10 +73,18 @@ from app.services.weather.declaration_policy import (
     evaluate_mapping,
 )
 
-# --- Source/profile-axis overlay states (taxonomy states 6-8) ---------------
+# --- Source/profile-axis overlay states (taxonomy states 7-9) ---------------
 STATE_WEATHER_SOURCE_MISSING = "weather_source_missing"
 STATE_WEATHER_SOURCE_STALE = "weather_source_stale"
 STATE_SOURCE_COVERAGE_INCOMPLETE = "source_coverage_incomplete"
+
+# --- Observed-device state (taxonomy state 1) -------------------------------
+# A weather-capable device that is actually observed (telemetry-mapped and/or
+# producing readings) but has NO governed declaration. Distinguished from
+# ``weather_source_missing`` (nothing observed/mapped for the site at all).
+STATE_OBSERVED_WEATHER_DEVICE_NO_GOVERNED_DECLARATION = (
+    "observed_weather_device_no_governed_declaration"
+)
 
 # Internal sentinel: a usable, in-effect active source profile is present.
 _SOURCE_PRESENT = "source_present"
@@ -87,12 +107,28 @@ class _StateMeta:
     blocking_level: str
 
 
-# Presentation metadata for every headline state. Declaration states 1-5 reuse the
-# canonical declaration_policy constants so wording stays single-sourced; source
-# states 6-8 are defined here. ``required_action=None`` for the eligible state (no
-# action) and for ``declared_not_physics_usable`` (which prefers the verdict's own,
-# more specific required_action).
+# Presentation metadata for every headline state. The declaration-axis states reuse
+# the canonical declaration_policy constants so wording stays single-sourced; the
+# observed-device state (taxonomy state 1) and the source-axis states (7-9) are
+# defined here. ``required_action=None`` for the eligible state (no action) and for
+# ``declared_not_physics_usable`` (which prefers the verdict's own, more specific
+# required_action).
 _STATE_META: dict[str, _StateMeta] = {
+    STATE_OBSERVED_WEATHER_DEVICE_NO_GOVERNED_DECLARATION: _StateMeta(
+        label="Observed device — no governed declaration",
+        explanation=(
+            "A weather-capable telemetry device is observed for this site "
+            "(telemetry-mapped and/or producing readings), but no governed "
+            "weather-source/semantics declaration establishes what it measures. "
+            "Semantics are never inferred."
+        ),
+        required_action=(
+            "Review the available evidence and create a governed weather "
+            "declaration for this device (e.g. POA plane / cell temperature), "
+            "then activate."
+        ),
+        blocking_level=BLOCKING_LOWERS_CONFIDENCE,
+    ),
     STATE_DECLARED_ELIGIBLE_INTEGRATION_PENDING: _StateMeta(
         label="Eligible — integration pending",
         explanation=(
@@ -148,15 +184,15 @@ _STATE_META: dict[str, _StateMeta] = {
         blocking_level=BLOCKING_LOWERS_CONFIDENCE,
     ),
     STATE_WEATHER_SOURCE_MISSING: _StateMeta(
-        label="No weather source",
+        label="No weather device or source",
         explanation=(
-            "This site has no registered weather source, so there is nothing to "
-            "declare against. Attach evidence and register a weather source — "
-            "semantics are never inferred."
+            "No observed or mapped weather-capable device — and no registered "
+            "weather source — exists for this site/role, so there is nothing to "
+            "declare against. Semantics are never inferred."
         ),
         required_action=(
-            "Register a weather source for this site (attach source evidence) "
-            "before declaring this device's semantics."
+            "Connect, configure, map, or install an appropriate weather source "
+            "for this site before declaring semantics."
         ),
         blocking_level=BLOCKING_LOWERS_CONFIDENCE,
     ),
@@ -238,25 +274,52 @@ def _compute_source_axis(db: Session, site: Site) -> tuple[str, bool, bool]:
     return _SOURCE_PRESENT, True, True
 
 
+def _device_is_observed(db: Session, device: Device) -> bool:
+    """Whether a weather-capable device is actually OBSERVED.
+
+    A device is observed when it is telemetry-mapped (it has a
+    ``TelemetryDeviceMapping``) and/or it has produced at least one reading. An
+    observed device with no governed declaration is taxonomy state 1
+    (``observed_weather_device_no_governed_declaration``) rather than the
+    ``weather_source_missing`` source-axis state (which means nothing is
+    observed/mapped for the site at all). Read-only: a relationship check plus a
+    bounded EXISTS probe; no writes.
+    """
+    if getattr(device, "telemetry_mapping", None) is not None:
+        return True
+    readings_exist = (
+        db.query(TelemetryReading)
+        .filter(TelemetryReading.device_id == device.id)
+        .exists()
+    )
+    return bool(db.query(readings_exist).scalar())
+
+
 def _build_row(
-    device: Device, mapping: Any, *, source_state: str
+    device: Device, mapping: Any, *, source_state: str, observed: bool
 ) -> WeatherSemanticsReconciliationRow:
     """Build one read-only reconciliation row for a weather-capable device.
 
-    The declaration verdict (states 1-5) is the headline UNLESS semantics are
-    undeclared (state 1) AND the source is not currently usable, in which case the
-    deeper source-axis state (6-8) becomes the headline. A device with any
-    declared value (draft/active/eligible/stale) never has its state hidden by a
-    source gap — the gap is still disclosed via ``source_state``.
+    The declaration verdict is the headline UNLESS semantics are undeclared, in
+    which case the headline depends on whether the device is OBSERVED:
+      * an observed device (telemetry-mapped and/or producing readings) is state 1
+        ``observed_weather_device_no_governed_declaration`` — the gap is governance;
+      * an unobserved device whose source is not currently usable takes the deeper
+        source-axis state (``weather_source_missing`` / ``weather_source_stale`` /
+        ``source_coverage_incomplete``).
+    A device with any declared value (draft/active/eligible/stale) never has its
+    state hidden — the deeper source gap is still disclosed via ``source_state``.
     """
     verdict = evaluate_mapping(mapping)
     declaration_state = verdict.declaration_state
 
-    if (
-        declaration_state == STATE_SOURCE_EXISTS_SEMANTICS_UNKNOWN
-        and source_state != _SOURCE_PRESENT
-    ):
-        headline = source_state
+    if declaration_state == STATE_SOURCE_EXISTS_SEMANTICS_UNKNOWN:
+        if observed:
+            headline = STATE_OBSERVED_WEATHER_DEVICE_NO_GOVERNED_DECLARATION
+        elif source_state != _SOURCE_PRESENT:
+            headline = source_state
+        else:
+            headline = declaration_state
     else:
         headline = declaration_state
 
@@ -343,7 +406,12 @@ def build_site_semantics_reconciliation(
     rows: list[WeatherSemanticsReconciliationRow] = []
     for device in weather_devices:
         mapping = mapping_crud.get_current_for_device(device.id)
-        rows.append(_build_row(device, mapping, source_state=source_state))
+        observed = _device_is_observed(db, device)
+        rows.append(
+            _build_row(
+                device, mapping, source_state=source_state, observed=observed
+            )
+        )
 
     state_counts: dict[str, int] = {}
     blocking_counts: dict[str, int] = {}

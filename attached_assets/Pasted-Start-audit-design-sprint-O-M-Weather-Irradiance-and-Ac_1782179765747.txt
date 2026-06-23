@@ -1,0 +1,208 @@
+Start audit/design sprint: O&M Weather, Irradiance, and Actual-vs-Expected Performance Context.
+
+This is an audit/design sprint only. Do not implement production code, change expected calculations, alter resolver behavior, revalidate baselines, change weather declarations, or modify telemetry data.
+
+Context:
+Ilios now has:
+
+* V2 actual production telemetry;
+* weather-adjusted expected performance;
+* an O&M actual-versus-expected chart;
+* raw irradiance and temperature telemetry for some sites;
+* governed weather semantics declarations in WS.1–WS.4;
+* WS.5 expected-model integration explicitly deferred.
+
+Current product gap:
+Weather, irradiance, temperature, and actual-versus-expected performance are not presented together in a clear operational UI. Users cannot quickly assess whether a production variance may be weather-related, telemetry-related, or operational.
+
+Strategic objective:
+Design a read-only O&M Performance Context experience that presents actual production, expected production, observed weather telemetry, weather-source quality, and variance context together without fabricating causality or overstating unverified weather semantics.
+
+Core governance rules:
+
+* Raw observed weather telemetry may be displayed when available.
+* Raw `irradiance_wm2` must be labeled according to governed semantics:
+
+  * “POA irradiance” only when an active, physics-usable governed declaration establishes POA;
+  * otherwise “Observed irradiance” or “Irradiance — semantics unverified.”
+* Raw `cell_temperature_f` must be labeled:
+
+  * “Cell temperature” only when governed semantics establish cell/module temperature;
+  * otherwise “Observed temperature — semantics unverified.”
+* Do not imply that weather caused a production variance unless the required attribution policy is later approved.
+* Do not claim “weather-adjusted” performance is fully validated merely because raw weather telemetry is visible.
+* Keep raw telemetry, governed declaration state, expected-model eligibility, and performance interpretation visibly distinct.
+* Preserve nulls, genuine zeroes, and small negative nighttime tare values.
+* Do not use BigQuery, Firestore, SAFL, or legacy telemetry.
+
+A. Current UI and API audit
+
+Trace all current O&M / Project Hub surfaces that display:
+
+* actual production;
+* expected production;
+* variance;
+* irradiance;
+* temperature;
+* weather status;
+* baseline provenance;
+* telemetry data quality.
+
+For each, identify:
+
+* route/component;
+* API endpoint;
+* metric and unit;
+* time bucket;
+* timezone handling;
+* whether value is raw, rolled up, modeled, or derived;
+* current label;
+* current missing/unknown state;
+* whether data is suitable for the intended UI use.
+
+B. Proposed Performance Context layout
+
+Design a site-level O&M component that includes:
+
+1. Primary chart
+
+* Actual AC power, kW
+* Expected AC power, kW
+* Time-window selector
+* Clear expected-state label:
+
+  * available;
+  * partial;
+  * baseline invalid for period;
+  * baseline unavailable;
+  * weather dependency unresolved.
+
+2. Weather context overlay or aligned secondary chart
+
+* Observed irradiance, W/m²
+* Observed temperature, °F or °C according to user preference
+* Never force weather and power onto the same Y-axis.
+* Use separate axis, aligned subplot, or synchronized chart panels.
+* Preserve chart gaps for missing values.
+
+3. Performance summary cards
+
+* Actual energy for selected period
+* Expected energy where available
+* Variance, kWh and %
+* Observed peak irradiance
+* Weather source status
+* Baseline status / source
+* Telemetry completeness / freshness
+
+4. Data-quality and semantics banner
+   Examples:
+
+* “Observed irradiance is available, but sensor semantics are not yet verified.”
+* “Expected comparison is partially available because the historical baseline is invalid.”
+* “Weather source is physics-usable for the active model.”
+* “Weather telemetry is unavailable for this period.”
+* “Actual production is available; expected comparison is unavailable.”
+
+C. Weather-semantic display rules
+
+Define exact labels and badges for:
+
+* observed irradiance, semantics unverified;
+* POA irradiance, governed and physics-usable;
+* GHI irradiance, governed;
+* irradiance source missing;
+* observed temperature, semantics unverified;
+* cell/module temperature, governed;
+* ambient temperature, governed;
+* weather declaration draft;
+* weather declaration stale / needs re-review;
+* weather source stale;
+* modeled weather/design weather;
+* no weather telemetry.
+
+The UI must reveal:
+
+* declaration basis;
+* evidence/source state;
+* expected-model eligibility;
+* whether the displayed weather data is used by the active expected model;
+* whether the displayed weather data is merely contextual.
+
+D. Variance interpretation policy
+
+Design a conservative interpretation framework.
+
+Allowed:
+
+* factual, source-backed observations such as:
+
+  * “Observed irradiance was lower during the selected interval.”
+  * “Actual production was below modeled expected.”
+  * “Weather telemetry is unavailable / semantically unverified.”
+  * “A production device was not reporting.”
+
+Not allowed without future explicit attribution policy:
+
+* “Cloud cover caused underperformance.”
+* “Irradiance explains the production shortfall.”
+* “The site is underperforming because of weather.”
+* any causal or root-cause conclusion from correlation alone.
+
+Define language for:
+
+* no inference;
+* possible contextual signal;
+* verified model-supported comparison;
+* operational investigation needed.
+
+E. Site 4 design validation
+
+Use Site 4 as the example.
+
+The design must show:
+
+* actual site power curve;
+* expected site power curve where available;
+* observed irradiance;
+* observed temperature;
+* weather-dependency status:
+  “Observed weather telemetry is available, but IMT Reference Cell semantics are not yet governed/verified.”
+* no claim that irradiance is POA or that weather explains variance until a qualifying declaration and WS.5 integration are complete.
+
+F. Reporting and navigation
+
+Define where this experience belongs:
+
+* O&M Site Overview as primary location;
+* Project Hub O&M summary as compact context;
+* Reconciliation deep link for data-quality issues;
+* Telemetry tab deep link for weather-source semantics;
+* Data Room deep link for source evidence;
+* future investor report use as disclosure/context, not unsupported attribution.
+
+G. Test and implementation plan
+
+Provide:
+
+* UI state matrix;
+* API/data-contract requirements;
+* charting approach;
+* accessibility requirements;
+* timezone/unit rules;
+* no-data / partial-data behavior;
+* browser validation plan;
+* phased implementation plan:
+
+  1. read-only performance-context data contract;
+  2. O&M chart/context UI;
+  3. status/deep-link integration;
+  4. conservative narrative/insight rules;
+  5. later WS.5-aware expected-model connection.
+
+Deliverable:
+Create:
+
+`docs/om_weather_and_performance_context_ui_audit.md`
+
+No production changes in this sprint.

@@ -24,7 +24,7 @@ export type WeatherDeclarationBasis =
 export type WeatherDeclarationStatus = 'draft' | 'active' | 'superseded';
 
 // --- Governed taxonomy states ----------------------------------------------
-// Declaration axis (states 1-5).
+// Declaration axis (the governed declaration verdict states).
 export type WeatherDeclarationState =
   | 'source_exists_semantics_unknown'
   | 'declaration_draft'
@@ -32,10 +32,13 @@ export type WeatherDeclarationState =
   | 'declared_eligible_integration_pending'
   | 'declaration_stale_needs_re_review';
 
-// Source/profile overlay axis (states 6-8) + the declaration states above; the
-// reconciliation headline is one of all eight.
+// Reconciliation headline = the declaration states above, the source/profile
+// overlay axis (weather_source_missing / weather_source_stale /
+// source_coverage_incomplete), plus the observed-device state for a device that
+// is telemetry-mapped and/or producing readings but has no governed declaration.
 export type WeatherReconciliationState =
   | WeatherDeclarationState
+  | 'observed_weather_device_no_governed_declaration'
   | 'weather_source_missing'
   | 'weather_source_stale'
   | 'source_coverage_incomplete';
@@ -148,7 +151,7 @@ export interface WeatherUpstreamReEvaluateResponse {
   mappings: WeatherUpstreamMappingDivergence[];
 }
 
-// --- 8-state semantics reconciliation (WS.4, read-only) ---------------------
+// --- 9-state semantics reconciliation (WS.4, read-only) ---------------------
 export interface WeatherSemanticsReconciliationRow {
   device_id: number;
   device_name: string | null;

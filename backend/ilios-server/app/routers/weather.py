@@ -731,19 +731,22 @@ def re_evaluate_weather_upstream_changes(
 @weather_router.get(
     "/sites/{site_id}/semantics-reconciliation",
     response_model=WeatherSemanticsReconciliationResponse,
-    summary="Read-only governed weather-semantics reconciliation (8-state taxonomy)",
+    summary="Read-only governed weather-semantics reconciliation (9-state taxonomy)",
 )
 def get_weather_semantics_reconciliation(
     site: Annotated[Site, Depends(get_authorized_site)],
     db: Annotated[Session, Depends(get_session)],
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
 ) -> WeatherSemanticsReconciliationResponse:
-    """READ-ONLY 8-state weather-semantics reconciliation for a project/site.
+    """READ-ONLY 9-state weather-semantics reconciliation for a project/site.
 
     For every weather-source-capable device this discloses its position in the
-    governed taxonomy — declaration states 1-5 (from the live eligibility verdict)
-    overlaid by source/profile states 6-8 when semantics are undeclared — plus
-    deduped site-level counts (states, blocking levels, eligible, needs-re-review).
+    governed taxonomy — the declaration-axis states (from the live eligibility
+    verdict); for undeclared semantics, an OBSERVED device (telemetry-mapped and/or
+    producing readings) is the dedicated state 1
+    (``observed_weather_device_no_governed_declaration``) while an unobserved device
+    takes the source/profile overlay (states 7-9) — plus deduped site-level counts
+    (states, blocking levels, eligible, needs-re-review).
     It performs NO writes/commits, never infers or converts semantics (declaring
     nothing leaves the value ``unknown``), never promotes or activates anything,
     and never touches the WeatherResolver, the expected formula, ingestion,

@@ -19,6 +19,7 @@ import pytest
 
 from app.crud.device import DeviceCRUD
 from app.helpers.authentication import get_current_user
+from app.models.telemetry import TelemetryDeviceMapping
 from app.schema.user import CurrentUserSchema
 from tests.conftest import test_app
 
@@ -73,6 +74,28 @@ def weather_device(db_session, site_id):
     )
     yield device
     crud.delete_by_id(device.id)
+
+
+@pytest.fixture(scope="function")
+def observed_weather_device(db_session, weather_device):
+    """A weather-source-capable device that is OBSERVED (telemetry-mapped).
+
+    Adding a ``TelemetryDeviceMapping`` makes the device "observed" so the
+    reconciliation reports state 1
+    (``observed_weather_device_no_governed_declaration``) rather than the generic
+    ``weather_source_missing`` source-axis state. Teardown runs before the
+    ``weather_device`` teardown, so the mapping is removed before its device.
+    """
+    mapping = TelemetryDeviceMapping(
+        device_id=weather_device.id,
+        telemetry_device_id="WX-TELE-0001",
+        telemetry_device_name="Test Weather Telemetry",
+    )
+    db_session.add(mapping)
+    db_session.commit()
+    yield weather_device
+    db_session.delete(mapping)
+    db_session.commit()
 
 
 class TestWeatherDeclarationEndpoints:
@@ -135,7 +158,8 @@ class TestWeatherDeclarationEndpoints:
     def test_reconciliation_reports_weather_source_missing(
         self, client, site_id, weather_device
     ):
-        """With a weather device but no weather source, the row is source-missing."""
+        """An UNOBSERVED weather device (no telemetry mapping, no readings) with no
+        weather source is the source-missing state."""
         r = client.get(f"/api/weather/sites/{site_id}/semantics-reconciliation")
         assert r.status_code == 200, r.text
         body = r.json()
@@ -146,7 +170,7 @@ class TestWeatherDeclarationEndpoints:
         assert body["total_weather_capable_devices"] >= 1
 
         row = next(d for d in body["devices"] if d["device_id"] == weather_device.id)
-        # Undeclared semantics + no usable source => source-axis overlay wins.
+        # Undeclared semantics + not observed + no usable source => source-axis wins.
         assert row["reconciliation_state"] == "weather_source_missing"
         assert row["declaration_state"] == "source_exists_semantics_unknown"
         assert row["source_state"] == "weather_source_missing"
@@ -155,6 +179,37 @@ class TestWeatherDeclarationEndpoints:
         # Layer-1 never blocks calculation.
         assert row["blocking_level"] in ("lowers_confidence", "informational")
         # Semantics are never inferred — nothing declared stays unknown.
+        assert row["irradiance_plane"] in (None, "unknown")
+
+    def test_reconciliation_observed_device_no_declaration(
+        self, client, site_id, observed_weather_device
+    ):
+        """An OBSERVED weather device with no declaration is taxonomy state 1
+        (observed_weather_device_no_governed_declaration), never the generic
+        weather_source_missing source-axis state — even though the site still has
+        no registered weather source."""
+        r = client.get(f"/api/weather/sites/{site_id}/semantics-reconciliation")
+        assert r.status_code == 200, r.text
+        body = r.json()
+
+        row = next(
+            d
+            for d in body["devices"]
+            if d["device_id"] == observed_weather_device.id
+        )
+        assert (
+            row["reconciliation_state"]
+            == "observed_weather_device_no_governed_declaration"
+        )
+        # The declaration axis is still "no governed value"...
+        assert row["declaration_state"] == "source_exists_semantics_unknown"
+        # ...and the source axis still honestly discloses the missing source.
+        assert row["source_state"] == "weather_source_missing"
+        assert row["expected_model_eligible"] is False
+        assert row["needs_re_review"] is False
+        # Layer-1 never blocks calculation; the gap only lowers confidence.
+        assert row["blocking_level"] in ("lowers_confidence", "informational")
+        # Semantics are never inferred — observation is not a declaration.
         assert row["irradiance_plane"] in (None, "unknown")
 
     def test_declare_draft_then_reconciliation_shows_draft(
