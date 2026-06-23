@@ -26,6 +26,12 @@ description: How to actually run the FastAPI backend pytest suite and the gotcha
   tests, **override `company_id`/`site_id` in your test module** to create rows
   directly via `CompanyCRUD`/`SiteCRUD` on `db_session` (uses `samples.SETUP_COMPANIES[0]`
   / `samples.TEST_SITE_BODY`); this skips `client` and runs in seconds.
+- **A standalone `python -c` / script that queries ORM models** (outside pytest)
+  dies with `InvalidRequestError: ... 'Task' failed to locate a name` — SQLAlchemy
+  only configures mappers lazily and a partial-import script never registers all of
+  them. Fix: `import app.main` (or the full models package) once at the top before
+  the first query so every relationship target is registered. pytest's conftest does
+  this for you; ad-hoc scripts must do it themselves.
 - **A killed pytest run leaves connections holding locks on the test DB**; the next
   run's `create_all` then blocks forever. Clear them first:
   `psql "$DATABASE_URL" -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='<test_db>' AND pid<>pg_backend_pid()"`.

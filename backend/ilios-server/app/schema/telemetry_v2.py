@@ -27,6 +27,7 @@ from app.models.telemetry_expected import (
     TelemetryBaselineStatus,
     TelemetryBaselineType,
 )
+from app.schema.weather import WeatherSemanticsReconciliationResponse
 
 
 # ---------------------------------------------------------------------------
@@ -589,6 +590,199 @@ class TelemetrySyncJobListResponse(BaseModel):
 
     site_id: int
     jobs: list[TelemetrySyncJobSummary] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Performance context aggregator (read-only, composition-only)
+#
+# A single canonical envelope that COMPOSES already-computed V2 reads — the
+# period-effective expected calc, native rollup actuals, governed weather
+# semantics reconciliation, and eligibility diagnostics — without re-deriving
+# any formula, governance verdict, or eligibility decision. Nullable-everywhere:
+# null means "unavailable" and 0 means "a genuine measured zero"; a negative
+# tare is preserved verbatim and an expected/variance is never fabricated.
+# ---------------------------------------------------------------------------
+
+
+class PerformanceContextProvenance(BaseModel):
+    """Per-bucket provenance: which metrics/baseline produced the values."""
+
+    actual_metric: Optional[str] = None
+    actual_unit: Optional[str] = None
+    actual_agg: Optional[str] = None
+    expected_baseline_id: Optional[int] = None
+    baseline_selection_mode: Optional[str] = None
+    irradiance_metric: Optional[str] = None
+    irradiance_source_id: Optional[int] = None
+    temperature_metric: Optional[str] = None
+    temperature_source_id: Optional[int] = None
+    # The governed weather_device_mapping (if any) backing the weather labels for
+    # this bucket; null when no governed mapping produced the value (never faked).
+    weather_declaration_mapping_id: Optional[int] = None
+
+
+class PerformanceContextPoint(BaseModel):
+    """One time bucket of composed actual / expected / weather context.
+
+    Every numeric field is nullable: ``null`` == unavailable, ``0`` == a genuine
+    measured zero (a negative tare is preserved), and an expected/variance is
+    never fabricated when an input is missing.
+    """
+
+    bucket_start: datetime
+    bucket_start_utc: datetime
+    bucket_start_site_local: Optional[datetime] = None
+
+    actual_kw: Optional[float] = None
+    actual_kwh: Optional[float] = None
+    actual_state: str
+
+    expected_kw: Optional[float] = None
+    expected_kwh: Optional[float] = None
+    expected_state: str
+    baseline_id: Optional[int] = None
+
+    variance_kwh: Optional[float] = None
+    variance_pct: Optional[float] = None
+
+    irradiance_wm2: Optional[float] = None
+    temperature: Optional[float] = None
+
+    sample_count: Optional[int] = None
+    completeness: Optional[float] = None
+
+    source_provenance: PerformanceContextProvenance = Field(
+        default_factory=PerformanceContextProvenance
+    )
+
+
+class PerformanceContextWeatherMetric(BaseModel):
+    """Compact, verbatim per-metric weather semantics summary.
+
+    Every field is copied verbatim from the governed semantics reconciliation
+    rows — no label is invented and no state is recomputed.
+    """
+
+    label: Optional[str] = None
+    plane: Optional[str] = None
+    type: Optional[str] = None
+    basis: Optional[str] = None
+    expected_model_eligible: bool = False
+    used_by_active_model: bool = False
+
+
+class PerformanceContextWeatherSemantics(BaseModel):
+    """Governed weather semantics, projected verbatim (never re-derived).
+
+    The compact ``irradiance``/``temperature`` blocks and the ``headline_state`` /
+    ``blocking_level`` are selected from the reconciliation rows; the full
+    reconciliation response is embedded under ``reconciliation`` so a consumer can
+    read the authoritative rows directly.
+    """
+
+    irradiance: PerformanceContextWeatherMetric = Field(
+        default_factory=PerformanceContextWeatherMetric
+    )
+    temperature: PerformanceContextWeatherMetric = Field(
+        default_factory=PerformanceContextWeatherMetric
+    )
+    headline_state: Optional[str] = None
+    blocking_level: Optional[str] = None
+    reconciliation: Optional["WeatherSemanticsReconciliationResponse"] = None
+
+
+class PerformanceContextBaselineStatus(BaseModel):
+    """The active baseline's read-time health for the window (never mutated)."""
+
+    expected_baseline_available: bool = False
+    expected_state: str
+    baseline_id: Optional[int] = None
+    baseline_type: Optional[str] = None
+    baseline_selection_mode: Optional[str] = None
+    # Additive fail-closed metadata, non-null only when the active baseline is
+    # physically invalid (validated on read).
+    baseline_invalid: Optional[bool] = None
+    invalid_baseline_id: Optional[int] = None
+    baseline_validation_summary: Optional[Any] = None
+    baseline_validation_policy_version: Optional[str] = None
+    required_action: Optional[str] = None
+
+
+class PerformanceContextTelemetryQuality(BaseModel):
+    """Eligibility/mapping counts (verbatim) + native-read freshness."""
+
+    total_devices: int = 0
+    mappable_count: int = 0
+    mapped_count: int = 0
+    unmapped_eligible_count: int = 0
+    expected_driving_count: int = 0
+    weather_source_count: int = 0
+    weather_unknown_semantics_count: int = 0
+
+    latest_reading_at: Optional[datetime] = None
+    latest_bucket_start: Optional[datetime] = None
+    data_delay_minutes: Optional[int] = None
+    freshness_state: str = "no_data"
+
+
+class PerformanceContextSummary(BaseModel):
+    """Window-level rollup of the composed series (honest, never fabricated)."""
+
+    window_start: datetime
+    window_end: datetime
+    bucket_size: str
+    temp_unit: str
+    bucket_count: int = 0
+
+    total_actual_kwh: Optional[float] = None
+    total_expected_kwh: Optional[float] = None
+    variance_kwh: Optional[float] = None
+    variance_pct: Optional[float] = None
+
+    actual_state: str
+    expected_state: str
+
+
+class PerformanceContextWindow(BaseModel):
+    """The resolved bounded window as naive-UTC instants plus a tz disclosure note.
+
+    ``start``/``end`` are the canonical naive-UTC bounds (the query/storage axis);
+    ``tz_note`` states verbatim that ``site_timezone`` shifts ONLY the day/'today'
+    boundary, never the stored timestamps.
+    """
+
+    start: datetime
+    end: datetime
+    tz_note: str = (
+        "all timestamps are naive-UTC; site_timezone affects only "
+        "day/'today' boundaries"
+    )
+
+
+class PerformanceContextResponse(BaseModel):
+    """Canonical read-only V2 performance-context envelope (composition-only)."""
+
+    site_id: int
+    # IANA tz (e.g. "America/New_York"); affects ONLY the 'today'/daily boundary,
+    # never how timestamps render. Falls back to "UTC" when the site has none.
+    site_timezone: Optional[str] = None
+    window: PerformanceContextWindow
+    # Flat bounds retained additively for back-compat with earlier callers; the
+    # canonical bounds are ``window.start``/``window.end``.
+    window_start: datetime
+    window_end: datetime
+    bucket_size: str
+    temp_unit: str
+
+    series: list[PerformanceContextPoint] = Field(default_factory=list)
+    weather_semantics: PerformanceContextWeatherSemantics = Field(
+        default_factory=PerformanceContextWeatherSemantics
+    )
+    baseline_status: PerformanceContextBaselineStatus
+    telemetry_quality: PerformanceContextTelemetryQuality = Field(
+        default_factory=PerformanceContextTelemetryQuality
+    )
+    summary: PerformanceContextSummary
 
 
 # ---------------------------------------------------------------------------

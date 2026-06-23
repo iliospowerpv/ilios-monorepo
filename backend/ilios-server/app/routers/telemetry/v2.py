@@ -106,6 +106,7 @@ from app.schema.telemetry_v2 import (
     ProviderAccountList,
     ProviderAccountResponse,
     ProviderAccountUpdateRequest,
+    PerformanceContextResponse,
     ProviderCatalogEntry,
     ProviderCatalogList,
     RefreshReadingsRequest,
@@ -161,6 +162,11 @@ from app.services.telemetry.device_eligibility_diagnostics_service import (
 from app.services.telemetry.device_inventory_reconciliation_service import (
     build_site_inventory_reconciliation,
 )
+from app.services.telemetry.performance_context_service import (
+    build_performance_context,
+)
+from app.helpers.telemetry.v2_chart_data import _site_local_day_start_utc
+from app.services.weather.bucketing import floor_to_bucket
 from app.models.device import Device
 from app.services.telemetry.ingestion_service import (
     IngestionConfigError,
@@ -2548,6 +2554,121 @@ def get_site_rollup_series(
         count=len(points),
         latest_bucket_start=points[-1].bucket_start if points else None,
         points=points,
+    )
+
+
+_ALLOWED_TEMP_UNITS = ("F", "C")
+
+# Selectable window presets (contract §2.1). ``custom`` falls back to from/to.
+# Every resolved window is still clamped to the shared 90-day max.
+_ALLOWED_PERF_WINDOWS = ("today", "24h", "7d", "30d", "custom")
+
+
+def _resolve_perf_window(
+    site: Site,
+    window: Optional[str],
+    frm: Optional[datetime],
+    to: Optional[datetime],
+) -> tuple[datetime, datetime]:
+    """Resolve the performance-context window (preset OR explicit from/to).
+
+    The site timezone affects ONLY the ``today`` daily boundary — ``today``
+    starts at the site's local midnight expressed as naive-UTC (via
+    ``_site_local_day_start_utc``), consistent with the rest of the V2 stack.
+    All other presets are rolling spans ending "now". Every result is run
+    through ``_clamp_series_window`` so the 90-day max and naive-UTC
+    normalization always apply.
+    """
+    if not window or window.lower() == "custom":
+        return _clamp_series_window(frm, to)
+    w = window.lower()
+    if w not in _ALLOWED_PERF_WINDOWS:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Invalid window '{window}'. "
+                f"Allowed: {', '.join(_ALLOWED_PERF_WINDOWS)}."
+            ),
+        )
+    now = datetime.utcnow()
+    if w == "today":
+        return _clamp_series_window(_site_local_day_start_utc(site), now)
+    if w == "24h":
+        return _clamp_series_window(now - timedelta(days=1), now)
+    if w == "30d":
+        return _clamp_series_window(now - timedelta(days=30), now)
+    # "7d" (and the explicit default).
+    return _clamp_series_window(now - timedelta(days=7), now)
+
+
+@telemetry_v2_router.get(
+    "/v2/sites/{site_id}/performance-context",
+    response_model=PerformanceContextResponse,
+    summary="Read-only composed V2 performance context for a site",
+)
+def get_site_performance_context(
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db_session: Annotated[Session, Depends(get_session)],
+    bucket_size: Annotated[str, Query(alias="bucket")] = "1h",
+    temp_unit: str = "F",
+    window: Optional[str] = None,
+    from_: Annotated[Optional[datetime], Query(alias="from")] = None,
+    to: Optional[datetime] = None,
+) -> PerformanceContextResponse:
+    """Compose the read-only V2 performance-context envelope for a site.
+
+    A single canonical view that COMPOSES already-computed V2 reads — the
+    period-effective expected calc, native rollup actuals, governed weather
+    semantics reconciliation, and eligibility diagnostics — without re-deriving
+    any formula, governance verdict, or eligibility decision. Performs zero
+    writes/commits. Nullable-everywhere: ``null`` means "unavailable" and ``0``
+    means "a genuine measured zero" (a negative tare is preserved), and an
+    expected/variance is never fabricated.
+
+    ``window`` selects a preset (``today``/``24h``/``7d``/``30d``/``custom``); a
+    bare ``from``/``to`` (or ``custom``) is an explicit range. The window
+    defaults to the last 7 days (max 90); ``bucket`` is one of
+    ``15m``/``30m``/``1h``/``1d``; ``temp_unit`` is ``F`` (default) or ``C``.
+    The site timezone affects ONLY the ``today``/daily boundary.
+    """
+    _validate_bucket_size(bucket_size)
+    normalized_temp_unit = (temp_unit or "F").upper()
+    if normalized_temp_unit not in _ALLOWED_TEMP_UNITS:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Invalid temp_unit '{temp_unit}'. "
+                f"Allowed: {', '.join(_ALLOWED_TEMP_UNITS)}."
+            ),
+        )
+    start, end = _resolve_perf_window(site, window, from_, to)
+    # ``today`` is a SITE-LOCAL day boundary, but 1d rollups are epoch-anchored to
+    # UTC midnight. For a site whose local midnight is not UTC midnight (any
+    # non-UTC site), the resolved ``today`` start does not land on the 1d grid, so
+    # a 1d bucket over "today" would be empty/misaligned. Reject the combination
+    # with a clear error rather than return a misleading empty series.
+    if (
+        bucket_size == "1d"
+        and (window or "").lower() == "today"
+        and floor_to_bucket(start, "1d") != start
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "bucket=1d is not supported with window=today for this site: the "
+                "site's local day boundary does not align to the UTC-anchored "
+                "daily rollup grid, so a 1d bucket over 'today' would be empty. "
+                "Use a finer bucket (15m/30m/1h) for 'today', or use bucket=1d "
+                "with a rolling window (24h/7d/30d) or an explicit custom range."
+            ),
+        )
+    return build_performance_context(
+        db_session,
+        site=site,
+        window_start=start,
+        window_end=end,
+        bucket_size=bucket_size,
+        temp_unit=normalized_temp_unit,
     )
 
 
