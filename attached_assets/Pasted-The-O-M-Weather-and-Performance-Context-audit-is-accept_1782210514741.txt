@@ -1,0 +1,144 @@
+The O&M Weather and Performance Context audit is accepted.
+
+The most important finding is the existence of two parallel actual-versus-expected pipelines and the current Actual Production widget behavior that coerces missing actual values to `0`.
+
+Do not begin broad UI implementation yet.
+
+Start a narrow design and remediation planning sprint:
+
+**V2 Performance Context Data Contract and Existing Actual-Display Integrity**
+
+Objective:
+
+Define the single V2-native read model that will power:
+
+* O&M actual-versus-expected performance charts;
+* the new Performance Context panel;
+* Project Hub summary widgets;
+* future investor reporting disclosures.
+
+This sprint must also plan the correction for missing actual values currently rendered as zero.
+
+No production code changes in this sprint unless a narrowly scoped, fully validated null-display correction is separately approved.
+
+Required work:
+
+1. Trace both current actual-versus-expected pipelines
+
+For each pipeline, identify:
+
+* endpoint;
+* source tables/services;
+* actual calculation path;
+* expected calculation path;
+* baseline-selection behavior;
+* weather/irradiance fields;
+* timezone and bucket behavior;
+* null/zero/negative handling;
+* consumers;
+* legacy dependencies;
+* whether it is V2 operational truth or compatibility/legacy behavior.
+
+2. Define the canonical V2 Performance Context contract
+
+The proposed contract must expose, per time bucket:
+
+* `actual_kw` and/or `actual_kwh`;
+* `expected_kw` and/or `expected_kwh`;
+* variance value and variance percent only when mathematically valid;
+* actual data state;
+* expected data state;
+* baseline state;
+* observed irradiance;
+* observed temperature;
+* weather semantic state;
+* weather expected-model eligibility;
+* telemetry freshness/completeness;
+* source provenance and bucket timezone.
+
+Every metric must support true nulls.
+
+Required distinction:
+
+* `0` = measured or computed zero;
+* `null` = unavailable / not applicable / unknown;
+* negative nighttime tare/parasitic values = preserved, never coerced to zero;
+* expected unavailable = explicit expected-state, never fabricated;
+* actual unavailable = explicit actual-state, never zero-filled.
+
+3. Define actual-state taxonomy
+
+At minimum:
+
+* `available`
+* `partial`
+* `telemetry_unavailable`
+* `telemetry_stale`
+* `no_production_during_interval`
+* `pre_pto`
+* `insufficient_data`
+* `not_applicable`
+
+Do not infer an outage from missing actual telemetry.
+
+4. Correct the existing Actual Production widget design
+
+Document the exact UI behavior change required:
+
+* replace null-to-zero rendering with `N/A`, `Unavailable`, or the applicable actual-state;
+* preserve genuine zero and negative values;
+* show a data-quality explanation and deep link where appropriate;
+* do not alter raw telemetry, rollups, expected logic, or baseline logic.
+
+5. Define weather presentation boundaries
+
+The contract may include observed weather values, but labels must remain governed:
+
+* “Observed irradiance — semantics unverified”
+* “POA irradiance” only when active governed declaration supports it
+* “Observed temperature — semantics unverified”
+* “Cell/module temperature” only when governed declaration supports it
+* “Weather data is contextual only” until WS.5 integration exists
+
+No causal language or root-cause conclusion.
+
+6. Site 4 validation
+
+Use Site 4 to demonstrate:
+
+* V2 actual curve;
+* expected curve where valid;
+* observed irradiance and temperature;
+* current weather state:
+  `observed_weather_device_no_governed_declaration`;
+* expected-model eligibility;
+* exact null behavior for any missing buckets;
+* confirmation that no UI calls it POA or says weather explains variance.
+
+7. Deliverable
+
+Create:
+
+`docs/v2_performance_context_data_contract_and_actual_display_integrity.md`
+
+Include:
+
+* pipeline comparison;
+* recommended canonical contract;
+* field-level semantics;
+* status taxonomy;
+* migration/compatibility strategy;
+* existing-widget correction plan;
+* API and frontend implementation phases;
+* browser validation plan;
+* regression tests;
+* explicit list of modules that must not be changed.
+
+Hard constraints:
+
+* no BigQuery, Firestore, SAFL, or legacy telemetry as operational truth;
+* no expected/baseline formula change;
+* no weather declaration change;
+* no WS.5 work;
+* no fabricated nulls, zeroes, weather semantics, or causal explanations;
+* no automatic retirement of an existing endpoint until all current consumers are inventoried and migrated safely.
