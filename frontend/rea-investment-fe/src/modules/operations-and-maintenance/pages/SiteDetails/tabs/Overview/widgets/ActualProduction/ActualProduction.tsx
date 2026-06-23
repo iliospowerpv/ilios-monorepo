@@ -101,13 +101,13 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
   const theme = useTheme();
   const [alignment, setAlignment] = React.useState('current');
 
-  const { system_size_ac = 0, system_size_dc = 0, weather = 'Sunny' } = data || {};
-  const actual_kw = alignment === 'current' ? (data?.actual_kw ?? 0) : (data?.cumulative_actual_kw ?? 0);
-  const actual_vs_expected =
-    alignment === 'current' ? (data?.actual_vs_expected ?? 0) : (data?.cumulative_actual_vs_expected ?? 0);
+  // Weather descriptor is contextual/observed only — no hard-coded default. The
+  // chip below renders ONLY when a descriptor is actually present.
+  const { system_size_ac = 0, system_size_dc = 0, weather } = data || {};
 
-  const actualVsExpected = actual_vs_expected > 100 ? 100 : (actual_vs_expected ?? 0);
-  const actualVsExpectedRest = 100 - actualVsExpected ?? 0;
+  // Honest null handling: only null/undefined map to N/A. A genuine measured 0
+  // and a negative night-time tare value are finite and preserved untouched.
+  const isNum = (v: number | null | undefined): v is number => typeof v === 'number' && Number.isFinite(v);
 
   // V2 telemetry sites carry actual-only data (no projected baseline). The
   // resolver maps expected_state (or the legacy boolean) to a display mode:
@@ -115,8 +115,36 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
   // baseline_not_available -> honest "N/A" + reason, never a fabricated 0.
   const expectedState = resolveExpectedState(data);
   const rawExpected = alignment === 'current' ? data?.expected_kw : data?.cumulative_expected_kw;
-  const expectedDisplay =
-    expectedState.showExpected && typeof rawExpected === 'number' ? formatFloatValue(rawExpected) : 'N/A';
+  const expectedDisplay = expectedState.showExpected && isNum(rawExpected) ? formatFloatValue(rawExpected) : 'N/A';
+
+  // Actual value for the selected scope. Kept raw (no `?? 0`) so a missing
+  // actual renders as N/A instead of a misleading 0.
+  const actualRaw = alignment === 'current' ? data?.actual_kw : data?.cumulative_actual_kw;
+  const actualAvailable = isNum(actualRaw);
+
+  // Variance/percent is meaningful only when BOTH sides are present: a measured
+  // actual AND a usable expected baseline. Otherwise the gauge shows "Variance
+  // N/A" rather than a fabricated 0% ring.
+  const varianceRaw = alignment === 'current' ? data?.actual_vs_expected : data?.cumulative_actual_vs_expected;
+  const varianceAvailable = expectedState.showExpected && actualAvailable && isNum(varianceRaw);
+  const varianceValue = isNum(varianceRaw) ? varianceRaw : 0;
+  const actualVsExpected = varianceValue > 100 ? 100 : varianceValue;
+  const actualVsExpectedRest = 100 - actualVsExpected;
+
+  // Caption for the "Variance N/A" state — actual-side reason first, then the
+  // expected-side term from the resolver.
+  const varianceReason = !actualAvailable ? 'Actual unavailable' : expectedState.term;
+
+  // Observed weather descriptor + icon, normalized from the string-or-object
+  // shape. Null when no descriptor is present so the chip stays hidden.
+  const weatherDescription =
+    weather && typeof weather === 'object' && 'weather_description' in weather
+      ? weather.weather_description
+      : typeof weather === 'string'
+        ? weather
+        : null;
+  const weatherIconUrl =
+    weather && typeof weather === 'object' && 'weather_icon_url' in weather ? weather.weather_icon_url : null;
 
   const deriveProductionColorFromValue = (progress: number): string => {
     if (progress < 51) return theme.efficiencyColors.low;
@@ -128,10 +156,11 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
   const chartData = {
     datasets: [
       {
-        // No baseline -> fully neutral ring (0 filled) so it reads as "no data".
-        data: expectedState.showExpected ? [actualVsExpected, actualVsExpectedRest] : [0, 100],
+        // No usable variance (missing actual or expected) -> fully neutral ring
+        // (0 filled) so it reads as "no data", never a fabricated 0%.
+        data: varianceAvailable ? [actualVsExpected, actualVsExpectedRest] : [0, 100],
         backgroundColor: [
-          expectedState.showExpected ? deriveProductionColorFromValue(actual_vs_expected) : theme.efficiencyColors.none,
+          varianceAvailable ? deriveProductionColorFromValue(varianceValue) : theme.efficiencyColors.none,
           '#F3F4F8'
         ],
         cutout: '75%'
@@ -204,9 +233,9 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
                     textAlign: 'center'
                   }}
                 >
-                  {expectedState.showExpected ? (
+                  {varianceAvailable ? (
                     <>
-                      {actual_vs_expected ?? 0}{' '}
+                      {varianceValue}{' '}
                       <Typography
                         variant="body2"
                         display="inline-block"
@@ -221,9 +250,9 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
                     </>
                   ) : (
                     <>
-                      N/A
+                      Variance N/A
                       <Typography variant="body2" fontSize={12} color={theme => theme.palette.text.secondary}>
-                        {expectedState.term}
+                        {varianceReason}
                       </Typography>
                     </>
                   )}
@@ -285,7 +314,7 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
                     }}
                   >
                     <Typography variant="h6" fontWeight={700} fontSize={20} lineHeight="32px">
-                      {formatFloatValue(actual_kw ?? 0)}
+                      {isNum(actualRaw) ? formatFloatValue(actualRaw) : 'N/A'}
                     </Typography>
                     <Typography variant="caption" color={theme => theme.palette.text.secondary}>
                       {alignment === 'current' ? `Actual (kW)` : `Actual (kWh)`}
@@ -321,14 +350,8 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
                     </Typography>
                   </Grid>
                   <Grid item xs={4} sx={{ '&.MuiGrid-item': { textAlign: 'center' } }}>
-                    {weather && (
-                      <BootstrapTooltip
-                        title={
-                          weather && typeof weather === 'object' && 'weather_description' in weather
-                            ? weather.weather_description
-                            : weather
-                        }
-                      >
+                    {weatherDescription && (
+                      <BootstrapTooltip title={`Observed weather (contextual): ${weatherDescription}`}>
                         <Box
                           display="flex"
                           flexDirection="column"
@@ -338,13 +361,14 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
                           alignItems="center"
                           gap="4px"
                         >
-                          <WeatherIndicator
-                            imageSrc={
-                              weather && typeof weather === 'object' && 'weather_icon_url' in weather
-                                ? weather.weather_icon_url
-                                : null
-                            }
-                          />
+                          <Typography
+                            variant="caption"
+                            color={theme => theme.palette.text.secondary}
+                            sx={{ lineHeight: 1 }}
+                          >
+                            Observed
+                          </Typography>
+                          <WeatherIndicator imageSrc={weatherIconUrl} />
                           <Typography
                             variant="caption"
                             noWrap
@@ -352,9 +376,7 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
                             maxWidth="100%"
                             color={theme => theme.palette.text.secondary}
                           >
-                            {weather && typeof weather === 'object' && 'weather_description' in weather
-                              ? weather.weather_description
-                              : weather}
+                            {weatherDescription}
                           </Typography>
                         </Box>
                       </BootstrapTooltip>
@@ -362,6 +384,13 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
                   </Grid>
                 </Box>
               </Grid>
+              {!actualAvailable && (
+                <Grid item xs={12} sx={{ '&.MuiGrid-item': { paddingTop: '4px' } }}>
+                  <Typography variant="caption" color={theme => theme.palette.text.secondary}>
+                    Actual production is unavailable for this period (no telemetry reading), shown as N/A.
+                  </Typography>
+                </Grid>
+              )}
             </Grid>
           </Box>
         )}
