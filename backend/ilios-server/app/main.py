@@ -135,6 +135,33 @@ def _resolve_cors_origins() -> list[str]:
     return dev_origins
 
 
+def _resolve_cors_origin_regex() -> str | None:
+    """Resolve an additional allow-origin *regex* for CORS.
+
+    In development the exact preview origin is brittle: the Replit dev
+    domain can rotate, the preview can be served from a port-specific
+    host, and a stale browser tab may still carry a previous domain.
+    Any of those produce an Origin that is absent from the static
+    allow-list captured at startup, so the CORS preflight is rejected
+    with ``400 "Disallowed CORS origin"`` and the real request (e.g.
+    ``POST /api/auth/login``) never runs.
+
+    To make local/preview development robust we additionally allow any
+    Replit preview origin (``*.replit.dev`` / ``*.replit.app``, with an
+    optional explicit port) via regex. This is intentionally NOT applied
+    when:
+
+    - ``CORS_ALLOWED_ORIGINS`` is explicitly set (operator is being
+      deliberate about the allow-list), or
+    - the environment is production-like (locked to the static list).
+    """
+    if (os.environ.get("CORS_ALLOWED_ORIGINS") or "").strip():
+        return None
+    if _is_production():
+        return None
+    return r"https://([a-z0-9-]+\.)*(replit\.dev|replit\.app)(:\d+)?"
+
+
 def _validate_configuration():
     """Validate critical configuration at startup."""
     logger.info(f"Storage provider: {settings.storage_provider}")
@@ -277,10 +304,14 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
         responses=HTTP_422_RESPONSE,
     )
     cors_origins = _resolve_cors_origins()
+    cors_origin_regex = _resolve_cors_origin_regex()
     logger.info(f"CORS allowed origins: {cors_origins}")
+    if cors_origin_regex:
+        logger.info(f"CORS allowed origin regex: {cors_origin_regex}")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins,
+        allow_origin_regex=cors_origin_regex,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["*"],

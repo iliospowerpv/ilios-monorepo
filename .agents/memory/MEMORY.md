@@ -3,6 +3,7 @@
 - [Telemetry expected baseline design](telemetry-expected-baseline-design.md) — two "expected" notions (PVsyst vs weather-adjusted physics); on-read native baseline w/ never-fabricate states; consumed by V2 charts + aggregation.
 - [Telemetry V2 scheduler flag](telemetry-scheduler-flag.md) — scheduled pulls gated by opt-in lowercase `telemetry_scheduler_enabled` (default off); off looks "enabled" in UI but runs zero jobs.
 - [CORS expose_headers](cors-expose-headers.md) — FE is cross-origin; any non-safelisted response header it must read (e.g. Retry-After on 429) must be in CORSMiddleware expose_headers in main.py or the browser silently strips it.
+- [Dev CORS origin brittleness](cors-dev-origin-brittleness.md) — Preview login "fails" via OPTIONS 400 Disallowed CORS origin (POST never runs); static dev allow-list snapshots one domain — fixed with dev-only allow_origin_regex, prod untouched.
 - [Telemetry V2 read-path precedence](telemetry-v2-chart-precedence.md) — app-facing telemetry (charts/health/readiness + company/investor/portfolio aggregation) is V2-only; expected/loss = honest N/A, never fabricated zero.
 - [Telemetry V2 scheduler + backfill](telemetry-scheduler-backfill.md) — floor rollups at trigger; cursor advances only on full success; backfill+scheduler share the per-site lease lock (manual refresh doesn't); FE parses naive-UTC by appending Z.
 - [Telemetry rollup completeness](telemetry-rollup-completeness.md) — completeness needs PER-SERIES cadence inference; merging timestamps across devices collapses cadence to ~1s and ruins the ratio.
