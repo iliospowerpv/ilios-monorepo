@@ -1,0 +1,251 @@
+Approved implementation sprint: Tasks #68 and #69 only.
+
+Implement these as narrow, additive, independently shippable tasks. Do not expand scope.
+
+Do not begin:
+- Performance Context UI panel
+- Investor Reporting
+- Project Hub changes
+- broad O&M refactoring
+- migration of existing consumers
+
+TASK #68 — Honest Null Display: Actual Production Widget
+
+Objective:
+Fix the render-layer honesty issue where missing actual telemetry is shown as 0 kW / 0% and weather defaults to “Sunny.”
+
+Constraints:
+- Frontend only.
+- No backend changes.
+- No API changes.
+- No schema changes.
+- No telemetry, rollup, expected, baseline, or weather-governance changes.
+- Only null/undefined render as unavailable.
+- Genuine 0 renders as 0.
+- Negative values remain negative.
+
+Required behavior:
+- null actual → N/A / Unavailable
+- undefined actual → N/A / Unavailable
+- 0 actual → 0
+- negative actual → negative value preserved
+- If actual_state exists, display it.
+- If actual_state does not exist, display neutral “Data unavailable.”
+- Remove any weather fallback such as weather ?? "Sunny".
+- Weather chip renders only when a descriptor exists.
+- Weather label must be contextual/observed only, with no causal language.
+- If actual or expected is unavailable, show “Variance N/A” and do not render a fabricated 0% gauge/ring.
+- Expected-side behavior remains unchanged unless needed only to support Variance N/A display.
+
+Same-pattern audit:
+Check:
+frontend/rea-investment-fe/src/modules/operations-and-maintenance/pages/SiteDetails/tabs/Overview/widgets/ActualProjectedPower/ActualProjectedPower.tsx
+
+If the same null-to-zero pattern exists in the same render path, apply the same honest-null treatment. Do not expand to unrelated widgets.
+
+Relevant primary file:
+frontend/rea-investment-fe/src/modules/operations-and-maintenance/pages/SiteDetails/tabs/Overview/widgets/ActualProduction/ActualProduction.tsx
+
+Tests:
+Add/extend tests for:
+- null → N/A
+- undefined → N/A
+- 0 → 0
+- negative → negative
+- weather absent → chip hidden
+- actual or expected unavailable → Variance N/A
+
+Browser validation:
+Use Site 4 / 110 Shawmut:
+- missing actual bucket renders N/A/gap
+- genuine night zero renders 0
+- negative tare is preserved
+- no permanent Sunny chip
+- expected unavailable shows Variance N/A
+
+TASK #69 — V2 Performance Context Read Model
+
+Objective:
+Create a new additive, read-only canonical V2 Performance Context read model. This is a backend service + endpoint only. No frontend consumers migrate in this task.
+
+Future consumers only:
+- Performance Context panel
+- Project Hub summaries
+- Investor Performance Reports
+- O&M dashboard consumers
+
+Critical constraints:
+- Read-only composition only.
+- No writes.
+- No ingestion.
+- No activation/promote/revalidate behavior.
+- No expected math changes.
+- No baseline selection changes.
+- No weather declaration/governance changes.
+- No WS.5 work.
+- No BigQuery, Firestore, SAFL, or legacy telemetry as operational truth.
+- Do not alter existing O&M chart endpoints.
+- Do not alter existing V2 series endpoints.
+- Do not migrate any current consumer.
+
+Architecture sequence:
+1. Build independently testable Performance Context service/helper first.
+2. Add unit/integration tests.
+3. Validate Site 4.
+4. Only then expose the endpoint.
+
+Endpoint:
+GET /api/telemetry/v2/sites/{site_id}/performance-context
+
+Response must include:
+schema_version: "1.0"
+
+The response must include a canonical envelope with:
+- per-bucket series
+- nullable actual_kw and/or actual_kwh
+- nullable expected_kw and/or expected_kwh
+- variance and variance_percent only when mathematically valid
+- actual_state
+- expected_state
+- baseline_state
+- observed irradiance
+- observed temperature
+- weather semantic state
+- weather expected-model eligibility
+- telemetry freshness/completeness
+- source provenance
+- UTC bucket timestamp
+- site-local display timestamp
+- bucket timezone metadata
+- window summary
+
+Actual rules:
+- measured zero = 0
+- unavailable = null
+- negative tare/parasitic values preserved
+- never fabricate zero
+- never infer outage from missing telemetry
+
+Expected rules:
+- Use expected_service verbatim.
+- No formula change.
+- No baseline change.
+- Expected unavailable must be explicit via expected_state, never fabricated.
+
+Variance rules:
+Calculate variance only when:
+- actual exists
+- expected exists
+- expected > 0
+
+Otherwise:
+variance = null
+variance_percent = null
+
+Actual-state taxonomy:
+Support at minimum:
+- available
+- partial
+- telemetry_unavailable
+- telemetry_stale
+- no_production_during_interval
+- pre_pto
+- insufficient_data
+- not_applicable
+
+Weather rules:
+- Project existing weather semantics verbatim from existing services.
+- Do not derive or reinterpret weather semantics in the aggregator.
+- used_by_active_model must remain false until WS.5 exists.
+- Use only contextual labels unless governed declarations already support stronger labels.
+- No POA label unless governed declaration supports it.
+- No cell/module temperature label unless governed declaration supports it.
+- No causal/root-cause language.
+
+Provenance:
+Each bucket must support:
+- source_provenance
+- telemetry_freshness
+- telemetry_completeness
+- timezone
+- utc_timestamp
+- site_local_display
+
+Never fabricate provenance. If absent, use null.
+
+Timezone:
+- UTC remains canonical.
+- Site timezone affects daily/today boundary only.
+- Bucket keys remain UTC.
+
+Snapshot fixtures:
+Produce JSON snapshots for:
+1. Site 4
+2. healthy site
+3. no-baseline site
+4. stale telemetry site
+
+Tests:
+Add tests for:
+- missing actual → null + actual_state, never 0
+- genuine 0 preserved
+- negative preserved
+- expected states preserved
+- variance null when either side missing
+- variance percent null when expected <= 0
+- weather semantics copied verbatim
+- provenance copied or null, never fabricated
+- timezone correctness
+- auth/cross-tenant behavior
+- zero writes
+
+Site 4 validation:
+Validate:
+- actual curve
+- expected where valid
+- observed irradiance/temperature labeled semantics-unverified/contextual
+- weather state observed_weather_device_no_governed_declaration
+- used_by_active_model=false
+- missing buckets show null + state
+- no POA language
+- no causal language
+
+Relevant files:
+backend/ilios-server/app/routers/telemetry/v2.py
+backend/ilios-server/app/schema/telemetry_v2.py
+backend/ilios-server/app/helpers/telemetry/v2_chart_data.py
+backend/ilios-server/app/services/telemetry/expected_service.py
+backend/ilios-server/app/services/weather/semantics_reconciliation_service.py
+backend/ilios-server/app/services/telemetry/device_eligibility_diagnostics_service.py
+backend/ilios-server/app/routers/telemetry/telemetry.py
+backend/ilios-server/app/routers/operations_and_maintenance/companies.py
+docs/v2_performance_context_data_contract_and_actual_display_integrity.md
+
+Explicit do-not-change list:
+- PowerBI reporting
+- existing Reporting module
+- investor report implementation
+- Project Hub
+- Performance Context UI panel
+- existing O&M chart endpoints
+- existing V2 series endpoints
+- expected formulas
+- baseline selection logic
+- telemetry ingestion
+- rollup generation
+- weather declarations
+- WS.5
+- scheduler jobs
+- company-level expected calculations
+- legacy consumers
+
+Return when complete:
+1. files changed
+2. tests added
+3. Site 4 validation results
+4. browser validation results for #68
+5. API validation results for #69
+6. confirmation that no existing consumers were migrated
+7. confirmation that no writes were introduced
+
+Proceed with Tasks #68 and #69 only under these constraints.
