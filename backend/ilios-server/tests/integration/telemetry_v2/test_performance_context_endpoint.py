@@ -273,3 +273,170 @@ def test_today_1d_utc_site_allowed(_patched_seams):
     client = TestClient(app)
     resp = client.get(_URL, params={"window": "today", "bucket": "1d"})
     assert resp.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Task #74 — end-to-end API coverage matrix for the performance-context route.
+#
+# These extend the suite above with the explicit cases requested for the
+# read-model acceptance gate: full envelope shape, unauthorized denial, the two
+# 422 input-validation paths (bucket / temp_unit), the default + clamped window
+# resolution, F/C temperature handling, and a no-writes guarantee. Every test
+# runs against the autouse ``_NoWriteSession`` override, so any attempt by the
+# route/service to mutate the session fails the test (the no-writes contract is
+# enforced structurally on every case, not only the dedicated one below).
+# ---------------------------------------------------------------------------
+
+
+def _auth_site(timezone: str = "UTC"):
+    """Authorize a visible site (id=1) with the given IANA timezone."""
+    app.dependency_overrides[get_authorized_site] = lambda: SimpleNamespace(
+        id=1, timezone=timezone
+    )
+
+
+def test_envelope_full_section_shape(_patched_seams):
+    """200 envelope exposes every canonical top-level section verbatim — the
+    flat back-compat bounds, the nested window, and the composed sub-objects
+    (series / weather_semantics / baseline_status / telemetry_quality /
+    summary), with the echoed bucket_size + temp_unit defaults."""
+    _auth_site("America/New_York")
+    client = TestClient(app)
+    resp = client.get(_URL, params=_PARAMS)
+    assert resp.status_code == 200
+    body = resp.json()
+
+    # Canonical + back-compat scalar fields.
+    assert body["site_id"] == 1
+    assert body["site_timezone"] == "America/New_York"
+    assert body["bucket_size"] == "1h"
+    assert body["temp_unit"] == "F"  # default when temp_unit omitted
+    # Flat bounds mirror the nested window bounds (additive back-compat).
+    assert body["window_start"] == body["window"]["start"]
+    assert body["window_end"] == body["window"]["end"]
+
+    # Every composed section is present and correctly typed.
+    assert isinstance(body["series"], list) and body["series"]
+    assert isinstance(body["weather_semantics"], dict)
+    assert isinstance(body["baseline_status"], dict)
+    assert isinstance(body["telemetry_quality"], dict)
+    summary = body["summary"]
+    assert summary["bucket_size"] == "1h"
+    assert summary["temp_unit"] == "F"
+    assert summary["bucket_count"] == len(body["series"])
+
+    # A series point carries the canonical actual/expected/provenance keys.
+    point = body["series"][0]
+    for key in ("bucket_start", "actual_state", "expected_state", "source_provenance"):
+        assert key in point
+
+
+def test_unauthorized_site_propagates_denial(_patched_seams):
+    """The route never composes a body for a site the caller cannot access: the
+    authorization dependency's denial is propagated verbatim (403 here), so the
+    composition seams are never reached."""
+
+    def _deny():
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    app.dependency_overrides[get_authorized_site] = _deny
+    client = TestClient(app)
+    resp = client.get(_URL, params=_PARAMS)
+    assert resp.status_code == 403
+
+
+def test_invalid_bucket_returns_422():
+    """``bucket`` validation happens at the route before any composition — an
+    unsupported bucket size fails closed with 422 (no body composed)."""
+    _auth_site("UTC")
+    client = TestClient(app)
+    resp = client.get(_URL, params={**_PARAMS, "bucket": "5m"})
+    assert resp.status_code == 422
+    assert "bucket_size" in resp.text
+
+
+def test_default_window_is_last_7_days(_patched_seams):
+    """With no ``window`` and no ``from``/``to``, the resolved window defaults to
+    the last 7 days (the shared series default)."""
+    _auth_site("UTC")
+    client = TestClient(app)
+    # bucket=1d keeps the composed grid tiny; the assertion is purely on span.
+    resp = client.get(_URL, params={"bucket": "1d"})
+    assert resp.status_code == 200
+    body = resp.json()
+    start = datetime.fromisoformat(body["window"]["start"])
+    end = datetime.fromisoformat(body["window"]["end"])
+    assert end - start == timedelta(days=7)
+
+
+def test_window_span_clamped_to_90_days(_patched_seams):
+    """An explicit range wider than the 90-day max is clamped to 90 days
+    (anchored to ``to``) so a single read can never scan an unbounded range."""
+    _auth_site("UTC")
+    client = TestClient(app)
+    resp = client.get(
+        _URL,
+        params={
+            "from": "2020-01-01T00:00:00",
+            "to": "2026-06-20T00:00:00",
+            "bucket": "1d",
+        },
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    start = datetime.fromisoformat(body["window"]["start"])
+    end = datetime.fromisoformat(body["window"]["end"])
+    assert end == datetime(2026, 6, 20, 0, 0, 0)
+    assert end - start == timedelta(days=90)
+
+
+def _patch_rollups_with_temp(monkeypatch, temp_f: float):
+    """Re-point the rollup CRUD to a power + cell-temperature series at ``_T0``
+    (overrides the power-only patch installed by ``_patched_seams``)."""
+    monkeypatch.setattr(
+        svc,
+        "TelemetrySiteRollupCRUD",
+        _fake_rollup_crud(
+            {
+                svc.SITE_POWER_METRIC: [_RollupRow(_T0, 40.0)],
+                svc.CELL_TEMPERATURE_METRIC: [_RollupRow(_T0, temp_f, unit="degF")],
+            }
+        ),
+    )
+
+
+def test_temp_unit_default_fahrenheit_passthrough(_patched_seams, monkeypatch):
+    """Default ``temp_unit=F``: an observed °F cell temperature flows through
+    unconverted, and the echoed unit is ``F``."""
+    _auth_site("UTC")
+    _patch_rollups_with_temp(monkeypatch, 77.0)
+    client = TestClient(app)
+    resp = client.get(_URL, params=_PARAMS)  # temp_unit omitted -> F
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["temp_unit"] == "F"
+    assert body["series"][0]["temperature"] == 77.0
+
+
+def test_temp_unit_celsius_conversion(_patched_seams, monkeypatch):
+    """``temp_unit=C``: the same observed 77 °F is converted to 25 °C for
+    display, and the echoed unit is ``C`` (conversion only — never fabricated)."""
+    _auth_site("UTC")
+    _patch_rollups_with_temp(monkeypatch, 77.0)
+    client = TestClient(app)
+    resp = client.get(_URL, params={**_PARAMS, "temp_unit": "C"})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["temp_unit"] == "C"
+    assert body["series"][0]["temperature"] == pytest.approx(25.0)
+
+
+def test_no_writes_on_happy_path(_patched_seams):
+    """The read-only contract: a full 200 composition runs entirely against the
+    ``_NoWriteSession`` (the autouse override), which raises on any
+    ``add``/``commit``/``flush``/``delete``/``execute``/``merge``. Reaching 200
+    therefore proves the route/service performed zero writes or commits."""
+    _auth_site("UTC")
+    client = TestClient(app)
+    resp = client.get(_URL, params=_PARAMS)
+    assert resp.status_code == 200
