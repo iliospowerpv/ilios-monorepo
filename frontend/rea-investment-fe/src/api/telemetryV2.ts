@@ -22,6 +22,8 @@ import type {
   ProviderAccountCreatePayload,
   ProviderAccountList,
   ProviderAccountUpdatePayload,
+  PerformanceContextQuery,
+  PerformanceContextResponse,
   ProviderCatalogList,
   ReadinessFromFactsResponse,
   RefreshReadingsPayload,
@@ -460,6 +462,34 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     return data;
   };
 
+  /**
+   * READ-ONLY composed V2 performance context for one site. COMPOSES
+   * already-computed reads (period-effective expected, native rollup actuals,
+   * governed weather semantics, eligibility diagnostics) into a single
+   * envelope. Never triggers a provider/credential call and performs zero
+   * writes. Nullable-everywhere: `null` is "unavailable", `0` is a genuine
+   * measured zero, and an expected/variance is never fabricated. `window`
+   * selects a preset (today/24h/7d/30d/custom; default 7d, max 90d); a bare
+   * from/to (or `custom`) is an explicit range. `bucket` is 15m/30m/1h/1d;
+   * `tempUnit` is F (default) or C.
+   */
+  const getSitePerformanceContext = async (
+    siteId: number,
+    query: PerformanceContextQuery = {}
+  ): Promise<PerformanceContextResponse> => {
+    const params = new URLSearchParams();
+    if (query.window) params.set('window', query.window);
+    if (query.bucket) params.set('bucket', query.bucket);
+    if (query.tempUnit) params.set('temp_unit', query.tempUnit);
+    if (query.from) params.set('from', query.from);
+    if (query.to) params.set('to', query.to);
+    const qs = params.toString();
+    const { data } = await httpClient.get<PerformanceContextResponse>(
+      `${V2}/sites/${siteId}/performance-context${qs ? `?${qs}` : ''}`
+    );
+    return data;
+  };
+
   return {
     getCatalog,
     listLicensedProviders,
@@ -494,7 +524,8 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     getActiveExpectedBaseline,
     approveExpectedBaseline,
     activateExpectedBaseline,
-    getBaselineDiff
+    getBaselineDiff,
+    getSitePerformanceContext
   };
 };
 

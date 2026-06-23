@@ -1,3 +1,5 @@
+import type { WeatherSemanticsReconciliationResponse } from './weather';
+
 export type ProviderAccountStatus = 'active' | 'paused' | 'archived';
 
 export type CredentialStatus = 'unverified' | 'verified' | 'invalid' | 'expired';
@@ -1073,4 +1075,149 @@ export interface BaselineDiffResponse {
   from_validation?: BaselinePhysicsValidation | null;
   to_validation: BaselinePhysicsValidation;
   expected_impact?: BaselineExpectedImpact | null;
+}
+
+// ---------------------------------------------------------------------------
+// Performance Context (read-only composed V2 envelope)
+//
+// Mirrors the backend `PerformanceContext*` schema. Nullable-everywhere by
+// design: `null` means "unavailable" (render a gap / "—"), `0` means a genuine
+// measured zero, and negative values (e.g. a tare) are preserved verbatim. An
+// expected/variance is never fabricated when an input is missing.
+// ---------------------------------------------------------------------------
+
+/** Preset windows accepted by the performance-context endpoint. */
+export type PerformanceWindowPreset = 'today' | '24h' | '7d' | '30d' | 'custom';
+
+/** Temperature unit accepted/echoed by the performance-context endpoint. */
+export type PerformanceTempUnit = 'F' | 'C';
+
+/** Per-bucket provenance: which metrics/baseline produced the values. */
+export interface PerformanceContextProvenance {
+  actual_metric: string | null;
+  actual_unit: string | null;
+  actual_agg: string | null;
+  expected_baseline_id: number | null;
+  baseline_selection_mode: string | null;
+  irradiance_metric: string | null;
+  irradiance_source_id: number | null;
+  temperature_metric: string | null;
+  temperature_source_id: number | null;
+  weather_declaration_mapping_id: number | null;
+}
+
+/** One time bucket of composed actual / expected / weather context. */
+export interface PerformanceContextPoint {
+  bucket_start: string;
+  bucket_start_utc: string;
+  bucket_start_site_local: string | null;
+  actual_kw: number | null;
+  actual_kwh: number | null;
+  actual_state: string;
+  expected_kw: number | null;
+  expected_kwh: number | null;
+  expected_state: string;
+  baseline_id: number | null;
+  variance_kwh: number | null;
+  variance_pct: number | null;
+  irradiance_wm2: number | null;
+  temperature: number | null;
+  sample_count: number | null;
+  completeness: number | null;
+  source_provenance: PerformanceContextProvenance;
+}
+
+/** Compact, verbatim per-metric weather semantics summary. */
+export interface PerformanceContextWeatherMetric {
+  label: string | null;
+  plane: string | null;
+  type: string | null;
+  basis: string | null;
+  expected_model_eligible: boolean;
+  used_by_active_model: boolean;
+}
+
+/** Governed weather semantics, projected verbatim (never re-derived). */
+export interface PerformanceContextWeatherSemantics {
+  irradiance: PerformanceContextWeatherMetric;
+  temperature: PerformanceContextWeatherMetric;
+  headline_state: string | null;
+  blocking_level: string | null;
+  reconciliation: WeatherSemanticsReconciliationResponse | null;
+}
+
+/** The active baseline's read-time health for the window (never mutated). */
+export interface PerformanceContextBaselineStatus {
+  expected_baseline_available: boolean;
+  expected_state: string;
+  baseline_id: number | null;
+  baseline_type: string | null;
+  baseline_selection_mode: string | null;
+  baseline_invalid: boolean | null;
+  invalid_baseline_id: number | null;
+  baseline_validation_summary: unknown | null;
+  baseline_validation_policy_version: string | null;
+  required_action: string | null;
+}
+
+/** Eligibility/mapping counts (verbatim) + native-read freshness. */
+export interface PerformanceContextTelemetryQuality {
+  total_devices: number;
+  mappable_count: number;
+  mapped_count: number;
+  unmapped_eligible_count: number;
+  expected_driving_count: number;
+  weather_source_count: number;
+  weather_unknown_semantics_count: number;
+  latest_reading_at: string | null;
+  latest_bucket_start: string | null;
+  data_delay_minutes: number | null;
+  freshness_state: string;
+}
+
+/** Window-level rollup of the composed series (honest, never fabricated). */
+export interface PerformanceContextSummary {
+  window_start: string;
+  window_end: string;
+  bucket_size: string;
+  temp_unit: string;
+  bucket_count: number;
+  total_actual_kwh: number | null;
+  total_expected_kwh: number | null;
+  variance_kwh: number | null;
+  variance_pct: number | null;
+  actual_state: string;
+  expected_state: string;
+}
+
+/** Resolved bounded window as naive-UTC instants plus a tz disclosure note. */
+export interface PerformanceContextWindow {
+  start: string;
+  end: string;
+  tz_note: string;
+}
+
+/** Canonical read-only V2 performance-context envelope (composition-only). */
+export interface PerformanceContextResponse {
+  site_id: number;
+  site_timezone: string | null;
+  window: PerformanceContextWindow;
+  window_start: string;
+  window_end: string;
+  bucket_size: string;
+  temp_unit: string;
+  series: PerformanceContextPoint[];
+  weather_semantics: PerformanceContextWeatherSemantics;
+  baseline_status: PerformanceContextBaselineStatus;
+  telemetry_quality: PerformanceContextTelemetryQuality;
+  summary: PerformanceContextSummary;
+}
+
+/** Query params for the read-only performance-context read. */
+export interface PerformanceContextQuery {
+  window?: PerformanceWindowPreset;
+  bucket?: TelemetryBucketSize;
+  tempUnit?: PerformanceTempUnit;
+  from?: string;
+  to?: string;
 }
