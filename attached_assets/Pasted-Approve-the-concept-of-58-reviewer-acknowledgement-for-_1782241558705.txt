@@ -1,0 +1,162 @@
+Approve the concept of #58 — reviewer acknowledgement for inventory mismatches — but do not begin implementation yet.
+
+Please revise the implementation plan first.
+
+This is the first governed write path for Device Inventory Reconciliation, so the design must be tightened before coding.
+
+Task:
+#58 - Let reviewers sign off on inventory mismatches they've checked (Phase B)
+
+Objective:
+Allow authorized reviewers to acknowledge specific actionable inventory mismatches that they have reviewed and accepted, without mutating operational truth.
+
+This should make the existing ladder state mapping_complete_with_acknowledged_exceptions (G6) reachable.
+
+Critical constraints:
+- Additive only.
+- Do not mutate devices.
+- Do not mutate mappings.
+- Do not mutate project_facts.
+- Do not mutate telemetry_*.
+- Do not mutate weather_device_mappings.
+- Do not mutate baselines.
+- Do not mutate expected logic.
+- Do not change telemetry ingestion.
+- Do not allow blocking mismatches to be acknowledged away.
+
+Blocking mismatches, including Site 4 weather dependency / not_acknowledgeable_blocking items, must remain blocking.
+
+Required revisions to the plan:
+
+1. Add a new additive acknowledgement table.
+The acknowledgement table should store:
+- id
+- site_id
+- mismatch_signature
+- mismatch_type
+- severity
+- acknowledgement_policy
+- mismatch_title/message snapshot
+- source_module/source_context, if available
+- acknowledged_by
+- acknowledged_at
+- acknowledgement_reason
+- status
+- revoked_by
+- revoked_at
+- revocation_reason
+- created_at
+- updated_at
+
+2. Require a rationale.
+The acknowledgement reason must be required.
+Do not allow empty or meaningless reasons.
+Add reasonable validation, such as minimum length.
+
+3. Audit trail.
+Every acknowledgement must record:
+- who acknowledged it
+- when they acknowledged it
+- the rationale
+- who revoked it, if revoked
+- when it was revoked
+- revocation rationale, if revoked
+
+4. Revocation support.
+Reviewers must be able to remove/revoke an acknowledgement if it was made in error.
+Revocation should not delete the row.
+It should mark the acknowledgement as revoked.
+
+5. Exact-signature matching only.
+Acknowledgements apply only to the exact mismatch_signature.
+If the mismatch changes and the signature changes, the old acknowledgement must not apply automatically.
+
+6. Snapshot mismatch details.
+Store the mismatch details at the time of acknowledgement so the audit trail remains meaningful even if the live mismatch changes later.
+
+7. Acknowledgement status model.
+Use a clear status model, at minimum:
+- acknowledged
+- revoked
+
+If useful, also support:
+- expired
+
+Expired should mean the acknowledgement no longer applies because the mismatch signature or reconciliation context changed.
+
+8. Ladder behavior.
+Update the reconciliation service logic so:
+- actionable acknowledgeable mismatches can be treated as acknowledged when an active acknowledgement exists for the exact signature.
+- blocking mismatches remain blocking.
+- G6 mapping_complete_with_acknowledged_exceptions becomes reachable only when all remaining mismatches are acknowledged exceptions and no blocking mismatches remain.
+- acknowledgements must not turn unsafe telemetry/weather/model dependencies into safe states.
+
+9. Authorization.
+The write endpoint must require appropriate reviewer permissions.
+Use the same site/company visibility rules as the read endpoint plus a write/reviewer permission if available.
+Cross-tenant acknowledgement attempts must return 404 or equivalent safe denial.
+
+10. API endpoints.
+Propose additive endpoints only, for example:
+- POST /api/telemetry/v2/sites/{site_id}/inventory-reconciliation/acknowledgements
+- DELETE or POST revoke endpoint for /acknowledgements/{ack_id}/revoke
+
+Do not alter existing read endpoints except to include acknowledgement state in the response if safe and additive.
+
+11. Frontend behavior.
+The Reconciliation panel should:
+- show which mismatches are acknowledgeable
+- show which are not acknowledgeable/blocking
+- provide an acknowledge action only for acknowledgeable items
+- require rationale before submit
+- show acknowledged-by / acknowledged-at / rationale
+- allow revocation when permitted
+- never show an acknowledge action for blocking items
+- make clear that acknowledgement means “reviewed exception,” not “fixed”
+
+12. Data integrity.
+No acknowledgement should be created if:
+- mismatch_signature is missing
+- mismatch is not acknowledgeable
+- mismatch is blocking
+- user lacks permissions
+- rationale is missing/invalid
+
+13. Tests.
+Plan backend tests for:
+- acknowledge valid mismatch
+- reject blocking mismatch
+- reject cross-tenant acknowledgement
+- reject missing/short rationale
+- exact signature match required
+- revoked acknowledgement no longer counts
+- G6 reachable when only acknowledged exceptions remain
+- G6 not reachable when blocking mismatch remains
+- no mutation of device/mapping/telemetry/weather/baseline tables
+
+Plan frontend tests for:
+- acknowledge button shown only for acknowledgeable mismatch
+- blocking mismatch has no acknowledge button
+- rationale required
+- acknowledged state displayed
+- revoke action displayed when allowed
+- revoked state no longer treated as acknowledged
+
+14. Validation.
+Use Site 4 as a protected validation case:
+- weather dependency remains not_acknowledgeable_blocking
+- it cannot be acknowledged away
+- reconciliation headline remains honest
+
+Deliverable now:
+Please revise the plan first and return:
+1. proposed table schema
+2. endpoint design
+3. authorization model
+4. service behavior
+5. ladder behavior
+6. frontend behavior
+7. test plan
+8. explicit do-not-change list
+
+Do not write production code until this revised plan is reviewed and approved.

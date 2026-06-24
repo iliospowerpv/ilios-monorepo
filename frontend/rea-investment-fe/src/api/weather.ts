@@ -63,10 +63,7 @@ export const buildWeatherApi = (httpClient: AxiosInstance) => {
   };
 
   // Append-only declaration history for a single device (oldest first).
-  const listDeviceMappingHistory = async (
-    siteId: number,
-    deviceId: number
-  ): Promise<WeatherDeviceMapping[]> => {
+  const listDeviceMappingHistory = async (siteId: number, deviceId: number): Promise<WeatherDeviceMapping[]> => {
     const response = await httpClient.get<WeatherDeviceMapping[]>(
       `${base(siteId)}/devices/${deviceId}/device-mappings`
     );
@@ -90,9 +87,7 @@ export const buildWeatherApi = (httpClient: AxiosInstance) => {
   };
 
   // Read-only 8-state governed-semantics reconciliation rollup.
-  const getSemanticsReconciliation = async (
-    siteId: number
-  ): Promise<WeatherSemanticsReconciliationResponse> => {
+  const getSemanticsReconciliation = async (siteId: number): Promise<WeatherSemanticsReconciliationResponse> => {
     const response = await httpClient.get<WeatherSemanticsReconciliationResponse>(
       `${base(siteId)}/semantics-reconciliation`
     );

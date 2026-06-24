@@ -74,6 +74,12 @@ from app.models.telemetry_expected import (
 from app.static import PermissionsActions
 from app.schema.device_eligibility import DeviceEligibilityDiagnosticsResponse
 from app.schema.inventory_reconciliation import InventoryReconciliationResponse
+from app.schema.inventory_acknowledgement import (
+    InventoryAckCreateRequest,
+    InventoryAckListResponse,
+    InventoryAckResponse,
+    InventoryAckRevokeRequest,
+)
 from app.schema.telemetry_v2 import (
     BaselineActivateRequest,
     BaselineDiffResponse,
@@ -167,6 +173,7 @@ from app.services.telemetry.performance_context_service import (
 )
 from app.helpers.telemetry.v2_chart_data import _site_local_day_start_utc
 from app.services.weather.bucketing import floor_to_bucket
+from app.services.telemetry import inventory_acknowledgement_service
 from app.models.device import Device
 from app.services.telemetry.ingestion_service import (
     IngestionConfigError,
@@ -1612,6 +1619,85 @@ def get_site_inventory_reconciliation(
     """
     _enforce_company_visibility(current_user, site.company_id)
     return build_site_inventory_reconciliation(db, site)
+
+
+@telemetry_v2_router.get(
+    "/v2/sites/{site_id}/inventory-reconciliation/acknowledgements",
+    response_model=InventoryAckListResponse,
+    summary="List inventory-reconciliation mismatch acknowledgements for a site",
+    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.view)))],
+)
+def list_inventory_reconciliation_acknowledgements(
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> InventoryAckListResponse:
+    """Return every acknowledgement row for the site (read-only).
+
+    Each row carries the read-time derived ``is_active`` / ``is_expired`` flags
+    relative to the current reconciliation engine version.
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+    return inventory_acknowledgement_service.list_acknowledgements(db, site=site)
+
+
+@telemetry_v2_router.post(
+    "/v2/sites/{site_id}/inventory-reconciliation/acknowledgements",
+    response_model=InventoryAckResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Acknowledge an actionable inventory-reconciliation mismatch",
+    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.edit)))],
+)
+def acknowledge_inventory_reconciliation_mismatch(
+    payload: InventoryAckCreateRequest,
+    request: Request,
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> InventoryAckResponse:
+    """Sign off on one actionable mismatch as an acceptable exception.
+
+    Strictly additive: writes ONLY to ``inventory_mismatch_acknowledgements`` and
+    never mutates devices, mappings, facts, telemetry, weather semantics, or
+    baselines. The server re-derives the live reconciliation and matches the target
+    by its exact ``mismatch_signature`` + current ``reconciliation_version``;
+    blocking and informational findings are rejected (422). The persisted snapshot
+    is taken from the server-derived mismatch, not from client input.
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+    return inventory_acknowledgement_service.create_acknowledgement(
+        db,
+        site=site,
+        payload=payload,
+        user_id=current_user.id,
+        request=request,
+    )
+
+
+@telemetry_v2_router.post(
+    "/v2/sites/{site_id}/inventory-reconciliation/acknowledgements/{ack_id}/revoke",
+    response_model=InventoryAckResponse,
+    summary="Revoke an inventory-reconciliation mismatch acknowledgement",
+    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.edit)))],
+)
+def revoke_inventory_reconciliation_acknowledgement(
+    payload: InventoryAckRevokeRequest,
+    request: Request,
+    ack_id: int,
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> InventoryAckResponse:
+    """Revoke an active acknowledgement; the row is retained as immutable history."""
+    _enforce_company_visibility(current_user, site.company_id)
+    return inventory_acknowledgement_service.revoke_acknowledgement(
+        db,
+        site=site,
+        ack_id=ack_id,
+        payload=payload,
+        user_id=current_user.id,
+        request=request,
+    )
 
 
 @telemetry_v2_router.post(

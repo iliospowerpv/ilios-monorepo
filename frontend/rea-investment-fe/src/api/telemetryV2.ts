@@ -14,6 +14,10 @@ import type {
   ExpectedBaselineResponse,
   ExternalDeviceListResponse,
   ExternalSiteListResponse,
+  InventoryAckCreateRequest,
+  InventoryAckListResponse,
+  InventoryAckResponse,
+  InventoryAckRevokeRequest,
   InventoryReconciliationResponse,
   LicenseCreatePayload,
   LicensedProvider,
@@ -304,11 +308,58 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
    * findings, and recommended next actions. Returns HTTP 200 for every valid
    * reconciliation state; never mutates anything.
    */
-  const getSiteInventoryReconciliation = async (
-    siteId: number
-  ): Promise<InventoryReconciliationResponse> => {
+  const getSiteInventoryReconciliation = async (siteId: number): Promise<InventoryReconciliationResponse> => {
     const { data } = await httpClient.get<InventoryReconciliationResponse>(
       `${V2}/sites/${siteId}/inventory-reconciliation`
+    );
+    return data;
+  };
+
+  /**
+   * Read-only list of every reviewer acknowledgement for a site's inventory
+   * reconciliation mismatches (most-recent first). Each row carries a read-time
+   * derived `is_active` / `is_expired`; a stale-version ack reads as expired even
+   * though it is persisted as `acknowledged`. Asset-view gated server-side.
+   */
+  const listInventoryAcknowledgements = async (siteId: number): Promise<InventoryAckListResponse> => {
+    const { data } = await httpClient.get<InventoryAckListResponse>(
+      `${V2}/sites/${siteId}/inventory-reconciliation/acknowledgements`
+    );
+    return data;
+  };
+
+  /**
+   * Acknowledge ("sign off on") one ACTIONABLE inventory-reconciliation mismatch.
+   * Strictly additive: writes ONLY to the acknowledgements table — never devices,
+   * mappings, project_facts, telemetry, weather, or baselines. The server
+   * re-derives the live reconciliation and snapshots the mismatch, so it rejects
+   * blocking/informational mismatches (422), an unknown signature (404), a stale
+   * `reconciliation_version` (409), and a duplicate active ack (409). Requires
+   * Asset.edit (403 otherwise). Returns the created row (HTTP 201).
+   */
+  const createInventoryAcknowledgement = async (
+    siteId: number,
+    payload: InventoryAckCreateRequest
+  ): Promise<InventoryAckResponse> => {
+    const { data } = await httpClient.post<InventoryAckResponse>(
+      `${V2}/sites/${siteId}/inventory-reconciliation/acknowledgements`,
+      payload
+    );
+    return data;
+  };
+
+  /**
+   * Revoke an active acknowledgement. The row is retained as immutable history
+   * (status -> revoked). Requires Asset.edit. Never mutates operational truth.
+   */
+  const revokeInventoryAcknowledgement = async (
+    siteId: number,
+    ackId: number,
+    payload: InventoryAckRevokeRequest
+  ): Promise<InventoryAckResponse> => {
+    const { data } = await httpClient.post<InventoryAckResponse>(
+      `${V2}/sites/${siteId}/inventory-reconciliation/acknowledgements/${ackId}/revoke`,
+      payload
     );
     return data;
   };
@@ -451,10 +502,7 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
    * visible), and a reference-condition expected-power impact. Performs ZERO
    * writes; never mutates either baseline.
    */
-  const getBaselineDiff = async (
-    baselineId: number,
-    againstBaselineId?: number
-  ): Promise<BaselineDiffResponse> => {
+  const getBaselineDiff = async (baselineId: number, againstBaselineId?: number): Promise<BaselineDiffResponse> => {
     const { data } = await httpClient.get<BaselineDiffResponse>(
       `${V2}/expected-baselines/${baselineId}/diff`,
       againstBaselineId != null ? { params: { against_baseline_id: againstBaselineId } } : undefined
@@ -517,6 +565,9 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     getCompanySchedulerStatus,
     getSiteEligibilityDiagnostics,
     getSiteInventoryReconciliation,
+    listInventoryAcknowledgements,
+    createInventoryAcknowledgement,
+    revokeInventoryAcknowledgement,
     backfillSiteReadings,
     getReadinessFromFacts,
     createDraftFromFacts,

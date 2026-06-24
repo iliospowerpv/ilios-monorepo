@@ -708,6 +708,70 @@ export interface InventoryReconciliationResponse {
   mismatches: InventoryMismatch[];
   next_actions: InventoryNextAction[];
   notes: string[];
+  // Engine version this reconciliation was derived under. Acknowledgements are
+  // bound to the EXACT (mismatch_signature, reconciliation_version) pair, so the
+  // client must echo this value back when acknowledging a mismatch.
+  reconciliation_version: string;
+}
+
+// ---------------------------------------------------------------------------
+// Inventory Reconciliation — reviewer acknowledgements (Phase B, write path)
+// ---------------------------------------------------------------------------
+
+/**
+ * Acknowledge ("sign off on") one ACTIONABLE inventory-reconciliation mismatch.
+ * The server re-derives the live reconciliation and snapshots the mismatch, so
+ * the client only supplies the target signature, the engine version it was seen
+ * under, and a rationale (>= 10 non-whitespace chars). Blocking mismatches
+ * (`not_acknowledgeable_blocking`) and informational ones can never be acked.
+ */
+export interface InventoryAckCreateRequest {
+  mismatch_signature: string;
+  reconciliation_version: string;
+  acknowledgement_reason: string;
+}
+
+/** Revoke an existing acknowledgement (the row is kept as immutable history). */
+export interface InventoryAckRevokeRequest {
+  revocation_reason: string;
+}
+
+/**
+ * One acknowledgement row. The persisted DB status stays {acknowledged, revoked};
+ * `is_active`/`is_expired` are derived at read time — an ack is only `is_active`
+ * while status==acknowledged AND its `reconciliation_version` still matches the
+ * current engine version (a stale-version ack reads as `is_expired`).
+ */
+export interface InventoryAckResponse {
+  id: number;
+  site_id: number;
+  mismatch_signature: string;
+  reconciliation_version: string;
+  mismatch_type: string;
+  severity: string;
+  acknowledgement_policy: InventoryAckPolicy;
+  mismatch_title: string;
+  mismatch_detail: string | null;
+  source_module: string | null;
+  acknowledged_context_hash: string | null;
+  status: string;
+  acknowledged_by: number | null;
+  acknowledged_at: string;
+  acknowledgement_reason: string;
+  revoked_by: number | null;
+  revoked_at: string | null;
+  revocation_reason: string | null;
+  created_at: string;
+  updated_at: string;
+  is_active: boolean;
+  is_expired: boolean;
+}
+
+/** All acknowledgement rows for a site (most-recent first). */
+export interface InventoryAckListResponse {
+  site_id: number;
+  reconciliation_version: string;
+  acknowledgements: InventoryAckResponse[];
 }
 
 // ---------------------------------------------------------------------------

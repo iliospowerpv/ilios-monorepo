@@ -198,9 +198,7 @@ export const WeatherDeclareDialog: React.FC<WeatherDeclareDialogProps> = ({
 
   const metricValid = metric.trim().length > 0 && metric.trim().length <= 64;
   const windowValid =
-    !effectiveFrom.trim() ||
-    !effectiveTo.trim() ||
-    new Date(effectiveTo).getTime() > new Date(effectiveFrom).getTime();
+    !effectiveFrom.trim() || !effectiveTo.trim() || new Date(effectiveTo).getTime() > new Date(effectiveFrom).getTime();
   const canContinue = metricValid && windowValid;
   const assumptionBlocks = isAssumption && !assumptionConfirmed;
   const canSubmit = canContinue && !assumptionBlocks && !mutation.isPending;
@@ -271,8 +269,8 @@ export const WeatherDeclareDialog: React.FC<WeatherDeclareDialogProps> = ({
         {activeStep === 0 && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Alert severity="info" sx={{ py: 0 }}>
-              Semantics are never guessed. Anything left as &quot;Unknown&quot; stays undeclared — declaring GHI does not
-              transpose it to POA, and declaring ambient does not promote it to cell.
+              Semantics are never guessed. Anything left as &quot;Unknown&quot; stays undeclared — declaring GHI does
+              not transpose it to POA, and declaring ambient does not promote it to cell.
             </Alert>
             <Typography variant="body2" color="text.secondary">
               Device: <strong>{deviceName ?? `Device ${deviceId}`}</strong>

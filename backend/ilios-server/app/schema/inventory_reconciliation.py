@@ -246,6 +246,10 @@ class InventoryReconciliationResponse(BaseModel):
 
     site_id: int
     generated_at: datetime
+    # Reconciliation engine/rule version that produced these mismatches. An
+    # acknowledgement is bound to this version (plus the exact signature), so a
+    # future rule change that bumps this value never silently reuses an old ack.
+    reconciliation_version: str
 
     # Headline.
     status: InventoryReconciliationStatus

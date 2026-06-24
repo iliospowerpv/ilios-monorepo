@@ -35,6 +35,7 @@ import itertools
 from datetime import datetime, timedelta
 
 import pytest
+from fastapi import HTTPException
 
 from app.crud.das_connection import DASConnectionCRUD
 from app.crud.device import DeviceCRUD
@@ -63,14 +64,20 @@ from app.models.weather import (
     WeatherIrradiancePlane,
     WeatherTemperatureType,
 )
+from app.schema.inventory_acknowledgement import (
+    InventoryAckCreateRequest,
+    InventoryAckRevokeRequest,
+)
 from app.schema.inventory_reconciliation import (
     CoverageMode,
     DocumentedInventoryState,
     EquipmentClass,
+    InventoryAckPolicy,
     InventoryReconciliationStatus,
     WeatherDependencySubtype,
 )
 from app.services.telemetry import device_inventory_reconciliation_service as svc
+from app.services.telemetry import inventory_acknowledgement_service as ack_svc
 
 _SEQ = itertools.count(1)
 
@@ -646,3 +653,285 @@ class TestSite4Shaped:
         )
         assert _class_count(resp, EquipmentClass.inverter).documented_count == 7
         assert _class_count(resp, EquipmentClass.module).documented_count == 1900
+
+
+# ---------------------------------------------------------------------------
+# Phase B — reviewer acknowledgements + the G6 ladder state
+# ---------------------------------------------------------------------------
+def _build_single_actionable_site(db, company_id, site_id):
+    """A clean device-level site whose ONLY finding is one acknowledgeable mismatch.
+
+    One mapped inverter (documented qty 1) + a mappable-but-unmapped gateway →
+    a single non-blocking ``missing_telemetry_counterpart`` follow-up. No weather
+    dependency, no staleness → the site sits at ``partially_matched`` (G7) and
+    becomes G6 once that one mismatch is acknowledged.
+    """
+    conn = _make_connection(db, company_id)
+    ext = _ext(site_id)
+    _map_site(db, site_id, conn, telemetry_site_id=ext)
+    _add_fact(db, site_id, "inverter_quantity", "1")
+    _add_fact(db, site_id, "module_quantity", "1900")
+    inv = _device(db, site_id, DeviceCategories.inverter)
+    _map_device(db, inv, "INV1")
+    _device(db, site_id, DeviceCategories.network_gateway, name="AE UPS")
+    _external_device(db, conn, ext, "INV1")
+    _external_site(db, conn, ext, datetime.utcnow())
+    return conn
+
+
+def _actionable_signature(resp) -> str:
+    return next(
+        m.mismatch_signature
+        for m in resp.mismatches
+        if m.acknowledgement_policy
+        in (
+            InventoryAckPolicy.acknowledgeable_with_required_followup,
+            InventoryAckPolicy.acknowledgeable_non_blocking,
+        )
+    )
+
+
+class TestAcknowledgements:
+    def test_acknowledge_reaches_g6(self, db_session, company_id, site_id):
+        _build_single_actionable_site(db_session, company_id, site_id)
+        resp = svc.build_site_inventory_reconciliation(
+            db_session, _site(db_session, site_id)
+        )
+        assert resp.status == S.partially_matched
+        assert resp.open_actionable_mismatch_count == 1
+        assert resp.acknowledged_exception_count == 0
+
+        sig = _actionable_signature(resp)
+        out = ack_svc.create_acknowledgement(
+            db_session,
+            site=_site(db_session, site_id),
+            payload=InventoryAckCreateRequest(
+                mismatch_signature=sig,
+                reconciliation_version=resp.reconciliation_version,
+                acknowledgement_reason="Spare UPS, not a telemetry source — accepted.",
+            ),
+            user_id=None,
+        )
+        assert out.is_active is True
+        assert out.is_expired is False
+
+        after = svc.build_site_inventory_reconciliation(
+            db_session, _site(db_session, site_id)
+        )
+        assert after.status == S.mapping_complete_with_acknowledged_exceptions
+        assert after.open_actionable_mismatch_count == 0
+        assert after.acknowledged_exception_count == 1
+        assert after.has_blocking_mismatch is False
+        acked = next(m for m in after.mismatches if m.mismatch_signature == sig)
+        assert acked.is_acknowledged is True
+
+    def test_blocking_mismatch_can_never_be_acknowledged(
+        self, db_session, company_id, site_id
+    ):
+        _build_site4_shaped(db_session, company_id, site_id)
+        resp = svc.build_site_inventory_reconciliation(
+            db_session, _site(db_session, site_id)
+        )
+        assert resp.status == S.needs_reconciliation
+        blocking_sig = next(
+            m.mismatch_signature
+            for m in resp.mismatches
+            if m.acknowledgement_policy
+            == InventoryAckPolicy.not_acknowledgeable_blocking
+        )
+        with pytest.raises(HTTPException) as exc:
+            ack_svc.create_acknowledgement(
+                db_session,
+                site=_site(db_session, site_id),
+                payload=InventoryAckCreateRequest(
+                    mismatch_signature=blocking_sig,
+                    reconciliation_version=resp.reconciliation_version,
+                    acknowledgement_reason="Trying to wave away a blocking finding.",
+                ),
+                user_id=None,
+            )
+        assert exc.value.status_code == 422
+
+        # The site is unchanged — still blocking.
+        again = svc.build_site_inventory_reconciliation(
+            db_session, _site(db_session, site_id)
+        )
+        assert again.status == S.needs_reconciliation
+        assert again.has_blocking_mismatch is True
+
+    def test_revoke_restores_open_actionable_count(
+        self, db_session, company_id, site_id
+    ):
+        _build_single_actionable_site(db_session, company_id, site_id)
+        resp = svc.build_site_inventory_reconciliation(
+            db_session, _site(db_session, site_id)
+        )
+        sig = _actionable_signature(resp)
+        created = ack_svc.create_acknowledgement(
+            db_session,
+            site=_site(db_session, site_id),
+            payload=InventoryAckCreateRequest(
+                mismatch_signature=sig,
+                reconciliation_version=resp.reconciliation_version,
+                acknowledgement_reason="Accepted as a known spare device.",
+            ),
+            user_id=None,
+        )
+        g6 = svc.build_site_inventory_reconciliation(
+            db_session, _site(db_session, site_id)
+        )
+        assert g6.status == S.mapping_complete_with_acknowledged_exceptions
+
+        revoked = ack_svc.revoke_acknowledgement(
+            db_session,
+            site=_site(db_session, site_id),
+            ack_id=created.id,
+            payload=InventoryAckRevokeRequest(
+                revocation_reason="Re-opening: needs proper mapping after all.",
+            ),
+            user_id=None,
+        )
+        assert revoked.status == "revoked"
+        assert revoked.is_active is False
+
+        after = svc.build_site_inventory_reconciliation(
+            db_session, _site(db_session, site_id)
+        )
+        assert after.status == S.partially_matched
+        assert after.open_actionable_mismatch_count == 1
+        assert after.acknowledged_exception_count == 0
+
+    def test_stale_reconciliation_version_rejected(
+        self, db_session, company_id, site_id
+    ):
+        _build_single_actionable_site(db_session, company_id, site_id)
+        resp = svc.build_site_inventory_reconciliation(
+            db_session, _site(db_session, site_id)
+        )
+        sig = _actionable_signature(resp)
+        with pytest.raises(HTTPException) as exc:
+            ack_svc.create_acknowledgement(
+                db_session,
+                site=_site(db_session, site_id),
+                payload=InventoryAckCreateRequest(
+                    mismatch_signature=sig,
+                    reconciliation_version="inv-recon/ancient",
+                    acknowledgement_reason="Stale client trying to acknowledge.",
+                ),
+                user_id=None,
+            )
+        assert exc.value.status_code == 409
+
+    def test_unknown_signature_not_found(self, db_session, company_id, site_id):
+        _build_single_actionable_site(db_session, company_id, site_id)
+        resp = svc.build_site_inventory_reconciliation(
+            db_session, _site(db_session, site_id)
+        )
+        with pytest.raises(HTTPException) as exc:
+            ack_svc.create_acknowledgement(
+                db_session,
+                site=_site(db_session, site_id),
+                payload=InventoryAckCreateRequest(
+                    mismatch_signature="missing_telemetry_counterpart:does:not:exist",
+                    reconciliation_version=resp.reconciliation_version,
+                    acknowledgement_reason="Pointing at a signature that is not present.",
+                ),
+                user_id=None,
+            )
+        assert exc.value.status_code == 404
+
+    def test_double_acknowledge_conflicts(self, db_session, company_id, site_id):
+        _build_single_actionable_site(db_session, company_id, site_id)
+        resp = svc.build_site_inventory_reconciliation(
+            db_session, _site(db_session, site_id)
+        )
+        sig = _actionable_signature(resp)
+        payload = InventoryAckCreateRequest(
+            mismatch_signature=sig,
+            reconciliation_version=resp.reconciliation_version,
+            acknowledgement_reason="First acknowledgement of this mismatch.",
+        )
+        ack_svc.create_acknowledgement(
+            db_session, site=_site(db_session, site_id), payload=payload, user_id=None
+        )
+        with pytest.raises(HTTPException) as exc:
+            ack_svc.create_acknowledgement(
+                db_session,
+                site=_site(db_session, site_id),
+                payload=payload,
+                user_id=None,
+            )
+        assert exc.value.status_code == 409
+
+    def test_acknowledgement_goes_inert_when_version_changes(
+        self, db_session, company_id, site_id, monkeypatch
+    ):
+        """A version bump expires an ack at read time (DB enum still 'acknowledged')."""
+        _build_single_actionable_site(db_session, company_id, site_id)
+        resp = svc.build_site_inventory_reconciliation(
+            db_session, _site(db_session, site_id)
+        )
+        sig = _actionable_signature(resp)
+        ack_svc.create_acknowledgement(
+            db_session,
+            site=_site(db_session, site_id),
+            payload=InventoryAckCreateRequest(
+                mismatch_signature=sig,
+                reconciliation_version=resp.reconciliation_version,
+                acknowledgement_reason="Acknowledged under the current rule set.",
+            ),
+            user_id=None,
+        )
+        assert (
+            svc.build_site_inventory_reconciliation(
+                db_session, _site(db_session, site_id)
+            ).status
+            == S.mapping_complete_with_acknowledged_exceptions
+        )
+
+        # Simulate a reconciliation rule-set change that bumps the engine version.
+        monkeypatch.setattr(svc, "RECONCILIATION_VERSION", "inv-recon/next")
+
+        listing = ack_svc.list_acknowledgements(
+            db_session, site=_site(db_session, site_id)
+        )
+        assert len(listing.acknowledgements) == 1
+        assert listing.acknowledgements[0].is_active is False
+        assert listing.acknowledgements[0].is_expired is True
+
+        # The stale ack no longer applies → the mismatch is open again.
+        reverted = svc.build_site_inventory_reconciliation(
+            db_session, _site(db_session, site_id)
+        )
+        assert reverted.status == S.partially_matched
+        assert reverted.open_actionable_mismatch_count == 1
+        assert reverted.acknowledged_exception_count == 0
+
+    def test_acknowledgement_writes_do_not_mutate_operational_tables(
+        self, db_session, company_id, site_id
+    ):
+        """Acknowledging touches ONLY the ack table; the read path stays zero-mutation."""
+        _build_single_actionable_site(db_session, company_id, site_id)
+        resp = svc.build_site_inventory_reconciliation(
+            db_session, _site(db_session, site_id)
+        )
+        sig = _actionable_signature(resp)
+        ack_svc.create_acknowledgement(
+            db_session,
+            site=_site(db_session, site_id),
+            payload=InventoryAckCreateRequest(
+                mismatch_signature=sig,
+                reconciliation_version=resp.reconciliation_version,
+                acknowledgement_reason="Accepted; verifying read path stays read-only.",
+            ),
+            user_id=None,
+        )
+        before = _fingerprint(db_session)
+        out = svc.build_site_inventory_reconciliation(
+            db_session, _site(db_session, site_id)
+        )
+        assert out.status == S.mapping_complete_with_acknowledged_exceptions
+        assert not db_session.new
+        assert not db_session.dirty
+        assert not db_session.deleted
+        assert before == _fingerprint(db_session)

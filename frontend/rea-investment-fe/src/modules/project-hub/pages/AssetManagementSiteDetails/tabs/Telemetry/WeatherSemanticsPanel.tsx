@@ -172,7 +172,8 @@ export const WeatherSemanticsPanel: React.FC<WeatherSemanticsPanelProps> = ({ si
             : 'No new upstream drift detected.'
       });
     },
-    onError: err => setFeedback({ severity: 'error', message: extractError(err, 'Failed to re-evaluate upstream drift.') })
+    onError: err =>
+      setFeedback({ severity: 'error', message: extractError(err, 'Failed to re-evaluate upstream drift.') })
   });
 
   if (isLoading) {
@@ -246,8 +247,8 @@ export const WeatherSemanticsPanel: React.FC<WeatherSemanticsPanelProps> = ({ si
           }
         >
           <Typography variant="body2">
-            {driftCount} active declaration(s) have upstream-identity drift since they were declared. Re-evaluate to flag
-            them for re-review; this never changes the declared semantics.
+            {driftCount} active declaration(s) have upstream-identity drift since they were declared. Re-evaluate to
+            flag them for re-review; this never changes the declared semantics.
           </Typography>
         </Alert>
       )}
@@ -266,7 +267,8 @@ export const WeatherSemanticsPanel: React.FC<WeatherSemanticsPanelProps> = ({ si
             </TableHead>
             <TableBody>
               {data.devices.map(row => {
-                const meta = blockingMeta[row.blocking_level as keyof typeof blockingMeta] ?? blockingMeta.informational;
+                const meta =
+                  blockingMeta[row.blocking_level as keyof typeof blockingMeta] ?? blockingMeta.informational;
                 const isDraft = row.declaration_status === 'draft' && row.mapping_id != null;
                 const isActive = row.declaration_status === 'active' && row.mapping_id != null;
                 return (
@@ -285,10 +287,22 @@ export const WeatherSemanticsPanel: React.FC<WeatherSemanticsPanelProps> = ({ si
                         <Chip size="small" variant="outlined" label={row.state_label} sx={{ mb: 0.5 }} />
                       </Tooltip>
                       {row.blocking_level !== 'informational' && (
-                        <Chip size="small" color={meta.color} variant="outlined" label={meta.label} sx={{ ml: 0.5, mb: 0.5 }} />
+                        <Chip
+                          size="small"
+                          color={meta.color}
+                          variant="outlined"
+                          label={meta.label}
+                          sx={{ ml: 0.5, mb: 0.5 }}
+                        />
                       )}
                       {row.needs_re_review && (
-                        <Chip size="small" color="warning" variant="outlined" label="Needs re-review" sx={{ ml: 0.5, mb: 0.5 }} />
+                        <Chip
+                          size="small"
+                          color="warning"
+                          variant="outlined"
+                          label="Needs re-review"
+                          sx={{ ml: 0.5, mb: 0.5 }}
+                        />
                       )}
                       {row.required_action && (
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
@@ -299,7 +313,13 @@ export const WeatherSemanticsPanel: React.FC<WeatherSemanticsPanelProps> = ({ si
                     <TableCell>
                       <Typography variant="caption">{semanticsLabel(row)}</Typography>
                       {row.expected_model_eligible && (
-                        <Chip size="small" color="success" variant="outlined" label="Expected-eligible" sx={{ ml: 0.5 }} />
+                        <Chip
+                          size="small"
+                          color="success"
+                          variant="outlined"
+                          label="Expected-eligible"
+                          sx={{ ml: 0.5 }}
+                        />
                       )}
                     </TableCell>
                     <TableCell align="right">

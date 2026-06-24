@@ -43,6 +43,10 @@ from sqlalchemy.orm import Session, joinedload
 from app.crud.telemetry_expected import TelemetryExpectedBaselineCRUD
 from app.crud.weather import WeatherDeviceMappingCRUD
 from app.models.device import DeviceCategories
+from app.models.inventory_acknowledgement import (
+    InventoryAckStatus,
+    InventoryMismatchAcknowledgement,
+)
 from app.models.project_facts import FactStatus, ProjectFact
 from app.models.telemetry import (
     ExternalSiteSyncStatus,
@@ -73,6 +77,18 @@ from app.schema.weather import _PHYSICS_USABLE_PLANES, _PHYSICS_USABLE_TEMPERATU
 from app.services.telemetry.device_classification import classify_device
 
 logger = logging.getLogger(__name__)
+
+# --- Reconciliation engine version -----------------------------------------
+# Identifies the reconciliation rule set / signature scheme that produced a
+# mismatch. A reviewer acknowledgement is bound to BOTH the exact
+# ``mismatch_signature`` AND this version, so when a future rule change alters how
+# signatures are computed this value MUST be bumped in lockstep — an older
+# acknowledgement then no longer applies (it goes inert / "expired" at read time)
+# instead of being silently reused against a different finding.
+RECONCILIATION_VERSION = "inv-recon/1"
+
+# --- Source module tag (snapshotted onto an acknowledgement row) ------------
+SOURCE_MODULE = "device_inventory_reconciliation"
 
 # --- Soft thresholds --------------------------------------------------------
 # Discovery is "stale" when the provider device cache has not been re-synced
@@ -676,7 +692,25 @@ def build_site_inventory_reconciliation(
             )
         )
 
-    # -- 9. Aggregate mismatch tallies --------------------------------------
+    # -- 9. Apply reviewer acknowledgements (exact signature + version only) -
+    # Read-only: we only SELECT active acknowledgements for this site whose
+    # reconciliation_version matches the current engine version, then mark the
+    # matching acknowledgeable mismatches. Blocking / informational mismatches
+    # ignore acknowledgements entirely, so a blocking finding can never be
+    # acknowledged away. No write/commit happens on this path.
+    _ACKNOWLEDGEABLE_POLICIES = (
+        InventoryAckPolicy.acknowledgeable_with_required_followup,
+        InventoryAckPolicy.acknowledgeable_non_blocking,
+    )
+    acknowledged_signatures = _load_active_acknowledged_signatures(db, site.id)
+    for m in mismatches:
+        if (
+            m.acknowledgement_policy in _ACKNOWLEDGEABLE_POLICIES
+            and m.mismatch_signature in acknowledged_signatures
+        ):
+            m.is_acknowledged = True
+
+    # -- 9b. Aggregate mismatch tallies (ack-aware) -------------------------
     has_blocking_mismatch = any(
         m.acknowledgement_policy == InventoryAckPolicy.not_acknowledgeable_blocking
         for m in mismatches
@@ -684,11 +718,13 @@ def build_site_inventory_reconciliation(
     open_actionable_mismatch_count = sum(
         1
         for m in mismatches
-        if m.acknowledgement_policy
-        in (
-            InventoryAckPolicy.acknowledgeable_with_required_followup,
-            InventoryAckPolicy.acknowledgeable_non_blocking,
-        )
+        if m.acknowledgement_policy in _ACKNOWLEDGEABLE_POLICIES
+        and not m.is_acknowledged
+    )
+    acknowledged_exception_count = sum(
+        1
+        for m in mismatches
+        if m.acknowledgement_policy in _ACKNOWLEDGEABLE_POLICIES and m.is_acknowledged
     )
     informational_mismatch_count = sum(
         1
@@ -722,11 +758,18 @@ def build_site_inventory_reconciliation(
     ):
         status = InventoryReconciliationStatus.telemetry_inventory_incomplete_or_stale
     elif has_blocking_mismatch:
+        # Blocking findings can never be acknowledged away (Site-4 weather
+        # dependency stays here regardless of any acknowledgement row).
         status = InventoryReconciliationStatus.needs_reconciliation
-    # G6 (mapping_complete_with_acknowledged_exceptions) is unreachable in Phase A:
-    # there is no acknowledgement write path, so no exception is ever acknowledged.
     elif open_actionable_mismatch_count > 0:
         status = InventoryReconciliationStatus.partially_matched
+    elif acknowledged_exception_count > 0:
+        # G6: no blocking findings, every remaining actionable mismatch is a
+        # reviewer-acknowledged exception (open_actionable == 0). Reachable only
+        # via the Phase-B acknowledgement write path.
+        status = (
+            InventoryReconciliationStatus.mapping_complete_with_acknowledged_exceptions
+        )
     else:
         status = InventoryReconciliationStatus.matched
 
@@ -761,6 +804,7 @@ def build_site_inventory_reconciliation(
     return InventoryReconciliationResponse(
         site_id=site.id,
         generated_at=now,
+        reconciliation_version=RECONCILIATION_VERSION,
         status=status,
         status_label=_STATUS_LABELS[status],
         status_explanation=_STATUS_EXPLANATIONS[status],
@@ -782,11 +826,33 @@ def build_site_inventory_reconciliation(
         mismatch_category_counts=dict(mismatch_category_counts),
         open_actionable_mismatch_count=open_actionable_mismatch_count,
         informational_mismatch_count=informational_mismatch_count,
-        acknowledged_exception_count=0,
+        acknowledged_exception_count=acknowledged_exception_count,
         mismatches=mismatches,
         next_actions=next_actions,
         notes=notes,
     )
+
+
+def _load_active_acknowledged_signatures(db: Session, site_id: int) -> set[str]:
+    """Return mismatch signatures with an ACTIVE acknowledgement for this site.
+
+    Read-only (SELECT only). Restricted to ``status == acknowledged`` rows whose
+    ``reconciliation_version`` equals the current engine version, so an
+    acknowledgement recorded under a different rule set never applies to a freshly
+    computed mismatch.
+    """
+    rows = (
+        db.query(InventoryMismatchAcknowledgement.mismatch_signature)
+        .filter(
+            InventoryMismatchAcknowledgement.site_id == site_id,
+            InventoryMismatchAcknowledgement.status
+            == InventoryAckStatus.acknowledged,
+            InventoryMismatchAcknowledgement.reconciliation_version
+            == RECONCILIATION_VERSION,
+        )
+        .all()
+    )
+    return {row[0] for row in rows}
 
 
 def _build_class_counts(

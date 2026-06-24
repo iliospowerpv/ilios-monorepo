@@ -1,5 +1,5 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
@@ -8,17 +8,29 @@ import AlertTitle from '@mui/material/AlertTitle';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Tooltip from '@mui/material/Tooltip';
+import Button from '@mui/material/Button';
 import Table from '@mui/material/Table';
 import TableHead from '@mui/material/TableHead';
 import TableBody from '@mui/material/TableBody';
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
+import TaskAltOutlinedIcon from '@mui/icons-material/TaskAltOutlined';
 
 import { ApiClient } from '../../../../../../../api';
+import { useAuth } from '../../../../../../../contexts/auth/auth';
 import type {
   DiagnosticBlockingLevel,
+  InventoryAckListResponse,
+  InventoryAckPolicy,
+  InventoryAckResponse,
   InventoryClassCount,
   InventoryMismatch,
   InventoryNextAction,
@@ -34,6 +46,9 @@ interface StatusMeta {
   color: ChipColor;
   severity: 'neutral' | 'info' | 'good' | 'attention' | 'blocking';
 }
+
+const MIN_REASON_LEN = 10;
+const MAX_REASON_LEN = 1000;
 
 /**
  * Display metadata for the G1->G8 reconciliation headline. The backend remains
@@ -122,9 +137,35 @@ const categoryLabel = (value: string): string => CATEGORY_LABELS[value] || value
 const formatCount = (value: number | null | undefined): string =>
   value === null || value === undefined ? PLACEHOLDER : String(value);
 
+/** A mismatch is acknowledgeable only when its policy is one of the two ack-able. */
+const isAcknowledgeablePolicy = (policy: InventoryAckPolicy): boolean =>
+  policy === 'acknowledgeable_with_required_followup' || policy === 'acknowledgeable_non_blocking';
+
+/**
+ * Best-effort extraction of a human message from an axios-style error. The
+ * backend returns FastAPI `detail` (string) for most cases and a structured
+ * object for stale-version conflicts; fall back to a generic message.
+ */
+const extractErrorMessage = (err: unknown, fallback: string): string => {
+  const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+  if (typeof detail === 'string' && detail.trim()) return detail;
+  if (detail && typeof detail === 'object') {
+    const msg = (detail as { message?: unknown }).message;
+    if (typeof msg === 'string' && msg.trim()) return msg;
+  }
+  return fallback;
+};
+
 const inventoryReconciliationQuery = (siteId: number, enabled: boolean) => ({
   queryKey: ['site', 'inventory-reconciliation', { siteId }],
   queryFn: () => ApiClient.telemetryV2.getSiteInventoryReconciliation(siteId),
+  enabled,
+  retry: false as const
+});
+
+const inventoryAcknowledgementsQuery = (siteId: number, enabled: boolean) => ({
+  queryKey: ['site', 'inventory-reconciliation-acks', { siteId }],
+  queryFn: () => ApiClient.telemetryV2.listInventoryAcknowledgements(siteId),
   enabled,
   retry: false as const
 });
@@ -180,7 +221,104 @@ const ClassCountTable: React.FC<{ rows: InventoryClassCount[] }> = ({ rows }) =>
   </TableContainer>
 );
 
-const MismatchTable: React.FC<{ rows: InventoryMismatch[] }> = ({ rows }) => (
+interface MismatchTableProps {
+  rows: InventoryMismatch[];
+  canAcknowledge: boolean;
+  ackBySignature: Map<string, InventoryAckResponse>;
+  pendingSignature: string | null;
+  onAcknowledge: (mismatch: InventoryMismatch) => void;
+  onRevoke: (mismatch: InventoryMismatch, ack: InventoryAckResponse) => void;
+}
+
+const MismatchAckCell: React.FC<{
+  mismatch: InventoryMismatch;
+  canAcknowledge: boolean;
+  ack?: InventoryAckResponse;
+  pending: boolean;
+  onAcknowledge: (mismatch: InventoryMismatch) => void;
+  onRevoke: (mismatch: InventoryMismatch, ack: InventoryAckResponse) => void;
+}> = ({ mismatch, canAcknowledge, ack, pending, onAcknowledge, onRevoke }) => {
+  // Already acknowledged for the current engine version.
+  if (mismatch.is_acknowledged) {
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: 'flex-start' }}>
+        <Tooltip
+          title={
+            ack
+              ? `Acknowledged ${formatDateTime(ack.acknowledged_at)}${
+                  ack.acknowledgement_reason ? ` — ${ack.acknowledgement_reason}` : ''
+                }`
+              : 'Acknowledged'
+          }
+          arrow
+        >
+          <Chip size="small" color="success" icon={<TaskAltOutlinedIcon />} label="Acknowledged" variant="outlined" />
+        </Tooltip>
+        {canAcknowledge && ack ? (
+          <Button
+            size="small"
+            color="inherit"
+            disabled={pending}
+            onClick={() => onRevoke(mismatch, ack)}
+            data-testid={`inventory-ack-revoke-${mismatch.mismatch_signature}`}
+          >
+            Revoke
+          </Button>
+        ) : null}
+      </Box>
+    );
+  }
+
+  // Blocking mismatches can never be acknowledged.
+  if (mismatch.acknowledgement_policy === 'not_acknowledgeable_blocking') {
+    return (
+      <Tooltip
+        title="This mismatch blocks expected-performance math and can never be signed off — it must be resolved."
+        arrow
+      >
+        <Chip size="small" color="error" variant="outlined" label="Cannot acknowledge" />
+      </Tooltip>
+    );
+  }
+
+  // Informational findings are not actionable, so there is nothing to sign off.
+  if (!isAcknowledgeablePolicy(mismatch.acknowledgement_policy)) {
+    return (
+      <Typography variant="caption" color="text.secondary">
+        {PLACEHOLDER}
+      </Typography>
+    );
+  }
+
+  if (!canAcknowledge) {
+    return (
+      <Typography variant="caption" color="text.secondary">
+        Asset edit required
+      </Typography>
+    );
+  }
+
+  return (
+    <Button
+      size="small"
+      variant="outlined"
+      disabled={pending}
+      onClick={() => onAcknowledge(mismatch)}
+      data-testid={`inventory-ack-${mismatch.mismatch_signature}`}
+    >
+      Acknowledge
+    </Button>
+  );
+};
+
+const MismatchTable: React.FC<MismatchTableProps> = ({
+  rows,
+  canAcknowledge,
+  ackBySignature,
+  pendingSignature,
+  onAcknowledge,
+  onRevoke
+}) => (
   <TableContainer component={Paper} variant="outlined" sx={{ mb: 2 }}>
     <Table size="small" aria-label="inventory mismatches">
       <TableHead>
@@ -193,6 +331,7 @@ const MismatchTable: React.FC<{ rows: InventoryMismatch[] }> = ({ rows }) => (
           <TableCell>Observed</TableCell>
           <TableCell>Provenance</TableCell>
           <TableCell>Next step</TableCell>
+          <TableCell>Sign-off</TableCell>
         </TableRow>
       </TableHead>
       <TableBody>
@@ -250,6 +389,16 @@ const MismatchTable: React.FC<{ rows: InventoryMismatch[] }> = ({ rows }) => (
                   {m.recommended_action ?? PLACEHOLDER}
                 </Typography>
               </TableCell>
+              <TableCell>
+                <MismatchAckCell
+                  mismatch={m}
+                  canAcknowledge={canAcknowledge}
+                  ack={ackBySignature.get(m.mismatch_signature)}
+                  pending={pendingSignature === m.mismatch_signature}
+                  onAcknowledge={onAcknowledge}
+                  onRevoke={onRevoke}
+                />
+              </TableCell>
             </TableRow>
           );
         })}
@@ -299,9 +448,112 @@ const Header: React.FC<{ generatedAt?: string }> = ({ generatedAt }) => (
 
 export const InventoryReconciliationPanel: React.FC<InventoryReconciliationPanelProps> = ({ siteId }) => {
   const isValidId = Number.isSafeInteger(siteId) && siteId > 0;
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  // Acknowledging an inventory mismatch is an Asset.edit reviewer action. The
+  // backend still enforces the real Asset.edit dependency, so a non-reviewer
+  // sees read-only chips instead of action buttons.
+  const canAcknowledge = Boolean(user?.is_system_user) || Boolean(user?.role?.permissions?.['Asset Management']?.edit);
+
   const { data, isLoading, error } = useQuery<InventoryReconciliationResponse>(
     inventoryReconciliationQuery(isValidId ? siteId : -1, isValidId)
   );
+  const { data: ackList } = useQuery<InventoryAckListResponse>(
+    inventoryAcknowledgementsQuery(isValidId ? siteId : -1, isValidId)
+  );
+
+  // Map active acknowledgements by signature so a row can offer Revoke and show
+  // who/when. Only `is_active` acks are surfaced (a stale-version ack reads as
+  // expired and the matching mismatch is no longer `is_acknowledged`).
+  const ackBySignature = React.useMemo(() => {
+    const map = new Map<string, InventoryAckResponse>();
+    (ackList?.acknowledgements ?? []).forEach(ack => {
+      if (ack.is_active && !map.has(ack.mismatch_signature)) {
+        map.set(ack.mismatch_signature, ack);
+      }
+    });
+    return map;
+  }, [ackList]);
+
+  const [ackTarget, setAckTarget] = React.useState<InventoryMismatch | null>(null);
+  const [revokeTarget, setRevokeTarget] = React.useState<{
+    mismatch: InventoryMismatch;
+    ack: InventoryAckResponse;
+  } | null>(null);
+  const [reason, setReason] = React.useState('');
+  const [actionError, setActionError] = React.useState<string | null>(null);
+
+  const invalidate = React.useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['site', 'inventory-reconciliation', { siteId }] });
+    queryClient.invalidateQueries({ queryKey: ['site', 'inventory-reconciliation-acks', { siteId }] });
+  }, [queryClient, siteId]);
+
+  const createMutation = useMutation({
+    mutationFn: (vars: { mismatch: InventoryMismatch; reason: string }) =>
+      ApiClient.telemetryV2.createInventoryAcknowledgement(siteId, {
+        mismatch_signature: vars.mismatch.mismatch_signature,
+        reconciliation_version: data?.reconciliation_version ?? '',
+        acknowledgement_reason: vars.reason
+      }),
+    onSuccess: () => {
+      invalidate();
+      setAckTarget(null);
+      setReason('');
+      setActionError(null);
+    },
+    onError: (err: unknown) => {
+      setActionError(extractErrorMessage(err, "Couldn't acknowledge this mismatch. Please try again."));
+    }
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: (vars: { ackId: number; reason: string }) =>
+      ApiClient.telemetryV2.revokeInventoryAcknowledgement(siteId, vars.ackId, { revocation_reason: vars.reason }),
+    onSuccess: () => {
+      invalidate();
+      setRevokeTarget(null);
+      setReason('');
+      setActionError(null);
+    },
+    onError: (err: unknown) => {
+      setActionError(extractErrorMessage(err, "Couldn't revoke this acknowledgement. Please try again."));
+    }
+  });
+
+  const openAcknowledge = (mismatch: InventoryMismatch) => {
+    setReason('');
+    setActionError(null);
+    setAckTarget(mismatch);
+  };
+
+  const openRevoke = (mismatch: InventoryMismatch, ack: InventoryAckResponse) => {
+    setReason('');
+    setActionError(null);
+    setRevokeTarget({ mismatch, ack });
+  };
+
+  const closeDialogs = () => {
+    if (createMutation.isPending || revokeMutation.isPending) return;
+    setAckTarget(null);
+    setRevokeTarget(null);
+    setReason('');
+    setActionError(null);
+  };
+
+  const trimmedReason = reason.trim();
+  const reasonValid = trimmedReason.length >= MIN_REASON_LEN && trimmedReason.length <= MAX_REASON_LEN;
+  const reasonError =
+    reason.length > 0 && !reasonValid
+      ? trimmedReason.length < MIN_REASON_LEN
+        ? `Please enter at least ${MIN_REASON_LEN} characters.`
+        : `Please keep this under ${MAX_REASON_LEN} characters.`
+      : undefined;
+
+  const pendingSignature = createMutation.isPending
+    ? (ackTarget?.mismatch_signature ?? null)
+    : revokeMutation.isPending
+      ? (revokeTarget?.mismatch.mismatch_signature ?? null)
+      : null;
 
   if (isLoading) {
     return (
@@ -349,8 +601,10 @@ export const InventoryReconciliationPanel: React.FC<InventoryReconciliationPanel
 
       <Alert severity="info" sx={{ mb: 2 }} data-testid="inventory-reconciliation-disclaimer">
         Compares the approved documented inventory (active project facts) against the telemetry-discovered devices and
-        their reviewer-confirmed mappings. This view is strictly informational — it never maps, creates, acknowledges,
-        converts, or promotes anything. Modules are counted but never compared to per-device telemetry counts.
+        their reviewer-confirmed mappings. This view is strictly informational — it never maps, creates, converts, or
+        promotes anything. Reviewers with Asset edit rights may sign off on actionable mismatches as accepted
+        exceptions; sign-off records a rationale only and changes no devices, mappings, facts, telemetry, or baselines.
+        Modules are counted but never compared to per-device telemetry counts.
       </Alert>
 
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }} data-testid="inventory-reconciliation-headline">
@@ -387,6 +641,9 @@ export const InventoryReconciliationPanel: React.FC<InventoryReconciliationPanel
             Open actionable mismatches: <strong>{data.open_actionable_mismatch_count}</strong>
           </Typography>
           <Typography variant="caption" color="text.secondary">
+            Acknowledged exceptions: <strong>{data.acknowledged_exception_count}</strong>
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
             Informational: <strong>{data.informational_mismatch_count}</strong>
           </Typography>
           {data.discovery_last_synced_at ? (
@@ -411,7 +668,14 @@ export const InventoryReconciliationPanel: React.FC<InventoryReconciliationPanel
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
             Findings ({data.mismatches.length})
           </Typography>
-          <MismatchTable rows={data.mismatches} />
+          <MismatchTable
+            rows={data.mismatches}
+            canAcknowledge={canAcknowledge}
+            ackBySignature={ackBySignature}
+            pendingSignature={pendingSignature}
+            onAcknowledge={openAcknowledge}
+            onRevoke={openRevoke}
+          />
         </>
       ) : (
         <Alert severity="success" sx={{ mb: 2 }} data-testid="inventory-reconciliation-no-mismatches">
@@ -437,6 +701,114 @@ export const InventoryReconciliationPanel: React.FC<InventoryReconciliationPanel
           </Box>
         </Paper>
       ) : null}
+
+      <Dialog
+        open={Boolean(ackTarget)}
+        onClose={closeDialogs}
+        fullWidth
+        maxWidth="sm"
+        data-testid="inventory-ack-dialog"
+      >
+        <DialogTitle>Acknowledge mismatch</DialogTitle>
+        <DialogContent>
+          <DialogContentText component="div" sx={{ mb: 2 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {ackTarget?.title}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {ackTarget?.detail}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+              Signing off records this as a reviewed, accepted exception. It changes no devices, mappings, facts,
+              telemetry, or baselines, and it can be revoked later.
+            </Typography>
+          </DialogContentText>
+          <TextField
+            autoFocus
+            fullWidth
+            multiline
+            minRows={3}
+            label="Reason for acknowledgement"
+            placeholder="Explain why this mismatch is an acceptable exception"
+            value={reason}
+            onChange={e => setReason(e.target.value)}
+            error={Boolean(reasonError)}
+            helperText={reasonError ?? `${trimmedReason.length}/${MAX_REASON_LEN}`}
+            inputProps={{ 'data-testid': 'inventory-ack-reason' }}
+          />
+          {actionError ? (
+            <Alert severity="error" sx={{ mt: 2 }} data-testid="inventory-ack-dialog-error">
+              {actionError}
+            </Alert>
+          ) : null}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeDialogs} disabled={createMutation.isPending}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            disabled={!reasonValid || createMutation.isPending || !ackTarget}
+            onClick={() => ackTarget && createMutation.mutate({ mismatch: ackTarget, reason: trimmedReason })}
+            data-testid="inventory-ack-confirm"
+          >
+            {createMutation.isPending ? 'Acknowledging…' : 'Acknowledge'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(revokeTarget)}
+        onClose={closeDialogs}
+        fullWidth
+        maxWidth="sm"
+        data-testid="inventory-revoke-dialog"
+      >
+        <DialogTitle>Revoke acknowledgement</DialogTitle>
+        <DialogContent>
+          <DialogContentText component="div" sx={{ mb: 2 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {revokeTarget?.mismatch.title}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Revoking returns this mismatch to open/actionable. The original acknowledgement is kept as immutable
+              history.
+            </Typography>
+          </DialogContentText>
+          <TextField
+            autoFocus
+            fullWidth
+            multiline
+            minRows={3}
+            label="Reason for revocation"
+            placeholder="Explain why this acknowledgement no longer applies"
+            value={reason}
+            onChange={e => setReason(e.target.value)}
+            error={Boolean(reasonError)}
+            helperText={reasonError ?? `${trimmedReason.length}/${MAX_REASON_LEN}`}
+            inputProps={{ 'data-testid': 'inventory-revoke-reason' }}
+          />
+          {actionError ? (
+            <Alert severity="error" sx={{ mt: 2 }} data-testid="inventory-revoke-dialog-error">
+              {actionError}
+            </Alert>
+          ) : null}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeDialogs} disabled={revokeMutation.isPending}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="warning"
+            disabled={!reasonValid || revokeMutation.isPending || !revokeTarget}
+            onClick={() => revokeTarget && revokeMutation.mutate({ ackId: revokeTarget.ack.id, reason: trimmedReason })}
+            data-testid="inventory-revoke-confirm"
+          >
+            {revokeMutation.isPending ? 'Revoking…' : 'Revoke'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
