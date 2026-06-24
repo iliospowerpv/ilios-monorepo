@@ -36,6 +36,21 @@ These are environment/tooling facts, not code. They repeatedly cost time.
   pre-existing stale-mock errors in `**/__tests__/*.test.tsx` (see
   `repo-validation-known-noise.md`) — those are not regressions.
 
+## A blocking ESLint *error* shows a full-screen "Compiled with problems" overlay
+- Symptom: user reports the Frontend "crashed with a runtime error" but the app
+  is actually covered by the CRA red "Compiled with problems:" overlay. The dev
+  server compiles ESLint `error`-level rules as a blocking `ERROR in [eslint]`
+  (`webpack compiled with N error(s)`) and the overlay hides the whole app.
+- **Why:** CRA treats ESLint errors as build errors in dev; warnings do NOT block.
+  prettier/prettier formatting and @typescript-eslint/no-unused-vars are errors
+  here, so an unformatted/unused-var file ANYWHERE (even one you didn't touch)
+  blackouts the app — it is not necessarily your diff's fault.
+- **How to apply:** read the overlay/webpack log for the file+rule, `eslint --fix`
+  the formatting ones, remove dead vars by hand, then clear `node_modules/.cache`
+  + restart Frontend. Clean state = `webpack compiled with N warning(s)` (no
+  "error"). Don't be misled by a recurring "Invalid hook call" console warning —
+  check its timestamp; if it predates your merge it is pre-existing, not the crash.
+
 ## Prettier is enforced via eslint
 - `.eslintrc` extends `plugin:prettier/recommended`; effective prettier config is
   `.prettierrc` (printWidth 120, singleQuote, semi, no trailing comma,

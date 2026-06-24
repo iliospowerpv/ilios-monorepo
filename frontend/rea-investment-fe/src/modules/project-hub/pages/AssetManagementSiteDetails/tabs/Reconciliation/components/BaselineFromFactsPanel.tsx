@@ -436,11 +436,7 @@ export const BaselineFromFactsPanel: React.FC<BaselineFromFactsPanelProps> = ({ 
       ? 'Enter a number'
       : 'Negative for crystalline silicon, e.g. -0.35. Units are % per °C (not %/°F, not a decimal fraction); no conversion is applied.';
     const verdictColor =
-      verdict?.level === 'hard_invalid'
-        ? 'error.main'
-        : verdict?.level === 'warning'
-          ? 'warning.main'
-          : 'success.main';
+      verdict?.level === 'hard_invalid' ? 'error.main' : verdict?.level === 'warning' ? 'warning.main' : 'success.main';
     const previewFactor = typeof parsed === 'number' ? thermalFactorAt(parsed, THERMAL_PREVIEW_CELL_C) : null;
     return (
       <Grid item xs={12} sm={6} md={4} key={field}>

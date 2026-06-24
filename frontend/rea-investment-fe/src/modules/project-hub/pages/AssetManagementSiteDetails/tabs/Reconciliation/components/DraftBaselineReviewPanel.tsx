@@ -282,8 +282,7 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
   // BOTH baselines, so an invalid active baseline AND a valid replacement are
   // both visible. Skipped when there is no candidate or no active to compare.
   const diffCandidateId = selectedDraft?.id ?? approvedNotActive[0]?.id ?? null;
-  const diffEnabled =
-    enabled && diffCandidateId != null && active != null && diffCandidateId !== active.id;
+  const diffEnabled = enabled && diffCandidateId != null && active != null && diffCandidateId !== active.id;
   const {
     data: diff,
     isLoading: diffLoading,
@@ -1052,9 +1051,7 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
                   : { baselineId: activateTarget.id }
               )
             }
-            disabled={
-              activateMutation.isPending || (activateWarnings != null && activateNote.trim().length === 0)
-            }
+            disabled={activateMutation.isPending || (activateWarnings != null && activateNote.trim().length === 0)}
             data-testid="activate-confirm-submit"
           >
             {activateMutation.isPending

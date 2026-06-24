@@ -28,7 +28,6 @@ const getParseStateDisplay = (summary: ParseStateSummary): ParseStateDisplay => 
   const state: ParseState = summary.parse_state;
   const reason: NoUsableFieldsReason | null = summary.no_usable_fields_reason;
   const isEquipment = summary.selected_document_type.is_equipment_type;
-  const isGenericStub = summary.selected_document_type.is_generic_contractual_stub;
 
   switch (state) {
     case 'not_yet_parsed':
@@ -235,7 +234,11 @@ const ParseStatusCard: React.FC<ParseStatusCardProps> = ({
           size="small"
           variant="outlined"
           color={version.is_current_version ? 'success' : 'default'}
-          label={version.is_current_version ? `${version.version_display} · Current` : `${version.version_display} · Not current`}
+          label={
+            version.is_current_version
+              ? `${version.version_display} · Current`
+              : `${version.version_display} · Not current`
+          }
           sx={{ fontSize: '11px' }}
         />
       </Stack>

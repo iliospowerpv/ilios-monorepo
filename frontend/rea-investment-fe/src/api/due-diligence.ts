@@ -425,7 +425,11 @@ type ParseState =
   | 'accepted_or_overridden'
   | 'promoted';
 
-type NoUsableFieldsReason = 'no_schema_fields' | 'no_fields_found' | 'fields_did_not_map' | 'generic_contractual_schema';
+type NoUsableFieldsReason =
+  | 'no_schema_fields'
+  | 'no_fields_found'
+  | 'fields_did_not_map'
+  | 'generic_contractual_schema';
 
 type ParseNextAction =
   | 'parse_document'
