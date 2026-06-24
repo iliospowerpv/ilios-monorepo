@@ -20,6 +20,7 @@ import type {
   InventoryAckRevokeRequest,
   InventoryMismatchTaskCreatePayload,
   InventoryMismatchTaskResponse,
+  InventoryMismatchTrackedStatusResponse,
   InventoryReconciliationResponse,
   InventoryReconciliationSummaryBatchResponse,
   LicenseCreatePayload,
@@ -407,6 +408,24 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     return data;
   };
 
+  /**
+   * Read-only list of the OPEN tasks tracking this site's inventory-reconciliation
+   * gaps, fetched ONCE per page (no per-row request). The Reconciliation tab keys
+   * these by `mismatch_signature` to show EITHER "Tracked" (with a deep link) OR
+   * "Create task" per actionable row — never both. Only open tasks
+   * (`completed_at IS NULL`) are returned, so a closed task never suppresses
+   * "Create task". Performs no writes. On failure callers must fall back to
+   * "Create task" and never fabricate a false "Tracked".
+   */
+  const getInventoryReconciliationTrackedTasks = async (
+    siteId: number
+  ): Promise<InventoryMismatchTrackedStatusResponse> => {
+    const { data } = await httpClient.get<InventoryMismatchTrackedStatusResponse>(
+      `${V2}/sites/${siteId}/inventory-reconciliation/tracked-tasks`
+    );
+    return data;
+  };
+
   /** List per-site scheduler status across a company's mapped telemetry sites. */
   const getCompanySchedulerStatus = async (companyId: number): Promise<CompanySchedulerStatusList> => {
     const { data } = await httpClient.get<CompanySchedulerStatusList>(`${V2}/companies/${companyId}/scheduler/status`);
@@ -613,6 +632,7 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     revokeInventoryAcknowledgement,
     getInventoryReconciliationSummaries,
     createInventoryReconciliationTask,
+    getInventoryReconciliationTrackedTasks,
     backfillSiteReadings,
     getReadinessFromFacts,
     createDraftFromFacts,

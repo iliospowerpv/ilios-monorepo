@@ -1336,3 +1336,22 @@ export interface InventoryMismatchTaskResponse {
   message: string;
   deep_link: string;
 }
+
+/**
+ * One OPEN task tracking an inventory-reconciliation gap. Returned only for
+ * signatures that currently have an open task; a signature absent from the
+ * response is untracked (the row shows "Create task").
+ */
+export interface InventoryMismatchTrackedTask {
+  mismatch_signature: string;
+  is_tracked: boolean;
+  task_id: number;
+  task_name: string | null;
+  task_status: string | null;
+  task_link: string;
+}
+
+/** Read-only batch of OPEN inventory-gap tracking tasks for a single site. */
+export interface InventoryMismatchTrackedStatusResponse {
+  tracked: InventoryMismatchTrackedTask[];
+}

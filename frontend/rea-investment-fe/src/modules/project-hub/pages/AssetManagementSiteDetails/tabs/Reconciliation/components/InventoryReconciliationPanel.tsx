@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -34,6 +35,8 @@ import type {
   InventoryAckResponse,
   InventoryClassCount,
   InventoryMismatch,
+  InventoryMismatchTrackedStatusResponse,
+  InventoryMismatchTrackedTask,
   InventoryNextAction,
   InventoryReconciliationResponse
 } from '../../../../../../../types/telemetryV2';
@@ -140,6 +143,17 @@ const inventoryAcknowledgementsQuery = (siteId: number, enabled: boolean) => ({
   retry: false as const
 });
 
+// One batched lookup per page (no per-row request) of the OPEN tasks tracking
+// this site's inventory gaps. The query key shares the `['site',
+// 'inventory-reconciliation']` prefix used by `CreateInventoryTaskDialog` on a
+// successful create, so a new task immediately flips its row to "Tracked".
+const inventoryTrackedTasksQuery = (siteId: number, enabled: boolean) => ({
+  queryKey: ['site', 'inventory-reconciliation', 'tracked', { siteId }],
+  queryFn: () => ApiClient.telemetryV2.getInventoryReconciliationTrackedTasks(siteId),
+  enabled,
+  retry: false as const
+});
+
 interface InventoryReconciliationPanelProps {
   siteId: number;
   /** Project name, woven into a created task's description so it reads standalone. */
@@ -202,6 +216,7 @@ interface MismatchTableProps {
   onRevoke: (mismatch: InventoryMismatch, ack: InventoryAckResponse) => void;
   canEdit: boolean;
   onCreateTask: (mismatch: InventoryMismatch) => void;
+  trackedBySignature: Map<string, InventoryMismatchTrackedTask>;
 }
 
 const MismatchAckCell: React.FC<{
@@ -293,7 +308,8 @@ const MismatchTable: React.FC<MismatchTableProps> = ({
   onAcknowledge,
   onRevoke,
   canEdit,
-  onCreateTask
+  onCreateTask,
+  trackedBySignature
 }) => (
   <TableContainer component={Paper} variant="outlined" sx={{ mb: 2 }}>
     <Table size="small" aria-label="inventory mismatches">
@@ -314,6 +330,7 @@ const MismatchTable: React.FC<MismatchTableProps> = ({
       <TableBody>
         {rows.map(m => {
           const impact = blockingMeta(m.blocking_level);
+          const tracked = trackedBySignature.get(m.mismatch_signature);
           const provenance = m.recorded_provenance;
           const provenanceText = provenance
             ? [
@@ -379,15 +396,36 @@ const MismatchTable: React.FC<MismatchTableProps> = ({
               {canEdit ? (
                 <TableCell align="right">
                   {isActionableInventoryMismatch(m) ? (
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={<AddTaskOutlinedIcon fontSize="small" />}
-                      onClick={() => onCreateTask(m)}
-                      data-testid="inventory-create-task-button"
-                    >
-                      Create task
-                    </Button>
+                    tracked ? (
+                      <Tooltip
+                        title={`Open task${tracked.task_status ? ` (${tracked.task_status})` : ''}${
+                          tracked.task_name ? `: ${tracked.task_name}` : ''
+                        }`}
+                        arrow
+                      >
+                        <Chip
+                          size="small"
+                          color="success"
+                          variant="outlined"
+                          clickable
+                          component={RouterLink}
+                          to={tracked.task_link}
+                          icon={<TaskAltOutlinedIcon />}
+                          label="Tracked"
+                          data-testid="inventory-tracked-chip"
+                        />
+                      </Tooltip>
+                    ) : (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<AddTaskOutlinedIcon fontSize="small" />}
+                        onClick={() => onCreateTask(m)}
+                        data-testid="inventory-create-task-button"
+                      >
+                        Create task
+                      </Button>
+                    )
                   ) : (
                     <Tooltip title="Informational finding — no actionable next step to track." arrow>
                       <Typography variant="caption" color="text.disabled" sx={{ cursor: 'help' }}>
@@ -468,6 +506,25 @@ export const InventoryReconciliationPanel: React.FC<InventoryReconciliationPanel
   const { data: ackList } = useQuery<InventoryAckListResponse>(
     inventoryAcknowledgementsQuery(isValidId ? siteId : -1, isValidId)
   );
+  // Tracked-task status is only relevant where the Action column renders (canEdit).
+  // On error the data is undefined and every row falls back to "Create task" — a
+  // lookup failure can never surface a false "Tracked".
+  const { data: trackedList } = useQuery<InventoryMismatchTrackedStatusResponse>(
+    inventoryTrackedTasksQuery(isValidId ? siteId : -1, isValidId && canEdit)
+  );
+
+  // One Map<signature, open-task> built once per fetch so each row is an O(1)
+  // lookup (no per-row request). The lowest task id wins on the off chance of
+  // duplicates (the backend already dedupes open tasks per signature).
+  const trackedBySignature = React.useMemo(() => {
+    const map = new Map<string, InventoryMismatchTrackedTask>();
+    (trackedList?.tracked ?? []).forEach(item => {
+      if (item.is_tracked && !map.has(item.mismatch_signature)) {
+        map.set(item.mismatch_signature, item);
+      }
+    });
+    return map;
+  }, [trackedList]);
 
   // Map active acknowledgements by signature so a row can offer Revoke and show
   // who/when. Only `is_active` acks are surfaced (a stale-version ack reads as
@@ -684,6 +741,7 @@ export const InventoryReconciliationPanel: React.FC<InventoryReconciliationPanel
             onRevoke={openRevoke}
             canEdit={canEdit}
             onCreateTask={setTaskMismatch}
+            trackedBySignature={trackedBySignature}
           />
         </>
       ) : (

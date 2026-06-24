@@ -89,6 +89,7 @@ from app.schema.inventory_acknowledgement import (
 from app.schema.task import (
     InventoryMismatchTaskCreateSchema,
     InventoryMismatchTaskResponseSchema,
+    InventoryMismatchTrackedStatusResponse,
 )
 from app.schema.telemetry_v2 import (
     BaselineActivateRequest,
@@ -187,6 +188,7 @@ from app.services.weather.bucketing import floor_to_bucket
 from app.services.telemetry import inventory_acknowledgement_service
 from app.services.telemetry.inventory_mismatch_task_service import (
     create_task_from_inventory_mismatch,
+    list_tracked_inventory_tasks,
 )
 from app.models.device import Device
 from app.services.telemetry.ingestion_service import (
@@ -1842,6 +1844,32 @@ def create_inventory_reconciliation_task(
     """
     _enforce_company_visibility(current_user, site.company_id)
     return create_task_from_inventory_mismatch(db, site, current_user, payload)
+
+
+@telemetry_v2_router.get(
+    "/v2/sites/{site_id}/inventory-reconciliation/tracked-tasks",
+    response_model=InventoryMismatchTrackedStatusResponse,
+    summary="Read-only list of OPEN tasks tracking inventory-reconciliation gaps",
+    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.view)))],
+)
+def list_inventory_reconciliation_tracked_tasks(
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> InventoryMismatchTrackedStatusResponse:
+    """Disclose which inventory-reconciliation gaps already have an OPEN task.
+
+    Read-only companion to the create-task seam: it lets the Reconciliation tab show
+    EITHER "Tracked" (with a deep link to the open task) OR "Create task" per
+    actionable mismatch row — never both — without firing one request per row. It
+    runs a SINGLE batched query, performs NO writes/commits, and never creates,
+    dedupes, maps, acknowledges, or promotes anything (the #60 create/dedupe path is
+    untouched). Only OPEN tasks (``completed_at IS NULL``) are returned, so a closed
+    task never suppresses "Create task". Asset-view gated; the frontend keys rows by
+    ``mismatch_signature`` and treats any absent signature as untracked.
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+    return list_tracked_inventory_tasks(db, site)
 
 
 @telemetry_v2_router.post(

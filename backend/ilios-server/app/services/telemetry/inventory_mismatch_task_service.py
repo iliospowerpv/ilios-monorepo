@@ -31,7 +31,7 @@ from datetime import date, timedelta
 from typing import Optional
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.crud.errors import UniqueConstraintViolationError
 from app.crud.task import TaskCRUD
@@ -40,7 +40,12 @@ from app.models.board import Board, BoardModuleEnum, BoardRelatedEntity, BoardRe
 from app.models.site import Site
 from app.models.task import Task, TaskPriorityEnum
 from app.schema.inventory_reconciliation import InventoryAckPolicy, InventoryMismatch
-from app.schema.task import InventoryMismatchTaskCreateSchema, InventoryMismatchTaskResponseSchema
+from app.schema.task import (
+    InventoryMismatchTaskCreateSchema,
+    InventoryMismatchTaskResponseSchema,
+    InventoryMismatchTrackedStatusResponse,
+    InventoryMismatchTrackedTask,
+)
 from app.schema.user import CurrentUserSchema
 from app.services.telemetry.device_inventory_reconciliation_service import (
     build_site_inventory_reconciliation,
@@ -316,6 +321,58 @@ def create_task_from_inventory_mismatch(
         message=TaskMessages.task_create_success,
         deep_link=_deep_link(site, task.id),
     )
+
+
+def list_tracked_inventory_tasks(db: Session, site: Site) -> InventoryMismatchTrackedStatusResponse:
+    """Return every OPEN task that tracks an inventory-reconciliation gap on the site.
+
+    Read-only companion to the reconciliation view. It runs a SINGLE batched query
+    (no per-row/per-signature lookups, no N+1) and performs NO writes/commits. Only
+    OPEN tasks (``completed_at IS NULL``) are returned, so a closed task never
+    suppresses the "Create task" affordance. The status relationship is eager-loaded
+    so reading ``task.status.name`` does not fan out into per-row queries.
+
+    The frontend keys these rows by ``mismatch_signature`` and treats any signature
+    absent here as untracked. On any lookup failure the endpoint errors and the
+    frontend simply renders "Create task" — it never fabricates a false "Tracked".
+    Open-dedupe at creation guarantees at most one open task per signature; if more
+    ever exist (defensive), the lowest task id wins and duplicates are collapsed.
+    """
+    board_ids = _site_board_ids(db, site.id)
+    if not board_ids:
+        return InventoryMismatchTrackedStatusResponse(tracked=[])
+
+    tasks = (
+        db.query(Task)
+        .options(joinedload(Task.status))
+        .filter(
+            Task.board_id.in_(board_ids),
+            Task.source_kind == INVENTORY_SOURCE_KIND,
+            Task.source_signature.isnot(None),
+            Task.completed_at.is_(None),
+        )
+        .order_by(Task.id.asc())
+        .all()
+    )
+
+    seen: set[str] = set()
+    tracked: list[InventoryMismatchTrackedTask] = []
+    for task in tasks:
+        signature = task.source_signature
+        if not signature or signature in seen:
+            continue
+        seen.add(signature)
+        tracked.append(
+            InventoryMismatchTrackedTask(
+                mismatch_signature=signature,
+                is_tracked=True,
+                task_id=task.id,
+                task_name=task.name,
+                task_status=task.status.name if task.status else None,
+                task_link=_deep_link(site, task.id),
+            )
+        )
+    return InventoryMismatchTrackedStatusResponse(tracked=tracked)
 
 
 class _DueDateOnly:

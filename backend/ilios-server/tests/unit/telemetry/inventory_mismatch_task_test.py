@@ -302,3 +302,151 @@ class TestEndpointAuth:
             headers=non_system_user_auth_header,
         )
         assert response.status_code == 403
+
+    def test_get_tracked_without_site_access_403(
+        self, client, company_id, site_id, non_system_user_auth_header
+    ):
+        response = client.get(
+            f"api/telemetry/v2/sites/{site_id}/inventory-reconciliation/tracked-tasks",
+            headers=non_system_user_auth_header,
+        )
+        assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# Tracked-task companion lookup (Task #83) — read-only "Tracked" indicator
+# ---------------------------------------------------------------------------
+class TestTrackedTasks:
+    """``list_tracked_inventory_tasks`` is the read-only companion to creation.
+
+    It backs the "Tracked" vs "Create task" affordance: a row is "Tracked" iff an
+    OPEN task carries its signature. These pin the load-bearing contracts —
+    open-only, dedupe-collapsed, read-only, and single-query (no N+1).
+    """
+
+    def test_returns_open_task_for_created_signature(
+        self, db_session, company_id, site_id, creator, asset_board
+    ):
+        _build_site4_shaped(db_session, company_id, site_id)
+        created = task_svc.create_task_from_inventory_mismatch(
+            db_session, _site(db_session, site_id), creator, _payload(_ACTIONABLE_SIG)
+        )
+
+        result = task_svc.list_tracked_inventory_tasks(db_session, _site(db_session, site_id))
+
+        by_sig = {t.mismatch_signature: t for t in result.tracked}
+        assert _ACTIONABLE_SIG in by_sig
+        tracked = by_sig[_ACTIONABLE_SIG]
+        assert tracked.is_tracked is True
+        assert tracked.task_id == created.task_id
+        assert tracked.task_link and str(site_id) in tracked.task_link
+
+    def test_empty_when_no_tracking_tasks(
+        self, db_session, company_id, site_id, creator, asset_board
+    ):
+        _build_site4_shaped(db_session, company_id, site_id)
+
+        result = task_svc.list_tracked_inventory_tasks(db_session, _site(db_session, site_id))
+
+        assert result.tracked == []
+
+    def test_closed_task_not_tracked(
+        self, db_session, company_id, site_id, creator, asset_board
+    ):
+        _build_site4_shaped(db_session, company_id, site_id)
+        created = task_svc.create_task_from_inventory_mismatch(
+            db_session, _site(db_session, site_id), creator, _payload(_ACTIONABLE_SIG)
+        )
+        # Closing the only tracking task must drop the signature from the result,
+        # so a resolved gap re-offers "Create task" (never a stale "Tracked").
+        from datetime import datetime
+
+        closed = db_session.query(Task).filter(Task.id == created.task_id).one()
+        closed.completed_at = datetime.utcnow()
+        db_session.commit()
+
+        result = task_svc.list_tracked_inventory_tasks(db_session, _site(db_session, site_id))
+
+        assert all(t.mismatch_signature != _ACTIONABLE_SIG for t in result.tracked)
+
+    def test_dedupes_to_lowest_id_when_duplicate_open_tasks(
+        self, db_session, company_id, site_id, creator, asset_board
+    ):
+        _build_site4_shaped(db_session, company_id, site_id)
+        first = task_svc.create_task_from_inventory_mismatch(
+            db_session, _site(db_session, site_id), creator, _payload(_ACTIONABLE_SIG)
+        )
+        # Defensive: force a second OPEN row with the same signature (bypassing the
+        # create-time dedupe) and assert the list collapses to the lowest id.
+        dup = Task(
+            name="dup tracking task",
+            board_id=asset_board.id,
+            creator_id=creator.id,
+            source_kind=INVENTORY_SOURCE_KIND,
+            source_signature=_ACTIONABLE_SIG,
+        )
+        db_session.add(dup)
+        db_session.commit()
+
+        result = task_svc.list_tracked_inventory_tasks(db_session, _site(db_session, site_id))
+
+        rows = [t for t in result.tracked if t.mismatch_signature == _ACTIONABLE_SIG]
+        assert len(rows) == 1
+        assert rows[0].task_id == first.task_id
+
+    def test_listing_does_not_mutate_sources(
+        self, db_session, company_id, site_id, creator, asset_board
+    ):
+        _build_site4_shaped(db_session, company_id, site_id)
+        task_svc.create_task_from_inventory_mismatch(
+            db_session, _site(db_session, site_id), creator, _payload(_ACTIONABLE_SIG)
+        )
+
+        before = _fingerprint(db_session)
+        task_svc.list_tracked_inventory_tasks(db_session, _site(db_session, site_id))
+        after = _fingerprint(db_session)
+
+        assert before == after
+
+    def test_single_query_no_n_plus_one(
+        self, db_session, company_id, site_id, creator, asset_board
+    ):
+        _build_site4_shaped(db_session, company_id, site_id)
+        # Several open tracking tasks across distinct signatures — reading each
+        # task's status must NOT fan out into a per-row query.
+        for sig in (_ACTIONABLE_SIG,):
+            task_svc.create_task_from_inventory_mismatch(
+                db_session, _site(db_session, site_id), creator, _payload(sig)
+            )
+        for i in range(3):
+            db_session.add(
+                Task(
+                    name=f"extra tracking {i}",
+                    board_id=asset_board.id,
+                    creator_id=creator.id,
+                    source_kind=INVENTORY_SOURCE_KIND,
+                    source_signature=f"synthetic_gap:site:extra:{i}",
+                )
+            )
+        db_session.commit()
+
+        statements: list[str] = []
+        from sqlalchemy import event
+
+        engine = db_session.get_bind()
+
+        def _before_cursor(conn, cursor, statement, parameters, context, executemany):
+            if statement.lstrip().upper().startswith("SELECT"):
+                statements.append(statement)
+
+        event.listen(engine, "before_cursor_execute", _before_cursor)
+        try:
+            result = task_svc.list_tracked_inventory_tasks(db_session, _site(db_session, site_id))
+        finally:
+            event.remove(engine, "before_cursor_execute", _before_cursor)
+
+        # board-ids resolution + the single tasks+status query. The eager
+        # joinedload means status reads add NO extra SELECTs regardless of row count.
+        assert len(result.tracked) >= 4
+        task_selects = [s for s in statements if "FROM tasks" in s or "FROM task" in s]
+        assert len(task_selects) == 1, statements

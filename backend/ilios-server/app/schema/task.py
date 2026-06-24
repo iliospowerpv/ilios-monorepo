@@ -80,6 +80,45 @@ class InventoryMismatchTaskResponseSchema(BaseModel):
     )
 
 
+class InventoryMismatchTrackedTask(BaseModel):
+    """One OPEN task that currently tracks an inventory-reconciliation gap.
+
+    Returned ONLY for mismatch signatures that have an open (``completed_at IS
+    NULL``) tracking task. The frontend keys these by ``mismatch_signature`` and
+    treats any signature absent from the response as untracked (it then offers
+    "Create task"). A closed task is never returned here, so it can never suppress
+    the "Create task" affordance.
+    """
+
+    mismatch_signature: str = Field(
+        examples=["telemetry_freshness:site:discovery_stale"],
+        description="Stable signature of the mismatch this open task tracks.",
+    )
+    is_tracked: bool = Field(
+        default=True,
+        description="Always True for returned rows (each row is an open tracking task).",
+    )
+    task_id: int = Field(examples=[42])
+    task_name: Optional[str] = Field(default=None, examples=["Inventory: Telemetry discovery is stale"])
+    task_status: Optional[str] = Field(default=None, examples=["To Do"])
+    task_link: str = Field(
+        examples=["/project-hub/companies/3/sites/4/tasks/42"],
+        description="Relative deep link to the open task.",
+    )
+
+
+class InventoryMismatchTrackedStatusResponse(BaseModel):
+    """Read-only batch of OPEN inventory-gap tracking tasks for a single site.
+
+    Built from ONE batched query (no per-row/per-signature lookups) and performs
+    no writes. The frontend builds a ``Map<mismatch_signature, item>`` from this so
+    each actionable mismatch row shows EITHER "Tracked" (with a deep link) OR
+    "Create task" — never both.
+    """
+
+    tracked: list[InventoryMismatchTrackedTask] = []
+
+
 class TaskOrderByFieldEnum(str, Enum):
     id = "id"
     external_id = "external_id"

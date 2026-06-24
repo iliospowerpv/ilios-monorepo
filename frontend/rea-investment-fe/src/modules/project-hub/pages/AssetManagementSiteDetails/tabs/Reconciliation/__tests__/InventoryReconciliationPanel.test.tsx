@@ -1,11 +1,14 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import type {
   InventoryAckListResponse,
   InventoryAckResponse,
   InventoryMismatch,
+  InventoryMismatchTrackedStatusResponse,
+  InventoryMismatchTrackedTask,
   InventoryReconciliationResponse
 } from '../../../../../../../types/telemetryV2';
 
@@ -15,13 +18,15 @@ const mockGetRecon = jest.fn();
 const mockListAcks = jest.fn();
 const mockCreateAck = jest.fn();
 const mockRevokeAck = jest.fn();
+const mockGetTracked = jest.fn();
 jest.mock('../../../../../../../api', () => ({
   ApiClient: {
     telemetryV2: {
       getSiteInventoryReconciliation: (...args: unknown[]) => mockGetRecon(...args),
       listInventoryAcknowledgements: (...args: unknown[]) => mockListAcks(...args),
       createInventoryAcknowledgement: (...args: unknown[]) => mockCreateAck(...args),
-      revokeInventoryAcknowledgement: (...args: unknown[]) => mockRevokeAck(...args)
+      revokeInventoryAcknowledgement: (...args: unknown[]) => mockRevokeAck(...args),
+      getInventoryReconciliationTrackedTasks: (...args: unknown[]) => mockGetTracked(...args)
     }
   }
 }));
@@ -125,18 +130,36 @@ const activeAck = (signature: string): InventoryAckResponse => ({
   is_expired: false
 });
 
+const trackedTask = (signature: string, overrides: Partial<InventoryMismatchTrackedTask> = {}): InventoryMismatchTrackedTask => ({
+  mismatch_signature: signature,
+  is_tracked: true,
+  task_id: 99,
+  task_name: 'Inventory: confirm inverter count',
+  task_status: 'To Do',
+  task_link: '/project-hub/companies/3/sites/123/tasks/99',
+  ...overrides
+});
+
+const buildTracked = (tracked: InventoryMismatchTrackedTask[] = []): InventoryMismatchTrackedStatusResponse => ({
+  tracked
+});
+
 const renderPanel = () => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={queryClient}>
-      <InventoryReconciliationPanel siteId={123} />
-    </QueryClientProvider>
+    <MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <InventoryReconciliationPanel siteId={123} />
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 };
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockListAcks.mockResolvedValue(buildAckList());
+  // No tracking tasks by default — rows fall back to "Create task".
+  mockGetTracked.mockResolvedValue(buildTracked());
   // Default to a reviewer with Asset.edit rights.
   mockUseAuth.mockReturnValue({
     user: { is_system_user: false, role: { permissions: { 'Asset Management': { edit: true } } } }
@@ -258,5 +281,52 @@ describe('InventoryReconciliationPanel acknowledgements', () => {
     expect(await screen.findByTestId('inventory-ack-dialog-error')).toHaveTextContent(
       'Reconciliation version is stale.'
     );
+  });
+});
+
+describe('InventoryReconciliationPanel tracked-task indicator', () => {
+  it('shows a Tracked deep link (and no Create task) when an open task tracks the mismatch', async () => {
+    mockGetRecon.mockResolvedValue(buildResponse([baseMismatch()]));
+    mockGetTracked.mockResolvedValue(buildTracked([trackedTask('sig-acknowledgeable')]));
+
+    renderPanel();
+
+    const chip = await screen.findByTestId('inventory-tracked-chip');
+    expect(chip).toBeInTheDocument();
+    expect(chip.closest('a')).toHaveAttribute('href', '/project-hub/companies/3/sites/123/tasks/99');
+    // Never both: the Create task button must be absent for a tracked row.
+    expect(screen.queryByTestId('inventory-create-task-button')).not.toBeInTheDocument();
+  });
+
+  it('shows Create task (and no Tracked chip) when no open task tracks the mismatch', async () => {
+    mockGetRecon.mockResolvedValue(buildResponse([baseMismatch()]));
+    mockGetTracked.mockResolvedValue(buildTracked([]));
+
+    renderPanel();
+
+    expect(await screen.findByTestId('inventory-create-task-button')).toBeInTheDocument();
+    expect(screen.queryByTestId('inventory-tracked-chip')).not.toBeInTheDocument();
+  });
+
+  it('falls back to Create task (never a false Tracked) when the tracked lookup fails', async () => {
+    mockGetRecon.mockResolvedValue(buildResponse([baseMismatch()]));
+    mockGetTracked.mockRejectedValue(new Error('tracked lookup failed'));
+
+    renderPanel();
+
+    expect(await screen.findByTestId('inventory-create-task-button')).toBeInTheDocument();
+    expect(screen.queryByTestId('inventory-tracked-chip')).not.toBeInTheDocument();
+  });
+
+  it('does not request the tracked lookup for a read-only viewer', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { is_system_user: false, role: { permissions: { 'Asset Management': { edit: false } } } }
+    });
+    mockGetRecon.mockResolvedValue(buildResponse([baseMismatch()]));
+
+    renderPanel();
+
+    expect(await screen.findByText('Asset edit required')).toBeInTheDocument();
+    expect(mockGetTracked).not.toHaveBeenCalled();
   });
 });
