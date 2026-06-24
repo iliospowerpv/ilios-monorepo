@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -14,6 +15,9 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import Skeleton from '@mui/material/Skeleton';
 
 import type { WorkspaceProject } from '../../../../api/workspace';
+import { ApiClient } from '../../../../api';
+import type { InventoryReconciliationSummary } from '../../../../types/telemetryV2';
+import InventoryReconciliationChip from '../../../../components/common/InventoryReconciliationChip/InventoryReconciliationChip';
 
 interface HomeProjectsProps {
   projects: WorkspaceProject[];
@@ -22,6 +26,34 @@ interface HomeProjectsProps {
 
 export const HomeProjects: React.FC<HomeProjectsProps> = ({ projects, isLoading }) => {
   const navigate = useNavigate();
+
+  // One reconciliation-summary request for the whole card set (not one per card).
+  const sortedSiteIds = useMemo(
+    () =>
+      projects
+        .map(p => p.project_id)
+        .filter((id): id is number => typeof id === 'number')
+        .sort((a, b) => a - b),
+    [projects]
+  );
+  const {
+    data: reconData,
+    isFetching: reconFetching,
+    isError: reconIsError
+  } = useQuery({
+    queryKey: ['inventory-reconciliation-summaries', sortedSiteIds],
+    queryFn: () => ApiClient.telemetryV2.getInventoryReconciliationSummaries(sortedSiteIds),
+    enabled: sortedSiteIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: 1
+  });
+  const reconMap = useMemo(() => {
+    const map = new Map<number, InventoryReconciliationSummary>();
+    (reconData?.summaries ?? []).forEach(item => map.set(item.site_id, item.summary));
+    return map;
+  }, [reconData]);
 
   if (isLoading) {
     return (
@@ -90,9 +122,17 @@ export const HomeProjects: React.FC<HomeProjectsProps> = ({ projects, isLoading 
                       </Box>
                     </Box>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1, flexWrap: 'wrap' }}>
                       <BusinessIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                       <Chip size="small" label={project.company_name} variant="outlined" />
+                    </Box>
+
+                    <Box sx={{ mb: 1 }}>
+                      <InventoryReconciliationChip
+                        summary={reconMap.get(project.project_id)}
+                        loading={reconFetching && !reconMap.get(project.project_id)}
+                        error={reconIsError && !reconMap.get(project.project_id)}
+                      />
                     </Box>
 
                     {location && (

@@ -774,6 +774,36 @@ export interface InventoryAckListResponse {
   acknowledgements: InventoryAckResponse[];
 }
 
+/**
+ * Compact reconciliation headline used by list/card status chips. Mirrors the
+ * backend `InventoryReconciliationSummary` (the same projection that powers the
+ * DD `telemetry_reality` block), so the chip and the Reconciliation tab agree.
+ */
+export interface InventoryReconciliationSummary {
+  status: InventoryReconciliationStatus;
+  status_label: string;
+  status_explanation: string;
+  has_blocking_mismatch: boolean;
+  weather_dependency_unsatisfied: boolean;
+  open_actionable_mismatch_count: number;
+  informational_mismatch_count: number;
+}
+
+/** One site's compact reconciliation summary, keyed by `site_id`. */
+export interface InventoryReconciliationSummaryItem {
+  site_id: number;
+  summary: InventoryReconciliationSummary;
+}
+
+/**
+ * Batch of compact reconciliation summaries (read-only). Sites the caller cannot
+ * view, or that do not exist, are omitted — the chip then renders an honest
+ * "Status unavailable" rather than a fabricated match.
+ */
+export interface InventoryReconciliationSummaryBatchResponse {
+  summaries: InventoryReconciliationSummaryItem[];
+}
+
 // ---------------------------------------------------------------------------
 // DD V2 — Baseline Readiness from promoted project_facts (+ reviewer inputs)
 // ---------------------------------------------------------------------------

@@ -34,60 +34,15 @@ import type {
   InventoryClassCount,
   InventoryMismatch,
   InventoryNextAction,
-  InventoryReconciliationResponse,
-  InventoryReconciliationStatus
+  InventoryReconciliationResponse
 } from '../../../../../../../types/telemetryV2';
+import { inventoryStatusMeta as statusMeta } from '../../../../../../../components/common/InventoryReconciliationChip/InventoryReconciliationChip';
 import { formatDateTime, PLACEHOLDER } from '../utils';
 
 type ChipColor = 'default' | 'info' | 'success' | 'warning' | 'error';
 
-interface StatusMeta {
-  label: string;
-  color: ChipColor;
-  severity: 'neutral' | 'info' | 'good' | 'attention' | 'blocking';
-}
-
 const MIN_REASON_LEN = 10;
 const MAX_REASON_LEN = 1000;
-
-/**
- * Display metadata for the G1->G8 reconciliation headline. The backend remains
- * the source of truth for `status_label` / `status_explanation`; this map only
- * picks an honest chip colour and a fallback label for unknown future statuses.
- */
-const STATUS_META: Record<string, StatusMeta> = {
-  telemetry_not_connected: { label: 'Telemetry not connected', color: 'default', severity: 'neutral' },
-  documented_inventory_incomplete: {
-    label: 'Documented inventory incomplete',
-    color: 'warning',
-    severity: 'attention'
-  },
-  telemetry_connected_no_devices: {
-    label: 'Connected — no devices discovered',
-    color: 'warning',
-    severity: 'attention'
-  },
-  telemetry_inventory_incomplete_or_stale: {
-    label: 'Telemetry inventory incomplete / stale',
-    color: 'warning',
-    severity: 'attention'
-  },
-  needs_reconciliation: { label: 'Needs reconciliation', color: 'error', severity: 'blocking' },
-  mapping_complete_with_acknowledged_exceptions: {
-    label: 'Mapping complete (acknowledged exceptions)',
-    color: 'info',
-    severity: 'info'
-  },
-  partially_matched: { label: 'Partially matched', color: 'warning', severity: 'attention' },
-  matched: { label: 'Matched', color: 'success', severity: 'good' }
-};
-
-const statusMeta = (status: InventoryReconciliationStatus): StatusMeta =>
-  STATUS_META[status] || {
-    label: String(status).replace(/_/g, ' '),
-    color: 'default',
-    severity: 'neutral'
-  };
 
 interface BlockingMeta {
   label: string;

@@ -1,0 +1,56 @@
+Task #59: Show inventory reconciliation status chip on site/project lists
+
+Add a reusable, read-only inventory-reconciliation status chip wherever a site is listed, driven by the existing reconciliation summary builder — with at most ONE reconciliation request per rendered page/card set (no per-row fetching).
+
+Backend (additive, read-only; no new reconciliation logic, no mutation):
+- New schemas InventoryReconciliationSummaryItem + InventoryReconciliationSummaryBatchResponse.
+- New endpoint:
+  GET /api/telemetry/v2/inventory-reconciliation/summaries?site_ids=1,2,3
+- Parses/dedupes ids, caps at 200.
+- AssetPermissions(view) enforced.
+- Per-site company-visibility enforced.
+- Unauthorized/unknown sites silently omitted.
+- Per-site try/catch so one bad site cannot fail the batch.
+- Reuses build_inventory_reconciliation_summary verbatim.
+- Existing per-site endpoint remains unchanged.
+- Existing site-list APIs remain unchanged.
+
+Frontend:
+- New InventoryReconciliationChip.
+- Uses backend status_label and status_explanation as the source of truth.
+- Loading = "Checking…"
+- Missing/error/auth-omitted = "Status unavailable"
+- Never fabricate "Matched."
+- Blocking indicator shown independently.
+- New getInventoryReconciliationSummaries(siteIds) API method.
+- SitesTable performs a single batched request for visible rows.
+- HomeProjects performs a single batched request for visible cards.
+- React Query cache: staleTime 5 minutes.
+
+Tests:
+- Backend: test_inventory_reconciliation_summaries.py (8 tests).
+- Frontend: InventoryReconciliationChip.test.tsx (6 tests).
+
+Performance:
+- Maximum one reconciliation request per rendered page/card set.
+- No per-site fetching.
+- Existing list APIs unchanged.
+- No list-performance degradation.
+
+Rebase:
+- Task #58 acknowledgement work and Task #59 batch summary work were merged together.
+- All conflict markers resolved.
+- Weather and acknowledgement migrations remain intact.
+
+Before final acceptance please confirm:
+
+1. Rebase coordination is fully finalized.
+2. Working tree is clean.
+3. No conflict markers remain.
+4. Backend starts cleanly.
+5. Backend summary tests still pass (8/8).
+6. Frontend chip tests still pass (6/6).
+7. Any remaining ESLint warnings/errors are pre-existing on main and unrelated to #59.
+8. No per-row or per-cell reconciliation requests exist anywhere in the application.
+
+Once confirmed, #59 is approved for application to main.

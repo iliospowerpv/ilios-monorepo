@@ -50,6 +50,8 @@ __all__ = [
     "InventoryMismatch",
     "NextAction",
     "InventoryReconciliationSummary",
+    "InventoryReconciliationSummaryItem",
+    "InventoryReconciliationSummaryBatchResponse",
     "InventoryReconciliationResponse",
 ]
 
@@ -239,6 +241,25 @@ class InventoryReconciliationSummary(BaseModel):
     weather_dependency_unsatisfied: bool
     open_actionable_mismatch_count: int
     informational_mismatch_count: int
+
+
+class InventoryReconciliationSummaryItem(BaseModel):
+    """One site's compact reconciliation summary, keyed by ``site_id``.
+
+    Used by the batch summaries endpoint so list/card surfaces can render a
+    read-only status chip per site with a SINGLE request. Only sites the caller
+    is authorized to view are included; everything else is simply omitted (the
+    chip then renders an honest "Status unavailable", never a fabricated match).
+    """
+
+    site_id: int
+    summary: InventoryReconciliationSummary
+
+
+class InventoryReconciliationSummaryBatchResponse(BaseModel):
+    """Batch of compact reconciliation summaries for a set of sites (read-only)."""
+
+    summaries: list[InventoryReconciliationSummaryItem] = []
 
 
 class InventoryReconciliationResponse(BaseModel):

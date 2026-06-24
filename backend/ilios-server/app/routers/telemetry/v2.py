@@ -73,7 +73,11 @@ from app.models.telemetry_expected import (
 )
 from app.static import PermissionsActions
 from app.schema.device_eligibility import DeviceEligibilityDiagnosticsResponse
-from app.schema.inventory_reconciliation import InventoryReconciliationResponse
+from app.schema.inventory_reconciliation import (
+    InventoryReconciliationResponse,
+    InventoryReconciliationSummaryBatchResponse,
+    InventoryReconciliationSummaryItem,
+)
 from app.schema.inventory_acknowledgement import (
     InventoryAckCreateRequest,
     InventoryAckListResponse,
@@ -166,6 +170,7 @@ from app.services.telemetry.device_eligibility_diagnostics_service import (
     compute_site_eligibility_diagnostics,
 )
 from app.services.telemetry.device_inventory_reconciliation_service import (
+    build_inventory_reconciliation_summary,
     build_site_inventory_reconciliation,
 )
 from app.services.telemetry.performance_context_service import (
@@ -1698,6 +1703,100 @@ def revoke_inventory_reconciliation_acknowledgement(
         user_id=current_user.id,
         request=request,
     )
+
+
+# Bound the batch so a hostile/oversized request can never fan out unbounded work.
+# A list page tops out at 100 rows, so 200 leaves comfortable headroom.
+_INVENTORY_SUMMARY_BATCH_MAX = 200
+
+
+@telemetry_v2_router.get(
+    "/v2/inventory-reconciliation/summaries",
+    response_model=InventoryReconciliationSummaryBatchResponse,
+    summary="Read-only batch of compact inventory reconciliation summaries",
+    dependencies=[Depends(AuthorizedUser(AssetPermissions(PermissionsActions.view)))],
+)
+def list_inventory_reconciliation_summaries(
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    site_ids: Annotated[
+        str,
+        Query(
+            description=(
+                "Comma-separated site ids to summarize (e.g. ``1,2,3``). Sites the "
+                "caller cannot view, or that do not exist, are silently omitted."
+            ),
+        ),
+    ] = "",
+) -> InventoryReconciliationSummaryBatchResponse:
+    """Return compact reconciliation summaries for a set of sites in ONE request.
+
+    This is the list/card counterpart to the per-site
+    ``/v2/sites/{site_id}/inventory-reconciliation`` endpoint (which is unchanged).
+    It exists so higher-level surfaces (project lists, company landing, home cards)
+    can show a read-only status chip per site without firing one request per row.
+
+    It introduces NO new reconciliation logic: each summary is produced by the
+    SAME :func:`build_inventory_reconciliation_summary` builder used to populate the
+    Due-Diligence ``telemetry_reality`` block, so the chip and the Reconciliation
+    tab can never disagree. It performs NO writes/commits and never maps, creates,
+    acknowledges, converts, or promotes anything.
+
+    Authorization mirrors the per-site endpoint: each requested site is filtered by
+    the caller's company visibility, and unauthorized / unknown sites are simply
+    omitted (HTTP 200 with a partial result) rather than failing the whole batch —
+    the frontend renders an honest "Status unavailable" for any id it asked for but
+    did not get back, so it never fabricates a "Matched".
+    """
+    parsed_ids: list[int] = []
+    seen: set[int] = set()
+    for raw in site_ids.split(","):
+        token = raw.strip()
+        if not token:
+            continue
+        try:
+            value = int(token)
+        except ValueError:
+            continue
+        if value <= 0 or value in seen:
+            continue
+        seen.add(value)
+        parsed_ids.append(value)
+
+    if not parsed_ids:
+        return InventoryReconciliationSummaryBatchResponse(summaries=[])
+
+    if len(parsed_ids) > _INVENTORY_SUMMARY_BATCH_MAX:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Too many site_ids; max {_INVENTORY_SUMMARY_BATCH_MAX} per request.",
+        )
+
+    sites = db.query(Site).filter(Site.id.in_(parsed_ids)).all()
+    by_id = {s.id: s for s in sites}
+
+    items: list[InventoryReconciliationSummaryItem] = []
+    for site_id in parsed_ids:
+        site = by_id.get(site_id)
+        if site is None:
+            continue
+        try:
+            _enforce_company_visibility(current_user, site.company_id)
+        except HTTPException:
+            # Not visible to this caller — omit it (the chip renders "unavailable").
+            continue
+        try:
+            summary = build_inventory_reconciliation_summary(db, site)
+        except Exception:  # noqa: BLE001 — one bad site must never sink the batch.
+            logger.exception(
+                "inventory-reconciliation: summary failed for site %s", site_id
+            )
+            continue
+        items.append(
+            InventoryReconciliationSummaryItem(site_id=site_id, summary=summary)
+        )
+
+    return InventoryReconciliationSummaryBatchResponse(summaries=items)
 
 
 @telemetry_v2_router.post(

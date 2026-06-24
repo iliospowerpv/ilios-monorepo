@@ -19,6 +19,7 @@ import type {
   InventoryAckResponse,
   InventoryAckRevokeRequest,
   InventoryReconciliationResponse,
+  InventoryReconciliationSummaryBatchResponse,
   LicenseCreatePayload,
   LicensedProvider,
   LicensedProviderList,
@@ -364,6 +365,29 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     return data;
   };
 
+  /**
+   * Read-only batch of compact inventory reconciliation summaries for a set of
+   * sites in a SINGLE request. Powers the status chip on list/card surfaces
+   * (project lists, company landing, home cards) without firing one request per
+   * row. Reuses the same summary builder as the per-site endpoint (no new logic,
+   * no mutation). Sites the caller cannot view, or that do not exist, are omitted
+   * — callers render an honest "Status unavailable" for any id not returned and
+   * never fabricate a "Matched". Returns an empty result for an empty id list
+   * (no request is issued in that case by the consuming hooks).
+   */
+  const getInventoryReconciliationSummaries = async (
+    siteIds: number[]
+  ): Promise<InventoryReconciliationSummaryBatchResponse> => {
+    if (!siteIds.length) {
+      return { summaries: [] };
+    }
+    const { data } = await httpClient.get<InventoryReconciliationSummaryBatchResponse>(
+      `${V2}/inventory-reconciliation/summaries`,
+      { params: { site_ids: siteIds.join(',') } }
+    );
+    return data;
+  };
+
   /** List per-site scheduler status across a company's mapped telemetry sites. */
   const getCompanySchedulerStatus = async (companyId: number): Promise<CompanySchedulerStatusList> => {
     const { data } = await httpClient.get<CompanySchedulerStatusList>(`${V2}/companies/${companyId}/scheduler/status`);
@@ -568,6 +592,7 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     listInventoryAcknowledgements,
     createInventoryAcknowledgement,
     revokeInventoryAcknowledgement,
+    getInventoryReconciliationSummaries,
     backfillSiteReadings,
     getReadinessFromFacts,
     createDraftFromFacts,
