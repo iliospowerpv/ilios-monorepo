@@ -121,7 +121,7 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ document, onRefresh, onDocu
             handleDocumentClick();
           }
         }}
-        sx={{
+        sx={theme => ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -131,8 +131,8 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ document, onRefresh, onDocu
           borderRight: 0,
           borderTop: 0,
           borderLeft: 0,
-          borderBottom: '1px solid #E0E0E0',
-          background: 'rgb(255, 255, 255)',
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          background: theme.palette.mode === 'dark' ? theme.palette.background.paper : 'rgb(255, 255, 255)',
           textAlign: 'left',
           fontSize: '16px',
           lineHeight: '24px',
@@ -144,9 +144,9 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ document, onRefresh, onDocu
             borderBottom: 0
           },
           '&:hover': {
-            background: 'rgb(240, 240, 240)'
+            background: theme.palette.mode === 'dark' ? theme.palette.action.hover : 'rgb(240, 240, 240)'
           }
-        }}
+        })}
       >
         <Box width="40%" ml="auto" display="inline" gap="12px">
           <Box component="span" marginInlineEnd="12px">
@@ -193,11 +193,11 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ document, onRefresh, onDocu
                 <Chip
                   label={document.status}
                   size="small"
-                  sx={theme => ({
-                    color: theme.palette.primary.main,
+                  sx={{
+                    color: 'rgba(0, 0, 0, 0.87)',
                     background: '#F4E998',
                     minWidth: '75px'
-                  })}
+                  }}
                 />
               )}
             </Grid>

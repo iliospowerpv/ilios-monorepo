@@ -37,7 +37,7 @@ const ManagedAccordion: React.FC<{ children: NonNullable<React.ReactNode>; force
   return (
     <Accordion
       data-testid="accordion-item__component"
-      sx={{ boxShadow: 'none', border: '1px solid #E0E0E0', marginBottom: '20px' }}
+      sx={theme => ({ boxShadow: 'none', border: `1px solid ${theme.palette.divider}`, marginBottom: '20px' })}
       expanded={expanded}
       onChange={() => setExpanded(isExpanded => !isExpanded)}
     >
@@ -136,7 +136,7 @@ const SortableDocumentList: React.FC<SortableDocumentListProps> = ({
                         borderBottom: '1px solid #E0E0E0'
                       }}
                     >
-                      <DragIndicatorIcon sx={{ color: 'rgba(0, 0, 0, 0.4)', fontSize: '20px' }} />
+                      <DragIndicatorIcon sx={{ color: 'text.disabled', fontSize: '20px' }} />
                     </div>
                     <div style={{ flex: 1 }}>
                       <DocumentItem document={document} onRefresh={onRefresh} onDocumentClick={onDocumentClick} />
@@ -167,12 +167,12 @@ const RecursiveAccordion: React.FC<RecursiveAccordionProps> = ({
             expandIcon={<ArrowDropDownIcon />}
             aria-controls="panel2-content"
             id="panel2-header"
-            sx={{
+            sx={theme => ({
               flexDirection: 'row-reverse',
               height: '54px',
-              borderBottom: '1px solid #E0E0E0',
-              backgroundColor: 'rgba(0, 0, 0, 0.04)'
-            }}
+              borderBottom: `1px solid ${theme.palette.divider}`,
+              backgroundColor: theme.palette.action.hover
+            })}
           >
             <Box width="100%" display="flex" alignItems="center" justifyContent="space-between">
               <Typography sx={{ fontWeight: 'bold', width: '50%' }}>

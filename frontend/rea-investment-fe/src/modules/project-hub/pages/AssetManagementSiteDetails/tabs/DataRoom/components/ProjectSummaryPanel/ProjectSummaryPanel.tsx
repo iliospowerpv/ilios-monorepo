@@ -320,24 +320,25 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
   return (
     <Paper
       elevation={0}
-      sx={{
-        border: '1px solid #E0E0E0',
+      sx={theme => ({
+        border: `1px solid ${theme.palette.divider}`,
         borderRadius: 1,
         mb: 3,
         overflow: 'hidden'
-      }}
+      })}
     >
       <Box
-        sx={{
+        sx={theme => ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           px: 2,
           py: 1.5,
-          bgcolor: '#FAFAFA',
-          borderBottom: isExpanded ? '1px solid #E0E0E0' : 'none',
+          bgcolor: theme.palette.mode === 'dark' ? theme.custom.table.header100 : '#FAFAFA',
+          color: theme.palette.mode === 'dark' ? '#000000' : 'inherit',
+          borderBottom: isExpanded ? `1px solid ${theme.palette.divider}` : 'none',
           cursor: 'pointer'
-        }}
+        })}
         onClick={toggleExpanded}
       >
         <Stack direction="row" alignItems="center" spacing={1}>
@@ -524,7 +525,7 @@ export const ProjectSummaryPanel: React.FC<ProjectSummaryPanelProps> = ({ siteId
                       alignItems="center"
                       justifyContent="space-between"
                       py={0.5}
-                      sx={{ '&:not(:last-child)': { borderBottom: '1px solid #E0E0E0' } }}
+                      sx={theme => ({ '&:not(:last-child)': { borderBottom: `1px solid ${theme.palette.divider}` } })}
                     >
                       <Stack direction="row" alignItems="center" spacing={1}>
                         {statusIconMapping[item.status]}
