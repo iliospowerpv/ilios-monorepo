@@ -605,20 +605,10 @@ export type ReconciliationInference =
 export type DocumentedInventoryState = 'complete' | 'partial' | 'missing' | string;
 
 /** How device-level reconciliation coverage is expressed for the site. */
-export type CoverageMode =
-  | 'device_level'
-  | 'approved_aggregate'
-  | 'undeclared_aggregate'
-  | 'none'
-  | string;
+export type CoverageMode = 'device_level' | 'approved_aggregate' | 'undeclared_aggregate' | 'none' | string;
 
 /** Status of the site's weather dependency relative to an active WA expected. */
-export type WeatherDependencySubtype =
-  | 'not_applicable'
-  | 'satisfied'
-  | 'unknown_semantics'
-  | 'source_absent'
-  | string;
+export type WeatherDependencySubtype = 'not_applicable' | 'satisfied' | 'unknown_semantics' | 'source_absent' | string;
 
 /** Persisted device/mapping facts, read verbatim (never inferred). */
 export interface RecordedProvenance {
@@ -1314,4 +1304,35 @@ export interface PerformanceContextQuery {
   tempUnit?: PerformanceTempUnit;
   from?: string;
   to?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Inventory reconciliation → tracked task (explicit, never auto-created)
+// ---------------------------------------------------------------------------
+
+/**
+ * Explicit request to turn ONE actionable inventory-reconciliation mismatch into
+ * a tracked task. Board, default status, and device provenance are resolved
+ * server-side from the (re-run, read-only) reconciliation; the client only sends
+ * the human-editable fields. Reconciliation itself stays strictly read-only.
+ */
+export interface InventoryMismatchTaskCreatePayload {
+  mismatch_signature: string;
+  name?: string | null;
+  description?: string | null;
+  priority?: string | null;
+  due_date?: string | null;
+  assignee_id?: number | null;
+}
+
+/** Outcome of an inventory-mismatch task create. */
+export interface InventoryMismatchTaskResponse {
+  created: boolean;
+  duplicate: boolean;
+  task_id: number;
+  external_id: string | null;
+  board_id: number;
+  mismatch_signature: string;
+  message: string;
+  deep_link: string;
 }

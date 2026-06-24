@@ -61,6 +61,11 @@ description: How to actually run the FastAPI backend pytest suite and the gotcha
   ALLOW *and* DENY), while platform-bypass/system users were unaffected (they return
   before logging). This is now FIXED — company-member auth headers work end-to-end;
   you no longer need `system_user_auth_header` just to dodge this crash.
+- **Test users need a real-looking email domain.** `CurrentUserSchema`/user
+  schemas run pydantic email validation, which rejects reserved TLDs
+  (`.test`/`.example`/`.invalid`/`.localhost`) with "special-use or reserved
+  name". Build fixture emails on a normal domain (e.g. `@iliostest.com`), not
+  `@something.test`.
 - The shared `das_connection` fixture (tests/fixtures/connections.py) creates a
   connection via CRUD, which now **requires the provider be licensed to the
   company** (`CompanyDASProviderCRUD.has_provider`). Nothing assigns it, so the

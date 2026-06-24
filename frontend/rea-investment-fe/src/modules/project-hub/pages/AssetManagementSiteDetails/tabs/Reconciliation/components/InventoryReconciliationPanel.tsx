@@ -1,6 +1,7 @@
 import React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
@@ -8,7 +9,6 @@ import AlertTitle from '@mui/material/AlertTitle';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Tooltip from '@mui/material/Tooltip';
-import Button from '@mui/material/Button';
 import Table from '@mui/material/Table';
 import TableHead from '@mui/material/TableHead';
 import TableBody from '@mui/material/TableBody';
@@ -23,6 +23,7 @@ import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import TaskAltOutlinedIcon from '@mui/icons-material/TaskAltOutlined';
+import AddTaskOutlinedIcon from '@mui/icons-material/AddTaskOutlined';
 
 import { ApiClient } from '../../../../../../../api';
 import { useAuth } from '../../../../../../../contexts/auth/auth';
@@ -38,6 +39,20 @@ import type {
 } from '../../../../../../../types/telemetryV2';
 import { inventoryStatusMeta as statusMeta } from '../../../../../../../components/common/InventoryReconciliationChip/InventoryReconciliationChip';
 import { formatDateTime, PLACEHOLDER } from '../utils';
+import CreateInventoryTaskDialog from './CreateInventoryTaskDialog';
+
+/**
+ * A mismatch is *actionable* (and therefore task-eligible) only when it recommends
+ * a concrete next step that is not purely informational. This mirrors the backend
+ * `_is_actionable` backstop so the "Create task" affordance is never shown for an
+ * informational finding the server would reject with 422.
+ */
+export const isActionableInventoryMismatch = (mismatch: InventoryMismatch): boolean => {
+  if (!mismatch.recommended_action || !mismatch.recommended_action.trim()) return false;
+  if (mismatch.acknowledgement_policy === 'informational') return false;
+  if (mismatch.blocking_level === 'informational') return false;
+  return true;
+};
 
 type ChipColor = 'default' | 'info' | 'success' | 'warning' | 'error';
 
@@ -127,6 +142,8 @@ const inventoryAcknowledgementsQuery = (siteId: number, enabled: boolean) => ({
 
 interface InventoryReconciliationPanelProps {
   siteId: number;
+  /** Project name, woven into a created task's description so it reads standalone. */
+  siteName?: string;
 }
 
 const ClassCountTable: React.FC<{ rows: InventoryClassCount[] }> = ({ rows }) => (
@@ -183,6 +200,8 @@ interface MismatchTableProps {
   pendingSignature: string | null;
   onAcknowledge: (mismatch: InventoryMismatch) => void;
   onRevoke: (mismatch: InventoryMismatch, ack: InventoryAckResponse) => void;
+  canEdit: boolean;
+  onCreateTask: (mismatch: InventoryMismatch) => void;
 }
 
 const MismatchAckCell: React.FC<{
@@ -272,7 +291,9 @@ const MismatchTable: React.FC<MismatchTableProps> = ({
   ackBySignature,
   pendingSignature,
   onAcknowledge,
-  onRevoke
+  onRevoke,
+  canEdit,
+  onCreateTask
 }) => (
   <TableContainer component={Paper} variant="outlined" sx={{ mb: 2 }}>
     <Table size="small" aria-label="inventory mismatches">
@@ -287,6 +308,7 @@ const MismatchTable: React.FC<MismatchTableProps> = ({
           <TableCell>Provenance</TableCell>
           <TableCell>Next step</TableCell>
           <TableCell>Sign-off</TableCell>
+          {canEdit ? <TableCell align="right">Action</TableCell> : null}
         </TableRow>
       </TableHead>
       <TableBody>
@@ -354,6 +376,27 @@ const MismatchTable: React.FC<MismatchTableProps> = ({
                   onRevoke={onRevoke}
                 />
               </TableCell>
+              {canEdit ? (
+                <TableCell align="right">
+                  {isActionableInventoryMismatch(m) ? (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<AddTaskOutlinedIcon fontSize="small" />}
+                      onClick={() => onCreateTask(m)}
+                      data-testid="inventory-create-task-button"
+                    >
+                      Create task
+                    </Button>
+                  ) : (
+                    <Tooltip title="Informational finding — no actionable next step to track." arrow>
+                      <Typography variant="caption" color="text.disabled" sx={{ cursor: 'help' }}>
+                        —
+                      </Typography>
+                    </Tooltip>
+                  )}
+                </TableCell>
+              ) : null}
             </TableRow>
           );
         })}
@@ -401,7 +444,7 @@ const Header: React.FC<{ generatedAt?: string }> = ({ generatedAt }) => (
   </Box>
 );
 
-export const InventoryReconciliationPanel: React.FC<InventoryReconciliationPanelProps> = ({ siteId }) => {
+export const InventoryReconciliationPanel: React.FC<InventoryReconciliationPanelProps> = ({ siteId, siteName }) => {
   const isValidId = Number.isSafeInteger(siteId) && siteId > 0;
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -409,6 +452,15 @@ export const InventoryReconciliationPanel: React.FC<InventoryReconciliationPanel
   // backend still enforces the real Asset.edit dependency, so a non-reviewer
   // sees read-only chips instead of action buttons.
   const canAcknowledge = Boolean(user?.is_system_user) || Boolean(user?.role?.permissions?.['Asset Management']?.edit);
+  // Creating a task touches three modules' boards; any of the edit grants the
+  // backend accepts (Asset / Diligence / O&M) is enough to show the affordance.
+  const canEdit =
+    Boolean(user?.is_system_user) ||
+    Boolean(user?.role?.permissions?.['Asset Management']?.edit) ||
+    Boolean(user?.role?.permissions?.Diligence?.edit) ||
+    Boolean(user?.role?.permissions?.['O&M (Production Monitoring)']?.edit);
+
+  const [taskMismatch, setTaskMismatch] = React.useState<InventoryMismatch | null>(null);
 
   const { data, isLoading, error } = useQuery<InventoryReconciliationResponse>(
     inventoryReconciliationQuery(isValidId ? siteId : -1, isValidId)
@@ -630,6 +682,8 @@ export const InventoryReconciliationPanel: React.FC<InventoryReconciliationPanel
             pendingSignature={pendingSignature}
             onAcknowledge={openAcknowledge}
             onRevoke={openRevoke}
+            canEdit={canEdit}
+            onCreateTask={setTaskMismatch}
           />
         </>
       ) : (
@@ -764,6 +818,16 @@ export const InventoryReconciliationPanel: React.FC<InventoryReconciliationPanel
           </Button>
         </DialogActions>
       </Dialog>
+
+      {taskMismatch ? (
+        <CreateInventoryTaskDialog
+          open={Boolean(taskMismatch)}
+          siteId={siteId}
+          mismatch={taskMismatch}
+          siteName={siteName}
+          onClose={() => setTaskMismatch(null)}
+        />
+      ) : null}
     </Box>
   );
 };

@@ -264,7 +264,7 @@ export const Reconciliation: React.FC<AssetManagementSiteDetailsTabProps> = ({ s
         </>
       )}
 
-      {isValidId ? <InventoryReconciliationPanel siteId={siteId} /> : null}
+      {isValidId ? <InventoryReconciliationPanel siteId={siteId} siteName={siteDetails.name} /> : null}
     </Box>
   );
 };

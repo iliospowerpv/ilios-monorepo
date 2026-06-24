@@ -18,6 +18,8 @@ import type {
   InventoryAckListResponse,
   InventoryAckResponse,
   InventoryAckRevokeRequest,
+  InventoryMismatchTaskCreatePayload,
+  InventoryMismatchTaskResponse,
   InventoryReconciliationResponse,
   InventoryReconciliationSummaryBatchResponse,
   LicenseCreatePayload,
@@ -350,6 +352,23 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
   };
 
   /**
+   * Explicitly create a tracked task from ONE actionable inventory mismatch.
+   * The reconciliation read path stays read-only; this is the only write seam and
+   * it never auto-creates. Returns the existing open task (duplicate=true) when one
+   * already tracks the same gap.
+   */
+  const createInventoryReconciliationTask = async (
+    siteId: number,
+    payload: InventoryMismatchTaskCreatePayload
+  ): Promise<InventoryMismatchTaskResponse> => {
+    const { data } = await httpClient.post<InventoryMismatchTaskResponse>(
+      `${V2}/sites/${siteId}/inventory-reconciliation/tasks`,
+      payload
+    );
+    return data;
+  };
+
+  /**
    * Revoke an active acknowledgement. The row is retained as immutable history
    * (status -> revoked). Requires Asset.edit. Never mutates operational truth.
    */
@@ -593,6 +612,7 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     createInventoryAcknowledgement,
     revokeInventoryAcknowledgement,
     getInventoryReconciliationSummaries,
+    createInventoryReconciliationTask,
     backfillSiteReadings,
     getReadinessFromFacts,
     createDraftFromFacts,

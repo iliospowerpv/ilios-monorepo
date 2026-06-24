@@ -1,0 +1,73 @@
+Please revise #60 before implementation.
+
+Key questions/requirements:
+
+1. Identify the existing task system:
+- exact backend task router/endpoints
+- task schema/model
+- task-create UI/component
+- required permissions
+
+2. Define the user flow:
+- mismatch row → “Create task”
+- confirmation/review modal
+- prefilled title/description/priority/category
+- user must explicitly submit
+- no automatic task creation
+
+3. Define task payload:
+- site_id
+- device_id or source identifier if available
+- mismatch_signature
+- reconciliation_version
+- mismatch_type
+- equipment_class
+- recommended_action
+- provenance/source_context
+- acknowledgement_policy
+- deep link back to Reconciliation tab
+
+4. Prevent duplicates:
+- if an open task already exists for the same site_id + mismatch_signature + reconciliation_version, show existing task instead of creating another
+- define what happens if prior task is closed
+
+5. Permissions:
+- task creation must require existing task-create permission
+- reconciliation visibility alone is not enough
+
+6. Read-only reconciliation:
+- do not mutate reconciliation outputs
+- do not mutate devices/mappings/telemetry/weather/baselines
+- only create a task through the existing task system
+
+7. Frontend behavior:
+- “Create task” only appears for actionable mismatches
+- blocking/non-actionable/informational items should not show create task unless explicitly allowed
+- modal must show provenance and allow user edits before submit
+- success state links to the created task
+
+8. Tests:
+Backend:
+- creates task from valid mismatch
+- rejects unknown/stale mismatch_signature
+- prevents duplicate open task
+- allows new task after closed task only if intended
+- rejects user without task-create permission
+- does not mutate reconciliation/source tables
+
+Frontend:
+- create task button visibility
+- prefilled modal content
+- duplicate existing-task behavior
+- success link
+- permission-gated behavior
+
+9. Explicit do-not-change list:
+- reconciliation service logic
+- acknowledgement logic
+- telemetry ingestion
+- devices/mappings/weather/baselines
+- expected math
+- task system behavior outside this new flow
+
+Do not implement until this revised plan is reviewed and approved.

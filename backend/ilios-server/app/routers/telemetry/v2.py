@@ -21,6 +21,8 @@ from app.helpers.authentication import get_current_user
 from app.helpers.authorization import (
     AssetPermissions,
     AuthorizedUser,
+    DiligencePermissions,
+    OnMPermissions,
     SettingsPermissions,
 )
 from app.helpers.authorization.module_based.telemetry import (
@@ -83,6 +85,10 @@ from app.schema.inventory_acknowledgement import (
     InventoryAckListResponse,
     InventoryAckResponse,
     InventoryAckRevokeRequest,
+)
+from app.schema.task import (
+    InventoryMismatchTaskCreateSchema,
+    InventoryMismatchTaskResponseSchema,
 )
 from app.schema.telemetry_v2 import (
     BaselineActivateRequest,
@@ -179,6 +185,9 @@ from app.services.telemetry.performance_context_service import (
 from app.helpers.telemetry.v2_chart_data import _site_local_day_start_utc
 from app.services.weather.bucketing import floor_to_bucket
 from app.services.telemetry import inventory_acknowledgement_service
+from app.services.telemetry.inventory_mismatch_task_service import (
+    create_task_from_inventory_mismatch,
+)
 from app.models.device import Device
 from app.services.telemetry.ingestion_service import (
     IngestionConfigError,
@@ -1797,6 +1806,42 @@ def list_inventory_reconciliation_summaries(
         )
 
     return InventoryReconciliationSummaryBatchResponse(summaries=items)
+
+
+@telemetry_v2_router.post(
+    "/v2/sites/{site_id}/inventory-reconciliation/tasks",
+    response_model=InventoryMismatchTaskResponseSchema,
+    summary="Create a tracked task from one actionable inventory reconciliation mismatch",
+    dependencies=[
+        Depends(
+            AuthorizedUser(
+                [
+                    AssetPermissions(PermissionsActions.edit),
+                    DiligencePermissions(PermissionsActions.edit),
+                    OnMPermissions(PermissionsActions.edit),
+                ]
+            )
+        )
+    ],
+)
+def create_inventory_reconciliation_task(
+    payload: InventoryMismatchTaskCreateSchema,
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+) -> InventoryMismatchTaskResponseSchema:
+    """Explicitly turn ONE actionable inventory-reconciliation gap into a tracked task.
+
+    Reconciliation stays strictly read-only; this is the single write seam and it
+    NEVER auto-creates — it acts only on the ``mismatch_signature`` supplied here.
+    The mismatch is re-resolved by re-running the read-only reconciliation (404 if
+    the signature is unknown/stale), validated as actionable (422 otherwise),
+    deduped against any OPEN task tracking the same gap on the site (returned as-is
+    when found), and otherwise created on the site's Asset board pre-filled with the
+    recommended action + provenance and linked to the site/device.
+    """
+    _enforce_company_visibility(current_user, site.company_id)
+    return create_task_from_inventory_mismatch(db, site, current_user, payload)
 
 
 @telemetry_v2_router.post(

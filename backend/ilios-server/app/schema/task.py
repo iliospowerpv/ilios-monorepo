@@ -31,6 +31,55 @@ class TaskCreationSuccess(Success):
     entity_id: int = Field(description="Created task ID", examples=[1])
 
 
+class InventoryMismatchTaskCreateSchema(BaseModel):
+    """Explicit request to turn one actionable inventory-reconciliation mismatch
+    into a tracked task. The board, default status, and device provenance are all
+    resolved server-side from the (re-run, read-only) reconciliation; the client
+    only supplies the human-editable task fields."""
+
+    mismatch_signature: str = Field(
+        examples=["undocumented_telemetry_device:inverter:abc123"],
+        description="Stable signature of the mismatch to track (from the reconciliation payload).",
+    )
+    name: Optional[str] = Field(
+        default=None,
+        max_length=250,
+        examples=["Inventory: map discovered inverter INV-04"],
+        description="Task name. Defaults to a mismatch-derived title when omitted.",
+    )
+    description: Optional[str] = Field(
+        default=None,
+        max_length=TEXT_AREA_MAX_LENGTH,
+        examples=["Discovered an inverter in telemetry with no documented match..."],
+        description="Task description. Defaults to a provenance-rich summary when omitted.",
+    )
+    priority: Optional[TaskPriorityEnum] = Field(
+        default=None,
+        description="Task priority. Defaults to a blocking-level-derived priority when omitted.",
+    )
+    due_date: Optional[date] = Field(default=None, examples=["2026-07-01"])
+    assignee_id: Optional[int] = Field(default=None, examples=[1])
+
+
+class InventoryMismatchTaskResponseSchema(BaseModel):
+    """Outcome of an inventory-mismatch task create. ``created`` is False (and
+    ``duplicate`` True) when an open task already tracks the same gap."""
+
+    created: bool = Field(examples=[True], description="True if a new task was created, False if an open one existed.")
+    duplicate: bool = Field(
+        examples=[False], description="True when an open task already tracked this mismatch (no new task created)."
+    )
+    task_id: int = Field(examples=[42])
+    external_id: Optional[str] = Field(default=None, examples=["IOSP1-894"])
+    board_id: int = Field(examples=[7])
+    mismatch_signature: str = Field(examples=["undocumented_telemetry_device:inverter:abc123"])
+    message: str = Field(examples=["Task has been successfully created"])
+    deep_link: str = Field(
+        examples=["/project-hub/companies/3/sites/4/tasks/42"],
+        description="Relative deep link to the created/existing task.",
+    )
+
+
 class TaskOrderByFieldEnum(str, Enum):
     id = "id"
     external_id = "external_id"

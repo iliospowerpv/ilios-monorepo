@@ -1,6 +1,7 @@
 import enum
 
 from sqlalchemy import VARCHAR, Column, Date, DateTime, Enum, ForeignKey, Identity, Integer
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
 from app.db.base_class import Base
@@ -38,6 +39,12 @@ class Task(HasComments, HasNotifications, Base):
     affected_device_id = Column(Integer, ForeignKey("devices.id", ondelete="SET NULL"), nullable=True)
     document_id = Column(Integer, ForeignKey("documents.id", ondelete="SET NULL"), nullable=True)
     alert_id = Column(Integer, ForeignKey("alerts.id", ondelete="SET NULL"), nullable=True, unique=True)
+
+    # Additive provenance for tasks generated from a read-only source (e.g. an
+    # actionable inventory reconciliation mismatch). All NULL for ordinary tasks.
+    source_kind = Column(VARCHAR(50), nullable=True)
+    source_signature = Column(VARCHAR(255), nullable=True)
+    source_context = Column(JSONB, nullable=True)
 
     assignee = relationship("User", back_populates="assigned_tasks", primaryjoin="User.id == Task.assignee_id")
     creator = relationship("User", back_populates="created_tasks", primaryjoin="User.id == Task.creator_id")
