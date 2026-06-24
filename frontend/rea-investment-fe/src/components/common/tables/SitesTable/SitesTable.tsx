@@ -158,6 +158,7 @@ const SitesTable: React.FC<SitesTableProps> = ({ columns, companyId, companyName
             summary={summary}
             loading={ctx.reconLoading && !summary}
             error={ctx.reconError && !summary}
+            to={`/project-hub/projects/${siteId}/reconciliation`}
           />
         );
       }

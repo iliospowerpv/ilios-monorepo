@@ -134,4 +134,30 @@ describe('SitesTable reconciliation batching', () => {
     // The batch endpoint is still only hit once across all three rows.
     expect(summariesSpy).toHaveBeenCalledTimes(1);
   });
+
+  test('each available row chip deep-links to that site Reconciliation view', async () => {
+    summariesSpy.mockResolvedValue({
+      summaries: [
+        { site_id: 1, summary: summary() },
+        { site_id: 2, summary: summary() },
+        { site_id: 3, summary: summary() }
+      ]
+    });
+
+    renderTable();
+
+    // Every ready row chip is a link routed to its own site's Reconciliation tab.
+    await waitFor(() => expect(screen.getAllByTestId('inventory-reconciliation-chip-link').length).toBe(3));
+    const hrefs = screen
+      .getAllByTestId('inventory-reconciliation-chip-link')
+      .map(link => link.getAttribute('href'))
+      .sort();
+    expect(hrefs).toEqual([
+      '/project-hub/projects/1/reconciliation',
+      '/project-hub/projects/2/reconciliation',
+      '/project-hub/projects/3/reconciliation'
+    ]);
+    // Adding the deep link never introduces an extra reconciliation request.
+    expect(summariesSpy).toHaveBeenCalledTimes(1);
+  });
 });

@@ -132,6 +132,7 @@ export const HomeProjects: React.FC<HomeProjectsProps> = ({ projects, isLoading 
                         summary={reconMap.get(project.project_id)}
                         loading={reconFetching && !reconMap.get(project.project_id)}
                         error={reconIsError && !reconMap.get(project.project_id)}
+                        to={`/project-hub/projects/${project.project_id}/reconciliation`}
                       />
                     </Box>
 

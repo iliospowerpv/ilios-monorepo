@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
@@ -72,6 +73,15 @@ interface InventoryReconciliationChipProps {
   /** The batch summary request failed. Renders a neutral "Status unavailable" chip. */
   error?: boolean;
   size?: 'small' | 'medium';
+  /**
+   * Optional deep-link target for the site's Reconciliation view. When provided
+   * AND a summary is available (the "ready" state), the chip becomes a clickable
+   * RouterLink to this path so a user can jump straight to the details. The
+   * loading and "Status unavailable" states ignore this and are NEVER clickable
+   * — an absent summary must not present an actionable link. The chip adds no
+   * navigation logic or fetching of its own; consumers pass the known route.
+   */
+  to?: string;
 }
 
 /**
@@ -87,7 +97,8 @@ export const InventoryReconciliationChip: React.FC<InventoryReconciliationChipPr
   summary,
   loading = false,
   error = false,
-  size = 'small'
+  size = 'small',
+  to
 }) => {
   if (loading) {
     return (
@@ -157,8 +168,21 @@ export const InventoryReconciliationChip: React.FC<InventoryReconciliationChipPr
         data-testid="inventory-reconciliation-chip"
         data-state="ready"
         data-status={summary.status}
+        data-clickable={to ? 'true' : 'false'}
       >
-        <Chip size={size} color={meta.color} label={label} />
+        {to ? (
+          <Chip
+            size={size}
+            color={meta.color}
+            label={label}
+            clickable
+            component={RouterLink}
+            to={to}
+            data-testid="inventory-reconciliation-chip-link"
+          />
+        ) : (
+          <Chip size={size} color={meta.color} label={label} />
+        )}
         {summary.has_blocking_mismatch ? (
           <Box
             component="span"

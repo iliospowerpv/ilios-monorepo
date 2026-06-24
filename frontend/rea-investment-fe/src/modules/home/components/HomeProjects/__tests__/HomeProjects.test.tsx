@@ -109,6 +109,32 @@ describe('HomeProjects reconciliation batching', () => {
     expect(summariesSpy).toHaveBeenCalledTimes(1);
   });
 
+  test('each available chip deep-links to its project Reconciliation view', async () => {
+    const projects = [
+      project({ project_id: 1, project_name: 'Project One' }),
+      project({ project_id: 2, project_name: 'Project Two' })
+    ];
+    summariesSpy.mockResolvedValue({
+      summaries: [
+        { site_id: 1, summary: summary({ status_label: 'Matched' }) },
+        { site_id: 2, summary: summary({ status_label: 'Matched' }) }
+      ]
+    });
+
+    renderHomeProjects(projects);
+
+    // Each ready chip is a link routed to that site's Reconciliation tab.
+    await waitFor(() => {
+      const links = screen.getAllByTestId('inventory-reconciliation-chip-link');
+      expect(links).toHaveLength(2);
+    });
+    const links = screen.getAllByTestId('inventory-reconciliation-chip-link');
+    expect(links[0]).toHaveAttribute('href', '/project-hub/projects/1/reconciliation');
+    expect(links[1]).toHaveAttribute('href', '/project-hub/projects/2/reconciliation');
+    // The deep link adds no extra reconciliation request — still one batched call.
+    expect(summariesSpy).toHaveBeenCalledTimes(1);
+  });
+
   test('does not issue a request when there are no projects', () => {
     summariesSpy.mockResolvedValue({ summaries: [] });
     renderHomeProjects([]);
