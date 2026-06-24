@@ -29,18 +29,29 @@ export const WidgetWrapper: React.FC<WidgetWrapperProps> = ({ widgetId, onRemove
           px: 1,
           py: 0.5,
           borderBottom: theme => `1px solid ${theme.palette.divider}`,
-          backgroundColor: theme => theme.palette.grey[50],
+          backgroundColor: theme =>
+            theme.palette.mode === 'dark' ? theme.custom.table.header100 : theme.palette.grey[50],
+          color: theme => (theme.palette.mode === 'dark' ? '#000000' : theme.palette.text.primary),
           cursor: 'grab',
           '&:active': { cursor: 'grabbing' }
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <DragIndicatorIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+          <DragIndicatorIcon
+            sx={{
+              color: theme => (theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'text.secondary'),
+              fontSize: 20
+            }}
+          />
           <Typography variant="subtitle2" fontWeight={500}>
             {title}
           </Typography>
         </Box>
-        <IconButton size="small" onClick={() => onRemove(widgetId)} sx={{ '&:hover': { color: 'error.main' } }}>
+        <IconButton
+          size="small"
+          onClick={() => onRemove(widgetId)}
+          sx={{ color: 'inherit', '&:hover': { color: 'error.main' } }}
+        >
           <CloseIcon fontSize="small" />
         </IconButton>
       </Box>
