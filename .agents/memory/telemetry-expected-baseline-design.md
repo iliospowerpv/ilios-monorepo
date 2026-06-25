@@ -88,28 +88,31 @@ parser is built — never synthesize hourly from monthly (that is fabrication).
   (instead of 0/None÷100) for missing/undefined expected — an intentional honesty
   improvement; every consuming schema field is already Optional so no 500 risk.
 
-# Activation lifecycle + the historical-rewrite gap (audit)
-Full design + phased plan: `docs/expected_baseline_draft_review_activation_ux_audit.md`.
-- The server-side ladder ALREADY EXISTS end-to-end: `draft → approve → activate`
-  (activate supersedes the prior active row, preserves it, sets the
-  single-active partial index + a self-referential supersession chain). There is
-  **no frontend** to review / preview / approve / activate a draft yet — that is
-  the UX gap, not a missing backend.
-- **Historical-rewrite gap (highest severity):** O&M reads the SINGLE current
-  `active` baseline (status-only select; the chart binding has no effective-date
-  filter), so activating a new baseline **silently recomputes expected for ALL
-  historical periods**. **Why it matters:** violates the never-silent-rewrite
-  invariant. **The fix is read-only, not a schema change** — the header already
-  carries `active_from`/`active_to` + the supersession chain (the model was
-  explicitly designed for effective-dated history); only the read path must
-  become window-aware (pick the baseline whose period covers each bucket).
-- The expected **preview** endpoint refuses `draft` status (previewable =
-  approved/active/superseded), so a reviewer cannot see a draft's curve before
-  approving unless preview is extended to drafts (read-only, persist nothing).
-- **Permission asymmetry:** approve + activate also require company-admin
-  (stricter than create-draft's telemetry-admin); the FE `useTelemetryAdminPermission`
-  gate omits company-admin → a telemetry-admin-only user passes the FE gate but
-  gets 403. Gate approve/activate on a company-admin-aware predicate.
-- **Attribution gap:** activation persists only `active_from` (timestamp), no
-  `activated_by`; approve persists `reviewed_by`/`approved_by`. `in_review` and
-  `rejected` statuses exist in the enum but no endpoint transitions into them.
+# Activation lifecycle + reviewer UX (audit — UPDATED 2026-06-25)
+Comprehensive lifecycle+UX audit: `docs/baseline_review_approval_activation_and_staleness_ux_audit.md`
+(supersedes the older `docs/expected_baseline_draft_review_activation_ux_audit.md` on the points below).
+- Server-side ladder exists end-to-end: `draft → approve → activate` (activate supersedes the prior
+  active row, preserves it, single-active partial index + self-referential `supersedes_baseline_id`).
+- **A reviewer FE NOW EXISTS** (corrects the old "no frontend" note): `DraftBaselineReviewPanel.tsx`
+  calls approve/activate/`getBaselineDiff`/`getActiveExpectedBaseline`; `BaselineFromFactsPanel.tsx`
+  creates drafts; `ReadinessSummary.tsx` shows readiness. Remaining FE gaps are NARROWER: no
+  draft-curve preview, no explicit effective-date control on activate, no standalone supersede/
+  deactivate, no proactive active-baseline staleness banner, no cross-version field lineage, diff is
+  a field TABLE only (no curve overlay).
+- **Historical-rewrite gap is RESOLVED** (corrects old "highest severity" note): period-effective
+  selection (`crud.get_baselines_effective_in_window`, used by `expected_service.compute_site_expected`)
+  + per-segment validate-on-read suppression mean a new activation never recomputes prior periods.
+- **Preview still refuses `draft`** (`_PREVIEWABLE_BASELINE_STATUSES` = approved/active/superseded) →
+  reviewers approve without seeing the draft curve. Biggest remaining decision-support hole.
+- **Permission reality (verified, live FE defect):** create/approve/activate/diff require telemetry-admin
+  **AND** company-admin (route `Depends(telemetry_admin_required)` + handler `get_authorized_site_with_company_admin`).
+  FE `useTelemetryAdminPermission` checks telemetry-admin ONLY → telemetry-admin-without-company-admin
+  passes the FE gate then 403s. Fix is FE-only.
+- **Attribution:** there is NO `activated_by`/`activated_at` COLUMN; activation identity/time are stamped
+  inside `validation_result_json` (`activated_by_user_id`,`activated_at`) — JSONB-only, not queryable, no
+  discrete event log. (`activated_by`/`activated_at` columns belong to the weather module, not baselines.)
+  `in_review`/`rejected` statuses exist in the enum but no endpoint transitions into them.
+- **No separation-of-duties:** `crud.approve` lets approver == creator; no SoD policy exists (explicit
+  product decision, don't invent one).
+- **No proactive stale guard for physics/fact baselines:** only read-time reconciliation `W_ACTIVE_OUTDATED`;
+  the weather module's monotonic `needs_re_review` (upstream fingerprint) is the pattern to mirror.

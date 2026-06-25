@@ -1,0 +1,289 @@
+Start a planning/audit sprint:
+
+# Baseline Review, Approval, Activation, and Staleness UX
+
+Do not make production code changes in this sprint.
+
+## Objective
+
+Design the complete reviewer-facing workflow for governed expected-baseline lifecycle management:
+
+```text
+draft baseline
+→ review inputs and physics validation
+→ resolve warnings / provide required acknowledgement
+→ approve
+→ preview effective impact
+→ activate
+→ supersede or mark stale when source basis changes
+```
+
+The workflow must make baseline authority, effective dates, evidence, validation state, and downstream impact visible without allowing silent activation or historical rewrite.
+
+## Core authority rules
+
+* A draft baseline is not operational truth.
+* Approval is not activation.
+* Activation is explicit and effective-dated.
+* A new baseline must not silently rewrite historical expected values.
+* Period-effective expected must continue to select the correct active baseline by bucket date.
+* A baseline-driving fact/source change must create stale/re-review or explicit supersession behavior.
+* A validation warning is not hidden; it must be reviewed and, where policy requires, acknowledged with rationale.
+* A baseline that is invalid must never supply expected output.
+* No automatic baseline activation.
+* No automatic approval based on AI-parsed, accepted, or newly promoted facts.
+* Historical active/superseded baselines remain immutable and auditable.
+
+## A. Current-state audit
+
+Trace the existing backend lifecycle and frontend surfaces for:
+
+* draft creation;
+* baseline preview;
+* validation;
+* warnings and acknowledgements;
+* approval;
+* activation;
+* effective dates;
+* supersession;
+* invalid baseline behavior;
+* period-effective selection;
+* source freshness / stale basis;
+* O&M expected-state display;
+* Data Room / DD fact linkage;
+* permissions;
+* audit trail.
+
+For each capability, document:
+
+* service / endpoint;
+* request and response fields;
+* current permission checks;
+* existing UI surface;
+* whether the capability is visible, hidden, incomplete, or operationally unsafe;
+* mutation behavior;
+* expected/O&M impact;
+* gaps between backend capability and user workflow.
+
+## B. Proposed UX workflow
+
+Design one coherent Baseline Management experience, preferably reachable from:
+
+* Project Hub → O&M / Performance Context;
+* Project Hub → Reconciliation;
+* Data Room / due diligence evidence context;
+* any existing baseline-admin surface.
+
+The UX should include the following views.
+
+### 1. Baseline status summary
+
+Show:
+
+* active baseline ID/version;
+* lifecycle state:
+
+  * no baseline;
+  * draft;
+  * awaiting review;
+  * validation warning;
+  * approved awaiting activation;
+  * active;
+  * superseded;
+  * stale / needs review;
+  * invalid;
+* effective-from and effective-to;
+* expected coverage state;
+* source-basis status;
+* physics-validation status;
+* last reviewer/action;
+* impact on O&M expected comparison.
+
+### 2. Draft baseline review
+
+Show the full source-backed basis:
+
+* module quantity, wattage, degradation;
+* inverter count/rating/efficiency;
+* DC/AC ratio;
+* thermal coefficient;
+* losses and availability assumptions;
+* PTO/operation dates;
+* weather/irradiance model inputs;
+* design versus as-built source status;
+* source document/file/version;
+* fact provenance;
+* reviewer override/assumption status;
+* whether each field is active fact, approved unknown, reviewer override, or missing.
+
+For every field, show:
+
+* raw source value;
+* normalized/canonical value;
+* unit;
+* evidence;
+* confidence where relevant;
+* source document/version;
+* override reason and reviewer if applicable;
+* whether it is baseline-driving.
+
+### 3. Physics validation and warnings
+
+Make the validation outcome visible before approval.
+
+Show:
+
+* blocking errors;
+* warnings;
+* warning policy;
+* acknowledgement requirement;
+* exact physics rule;
+* affected field(s);
+* expected impact;
+* reviewer action needed.
+
+Never bury warnings behind a generic pass/fail chip.
+
+### 4. Approval workflow
+
+Approval must require:
+
+* required permissions;
+* complete/non-blocking validation;
+* explicit reviewer action;
+* optional approval note;
+* recorded identity, timestamp, and baseline version;
+* clear distinction between approved and active.
+
+A baseline may be approved but not active.
+
+### 5. Activation workflow
+
+Activation must require:
+
+* approved baseline;
+* explicit effective date/time;
+* confirmation of downstream impact;
+* period-effective preview;
+* confirmation that future buckets will use the new baseline;
+* no mutation of prior historical baseline periods;
+* activation audit event.
+
+The activation confirmation should state plainly:
+
+“Expected values before the effective date remain associated with prior active baseline versions. Expected values after the effective date will use this approved baseline, subject to normal availability and validation rules.”
+
+### 6. Preview / compare mode
+
+Before activation, show a read-only comparison:
+
+* current active baseline versus proposed baseline;
+* changed inputs;
+* expected production impact by selected interval;
+* effective-date boundary;
+* impacted O&M periods;
+* gaps or unavailable periods;
+* no fabricated forecast/expected values where inputs are missing.
+
+This is a decision-support preview, not an automatic recommendation.
+
+### 7. Staleness and source-basis review
+
+Define how the UI responds when:
+
+* an upstream document version changes;
+* promoted facts change;
+* a source file is replaced;
+* a weather declaration changes;
+* a device inventory/mapping change impacts baseline-driving inputs;
+* a relevant design/as-built source is superseded.
+
+Show:
+
+* “active baseline source basis changed”;
+* exact changed source/fact;
+* whether expected output remains available;
+* whether baseline is still usable, stale, or invalid;
+* required reviewer action;
+* link to source evidence and reconciliation issue.
+
+Do not auto-deactivate or alter active baseline math in this sprint.
+
+### 8. History and audit trail
+
+Provide baseline lineage:
+
+* draft;
+* approval;
+* activation;
+* supersession;
+* validation acknowledgements;
+* stale/review events;
+* effective dates;
+* reviewer identities;
+* source basis snapshot;
+* links to evidence.
+
+Historical baseline records must be read-only.
+
+## C. Permissions and safety
+
+Document exact role requirements for:
+
+* view baseline;
+* create draft;
+* edit draft;
+* approve;
+* activate;
+* supersede;
+* acknowledge warning;
+* view audit history.
+
+Ensure a reviewer cannot approve their own baseline if separation-of-duties policy already exists or is required. If no policy exists, identify this as an explicit product decision rather than inventing one.
+
+## D. Site 4 validation
+
+Use Site 4 as the controlled example.
+
+Show:
+
+* current active baseline;
+* superseded invalid baseline history;
+* corrected active baseline;
+* period-effective expected behavior;
+* current weather-governance state;
+* how the baseline UX communicates weather dependency without claiming WS.5 integration;
+* what a reviewer would see before approving or activating a new baseline.
+
+## E. Deliverable
+
+Create:
+
+`docs/baseline_review_approval_activation_and_staleness_ux_audit.md`
+
+Include:
+
+* current-state endpoint/UI matrix;
+* proposed screen and workflow map;
+* status taxonomy;
+* field-level review model;
+* validation/warning handling;
+* approval and activation state machine;
+* staleness/supersession model;
+* permission matrix;
+* Site 4 walkthrough;
+* implementation phases;
+* browser-validation and regression-test plan.
+
+## Hard constraints
+
+* no baseline math changes;
+* no expected formula changes;
+* no automatic draft creation, approval, activation, supersession, or deactivation;
+* no historical expected rewrite;
+* no BigQuery, Firestore, SAFL, or legacy telemetry as operational truth;
+* no weather-semantic inference;
+* no WS.5 work;
+* no production code changes in this audit sprint.
+
+Return the audit and implementation plan for review before beginning any build work.

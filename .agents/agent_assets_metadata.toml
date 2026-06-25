@@ -95,3 +95,9 @@ id = "4Hcwvds_tXrCUNv9415dw"
 uri = "file://docs/telemetry/v2_actual_production_curve_integrity_audit.md"
 type = "text"
 title = "V2 Actual Production Curve Integrity Audit — Site 4 (110 Shawmut)"
+
+[[outputs]]
+id = "hyDcNGnydzOapsnRIYQ7y"
+uri = "file://docs/baseline_review_approval_activation_and_staleness_ux_audit.md"
+type = "text"
+title = "Baseline Review, Approval, Activation & Staleness UX — Audit & Plan"
