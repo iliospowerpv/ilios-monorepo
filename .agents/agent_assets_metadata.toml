@@ -101,3 +101,9 @@ id = "hyDcNGnydzOapsnRIYQ7y"
 uri = "file://docs/baseline_review_approval_activation_and_staleness_ux_audit.md"
 type = "text"
 title = "Baseline Review, Approval, Activation & Staleness UX — Audit & Plan"
+
+[[outputs]]
+id = "RJY9rU7Z8N08TYeCWVeJV"
+uri = "file://docs/baseline_phase0_phase1_implementation_plan.md"
+type = "text"
+title = "Baseline Lifecycle Authorization Hardening (Phase 0) + Draft Preview (Phase 1) — Implementation Plan"
