@@ -45,6 +45,19 @@ export const Reconciliation: React.FC<AssetManagementSiteDetailsTabProps> = ({ s
   // check, so a non-admin sees a graceful read-only note instead of a hard error.
   const canDraftBaseline = useTelemetryAdminPermission();
 
+  // Approve/activate require BOTH telemetry-admin AND company-admin — a verdict
+  // only the backend can render. We read it off the (site-access, not
+  // admin-gated) enveloped active-baseline response and thread it down to the
+  // review panel. Same query key as the panel's own fetch, so React Query
+  // dedupes it into a single request. We never re-derive company-admin locally.
+  const { data: activeBaselineResponse } = useQuery({
+    queryKey: ['site', 'expected-baseline-active', { siteId }],
+    queryFn: () => ApiClient.telemetryV2.getActiveExpectedBaseline(siteId),
+    enabled: isValidId,
+    retry: false
+  });
+  const canManageLifecycle = Boolean(activeBaselineResponse?.viewer_can_manage_lifecycle);
+
   const { data, isLoading, error } = useQuery(reconciliationQuery(isValidId ? siteId : -1, isValidId));
 
   const [search, setSearch] = useState('');
@@ -170,7 +183,12 @@ export const Reconciliation: React.FC<AssetManagementSiteDetailsTabProps> = ({ s
         </Box>
       </Alert>
 
-      <ReadinessSummary readiness={data.readiness} siteId={siteId} canDraft={canDraftBaseline} />
+      <ReadinessSummary
+        readiness={data.readiness}
+        siteId={siteId}
+        canDraft={canDraftBaseline}
+        canManageLifecycle={canManageLifecycle}
+      />
 
       {data.schema_expansion_recommended && (
         <Alert severity="info" sx={{ mb: 2 }} data-testid="reconciliation-schema-note">

@@ -10,8 +10,11 @@ import type {
   DeviceEligibilityDiagnosticsResponse,
   DeviceMappingBulkPayload,
   DeviceMappingBulkResponse,
+  ActiveExpectedBaselineResponse,
+  DraftExpectedPreviewResponse,
   ExpectedBaselineListResponse,
   ExpectedBaselineResponse,
+  ExpectedPreviewResponse,
   ExternalDeviceListResponse,
   ExternalSiteListResponse,
   InventoryAckCreateRequest,
@@ -497,17 +500,68 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
 
   /**
    * READ-ONLY: the single active baseline of a type (defaults to
-   * `weather_adjusted_model`), or `null` when none is active. Read-only audit
-   * surface only — it never approves or activates anything.
+   * `weather_adjusted_model`) enveloped with the viewer capability flags. The
+   * `baseline` field is `null` when none is active. Reachable by any site-visible
+   * viewer (NOT telemetry-admin-gated) so the UI can mirror `viewer_can_*` flags
+   * without calling the gated list endpoint. Read-only audit surface only — it
+   * never approves or activates anything.
    */
   const getActiveExpectedBaseline = async (
     siteId: number,
     baselineType?: string
-  ): Promise<ExpectedBaselineResponse | null> => {
-    const { data } = await httpClient.get<ExpectedBaselineResponse | null>(
+  ): Promise<ActiveExpectedBaselineResponse> => {
+    const { data } = await httpClient.get<ActiveExpectedBaselineResponse>(
       `${V2}/sites/${siteId}/expected-baselines/active`,
       baselineType ? { params: { baseline_type: baselineType } } : undefined
     );
+    return data;
+  };
+
+  /**
+   * READ-ONLY (Phase 1, telemetry-admin only): preview the expected-vs-actual
+   * curve a `draft`/`approved` baseline WOULD produce, before it is activated.
+   * Identical computation to the public preview but isolated from it — it never
+   * activates and never persists. 403 = not telemetry-admin, 404 = baseline gone
+   * or cross-site, 409 = baseline is not in a previewable (draft/approved) state.
+   * When the read-time physics verdict is blocking the curve is suppressed
+   * (`overall_status === "baseline_invalid"`, empty `buckets`) — never 0.
+   */
+  const getDraftBaselinePreview = async (
+    siteId: number,
+    baselineId: number,
+    opts?: { start?: string; end?: string; bucketSize?: string }
+  ): Promise<DraftExpectedPreviewResponse> => {
+    const params: Record<string, string> = {};
+    if (opts?.start) params.start = opts.start;
+    if (opts?.end) params.end = opts.end;
+    if (opts?.bucketSize) params.bucket_size = opts.bucketSize;
+    const { data } = await httpClient.get<DraftExpectedPreviewResponse>(
+      `${V2}/sites/${siteId}/expected-baseline/${baselineId}/draft-preview`,
+      Object.keys(params).length ? { params } : undefined
+    );
+    return data;
+  };
+
+  /**
+   * READ-ONLY: the public weather-adjusted expected-vs-actual preview over a
+   * bounded window. With no `baselineId` it uses the site's ACTIVE baseline (the
+   * live curve); the overlay pairs this with `getDraftBaselinePreview` over the
+   * same window to show "current active" vs "draft (not active)". Never persists,
+   * never activates. Per-bucket non-`ok` states report NULL expected (never 0),
+   * and `overall_status === "baseline_not_available"` yields no buckets.
+   */
+  const getExpectedPreview = async (
+    siteId: number,
+    opts?: { start?: string; end?: string; bucketSize?: string; baselineId?: number }
+  ): Promise<ExpectedPreviewResponse> => {
+    const params: Record<string, string> = {};
+    if (opts?.start) params.start = opts.start;
+    if (opts?.end) params.end = opts.end;
+    if (opts?.bucketSize) params.bucket_size = opts.bucketSize;
+    if (opts?.baselineId != null) params.baseline_id = String(opts.baselineId);
+    const { data } = await httpClient.get<ExpectedPreviewResponse>(`${V2}/sites/${siteId}/expected-preview`, {
+      params
+    });
     return data;
   };
 
@@ -638,6 +692,8 @@ export const buildTelemetryV2Api = (httpClient: AxiosInstance) => {
     createDraftFromFacts,
     listExpectedBaselines,
     getActiveExpectedBaseline,
+    getDraftBaselinePreview,
+    getExpectedPreview,
     approveExpectedBaseline,
     activateExpectedBaseline,
     getBaselineDiff,

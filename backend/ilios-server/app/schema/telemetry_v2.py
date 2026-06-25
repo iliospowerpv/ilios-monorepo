@@ -891,6 +891,27 @@ class ExpectedBaselineResponse(BaseModel):
 class ExpectedBaselineListResponse(BaseModel):
     site_id: int
     baselines: list[ExpectedBaselineResponse] = Field(default_factory=list)
+    # Server-computed viewer capabilities for this site (Phase 0). The frontend
+    # mirrors backend authority via these flags and never re-derives company-admin
+    # locally. ``viewer_can_author_draft`` = telemetry-admin + site access;
+    # ``viewer_can_manage_lifecycle`` = telemetry-admin AND company-admin (or
+    # platform bypass).
+    viewer_can_author_draft: bool = False
+    viewer_can_manage_lifecycle: bool = False
+
+
+class ActiveExpectedBaselineResponse(BaseModel):
+    """Active baseline for a site plus the viewer's capability flags.
+
+    Envelopes the (nullable) active baseline so any site-visible user can still
+    reach it (read access is unchanged) while learning whether they may author a
+    draft or manage the lifecycle. Flags are the backend source of truth.
+    """
+
+    site_id: int
+    baseline: Optional[ExpectedBaselineResponse] = None
+    viewer_can_author_draft: bool = False
+    viewer_can_manage_lifecycle: bool = False
 
 
 class ExpectedPreviewBucket(BaseModel):
@@ -968,6 +989,25 @@ class ExpectedPreviewResponse(BaseModel):
     # Additive (W1): nullable provenance for the weather inputs. ``None`` when no
     # baseline was available (no weather was resolved).
     weather_provenance: Optional[ExpectedWeatherProvenanceSchema] = None
+
+
+class DraftExpectedPreviewResponse(ExpectedPreviewResponse):
+    """Draft/approved expected-vs-actual preview (Phase 1, telemetry-admin only).
+
+    Identical computation to the public preview but for an explicitly requested
+    ``draft`` or ``approved`` baseline so reviewers can inspect a candidate curve
+    BEFORE it is activated. It never activates, never persists, and is isolated
+    from the public preview (which still rejects draft/in_review baselines). The
+    additive fields make the not-yet-live nature explicit to the UI.
+    """
+
+    is_draft_preview: bool = True
+    baseline_status: str
+    validation_summary: Optional[dict[str, Any]] = None
+    disclaimer: str = (
+        "Preview of a draft/approved baseline that is NOT active. Numbers are "
+        "for review only and do not affect any live expected-performance output."
+    )
 
 
 # ---------------------------------------------------------------------------

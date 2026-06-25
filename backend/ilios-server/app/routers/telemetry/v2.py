@@ -26,6 +26,9 @@ from app.helpers.authorization import (
     SettingsPermissions,
 )
 from app.helpers.authorization.module_based.telemetry import (
+    can_author_draft,
+    can_manage_baseline_lifecycle,
+    enforce_baseline_lifecycle_authority,
     telemetry_admin_required,
     user_has_telemetry_admin,
 )
@@ -104,6 +107,8 @@ from app.schema.telemetry_v2 import (
     DesignPointsReadinessResponse,
     DeviceMappingBulkRequest,
     DeviceMappingBulkResponse,
+    ActiveExpectedBaselineResponse,
+    DraftExpectedPreviewResponse,
     ExpectedBaselineCreateRequest,
     ExpectedBaselineListResponse,
     ExpectedBaselineResponse,
@@ -3056,38 +3061,74 @@ _PREVIEWABLE_BASELINE_STATUSES = frozenset(
         TelemetryBaselineStatus.superseded,
     }
 )
+# Phase 1: statuses an explicit DRAFT preview may render — only the
+# pre-activation candidate states. ``active``/``superseded`` are already viewable
+# via the public preview; ``in_review``/``rejected`` are never rendered here.
+_DRAFT_PREVIEWABLE_BASELINE_STATUSES = frozenset(
+    {
+        TelemetryBaselineStatus.draft,
+        TelemetryBaselineStatus.approved,
+    }
+)
 
 
 @telemetry_v2_router.get(
     "/v2/sites/{site_id}/expected-baselines",
     response_model=ExpectedBaselineListResponse,
     summary="List expected-performance baselines for a site (newest first)",
+    dependencies=[Depends(telemetry_admin_required)],
 )
 def list_expected_baselines(
     site: Annotated[Site, Depends(get_authorized_site)],
     db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
 ) -> ExpectedBaselineListResponse:
-    """All baselines (any status) for a site, most-recently-created first."""
+    """All baselines (any status) for a site, most-recently-created first.
+
+    Phase 0: telemetry-admin only. The full lifecycle history — including
+    never-approved drafts — is a review surface, so the list is gated to
+    telemetry admins (was previously open to any site-visible user). The viewer
+    capability flags are the backend source of truth the frontend mirrors; it
+    never re-derives company-admin locally.
+    """
     rows = TelemetryExpectedBaselineCRUD(db).list_for_site(site.id)
     return ExpectedBaselineListResponse(
         site_id=site.id,
         baselines=[ExpectedBaselineResponse.model_validate(r) for r in rows],
+        viewer_can_author_draft=can_author_draft(current_user),
+        viewer_can_manage_lifecycle=can_manage_baseline_lifecycle(
+            db, current_user, site.company_id
+        ),
     )
 
 
 @telemetry_v2_router.get(
     "/v2/sites/{site_id}/expected-baselines/active",
-    response_model=Optional[ExpectedBaselineResponse],
+    response_model=ActiveExpectedBaselineResponse,
     summary="Active baseline for a site (defaults to weather_adjusted_model)",
 )
 def get_active_expected_baseline(
     site: Annotated[Site, Depends(get_authorized_site)],
     db: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     baseline_type: TelemetryBaselineType = TelemetryBaselineType.weather_adjusted_model,
-) -> Optional[ExpectedBaselineResponse]:
-    """The single active baseline of the given type, or ``null`` if none."""
+) -> ActiveExpectedBaselineResponse:
+    """The single active baseline of the given type (or ``null``) + viewer flags.
+
+    Read access is unchanged — any site-visible user may reach this. The baseline
+    is now enveloped (``baseline`` may be ``null``) so the viewer also learns
+    whether they may author a draft or manage the lifecycle WITHOUT calling the
+    telemetry-admin-gated list endpoint. Flags are the backend source of truth.
+    """
     row = TelemetryExpectedBaselineCRUD(db).get_active(site.id, baseline_type)
-    return None if row is None else ExpectedBaselineResponse.model_validate(row)
+    return ActiveExpectedBaselineResponse(
+        site_id=site.id,
+        baseline=None if row is None else ExpectedBaselineResponse.model_validate(row),
+        viewer_can_author_draft=can_author_draft(current_user),
+        viewer_can_manage_lifecycle=can_manage_baseline_lifecycle(
+            db, current_user, site.company_id
+        ),
+    )
 
 
 @telemetry_v2_router.post(
@@ -3779,9 +3820,16 @@ def approve_expected_baseline(
     baseline = crud.get(baseline_id)
     if baseline is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Baseline not found")
-    # Enforce access to the owning site (company-admin scope) + visibility.
+    # Resolve site visibility first (404 for a foreign/invisible site — unchanged
+    # semantics). The misnamed resolver enforces site VISIBILITY only.
     get_authorized_site_with_company_admin(baseline.site_id, current_user, db)
-    _enforce_company_visibility(current_user, baseline.company_id)
+    # Phase 0 hardening: lifecycle mutation requires telemetry-admin AND
+    # company-admin for the baseline's company (or platform bypass). Checked
+    # BEFORE any CRUD write so a forbidden caller mutates nothing; raises a
+    # structured 403 via the registered handler.
+    enforce_baseline_lifecycle_authority(
+        db, current_user, company_id=baseline.company_id, action_code="approve"
+    )
     try:
         updated = crud.approve(baseline, user_id=getattr(current_user, "id", None))
     except BaselineActivationError as exc:
@@ -3821,8 +3869,13 @@ def activate_expected_baseline(
     baseline = crud.get(baseline_id)
     if baseline is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Baseline not found")
+    # Site visibility first (404 for a foreign/invisible site — unchanged).
     get_authorized_site_with_company_admin(baseline.site_id, current_user, db)
-    _enforce_company_visibility(current_user, baseline.company_id)
+    # Phase 0 hardening: telemetry-admin AND company-admin (or platform bypass)
+    # required, BEFORE any CRUD write (forbidden mutates nothing); structured 403.
+    enforce_baseline_lifecycle_authority(
+        db, current_user, company_id=baseline.company_id, action_code="activate"
+    )
     payload = payload or BaselineActivateRequest()
     try:
         updated = crud.activate(
@@ -4015,4 +4068,181 @@ def get_expected_preview(
             if result.weather_provenance is not None
             else None
         ),
+    )
+
+
+def _expected_preview_payload(site_id: int, result) -> dict:
+    """Build the common ``ExpectedPreviewResponse`` kwargs from a compute result.
+
+    Lets the draft-preview endpoint render byte-identical buckets/provenance to
+    the public preview without duplicating the mapping. The public preview keeps
+    its own inline construction unchanged.
+    """
+    return dict(
+        site_id=site_id,
+        overall_status=result.overall_status.value,
+        baseline_id=result.baseline_id,
+        baseline_type=result.baseline_type,
+        bucket_size=result.bucket_size,
+        window_start=result.window_start,
+        window_end=result.window_end,
+        expected_energy_kwh=result.expected_energy_kwh,
+        actual_energy_kwh=result.actual_energy_kwh,
+        ok_bucket_count=result.ok_bucket_count,
+        missing_inputs_bucket_count=result.missing_inputs_bucket_count,
+        pre_pto_bucket_count=result.pre_pto_bucket_count,
+        buckets=[
+            ExpectedPreviewBucket(
+                bucket_start=b.bucket_start,
+                status=b.status.value,
+                expected_power_kw=b.expected_power_kw,
+                expected_energy_kwh=b.expected_energy_kwh,
+                actual_power_kw=b.actual_power_kw,
+                irradiance_wm2=b.irradiance_wm2,
+                cell_temperature_f=b.cell_temperature_f,
+                age_years=b.age_years,
+            )
+            for b in result.buckets
+        ],
+        weather_provenance=(
+            ExpectedWeatherProvenanceSchema(
+                status=result.weather_provenance.status,
+                source_type=result.weather_provenance.source_type,
+                source_label=result.weather_provenance.source_label,
+                is_modeled=result.weather_provenance.is_modeled,
+                confidence=result.weather_provenance.confidence,
+                irradiance_plane=result.weather_provenance.irradiance_plane,
+                temperature_type=result.weather_provenance.temperature_type,
+                calibration_status=result.weather_provenance.calibration_status,
+                weather_source_id=result.weather_provenance.weather_source_id,
+                profile_id=result.weather_provenance.profile_id,
+                profile_role=result.weather_provenance.profile_role,
+                min_confidence_policy=result.weather_provenance.min_confidence_policy,
+                missing_inputs=list(result.weather_provenance.missing_inputs),
+                warnings=list(result.weather_provenance.warnings),
+                indicators=list(result.weather_provenance.indicators),
+                historical=result.weather_provenance.historical,
+                observation_batch_ids=list(
+                    result.weather_provenance.observation_batch_ids
+                ),
+                coverage_pct=result.weather_provenance.coverage_pct,
+            )
+            if result.weather_provenance is not None
+            else None
+        ),
+    )
+
+
+@telemetry_v2_router.get(
+    "/v2/sites/{site_id}/expected-baseline/{baseline_id}/draft-preview",
+    response_model=DraftExpectedPreviewResponse,
+    summary="Preview a draft/approved (not-yet-active) baseline (telemetry-admin)",
+    dependencies=[Depends(telemetry_admin_required)],
+)
+def get_draft_expected_preview(
+    baseline_id: int,
+    site: Annotated[Site, Depends(get_authorized_site)],
+    db: Annotated[Session, Depends(get_session)],
+    start: Optional[datetime] = None,
+    end: Optional[datetime] = None,
+    bucket_size: str = "1h",
+) -> DraftExpectedPreviewResponse:
+    """Telemetry-admin-only preview of a ``draft`` or ``approved`` baseline.
+
+    Phase 1: lets reviewers inspect a candidate expected curve BEFORE activation.
+    Isolated from the public ``expected-preview`` (which still rejects
+    draft/in_review). Never activates, never persists, never mutates — the
+    baseline is loaded, validated ON READ, and computed over a bounded window.
+
+    * 404 — baseline missing or owned by another site (cross-site isolation).
+    * 409 — baseline not in ``draft``/``approved`` (active/superseded use the
+      public preview; in_review/rejected are not previewable).
+    * On a read-time-blocking physics verdict the expected curve is suppressed
+      (empty buckets, NULL energies — never 0) and ``validation_summary`` carries
+      the reason; the disclaimer marks the numbers as review-only / non-live.
+    """
+    if bucket_size not in _PREVIEW_BUCKET_SIZES:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            f"bucket_size must be one of {sorted(_PREVIEW_BUCKET_SIZES)}.",
+        )
+    window_end = _coerce_naive_utc(end) if end else _utcnow()
+    window_start = (
+        _coerce_naive_utc(start) if start else window_end - _DEFAULT_PREVIEW_WINDOW
+    )
+    if window_end <= window_start:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "end must be after start."
+        )
+    if window_end - window_start > _MAX_PREVIEW_WINDOW:
+        window_start = window_end - _MAX_PREVIEW_WINDOW
+
+    crud = TelemetryExpectedBaselineCRUD(db)
+    baseline = crud.get(baseline_id)
+    if baseline is None or baseline.site_id != site.id:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Baseline not found for this site"
+        )
+    if baseline.status not in _DRAFT_PREVIEWABLE_BASELINE_STATUSES:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Draft-preview is only available for draft or approved baselines "
+            f"(this baseline is '{baseline.status.value}'). Active/superseded "
+            "baselines use the standard expected-preview.",
+        )
+
+    from app.services.telemetry.baseline_physics_validation import validate_baseline
+    from app.services.telemetry.expected_service import ExpectedState
+
+    # Validate ON READ (no mutation/persist) so the reviewer always sees the
+    # verdict; a blocking verdict suppresses the curve (never fabricates 0).
+    report = validate_baseline(baseline, validation_source_mode="read_time")
+    validation_summary = report.to_dict()
+    baseline_status = baseline.status.value
+    baseline_type_value = (
+        baseline.baseline_type.value
+        if hasattr(baseline.baseline_type, "value")
+        else baseline.baseline_type
+    )
+
+    if report.is_blocking:
+        return DraftExpectedPreviewResponse(
+            site_id=site.id,
+            overall_status=ExpectedState.baseline_invalid.value,
+            baseline_id=baseline.id,
+            baseline_type=baseline_type_value,
+            bucket_size=bucket_size,
+            window_start=window_start,
+            window_end=window_end,
+            expected_energy_kwh=None,
+            actual_energy_kwh=None,
+            ok_bucket_count=0,
+            missing_inputs_bucket_count=0,
+            pre_pto_bucket_count=0,
+            buckets=[],
+            weather_provenance=None,
+            is_draft_preview=True,
+            baseline_status=baseline_status,
+            validation_summary=validation_summary,
+        )
+
+    try:
+        result = compute_site_expected(
+            db,
+            site=site,
+            baseline=baseline,
+            start=window_start,
+            end=window_end,
+            bucket_size=bucket_size,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)
+        ) from exc
+
+    return DraftExpectedPreviewResponse(
+        **_expected_preview_payload(site.id, result),
+        is_draft_preview=True,
+        baseline_status=baseline_status,
+        validation_summary=validation_summary,
     )

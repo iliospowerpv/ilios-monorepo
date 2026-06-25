@@ -23,6 +23,7 @@ import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
 
 import { ApiClient } from '../../../../../../../api';
 import type {
+  ActiveExpectedBaselineResponse,
   BaselineDiffResponse,
   BaselineFieldDiff,
   BaselineFieldSource,
@@ -33,19 +34,28 @@ import type {
 import { useTelemetryAdminPermission } from '../../../../../../../hooks/useTelemetryAdminPermission';
 import { useNotify } from '../../../../../../../contexts/notifications/notifications';
 import { PLACEHOLDER, formatConfidence, formatDateTime } from '../utils';
+import DraftPreviewOverlay from './DraftPreviewOverlay';
 
 interface DraftBaselineReviewPanelProps {
   siteId: number;
+  /**
+   * Backend-computed lifecycle capability (telemetry-admin AND company-admin),
+   * threaded from the loaded active response. When omitted, the panel falls back
+   * to the flag on its own active-baseline fetch. Approve/activate/acknowledge
+   * are gated on this — never on a locally re-derived company-admin guess.
+   */
+  canManageLifecycle?: boolean;
 }
 
 // Only the weather-adjusted model drives the live expected calc; the review
 // panel is intentionally scoped to it (design-estimate is a separate track).
 const WEATHER_ADJUSTED = 'weather_adjusted_model';
 
-// Frontend mirror of the (stricter) backend approve/activate gate. The server
-// still enforces telemetry_admin + company-admin + company visibility, so a user
-// who slips past this check just gets a graceful 403 — never a silent mutation.
-const PERMISSION_TOOLTIP = 'You need telemetry-admin (or company admin) access to approve or activate baselines.';
+// Approve/activate now require telemetry-admin AND company-admin (Phase 0). The
+// disabled button keeps lifecycle state visible but never fires a doomed 403 —
+// the read-only explanation below it spells out the missing access.
+const PERMISSION_TOOLTIP =
+  'Approving or activating requires Telemetry admin AND Company admin access for this company.';
 
 interface FieldDef {
   col: keyof ExpectedBaselineResponse;
@@ -210,28 +220,43 @@ const DesignEstimateSeparationNote: React.FC = () => (
  * never mutates project_facts / accepted values, never triggers a historical
  * backfill, and never touches design-estimate points.
  */
-export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> = ({ siteId }) => {
+export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> = ({
+  siteId,
+  canManageLifecycle: canManageLifecycleProp
+}) => {
   const enabled = Number.isSafeInteger(siteId) && siteId > 0;
-  const canManage = useTelemetryAdminPermission();
+  // Draft-authoring (create/preview a draft) is telemetry-admin + site access —
+  // the FE mirrors it locally. This gates the now-tightened (telemetry-admin)
+  // `list` query so a non-admin gets a clean read-only state, NOT a 403 toast.
+  const canAuthorDraft = useTelemetryAdminPermission();
   const notify = useNotify();
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery<ExpectedBaselineListResponse>({
     queryKey: baselinesQueryKey(siteId),
     queryFn: () => ApiClient.telemetryV2.listExpectedBaselines(siteId),
-    enabled,
+    enabled: enabled && canAuthorDraft,
     retry: false
   });
 
-  // Active baseline is fetched via the dedicated read endpoint and shown
-  // separately. Its failure must not blank the whole panel, so it is handled
-  // softly (the list still drives loading/error).
-  const { data: activeBaseline } = useQuery<ExpectedBaselineResponse | null>({
+  // Active baseline is fetched via the dedicated (site-access, NOT admin-gated)
+  // read endpoint, enveloped with the backend capability flags. Its failure must
+  // not blank the whole panel, so it is handled softly (the list drives
+  // loading/error). Every site viewer can read this — so it is the source of
+  // truth for `viewer_can_manage_lifecycle` even when `list` is forbidden.
+  const { data: activeResponse } = useQuery<ActiveExpectedBaselineResponse>({
     queryKey: activeBaselineQueryKey(siteId),
     queryFn: () => ApiClient.telemetryV2.getActiveExpectedBaseline(siteId),
     enabled,
     retry: false
   });
+  const activeBaseline = activeResponse?.baseline ?? null;
+
+  // Approve / activate / acknowledge are gated on the BACKEND lifecycle flag
+  // (telemetry-admin AND company-admin), preferring the value threaded from the
+  // parent's loaded active response and falling back to this panel's own fetch.
+  // The frontend never re-derives company-admin locally.
+  const canManageLifecycle = canManageLifecycleProp ?? activeResponse?.viewer_can_manage_lifecycle ?? false;
 
   const drafts = useMemo(
     () =>
@@ -389,16 +414,18 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
       <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
         Draft Baseline Review
       </Typography>
-      {!canManage && (
+      {!canManageLifecycle && (
         <Chip size="small" variant="outlined" color="default" icon={<LockOutlinedIcon />} label="View only" />
       )}
     </Box>
   );
 
   // A button that stays visible-but-disabled (with a tooltip) when the user
-  // can't act, so lifecycle state is never fully hidden (Scope B).
+  // can't act, so lifecycle state is never fully hidden (Scope B). The disabled
+  // state mirrors the backend gate (telemetry-admin AND company-admin), so it
+  // never fires a doomed 403; the read-only explanation below spells out why.
   const renderActionButton = (props: { testId: string; label: string; onClick: () => void; disabled?: boolean }) => {
-    const blockedByPermission = !canManage;
+    const blockedByPermission = !canManageLifecycle;
     const isDisabled = blockedByPermission || props.disabled;
     const button = (
       <Button
@@ -601,11 +628,8 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
           </Typography>
         )}
 
-        {/* Draft expected preview is intentionally unavailable */}
-        <Alert severity="info" sx={{ mt: 1.5 }} data-testid="draft-baseline-preview-unavailable">
-          Expected preview not available for draft baseline yet. Preview is limited to approved, active, or superseded
-          baselines so a never-approved draft can&apos;t render an expected curve.
-        </Alert>
+        {/* Read-only draft-vs-active expected overlay (Phase 1) */}
+        <DraftPreviewOverlay siteId={siteId} draftId={draft.id} baselineStatus={draft.status} />
 
         {/* Approve action (separate from activation) */}
         {approvable && (
@@ -792,6 +816,19 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
         historical periods continue to use the baseline that was active during those periods (period-effective
         selection).
       </Alert>
+
+      {/* Read-only explanation when the viewer can't run lifecycle actions */}
+      {!canManageLifecycle && (
+        <Alert
+          severity="info"
+          icon={<LockOutlinedIcon fontSize="inherit" />}
+          sx={{ mb: 1.5 }}
+          data-testid="lifecycle-readonly-explanation"
+        >
+          You can review this baseline. Approving or activating requires <strong>Telemetry admin</strong> and{' '}
+          <strong>Company admin</strong> access for this project&apos;s company.
+        </Alert>
+      )}
 
       {diff?.from_validation?.is_blocking && (
         <Alert severity="error" sx={{ mb: 1.5 }} data-testid="active-baseline-invalid-banner">

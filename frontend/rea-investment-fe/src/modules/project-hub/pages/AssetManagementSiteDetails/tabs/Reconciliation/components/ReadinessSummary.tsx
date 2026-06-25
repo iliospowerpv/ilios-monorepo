@@ -18,6 +18,11 @@ interface ReadinessSummaryProps {
   siteId?: number;
   /** Telemetry-admin (or system user) — gates the actionable create form. */
   canDraft?: boolean;
+  /**
+   * Backend lifecycle capability (telemetry-admin AND company-admin) from the
+   * loaded active response; threaded into the review panel to gate approve/activate.
+   */
+  canManageLifecycle?: boolean;
 }
 
 const BoolPill: React.FC<{ value: boolean | null; trueLabel: string; falseLabel: string; unknownLabel?: string }> = ({
@@ -45,7 +50,12 @@ const StatTile: React.FC<{ title: string; children: React.ReactNode }> = ({ titl
   </Paper>
 );
 
-export const ReadinessSummary: React.FC<ReadinessSummaryProps> = ({ readiness, siteId, canDraft = false }) => {
+export const ReadinessSummary: React.FC<ReadinessSummaryProps> = ({
+  readiness,
+  siteId,
+  canDraft = false,
+  canManageLifecycle = false
+}) => {
   const hasSite = Number.isSafeInteger(siteId) && (siteId as number) > 0;
   return (
     <Box sx={{ mb: 3 }} data-testid="reconciliation-readiness">
@@ -130,7 +140,7 @@ export const ReadinessSummary: React.FC<ReadinessSummaryProps> = ({ readiness, s
       </Grid>
 
       {hasSite && <BaselineFromFactsPanel siteId={siteId as number} canDraft={canDraft} />}
-      {hasSite && <DraftBaselineReviewPanel siteId={siteId as number} />}
+      {hasSite && <DraftBaselineReviewPanel siteId={siteId as number} canManageLifecycle={canManageLifecycle} />}
     </Box>
   );
 };

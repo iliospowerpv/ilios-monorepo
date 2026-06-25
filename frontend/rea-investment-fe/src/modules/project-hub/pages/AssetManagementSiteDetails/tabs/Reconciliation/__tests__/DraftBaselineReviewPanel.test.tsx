@@ -3,7 +3,16 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { buildTelemetryV2Api } from '../../../../../../../api/telemetryV2';
-import type { ExpectedBaselineResponse } from '../../../../../../../types/telemetryV2';
+import type { ActiveExpectedBaselineResponse, ExpectedBaselineResponse } from '../../../../../../../types/telemetryV2';
+
+// ag-charts-react renders to a canvas jsdom cannot drive; stub it with a element
+// that serializes the options so the overlay's series can be asserted on.
+jest.mock('ag-charts-react', () => ({
+  __esModule: true,
+  AgChartsReact: ({ options }: { options: { data?: unknown[]; series?: unknown[] } }) => (
+    <div data-testid="ag-chart" data-options={JSON.stringify(options)} />
+  )
+}));
 
 // Mock the API client index so the panel resolves through our spies instead of
 // hitting axios. The factory may only reference `mock`-prefixed outer variables.
@@ -11,19 +20,28 @@ const mockListExpectedBaselines = jest.fn();
 const mockGetActiveExpectedBaseline = jest.fn();
 const mockApproveExpectedBaseline = jest.fn();
 const mockActivateExpectedBaseline = jest.fn();
+const mockGetDraftBaselinePreview = jest.fn();
+const mockGetExpectedPreview = jest.fn();
 jest.mock('../../../../../../../api', () => ({
   ApiClient: {
     telemetryV2: {
       listExpectedBaselines: (...args: unknown[]) => mockListExpectedBaselines(...args),
       getActiveExpectedBaseline: (...args: unknown[]) => mockGetActiveExpectedBaseline(...args),
       approveExpectedBaseline: (...args: unknown[]) => mockApproveExpectedBaseline(...args),
-      activateExpectedBaseline: (...args: unknown[]) => mockActivateExpectedBaseline(...args)
+      activateExpectedBaseline: (...args: unknown[]) => mockActivateExpectedBaseline(...args),
+      getDraftBaselinePreview: (...args: unknown[]) => mockGetDraftBaselinePreview(...args),
+      getExpectedPreview: (...args: unknown[]) => mockGetExpectedPreview(...args)
     }
   }
 }));
 
-// Controllable permission mirror of the backend telemetry-admin/company-admin gate.
+// `mockCanManage` mirrors the telemetry-admin gate (useTelemetryAdminPermission):
+// it controls draft AUTHORING and the now-tightened `list` query. Lifecycle
+// (approve/activate) is gated separately by the backend `viewer_can_manage_lifecycle`
+// flag on the active-baseline envelope, controlled by `mockCanManageLifecycle`.
 let mockCanManage = true;
+let mockCanManageLifecycle = true;
+let mockActiveResponseBaseline: ExpectedBaselineResponse | null = null;
 jest.mock('../../../../../../../hooks/useTelemetryAdminPermission', () => ({
   __esModule: true,
   useTelemetryAdminPermission: () => mockCanManage,
@@ -139,7 +157,31 @@ const renderPanel = (siteId = 123) => {
 beforeEach(() => {
   jest.clearAllMocks();
   mockCanManage = true;
-  mockGetActiveExpectedBaseline.mockResolvedValue(null);
+  mockCanManageLifecycle = true;
+  mockActiveResponseBaseline = null;
+  // Active baseline is now an envelope carrying the backend capability flags;
+  // read at call time so per-test overrides of the control vars take effect.
+  mockGetActiveExpectedBaseline.mockImplementation(
+    async (): Promise<ActiveExpectedBaselineResponse> => ({
+      baseline: mockActiveResponseBaseline,
+      viewer_can_author_draft: mockCanManage,
+      viewer_can_manage_lifecycle: mockCanManageLifecycle
+    })
+  );
+  // Read-only overlay previews default to honest-empty (no buckets) so no chart
+  // renders unless a test supplies data; both endpoints are stubbed.
+  mockGetDraftBaselinePreview.mockResolvedValue({
+    is_draft_preview: true,
+    baseline_id: 901,
+    baseline_status: 'draft',
+    overall_status: 'ok',
+    disclaimer: 'Preview only — this draft is not active.',
+    buckets: []
+  });
+  mockGetExpectedPreview.mockResolvedValue({
+    overall_status: 'baseline_not_available',
+    buckets: []
+  });
 });
 
 describe('DraftBaselineReviewPanel — read & lifecycle state', () => {
@@ -175,12 +217,21 @@ describe('DraftBaselineReviewPanel — read & lifecycle state', () => {
     expect(await screen.findByTestId('draft-baseline-pto-suppressed')).toBeInTheDocument();
   });
 
-  it('states that a draft expected preview is unavailable (never calls a preview endpoint)', async () => {
+  it('renders the read-only draft-vs-active expected overlay and calls both preview endpoints', async () => {
     mockListExpectedBaselines.mockResolvedValue({ site_id: 123, baselines: [draftBaseline] });
 
     renderPanel();
 
-    expect(await screen.findByTestId('draft-baseline-preview-unavailable')).toBeInTheDocument();
+    expect(await screen.findByTestId('draft-preview-overlay')).toBeInTheDocument();
+    // The overlay reads draft + active expected previews (read-only, no writes).
+    await waitFor(() => expect(mockGetDraftBaselinePreview).toHaveBeenCalled());
+    expect(mockGetDraftBaselinePreview.mock.calls[0][0]).toBe(123);
+    expect(mockGetDraftBaselinePreview.mock.calls[0][1]).toBe(901);
+    await waitFor(() => expect(mockGetExpectedPreview).toHaveBeenCalled());
+    // Honest-empty preview window shows the no-data state, never a fabricated chart.
+    expect(await screen.findByTestId('draft-preview-overlay-disclaimer')).toBeInTheDocument();
+    expect(await screen.findByTestId('draft-preview-overlay-empty')).toBeInTheDocument();
+    expect(screen.queryByTestId('ag-chart')).not.toBeInTheDocument();
   });
 
   it('shows a draft selector when more than one draft exists', async () => {
@@ -222,7 +273,7 @@ describe('DraftBaselineReviewPanel — read & lifecycle state', () => {
       site_id: 123,
       baselines: [draftBaseline, approvedBaseline, activeBaseline, supersededBaseline]
     });
-    mockGetActiveExpectedBaseline.mockResolvedValue(activeBaseline);
+    mockActiveResponseBaseline = activeBaseline;
 
     renderPanel();
 
@@ -253,8 +304,11 @@ describe('DraftBaselineReviewPanel — approve action', () => {
     expect(approve).toBeEnabled();
   });
 
-  it('shows a disabled (never misleading) Approve action for an unpermitted user', async () => {
-    mockCanManage = false;
+  it('shows a disabled (never misleading) Approve action for a draft author who cannot manage lifecycle', async () => {
+    // Telemetry-admin can author/see the list, but lifecycle (approve/activate)
+    // is gated by the backend `viewer_can_manage_lifecycle` flag, which is false.
+    mockCanManage = true;
+    mockCanManageLifecycle = false;
     mockListExpectedBaselines.mockResolvedValue({ site_id: 123, baselines: [draftBaseline] });
 
     renderPanel();
@@ -262,6 +316,8 @@ describe('DraftBaselineReviewPanel — approve action', () => {
     const approve = await screen.findByTestId('approve-baseline-button');
     expect(approve).toBeDisabled();
     expect(screen.getByTestId('approve-baseline-button-disabled-wrap')).toBeInTheDocument();
+    // The panel explains the read-only state rather than presenting a dead control.
+    expect(screen.getByTestId('lifecycle-readonly-explanation')).toBeInTheDocument();
   });
 
   it('approve confirmation summarizes provenance, defaults, normalization, PTO, and the design-estimate separation', async () => {
@@ -351,19 +407,21 @@ describe('DraftBaselineReviewPanel — activate action', () => {
     expect(activate).toBeEnabled();
   });
 
-  it('shows a disabled Activate action for an unpermitted user', async () => {
-    mockCanManage = false;
+  it('shows a disabled Activate action for a draft author who cannot manage lifecycle', async () => {
+    mockCanManage = true;
+    mockCanManageLifecycle = false;
     mockListExpectedBaselines.mockResolvedValue({ site_id: 123, baselines: [approvedBaseline] });
 
     renderPanel();
 
     const activate = await screen.findByTestId('activate-baseline-button-902');
     expect(activate).toBeDisabled();
+    expect(screen.getByTestId('lifecycle-readonly-explanation')).toBeInTheDocument();
   });
 
   it('activate confirmation explains period-effective history, supersession, and design-estimate separation', async () => {
     mockListExpectedBaselines.mockResolvedValue({ site_id: 123, baselines: [approvedBaseline, activeBaseline] });
-    mockGetActiveExpectedBaseline.mockResolvedValue(activeBaseline);
+    mockActiveResponseBaseline = activeBaseline;
 
     renderPanel();
 
@@ -387,7 +445,10 @@ describe('DraftBaselineReviewPanel — activate action', () => {
     fireEvent.click(await screen.findByTestId('activate-baseline-button-902'));
     fireEvent.click(await screen.findByTestId('activate-confirm-submit'));
 
-    await waitFor(() => expect(mockActivateExpectedBaseline).toHaveBeenCalledWith(902));
+    // Activates the selected baseline; warning-ack options are passed through but
+    // are undefined here (no waiver needed for a clean activation).
+    await waitFor(() => expect(mockActivateExpectedBaseline).toHaveBeenCalled());
+    expect(mockActivateExpectedBaseline.mock.calls[0][0]).toBe(902);
     // No approve, no facts/accepted mutation, no backfill — only activate exists in the surface.
     expect(mockApproveExpectedBaseline).not.toHaveBeenCalled();
     // Refetches the active baseline + the expected-bearing O&M site charts (Scope G).
@@ -470,16 +531,61 @@ describe('telemetryV2 expected-baseline API', () => {
     expect(http.delete).not.toHaveBeenCalled();
   });
 
-  it('getActiveExpectedBaseline issues only a GET and returns null when none is active', async () => {
-    const http = makeHttp(null);
+  it('getActiveExpectedBaseline issues only a GET and returns the capability envelope', async () => {
+    const envelope = { baseline: null, viewer_can_author_draft: true, viewer_can_manage_lifecycle: false };
+    const http = makeHttp(envelope);
 
     const api = buildTelemetryV2Api(http as never);
     const result = await api.getActiveExpectedBaseline(123);
 
     expect(http.get).toHaveBeenCalledTimes(1);
     expect(http.get).toHaveBeenCalledWith('/api/telemetry/v2/sites/123/expected-baselines/active', undefined);
-    expect(result).toBeNull();
+    expect(result).toEqual(envelope);
     expect(http.post).not.toHaveBeenCalled();
+  });
+
+  it('getDraftBaselinePreview issues only a GET to the per-baseline draft-preview URL with mapped params', async () => {
+    const payload = { is_draft_preview: true, baseline_id: 901, overall_status: 'ok', buckets: [] };
+    const http = makeHttp(payload);
+
+    const api = buildTelemetryV2Api(http as never);
+    const result = await api.getDraftBaselinePreview(123, 901, {
+      start: '2026-06-01T00:00:00Z',
+      end: '2026-06-02T00:00:00Z',
+      bucketSize: '1h'
+    });
+
+    expect(http.get).toHaveBeenCalledTimes(1);
+    expect(http.get).toHaveBeenCalledWith('/api/telemetry/v2/sites/123/expected-baseline/901/draft-preview', {
+      params: { start: '2026-06-01T00:00:00Z', end: '2026-06-02T00:00:00Z', bucket_size: '1h' }
+    });
+    expect(result).toEqual(payload);
+    expect(http.post).not.toHaveBeenCalled();
+    expect(http.put).not.toHaveBeenCalled();
+    expect(http.patch).not.toHaveBeenCalled();
+    expect(http.delete).not.toHaveBeenCalled();
+  });
+
+  it('getExpectedPreview issues only a GET to the site expected-preview URL with mapped params', async () => {
+    const payload = { overall_status: 'baseline_not_available', buckets: [] };
+    const http = makeHttp(payload);
+
+    const api = buildTelemetryV2Api(http as never);
+    const result = await api.getExpectedPreview(123, {
+      start: '2026-06-01T00:00:00Z',
+      end: '2026-06-02T00:00:00Z',
+      bucketSize: '1h'
+    });
+
+    expect(http.get).toHaveBeenCalledTimes(1);
+    expect(http.get).toHaveBeenCalledWith('/api/telemetry/v2/sites/123/expected-preview', {
+      params: { start: '2026-06-01T00:00:00Z', end: '2026-06-02T00:00:00Z', bucket_size: '1h' }
+    });
+    expect(result).toEqual(payload);
+    expect(http.post).not.toHaveBeenCalled();
+    expect(http.put).not.toHaveBeenCalled();
+    expect(http.patch).not.toHaveBeenCalled();
+    expect(http.delete).not.toHaveBeenCalled();
   });
 
   it('approveExpectedBaseline issues a single POST to the approve URL (no other verbs)', async () => {
@@ -504,7 +610,8 @@ describe('telemetryV2 expected-baseline API', () => {
     const result = await api.activateExpectedBaseline(902);
 
     expect(http.post).toHaveBeenCalledTimes(1);
-    expect(http.post).toHaveBeenCalledWith('/api/telemetry/v2/expected-baselines/902/activate');
+    // No warning-ack waiver supplied → no request body for a clean activation.
+    expect(http.post).toHaveBeenCalledWith('/api/telemetry/v2/expected-baselines/902/activate', undefined);
     expect(result).toEqual(activeBaseline);
     expect(http.get).not.toHaveBeenCalled();
     expect(http.put).not.toHaveBeenCalled();

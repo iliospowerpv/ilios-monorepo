@@ -83,6 +83,10 @@ from .routers.telemetry import telemetry_router, telemetry_v2_router
 from .security.redaction import configure_redaction
 from .settings import settings
 from .static import HTTP_422_RESPONSE, tags
+from .helpers.authorization.module_based.telemetry import (
+    BaselineLifecycleForbiddenError,
+    baseline_lifecycle_forbidden_handler,
+)
 from .utils import http_500_exception_handler, http_exception_handler, validation_exception_handler
 
 # logging.basicConfig(level=logging.DEBUG,
@@ -325,6 +329,9 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
     app.add_middleware(AuditingMiddleware)
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(
+        BaselineLifecycleForbiddenError, baseline_lifecycle_forbidden_handler
+    )
     app.add_exception_handler(Exception, http_500_exception_handler)
     app.include_router(health_router)
     # authorization related APIs

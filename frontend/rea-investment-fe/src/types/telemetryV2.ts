@@ -1090,6 +1090,98 @@ export interface ExpectedBaselineResponse {
 export interface ExpectedBaselineListResponse {
   site_id: number;
   baselines: ExpectedBaselineResponse[];
+  // Phase 0 capability flags — the BACKEND source of truth the UI mirrors; the
+  // frontend never re-derives company-admin locally.
+  // `viewer_can_author_draft`  = telemetry-admin + site access (create/preview a draft).
+  // `viewer_can_manage_lifecycle` = telemetry-admin AND company-admin (approve/activate).
+  viewer_can_author_draft: boolean;
+  viewer_can_manage_lifecycle: boolean;
+}
+
+/**
+ * Enveloped active-baseline read (Phase 0). The active baseline of a type, or
+ * `null` when none is active, PLUS the same viewer capability flags so any
+ * site-visible viewer learns whether they may author a draft / manage the
+ * lifecycle WITHOUT calling the telemetry-admin-gated list endpoint. Read-only.
+ */
+export interface ActiveExpectedBaselineResponse {
+  site_id: number;
+  baseline: ExpectedBaselineResponse | null;
+  viewer_can_author_draft: boolean;
+  viewer_can_manage_lifecycle: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Expected-vs-actual preview (read-only). Mirrors backend `ExpectedPreviewBucket`
+// / `ExpectedPreviewResponse` and the Phase-1 `DraftExpectedPreviewResponse`.
+// Expected fields are `null` (never 0) on non-`ok` buckets / unavailable curves.
+// ---------------------------------------------------------------------------
+export interface ExpectedPreviewBucket {
+  bucket_start: string;
+  // `ok` | `missing_inputs` | `pre_pto`
+  status: string;
+  expected_power_kw?: number | null;
+  expected_energy_kwh?: number | null;
+  actual_power_kw?: number | null;
+  irradiance_wm2?: number | null;
+  cell_temperature_f?: number | null;
+  age_years?: number | null;
+}
+
+/** Weather provenance for an expected computation (W1; additive, nullable). */
+export interface ExpectedWeatherProvenance {
+  status: string;
+  source_type: string;
+  source_label: string;
+  is_modeled: boolean;
+  confidence: string;
+  irradiance_plane: string;
+  temperature_type: string;
+  calibration_status: string;
+  weather_source_id?: number | null;
+  profile_id?: number | null;
+  profile_role?: string | null;
+  min_confidence_policy?: string | null;
+  missing_inputs: string[];
+  warnings: string[];
+  indicators: string[];
+  historical: boolean;
+  observation_batch_ids: number[];
+  coverage_pct?: number | null;
+}
+
+export interface ExpectedPreviewResponse {
+  site_id: number;
+  // `ok` | `baseline_not_available` | `baseline_invalid`
+  overall_status: string;
+  baseline_id?: number | null;
+  baseline_type?: string | null;
+  bucket_size: string;
+  window_start: string;
+  window_end: string;
+  expected_energy_kwh?: number | null;
+  actual_energy_kwh?: number | null;
+  ok_bucket_count: number;
+  missing_inputs_bucket_count: number;
+  pre_pto_bucket_count: number;
+  buckets: ExpectedPreviewBucket[];
+  weather_provenance?: ExpectedWeatherProvenance | null;
+}
+
+/**
+ * Phase 1 draft/approved preview (telemetry-admin only). Identical computation
+ * to the public preview but for an explicitly requested `draft`/`approved`
+ * baseline so reviewers can inspect a candidate curve BEFORE activation. It
+ * never activates and never persists. The additive fields make the not-yet-live
+ * nature explicit. When the read-time physics verdict is blocking, the curve is
+ * suppressed (`overall_status === "baseline_invalid"`, empty `buckets`) — never 0.
+ */
+export interface DraftExpectedPreviewResponse extends ExpectedPreviewResponse {
+  is_draft_preview: boolean;
+  // The previewed baseline's lifecycle status (`draft` | `approved`).
+  baseline_status: string;
+  validation_summary?: Record<string, unknown> | null;
+  disclaimer: string;
 }
 
 // ---------------------------------------------------------------------------
