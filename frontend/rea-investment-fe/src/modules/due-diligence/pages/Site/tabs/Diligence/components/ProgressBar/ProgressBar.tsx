@@ -23,7 +23,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ value }) => (
       <StyledLinearProgress variant="determinate" value={value} />
     </Box>
     <Box sx={{ minWidth: 35 }}>
-      <Typography variant="body2" color="text.secondary">{`${Math.round(value)}%`}</Typography>
+      <Typography variant="body2" sx={{ color: 'rgba(0, 0, 0, 0.7)' }}>{`${Math.round(value)}%`}</Typography>
     </Box>
   </Box>
 );

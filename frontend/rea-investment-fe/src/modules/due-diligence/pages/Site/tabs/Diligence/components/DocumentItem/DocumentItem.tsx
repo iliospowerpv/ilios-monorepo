@@ -144,7 +144,7 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ document, onRefresh, onDocu
             borderBottom: 0
           },
           '&:hover': {
-            background: theme.palette.mode === 'dark' ? theme.palette.action.hover : 'rgb(240, 240, 240)'
+            background: theme.palette.mode === 'dark' ? '#333333' : 'rgb(240, 240, 240)'
           }
         })}
       >

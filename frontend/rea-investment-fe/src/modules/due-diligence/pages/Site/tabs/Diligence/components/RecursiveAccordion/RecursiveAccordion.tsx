@@ -171,7 +171,11 @@ const RecursiveAccordion: React.FC<RecursiveAccordionProps> = ({
               flexDirection: 'row-reverse',
               height: '54px',
               borderBottom: `1px solid ${theme.palette.divider}`,
-              backgroundColor: theme.palette.action.hover
+              backgroundColor: theme.palette.mode === 'dark' ? theme.custom.table.header100 : '#F0F0F0',
+              color: '#000000',
+              '& .MuiTypography-root': { color: '#000000' },
+              '& .MuiSvgIcon-root': { color: '#000000' },
+              '& .MuiAccordionSummary-expandIconWrapper': { color: '#000000' }
             })}
           >
             <Box width="100%" display="flex" alignItems="center" justifyContent="space-between">
