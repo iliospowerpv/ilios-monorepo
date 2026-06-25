@@ -1,241 +1,266 @@
 # Baseline Lifecycle Authorization Hardening (Phase 0) + Draft Preview (Phase 1) — Implementation Plan
 
-**Status:** PLAN ONLY — no production code written. Return for review before implementation.
+**Status:** PLAN ONLY — no production code written. Return for review; implementation begins only after approval.
 **Date:** 2026-06-25
-**Supersedes a claim in:** `docs/baseline_review_approval_activation_and_staleness_ux_audit.md` (§0.3 / §D — see Correction below).
-**Scope guardrails:** Do not change baseline math, period-effective selection, expected output, or any existing approved/active baseline state. Do not change the backend `Site` entity. Separation-of-duties (approver ≠ activator) is explicitly **deferred** to a separate product-policy decision; this work is **role-based authorization only**.
+**Approved decisions baked in:** D1, D2, D3, D4 (see §0.2).
+**Supersedes a claim in:** `docs/baseline_review_approval_activation_and_staleness_ux_audit.md` §0.3 / §D (see §0.1).
+
+### Required-return checklist (maps to your 13 items)
+1. Affected backend files & routes → **§2, §9**
+2. Affected frontend files/components → **§5, §9**
+3. Authorization helper design → **§3**
+4. Structured 403 response contract → **§4**
+5. Capability-flag response schema → **§5.1**
+6. Draft-preview API contract → **§6**
+7. Migration impact confirmation → **§7**
+8. Full permission matrix → **§1, §8b**
+9. Mutation boundaries → **§10**
+10. Backend test plan → **§8b, §8c**
+11. Frontend test plan → **§8d**
+12. Browser-validation plan incl. Site 4 / 110 Shawmut → **§8a**
+13. Confirmation math/expected/active/historical unchanged → **§11**
 
 ---
 
-## 0. Audit correction (why Phase 0 is reframed)
+## 0.1 Audit correction (why Phase 0 is reframed)
 
-The accepted audit reported a "live permission defect": that the backend required **company-admin** for `approve`/`activate` while the frontend only checked telemetry-admin, so a telemetry-admin-without-company-admin user would pass the FE gate and then hit a 403.
+The accepted audit reported a "live permission defect": that the backend required **company-admin** for `approve`/`activate` while the FE only checked telemetry-admin (→ 403 mismatch). **That was inferred from a function _name_, not its body.** Verified:
 
-**That was inferred from a function _name_, not its body.** Verified facts:
+- `get_authorized_site_with_company_admin` (`app/helpers/authorization/project_access.py:216`) is a **misnamed alias** of `get_authorized_site` — resolver **site visibility** only; its docstring says the legacy company-admin fallback was **deprecated**.
+- The real gate today for create/draft/approve/activate/diff is `telemetry_admin_required` (`app/helpers/authorization/module_based/telemetry.py:57`) = platform-bypass **OR** `Telemetry.admin` **OR** `Settings Page.edit`. The FE `useTelemetryAdminPermission` already mirrors it.
 
-- `get_authorized_site_with_company_admin` (`app/helpers/authorization/project_access.py:216`) is a **misnamed alias** — its body is identical to `get_authorized_site` (resolver-based **site visibility** only). Its own docstring states the legacy company-admin fallback was **deprecated**.
-- The real backend gate today for create/draft/approve/activate/diff is `telemetry_admin_required` (`app/helpers/authorization/module_based/telemetry.py:57`) = platform-bypass **OR** `Telemetry.admin` **OR** `Settings Page.edit`.
-- The FE `useTelemetryAdminPermission` already mirrors that gate exactly.
+So there is **no 403 defect** today. Phase 0 is therefore a deliberate **governance strengthening**: make telemetry-admin **AND** company-admin a real requirement for lifecycle mutations, enforced backend-first.
 
-**Conclusion:** there is **no** company-admin enforcement today, hence **no 403 defect** to "align." Per the approved direction (Option B), Phase 0 is therefore reframed from a *defect fix* into a deliberate **governance control**: make telemetry-admin **AND** company-admin a *real* requirement for lifecycle mutations, enforced backend-first and mirrored on the FE. This is a backend **strengthening**, not a weakening.
+## 0.2 Approved decisions
+
+- **D1 — Reads:** Tighten **`list`/history** to telemetry-admin only. **Keep `active` and public `expected-preview` open** to authorized site viewers (caller audit may justify tightening later). *Audit result: the only consumers of `list`/`active` are the two governance panels in the Reconciliation tab (§5.3); no O&M chart, dashboard, or company/portfolio aggregation path uses them, so tightening `list` is safe once the FE gates the list query on telemetry-admin.*
+- **D2 — Capability flags:** Add server-computed `viewer_can_author_draft` + `viewer_can_manage_lifecycle` to the baseline **list** and **active** responses (§5.1).
+- **D3 — Structured 403:** Use a **registered exception handler** for lifecycle 403s (§4).
+- **D4 — Draft preview:** Preview baselines with status **`draft` or `approved` only** (§6).
 
 ---
 
-## 1. Target permission model (the spec)
+## 1. Target permission model
 
-Three authority tiers. The actor for every tier already needs **normal site access** (resolver visibility) as a baseline.
+Every tier also requires **normal site access** (resolver visibility). Platform-bypass (system / global admin) satisfies all tiers.
 
 | Tier | Actions | Required authority |
 |---|---|---|
-| **Read-only** | list baseline history; view active baseline; view validation; view source-basis lineage; compare/diff; **read-only draft preview** | telemetry-admin **+** site access |
-| **Draft-authoring** | create draft from facts; edit draft inputs (where supported); generate draft design points | telemetry-admin **+** site access |
-| **Governance / lifecycle** | approve; activate; supersede-via-replacement-activation; acknowledge activation warnings; *(future)* reject; *(future)* retire / deactivate-with-reason | telemetry-admin **AND** company-admin (for the baseline's company) **+** site access |
+| **Read-only** | list/history; view active; view validation; source-basis lineage; compare/diff; read-only draft preview | telemetry-admin **+** site access |
+| **Draft-authoring** | create draft from facts; edit draft inputs (where supported); generate design points | telemetry-admin **+** site access |
+| **Governance / lifecycle** | approve; activate; supersede-via-replacement-activation; acknowledge activation warnings | telemetry-admin **AND** company-admin (baseline's company) **+** site access |
 
-Platform-bypass (system user / global admin) satisfies all tiers.
-"company-admin" = backend truth `crud.is_company_admin(user_id, company_id)` (`app/crud/user_company_access.py:101`) = an **active** `user_company_access` membership with `role == company_admin` for the baseline's `company_id`.
+`company-admin` = `crud.is_company_admin(user_id, company_id)` (`app/crud/user_company_access.py:101`) = active `user_company_access` membership with `role == company_admin` for the **baseline's** `company_id`.
+*Out of scope per directive:* reject, retire/deactivate, staleness, separation-of-duties — not implemented here (when reject/retire are later added they must use the lifecycle gate).
 
 ---
 
-## 2. Phase 0 — exact affected routes (current → target)
-
-All routes in `app/routers/telemetry/v2.py`. "alias" = `get_authorized_site_with_company_admin` (site-visibility only, despite the name).
+## 2. Affected backend routes (current → target) — all in `app/routers/telemetry/v2.py`
 
 ### 2a. Governance / lifecycle mutations — **CHANGE: add company-admin gate**
 
-| Route | Line | Current authority | Target authority |
+| Route | Line | Current | Target |
 |---|---|---|---|
-| `POST /v2/expected-baselines/{baseline_id}/approve` | 3763 | `telemetry_admin_required` + inline alias + `_enforce_company_visibility` | `telemetry_admin_required` + **`enforce_baseline_lifecycle_authority(action="approve")`** (company-admin OR bypass) |
-| `POST /v2/expected-baselines/{baseline_id}/activate` | 3797 | same (covers supersede + `acknowledge_warnings` payload) | same gate, `action="activate"` |
+| `POST /v2/expected-baselines/{baseline_id}/approve` | 3763 | `telemetry_admin_required` + alias + `_enforce_company_visibility` | `telemetry_admin_required` + **`enforce_baseline_lifecycle_authority(action="approve")`** |
+| `POST /v2/expected-baselines/{baseline_id}/activate` | 3797 | same (covers supersede + `acknowledge_warnings`) | same gate, `action="activate"` |
 
-There are **no** reject/retire/deactivate endpoints today (verified: next route after `activate` at line 3858 is the GET preview). When added later they **must** use the same gate (`action="reject"` / `"retire"`).
+No reject/retire/deactivate routes exist (verified: next route after `activate` is the GET preview at 3858). The acknowledge-warnings path is the `acknowledge_warnings=true` branch *inside* `activate`, so it inherits the gate.
 
-> The acknowledge-warnings path is the `acknowledge_warnings=true` + non-empty `activation_source_note` branch *inside* `activate` — it is gated by the same endpoint, so it inherits the lifecycle gate automatically. No separate endpoint.
+### 2b. Draft-authoring — **NO AUTH CHANGE** (stay telemetry-admin + site access)
+`create-draft-from-facts` (3240), `generate-design-points` (3645), `readiness-from-facts` (3205), `points-readiness` (3618), deprecated snapshot create (3094). (They resolve the site via the alias = site visibility; correct for this tier. No change required.)
 
-### 2b. Draft-authoring — **NO CHANGE** (already telemetry-admin + site access)
+### 2c. Reads
 
-| Route | Line |
-|---|---|
-| `POST /v2/sites/{site_id}/expected-baseline/create-draft-from-facts` | 3240 |
-| `POST /v2/sites/{site_id}/expected-baseline/{baseline_id}/generate-design-points` | 3645 |
-| `GET  /v2/sites/{site_id}/expected-baseline/readiness-from-facts` | 3205 |
-| `GET  /v2/sites/{site_id}/expected-baseline/{baseline_id}/points-readiness` | 3618 |
-| `POST /v2/sites/{site_id}/expected-baselines` (DEPRECATED snapshot create) | 3094 |
-
-These keep `telemetry_admin_required`. No company-admin. (They currently resolve the site via the misnamed alias; functionally that is just site visibility, which is correct for this tier. No behavior change needed; optional cosmetic swap to `get_authorized_site` for clarity — **not required**.)
-
-### 2c. Reads — mostly unchanged; one decision point
-
-| Route | Line | Current authority | Notes |
+| Route | Line | Current | Target (D1) |
 |---|---|---|---|
-| `GET /v2/expected-baselines/{baseline_id}/diff` | 3502 | `telemetry_admin_required` + alias | ✅ already matches read tier |
-| `GET /v2/sites/{site_id}/expected-baselines` (list/history) | 3062 | **`get_authorized_site` only** (no telemetry-admin) | ⚠️ looser than the model — **Decision D1** |
-| `GET /v2/sites/{site_id}/expected-baselines/active` | 3079 | **`get_authorized_site` only** | ⚠️ looser than the model — **Decision D1** |
-| `GET /v2/sites/{site_id}/expected-preview` (O&M chart feed) | 3858 | `get_authorized_site` only (intentional) | **Keep open.** This is the public expected-vs-actual feed for non-admin O&M viewers; tightening it would break their charts and contradicts the "honest expected for all viewers" design. NOT in the governance surface. |
+| `GET /v2/expected-baselines/{baseline_id}/diff` | 3502 | `telemetry_admin_required` + alias | unchanged ✅ |
+| `GET /v2/sites/{site_id}/expected-baselines` (list/history) | 3062 | `get_authorized_site` only | **ADD `telemetry_admin_required`** + capability flags on envelope |
+| `GET /v2/sites/{site_id}/expected-baselines/active` | 3079 | `get_authorized_site` only | **keep site-access**; wrap in envelope + capability flags |
+| `GET /v2/sites/{site_id}/expected-preview` (O&M feed) | 3858 | `get_authorized_site` only | **unchanged** (public; refuses non-`{approved,active,superseded}` → never exposes drafts) |
 
-**Decision D1 (list & active reads):** The model says reads require telemetry-admin. Today `list` and `active` are site-access-only. Recommended: tighten **`list`** (clearly a governance/history view) to `telemetry_admin_required`, and **leave `active` at site-access** unless a consumer audit shows it is only consumed by admin surfaces (it may feed read-only "current baseline" panels for non-admins). **Pre-step:** grep all callers of `getActiveExpectedBaseline` / the `/active` route before tightening. I will not tighten anything that a non-admin surface depends on. *Flagging for your call; default = tighten `list` only, keep `active` and `expected-preview` open.*
+### 2d. New endpoint (Phase 1)
+`GET /v2/sites/{site_id}/expected-baseline/{baseline_id}/draft-preview` — `telemetry_admin_required` + `get_authorized_site` (read tier). See §6.
 
 ---
 
-## 3. Phase 0 — backend authorization helper changes
+## 3. Authorization helper design
 
-**New, baseline-only helpers** (proposed home: `app/helpers/authorization/module_based/telemetry.py`, beside `telemetry_admin_required`). We deliberately **do not** modify the shared `get_authorized_site_with_company_admin` alias because it is also used by 10 endpoints in `app/routers/weather.py`; changing its body would silently re-gate weather governance (out of scope — see §9).
+**New, baseline-only helpers** in `app/helpers/authorization/module_based/telemetry.py` (beside `telemetry_admin_required`). We **do not** modify the shared `get_authorized_site_with_company_admin` alias — `app/routers/weather.py` reuses it in 10 places and changing its body would silently re-gate weather (out of scope).
 
-1. `class BaselineLifecycleForbiddenError(Exception)` — carries `action_code`, `reason_code` (`"company_admin_required"` | `"telemetry_admin_required"`), `company_id`, and a human message.
+1. `class BaselineLifecycleForbiddenError(Exception)` — fields: `action_code` (`approve`/`activate`), `reason_code` (`company_admin_required` | `telemetry_admin_required`), `company_id`, `message`.
 2. `enforce_baseline_lifecycle_authority(db, current_user, *, company_id, site_id, action_code) -> None` (throwing):
-   - resolve site access (resolver) for `site_id` — fail-closed on no visibility;
-   - require telemetry-admin via `user_has_telemetry_admin(current_user)` (non-throwing variant already exists at `telemetry.py:60`);
+   - resolve site access for `site_id` (fail-closed on no visibility);
+   - require telemetry-admin via existing non-throwing `user_has_telemetry_admin(current_user)` (`telemetry.py:60`);
    - require `current_user.has_platform_bypass OR crud.is_company_admin(current_user.id, company_id)`;
-   - on failure raise `BaselineLifecycleForbiddenError(action_code, reason, ...)`.
-3. `can_manage_baseline_lifecycle(db, current_user, company_id) -> bool` (non-throwing) — used to compute FE capability flags (§5) without duplicating logic.
+   - else raise `BaselineLifecycleForbiddenError(...)`.
+3. `can_author_draft(db, current_user, *, company_id, site_id) -> bool` and `can_manage_baseline_lifecycle(db, current_user, *, company_id, site_id) -> bool` (non-throwing) — drive the capability flags (§5.1) using the same predicates, guaranteeing FE/BE parity.
 
-**Structured 403 rendering.** The global `http_exception_handler` flattens `HTTPException.detail` to a string, so a raw `HTTPException(403, {...})` would lose structure. Two consistent options:
-- **Recommended:** register one handler in `app/main.py` — `app.add_exception_handler(BaselineLifecycleForbiddenError, baseline_lifecycle_forbidden_handler)` returning `JSONResponse(status_code=403, content=<body>)`. Future reject/retire get structured 403s for free.
-- **Alternative (matches the existing physics-block pattern):** inline `try/except` in each handler returning `JSONResponse(403, body)` — this is exactly how `activate` already returns the 409 physics block (`_baseline_block_body`, line 3745+). Either is acceptable; the registered handler is DRY-er given multiple endpoints.
+**Handler edit (approve, activate):** replace the current `get_authorized_site_with_company_admin(baseline.site_id, ...) + _enforce_company_visibility(...)` with one `enforce_baseline_lifecycle_authority(db, current_user, company_id=baseline.company_id, site_id=baseline.site_id, action_code=...)`. The route-level `Depends(telemetry_admin_required)` stays (telemetry-admin still 403s first via the dependency for non-telemetry-admins). Physics gate, supersede, acknowledge flow, and the 404-on-missing-baseline checks are untouched.
 
-**Structured 403 body contract:**
+---
+
+## 4. Structured 403 response contract (D3 — registered handler)
+
+`http_exception_handler` flattens `HTTPException.detail` to a string, so we register a dedicated handler in `app/main.py`:
+`app.add_exception_handler(BaselineLifecycleForbiddenError, baseline_lifecycle_forbidden_handler)` (handler fn in `app/utils.py`, returning `JSONResponse(status_code=403, content=<body>)`). Future reject/retire get structured 403s for free.
+
 ```json
 {
-  "error": "baseline_<action>_forbidden",
-  "action": "approve | activate | reject | retire",
-  "reason": "company_admin_required | telemetry_admin_required",
-  "message": "Approving an expected baseline requires Telemetry admin AND Company admin for this company.",
+  "error": "baseline_approve_forbidden",        // baseline_<action>_forbidden
+  "action": "approve",                            // approve | activate
+  "reason": "company_admin_required",             // company_admin_required | telemetry_admin_required
+  "message": "Approving this baseline requires Telemetry admin AND Company admin for this company.",
   "required_roles": ["telemetry_admin", "company_admin"]
 }
 ```
-
-**Edit in the two handlers:** replace the current `get_authorized_site_with_company_admin(baseline.site_id, ...) + _enforce_company_visibility(...)` lines with a single `enforce_baseline_lifecycle_authority(db, current_user, company_id=baseline.company_id, site_id=baseline.site_id, action_code=...)`. No other handler logic changes; the physics gate, supersede, and acknowledge flow are untouched.
-
----
-
-## 4. Phase 0 — migration impact
-
-**None.** Pure role-based authorization. No new tables, columns, enums, or Alembic revision. `is_company_admin` and the `user_company_access` rows it reads already exist. (Explicitly confirms the user's "expected none.")
+CORS: 403 is a normal response; no expose-headers change. The body is read from the JSON payload, not a header.
 
 ---
 
-## 5. Phase 0 — frontend gates + permission matrix + affected components
+## 5. Frontend gates
 
-**Core constraint:** the FE `user` object carries `is_system_user`, `is_global_admin`, `parent_company_id`, and a single global `role.permissions` map — it does **NOT** carry per-company `company_admin` membership. So the FE cannot reliably re-derive `is_company_admin(company_id)`. (`useAccess.isCompanyAdminFull` is `Settings Page.view`, which is **not** the backend company-admin role — using it would drift.)
+**Core constraint:** the FE `user` object has `is_system_user`/`is_global_admin`/`parent_company_id`/global `role.permissions` — **no per-company `company_admin` membership**. So the FE must **not** re-derive company-admin (`useAccess.isCompanyAdminFull` = `Settings Page.view`, which is the wrong signal). FE gates lifecycle UI **only** off the backend flags (D2).
 
-**Recommended design — server-computed capability flags (single source of truth):**
-Backend adds two additive, nullable-safe booleans to the baseline read responses, computed with the non-throwing helpers:
-- `viewer_can_author_draft` (telemetry-admin + site access)
-- `viewer_can_manage_lifecycle` (telemetry-admin AND company-admin)
+### 5.1 Capability-flag response schema (item 5)
+Both flags are **viewer-scoped** (about the requesting user), additive, non-null.
 
-Placed on `ExpectedBaselineListResponse` and the `/active` response (the data the review panel already loads). The FE gates UI off these flags — guaranteed to match the backend, zero drift. *(Alternative if we prefer not to touch read schemas: a dedicated `GET /v2/sites/{site_id}/expected-baselines/permissions` probe returning the same two flags.)*
+- `ExpectedBaselineListResponse` (`app/schema/telemetry_v2.py:891`, currently `{site_id, baselines[]}`) → add:
+  - `viewer_can_author_draft: bool`
+  - `viewer_can_manage_lifecycle: bool`
+- `/active` currently returns `ExpectedBaselineResponse | None` (no place to hang flags when null). Introduce a thin envelope **`ActiveExpectedBaselineResponse`**:
+  ```
+  ActiveExpectedBaselineResponse {
+    site_id: int
+    baseline: ExpectedBaselineResponse | None
+    viewer_can_author_draft: bool
+    viewer_can_manage_lifecycle: bool
+  }
+  ```
+  Because `/active` stays **open** (site-access), every site viewer can read these flags even after `list` is tightened — so the FE sources `viewer_can_manage_lifecycle` from the **active** response (always reachable). The flags are computed identically on both responses via the §3 non-throwing predicates.
 
-### FE permission matrix
+### 5.2 FE permission matrix
 
 | UI action | Component | Gating signal (target) |
 |---|---|---|
-| Create draft from facts | `BaselineFromFactsPanel.tsx` | `useTelemetryAdminPermission()` (**unchanged** — draft-authoring tier) |
+| Create draft from facts | `BaselineFromFactsPanel.tsx` | `useTelemetryAdminPermission()` (**unchanged**) |
 | Generate design points | review panel | `useTelemetryAdminPermission()` (unchanged) |
-| Compare / diff | `DraftBaselineReviewPanel.tsx` | `useTelemetryAdminPermission()` (unchanged — read tier) |
-| **Approve** | `DraftBaselineReviewPanel.tsx` | **`viewer_can_manage_lifecycle`** (server flag) |
-| **Activate** | `DraftBaselineReviewPanel.tsx` | **`viewer_can_manage_lifecycle`** (server flag) |
-| **Acknowledge warnings** (activate sub-flow) | `DraftBaselineReviewPanel.tsx` | **`viewer_can_manage_lifecycle`** |
-| Promote / task (DD) | `Reconciliation.tsx` | `Diligence.edit` (unchanged — separate concern) |
+| Compare / diff | `DraftBaselineReviewPanel.tsx` | `useTelemetryAdminPermission()` (unchanged) |
+| Read-only draft preview (Phase 1) | review panel | `useTelemetryAdminPermission()` |
+| **Approve** | `DraftBaselineReviewPanel.tsx` | **`viewer_can_manage_lifecycle`** (backend flag) |
+| **Activate** | `DraftBaselineReviewPanel.tsx` | **`viewer_can_manage_lifecycle`** |
+| **Acknowledge warnings** | `DraftBaselineReviewPanel.tsx` | **`viewer_can_manage_lifecycle`** |
 
-### Affected FE components
+When `viewer_can_manage_lifecycle` is false, render a **read-only explanation** (not a disabled-then-403 button): *"You can review this baseline. Approving or activating requires Telemetry admin **and** Company admin for {company}."*
 
-- `src/api/telemetryV2.ts` — add capability fields to `ExpectedBaselineListResponse`/`ExpectedBaselineResponse`; add `getDraftBaselinePreview` (Phase 1).
-- `src/types/telemetryV2.ts` — add `viewer_can_author_draft` / `viewer_can_manage_lifecycle`; add draft-preview response type.
-- `DraftBaselineReviewPanel.tsx` — bind approve/activate/ack to `viewer_can_manage_lifecycle`; when false, show a **read-only explanation** instead of a disabled-then-403 button: *"You can review this baseline. Approving or activating requires Telemetry admin **and** Company admin for {company}."*
-- `BaselineFromFactsPanel.tsx` — unchanged (canDraft = telemetry-admin).
-- `Reconciliation.tsx` — thread `canManageLifecycle` (from the loaded baseline data) into the review panel alongside the existing `canDraftBaseline`.
-- *(Optional)* `src/hooks/useBaselineLifecycleAuthority.ts` — thin helper that reads the server flag from loaded baseline data (keeps components clean). Not strictly required.
-
-**UX principle (per spec):** users lacking lifecycle authority still see baseline, validation, preview, diff, and history — never an action that fails later.
+### 5.3 Affected FE files/components (item 2)
+- `src/api/telemetryV2.ts` — list/active types gain the two flags + `ActiveExpectedBaselineResponse`; add `getDraftBaselinePreview`.
+- `src/types/telemetryV2.ts` — flag fields, `ActiveExpectedBaselineResponse`, `DraftExpectedPreviewResponse`.
+- `DraftBaselineReviewPanel.tsx` — bind approve/activate/ack to `viewer_can_manage_lifecycle` (from active response); add draft-vs-active overlay (§6); **gate the list query** (`enabled: isTelemetryAdmin`) so non-admins don't fire the now-tightened `list` (clean read-only state instead of a 403 toast).
+- `BaselineFromFactsPanel.tsx` — **gate its list query** on telemetry-admin too (D1); create still gated by `canDraft`. No lifecycle change.
+- `Reconciliation.tsx` — thread `canManageLifecycle` (from loaded active response) into the review panel alongside existing `canDraftBaseline`.
 
 ---
 
-## 6. Phase 1 — draft-preview API / data-contract design
+## 6. Draft-preview API contract (Phase 1, item 6)
 
-**New endpoint:** `GET /v2/sites/{site_id}/expected-baseline/{baseline_id}/draft-preview`
-- **Auth:** `Depends(telemetry_admin_required)` + `get_authorized_site` (site access). **Read tier → no company-admin.**
-- **Params:** optional `start`, `end`, `bucket_size` (same clamping as `expected-preview`: default last 24h, 24h max, `_PREVIEW_BUCKET_SIZES`).
-- **Behavior:** load baseline (must belong to `site_id`, else 404). Allow `status ∈ {draft, approved}` (the statuses the public preview refuses). Call `expected_service.compute_site_expected(db, site=site, baseline=<that baseline>, start, end, bucket_size, weather_resolver=default)` — uses the **specific** baseline, no active-resolution, no stitching. Run `validate_baseline` on read so an invalid/blocked draft suppresses expected honestly (NULL, never fabricated zeros). **Zero DB writes.**
-- **Response:** reuse `ExpectedPreviewResponse` as a base, add additive fields → `DraftExpectedPreviewResponse`:
-  - `is_draft_preview: bool = True`
-  - `baseline_status: str`
-  - `validation_summary` (the validate-on-read verdict, so the panel can show "draft invalid: …")
+`GET /v2/sites/{site_id}/expected-baseline/{baseline_id}/draft-preview`
+- **Auth:** `Depends(telemetry_admin_required)` + `get_authorized_site` (read tier; **no** company-admin).
+- **Params:** optional `start`, `end`, `bucket_size` — same clamping as `expected-preview` (default last 24h, 24h max, `bucket_size ∈ _PREVIEW_BUCKET_SIZES`).
+- **Baseline gate (D4):** load baseline; 404 if missing or `site_id` mismatch; **409 if status ∉ {draft, approved}** (mirrors the public preview's status guard, inverted for the admin surface).
+- **Compute:** `expected_service.compute_site_expected(db, site=site, baseline=<that baseline>, start, end, bucket_size, weather_resolver=default)` — specific baseline, **no** active-resolution, **no** stitching. `validate_baseline` on read → honest suppression (NULL expected on invalid/missing-inputs; never fabricated 0). **Zero DB writes.**
+- **Response — `DraftExpectedPreviewResponse`** (superset of `ExpectedPreviewResponse`, additive):
+  - all `ExpectedPreviewResponse` fields (buckets, energies, counts, weather provenance, …)
+  - `is_draft_preview: bool = true`
+  - `baseline_status: str` (`draft`|`approved`)
+  - `validation_summary` (validate-on-read verdict so the panel can show "draft invalid: …")
   - `disclaimer: str = "Draft preview — not approved or active. Not used for operations."`
 
-**FE additions:**
-- `getDraftBaselinePreview(siteId, baselineId, { start, end, bucket_size })` in `telemetryV2.ts`.
-- Reuse existing `getBaselineDiff(draftId, activeId)` for the field-level diff (already implemented; `/v2/expected-baselines/{id}/diff`).
-- Fetch the **active** series via the existing `expected-preview` (no `baseline_id`) over the same window for overlay.
-- New overlay UI in the review panel: active = solid "Current active"; draft = dashed "Draft (not active)"; disclaimer banner; honest gaps where the draft is invalid/missing-inputs; an effective-date note that the draft would take over **at activation** (Phase 3 effective-date policy is preserve-only here).
+**FE overlay:** new `getDraftBaselinePreview(siteId, baselineId, {start,end,bucket_size})`; reuse `getBaselineDiff(draftId, activeId)` (exists) for field diff; fetch the **active** series via existing `expected-preview` (no `baseline_id`) over the same window. Render active = solid "Current active", draft = dashed "Draft (not active)", with the disclaimer banner, honest gaps where the draft is invalid/missing-inputs, and a note that the draft would take over **at activation** (effective-date policy is preserve-only, not implemented here).
 
 ---
 
-## 7. Phase 1 — draft-preview isolation guarantees
+## 7. Migration impact confirmation (item 7)
 
-1. **Separate, telemetry-admin-gated endpoint** → drafts are unreachable by O&M / public viewers.
-2. **Public `expected-preview` still refuses non-`{approved,active,superseded}`** (409 via `_PREVIEWABLE_BASELINE_STATUSES`) → a draft can **never** appear in O&M charts, health, readiness, or company/portfolio aggregation.
-3. **Zero writes** → preview never changes status, never activates, never affects period-effective selection or any active/approved state.
-4. **Specific-baseline compute** (no active-resolution, no stitching) → the draft curve cannot leak into the period-effective active series.
-5. **Explicitly flagged** (`is_draft_preview`, `disclaimer`, `baseline_status`) so the UI cannot accidentally present a draft as operational truth.
+**None.** Pure role-based authorization + additive response fields (Pydantic only). No new tables/columns/enums, no Alembic revision. `is_company_admin` and the `user_company_access` rows it reads already exist. The capability flags and draft-preview compute read existing data only.
 
 ---
 
-## 8. Validation plans
+## 8. Validation & test plans
 
-### 8a. Browser validation (manual, after implementation)
-Workflows: **Backend** (uvicorn :8000), **Frontend** (:5000); drive via `$REPLIT_DEV_DOMAIN`.
-1. **System user (bypass):** site → Reconciliation → baseline review; create draft → see draft-preview overlay vs active → approve → activate. All succeed.
-2. **Telemetry-admin without company-admin** (seed role/membership): approve/activate render **read-only explanation** (no enabled button); create-draft still works; draft-preview visible; calling `approve`/`activate` directly returns **structured 403** with the right `action`/`reason` (verify in Network panel).
-3. **Normal site viewer:** governance panel read-only; **O&M expected chart still renders** (public `expected-preview` unaffected).
-4. **Isolation check:** confirm the draft series appears **only** in the admin draft-preview overlay, never in the O&M expected chart.
-Use `screenshot` (app_preview) for panel states; `refresh_all_logs` + Network for the 403 body.
+### 8a. Browser validation incl. Site 4 / 110 Shawmut (item 12)
+Workflows: **Backend** (uvicorn :8000), **Frontend** (:5000); drive via `$REPLIT_DEV_DOMAIN`. **Site 4 = 110 Shawmut** is a protected site whose current active baseline (#4, corrected thermal −0.35) and superseded invalid #3 (thermal=350) must remain byte-identical throughout.
 
-### 8b. Authorization regression-test matrix (backend pytest)
-Harness notes (from memory): needs `test_db_name` + own DB, override coverage `addopts`, no `pytest-mock` (use `monkeypatch`), `PermissionType` is a plain `str`. `is_company_admin` reads `user_company_access` → tests must seed memberships.
+1. **System user (bypass):** Site 4 → Reconciliation → baseline review. Confirm list/active/diff load; create a draft (a NEW draft, not touching #3/#4); open **draft-preview overlay** vs active; approve then activate the **new draft only**. (If you prefer not to change Site 4's active during validation, use a throwaway test site for the approve/activate happy-path and use Site 4 only for the read/forbidden/isolation checks.)
+2. **Telemetry-admin without company-admin** (seed role + non-admin membership on Site 4's company): approve/activate show the **read-only explanation** (no enabled button); create-draft still available; draft-preview visible. Direct `POST .../approve` and `.../activate` return **structured 403** (`action`, `reason=company_admin_required`) — verify in Network panel.
+3. **Diligence.view but not telemetry-admin:** Reconciliation opens; baseline panels show the telemetry-admin read-only state (list query not fired); no 403 toast.
+4. **Normal site viewer:** O&M expected chart for Site 4 still renders the **active** (−0.35) curve; governance panel read-only/absent.
+5. **Isolation (Site 4):** the new draft appears **only** in the admin draft-preview overlay; the public `expected-preview` for Site 4 still returns the active series and **409s** if asked for the draft `baseline_id`; the invalid #3 still suppresses (no corrupt curve).
+6. **No-side-effect (Site 4):** after every forbidden approve/activate attempt, re-read `list` → #3/#4 status, points, and validation JSON unchanged.
+Use `screenshot` (app_preview) for panel states; `refresh_all_logs` + Network for 403 bodies.
 
-| Actor | reads (list/diff/active/draft-preview) | draft-author (create/points) | lifecycle (approve/activate) |
+### 8b. Backend authorization regression matrix (item 8/10)
+Harness (memory): needs `test_db_name` + own DB; override coverage `addopts`; no `pytest-mock` (use `monkeypatch`); `PermissionType` is a plain `str`; seed `user_company_access` memberships.
+
+| Actor | reads: diff / **list** / active / draft-preview | draft-author | lifecycle (approve/activate) |
 |---|---|---|---|
-| system user (bypass) | ✅ | ✅ | ✅ |
-| telemetry-admin **+** company-admin (target company) | ✅ | ✅ | ✅ |
-| telemetry-admin, **not** company-admin (lower role in same company) | ✅ | ✅ | **403** `reason=company_admin_required` |
-| telemetry-admin via legacy `Settings Page.edit`, not company-admin | ✅ | ✅ | **403** `company_admin_required` |
-| company-admin **but not** telemetry-admin | ✅ if read requires only site access; **403** where telemetry-admin required | **403** `telemetry_admin_required` | **403** `telemetry_admin_required` (route dep fires first) |
-| normal site viewer (no telemetry-admin) | public `expected-preview` ✅; governance reads per Decision D1 | **403** | **403** |
-| telemetry-admin + company-admin of **company A**, acting on **company B** baseline | per visibility | per visibility | **403** (company-admin checked against baseline's company) |
+| system user (bypass) | ✅ / ✅ / ✅ / ✅ | ✅ | ✅ |
+| telemetry-admin **+** company-admin (target company) | ✅ / ✅ / ✅ / ✅ | ✅ | ✅ |
+| telemetry-admin, **not** company-admin | ✅ / ✅ / ✅ / ✅ | ✅ | **403 `company_admin_required`** |
+| telemetry-admin via legacy `Settings Page.edit`, not company-admin | ✅ / ✅ / ✅ / ✅ | ✅ | **403 `company_admin_required`** |
+| company-admin **not** telemetry-admin | diff **403** / list **403** / active ✅ / draft-preview **403** | **403 `telemetry_admin_required`** | **403 `telemetry_admin_required`** |
+| site viewer (no telemetry-admin) | diff **403** / list **403** / active ✅ / draft-preview **403** | **403** | **403** |
+| telemetry-admin + company-admin of company A, on company B baseline | per visibility | per visibility | **403** (checked against baseline's company) |
 | no site access (foreign company) | 403/404 on resolve | 403/404 | 403/404 |
 
-Plus **no-side-effect** assertions: a forbidden approve/activate leaves the draft and the existing active baseline **unchanged** (status, points, validation JSON).
+Plus **no-side-effect** assertions (see §10).
 
-### 8c. Phase 1 + FE regression tests
-- **Backend:** draft-preview computes for a draft; 404 on cross-site baseline; **isolation** — public `expected-preview` still 409 on a draft; zero-writes assertion; invalid draft → suppressed (NULL) expected.
-- **FE jest** (needs libuuid; trust fork-ts-checker): `DraftBaselineReviewPanel` — `viewer_can_manage_lifecycle=true` → approve/activate enabled; `false` → disabled + explanation; `BaselineFromFactsPanel` canDraft; `Reconciliation` wiring. Mock `useAuth` + baseline query returning capability flags.
-- **Existing suites** (baseline lifecycle happy-path with system user / company-admin) must still pass; consumer audit confirms no non-admin read surface breaks (Decision D1).
+### 8c. Backend Phase-1 + behavior tests (item 10)
+- draft-preview computes for `draft` and `approved`; **409** for `active`/`superseded`/`retired`; **404** cross-site baseline; **zero-writes** assertion (DB row counts + active baseline unchanged after preview); invalid draft → suppressed (NULL) expected.
+- **Isolation:** public `expected-preview` still 409s on a `draft` `baseline_id`.
+- Existing lifecycle happy-path tests (system / company-admin) still pass.
+
+### 8d. Frontend test plan (item 11)
+FE jest (needs libuuid; trust fork-ts-checker):
+- `DraftBaselineReviewPanel`: `viewer_can_manage_lifecycle=true` → approve/activate enabled; `false` → disabled + read-only explanation; list query disabled when not telemetry-admin.
+- `BaselineFromFactsPanel`: `canDraft` gating; list query disabled when not telemetry-admin.
+- `Reconciliation`: threads `canManageLifecycle` from the active response.
+- Draft-preview overlay: renders active+draft series; shows disclaimer; honest gaps. Mock `useAuth` + the active/list queries returning capability flags.
 
 ---
 
-## 9. Precise change list & out-of-scope notes
+## 9. Precise change list (items 1 & 2)
 
 **Backend (`backend/ilios-server`)**
-- `app/helpers/authorization/module_based/telemetry.py` — add `BaselineLifecycleForbiddenError`, `enforce_baseline_lifecycle_authority`, `can_manage_baseline_lifecycle`.
-- `app/routers/telemetry/v2.py` — gate `approve` (3763) + `activate` (3797) with the new helper; add `draft-preview` endpoint; add capability flags to list/active responses; *(Decision D1)* optionally add `telemetry_admin_required` to `list` (3062).
-- `app/main.py` — register `BaselineLifecycleForbiddenError` handler (or inline `JSONResponse` per the physics-block pattern).
-- `app/schema/telemetry_v2.py` — capability fields on `ExpectedBaselineListResponse`/active; `DraftExpectedPreviewResponse`.
+- `app/helpers/authorization/module_based/telemetry.py` — `BaselineLifecycleForbiddenError`, `enforce_baseline_lifecycle_authority`, `can_author_draft`, `can_manage_baseline_lifecycle`.
+- `app/routers/telemetry/v2.py` — gate `approve` (3763) + `activate` (3797); add `telemetry_admin_required` to `list` (3062); wrap `/active` (3079) in `ActiveExpectedBaselineResponse` + flags; add flags to list envelope; add `draft-preview` endpoint.
+- `app/utils.py` + `app/main.py` — `baseline_lifecycle_forbidden_handler` + register it.
+- `app/schema/telemetry_v2.py` — flags on `ExpectedBaselineListResponse`; new `ActiveExpectedBaselineResponse`; new `DraftExpectedPreviewResponse`.
 - **No Alembic migration.**
 
 **Frontend (`frontend/rea-investment-fe`)**
-- `src/api/telemetryV2.ts`, `src/types/telemetryV2.ts` — capability flags + `getDraftBaselinePreview` + draft-preview type.
-- `DraftBaselineReviewPanel.tsx` (lifecycle gate + read-only explanation + draft-preview overlay), `Reconciliation.tsx` (thread `canManageLifecycle`), optional `useBaselineLifecycleAuthority.ts`.
-- `BaselineFromFactsPanel.tsx` — unchanged.
+- `src/api/telemetryV2.ts`, `src/types/telemetryV2.ts` — flags, `ActiveExpectedBaselineResponse`, `getDraftBaselinePreview`, `DraftExpectedPreviewResponse`.
+- `DraftBaselineReviewPanel.tsx` (lifecycle gate + read-only explanation + overlay + list-query gating), `BaselineFromFactsPanel.tsx` (list-query gating), `Reconciliation.tsx` (thread `canManageLifecycle`).
 
-**Out of scope / flagged**
-- `app/routers/weather.py` (10 uses of the misnamed alias) — same name-only situation; weather declaration governance may merit the same company-admin gate, but that is a **separate follow-up**. We do **not** change the shared alias body (would silently re-gate weather).
-- Renaming/removing the misleading `get_authorized_site_with_company_admin` alias — deferred (churn).
-- **Separation-of-duties** (approver ≠ activator) — deferred to a separate product-policy decision, per direction.
-- **Effective-date policy** (Phase 3) — preserve-only here.
+**Out of scope / flagged:** weather.py alias reuse (separate follow-up); renaming the misleading alias (deferred); reject/retire/staleness/SoD/WS.5/device-mapping/weather-declaration — all excluded per directive.
 
 ---
 
-## 10. Open decisions to confirm before I implement
-- **D1:** Tighten `list` (and/or `active`) reads to telemetry-admin, or leave them at site-access to avoid O&M regressions? (Default: tighten `list` only; keep `active` + public `expected-preview` open, pending caller audit.)
-- **D2:** Capability flags embedded in list/active responses (recommended, fewer round-trips) vs a dedicated `/permissions` probe endpoint?
-- **D3:** Structured-403 via a registered exception handler (DRY) vs inline `JSONResponse` per handler (matches existing physics-block style)?
-- **D4:** Draft-preview accepts `{draft, approved}` or `draft` only?
+## 10. Mutation boundaries (item 9)
+
+- **Writes occur ONLY in:** `approve` (status draft/in-review → approved, stamps reviewer/approver) and `activate` (approved → active, supersede prior active, stamp activation identity in `validation_result_json`). Unchanged from today except the added pre-check.
+- **A forbidden approve/activate (403) writes NOTHING:** the authority check runs **before** any `crud.approve`/`crud.activate` call, so on 403 there is no change to baseline status, the active baseline, `validation_result_json`, design points, expected output, or historical ownership/period-effective windows.
+- **Draft-preview writes NOTHING** (read-only compute; no `db.add/flush/commit`).
+- **Capability-flag computation writes NOTHING** (read-only predicates).
+- **`list` tightening** changes only *who may read*; it performs no writes.
+- **Acknowledge-warnings** remains the only waiver path and only for warning-level (never `hard_invalid`); it still requires a non-empty `activation_source_note` and is now additionally gated by company-admin.
+
+---
+
+## 11. Unchanged-behavior confirmation (item 13)
+
+This work changes **authorization, response envelopes, and a new read-only endpoint** only. It does **not** change:
+- **Baseline math / physics formulas** — `expected_service` compute path and `BaselineParams` mapping are untouched.
+- **Expected output for operations** — O&M charts/health/readiness/aggregation continue to read the public `expected-preview` / active resolution unchanged; draft preview is isolated (§6/§8c) and never feeds them.
+- **Active baseline state** — no endpoint here mutates an existing active baseline; activation behavior (supersede, validate-on-activate, fail-closed physics gate) is byte-for-byte the same, only with an added pre-authorization check.
+- **Period-effective selection / historical expected ownership** — `get_baselines_effective_in_window` and stitching are not touched; no backdating, no historical rewrite.
+- **Protected Site 4 / 110 Shawmut** — #3 (superseded, invalid) and #4 (active, −0.35) remain unchanged; validation re-confirms before/after (§8a step 6).

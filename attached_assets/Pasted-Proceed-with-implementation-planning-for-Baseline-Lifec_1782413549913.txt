@@ -1,0 +1,62 @@
+Proceed with implementation planning for Baseline Lifecycle Authorization Hardening Phase 0 and Draft Preview Phase 1 only.
+
+Do not begin implementation until you return the required plan below for review.
+
+Objective:
+Harden baseline lifecycle authorization so approve/activate actions require telemetry-admin AND company-admin authority, while preserving draft-authoring and read-only review workflows. Add isolated read-only draft/approved baseline preview for reviewer decision support.
+
+Approved decisions:
+D1: Tighten baseline list/history reads to telemetry-admin only. Keep active baseline and public expected-preview open to authorized site viewers unless caller audit proves safe to tighten later.
+D2: Add server-computed capability flags to existing baseline list/active responses.
+D3: Use a registered structured exception handler for lifecycle 403 responses.
+D4: Draft-preview endpoint may preview baselines with status draft or approved only.
+
+In scope:
+1. Add backend lifecycle authorization helper for baseline approve/activate.
+2. Require telemetry-admin AND company-admin for approve/activate.
+3. Preserve telemetry-admin + site access for draft-authoring.
+4. Add viewer_can_author_draft and viewer_can_manage_lifecycle capability flags.
+5. Add read-only draft-preview endpoint for draft/approved baselines.
+6. Add frontend lifecycle gates using backend capability flags.
+7. Add draft-vs-active preview overlay in the baseline review panel.
+8. Add structured action-specific 403 responses.
+9. Add regression tests and browser validation.
+
+Out of scope:
+No baseline formula changes.
+No expected-model changes.
+No period-effective selection changes.
+No historical expected rewrite.
+No automatic approval, activation, or supersession.
+No separation-of-duties policy.
+No WS.5.
+No weather declaration changes.
+No device mapping changes.
+No baseline retirement.
+No baseline staleness logic.
+No migration unless the plan proves one is absolutely required.
+
+Hard constraints:
+Backend authorization is the source of truth.
+Frontend gates must mirror backend flags, not re-derive company-admin locally.
+Draft preview must perform zero writes.
+Draft preview must never affect operational expected output.
+Public expected-preview must not expose draft baselines.
+Forbidden approve/activate requests must not mutate baseline status, active baseline state, validation JSON, points, expected output, or historical ownership.
+
+Required return before code changes:
+1. Exact affected backend files and routes.
+2. Exact affected frontend files/components.
+3. Authorization helper design.
+4. Structured 403 response contract.
+5. Capability flag response schema.
+6. Draft-preview API contract.
+7. Migration impact confirmation.
+8. Full permission matrix.
+9. Mutation boundaries.
+10. Backend test plan.
+11. Frontend test plan.
+12. Browser-validation plan, including Site 4 / 110 Shawmut.
+13. Confirmation that baseline math, expected output, active baseline state, and historical expected ownership remain unchanged.
+
+Implementation may begin only after this plan is reviewed and approved.
