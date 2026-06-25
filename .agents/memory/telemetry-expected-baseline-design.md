@@ -104,10 +104,16 @@ Comprehensive lifecycle+UX audit: `docs/baseline_review_approval_activation_and_
   + per-segment validate-on-read suppression mean a new activation never recomputes prior periods.
 - **Preview still refuses `draft`** (`_PREVIEWABLE_BASELINE_STATUSES` = approved/active/superseded) →
   reviewers approve without seeing the draft curve. Biggest remaining decision-support hole.
-- **Permission reality (verified, live FE defect):** create/approve/activate/diff require telemetry-admin
-  **AND** company-admin (route `Depends(telemetry_admin_required)` + handler `get_authorized_site_with_company_admin`).
-  FE `useTelemetryAdminPermission` checks telemetry-admin ONLY → telemetry-admin-without-company-admin
-  passes the FE gate then 403s. Fix is FE-only.
+- **Permission reality (CORRECTED 2026-06-25 — supersedes the "company-admin defect" claim):**
+  `get_authorized_site_with_company_admin` is a MISNAMED ALIAS — its body is identical to
+  `get_authorized_site` (resolver-based SITE VISIBILITY only; does NOT enforce the `company_admin`
+  role; its docstring says the legacy company-admin fallback was deprecated). So the real gate for
+  create/approve/activate/diff = `telemetry_admin_required` (platform-bypass OR `Telemetry.admin` OR
+  `Settings Page.edit`, defined in `app/helpers/authorization/module_based/telemetry.py`) + site
+  visibility. The FE `useTelemetryAdminPermission` ALREADY mirrors that role gate, so there is NO
+  company-admin requirement and NO 403 defect. Any "baseline lifecycle needs company-admin" claim
+  (including earlier in this file and in the audit doc §0.3/§D) was inferred from the function NAME and
+  is WRONG. Making company-admin a real requirement would be a backend STRENGTHENING, not an FE-only fix.
 - **Attribution:** there is NO `activated_by`/`activated_at` COLUMN; activation identity/time are stamped
   inside `validation_result_json` (`activated_by_user_id`,`activated_at`) — JSONB-only, not queryable, no
   discrete event log. (`activated_by`/`activated_at` columns belong to the weather module, not baselines.)

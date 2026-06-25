@@ -1,0 +1,84 @@
+Baseline Review, Approval, Activation, and Staleness UX audit is accepted.
+
+Proceed with implementation planning for **Phase 0 and Phase 1 only**. Do not begin broader baseline lifecycle changes yet.
+
+## Phase 0 — Permission alignment
+
+Implement the frontend permission correction so actions requiring:
+
+* create draft;
+* compare/diff;
+* approve;
+* activate;
+* acknowledge activation warnings;
+
+require both:
+
+* telemetry-admin; and
+* company-admin authorization for the applicable site.
+
+A user who has telemetry-admin permission but lacks company-admin authority must see the baseline content in read-only mode with an accurate explanation. They must not be offered an action that predictably returns a backend 403.
+
+Do not weaken backend authorization. Do not alter baseline data, lifecycle state, expected calculations, or O&M output.
+
+## Phase 1 — Read-only draft preview and comparison
+
+Implement a governed, read-only preview for a draft weather-adjusted baseline.
+
+Requirements:
+
+* Draft preview must use the draft baseline’s exact stored snapshot and source basis.
+* It must persist nothing.
+* It must not change draft, approved, active, superseded, invalid, or baseline validation state.
+* It must not write expected points, provenance, rollups, telemetry, project facts, weather mappings, or audit events.
+* It must not appear in the normal O&M expected series as active operational truth.
+* It must be visually labeled:
+  “Draft preview — not approved or active.”
+* It must preserve honest gaps, null expected values, missing inputs, invalid states, and period-effective boundaries.
+* It must never fabricate a complete curve where inputs are unavailable.
+
+The comparison must show:
+
+* active baseline versus draft baseline;
+* field-level diff;
+* proposed curve overlay;
+* explicit effective-date boundary;
+* periods with unavailable/partial expected output;
+* source-basis and provenance differences;
+* reviewer-supplied constants distinctly from fact-backed values.
+
+## Effective-date policy for future activation work
+
+Do not implement Phase 3 yet, but preserve this policy in the design:
+
+* First activation may be PTO-anchored only through an explicit governed confirmation.
+* Replacement activation must default to current time.
+* Replacement activation may be scheduled for a future effective time.
+* Replacement activation must not be backdated into periods owned by a prior baseline without a separately approved historical-correction workflow.
+* No activation may silently rewrite historical expected ownership.
+
+## Site 4 validation
+
+Use Site 4 as the controlled fixture.
+
+The review/preview experience must visibly distinguish:
+
+* superseded baseline #3 as historically invalid;
+* active baseline #4 as physics-corrected;
+* #4’s missing document/fact linkage as a source-basis/provenance weakness;
+* historical expected suppression for #3-owned buckets;
+* current expected computation for #4-owned buckets;
+* weather semantics as contextual and unverified, with no WS.5 implication.
+
+## Return before implementation
+
+Return:
+
+1. exact Phase 0 frontend permission matrix and affected components;
+2. Phase 1 API/data-contract design;
+3. draft-preview isolation guarantees;
+4. browser-validation plan;
+5. regression-test plan;
+6. precise list of files and endpoints proposed for change.
+
+Do not make production changes until that Phase 0/Phase 1 plan is reviewed.
