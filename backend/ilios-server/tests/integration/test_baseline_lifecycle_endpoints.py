@@ -17,14 +17,17 @@ test seeds (cleaned up on teardown). The deep authorization matrix lives in the
 """
 from __future__ import annotations
 
+import json
 from datetime import date, datetime
 from unittest.mock import Mock
 
 import pytest
 
+import app.helpers.telemetry.audit as audit_mod
 import app.routers.telemetry.v2 as v2_router
 from app.crud.site import SiteCRUD
 from app.helpers.authentication import get_current_user
+from app.models.audit_log import AuditLog
 from app.models.telemetry_expected import (
     TelemetryBaselineStatus,
     TelemetryBaselineType,
@@ -313,3 +316,180 @@ class TestBaselineLifecycleEndpoints:
             params={"baseline_id": draft_baseline.id},
         )
         assert r.status_code == 409, r.text
+
+
+class TestBaselineLifecycleAuditEvents:
+    """Phase B3 Tier 1 — best-effort ``audit_logs`` events for lifecycle actions.
+
+    Every event is ``source="telemetry_baseline"`` with a JSON-encoded ``details``
+    string. The audit write is best-effort: it must never block, roll back, or
+    otherwise alter the lifecycle outcome.
+    """
+
+    BASELINE_AUDIT_SOURCE = "telemetry_baseline"
+
+    def setup_method(self):
+        test_app.dependency_overrides[get_current_user] = _system_user
+
+    def teardown_method(self):
+        test_app.dependency_overrides.pop(get_current_user, None)
+
+    def _audit_rows(self, db_session, baseline_id, action=None):
+        # ``details`` is JSON with sort_keys -> ``"baseline_id": <id>,`` is always
+        # followed by another key, so the trailing comma makes the match exact
+        # (no 12 vs 120 prefix collision).
+        query = db_session.query(AuditLog).filter(
+            AuditLog.source == self.BASELINE_AUDIT_SOURCE,
+            AuditLog.details.like(f'%"baseline_id": {baseline_id},%'),
+        )
+        if action is not None:
+            query = query.filter(AuditLog.action == action)
+        return query.all()
+
+    def _cleanup_audit(self, db_session, baseline_id):
+        db_session.query(AuditLog).filter(
+            AuditLog.source == self.BASELINE_AUDIT_SOURCE,
+            AuditLog.details.like(f'%"baseline_id": {baseline_id},%'),
+        ).delete(synchronize_session=False)
+        db_session.commit()
+
+    def test_approve_writes_audit_event(self, client, db_session, draft_baseline):
+        """A successful approve writes one ``baseline_approved`` audit row."""
+        r = client.post(
+            f"/api/telemetry/v2/expected-baselines/{draft_baseline.id}/approve"
+        )
+        assert r.status_code == 200, r.text
+        try:
+            rows = self._audit_rows(db_session, draft_baseline.id, "baseline_approved")
+            assert len(rows) == 1
+            row = rows[0]
+            assert row.is_success is True
+            assert row.user_id == 1
+            payload = json.loads(row.details)
+            assert payload["baseline_id"] == draft_baseline.id
+            assert payload["site_id"] == draft_baseline.site_id
+            assert payload["prior_status"] == "draft"
+        finally:
+            self._cleanup_audit(db_session, draft_baseline.id)
+
+    def test_activate_writes_audit_event_with_supersession_folded(
+        self, client, db_session, approved_baseline
+    ):
+        """A successful activate writes one ``baseline_activated`` row.
+
+        Supersession is folded into this single event (no separate superseded
+        event), and the details carry the activation context.
+        """
+        r = client.post(
+            f"/api/telemetry/v2/expected-baselines/{approved_baseline.id}/activate"
+        )
+        assert r.status_code == 200, r.text
+        try:
+            rows = self._audit_rows(
+                db_session, approved_baseline.id, "baseline_activated"
+            )
+            assert len(rows) == 1
+            row = rows[0]
+            assert row.is_success is True
+            assert row.user_id == 1
+            payload = json.loads(row.details)
+            assert payload["baseline_id"] == approved_baseline.id
+            assert payload["site_id"] == approved_baseline.site_id
+            # Supersession folded in (None when nothing was replaced).
+            assert "supersedes_baseline_id" in payload
+            assert payload["active_from"]  # ISO-8601 string
+            assert payload["acknowledged_warnings"] is False
+            assert payload["source_note"] is None
+            assert "policy_version" in payload
+        finally:
+            self._cleanup_audit(db_session, approved_baseline.id)
+
+    def test_activation_blocked_invalid_status_audits_without_mutation(
+        self, client, db_session, draft_baseline
+    ):
+        """A draft cannot be activated -> ``baseline_activation_blocked`` (no write)."""
+        r = client.post(
+            f"/api/telemetry/v2/expected-baselines/{draft_baseline.id}/activate"
+        )
+        assert r.status_code == 409, r.text
+        try:
+            rows = self._audit_rows(
+                db_session, draft_baseline.id, "baseline_activation_blocked"
+            )
+            assert len(rows) == 1
+            row = rows[0]
+            assert row.is_success is False
+            payload = json.loads(row.details)
+            assert payload["reason"] == "invalid_status"
+            # No mutation: the baseline is still a draft.
+            db_session.refresh(draft_baseline)
+            assert draft_baseline.status == TelemetryBaselineStatus.draft
+        finally:
+            self._cleanup_audit(db_session, draft_baseline.id)
+
+    def test_activation_blocked_hard_invalid_audits_without_mutation(
+        self, client, db_session, company_id, site_id
+    ):
+        """An approved-but-physics-incomplete baseline -> physics block + audit.
+
+        The physics gate raises before any mutation, so the baseline stays
+        ``approved`` and the blocked attempt is recorded (best-effort).
+        """
+        baseline = _make_baseline(
+            db_session,
+            company_id,
+            site_id,
+            status=TelemetryBaselineStatus.approved,
+            physics=False,
+        )
+        try:
+            r = client.post(
+                f"/api/telemetry/v2/expected-baselines/{baseline.id}/activate"
+            )
+            assert r.status_code == 409, r.text
+            assert r.json()["reason"] == "hard_invalid"
+            rows = self._audit_rows(
+                db_session, baseline.id, "baseline_activation_blocked"
+            )
+            assert len(rows) == 1
+            assert rows[0].is_success is False
+            assert json.loads(rows[0].details)["reason"] == "hard_invalid"
+            db_session.refresh(baseline)
+            assert baseline.status == TelemetryBaselineStatus.approved
+        finally:
+            self._cleanup_audit(db_session, baseline.id)
+            db_session.query(TelemetryExpectedBaseline).filter_by(
+                id=baseline.id
+            ).delete()
+            db_session.commit()
+
+    def test_audit_write_failure_does_not_break_activation(
+        self, client, db_session, approved_baseline, monkeypatch
+    ):
+        """If the audit backend fails, activation must still succeed (isolation).
+
+        The helper swallows the write failure; the activation was already
+        committed and the response is unaffected. No audit row is persisted.
+        """
+
+        class _BoomCRUD:
+            def __init__(self, *_a, **_k):
+                pass
+
+            def create_item(self, *_a, **_k):
+                raise RuntimeError("audit backend down")
+
+        monkeypatch.setattr(audit_mod, "AuditLogCRUD", _BoomCRUD)
+        r = client.post(
+            f"/api/telemetry/v2/expected-baselines/{approved_baseline.id}/activate"
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["status"] == "active"
+        # Activation persisted despite the audit failure.
+        db_session.refresh(approved_baseline)
+        assert approved_baseline.status == TelemetryBaselineStatus.active
+        # The failed audit write left no row behind.
+        rows = self._audit_rows(
+            db_session, approved_baseline.id, "baseline_activated"
+        )
+        assert rows == []

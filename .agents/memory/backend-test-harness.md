@@ -26,6 +26,14 @@ description: How to actually run the FastAPI backend pytest suite and the gotcha
   tests, **override `company_id`/`site_id` in your test module** to create rows
   directly via `CompanyCRUD`/`SiteCRUD` on `db_session` (uses `samples.SETUP_COMPANIES[0]`
   / `samples.TEST_SITE_BODY`); this skips `client` and runs in seconds.
+- **For tests that genuinely need `client` (HTTP integration tests), do NOT stop
+  the Backend workflow** — instead run pytest with `telemetry_scheduler_enabled=false`
+  in the env (settings are `case_sensitive=True`, so the key MUST be lowercase). With
+  the flag off, `scheduler_should_run()` returns False and the lifespan never calls
+  `scheduler_runner.start()`, which is the actual source of the dev-DB lease-contention
+  hang. The lifespan's `set_predefined_data()` still writes to the dev DB but it's a
+  quick idempotent write and doesn't hang against a live Backend. e.g.
+  `test_db_name=ilios_test telemetry_scheduler_enabled=false pytest <file> -o addopts="-q -p no:cacheprovider"`.
 - **A standalone `python -c` / script that queries ORM models** (outside pytest)
   dies with `InvalidRequestError: ... 'Task' failed to locate a name` — SQLAlchemy
   only configures mappers lazily and a partial-import script never registers all of

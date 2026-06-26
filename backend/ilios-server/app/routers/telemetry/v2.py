@@ -52,6 +52,7 @@ from app.integrations.telemetry.credential_store import (
     is_credential_store_durable,
 )
 from app.helpers.telemetry.audit import create_audit_log as _create_audit_log
+from app.helpers.telemetry.audit import create_baseline_audit_log as _create_baseline_audit_log
 from app.settings import settings
 from app.models.telemetry import (
     CompanyDASProvider,
@@ -3185,7 +3186,22 @@ def create_expected_baseline(
         baseline.id,
         baseline.baseline_type.value,
     )
-    return ExpectedBaselineResponse.model_validate(baseline)
+    _resp = ExpectedBaselineResponse.model_validate(baseline)
+    # Best-effort audit (Phase B3 Tier 1). The draft is already committed by
+    # ``create_draft``; this write is a separate transaction and never blocks.
+    _create_baseline_audit_log(
+        db,
+        user_id=getattr(current_user, "id", None),
+        action="baseline_created",
+        details={
+            "baseline_id": baseline.id,
+            "site_id": baseline.site_id,
+            "company_id": baseline.company_id,
+            "version": baseline.version,
+            "source_type": getattr(baseline.source_type, "value", baseline.source_type),
+        },
+    )
+    return _resp
 
 
 def _field_usage_schema(usage) -> BaselineFactFieldUsage:
@@ -3354,7 +3370,7 @@ def create_expected_baseline_draft_from_facts(
         result.created,
         result.idempotent_existing,
     )
-    return CreateDraftFromFactsResponse(
+    draft_response = CreateDraftFromFactsResponse(
         site_id=site.id,
         baseline_type=payload.baseline_type,
         ready=True,
@@ -3370,6 +3386,24 @@ def create_expected_baseline_draft_from_facts(
         field_blockers=[_field_blocker_schema(b) for b in readiness.field_blockers],
         baseline=ExpectedBaselineResponse.model_validate(baseline),
     )
+    # Best-effort audit (Phase B3 Tier 1). Emit ONLY for a genuinely new draft —
+    # an idempotent re-create (created=False) created nothing, so it is not logged
+    # as a creation. The draft is already committed by the service; this write is a
+    # separate transaction and never blocks the create path.
+    if result.created:
+        _create_baseline_audit_log(
+            db,
+            user_id=getattr(current_user, "id", None),
+            action="baseline_created",
+            details={
+                "baseline_id": baseline.id,
+                "site_id": baseline.site_id,
+                "company_id": baseline.company_id,
+                "version": baseline.version,
+                "source_type": getattr(baseline.source_type, "value", baseline.source_type),
+            },
+        )
+    return draft_response
 
 
 # ---------------------------------------------------------------------------
@@ -3830,6 +3864,7 @@ def approve_expected_baseline(
     enforce_baseline_lifecycle_authority(
         db, current_user, company_id=baseline.company_id, action_code="approve"
     )
+    prior_status = getattr(baseline.status, "value", baseline.status)
     try:
         updated = crud.approve(baseline, user_id=getattr(current_user, "id", None))
     except BaselineActivationError as exc:
@@ -3839,7 +3874,20 @@ def approve_expected_baseline(
         baseline.site_id,
         baseline.id,
     )
-    return ExpectedBaselineResponse.model_validate(updated)
+    _resp = ExpectedBaselineResponse.model_validate(updated)
+    # Best-effort audit (Phase B3 Tier 1). ``crud.approve`` already committed the
+    # transition; this is a separate write that never blocks the approve path.
+    _create_baseline_audit_log(
+        db,
+        user_id=getattr(current_user, "id", None),
+        action="baseline_approved",
+        details={
+            "baseline_id": updated.id,
+            "site_id": updated.site_id,
+            "prior_status": prior_status,
+        },
+    )
+    return _resp
 
 
 @telemetry_v2_router.post(
@@ -3892,11 +3940,38 @@ def activate_expected_baseline(
             baseline.id,
             exc.reason,
         )
+        # Best-effort audit (Phase B3 Tier 1). The physics gate raised BEFORE any
+        # mutation/lock, so the baseline is untouched; this write only records the
+        # blocked attempt and never blocks/rolls back the (already fail-closed) path.
+        _create_baseline_audit_log(
+            db,
+            user_id=getattr(current_user, "id", None),
+            action="baseline_activation_blocked",
+            details={
+                "baseline_id": baseline.id,
+                "site_id": baseline.site_id,
+                "reason": exc.reason,
+            },
+            is_success=False,
+        )
         return JSONResponse(
             status_code=status.HTTP_409_CONFLICT,
             content=_baseline_block_body(exc),
         )
     except BaselineActivationError as exc:
+        # Bad-status block (only an ``approved`` baseline may activate). This also
+        # raises before any mutation; record it as a blocked attempt (best-effort).
+        _create_baseline_audit_log(
+            db,
+            user_id=getattr(current_user, "id", None),
+            action="baseline_activation_blocked",
+            details={
+                "baseline_id": baseline.id,
+                "site_id": baseline.site_id,
+                "reason": "invalid_status",
+            },
+            is_success=False,
+        )
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
     logger.info(
         "telemetry_v2_expected_baseline_activated site_id=%s baseline_id=%s "
@@ -3905,7 +3980,25 @@ def activate_expected_baseline(
         baseline.id,
         baseline.supersedes_baseline_id,
     )
-    return ExpectedBaselineResponse.model_validate(updated)
+    _resp = ExpectedBaselineResponse.model_validate(updated)
+    # Best-effort audit (Phase B3 Tier 1). ``crud.activate`` already committed the
+    # supersede+activate; supersession is folded into this single event. Separate
+    # transaction — an audit failure never blocks/rolls back activation.
+    _create_baseline_audit_log(
+        db,
+        user_id=getattr(current_user, "id", None),
+        action="baseline_activated",
+        details={
+            "baseline_id": updated.id,
+            "site_id": updated.site_id,
+            "supersedes_baseline_id": updated.supersedes_baseline_id,
+            "active_from": updated.active_from.isoformat() if updated.active_from else None,
+            "acknowledged_warnings": bool(payload.acknowledge_warnings),
+            "source_note": (payload.activation_source_note or None),
+            "policy_version": updated.validation_policy_version,
+        },
+    )
+    return _resp
 
 
 @telemetry_v2_router.get(
