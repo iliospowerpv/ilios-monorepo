@@ -125,3 +125,9 @@ id = "5-xstAHimqbnpNxrE9YxC"
 uri = "file://docs/native_weather_indicator_replacement_audit.md"
 type = "text"
 title = "Native Weather Indicator Replacement — Audit & Design"
+
+[[outputs]]
+id = "5VnsmTiOMhFyEpfay-aMT"
+uri = "file://docs/native_weather_indicator_replacement_implementation_plan.md"
+type = "text"
+title = "Native Weather Indicator Replacement — Implementation Plan"
