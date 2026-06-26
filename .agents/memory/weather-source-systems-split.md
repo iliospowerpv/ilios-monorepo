@@ -42,3 +42,18 @@ physics (native domain, resolver). No other external weather provider
 (OpenWeather/NOAA/NREL/Solcast/Tomorrow.io/Visual Crossing/Meteostat) is
 integrated; NREL/PVWatts/PVGIS hits are PVsyst document-parsing prompts.
 Full write-up: `docs/weather_data_source_audit.md`.
+
+**Native cosmetic-indicator replacement (design):**
+`docs/native_weather_indicator_replacement_audit.md` designs replacing the paid
+Weatherstack description/icon (FE `OMSiteWeather`, backend `WeatherSchema` in
+`app/schema/om_site.py`, shown by `WeatherIndicator` in `ActualProduction` +
+the two site-card `Sites.tsx`). Replacement derives an **"observed light level"**
+from native rollup `irradiance_wm2` (reuse the read-only `performance-context`
+envelope — already exposes per-bucket irradiance/temp + `freshness_state` +
+governed `weather_semantics`). Hard honesty rules: never fabricate (null ≠ 0,
+no irr ⇒ "unavailable"); **never imply POA/cell unless a governed
+`weather_device_mappings` declaration says so** (raw `irradiance_wm2` merges
+POA+GHI, plane unknown). Sites have a clean IANA `timezone` but **no numeric
+lat/long — only `lon_lat_url` (a URL VARCHAR)**, forcing a tiered algorithm
+(clear-sky index when lat/long parses, else irradiance-magnitude + local-time
+night detection). Decommission Weatherstack only AFTER dual-run.

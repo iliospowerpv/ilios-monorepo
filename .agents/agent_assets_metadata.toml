@@ -119,3 +119,9 @@ id = "kmdRsAwB6QbZHVhBMeNK-"
 uri = "file://docs/weather_data_source_audit.md"
 type = "text"
 title = "Weather Data Source & Ingestion Audit"
+
+[[outputs]]
+id = "5-xstAHimqbnpNxrE9YxC"
+uri = "file://docs/native_weather_indicator_replacement_audit.md"
+type = "text"
+title = "Native Weather Indicator Replacement — Audit & Design"
