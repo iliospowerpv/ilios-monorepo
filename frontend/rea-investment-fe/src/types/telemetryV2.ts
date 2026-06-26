@@ -1191,6 +1191,25 @@ export interface DraftExpectedPreviewResponse extends ExpectedPreviewResponse {
 // replacement diff schemas. The validation report carries many fields; only the
 // ones the UI reads are typed, with an index signature for forward-compat.
 // ---------------------------------------------------------------------------
+/**
+ * One per-field (or cross-field) verdict — mirrors the backend
+ * `FieldValidationResult.to_dict()` (baseline_physics_validation.py). These are
+ * only carried by the diff endpoint's `from_validation`/`to_validation` reports
+ * and the structured activation-409 body; the list/active responses carry only
+ * the compact `baseline_validation_summary`, NOT this array. Read-only — the UI
+ * renders the verdict the engine produced and never re-derives a classification.
+ */
+export interface BaselineValidationFieldVerdict {
+  field: string;
+  entered_value: number | null;
+  expected_unit: string;
+  classification: 'plausible' | 'warning' | 'hard_invalid' | string;
+  reason: string;
+  source: string;
+  required_action: string | null;
+  policy_version?: string;
+}
+
 export interface BaselinePhysicsValidation {
   baseline_id: number | null;
   is_blocking: boolean;
@@ -1203,6 +1222,11 @@ export interface BaselinePhysicsValidation {
   celsius_fahrenheit_equivalence_verified?: boolean;
   blocking_field_count?: number;
   warning_field_count?: number;
+  // Present on the full report (diff `from_validation`/`to_validation`); absent
+  // on the compact summary carried by list/active responses.
+  has_warnings?: boolean;
+  fields?: BaselineValidationFieldVerdict[];
+  cross_field_checks?: BaselineValidationFieldVerdict[];
   [key: string]: unknown;
 }
 

@@ -17,6 +17,9 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import CircularProgress from '@mui/material/CircularProgress';
+import Checkbox from '@mui/material/Checkbox';
+import FormGroup from '@mui/material/FormGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
@@ -35,6 +38,10 @@ import { useTelemetryAdminPermission } from '../../../../../../../hooks/useTelem
 import { useNotify } from '../../../../../../../contexts/notifications/notifications';
 import { PLACEHOLDER, formatConfidence, formatDateTime } from '../utils';
 import DraftPreviewOverlay from './DraftPreviewOverlay';
+import ValidationSummaryPanel from './ValidationSummaryPanel';
+import ActivationReadinessSummary from './ActivationReadinessSummary';
+import ValidationHistoryPanel from './ValidationHistoryPanel';
+import { blockReasonExplainer } from '../../../../../../../utils/baselineValidation';
 
 interface DraftBaselineReviewPanelProps {
   siteId: number;
@@ -158,7 +165,12 @@ type BaselineBlockBody = {
   blocking?: boolean;
   message?: string;
   summary?: string;
-  warning_fields?: Array<{ field?: string; reason?: string }>;
+  warning_fields?: Array<{
+    field?: string;
+    reason?: string;
+    required_action?: string | null;
+    classification?: string;
+  }>;
 };
 
 // Returns the structured physics-block body ONLY when it is a warning-only,
@@ -300,6 +312,18 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
   // require a source note before re-submitting with `acknowledge_warnings`.
   const [activateWarnings, setActivateWarnings] = useState<BaselineBlockBody | null>(null);
   const [activateNote, setActivateNote] = useState('');
+  // Per-warning acknowledgement checkboxes are VISUAL-ONLY (audit B2.7): they help
+  // the reviewer read each warning deliberately but never gate submission. The
+  // backend contract is unchanged — a single set-level `acknowledge_warnings`
+  // plus the required source note below is what activates the baseline.
+  const [ackedWarnings, setAckedWarnings] = useState<Record<string, boolean>>({});
+
+  // All weather-adjusted versions (any status) for the read-only version history,
+  // assembled from the EXISTING list rows — no new endpoint, no new fetch.
+  const weatherAdjustedBaselines = useMemo(
+    () => (data?.baselines ?? []).filter(b => b.baseline_type === WEATHER_ADJUSTED),
+    [data]
+  );
 
   // Replacement diff: compare the proposed replacement (the selected draft, or an
   // approved-but-not-active baseline) against the current active baseline. The
@@ -339,6 +363,7 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
     setActivateTarget(null);
     setActivateWarnings(null);
     setActivateNote('');
+    setAckedWarnings({});
   };
 
   const activateMutation = useMutation<
@@ -482,6 +507,16 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
             </Typography>
           )}
         </Box>
+        {src?.source === 'reviewer_supplied' && src?.fact_id == null && src?.document_id == null && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            display="block"
+            data-testid={`draft-field-${String(def.col)}-no-document-source`}
+          >
+            Reviewer-supplied datasheet constant — no document source exists for this value.
+          </Typography>
+        )}
         {norm && norm.raw_value != null && norm.normalized_value != null && (
           <Typography variant="caption" color="text.secondary" display="block">
             Normalized {String(norm.raw_value)} → {norm.normalized_value}
@@ -759,6 +794,18 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
           {validationChip(diff.to_validation, 'Proposed')}
           {validationChip(diff.from_validation, 'Active')}
         </Box>
+        <ValidationSummaryPanel
+          validation={diff.to_validation}
+          who="Proposed baseline"
+          testIdPrefix="validation-summary-proposed"
+        />
+        {diff.from_validation && (
+          <ValidationSummaryPanel
+            validation={diff.from_validation}
+            who="Active baseline"
+            testIdPrefix="validation-summary-active"
+          />
+        )}
         <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
           Changed physics fields
         </Typography>
@@ -986,6 +1033,8 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
         Design-estimate baselines are a separate track and are neither reviewed nor changed here.
       </Alert>
 
+      <ValidationHistoryPanel baselines={weatherAdjustedBaselines} />
+
       {/* Approve confirmation dialog */}
       <Dialog
         open={approveTarget != null}
@@ -1029,6 +1078,13 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
         <DialogTitle>Activate expected baseline</DialogTitle>
         <DialogContent dividers>
           {activateTarget && <ActivateConfirmationSummary baseline={activateTarget} priorActive={active} />}
+          {activateTarget && (
+            <ActivationReadinessSummary
+              baseline={activateTarget}
+              priorActive={active}
+              validation={activateTarget.id === diff?.to_baseline_id ? diff?.to_validation : null}
+            />
+          )}
           {activateWarnings && (
             <Alert severity="warning" sx={{ mt: 2 }} data-testid="activate-warning-ack">
               <AlertTitle>Confirmation required before activation</AlertTitle>
@@ -1037,18 +1093,49 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
                   activateWarnings.summary ??
                   'This baseline has values that need confirmation before it can be activated.'}
               </Typography>
+              {(() => {
+                const explainer = blockReasonExplainer(activateWarnings.reason);
+                return explainer ? (
+                  <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 1 }}>
+                    {explainer.detail}
+                  </Typography>
+                ) : null;
+              })()}
               {Array.isArray(activateWarnings.warning_fields) && activateWarnings.warning_fields.length > 0 && (
-                <Box component="ul" sx={{ pl: 3, mt: 1, mb: 0 }}>
-                  {activateWarnings.warning_fields.map((w, i) => (
-                    <li key={`${w.field ?? 'field'}-${i}`}>
-                      <Typography variant="caption">
-                        {w.field ?? 'value'}
-                        {w.reason ? `: ${w.reason}` : ''}
-                      </Typography>
-                    </li>
-                  ))}
-                </Box>
+                <FormGroup sx={{ mt: 1 }} data-testid="activate-warning-checklist">
+                  {activateWarnings.warning_fields.map((w, i) => {
+                    const key = `${w.field ?? 'field'}-${i}`;
+                    return (
+                      <Box key={key} sx={{ mb: 0.5 }} data-testid={`activate-warning-item-${w.field ?? i}`}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              size="small"
+                              checked={Boolean(ackedWarnings[key])}
+                              onChange={e => setAckedWarnings(prev => ({ ...prev, [key]: e.target.checked }))}
+                              data-testid={`activate-warning-check-${w.field ?? i}`}
+                            />
+                          }
+                          label={
+                            <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                              {w.field ?? 'value'}
+                              {w.reason ? `: ${w.reason}` : ''}
+                            </Typography>
+                          }
+                        />
+                        {w.required_action && (
+                          <Typography variant="caption" display="block" color="text.secondary" sx={{ pl: 4 }}>
+                            Next: {w.required_action}
+                          </Typography>
+                        )}
+                      </Box>
+                    );
+                  })}
+                </FormGroup>
               )}
+              <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
+                Checking each item is optional — activation requires the source note below.
+              </Typography>
               <TextField
                 label="Source note (required)"
                 helperText="Document the source / justification for activating despite these warnings."
