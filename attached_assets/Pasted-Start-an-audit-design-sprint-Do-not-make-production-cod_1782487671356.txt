@@ -1,0 +1,81 @@
+Start an audit/design sprint.
+
+Do not make production code changes.
+
+Sprint:
+Baseline Activation Effective-Date & Audit Events — Phase B3
+
+Objective:
+Audit and design explicit baseline activation timing and lifecycle audit events while preserving period-effective ownership, baseline math, expected output, lifecycle authorization, and historical expected integrity.
+
+Current-state audit:
+Trace:
+- approve flow
+- activate flow
+- supersede behavior
+- active_from / active_to handling
+- validation_result_json activation block
+- reviewer / approver attribution
+- current audit_logs usage
+- activation_source_note behavior
+- warning acknowledgement behavior
+- Site 4 baseline #3/#4 ownership
+- period-effective expected selection
+- frontend activation dialog
+- tests covering lifecycle and period-effective behavior
+
+Governance rules:
+Approval is not activation.
+Activation must be explicit.
+Activation timing must be auditable.
+No activation may silently rewrite historical expected ownership.
+Replacement activation must preserve prior baseline ownership boundaries.
+Backdating is out of scope unless separately approved.
+Audit events must describe what happened, who did it, when, and what baseline was affected.
+
+Hard constraints:
+No production code changes.
+No baseline math changes.
+No expected-model changes.
+No historical expected rewrite.
+No authorization changes.
+No WS.5.
+No weather semantics changes.
+No device mapping changes.
+No migrations unless explicitly justified in the plan.
+No Site 4 mutations.
+Do not approve or activate anything on Site 4.
+
+Required deliverable:
+Create:
+
+docs/baseline_activation_effective_date_audit_events_audit.md
+
+Required contents:
+1. Executive summary.
+2. Current activation lifecycle.
+3. Current effective-date behavior.
+4. Current supersession behavior.
+5. Current attribution model.
+6. Current audit/event model.
+7. Existing data model inventory.
+8. Existing API inventory.
+9. Existing frontend UX inventory.
+10. Existing test inventory.
+11. Site 4 period-effective assessment.
+12. Gaps and risks.
+13. Recommended Phase B3 implementation plan.
+14. Mutation boundaries.
+15. Browser-validation strategy.
+16. Open product decisions.
+
+Return only:
+- audit findings
+- recommended implementation plan
+- affected files
+- affected routes
+- affected data models
+- migration impact
+- test plan
+- browser-validation plan
+- confirmation no production code changed

@@ -107,3 +107,9 @@ id = "RJY9rU7Z8N08TYeCWVeJV"
 uri = "file://docs/baseline_phase0_phase1_implementation_plan.md"
 type = "text"
 title = "Baseline Lifecycle Authorization Hardening (Phase 0) + Draft Preview (Phase 1) — Final Plan (D1–D4 approved)"
+
+[[outputs]]
+id = "mvVpXxE8WBsYkMjz1cFjY"
+uri = "file://docs/baseline_activation_effective_date_audit_events_audit.md"
+type = "text"
+title = "Baseline Activation Effective-Date & Audit Events — Phase B3 Audit"
