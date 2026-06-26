@@ -1,0 +1,240 @@
+Start an audit/design sprint.
+
+Do not make any production code changes.
+
+Sprint:
+Baseline Warning and Validation UX (Phase B2)
+
+Objective:
+Audit the current baseline validation and warning workflow and produce a complete implementation plan for a reviewer-centered validation experience that improves decision quality before baseline approval and activation while preserving all existing operational truth, lifecycle behavior, and expected-value integrity.
+
+Current-state audit:
+
+Trace the complete validation lifecycle beginning with draft baseline creation through approval and activation.
+
+Identify:
+
+• validation rules currently executed
+• validation rule sources
+• blocking vs non-blocking validation behavior
+• warning generation
+• hard-invalid conditions
+• acknowledgement workflow
+• validation_result_json structure
+• physics validation flow
+• API contracts
+• frontend consumers
+• review panels
+• approval flow
+• activation flow
+• browser UX
+• existing reviewer notes
+• existing activation_source_note behavior
+• existing warning acknowledgement behavior
+• Site 4 validation handling
+• automated tests covering validation
+
+Document every location where validation state can change.
+
+Identify every place where validation is computed versus merely displayed.
+
+Governance rules:
+
+Operational truth hierarchy remains:
+
+AI extraction
+→ promoted project facts
+→ draft baseline
+→ approved baseline
+→ active baseline
+
+Approval is not activation.
+
+Validation informs reviewer decisions.
+
+Validation does not modify operational truth.
+
+Warnings do not change baseline state.
+
+Acknowledgement does not change physics.
+
+Reviewer acknowledgement never overrides hard-invalid physics failures.
+
+Never fabricate:
+
+• expected values
+• validation outcomes
+• warning severity
+• weather semantics
+• source evidence
+• reviewer actions
+• causal explanations
+
+Use explicit states:
+
+ready
+available
+warning
+blocked
+invalid
+partial
+unavailable
+needs review
+
+Authority model:
+
+Read validation:
+telemetry-admin + authorized site access
+
+Review draft:
+telemetry-admin + authorized site access
+
+Approve / activate:
+telemetry-admin AND company-admin
+(existing implementation remains unchanged)
+
+This sprint must not alter any authorization behavior delivered in Phase 0.
+
+In scope:
+
+Audit only.
+
+Determine:
+
+1. Current validation architecture.
+2. Validation rule inventory.
+3. Blocking versus warning taxonomy.
+4. Current reviewer UX.
+5. Missing reviewer decision support.
+6. Validation data model.
+7. API contracts.
+8. Frontend rendering.
+9. Browser workflow.
+10. Existing audit trail.
+11. Test coverage.
+12. Site 4 validation behavior.
+
+Design recommendations for:
+
+• grouped validation presentation
+• severity hierarchy
+• field-level highlighting
+• evidence links
+• source-basis visibility
+• reviewer guidance
+• acknowledgement UX
+• required reviewer notes (where appropriate)
+• activation readiness summary
+• validation history visibility
+
+Out of scope:
+
+No production code.
+
+No frontend implementation.
+
+No backend implementation.
+
+No baseline math changes.
+
+No physics changes.
+
+No validation-rule changes.
+
+No expected-model changes.
+
+No expected calculations.
+
+No baseline activation changes.
+
+No approval changes.
+
+No lifecycle changes.
+
+No weather declaration work.
+
+No WS.5.
+
+No telemetry mapping.
+
+No migrations.
+
+No database mutations.
+
+No API mutations.
+
+No permission changes.
+
+No browser behavior changes.
+
+No historical expected rewrite.
+
+No changes to Site 4.
+
+Required deliverable:
+
+Create:
+
+docs/baseline_warning_validation_ux_audit.md
+
+The document must contain:
+
+1. Executive summary.
+2. Current validation architecture.
+3. Validation rule inventory.
+4. Severity classification matrix.
+5. Blocking vs warning analysis.
+6. Current reviewer workflow.
+7. UX gaps.
+8. API inventory.
+9. Data model inventory.
+10. Frontend component inventory.
+11. Browser workflow.
+12. Test inventory.
+13. Site 4 validation assessment.
+14. Recommended Phase B2 implementation plan.
+15. Risks.
+16. Mutation boundaries.
+17. Browser validation strategy.
+18. Open product decisions.
+
+Hard constraints:
+
+No production code changes.
+
+No backend mutations.
+
+No frontend mutations.
+
+No migrations.
+
+No permission changes.
+
+No lifecycle changes.
+
+No expected-output changes.
+
+No baseline math changes.
+
+No historical expected rewrite.
+
+No weather semantics changes.
+
+No WS.5.
+
+No device mapping changes.
+
+No Site 4 operational changes.
+
+Return only:
+
+1. Audit findings.
+2. Recommended implementation plan.
+3. Affected files.
+4. Existing routes.
+5. Existing data models.
+6. Existing frontend components.
+7. Existing tests.
+8. Browser validation approach.
+9. Mutation boundaries.
+10. Confirmation that no production code was changed.
