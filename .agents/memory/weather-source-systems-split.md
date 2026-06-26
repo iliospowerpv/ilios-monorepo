@@ -43,24 +43,18 @@ physics (native domain, resolver). No other external weather provider
 integrated; NREL/PVWatts/PVGIS hits are PVsyst document-parsing prompts.
 Full write-up: `docs/weather_data_source_audit.md`.
 
-**Native cosmetic-indicator replacement (IMPLEMENTED, dual-run):**
-The cosmetic `WeatherIndicator` (ActualProduction + the two site-card `Sites.tsx`)
-now shows a native telemetry-derived **`observed_condition`**, NOT `sites_weather`.
-Single source of truth: `native_weather_condition_service.derive_site_condition`
-(pure, query-free) fed by `solar_position.py` (zenith + Haurwitz clear-sky GHI).
-Surfaced two ways: (a) single-site via the read-only `performance-context`
-envelope (FE `useNativeWeatherCondition` hook); (b) site lists via
-`company_helper._extend_with_observed_condition` (batched latest-irradiance), set
-on a TRANSIENT `site.observed_condition` attr serialized under the existing
-`weather` alias in `om_site.py` (NEVER mutates the read-only `site.weather`).
-**Weatherstack still runs unchanged (dual-run)** — `sites_weather` is just no
-longer the indicator's source. So when debugging "why does the weather chip show
-X", look at the native service / performance-context, not `sites_weather`.
-Honesty rules enforced: null ≠ 0 (no irr ⇒ "unavailable"); never "rainy" (wettest
-= `overcast_unknown` → "precipitation (undetermined)"); **never imply POA/cell
-unless `plane_governed`** (raw `irradiance_wm2` merges POA+GHI, plane unknown).
-Sites have IANA `timezone` but **no numeric lat/long — only `lon_lat_url` (URL
-VARCHAR)**, hence the tiered algorithm (clear-sky index when coords parse, else
-irradiance-magnitude + local-time night detection). Design:
-`docs/native_weather_indicator_replacement_audit.md`. Decommission Weatherstack
-only AFTER dual-run validation + product sign-off.
+**Native cosmetic-indicator replacement (IMPLEMENTED, dual-run):** the cosmetic
+weather chip now shows a telemetry-derived `observed_condition`, NOT
+`sites_weather`. **Key debugging fact:** when the chip looks wrong, look at the
+native condition service + the `performance-context` read envelope, NOT
+`sites_weather` — Weatherstack still runs unchanged (true dual-run; nothing
+removed yet). Durable design rules to preserve: derivation is query-free/pure
+(no new ingestion); honesty invariants null ≠ 0 (no irradiance ⇒ "unavailable"),
+never "rainy" (wettest = "precipitation undetermined"), and **never imply
+POA/cell unless `plane_governed`** (raw `irradiance_wm2` mixes POA+GHI, plane
+unknown); sites have IANA `timezone` but **no numeric lat/long (only a
+`lon_lat_url` VARCHAR)**, so condition uses a tiered algorithm (clear-sky index
+when coords parse, else irradiance-magnitude + local-time night). Site-list value
+rides a transient ORM attr under the existing `weather` alias — never mutate the
+read-only `site.weather`/Site entity. Decommission Weatherstack only AFTER
+dual-run sign-off. Design: `docs/native_weather_indicator_replacement_audit.md`.
