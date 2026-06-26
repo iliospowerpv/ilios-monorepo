@@ -7,7 +7,7 @@ import Chip from '@mui/material/Chip';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import type { ReconciliationReadiness } from '../../../../../../../api';
+import type { ReconciliationReadiness, SourceBasisDrift } from '../../../../../../../api';
 import { PLACEHOLDER, formatDateTime } from '../utils';
 import BaselineFromFactsPanel from './BaselineFromFactsPanel';
 import DraftBaselineReviewPanel from './DraftBaselineReviewPanel';
@@ -49,6 +49,61 @@ const StatTile: React.FC<{ title: string; children: React.ReactNode }> = ({ titl
     {children}
   </Paper>
 );
+
+/**
+ * One-line baseline-level source-basis drift summary (Phase B4, audit gap G5),
+ * mirroring the chip on the active baseline row so the reviewer sees drift
+ * without scanning every table row. Read-only; `basis_unknown` is neutral
+ * (never red), and the rebuild action is shown only when the basis has drifted.
+ */
+const SourceBasisDriftSummary: React.FC<{ drift: SourceBasisDrift | null | undefined }> = ({ drift }) => {
+  if (!drift) return null;
+
+  if (drift.state === 'drifted') {
+    const fields = drift.drifted_fields.map(f => f.field).join(', ');
+    return (
+      <Box sx={{ mt: 1.5 }} data-testid="reconciliation-source-basis-summary">
+        <Typography variant="body2" color="warning.main" sx={{ fontWeight: 600 }}>
+          Source basis drifted ({drift.drifted_fields.length}){fields ? `: ${fields}` : ''}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          Rebuild the active baseline to include the latest promoted value.
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (drift.state === 'source_retired') {
+    return (
+      <Box sx={{ mt: 1.5 }} data-testid="reconciliation-source-basis-summary">
+        <Typography variant="body2" color="warning.main" sx={{ fontWeight: 600 }}>
+          Source fact retired
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          Rebuild the active baseline to re-establish its source basis.
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (drift.state === 'basis_unknown') {
+    return (
+      <Box sx={{ mt: 1.5 }} data-testid="reconciliation-source-basis-summary">
+        <Typography variant="body2" color="text.secondary">
+          Source basis not recorded — this baseline was not built from tracked facts, so drift can&apos;t be evaluated.
+        </Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ mt: 1.5 }} data-testid="reconciliation-source-basis-summary">
+      <Typography variant="body2" color="success.main">
+        Source basis: up to date — the active baseline matches every recorded fact-backed input.
+      </Typography>
+    </Box>
+  );
+};
 
 export const ReadinessSummary: React.FC<ReadinessSummaryProps> = ({
   readiness,
@@ -139,8 +194,16 @@ export const ReadinessSummary: React.FC<ReadinessSummaryProps> = ({
         </Grid>
       </Grid>
 
+      <SourceBasisDriftSummary drift={readiness.source_basis_drift} />
+
       {hasSite && <BaselineFromFactsPanel siteId={siteId as number} canDraft={canDraft} />}
-      {hasSite && <DraftBaselineReviewPanel siteId={siteId as number} canManageLifecycle={canManageLifecycle} />}
+      {hasSite && (
+        <DraftBaselineReviewPanel
+          siteId={siteId as number}
+          canManageLifecycle={canManageLifecycle}
+          sourceBasisDrift={readiness.source_basis_drift}
+        />
+      )}
     </Box>
   );
 };

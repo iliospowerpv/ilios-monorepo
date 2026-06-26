@@ -25,6 +25,7 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
 
 import { ApiClient } from '../../../../../../../api';
+import type { SourceBasisDrift } from '../../../../../../../api';
 import type {
   ActiveExpectedBaselineResponse,
   BaselineDiffResponse,
@@ -52,6 +53,12 @@ interface DraftBaselineReviewPanelProps {
    * are gated on this — never on a locally re-derived company-admin guess.
    */
   canManageLifecycle?: boolean;
+  /**
+   * Read-only source-basis drift verdict (Phase B4), threaded from the
+   * reconciliation readiness so the version-history panel can badge the active
+   * baseline row. Display only — introduces no mutation affordance.
+   */
+  sourceBasisDrift?: SourceBasisDrift | null;
 }
 
 // Only the weather-adjusted model drives the live expected calc; the review
@@ -234,7 +241,8 @@ const DesignEstimateSeparationNote: React.FC = () => (
  */
 export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> = ({
   siteId,
-  canManageLifecycle: canManageLifecycleProp
+  canManageLifecycle: canManageLifecycleProp,
+  sourceBasisDrift = null
 }) => {
   const enabled = Number.isSafeInteger(siteId) && siteId > 0;
   // Draft-authoring (create/preview a draft) is telemetry-admin + site access —
@@ -1033,7 +1041,7 @@ export const DraftBaselineReviewPanel: React.FC<DraftBaselineReviewPanelProps> =
         Design-estimate baselines are a separate track and are neither reviewed nor changed here.
       </Alert>
 
-      <ValidationHistoryPanel baselines={weatherAdjustedBaselines} />
+      <ValidationHistoryPanel baselines={weatherAdjustedBaselines} sourceBasisDrift={sourceBasisDrift} />
 
       {/* Approve confirmation dialog */}
       <Dialog

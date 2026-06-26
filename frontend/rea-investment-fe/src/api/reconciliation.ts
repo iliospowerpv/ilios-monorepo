@@ -96,6 +96,26 @@ export interface ReconciliationRow {
   source_document_type_lacks_operational_schema: boolean | null;
 }
 
+export type SourceBasisDriftState = 'up_to_date' | 'drifted' | 'basis_unknown' | 'source_retired';
+
+export interface SourceBasisDriftField {
+  field: string;
+  basis_value: ReconciliationValue;
+  current_value: ReconciliationValue;
+  current_fact_id: number | null;
+}
+
+export interface SourceBasisDrift {
+  /** Backend may add states later; keep the union open. */
+  state: SourceBasisDriftState | string;
+  baseline_id: number | null;
+  basis_captured_at: string | null;
+  unknown_basis: boolean;
+  drifted_fields: SourceBasisDriftField[];
+  no_fact_lineage_fields: string[];
+  note: string;
+}
+
 export interface ReconciliationReadiness {
   facts_to_draft_ready: boolean;
   missing_required_physics_fields: string[];
@@ -111,6 +131,9 @@ export interface ReconciliationReadiness {
   design_points_present_months: number[];
   design_points_missing: string[];
   design_points_parse_errors: string[];
+
+  /** Read-only value-based source-basis verdict (Phase B4). Additive, nullable. */
+  source_basis_drift: SourceBasisDrift | null;
 }
 
 export interface TelemetryReality {

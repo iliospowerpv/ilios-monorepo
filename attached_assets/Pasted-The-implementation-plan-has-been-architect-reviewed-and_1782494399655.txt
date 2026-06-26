@@ -1,0 +1,243 @@
+The implementation plan has been architect-reviewed and approved. The objective is to implement only D1–D3 exactly as specified, with no unrelated refactoring or behavioral changes.
+
+Implementation Scope
+Implement the read-only Baseline Source Basis Drift feature exactly as documented in:
+
+docs/baseline_source_basis_drift_staleness_implementation_plan.md
+
+Non-Negotiable Constraints
+This implementation is read-only.
+
+Do not modify:
+
+baseline generation math
+
+promotion lifecycle
+
+expected output calculations
+
+project facts
+
+weather logic
+
+mappings
+
+ingestion
+
+scheduler
+
+authentication
+
+permissions
+
+WebSocket behavior
+
+immutable baseline behavior
+
+can_drive_expected logic
+
+Site 4 data
+
+database migrations (D1–D3 only)
+
+No writes should occur anywhere in this implementation.
+
+Required Implementation
+1. New Resolver
+Create
+
+app/services/telemetry/baseline_source_basis_drift.py
+This resolver becomes the single source of truth for drift determination.
+
+2. Drift Algorithm
+Implement exactly this order:
+
+Step 0
+
+Build recorded basis from
+model_parameters_json
+
+If no basis exists:
+
+field -> basis_unknown
+
+never drift
+
+Step 1
+
+Optional signature shortcut
+
+Rules:
+
+equality may short-circuit
+
+inequality NEVER proves drift
+
+continue to authoritative comparison
+
+Step 2
+
+Authoritative value comparison
+
+Comparison rules:
+
+_coerce_number()
+
+only if coercion fails for normalizable fields:
+input_norm.propose()
+
+Decimal → float
+
+tolerant values_match()
+
+Only positively established value differences produce drift.
+
+Ambiguous comparisons remain neutral.
+
+Step 3
+
+Reviewer-entered constants
+
+Return
+
+no_fact_lineage
+Never classify as drift.
+
+Step 4
+
+Remove timestamp/created_at drift trigger completely.
+
+Step 5
+
+Perform baseline-level rollup.
+
+3. Reconciliation Service
+Modify only by deriving existing readiness information from the new resolver.
+
+Continue producing:
+
+W_ACTIVE_OUTDATED
+Populate the new additive drift block.
+
+No behavioral changes outside the resolver.
+
+4. Schema
+Add only:
+
+Optional[...] = None
+nullable field
+
+source_basis_drift
+to
+
+ReconciliationReadiness
+No breaking API changes.
+
+5. Frontend
+Update only:
+
+reconciliation.ts
+
+ValidationHistoryPanel
+
+ReadinessSummary
+
+StatusCell
+
+Display only.
+
+No business logic migration to frontend.
+
+Backend remains authoritative.
+
+6. UI Rules
+Display enums rather than presentation strings.
+
+Backend should return stable values such as:
+
+up_to_date
+drifted
+basis_unknown
+no_fact_lineage
+source_retired
+Frontend maps enums to badges/colors.
+
+7. Tests
+Implement regression tests for:
+
+Backend
+
+equal re-promotion
+
+numeric normalization
+
+Decimal handling
+
+floating tolerance
+
+null vs missing
+
+reordered JSON
+
+basis_unknown
+
+no_fact_lineage
+
+source_retired
+
+multiple drift fields
+
+zero-write assertion
+
+Integration
+
+Site 4 validation
+
+reconciliation endpoint unchanged
+
+readiness unchanged except additive metadata
+
+Frontend
+
+badge rendering
+
+neutral rendering
+
+drift rendering
+
+8. Acceptance Criteria
+The implementation is complete only if:
+
+zero database writes occur
+
+existing API contract remains backward compatible
+
+Site 4 false positives are eliminated
+
+basis_unknown is informational only
+
+no_fact_lineage is informational only
+
+drift only occurs on authoritative value differences
+
+signature mismatch alone never causes drift
+
+timestamp differences never cause drift
+
+all tests pass
+
+Deliverables
+After implementation provide:
+
+list of modified files
+
+summary of implementation
+
+any deviations from the plan (expected: none)
+
+test results
+
+confirmation that no write paths were introduced
+
+If any portion of the implementation requires changing behavior outside the approved scope, stop and explain why before making that change.
+

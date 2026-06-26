@@ -41,7 +41,8 @@ const baseReadiness: SiteReconciliationResponse['readiness'] = {
   design_points_ready: null,
   design_points_present_months: [],
   design_points_missing: [],
-  design_points_parse_errors: []
+  design_points_parse_errors: [],
+  source_basis_drift: null
 };
 
 const baseTelemetry: SiteReconciliationResponse['telemetry_reality'] = {

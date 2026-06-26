@@ -221,6 +221,9 @@ export type {
   ReconciliationWarning,
   ReconciliationRow,
   ReconciliationReadiness,
+  SourceBasisDriftState,
+  SourceBasisDriftField,
+  SourceBasisDrift,
   TelemetryReality,
   SiteReconciliationResponse
 } from './reconciliation';

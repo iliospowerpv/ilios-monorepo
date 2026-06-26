@@ -55,6 +55,7 @@ from app.services.due_diligence.parse_state_service import (
 )
 from app.services.telemetry import baseline_from_facts_service as facts_bridge
 from app.services.telemetry import baseline_points_service as points_svc
+from app.services.telemetry import baseline_source_basis_drift as drift_svc
 from app.services.telemetry.device_inventory_reconciliation_service import (
     build_inventory_reconciliation_summary,
 )
@@ -493,10 +494,24 @@ class _Ctx:
         self.de_draft_points = _baseline_points(db, self.de_draft, site)
         self.de_active_points = _baseline_points(db, self.de_active, site)
 
-        self.wam_active_fact_ids = _baseline_source_fact_ids(self.wam_active)
-        self.wam_active_created = _as_naive_utc(
-            getattr(self.wam_active, "created_at", None)
+        # Value-based source-basis drift (Phase B4). The read-only resolver
+        # compares each fact-backed baseline input against the basis recorded
+        # when the active baseline was built — by VALUE, never by fact-id
+        # membership or timestamp — so a re-promotion to the same value is never
+        # false-flagged (the prior id-membership + `created_at` heuristic is
+        # replaced).
+        retired_fact_ids = frozenset(
+            fact.id
+            for fact_list in self.retired_by_name.values()
+            for fact in fact_list
+            if fact.id is not None
         )
+        self.source_basis_drift = drift_svc.resolve_source_basis_drift(
+            self.wam_active,
+            self.active_by_name,
+            retired_fact_ids=retired_fact_ids,
+        )
+        self.drifted_columns = {f.field for f in self.source_basis_drift.drifted_fields}
 
         # Per-source-file parse-state indicator cache. Computed lazily and only
         # for rows carrying a source file; many rows share a source version, so
@@ -818,14 +833,14 @@ def _build_row(
         baseline_target == HEADER_COLUMN
         and active_fact is not None
         and ctx.wam_active is not None
+        and canonical_name in ctx.drifted_columns
     ):
-        ft = _fact_time(active_fact)
-        if active_fact.id not in ctx.wam_active_fact_ids or (
-            ft is not None
-            and ctx.wam_active_created is not None
-            and ft > ctx.wam_active_created
-        ):
-            warnings.append(W_ACTIVE_OUTDATED)
+        # Re-derived from the value-based source-basis resolver (Phase B4): the
+        # warning fires ONLY when the current active fact's value positively
+        # differs from the basis recorded on the active baseline. The constant
+        # and its meaning are unchanged; only detection is now accurate (a
+        # same-value re-promotion with a new fact id no longer false-flags).
+        warnings.append(W_ACTIVE_OUTDATED)
     if baseline_target in (POINTS_MONTHLY, POINTS_ANNUAL) and active_fact is not None:
         design_baseline = ctx.de_draft or ctx.de_active
         if design_baseline is not None and draft_raw is None and active_baseline_raw is None:
@@ -1034,6 +1049,7 @@ def _build_readiness(ctx: _Ctx) -> ReconciliationReadiness:
         design_points_present_months=present_months,
         design_points_missing=design_missing,
         design_points_parse_errors=parse_errors,
+        source_basis_drift=ctx.source_basis_drift,
     )
 
 

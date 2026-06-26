@@ -179,6 +179,57 @@ class ReconciliationRow(BaseModel):
     )
 
 
+class SourceBasisDriftField(BaseModel):
+    """One fact-backed baseline column whose value drifted from its recorded basis."""
+
+    field: str = Field(
+        description="Baseline column whose current value differs from its recorded basis."
+    )
+    basis_value: Optional[Any] = Field(
+        default=None,
+        description="Value recorded as the source basis when the active baseline was built.",
+    )
+    current_value: Optional[Any] = Field(
+        default=None,
+        description="Current active-fact value that positively differs from the recorded basis.",
+    )
+    current_fact_id: Optional[int] = Field(
+        default=None, description="Active project_fact id supplying the current value."
+    )
+
+
+class SourceBasisDrift(BaseModel):
+    """Read-only, value-based source-basis verdict for the ACTIVE baseline (Phase B4).
+
+    ``state`` rolls up per-field comparisons with precedence
+    ``basis_unknown > drifted > source_retired > up_to_date`` (informational
+    ordering, not a blocker escalation). ``basis_unknown`` is neutral — it means
+    the baseline carries no recorded fact lineage, NOT that the source changed.
+    """
+
+    state: str = Field(
+        description="up_to_date | drifted | basis_unknown | source_retired."
+    )
+    baseline_id: Optional[int] = None
+    basis_captured_at: Optional[datetime] = Field(
+        default=None,
+        description="Informational only (approved_at/active_from/created_at); never a drift trigger.",
+    )
+    unknown_basis: bool = Field(
+        default=False,
+        description="True when the baseline has no recorded fact lineage at all.",
+    )
+    drifted_fields: list[SourceBasisDriftField] = Field(default_factory=list)
+    no_fact_lineage_fields: list[str] = Field(
+        default_factory=list,
+        description="Reviewer-supplied / no-live-counterpart fields; informational, never drift.",
+    )
+    note: str = Field(
+        default="",
+        description="Honest, human-readable summary of the baseline's source-basis state.",
+    )
+
+
 class ReconciliationReadiness(BaseModel):
     facts_to_draft_ready: bool = Field(
         description="Whether promoted facts + reviewer constants can form a draft."
@@ -205,6 +256,14 @@ class ReconciliationReadiness(BaseModel):
     design_points_present_months: list[int] = Field(default_factory=list)
     design_points_missing: list[str] = Field(default_factory=list)
     design_points_parse_errors: list[str] = Field(default_factory=list)
+
+    source_basis_drift: Optional[SourceBasisDrift] = Field(
+        default=None,
+        description=(
+            "Read-only value-based source-basis verdict for the active baseline "
+            "(Phase B4). Additive and nullable for back-compat."
+        ),
+    )
 
 
 class TelemetryReality(BaseModel):
