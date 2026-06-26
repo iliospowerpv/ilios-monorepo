@@ -49,6 +49,10 @@ from app.schema.telemetry_v2 import (
 from app.services.telemetry.device_eligibility_diagnostics_service import (
     compute_site_eligibility_diagnostics,
 )
+from app.helpers.solar_position import parse_lon_lat
+from app.services.telemetry.native_weather_condition_service import (
+    derive_site_condition,
+)
 from app.schema.telemetry import TelemetryHealthStatus
 from app.services.telemetry.expected_service import (
     BUCKET_SIZE_TO_HOURS,
@@ -525,6 +529,32 @@ def build_performance_context(
         expected_state=window_expected_state,
     )
 
+    weather_semantics = _build_weather_semantics(db, site, recon=recon)
+
+    # --- Additive native observed-weather indicator (cosmetic, composition-only).
+    # Derived from the SAME already-fetched rollups (latest non-null irradiance +
+    # cell temperature), native freshness, and the GOVERNED plane flag — no new
+    # query, no physics, no baseline. ``derive_site_condition`` preserves the
+    # ``null``-vs-``0`` rule and never labels POA unless the plane is governed.
+    latest_irr_ts = max(irr_by_ts) if irr_by_ts else None
+    latest_irr_value = irr_by_ts.get(latest_irr_ts) if latest_irr_ts is not None else None
+    latest_temp_ts = max(temp_by_ts) if temp_by_ts else None
+    latest_temp_value = temp_by_ts.get(latest_temp_ts) if latest_temp_ts is not None else None
+    governed_temp_type = weather_semantics.temperature.type
+    if governed_temp_type in (None, "unknown"):
+        governed_temp_type = None
+    observed_condition = derive_site_condition(
+        latest_irradiance_wm2=latest_irr_value,
+        latest_irradiance_at_utc=latest_irr_ts,
+        freshness_state=quality.freshness_state,
+        timezone_name=tz_name,
+        coordinates=parse_lon_lat(getattr(site, "lon_lat_url", None)),
+        plane_governed=(weather_semantics.irradiance.plane or "").lower() == "poa",
+        latest_temperature_f=latest_temp_value,
+        temperature_unit=temp_unit,
+        temperature_type=governed_temp_type,
+    )
+
     return PerformanceContextResponse(
         site_id=site.id,
         site_timezone=tz_name,
@@ -534,7 +564,8 @@ def build_performance_context(
         bucket_size=bucket_size,
         temp_unit=temp_unit,
         series=series,
-        weather_semantics=_build_weather_semantics(db, site, recon=recon),
+        weather_semantics=weather_semantics,
+        observed_condition=observed_condition,
         baseline_status=_build_baseline_status(
             site,
             active=active,

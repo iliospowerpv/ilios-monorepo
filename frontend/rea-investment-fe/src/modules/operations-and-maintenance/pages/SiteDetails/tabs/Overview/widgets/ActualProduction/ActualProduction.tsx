@@ -16,6 +16,7 @@ import { WidgetContainer } from '../../Overview.style';
 import { formatFloatValue } from '../../../../../../../../utils/formatters/formatFloatValue';
 import { ApiClient } from '../../../../../../../../api';
 import { useSiteLatestTelemetry } from '../../../../../../../../hooks/telemetryV2';
+import { useNativeWeatherCondition } from '../../../../../../../../hooks/useNativeWeatherCondition';
 import WeatherIndicator from '../../../../../../../../components/common/WeatherIndicator/WeatherIndicator';
 import ToggleGroup from '../../../../../../../../components/common/ToogleGroup/ToggleGroup';
 import { parseUtc } from '../../../../../../../../utils/time/utcTime';
@@ -98,12 +99,15 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
   const { data: latestTelemetry } = useSiteLatestTelemetry(siteId);
   const lastRefreshed = formatWhen(latestTelemetry?.latest_reading_at);
 
+  // Native observed-weather condition (dual-run alongside the untouched
+  // Weatherstack pipeline). Drives the cosmetic chip below; null/unavailable
+  // hides it (never a fabricated condition).
+  const { data: observedCondition } = useNativeWeatherCondition(siteId);
+
   const theme = useTheme();
   const [alignment, setAlignment] = React.useState('current');
 
-  // Weather descriptor is contextual/observed only — no hard-coded default. The
-  // chip below renders ONLY when a descriptor is actually present.
-  const { system_size_ac = 0, system_size_dc = 0, weather } = data || {};
+  const { system_size_ac = 0, system_size_dc = 0 } = data || {};
 
   // Honest null handling: only null/undefined map to N/A. A genuine measured 0
   // and a negative night-time tare value are finite and preserved untouched.
@@ -134,17 +138,6 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
   // Caption for the "Variance N/A" state — actual-side reason first, then the
   // expected-side term from the resolver.
   const varianceReason = !actualAvailable ? 'Actual unavailable' : expectedState.term;
-
-  // Observed weather descriptor + icon, normalized from the string-or-object
-  // shape. Null when no descriptor is present so the chip stays hidden.
-  const weatherDescription =
-    weather && typeof weather === 'object' && 'weather_description' in weather
-      ? weather.weather_description
-      : typeof weather === 'string'
-        ? weather
-        : null;
-  const weatherIconUrl =
-    weather && typeof weather === 'object' && 'weather_icon_url' in weather ? weather.weather_icon_url : null;
 
   const deriveProductionColorFromValue = (progress: number): string => {
     if (progress < 51) return theme.efficiencyColors.low;
@@ -350,8 +343,8 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
                     </Typography>
                   </Grid>
                   <Grid item xs={4} sx={{ '&.MuiGrid-item': { textAlign: 'center' } }}>
-                    {weatherDescription && (
-                      <BootstrapTooltip title={`Observed weather (contextual): ${weatherDescription}`}>
+                    {observedCondition && observedCondition.state !== 'unavailable' && (
+                      <BootstrapTooltip title={`Observed (native): ${observedCondition.label}`}>
                         <Box
                           display="flex"
                           flexDirection="column"
@@ -368,7 +361,7 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
                           >
                             Observed
                           </Typography>
-                          <WeatherIndicator imageSrc={weatherIconUrl} />
+                          <WeatherIndicator condition={observedCondition} />
                           <Typography
                             variant="caption"
                             noWrap
@@ -376,7 +369,7 @@ const ActualProduction: React.FC<ActualProductionProps> = ({ siteId }) => {
                             maxWidth="100%"
                             color={theme => theme.palette.text.secondary}
                           >
-                            {weatherDescription}
+                            {observedCondition.label}
                           </Typography>
                         </Box>
                       </BootstrapTooltip>

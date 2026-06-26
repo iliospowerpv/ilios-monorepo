@@ -1,6 +1,6 @@
 ---
 name: Weather source systems split
-description: iliOS has TWO disjoint weather systems — legacy Weatherstack (cosmetic) vs native W0/W1/W2 (physics); they share no code/storage/creds.
+description: iliOS weather = legacy Weatherstack (external/paid cosmetic) vs native W0/W1/W2 (physics) vs native observed_condition (telemetry-derived cosmetic, dual-run with Weatherstack); never conflate.
 ---
 
 iliOS weather data comes from two systems that must never be conflated:
@@ -43,17 +43,24 @@ physics (native domain, resolver). No other external weather provider
 integrated; NREL/PVWatts/PVGIS hits are PVsyst document-parsing prompts.
 Full write-up: `docs/weather_data_source_audit.md`.
 
-**Native cosmetic-indicator replacement (design):**
-`docs/native_weather_indicator_replacement_audit.md` designs replacing the paid
-Weatherstack description/icon (FE `OMSiteWeather`, backend `WeatherSchema` in
-`app/schema/om_site.py`, shown by `WeatherIndicator` in `ActualProduction` +
-the two site-card `Sites.tsx`). Replacement derives an **"observed light level"**
-from native rollup `irradiance_wm2` (reuse the read-only `performance-context`
-envelope — already exposes per-bucket irradiance/temp + `freshness_state` +
-governed `weather_semantics`). Hard honesty rules: never fabricate (null ≠ 0,
-no irr ⇒ "unavailable"); **never imply POA/cell unless a governed
-`weather_device_mappings` declaration says so** (raw `irradiance_wm2` merges
-POA+GHI, plane unknown). Sites have a clean IANA `timezone` but **no numeric
-lat/long — only `lon_lat_url` (a URL VARCHAR)**, forcing a tiered algorithm
-(clear-sky index when lat/long parses, else irradiance-magnitude + local-time
-night detection). Decommission Weatherstack only AFTER dual-run.
+**Native cosmetic-indicator replacement (IMPLEMENTED, dual-run):**
+The cosmetic `WeatherIndicator` (ActualProduction + the two site-card `Sites.tsx`)
+now shows a native telemetry-derived **`observed_condition`**, NOT `sites_weather`.
+Single source of truth: `native_weather_condition_service.derive_site_condition`
+(pure, query-free) fed by `solar_position.py` (zenith + Haurwitz clear-sky GHI).
+Surfaced two ways: (a) single-site via the read-only `performance-context`
+envelope (FE `useNativeWeatherCondition` hook); (b) site lists via
+`company_helper._extend_with_observed_condition` (batched latest-irradiance), set
+on a TRANSIENT `site.observed_condition` attr serialized under the existing
+`weather` alias in `om_site.py` (NEVER mutates the read-only `site.weather`).
+**Weatherstack still runs unchanged (dual-run)** — `sites_weather` is just no
+longer the indicator's source. So when debugging "why does the weather chip show
+X", look at the native service / performance-context, not `sites_weather`.
+Honesty rules enforced: null ≠ 0 (no irr ⇒ "unavailable"); never "rainy" (wettest
+= `overcast_unknown` → "precipitation (undetermined)"); **never imply POA/cell
+unless `plane_governed`** (raw `irradiance_wm2` merges POA+GHI, plane unknown).
+Sites have IANA `timezone` but **no numeric lat/long — only `lon_lat_url` (URL
+VARCHAR)**, hence the tiered algorithm (clear-sky index when coords parse, else
+irradiance-magnitude + local-time night detection). Design:
+`docs/native_weather_indicator_replacement_audit.md`. Decommission Weatherstack
+only AFTER dual-run validation + product sign-off.

@@ -5,6 +5,7 @@ import { ThemeProvider } from '@mui/material/styles';
 
 import ActualProduction from '../ActualProduction';
 import theme from '../../../../../../../../../utils/styles/theme';
+import type { ObservedCondition } from '../../../../../../../../../types/telemetryV2';
 
 // react-chartjs-2 renders to a canvas jsdom cannot drive; stub the Doughnut with
 // an element that serializes the dataset so we can assert on the ring values.
@@ -32,6 +33,15 @@ jest.mock('../../../../../../../../../hooks/telemetryV2', () => ({
   useSiteLatestTelemetry: () => ({ data: undefined })
 }));
 
+// The native observed-weather condition now drives the cosmetic chip (dual-run
+// alongside the untouched Weatherstack pipeline). Mock the hook so each test can
+// set the returned condition explicitly.
+const mockUseNativeWeatherCondition = jest.fn();
+
+jest.mock('../../../../../../../../../hooks/useNativeWeatherCondition', () => ({
+  useNativeWeatherCondition: () => mockUseNativeWeatherCondition()
+}));
+
 type ProductionResponse = Record<string, unknown>;
 
 const baseResponse: ProductionResponse = {
@@ -49,6 +59,20 @@ const baseResponse: ProductionResponse = {
   expected_state: 'available'
 };
 
+const cloudyCondition: ObservedCondition = {
+  state: 'cloudy',
+  label: 'Cloudy / overcast (observed)',
+  light_level: 'low',
+  observed_irradiance_wm2: 120,
+  plane_governed: false,
+  temperature: null,
+  confidence: 'observed_uncalibrated',
+  tier: 'A',
+  as_of_utc: null,
+  as_of_site_local: null,
+  data_quality: 'fresh'
+};
+
 const renderWidget = () => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -62,6 +86,9 @@ const renderWidget = () => {
 
 beforeEach(() => {
   mockGetSiteDashboardProduction.mockReset();
+  mockUseNativeWeatherCondition.mockReset();
+  // Default: no observed condition available, so the weather chip stays hidden.
+  mockUseNativeWeatherCondition.mockReturnValue({ data: null });
 });
 
 describe('ActualProduction honest null display', () => {
@@ -132,22 +159,32 @@ describe('ActualProduction honest null display', () => {
     expect(screen.getByText('Baseline not available')).toBeInTheDocument();
   });
 
-  it('hides the weather chip entirely when no descriptor is returned', async () => {
-    mockGetSiteDashboardProduction.mockResolvedValue({ ...baseResponse, weather: null });
+  it('hides the weather chip entirely when no observed condition is available', async () => {
+    mockGetSiteDashboardProduction.mockResolvedValue(baseResponse);
+    mockUseNativeWeatherCondition.mockReturnValue({ data: null });
     renderWidget();
 
     await screen.findByTestId('doughnut');
     expect(screen.queryByText('Observed')).not.toBeInTheDocument();
   });
 
-  it('renders an observed/contextual weather chip when a descriptor is present', async () => {
-    mockGetSiteDashboardProduction.mockResolvedValue({
-      ...baseResponse,
-      weather: { weather_description: 'Cloudy', weather_icon_url: 'http://example.com/cloud.png' }
+  it('hides the weather chip when the native condition is unavailable (never fabricated)', async () => {
+    mockGetSiteDashboardProduction.mockResolvedValue(baseResponse);
+    mockUseNativeWeatherCondition.mockReturnValue({
+      data: { ...cloudyCondition, state: 'unavailable', label: 'Observed weather unavailable' }
     });
     renderWidget();
 
+    await screen.findByTestId('doughnut');
+    expect(screen.queryByText('Observed')).not.toBeInTheDocument();
+  });
+
+  it('renders the native observed-weather chip from observed_condition', async () => {
+    mockGetSiteDashboardProduction.mockResolvedValue(baseResponse);
+    mockUseNativeWeatherCondition.mockReturnValue({ data: cloudyCondition });
+    renderWidget();
+
     expect(await screen.findByText('Observed')).toBeInTheDocument();
-    expect(screen.getByText('Cloudy')).toBeInTheDocument();
+    expect(screen.getByText('Cloudy / overcast (observed)')).toBeInTheDocument();
   });
 });

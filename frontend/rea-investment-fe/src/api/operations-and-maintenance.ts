@@ -1,6 +1,7 @@
 import { AxiosInstance } from 'axios';
 
 import type { ExpectedState } from '../utils/telemetry/expectedState';
+import type { ObservedCondition } from '../types/telemetryV2';
 
 enum Ordering {
   ID = 'id',
@@ -184,7 +185,9 @@ interface OMSiteInfo {
   name: string;
   actual_kw: number | null;
   expected_kw: number | null;
-  weather: OMSiteWeather | string | null;
+  // Native observed condition (dual-run). Legacy string/OMSiteWeather shapes are
+  // tolerated for back-compat but are no longer produced by the backend.
+  weather: ObservedCondition | OMSiteWeather | string | null;
   actual_vs_expected: number | null;
   cumulative_vs_expected: number | null;
   cumulative_7_days_vs_expected: number | null;
@@ -289,6 +292,7 @@ interface OMCompanyDashboardProductionResponse {
   cumulative_actual_vs_expected: number;
 }
 
+/** @deprecated Legacy Weatherstack icon/description shape; superseded by ObservedCondition. */
 interface OMSiteWeather {
   weather_description: string;
   weather_icon_url: string;
@@ -302,7 +306,7 @@ interface OMSiteDashboardProductionResponse {
   performance_index: number;
   system_size_ac: number;
   system_size_dc: number;
-  weather: OMSiteWeather | string | null;
+  weather: ObservedCondition | OMSiteWeather | string | null;
   cumulative_actual_kw: number;
   cumulative_expected_kw: number | null;
   cumulative_actual_vs_expected: number;

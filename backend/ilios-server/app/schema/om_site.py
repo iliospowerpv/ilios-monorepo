@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, field_validator
 from app.schema.alert import AlertOverviewSchema
 from app.schema.common import calculate_actual_vs_expected, round_to_scale_2
 from app.schema.paginator import BasePaginator
+from app.schema.telemetry_v2 import ObservedCondition
 
 
 class OMSitesBaseSchema(BaseModel):
@@ -50,9 +51,18 @@ class WeatherSchema(BaseModel):
 
 
 class OMSitesBaseExtendedSchema(OMSitesBaseSchema):
-    # TODO: remove default value after frontend replaces weather with WeatherSchema, until that return "N/A"
-    latest_weather_info: Optional[WeatherSchema | str] = Field(
-        None, validate_default=True, examples=["Sunny"], serialization_alias="weather"
+    # Native observed-weather indicator, content-swapped from the Weatherstack
+    # ``latest_weather_info``. The Weatherstack pipeline and ``WeatherSchema`` are
+    # intentionally left in place for the untouched dual-run; only what this list
+    # endpoint SERIALIZES changes. Kept under the existing ``weather`` serialization
+    # alias so AG Grid ``field: 'weather'`` and the cell renderer keep their shape —
+    # only the value type changes (``ObservedCondition | null``). Populated from a
+    # transient ``site.observed_condition`` attribute set by the batched list
+    # enricher (never mutates the read-only ``site.weather`` ORM property); when no
+    # attribute is set it defaults to ``None`` (FE renders "unavailable"/CloudOff,
+    # never a fabricated description).
+    observed_condition: Optional[ObservedCondition] = Field(
+        None, serialization_alias="weather"
     )
     actual_vs_expected: Optional[int] = Field(None, validate_default=True, examples=[22])
 
@@ -62,11 +72,6 @@ class OMSitesBaseExtendedSchema(OMSitesBaseSchema):
         actual_kw = info.data.get("actual_kw")
         expected_kw = info.data.get("expected_kw")
         return calculate_actual_vs_expected(actual_kw, expected_kw)
-
-    @field_validator("latest_weather_info")
-    @classmethod
-    def generate_weather(cls, weather):
-        return "N/A" if weather is None else weather
 
 
 class OMSitesPageSchema(OMSitesBaseExtendedSchema):

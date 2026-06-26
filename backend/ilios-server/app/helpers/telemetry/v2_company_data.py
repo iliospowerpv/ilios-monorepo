@@ -111,6 +111,38 @@ def get_sites_latest_power(
     return {row.site_id: float(row.value) for row in rows}
 
 
+def get_sites_latest_irradiance(
+    db_session: Session, site_ids, *, bucket_size: str = CHART_BUCKET_SIZE
+) -> dict[int, tuple[float, datetime]]:
+    """Latest irradiance rollup bucket (value + bucket_start) per site (one query).
+
+    Returns ``{site_id: (latest_irradiance_wm2, bucket_start)}`` for every site
+    that has at least one irradiance rollup; sites without any are simply absent
+    (callers treat a missing site as "no observed irradiance"). Mirrors
+    :func:`get_sites_latest_power`'s ``DISTINCT ON (site_id)`` newest-bucket
+    pattern. Read-only; backs the cosmetic native observed-condition indicator on
+    the sites lists — it never feeds the expected model or any baseline.
+    """
+    site_ids = list(site_ids)
+    if not site_ids:
+        return {}
+    rows = (
+        db_session.query(TelemetrySiteIntervalRollup)
+        .filter(
+            TelemetrySiteIntervalRollup.site_id.in_(site_ids),
+            TelemetrySiteIntervalRollup.normalized_metric == IRRADIANCE_METRIC,
+            TelemetrySiteIntervalRollup.bucket_size == bucket_size,
+        )
+        .distinct(TelemetrySiteIntervalRollup.site_id)
+        .order_by(
+            TelemetrySiteIntervalRollup.site_id.asc(),
+            TelemetrySiteIntervalRollup.bucket_start.desc(),
+        )
+        .all()
+    )
+    return {row.site_id: (float(row.value), row.bucket_start) for row in rows}
+
+
 def get_sites_today_energy(
     db_session: Session, sites, *, bucket_size: str = CHART_BUCKET_SIZE
 ) -> dict[int, float]:

@@ -49,11 +49,7 @@ const SourceBasisChip: React.FC<{ drift: SourceBasisDrift; testId: string }> = (
     return (
       <Box sx={{ mt: 0.5 }} data-testid={testId}>
         <Tooltip title={fields.length > 0 ? `Drifted fields: ${fields.join(', ')}` : ''}>
-          <Chip
-            size="small"
-            color="warning"
-            label={`Source basis drifted (${drift.drifted_fields.length})`}
-          />
+          <Chip size="small" color="warning" label={`Source basis drifted (${drift.drifted_fields.length})`} />
         </Tooltip>
         <Typography variant="caption" display="block" color="warning.main" sx={{ mt: 0.25 }}>
           Rebuild the active baseline to include the latest promoted value.

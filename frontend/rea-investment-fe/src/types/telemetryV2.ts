@@ -1397,6 +1397,56 @@ export interface PerformanceContextWindow {
   tz_note: string;
 }
 
+/** Coarse observed light-level band derived from raw irradiance. */
+export type ObservedLightLevel = 'strong' | 'moderate' | 'low' | 'dark';
+
+/** Honest observed-condition state. Never "rainy"; wettest honest state is overcast_unknown. */
+export type ObservedConditionState =
+  | 'sunny'
+  | 'partly_cloudy'
+  | 'cloudy'
+  | 'overcast_unknown'
+  | 'low_light'
+  | 'nighttime'
+  | 'unavailable';
+
+/** Confidence in the observed condition; reflects governance + freshness, never a forecast. */
+export type ObservedConditionConfidence = 'observed_calibrated' | 'observed_uncalibrated' | 'coarse' | 'unavailable';
+
+/**
+ * A single observed temperature reading for the cosmetic weather indicator.
+ * `type` carries the GOVERNED `temperature_type` ONLY (e.g. "cell"); it is
+ * `null` whenever the semantics are ungoverned/unknown — the indicator never
+ * guesses or converts ambient<->cell.
+ */
+export interface ObservedTemperature {
+  value: number;
+  unit: 'F' | 'C';
+  type: string | null;
+}
+
+/**
+ * Native, observed-only "light level" derived from telemetry (cosmetic). Mirror
+ * of the backend `ObservedCondition`. NOT a forecast and NOT a meteorological
+ * condition. `null`-vs-`0` is preserved: `observed_irradiance_wm2` is `null`
+ * when unavailable and never coerced to `0`; a genuine measured `0` is
+ * classified by solar geometry/time. "rain"/"rainy" is never emitted, and any
+ * "POA"/"cell" wording is gated on `plane_governed`.
+ */
+export interface ObservedCondition {
+  state: ObservedConditionState;
+  label: string;
+  light_level: ObservedLightLevel | null;
+  observed_irradiance_wm2: number | null;
+  plane_governed: boolean;
+  temperature: ObservedTemperature | null;
+  confidence: ObservedConditionConfidence;
+  tier: 'A' | 'B';
+  as_of_utc: string | null;
+  as_of_site_local: string | null;
+  data_quality: 'fresh' | 'stale' | 'no_data';
+}
+
 /** Canonical read-only V2 performance-context envelope (composition-only). */
 export interface PerformanceContextResponse {
   site_id: number;
@@ -1411,6 +1461,11 @@ export interface PerformanceContextResponse {
   baseline_status: PerformanceContextBaselineStatus;
   telemetry_quality: PerformanceContextTelemetryQuality;
   summary: PerformanceContextSummary;
+  /**
+   * Additive, nullable native observed-weather indicator (dual-run alongside the
+   * untouched Weatherstack pipeline). `null` when unavailable; never fabricated.
+   */
+  observed_condition?: ObservedCondition | null;
 }
 
 /** Query params for the read-only performance-context read. */

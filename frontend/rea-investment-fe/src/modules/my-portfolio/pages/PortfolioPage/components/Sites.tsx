@@ -6,6 +6,7 @@ import BaseTable from '../../../../../components/common/tables/BaseTable/BaseTab
 import { ApiClient } from '../../../../../api';
 import EfficiencyRateBar from '../../../../../components/common/EfficiencyRateBar/EfficiencyRateBar';
 import WeatherIndicator from '../../../../../components/common/WeatherIndicator/WeatherIndicator';
+import type { ObservedCondition } from '../../../../../types/telemetryV2';
 import { formatFloatValue } from '../../../../../utils/formatters/formatFloatValue';
 import { BootstrapTooltip } from '../../../../../components/common/BootstrapTooltip/BootstrapTooltip';
 
@@ -43,21 +44,15 @@ const statusCellRenderer = (params: any) => {
 };
 
 const weatherIndicatorCellRenderer = (params: any) => {
-  const value = params?.value;
-
-  if (!value) return null;
-
-  if (typeof value === 'string') {
-    return (
-      <BootstrapTooltip placement="right" title={value}>
-        <WeatherIndicator imageSrc={null} />
-      </BootstrapTooltip>
-    );
-  }
+  // Native observed condition (dual-run alongside the untouched Weatherstack
+  // pipeline). `null`/unavailable renders the honest "unavailable" glyph via
+  // WeatherIndicator rather than fabricating a state.
+  const value = (params?.value ?? null) as ObservedCondition | null;
+  const title = value?.label ?? 'Observed weather unavailable';
 
   return (
-    <BootstrapTooltip placement="right" title={value?.weather_description}>
-      <WeatherIndicator imageSrc={value?.weather_icon_url} />
+    <BootstrapTooltip placement="right" title={title}>
+      <WeatherIndicator condition={value} />
     </BootstrapTooltip>
   );
 };

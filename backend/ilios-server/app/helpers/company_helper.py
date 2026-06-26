@@ -1,19 +1,31 @@
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
 from app.crud.company import CompanyCRUD
+from app.helpers.solar_position import parse_lon_lat
 from app.helpers.telemetry.bigquery import TelemetrySiteBigQuery
 from app.helpers.telemetry.legacy_flag import legacy_telemetry_enabled
 from app.helpers.telemetry.v2_company_data import (
     aggregate_company_actuals,
     compute_sites_expected_today,
     get_active_baselines,
+    get_sites_latest_irradiance,
     get_sites_latest_power,
     get_sites_today_power,
 )
 from app.models.site import Site
 from app.schema.common import calculate_actual_vs_expected
+from app.services.telemetry.native_weather_condition_service import (
+    derive_site_condition,
+)
+
+# Beyond this age, the sites-list weather cell treats the latest irradiance bucket
+# as ``stale`` (cosmetic only). The list approximates freshness from the newest
+# rollup bucket age rather than running a per-site telemetry-quality probe (which
+# would be N+1); the single-site widget uses the precise freshness state.
+OBSERVED_CONDITION_LIST_STALE_AFTER = timedelta(hours=6)
 
 
 # TODO potentially can be reused in other methods
@@ -105,6 +117,11 @@ def extend_company_sites_with_energy_attributes(db_session: Session, sites: list
     """
     if not sites:
         return
+    # Native observed-weather indicator (V2 PostgreSQL rollups only). Runs on BOTH
+    # the legacy-BigQuery and V2 energy paths so the sites-list weather cell is
+    # always the native indicator regardless of the energy source. Read-only and
+    # batched; independent of the energy attributes below.
+    _extend_with_observed_condition(db_session, sites)
     # V2-native fill (off by default). The decommissioned BigQuery is only used
     # when the legacy flag is explicitly enabled.
     if not legacy_telemetry_enabled():
@@ -124,6 +141,47 @@ def extend_company_sites_with_energy_attributes(db_session: Session, sites: list
         site.actual_kw, site.expected_kw = telemetry_sites_actual_expected.get(site.id)
         site.cumulative_vs_expected, site.cumulative_7_days_vs_expected, site.cumulative_30_days_vs_expected = (
             telemetry_sites_cumulative.get(site.id)
+        )
+
+
+def _extend_with_observed_condition(db_session: Session, sites: list[Site]):
+    """Set a transient ``observed_condition`` on each site for the weather cell.
+
+    Read-only and BATCHED: one ``get_sites_latest_irradiance`` query for all sites
+    (never N+1, never a per-site performance-context build). Calls the same
+    :func:`derive_site_condition` single-source-of-truth as the single-site widget
+    so the list and the widget agree by construction, but the list is deliberately
+    CONSERVATIVE:
+
+    * Freshness is approximated from the newest irradiance bucket age
+      (``OBSERVED_CONDITION_LIST_STALE_AFTER``) instead of a precise per-site
+      telemetry-quality probe (which would be N+1). No irradiance row ⇒
+      ``no_data`` ⇒ an honest ``unavailable`` condition (rendered CloudOff).
+    * ``plane_governed=False`` and no temperature are passed — the list never
+      claims POA/cell semantics or attaches a temperature it has not governed.
+    * Coordinates come from the site's stored ``lon_lat_url`` (no query), so Tier A
+      is used where they resolve and Tier B otherwise, matching the widget.
+
+    Never mutates ``site.weather`` (a read-only ORM property); the value is stashed
+    on the transient ``site.observed_condition`` attribute that
+    ``OMSitesBaseExtendedSchema`` serializes under the ``weather`` alias.
+    """
+    latest_irr = get_sites_latest_irradiance(db_session, [site.id for site in sites])
+    now = datetime.utcnow()
+    for site in sites:
+        entry = latest_irr.get(site.id)
+        if entry is None:
+            value, bucket_start, freshness = None, None, "no_data"
+        else:
+            value, bucket_start = entry
+            freshness = "stale" if (now - bucket_start) > OBSERVED_CONDITION_LIST_STALE_AFTER else "fresh"
+        site.observed_condition = derive_site_condition(
+            latest_irradiance_wm2=value,
+            latest_irradiance_at_utc=bucket_start,
+            freshness_state=freshness,
+            timezone_name=getattr(site, "timezone", None) or "UTC",
+            coordinates=parse_lon_lat(getattr(site, "lon_lat_url", None)),
+            plane_governed=False,
         )
 
 

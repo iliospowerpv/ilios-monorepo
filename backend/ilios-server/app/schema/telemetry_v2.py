@@ -8,7 +8,7 @@ account responses without ever leaking credential values.
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -759,6 +759,58 @@ class PerformanceContextWindow(BaseModel):
     )
 
 
+class ObservedTemperature(BaseModel):
+    """A single observed temperature reading for the cosmetic weather indicator.
+
+    ``type`` carries the GOVERNED ``temperature_type`` ONLY (e.g. ``cell``); it is
+    ``None`` whenever the semantics are ungoverned/unknown — the indicator never
+    guesses or converts ambient<->cell.
+    """
+
+    value: float
+    unit: Literal["F", "C"]
+    type: Optional[str] = None
+
+
+class ObservedCondition(BaseModel):
+    """Native, observed-only "light level" derived from telemetry (cosmetic).
+
+    Derived solely from already-observed irradiance + solar geometry; it is NOT a
+    forecast, NOT a meteorological condition, and NEVER drives the expected model
+    or a baseline. ``null``-vs-``0`` integrity is preserved:
+    ``observed_irradiance_wm2`` is ``None`` when unavailable and is never coerced
+    to ``0``; a genuine *measured* ``0`` is classified by solar geometry/time
+    (night vs low-light), never dropped and never rendered "sunny". The string
+    "rain"/"rainy" is never emitted (the wettest honest state is
+    ``overcast_unknown``). Any "POA"/"cell" wording is gated on ``plane_governed``.
+    """
+
+    state: Literal[
+        "sunny",
+        "partly_cloudy",
+        "cloudy",
+        "overcast_unknown",
+        "low_light",
+        "nighttime",
+        "unavailable",
+    ]
+    label: str
+    light_level: Optional[Literal["strong", "moderate", "low", "dark"]] = None
+    observed_irradiance_wm2: Optional[float] = None
+    plane_governed: bool = False
+    temperature: Optional[ObservedTemperature] = None
+    confidence: Literal[
+        "observed_calibrated",
+        "observed_uncalibrated",
+        "coarse",
+        "unavailable",
+    ]
+    tier: Literal["A", "B"]
+    as_of_utc: Optional[datetime] = None
+    as_of_site_local: Optional[datetime] = None
+    data_quality: Literal["fresh", "stale", "no_data"]
+
+
 class PerformanceContextResponse(BaseModel):
     """Canonical read-only V2 performance-context envelope (composition-only)."""
 
@@ -783,6 +835,9 @@ class PerformanceContextResponse(BaseModel):
         default_factory=PerformanceContextTelemetryQuality
     )
     summary: PerformanceContextSummary
+    # Additive, nullable native observed-weather indicator (dual-run alongside the
+    # untouched Weatherstack pipeline). ``None`` when unavailable; never fabricated.
+    observed_condition: Optional[ObservedCondition] = None
 
 
 # ---------------------------------------------------------------------------
