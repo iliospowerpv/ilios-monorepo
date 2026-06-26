@@ -1,0 +1,236 @@
+Start an audit/design sprint.
+
+Do NOT modify any production code.
+
+Sprint:
+Weather Data Source & Ingestion Audit
+
+Objective:
+Determine exactly where IliOS currently obtains all weather data, whether Weatherstack is still used anywhere, and trace the complete ingestion pipeline from external provider to UI.
+
+Audit everything related to weather.
+
+Trace:
+
+1. External weather providers
+- weatherstack
+- OpenWeather
+- NOAA
+- NREL
+- Solcast
+- Tomorrow.io
+- Visual Crossing
+- Meteostat
+- any other provider
+- any internal weather services
+
+2. Search for:
+- weatherstack
+- api.weatherstack.com
+- WEATHERSTACK
+- weather_api
+- weather provider
+- weather client
+- forecast
+- irradiance
+- ghi
+- dni
+- dhi
+- temperature
+- ambient temperature
+- weather station
+- weather refresh
+- weather scheduler
+- weather ingestion
+- weather cache
+- weather observation
+- weather declaration
+- weather source
+
+3. Determine:
+- Which provider(s) are currently active.
+- Which providers are legacy/dead code.
+- Which providers require API keys.
+- Which providers are paid services.
+- Whether Weatherstack is still referenced anywhere.
+- Whether Weatherstack credentials are still required.
+- Whether Weatherstack can be safely removed.
+
+4. Trace the complete data flow
+
+For each weather source identify:
+
+External API
+↓
+
+Scheduler / cron job
+
+↓
+
+Backend service
+
+↓
+
+Database tables
+
+↓
+
+ORM models
+
+↓
+
+CRUD layer
+
+↓
+
+API routes
+
+↓
+
+Frontend consumers
+
+↓
+
+Charts / dashboards / calculations
+
+5. Database audit
+
+Identify:
+
+- weather tables
+- weather observation tables
+- weather declarations
+- weather refresh metadata
+- weather cache
+- timestamps
+- provider identifiers
+- source metadata
+
+Document how weather records are stored and updated.
+
+6. Scheduler audit
+
+Determine:
+
+- scheduled jobs
+- refresh cadence
+- retry logic
+- backfill jobs
+- manual refresh endpoints
+- queue workers
+
+7. Expected-model dependency audit
+
+Determine exactly how weather enters:
+
+- expected generation
+- weather-adjusted baseline calculations
+- O&M charts
+- company dashboards
+- reconciliation
+- degradation calculations
+
+Document every code path.
+
+8. Configuration audit
+
+Search:
+
+.env
+settings
+config
+docker
+compose
+terraform
+secrets
+environment variables
+
+Identify:
+
+WEATHER*
+OPENWEATHER*
+WEATHERSTACK*
+SOLCAST*
+NOAA*
+NREL*
+API keys
+
+Determine which are actually consumed versus unused.
+
+9. Frontend audit
+
+Determine:
+
+Where weather is displayed.
+
+Which API endpoints feed weather.
+
+Which components consume weather.
+
+10. Live verification
+
+If possible, inspect a running development environment and determine:
+
+- Current provider in use.
+- Last successful weather refresh.
+- Current scheduler status.
+- Which provider generated the latest weather records.
+
+Do not mutate production data.
+
+Read-only only.
+
+11. Risks
+
+Identify:
+
+- dead integrations
+- unused credentials
+- duplicated providers
+- stale ingestion paths
+- multiple competing sources
+- weather calculations using different providers
+- technical debt
+
+12. Deliverable
+
+Create:
+
+docs/weather_data_source_audit.md
+
+Include:
+
+1. Executive summary
+2. Current weather architecture
+3. Active providers
+4. Legacy providers
+5. Complete ingestion pipeline
+6. Database tables
+7. Backend services
+8. Scheduler/jobs
+9. API routes
+10. Frontend consumers
+11. Configuration/environment variables
+12. Expected-model dependencies
+13. Weather-adjusted baseline dependencies
+14. Risks and technical debt
+15. Recommended cleanup plan
+16. Files affected if cleanup is later approved
+17. Mutation boundaries
+18. Browser validation plan
+19. Confirmation whether Weatherstack is still used
+20. Confirmation that NO production code was changed
+
+Hard constraints:
+
+- Audit only.
+- No production code.
+- No migrations.
+- No schema changes.
+- No configuration changes.
+- No API changes.
+- No weather refreshes.
+- No scheduler changes.
+- No deletions.
+- No Site 4 mutations.
+- Read-only investigation only.

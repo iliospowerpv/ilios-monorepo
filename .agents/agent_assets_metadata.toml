@@ -113,3 +113,9 @@ id = "mvVpXxE8WBsYkMjz1cFjY"
 uri = "file://docs/baseline_activation_effective_date_audit_events_audit.md"
 type = "text"
 title = "Baseline Activation Effective-Date & Audit Events — Phase B3 Audit"
+
+[[outputs]]
+id = "kmdRsAwB6QbZHVhBMeNK-"
+uri = "file://docs/weather_data_source_audit.md"
+type = "text"
+title = "Weather Data Source & Ingestion Audit"
