@@ -137,3 +137,9 @@ id = "CAQT8UyvAZsnhmp40xWM7"
 uri = "file://docs/third_party_weather_provider_framework_audit.md"
 type = "text"
 title = "Third-Party Weather Provider Framework — Audit/Design"
+
+[[outputs]]
+id = "raj1TqdUpA1uG0AF1DvYS"
+uri = "file://docs/third_party_weather_provider_framework_phase_a_d_implementation_plan.md"
+type = "text"
+title = "Weather Provider Framework — Phases A–D Implementation Plan"
