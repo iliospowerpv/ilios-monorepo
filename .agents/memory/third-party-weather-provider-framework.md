@@ -43,3 +43,25 @@ DB-as-cache + gap-only pulls + `dedupe_key` idempotency handle rate-limit/cost.
 add a path that makes external GHI drive expected; build cosmetic/context/provenance
 first (Phases A–D), keep resolver+expected byte-identical (golden tests), and gate
 any physics use behind governance + transposition (Phase E).
+
+**Phase D hardening (durable):**
+- *Licensing gate is DEFAULT-DENY.* Only an explicit unrestricted allowlist
+  (`public_domain`/`open_data`/`unrestricted`/`open`/empty) skips acknowledgement;
+  every other class — incl. `free_noncommercial` (Open-Meteo) and any unknown/future
+  string — requires an acknowledged per-company account, enforced in BOTH
+  create-account and the pull-context resolver. `catalog.licensing_class` takes
+  precedence over `capabilities_json` so stale capability metadata can't downgrade
+  it. **Caveat:** blank/None is currently allowlisted (treated unrestricted) — a
+  deliberate but debatable choice; make blank fail-closed only on product/legal call.
+- *Rollout gap:* there is NO API/UI to enable a provider — `is_enabled` is read-only
+  in routes, so turning a provider on is a manual DB flip. Flag this before any prod
+  rollout; it's intentionally out of Phase-D scope.
+- *Durability gate* (`_block_if_storage_not_durable`) fires ONLY when
+  `environment_name` ∈ {production,prod,staging,stage,live}; dev/test keyless imports
+  are unblocked. Keyless flows (no `secret_name`) never reach the gate.
+- *Validating when auth is blocked:* drive the service/CRUD layer against the migrated
+  dev DB on a NON-protected site (e.g. site 18), transiently flip `is_enabled` and
+  re-disable in a finally. Proof obligations: persisted obs are ghi/ambient only,
+  `is_modeled=True`, no poa/cell, `physics_usable_rows==0`; and
+  `compute_site_expected_period_effective` + `WeatherResolver.resolve_window` are
+  byte-identical before vs after the import (external source id never selected).

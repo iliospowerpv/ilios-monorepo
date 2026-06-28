@@ -15,7 +15,7 @@ import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 import { useExternalWeatherContext } from '../../../../../../hooks/weatherProvider';
-import type { ExternalWeatherContextSource } from '../../../../../../types/weather';
+import type { ExternalWeatherContextSource, ProviderPullBatchResponse } from '../../../../../../types/weather';
 
 /**
  * D2 — read-only external-weather context panel.
@@ -39,6 +39,62 @@ const fmtInstant = (raw: string | null | undefined): string => {
 
 const fmtCount = (n: number | null | undefined): string =>
   typeof n === 'number' && Number.isFinite(n) ? n.toLocaleString() : '—';
+
+type ChipColor = 'success' | 'warning' | 'error' | 'default';
+
+const pullStatusColor = (status: string | null | undefined): ChipColor => {
+  switch ((status || '').toLowerCase()) {
+    case 'succeeded':
+      return 'success';
+    case 'partial':
+      return 'warning';
+    case 'failed':
+      return 'error';
+    default:
+      return 'default';
+  }
+};
+
+const fmtWindow = (start: string | null | undefined, end: string | null | undefined): string => {
+  if (!start && !end) return '—';
+  return `${fmtInstant(start)} → ${fmtInstant(end)}`;
+};
+
+const RecentBatchRow: React.FC<{ batch: ProviderPullBatchResponse }> = ({ batch }) => (
+  <TableRow>
+    <TableCell>
+      <Chip
+        size="small"
+        label={batch.pull_status || 'unknown'}
+        color={pullStatusColor(batch.pull_status)}
+        variant={pullStatusColor(batch.pull_status) === 'default' ? 'outlined' : 'filled'}
+      />
+    </TableCell>
+    <TableCell>
+      <Typography variant="caption" color="text.secondary">
+        {fmtWindow(batch.period_start, batch.period_end)}
+      </Typography>
+    </TableCell>
+    <TableCell align="right">{fmtCount(batch.row_count)}</TableCell>
+    <TableCell>
+      <Typography variant="caption" color="text.secondary">
+        {batch.provider_api_version || '—'}
+      </Typography>
+    </TableCell>
+    <TableCell>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Typography variant="caption" color="text.secondary">
+          {fmtInstant(batch.created_at)}
+        </Typography>
+        {batch.error_summary && (
+          <Tooltip title={batch.error_summary}>
+            <InfoOutlinedIcon fontSize="inherit" color="warning" />
+          </Tooltip>
+        )}
+      </Box>
+    </TableCell>
+  </TableRow>
+);
 
 const SourceRow: React.FC<{ source: ExternalWeatherContextSource }> = ({ source }) => {
   const metricSummary =
@@ -153,6 +209,30 @@ export const ExternalWeatherContextPanel: React.FC<ExternalWeatherContextPanelPr
               Last import: {data.last_pull.pull_status || 'unknown'} · {fmtCount(data.last_pull.row_count)} row(s) ·{' '}
               {fmtInstant(data.last_pull.created_at)}
             </Typography>
+          )}
+
+          {data.recent_batches.length > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+                Recent pulls
+              </Typography>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Window</TableCell>
+                    <TableCell align="right">Rows</TableCell>
+                    <TableCell>API version</TableCell>
+                    <TableCell>When</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {data.recent_batches.map(batch => (
+                    <RecentBatchRow key={batch.id} batch={batch} />
+                  ))}
+                </TableBody>
+              </Table>
+            </Box>
           )}
         </Box>
       )}

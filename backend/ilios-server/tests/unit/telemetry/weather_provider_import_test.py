@@ -21,6 +21,7 @@ in-memory fakes, mirroring ``weather_resolver_test.py``.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -31,6 +32,7 @@ from app.integrations.weather.base import (
     WeatherProviderUnavailable,
     WeatherRateLimited,
 )
+from app.integrations.weather.openmeteo_adapter import OpenMeteoAdapter
 from app.integrations.weather.models import (
     NormalizedWeatherRow,
     RateLimitSpec,
@@ -777,3 +779,76 @@ def test_external_context_never_fabricates_when_empty(monkeypatch):
     assert resp.sources[0].observation_count == 0
     assert resp.sources[0].metrics == []
     assert resp.last_pull is None
+
+
+# ---------------------------------------------------------------------------
+# Phase D — end-to-end integration through the REAL Open-Meteo adapter
+# ---------------------------------------------------------------------------
+_OPENMETEO_FIXTURE = (
+    Path(__file__).resolve().parents[2]
+    / "fixtures"
+    / "weather"
+    / "openmeteo_archive_sample.json"
+)
+
+
+def test_integration_openmeteo_fixture_end_to_end_is_context_only(monkeypatch):
+    """End-to-end: the REAL ``OpenMeteoAdapter`` (URL build + HTTP shape + parse +
+    normalize) driven through ``run_provider_import`` against a recorded archive
+    fixture — no live HTTP, so it is deterministic in CI.
+
+    Proves the whole pull path stays CONTEXT-ONLY: the persisted rows are
+    ghi/ambient (never poa/cell), nothing is physics-usable, and the batch is
+    recorded honestly. The fixture carries 4 GHI + 4 ambient timestamps where the
+    last ambient value is ``null`` and is SKIPPED (never zero-filled) -> 7 rows.
+    """
+    obs = FakeObsCRUD(existing=[])
+    src = FakeSourceCRUD(sources=[_ext_source()])
+    batch = FakeBatchCRUD()
+    _patch_run_cruds(monkeypatch, obs=obs, src=src, batch=batch)
+
+    captured: dict[str, str] = {}
+
+    def fetcher(url: str):
+        captured["url"] = url
+        return 200, _OPENMETEO_FIXTURE.read_bytes()
+
+    adapter = OpenMeteoAdapter(fetcher=fetcher)
+
+    resp = run_provider_import(
+        None,
+        site=_site(),
+        catalog=_catalog(),
+        adapter=adapter,
+        credentials={},
+        coordinates=(42.36, -71.06),
+        request=_req(
+            start=datetime(2024, 6, 1, 0, 0),
+            end=datetime(2024, 6, 1, 3, 0),
+            metrics=["ghi_irradiance", "air_temperature"],
+        ),
+        rate_limiter=ProviderRateLimiter(use_default_cache=False),
+    )
+
+    # The real adapter actually built + fetched a KEYLESS archive URL (no secret).
+    assert "archive-api.open-meteo.com" in captured["url"]
+    assert "apikey" not in captured["url"].lower()
+    assert "shortwave_radiation" in captured["url"]
+    assert "temperature_2m" in captured["url"]
+
+    # 4 GHI + 3 ambient (the 4th ambient is null -> SKIPPED, never zeroed).
+    assert resp.rows_inserted == 7
+    assert resp.pull_status == WeatherProviderPullStatus.succeeded.value
+    assert resp.context_only is True
+    assert resp.expected_eligible_capable is False
+    assert resp.physics_usable_rows == 0
+    assert batch.created[0].row_count == 7
+
+    # Every persisted observation is ghi/ambient/unknown — NEVER poa or cell.
+    assert obs.upserted
+    for row in obs.upserted:
+        assert row["irradiance_plane"] in ("ghi", "unknown")
+        assert row["temperature_type"] in ("ambient", "unknown")
+        assert row["irradiance_plane"] != "poa"
+        assert row["temperature_type"] not in ("cell", "module", "modeled_cell")
+        assert row["is_modeled"] is True

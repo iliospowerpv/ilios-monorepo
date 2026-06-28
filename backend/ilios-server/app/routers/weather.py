@@ -876,6 +876,28 @@ def _provider_licensing_class(catalog: WeatherProviderCatalog) -> str:
     return str(raw).strip().lower()
 
 
+# Licensing classes that need NO explicit acknowledgement before use. Everything
+# else — ``free_noncommercial``, ``noncommercial``, ``commercial``, and any
+# unrecognised/future string — is treated as restricted and requires a durable,
+# audited per-company account acknowledgement before any provider pull. This is a
+# deliberate DEFAULT-DENY posture: an unknown licensing class is restricted, so a
+# keyless free-but-restricted provider (e.g. Open-Meteo, ``free_noncommercial``)
+# can never be pulled commercially without an operator first acknowledging terms.
+_UNRESTRICTED_LICENSING_CLASSES = frozenset(
+    {"", "public_domain", "open_data", "open_data_unrestricted", "unrestricted", "open"}
+)
+
+
+def _licensing_requires_ack(licensing_class: Optional[str]) -> bool:
+    """True when a provider's licensing requires an acknowledged account first.
+
+    Default-deny: only the explicit unrestricted allowlist is exempt; every other
+    class (including ``free_noncommercial`` and any future/unknown string) must be
+    acknowledged on a durable account before its data may be pulled.
+    """
+    return (licensing_class or "").strip().lower() not in _UNRESTRICTED_LICENSING_CLASSES
+
+
 def _stored_credential_fingerprint(
     credential_store: CredentialStore, secret_name: Optional[str]
 ) -> Optional[str]:
@@ -991,13 +1013,13 @@ def create_weather_provider_account(
     creds = dict(payload.credentials.fields) if payload.credentials else {}
 
     if (
-        _provider_licensing_class(catalog) == "commercial"
+        _licensing_requires_ack(_provider_licensing_class(catalog))
         and not payload.licensing_acknowledged
     ):
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
-            "This provider is commercially licensed; licensing must be "
-            "acknowledged before creating an account.",
+            "This provider's data is licensed for restricted use; its licensing "
+            "must be acknowledged before creating an account.",
         )
     if requires_credentials and not creds:
         raise HTTPException(
@@ -1321,6 +1343,7 @@ def _resolve_provider_pull_context(
         db, request_body.provider_key, must_be_enabled=True
     )
     licensing_class = _provider_licensing_class(catalog)
+    requires_ack = _licensing_requires_ack(licensing_class)
     requires_credentials = bool(catalog.config_schema)
 
     account: Optional[WeatherProviderAccount] = None
@@ -1347,11 +1370,12 @@ def _resolve_provider_pull_context(
                 status.HTTP_409_CONFLICT,
                 "Weather provider account is not active.",
             )
-        if licensing_class == "commercial" and account.licensing_acknowledged_at is None:
+        if requires_ack and account.licensing_acknowledged_at is None:
             raise HTTPException(
                 status.HTTP_422_UNPROCESSABLE_ENTITY,
-                "This provider is commercially licensed; licensing must be "
-                "acknowledged on the account before pulling weather.",
+                "This provider's data is licensed for restricted use; its "
+                "licensing must be acknowledged on the account before pulling "
+                "weather.",
             )
         if read_credentials and account.secret_name:
             _block_if_storage_not_durable(
@@ -1365,11 +1389,11 @@ def _resolve_provider_pull_context(
                 f"Weather provider '{request_body.provider_key}' requires an "
                 "account with credentials.",
             )
-        if licensing_class == "commercial":
+        if requires_ack:
             raise HTTPException(
                 status.HTTP_422_UNPROCESSABLE_ENTITY,
-                "This provider is commercially licensed and requires an "
-                "account with acknowledged licensing.",
+                "This provider's data is licensed for restricted use; create an "
+                "account with acknowledged licensing before pulling weather.",
             )
 
     return catalog, account, credentials
