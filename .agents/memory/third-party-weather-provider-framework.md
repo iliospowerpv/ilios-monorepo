@@ -3,8 +3,13 @@ name: Third-party weather provider framework (audit/design)
 description: How external weather providers would plug into the native W0/W1/W2 domain without changing expected math; why free providers can't drive physics.
 ---
 
-Full design: `docs/third_party_weather_provider_framework_audit.md` (audit/design
-sprint, no code shipped).
+Full design: `docs/third_party_weather_provider_framework_audit.md` (original
+audit) + `docs/third_party_weather_provider_framework_phase_a_d_implementation_plan.md`
+(build plan). **Phases A–D are now SHIPPED context-only** (provider catalog +
+keyless Open-Meteo adapter + credentialed accounts + gap-only idempotent import +
+read-only external-weather-context endpoint + provider-admin/import FE); Phase E
+(any physics use of external weather) remains DEFERRED and forbidden until the
+governance + GHI→POA transposition design lands.
 
 **Core insight (durable):** the native W0/W2 weather model is ALREADY
 provider-agnostic at the storage/provenance layer. An external value is just a

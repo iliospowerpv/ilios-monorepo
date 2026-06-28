@@ -53,9 +53,20 @@ V2_SECRET_PREFIX = "ilios-telemetry-v2"
 @runtime_checkable
 class CredentialStore(Protocol):
     def store(
-        self, account_label: str, fields: dict[str, str], *, company_id: int
+        self,
+        account_label: str,
+        fields: dict[str, str],
+        *,
+        company_id: int,
+        name_prefix: Optional[str] = None,
     ) -> str:
-        """Persist ``fields`` and return an opaque secret reference name."""
+        """Persist ``fields`` and return an opaque secret reference name.
+
+        ``name_prefix`` lets a caller (e.g. the weather provider framework)
+        namespace its secrets (``ilios-weather-c{company}-…``) so they are
+        distinguishable from telemetry secrets for audit / IAM / cleanup.
+        When omitted the existing telemetry prefix is used unchanged.
+        """
 
     def retrieve(self, secret_name: str) -> dict[str, str]:
         """Fetch the latest credential payload for ``secret_name``."""
@@ -79,14 +90,19 @@ class InMemoryCredentialStore:
         self._lock = Lock()
         self._data: dict[str, dict[str, str]] = {}
 
-    def _new_name(self, company_id: int) -> str:
-        return f"{V2_SECRET_PREFIX}-c{company_id}-{secrets.token_hex(6)}"
+    def _new_name(self, company_id: int, name_prefix: Optional[str] = None) -> str:
+        return f"{name_prefix or V2_SECRET_PREFIX}-c{company_id}-{secrets.token_hex(6)}"
 
     def store(
-        self, account_label: str, fields: dict[str, str], *, company_id: int
+        self,
+        account_label: str,
+        fields: dict[str, str],
+        *,
+        company_id: int,
+        name_prefix: Optional[str] = None,
     ) -> str:
         with self._lock:
-            name = self._new_name(company_id)
+            name = self._new_name(company_id, name_prefix)
             self._data[name] = dict(fields)
         return name
 
@@ -121,7 +137,12 @@ class PlaceholderCredentialStore:
     """
 
     def store(
-        self, account_label: str, fields: dict[str, str], *, company_id: int
+        self,
+        account_label: str,
+        fields: dict[str, str],
+        *,
+        company_id: int,
+        name_prefix: Optional[str] = None,
     ) -> str:
         return account_label or "telemetry::placeholder"
 
@@ -166,13 +187,18 @@ class GCPSecretManagerCredentialStore:
             self._manager = GCPSecretsManager()
         return self._manager
 
-    def _new_name(self, company_id: int) -> str:
-        return f"{V2_SECRET_PREFIX}-c{company_id}-{secrets.token_hex(6)}"
+    def _new_name(self, company_id: int, name_prefix: Optional[str] = None) -> str:
+        return f"{name_prefix or V2_SECRET_PREFIX}-c{company_id}-{secrets.token_hex(6)}"
 
     def store(
-        self, account_label: str, fields: dict[str, str], *, company_id: int
+        self,
+        account_label: str,
+        fields: dict[str, str],
+        *,
+        company_id: int,
+        name_prefix: Optional[str] = None,
     ) -> str:
-        name = self._new_name(company_id)
+        name = self._new_name(company_id, name_prefix)
         payload = json.dumps(fields, separators=(",", ":"))
         self.manager.create_secret(name)
         self.manager.add_secret_version(name, payload)

@@ -194,3 +194,201 @@ export interface WeatherSemanticsReconciliationResponse {
   blocking_counts: Record<string, number>;
   devices: WeatherSemanticsReconciliationRow[];
 }
+
+// ---------------------------------------------------------------------------
+// Third-party weather provider framework (Phases A–D) — CONTEXT-ONLY.
+//
+// These mirror `app/schema/weather.py`. External weather is context/provenance
+// only: every provider/source/preview/run carries `expected_eligible_capable:
+// false` and is never converted to POA irradiance or cell temperature. The UI
+// must surface that verdict honestly and never fabricate a value (a missing
+// reading is the ABSENCE of a row, never a 0). String unions stay open so a
+// backend enum addition never breaks the build.
+// ---------------------------------------------------------------------------
+export interface WeatherProviderEntry {
+  provider_key: string;
+  display_name: string;
+  licensing_class: string | null;
+  docs_url: string | null;
+  is_enabled: boolean;
+  requires_credentials: boolean;
+  config_schema: Record<string, unknown>;
+  capabilities: Record<string, unknown> | null;
+  // Always false in Phases A–D — external weather is never expected-eligible.
+  expected_eligible_capable: boolean;
+}
+
+export interface WeatherProviderList {
+  items: WeatherProviderEntry[];
+}
+
+export type WeatherProviderAccountStatus = 'active' | 'paused' | 'archived' | string;
+
+// Credentials are sent write-only and never returned by any response.
+export interface WeatherProviderCredentials {
+  fields: Record<string, string>;
+}
+
+export interface WeatherProviderAccountCreate {
+  provider_key: string;
+  display_name: string;
+  external_account_label?: string | null;
+  credentials?: WeatherProviderCredentials | null;
+  licensing_acknowledged?: boolean;
+}
+
+export interface WeatherProviderAccountUpdate {
+  display_name?: string | null;
+  external_account_label?: string | null;
+  status?: WeatherProviderAccountStatus;
+  credentials?: WeatherProviderCredentials | null;
+  licensing_acknowledged?: boolean | null;
+}
+
+export interface WeatherProviderAccountResponse {
+  id: number;
+  company_id: number;
+  provider_key: string;
+  display_name: string;
+  external_account_label: string | null;
+  status: string;
+  credential_status: string;
+  last_sync_status: string;
+  licensing_acknowledged: boolean;
+  licensing_acknowledged_at: string | null;
+  last_success_at: string | null;
+  last_error_at: string | null;
+  last_error_message: string | null;
+  is_archived: boolean;
+  has_stored_credentials: boolean;
+  credential_fingerprint: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface WeatherProviderAccountList {
+  items: WeatherProviderAccountResponse[];
+}
+
+export interface WeatherProviderTestResponse {
+  success: boolean;
+  message: string;
+  credential_status: string;
+}
+
+// --- Provider import (preview / run / batches) -----------------------------
+// Window fields are naive-UTC ISO strings (the existing storage convention).
+export interface ProviderImportRequest {
+  provider_key: string;
+  account_id?: number | null;
+  window_start: string;
+  window_end: string;
+  metrics?: string[] | null;
+  granularity?: string;
+}
+
+export interface ProviderImportPreviewResponse {
+  provider_key: string;
+  display_name: string;
+  licensing_class: string | null;
+  context_only: boolean;
+  expected_eligible_capable: boolean;
+  verdict: string;
+  requested_metrics: string[];
+  native_plane: WeatherIrradiancePlane | string;
+  native_temperature_type: WeatherTemperatureType | string;
+  is_modeled: boolean;
+  window_start: string;
+  window_end: string;
+  effective_window_start: string | null;
+  effective_window_end: string | null;
+  chunk_count: number;
+  chunks_to_pull: number;
+  chunks_already_covered: number;
+  estimated_provider_calls: number;
+  existing_observation_count: number;
+  rate_limit_remaining_minute: number | null;
+  rate_limit_remaining_day: number | null;
+  warnings: string[];
+}
+
+export interface ProviderImportResponse {
+  status: string;
+  pull_status: string;
+  batch_id: number | null;
+  site_id: number;
+  weather_source_id: number | null;
+  provider_key: string;
+  account_id: number | null;
+  context_only: boolean;
+  expected_eligible_capable: boolean;
+  rows_pulled: number;
+  rows_inserted: number;
+  rows_duplicate: number;
+  distinct_metrics: string[];
+  physics_usable_rows: number;
+  stored_not_usable_rows: number;
+  modeled_rows: number;
+  chunks_pulled: number;
+  chunks_skipped: number;
+  period_start: string | null;
+  period_end: string | null;
+  api_version: string | null;
+  rate_limited: boolean;
+  warnings: string[];
+  errors: string[];
+}
+
+export interface ProviderPullBatchResponse {
+  id: number;
+  site_id: number;
+  weather_source_id: number;
+  account_id: number | null;
+  batch_kind: string;
+  pull_status: string | null;
+  period_start: string | null;
+  period_end: string | null;
+  row_count: number | null;
+  provider_api_version: string | null;
+  error_summary: string | null;
+  created_at: string | null;
+}
+
+export interface ProviderPullBatchList {
+  items: ProviderPullBatchResponse[];
+}
+
+// --- External weather context (read-only provenance, Phase D) ---------------
+export interface ExternalWeatherContextMetric {
+  metric: string;
+  observation_count: number;
+  earliest_obs: string | null;
+  latest_obs: string | null;
+}
+
+export interface ExternalWeatherContextSource {
+  weather_source_id: number;
+  source_type: string;
+  provider_key: string | null;
+  display_name: string;
+  is_modeled: boolean;
+  default_confidence: string | null;
+  licensing_note: string | null;
+  active: boolean;
+  observation_count: number;
+  earliest_obs: string | null;
+  latest_obs: string | null;
+  metrics: ExternalWeatherContextMetric[];
+}
+
+export interface ExternalWeatherContextResponse {
+  site_id: number;
+  context_only: boolean;
+  expected_eligible_capable: boolean;
+  banner: string;
+  source_count: number;
+  total_observation_count: number;
+  sources: ExternalWeatherContextSource[];
+  last_pull: ProviderPullBatchResponse | null;
+  recent_batches: ProviderPullBatchResponse[];
+}

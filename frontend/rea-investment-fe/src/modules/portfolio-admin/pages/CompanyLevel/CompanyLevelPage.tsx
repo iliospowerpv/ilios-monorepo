@@ -36,6 +36,7 @@ import { ApiClient } from '../../../../api';
 import { ContactsList } from '../../components/contacts';
 import { FinanceIntegrationsSection, FinanceHealthCard } from '../../components/finance';
 import { TelemetryAdminSection } from '../../components/telemetry/v2';
+import { WeatherProviderAdminSection } from '../../components/weather';
 import type { CompanyMember } from '../../../../api';
 import {
   AddProjectDialog,
@@ -417,6 +418,8 @@ export const CompanyLevelPage: React.FC = () => {
       <FinanceIntegrationsSection companyId={companyIdNum} />
 
       <TelemetryAdminSection companyId={companyIdNum} />
+
+      <WeatherProviderAdminSection companyId={companyIdNum} />
 
       <AddProjectDialog
         open={isAddProjectOpen}

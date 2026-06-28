@@ -13,6 +13,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import SettingsInputAntennaIcon from '@mui/icons-material/SettingsInputAntenna';
 import ScheduleIcon from '@mui/icons-material/Schedule';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 
 import { ApiClient } from '../../../../../../api';
 import type {
@@ -29,6 +30,8 @@ import { ScheduleDialog } from './ScheduleDialog';
 import { EligibilityDiagnosticsPanel } from './EligibilityDiagnosticsPanel';
 import { WeatherSemanticsPanel } from './WeatherSemanticsPanel';
 import { PerformanceContextPanel } from './PerformanceContextPanel';
+import { ExternalWeatherContextPanel } from './ExternalWeatherContextPanel';
+import { ImportExternalWeatherDialog } from './ImportExternalWeatherDialog';
 
 const getStatusColor = (status: TelemetryHealthStatus): 'success' | 'warning' | 'error' | 'default' => {
   switch (status) {
@@ -184,6 +187,7 @@ const HealthStrip: React.FC<HealthStripProps> = ({ health }) => {
 export const Telemetry: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDetails }) => {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [importWeatherOpen, setImportWeatherOpen] = useState(false);
   const cooldown = useTelemetryCooldown();
 
   const {
@@ -267,6 +271,16 @@ export const Telemetry: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDe
               Automatic Refresh Schedule
             </Button>
           )}
+          {isTelemetryAdmin && (
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<CloudDownloadIcon />}
+              onClick={() => setImportWeatherOpen(true)}
+            >
+              Import External Weather
+            </Button>
+          )}
           <Button variant="contained" color="primary" onClick={() => setWizardOpen(true)}>
             {isConfigured ? 'Map Telemetry' : 'Connect Telemetry'}
           </Button>
@@ -276,6 +290,8 @@ export const Telemetry: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDe
       {readiness && <ReadinessStrip readiness={readiness} />}
 
       {health && <HealthStrip health={health} />}
+
+      <ExternalWeatherContextPanel siteId={siteDetails.id} />
 
       {isConfigured && <PerformanceContextPanel siteId={siteDetails.id} />}
 
@@ -307,6 +323,15 @@ export const Telemetry: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDe
       )}
 
       <TelemetryWizard open={wizardOpen} onClose={handleWizardClose} siteDetails={siteDetails} readiness={readiness} />
+
+      {isTelemetryAdmin && (
+        <ImportExternalWeatherDialog
+          open={importWeatherOpen}
+          onClose={() => setImportWeatherOpen(false)}
+          siteId={siteDetails.id}
+          companyId={siteDetails.company.id}
+        />
+      )}
 
       {isConfigured && isTelemetryAdmin && (
         <ScheduleDialog

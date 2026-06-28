@@ -14,6 +14,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Iterable, Optional
 
+from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
@@ -27,6 +28,9 @@ from app.models.weather import (
     WeatherDeviceMapping,
     WeatherObservation,
     WeatherObservationBatch,
+    WeatherObservationBatchKind,
+    WeatherProviderAccount,
+    WeatherProviderCatalog,
     WeatherSource,
     WeatherSourceApproval,
     WeatherSourceProfile,
@@ -164,6 +168,30 @@ class WeatherObservationBatchCRUD(BaseCRUD):
             .one_or_none()
         )
 
+    def list_provider_pulls_for_site(
+        self, site_id: int, *, limit: int = 100
+    ) -> list[WeatherObservationBatch]:
+        """List ``provider_pull`` provenance batches for a site (newest-first).
+
+        Read-only audit feed for the third-party provider framework. Scoped to
+        ``batch_kind=provider_pull`` so file/manual/telemetry-backfill batches
+        never leak into the provider-pull history view. Never mutates anything.
+        """
+        return (
+            self.db_session.query(WeatherObservationBatch)
+            .filter(
+                WeatherObservationBatch.site_id == site_id,
+                WeatherObservationBatch.batch_kind
+                == WeatherObservationBatchKind.provider_pull,
+            )
+            .order_by(
+                WeatherObservationBatch.created_at.desc(),
+                WeatherObservationBatch.id.desc(),
+            )
+            .limit(limit)
+            .all()
+        )
+
 
 class WeatherObservationCRUD(BaseCRUD):
     def __init__(self, db_session: Session):
@@ -231,6 +259,34 @@ class WeatherObservationCRUD(BaseCRUD):
             )
         return query.order_by(
             WeatherObservation.metric, WeatherObservation.obs_ts
+        ).all()
+
+    def summarize_by_source_metric(
+        self, site_id: int, *, source_ids: Optional[Iterable[int]] = None
+    ) -> list[tuple[int, str, int, Optional[datetime], Optional[datetime]]]:
+        """Aggregate a site's observations to ``(source, metric)`` coverage rows.
+
+        Returns ``(weather_source_id, metric, count, earliest_obs_ts,
+        latest_obs_ts)`` grouped per source+metric — the read-only coverage
+        summary the external-weather-context surface needs without loading every
+        observation row. Optionally narrows to ``source_ids``. Never mutates
+        anything; an absent (source, metric) pair simply yields no row (it is
+        never fabricated as a zero-count entry).
+        """
+        query = self.db_session.query(
+            WeatherObservation.weather_source_id,
+            WeatherObservation.metric,
+            func.count(WeatherObservation.id),
+            func.min(WeatherObservation.obs_ts),
+            func.max(WeatherObservation.obs_ts),
+        ).filter(WeatherObservation.site_id == site_id)
+        id_list = list(source_ids) if source_ids is not None else None
+        if id_list is not None:
+            if not id_list:
+                return []
+            query = query.filter(WeatherObservation.weather_source_id.in_(id_list))
+        return query.group_by(
+            WeatherObservation.weather_source_id, WeatherObservation.metric
         ).all()
 
 
@@ -354,3 +410,66 @@ class ExpectedWeatherProvenanceCRUD(BaseCRUD):
             .order_by(ExpectedWeatherProvenance.id)
             .all()
         )
+
+
+# ---------------------------------------------------------------------------
+# Third-party weather provider framework (Phases A–D) — read helpers.
+# ---------------------------------------------------------------------------
+class WeatherProviderCatalogCRUD(BaseCRUD):
+    """Read helpers for the seeded third-party weather provider catalog.
+
+    Catalog rows are seeded by migration (never user-created) and default to
+    ``is_enabled=false`` so a provider stays dark until explicitly turned on.
+    These helpers are read-only; the framework never marks an external provider
+    as physics-/expected-eligible.
+    """
+
+    def __init__(self, db_session: Session):
+        super().__init__(model=WeatherProviderCatalog, db_session=db_session)
+
+    def get_by_key(self, provider_key: str) -> Optional[WeatherProviderCatalog]:
+        return (
+            self.db_session.query(WeatherProviderCatalog)
+            .filter(WeatherProviderCatalog.provider_key == provider_key)
+            .one_or_none()
+        )
+
+    def list_all(self, *, enabled_only: bool = False) -> list[WeatherProviderCatalog]:
+        query = self.db_session.query(WeatherProviderCatalog)
+        if enabled_only:
+            query = query.filter(WeatherProviderCatalog.is_enabled.is_(True))
+        return query.order_by(WeatherProviderCatalog.display_name).all()
+
+
+class WeatherProviderAccountCRUD(BaseCRUD):
+    """Read helpers for per-company weather provider accounts.
+
+    The row stores only a ``secret_name`` REFERENCE into the durable credential
+    store, never the API key itself. Account creation/rotation lives in the
+    router so it can own the durability gate and compensating secret cleanup.
+    """
+
+    def __init__(self, db_session: Session):
+        super().__init__(model=WeatherProviderAccount, db_session=db_session)
+
+    def get_for_company(
+        self, *, company_id: int, account_id: int
+    ) -> Optional[WeatherProviderAccount]:
+        return (
+            self.db_session.query(WeatherProviderAccount)
+            .filter(
+                WeatherProviderAccount.id == account_id,
+                WeatherProviderAccount.company_id == company_id,
+            )
+            .one_or_none()
+        )
+
+    def list_for_company(
+        self, company_id: int, *, include_archived: bool = False
+    ) -> list[WeatherProviderAccount]:
+        query = self.db_session.query(WeatherProviderAccount).filter(
+            WeatherProviderAccount.company_id == company_id
+        )
+        if not include_archived:
+            query = query.filter(WeatherProviderAccount.is_archived.is_(False))
+        return query.order_by(WeatherProviderAccount.id).all()

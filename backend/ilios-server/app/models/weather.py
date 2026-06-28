@@ -242,6 +242,67 @@ _DECLARATION_STATUS_ENUM = Enum(
 
 
 # ---------------------------------------------------------------------------
+# Third-party weather provider framework enums (Phases A–D, additive).
+# Context-only: these describe provider plumbing/provenance and never make an
+# external source physics-/expected-eligible.
+# ---------------------------------------------------------------------------
+class WeatherProviderPullStatus(str, enum.Enum):
+    """Outcome of a single third-party weather provider pull batch."""
+
+    succeeded = "succeeded"
+    partial = "partial"
+    failed = "failed"
+
+
+class WeatherProviderAccountStatus(str, enum.Enum):
+    """Lifecycle of a third-party weather provider account."""
+
+    active = "active"
+    paused = "paused"
+    archived = "archived"
+
+
+class WeatherProviderCredentialStatus(str, enum.Enum):
+    """Verification state of a provider account's stored credentials."""
+
+    unverified = "unverified"
+    verified = "verified"
+    invalid = "invalid"
+    expired = "expired"
+
+
+class WeatherProviderSyncStatus(str, enum.Enum):
+    """Outcome of the most recent pull attempt for a provider account."""
+
+    never = "never"
+    success = "success"
+    partial = "partial"
+    failed = "failed"
+
+
+WEATHER_PROVIDER_PULL_STATUS_ENUM_NAME = "weather_provider_pull_status_enum"
+WEATHER_PROVIDER_ACCOUNT_STATUS_ENUM_NAME = "weather_provider_account_status_enum"
+WEATHER_PROVIDER_CREDENTIAL_STATUS_ENUM_NAME = (
+    "weather_provider_credential_status_enum"
+)
+WEATHER_PROVIDER_SYNC_STATUS_ENUM_NAME = "weather_provider_sync_status_enum"
+
+_PROVIDER_PULL_STATUS_ENUM = Enum(
+    WeatherProviderPullStatus, name=WEATHER_PROVIDER_PULL_STATUS_ENUM_NAME
+)
+_PROVIDER_ACCOUNT_STATUS_ENUM = Enum(
+    WeatherProviderAccountStatus, name=WEATHER_PROVIDER_ACCOUNT_STATUS_ENUM_NAME
+)
+_PROVIDER_CREDENTIAL_STATUS_ENUM = Enum(
+    WeatherProviderCredentialStatus,
+    name=WEATHER_PROVIDER_CREDENTIAL_STATUS_ENUM_NAME,
+)
+_PROVIDER_SYNC_STATUS_ENUM = Enum(
+    WeatherProviderSyncStatus, name=WEATHER_PROVIDER_SYNC_STATUS_ENUM_NAME
+)
+
+
+# ---------------------------------------------------------------------------
 # 1. weather_sources
 # ---------------------------------------------------------------------------
 class WeatherSource(Base):
@@ -401,6 +462,23 @@ class WeatherObservationBatch(Base):
         ForeignKey("weather_observation_batches.id", ondelete="SET NULL"),
         nullable=True,
     )
+
+    # -- Third-party provider pull provenance (additive, NULLable) -----------
+    # Populated only on ``batch_kind=provider_pull`` batches; NULL on file /
+    # manual / telemetry-backfill batches. These columns describe HOW a provider
+    # pull went (which account, success/partial/failed, request/response hashes,
+    # api version, an error summary) without ever changing what the observations
+    # MEAN — semantics stay on the observation rows and are never converted.
+    account_id = Column(
+        Integer,
+        ForeignKey("weather_provider_accounts.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    pull_status = Column(_PROVIDER_PULL_STATUS_ENUM, nullable=True)
+    provider_request_hash = Column(String(128), nullable=True)
+    provider_response_hash = Column(String(128), nullable=True)
+    provider_api_version = Column(String(64), nullable=True)
+    error_summary = Column(Text, nullable=True)
 
     created_at = Column(DateTime, nullable=False, server_default=utcnow())
 
@@ -765,3 +843,126 @@ def _enforce_weather_declaration_append_only(mapper, connection, target):  # noq
         old[key] = old_val
         new[key] = new_val
     assert_governed_update_allowed(old, new)
+
+
+# ---------------------------------------------------------------------------
+# 8. weather_provider_catalog  (third-party provider framework — Phase A)
+# ---------------------------------------------------------------------------
+class WeatherProviderCatalog(Base):
+    """DB-backed registry of third-party weather providers.
+
+    Mirrors ``TelemetryProviderCatalog``: a ``provider_key`` resolves to an
+    ``adapter_class`` (dotted import path) via the weather adapter registry, and
+    ``config_schema`` drives the credential form for keyed providers (empty for
+    keyless ones such as Open-Meteo). Rows are seeded, never user-created, and
+    default to ``is_enabled=false`` so a provider stays dark until explicitly
+    turned on.
+
+    Context-only by construction: ``capabilities_json`` snapshots the adapter's
+    declared capabilities, but the framework NEVER marks an external provider as
+    expected-/physics-eligible. External GHI/ambient stays context-only.
+    """
+
+    __tablename__ = "weather_provider_catalog"
+
+    id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
+    provider_key = Column(String(64), nullable=False, unique=True)
+    display_name = Column(String(128), nullable=False)
+    adapter_class = Column(String(255), nullable=False)
+    config_schema = Column(
+        JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb")
+    )
+    capabilities_json = Column(JSONB, nullable=True)
+    licensing_class = Column(String(64), nullable=True)
+    docs_url = Column(String(512), nullable=True)
+    is_enabled = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+
+    created_at = Column(DateTime, nullable=False, server_default=utcnow())
+    updated_at = Column(
+        DateTime, nullable=False, server_default=utcnow(), onupdate=utcnow()
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<WeatherProviderCatalog(id={self.id}, key={self.provider_key}, "
+            f"enabled={self.is_enabled})>"
+        )
+
+
+# ---------------------------------------------------------------------------
+# 9. weather_provider_accounts  (third-party provider framework — Phase B)
+# ---------------------------------------------------------------------------
+class WeatherProviderAccount(Base):
+    """A company's account/credential reference for a keyed weather provider.
+
+    Mirrors the telemetry ``DASConnection`` v2 account: the row stores only a
+    ``secret_name`` *reference* into the durable credential store (GCP Secret
+    Manager), NEVER the API key itself. Keyless providers (e.g. Open-Meteo) need
+    no account at all; this table exists for keyed/commercial providers.
+
+    Accounts are archived (``status=archived`` / ``is_archived``), never hard
+    deleted, so batch provenance that references an account stays resolvable.
+    """
+
+    __tablename__ = "weather_provider_accounts"
+    __table_args__ = (
+        Index("ix_weather_provider_accounts_company", "company_id"),
+        Index("ix_weather_provider_accounts_provider", "provider_key"),
+    )
+
+    id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
+    company_id = Column(
+        Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+    provider_key = Column(String(64), nullable=False)
+    display_name = Column(String(255), nullable=False)
+    # Reference into the durable credential store; the secret VALUE never lives
+    # in the DB. NULL only for keyless or transient build states.
+    secret_name = Column(String(255), nullable=True)
+    external_account_label = Column(String(255), nullable=True)
+    status = Column(
+        _PROVIDER_ACCOUNT_STATUS_ENUM,
+        nullable=False,
+        default=WeatherProviderAccountStatus.active,
+        server_default=WeatherProviderAccountStatus.active.value,
+    )
+    credential_status = Column(
+        _PROVIDER_CREDENTIAL_STATUS_ENUM,
+        nullable=False,
+        default=WeatherProviderCredentialStatus.unverified,
+        server_default=WeatherProviderCredentialStatus.unverified.value,
+    )
+    last_sync_status = Column(
+        _PROVIDER_SYNC_STATUS_ENUM,
+        nullable=False,
+        default=WeatherProviderSyncStatus.never,
+        server_default=WeatherProviderSyncStatus.never.value,
+    )
+    # Licensing acknowledgement — required before a commercial account is usable.
+    licensing_acknowledged_by = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    licensing_acknowledged_at = Column(DateTime, nullable=True)
+    last_success_at = Column(DateTime, nullable=True)
+    last_error_at = Column(DateTime, nullable=True)
+    last_error_message = Column(String(1000), nullable=True)
+    is_archived = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    archived_at = Column(DateTime, nullable=True)
+    created_by_user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+
+    created_at = Column(DateTime, nullable=False, server_default=utcnow())
+    updated_at = Column(
+        DateTime, nullable=False, server_default=utcnow(), onupdate=utcnow()
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<WeatherProviderAccount(id={self.id}, company_id={self.company_id}, "
+            f"provider={self.provider_key}, status={self.status})>"
+        )

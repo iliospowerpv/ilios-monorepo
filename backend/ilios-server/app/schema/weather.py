@@ -33,6 +33,7 @@ from app.models.weather import (
     WeatherDeclarationStatus,
     WeatherIrradiancePlane,
     WeatherObservationBatchKind,
+    WeatherProviderAccountStatus,
     WeatherSourceProfileRole,
     WeatherSourceType,
     WeatherTemperatureType,
@@ -673,3 +674,351 @@ class WeatherSemanticsReconciliationResponse(BaseModel):
     state_counts: dict[str, int] = Field(default_factory=dict)
     blocking_counts: dict[str, int] = Field(default_factory=dict)
     devices: list[WeatherSemanticsReconciliationRow] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Third-party weather provider framework (Phases A–D) — provider catalog +
+# per-company accounts. Additive + CONTEXT-ONLY. The secret VALUE and the
+# durable-store ``secret_name`` are NEVER surfaced in any response.
+# ---------------------------------------------------------------------------
+class WeatherProviderEntry(BaseModel):
+    """One registered weather provider (read-only catalog view).
+
+    ``expected_eligible_capable`` is surfaced explicitly and is ALWAYS ``False``
+    in Phases A–D: external weather is context-only and never physics-/expected-
+    eligible. ``requires_credentials`` is derived from a non-empty config schema
+    (keyless providers such as Open-Meteo report ``False``).
+    """
+
+    provider_key: str
+    display_name: str
+    licensing_class: Optional[str] = None
+    docs_url: Optional[str] = None
+    is_enabled: bool
+    requires_credentials: bool
+    config_schema: dict[str, Any] = Field(default_factory=dict)
+    capabilities: Optional[dict[str, Any]] = None
+    expected_eligible_capable: bool = False
+
+    @classmethod
+    def from_model(cls, row: Any) -> "WeatherProviderEntry":
+        schema = row.config_schema or {}
+        return cls(
+            provider_key=row.provider_key,
+            display_name=row.display_name,
+            licensing_class=row.licensing_class,
+            docs_url=row.docs_url,
+            is_enabled=bool(row.is_enabled),
+            requires_credentials=bool(schema),
+            config_schema=schema,
+            capabilities=row.capabilities_json or None,
+            expected_eligible_capable=False,
+        )
+
+
+class WeatherProviderList(BaseModel):
+    items: list[WeatherProviderEntry] = Field(default_factory=list)
+
+
+class WeatherProviderCredentials(BaseModel):
+    """Opaque credential field bag for a keyed provider account.
+
+    Values are written ONLY to the durable credential store; they are never
+    persisted to the DB, logged, or echoed back in any response.
+    """
+
+    fields: dict[str, str] = Field(default_factory=dict)
+
+
+class WeatherProviderAccountCreate(BaseModel):
+    provider_key: str
+    display_name: str
+    external_account_label: Optional[str] = None
+    credentials: Optional[WeatherProviderCredentials] = None
+    licensing_acknowledged: bool = False
+
+
+class WeatherProviderAccountUpdate(BaseModel):
+    display_name: Optional[str] = None
+    external_account_label: Optional[str] = None
+    status: Optional[WeatherProviderAccountStatus] = None
+    credentials: Optional[WeatherProviderCredentials] = None
+    licensing_acknowledged: Optional[bool] = None
+
+
+class WeatherProviderAccountResponse(BaseModel):
+    """A provider account row.
+
+    The secret value / ``secret_name`` is NEVER included;
+    ``credential_fingerprint`` is a non-reversible admin-only hint and
+    ``has_stored_credentials`` merely says whether a secret reference exists.
+    """
+
+    id: int
+    company_id: int
+    provider_key: str
+    display_name: str
+    external_account_label: Optional[str] = None
+    status: str
+    credential_status: str
+    last_sync_status: str
+    licensing_acknowledged: bool
+    licensing_acknowledged_at: Optional[datetime] = None
+    last_success_at: Optional[datetime] = None
+    last_error_at: Optional[datetime] = None
+    last_error_message: Optional[str] = None
+    is_archived: bool
+    has_stored_credentials: bool
+    credential_fingerprint: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    @staticmethod
+    def _ev(value: Any) -> Any:
+        return value.value if hasattr(value, "value") else value
+
+    @classmethod
+    def from_model(
+        cls, account: Any, *, credential_fingerprint: Optional[str] = None
+    ) -> "WeatherProviderAccountResponse":
+        return cls(
+            id=account.id,
+            company_id=account.company_id,
+            provider_key=account.provider_key,
+            display_name=account.display_name,
+            external_account_label=account.external_account_label,
+            status=cls._ev(account.status),
+            credential_status=cls._ev(account.credential_status),
+            last_sync_status=cls._ev(account.last_sync_status),
+            licensing_acknowledged=account.licensing_acknowledged_at is not None,
+            licensing_acknowledged_at=account.licensing_acknowledged_at,
+            last_success_at=account.last_success_at,
+            last_error_at=account.last_error_at,
+            last_error_message=account.last_error_message,
+            is_archived=bool(account.is_archived),
+            has_stored_credentials=bool(account.secret_name),
+            credential_fingerprint=credential_fingerprint,
+            created_at=getattr(account, "created_at", None),
+            updated_at=getattr(account, "updated_at", None),
+        )
+
+
+class WeatherProviderAccountList(BaseModel):
+    items: list[WeatherProviderAccountResponse] = Field(default_factory=list)
+
+
+class WeatherProviderTestResponse(BaseModel):
+    success: bool
+    message: str
+    credential_status: str
+
+
+# ---------------------------------------------------------------------------
+# Third-party provider import (Phase C) — preview / run / batch surfaces.
+# CONTEXT-ONLY: a provider pull stores honest measurement semantics (e.g. GHI
+# irradiance / ambient temperature) verbatim and converts NOTHING. It never
+# marks an external source physics-/expected-eligible, never transposes GHI->POA
+# or ambient->cell, and never fabricates a value (a missing reading is the
+# ABSENCE of a row). Pulls are gap-only + idempotent (``dedupe_key``) so they
+# never re-spend a metered call on a window already stored.
+# ---------------------------------------------------------------------------
+class ProviderImportRequest(BaseModel):
+    """Operator request to pull weather from a registered provider for a window.
+
+    ``account_id`` is required only for keyed providers; keyless providers (e.g.
+    Open-Meteo) omit it. ``metrics`` defaults to the provider's full advertised
+    metric set. The window is naive-UTC (the existing storage convention) and is
+    clamped to the provider's ``max_history_days`` at run time when declared.
+    """
+
+    provider_key: str = Field(min_length=1, max_length=64)
+    account_id: Optional[int] = None
+    window_start: datetime
+    window_end: datetime
+    metrics: Optional[list[str]] = None
+    granularity: str = Field(default="hourly", max_length=16)
+
+    @model_validator(mode="after")
+    def _check_window(self) -> "ProviderImportRequest":
+        if self.window_end <= self.window_start:
+            raise ValueError("window_end must be after window_start")
+        return self
+
+
+class ProviderImportPreviewResponse(BaseModel):
+    """Dry-run plan for a provider pull. Writes NOTHING.
+
+    Always reports ``context_only=True`` / ``expected_eligible_capable=False``:
+    external weather is context/provenance only and never feeds expected math.
+    ``estimated_provider_calls`` reflects gap-fill (windows already stored are
+    skipped), so the operator sees the real metered cost before committing.
+    """
+
+    provider_key: str
+    display_name: str
+    licensing_class: Optional[str] = None
+    context_only: bool = True
+    expected_eligible_capable: bool = False
+    verdict: str = "Context-only — not expected-eligible"
+    requested_metrics: list[str] = Field(default_factory=list)
+    native_plane: str = "unknown"
+    native_temperature_type: str = "unknown"
+    is_modeled: bool = True
+    window_start: datetime
+    window_end: datetime
+    effective_window_start: Optional[datetime] = None
+    effective_window_end: Optional[datetime] = None
+    chunk_count: int = 0
+    chunks_to_pull: int = 0
+    chunks_already_covered: int = 0
+    estimated_provider_calls: int = 0
+    existing_observation_count: int = 0
+    rate_limit_remaining_minute: Optional[int] = None
+    rate_limit_remaining_day: Optional[int] = None
+    warnings: list[str] = Field(default_factory=list)
+
+
+class ProviderImportResponse(BaseModel):
+    """Outcome of a provider pull (best-effort, partial-tolerant).
+
+    ``status`` mirrors ``pull_status`` (``succeeded`` / ``partial`` / ``failed``).
+    A pull that found every window already stored returns ``succeeded`` with
+    ``batch_id=None`` and zero writes. ``physics_usable_rows`` is reported for
+    transparency and is always 0 for context-only external weather.
+    """
+
+    status: str
+    pull_status: str
+    batch_id: Optional[int] = None
+    site_id: int
+    weather_source_id: Optional[int] = None
+    provider_key: str
+    account_id: Optional[int] = None
+    context_only: bool = True
+    expected_eligible_capable: bool = False
+    rows_pulled: int = 0
+    rows_inserted: int = 0
+    rows_duplicate: int = 0
+    distinct_metrics: list[str] = Field(default_factory=list)
+    physics_usable_rows: int = 0
+    stored_not_usable_rows: int = 0
+    modeled_rows: int = 0
+    chunks_pulled: int = 0
+    chunks_skipped: int = 0
+    period_start: Optional[datetime] = None
+    period_end: Optional[datetime] = None
+    api_version: Optional[str] = None
+    rate_limited: bool = False
+    warnings: list[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
+
+
+class ProviderPullBatchResponse(BaseModel):
+    """Read-only view of a ``provider_pull`` provenance batch.
+
+    Exposes only NON-secret provenance: which account, the pull status, the
+    window, row count, provider api version, and an error summary (never a
+    credential). Request/response hashes stay internal; they are not surfaced.
+    """
+
+    id: int
+    site_id: int
+    weather_source_id: int
+    account_id: Optional[int] = None
+    batch_kind: str
+    pull_status: Optional[str] = None
+    period_start: Optional[datetime] = None
+    period_end: Optional[datetime] = None
+    row_count: Optional[int] = None
+    provider_api_version: Optional[str] = None
+    error_summary: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    @staticmethod
+    def _ev(value: Any) -> Any:
+        return value.value if hasattr(value, "value") else value
+
+    @classmethod
+    def from_model(cls, batch: Any) -> "ProviderPullBatchResponse":
+        return cls(
+            id=batch.id,
+            site_id=batch.site_id,
+            weather_source_id=batch.weather_source_id,
+            account_id=getattr(batch, "account_id", None),
+            batch_kind=cls._ev(batch.batch_kind),
+            pull_status=cls._ev(getattr(batch, "pull_status", None)),
+            period_start=batch.period_start,
+            period_end=batch.period_end,
+            row_count=batch.row_count,
+            provider_api_version=getattr(batch, "provider_api_version", None),
+            error_summary=getattr(batch, "error_summary", None),
+            created_at=getattr(batch, "created_at", None),
+        )
+
+
+class ProviderPullBatchList(BaseModel):
+    items: list[ProviderPullBatchResponse] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# External weather CONTEXT (Phase D) — read-only provenance surface.
+#
+# This response is a pure read aggregation over already-stored external weather.
+# It NEVER calls or alters ``compute_weather_readiness`` and never feeds expected
+# math: every external source it reports is context-only and structurally
+# ``expected_eligible_capable=False`` (carries ghi/ambient/unknown semantics, not
+# poa/cell). Absent coverage is the absence of a row — counts are never fabricated.
+# ---------------------------------------------------------------------------
+class ExternalWeatherContextMetric(BaseModel):
+    """Per-metric coverage for one external source (honest, never fabricated)."""
+
+    metric: str
+    observation_count: int = 0
+    earliest_obs: Optional[datetime] = None
+    latest_obs: Optional[datetime] = None
+
+
+class ExternalWeatherContextSource(BaseModel):
+    """One external (modeled) weather source and its stored coverage.
+
+    ``is_modeled`` / ``default_confidence`` are reported verbatim from the source
+    row so the UI can label the value honestly ("modeled — <provider>"). The
+    source is never represented as physics-/expected-eligible.
+    """
+
+    weather_source_id: int
+    source_type: str
+    provider_key: Optional[str] = None
+    display_name: str
+    is_modeled: bool = True
+    default_confidence: Optional[str] = None
+    licensing_note: Optional[str] = None
+    active: bool = True
+    observation_count: int = 0
+    earliest_obs: Optional[datetime] = None
+    latest_obs: Optional[datetime] = None
+    metrics: list[ExternalWeatherContextMetric] = Field(default_factory=list)
+
+
+class ExternalWeatherContextResponse(BaseModel):
+    """Read-only external-weather context for a site.
+
+    Carries the explicit context-only banner/verdict, the external sources with
+    their coverage windows, the most recent provider pull, and recent pull
+    provenance. ``expected_eligible_capable`` is always ``False`` — this surface
+    exists to make external weather auditable, NOT to feed expected math.
+    """
+
+    site_id: int
+    context_only: bool = True
+    expected_eligible_capable: bool = False
+    banner: str = (
+        "External weather is context-only and is NOT expected-eligible. "
+        "It is never converted to plane-of-array irradiance or cell temperature "
+        "and never feeds the expected-production calculation."
+    )
+    source_count: int = 0
+    total_observation_count: int = 0
+    sources: list[ExternalWeatherContextSource] = Field(default_factory=list)
+    last_pull: Optional[ProviderPullBatchResponse] = None
+    recent_batches: list[ProviderPullBatchResponse] = Field(default_factory=list)

@@ -6,7 +6,17 @@ import type {
   WeatherActivateRequest,
   WeatherReReviewRequest,
   WeatherUpstreamReEvaluateResponse,
-  WeatherSemanticsReconciliationResponse
+  WeatherSemanticsReconciliationResponse,
+  WeatherProviderList,
+  WeatherProviderAccountList,
+  WeatherProviderAccountResponse,
+  WeatherProviderAccountCreate,
+  WeatherProviderAccountUpdate,
+  WeatherProviderTestResponse,
+  ProviderImportRequest,
+  ProviderImportPreviewResponse,
+  ProviderImportResponse,
+  ExternalWeatherContextResponse
 } from '../types/weather';
 
 /**
@@ -94,6 +104,90 @@ export const buildWeatherApi = (httpClient: AxiosInstance) => {
     return response.data;
   };
 
+  // -------------------------------------------------------------------------
+  // Third-party weather provider framework (Phases A–D) — CONTEXT-ONLY.
+  // External weather is provenance/context only: it is NEVER expected-eligible,
+  // never converted to POA/cell, and never fabricated. These thin clients only
+  // read the catalog/context and trigger explicitly-bounded, idempotent pulls.
+  // -------------------------------------------------------------------------
+
+  // Read-only catalog of registered providers + capabilities + licensing.
+  const listProviders = async (includeDisabled = false): Promise<WeatherProviderList> => {
+    const response = await httpClient.get<WeatherProviderList>('/api/weather/providers', {
+      params: includeDisabled ? { include_disabled: true } : undefined
+    });
+    return response.data;
+  };
+
+  // Read-only list of a company's weather provider accounts.
+  const listProviderAccounts = async (
+    companyId: number,
+    includeArchived = false
+  ): Promise<WeatherProviderAccountList> => {
+    const response = await httpClient.get<WeatherProviderAccountList>(
+      `/api/weather/companies/${companyId}/weather-provider-accounts`,
+      { params: includeArchived ? { include_archived: true } : undefined }
+    );
+    return response.data;
+  };
+
+  // Create a keyed/keyless provider account (credentials stored write-only).
+  const createProviderAccount = async (
+    companyId: number,
+    payload: WeatherProviderAccountCreate
+  ): Promise<WeatherProviderAccountResponse> => {
+    const response = await httpClient.post<WeatherProviderAccountResponse>(
+      `/api/weather/companies/${companyId}/weather-provider-accounts`,
+      payload
+    );
+    return response.data;
+  };
+
+  // Rename / pause / archive / rotate credentials (no hard delete).
+  const updateProviderAccount = async (
+    companyId: number,
+    accountId: number,
+    payload: WeatherProviderAccountUpdate
+  ): Promise<WeatherProviderAccountResponse> => {
+    const response = await httpClient.patch<WeatherProviderAccountResponse>(
+      `/api/weather/companies/${companyId}/weather-provider-accounts/${accountId}`,
+      payload
+    );
+    return response.data;
+  };
+
+  // Verify stored credentials against the provider; updates credential_status.
+  const testProviderAccount = async (companyId: number, accountId: number): Promise<WeatherProviderTestResponse> => {
+    const response = await httpClient.post<WeatherProviderTestResponse>(
+      `/api/weather/companies/${companyId}/weather-provider-accounts/${accountId}/test`
+    );
+    return response.data;
+  };
+
+  // Dry-run a bounded pull: row plan, semantics, context-only verdict. No writes.
+  const previewProviderImport = async (
+    siteId: number,
+    payload: ProviderImportRequest
+  ): Promise<ProviderImportPreviewResponse> => {
+    const response = await httpClient.post<ProviderImportPreviewResponse>(
+      `${base(siteId)}/provider-import/preview`,
+      payload
+    );
+    return response.data;
+  };
+
+  // Execute a bounded, gap-only, idempotent pull into a provider_pull batch.
+  const runProviderImport = async (siteId: number, payload: ProviderImportRequest): Promise<ProviderImportResponse> => {
+    const response = await httpClient.post<ProviderImportResponse>(`${base(siteId)}/provider-import`, payload);
+    return response.data;
+  };
+
+  // Read-only external-weather context for a site (sources, coverage, pulls).
+  const getExternalWeatherContext = async (siteId: number): Promise<ExternalWeatherContextResponse> => {
+    const response = await httpClient.get<ExternalWeatherContextResponse>(`${base(siteId)}/external-weather-context`);
+    return response.data;
+  };
+
   return Object.freeze({
     listDeviceMappings,
     declareDeviceMapping,
@@ -102,6 +196,14 @@ export const buildWeatherApi = (httpClient: AxiosInstance) => {
     listDeviceMappingHistory,
     previewUpstreamChanges,
     reEvaluateUpstreamChanges,
-    getSemanticsReconciliation
+    getSemanticsReconciliation,
+    listProviders,
+    listProviderAccounts,
+    createProviderAccount,
+    updateProviderAccount,
+    testProviderAccount,
+    previewProviderImport,
+    runProviderImport,
+    getExternalWeatherContext
   });
 };

@@ -816,6 +816,56 @@ def test_resolve_window_das_byte_identical_when_historical_profile_not_active(
     assert window.provenance.historical is False
 
 
+def test_resolve_window_unaffected_by_imported_external_provider_observations(
+    monkeypatch,
+):
+    # Phase A-D gate: importing third-party (external_modeled_provider) weather —
+    # ghi/ambient/unknown context-only observations — must NEVER divert the live
+    # resolver. With no ACTIVE historical profile the resolved window AND its
+    # provenance are byte-identical whether or not the external observations exist,
+    # so a provider pull can never silently feed expected math.
+    das_source = _source(id=20)
+
+    def _run(observations):
+        _patch_resolver(
+            monkeypatch,
+            irr_rows=[_row(_T0, 500.0), _row(_T1, 800.0)],
+            cell_rows=[_row(_T0, 95.0), _row(_T1, 104.0)],
+            profiles=[],
+            sources=[das_source],
+            observations=observations,
+        )
+        return WeatherResolver(db=None).resolve_window(
+            site_id=1, start=_WIN_START, end=_WIN_END, bucket_size="1h"
+        )
+
+    baseline = _run([])
+    external_obs = [
+        _obs(
+            _T0,
+            IRRADIANCE_METRIC,
+            999.0,  # a wildly different ghi value that must NEVER leak in
+            plane="ghi",
+            temp="unknown",
+            is_modeled=True,
+            confidence="unknown",
+            weather_source_id=20,
+        ),
+    ]
+    with_external = _run(external_obs)
+
+    assert set(with_external.buckets) == set(baseline.buckets) == {_T0, _T1}
+    # The DAS rollup values win unchanged; the external ghi=999 is never promoted.
+    assert with_external.buckets[_T0].irradiance_poa_wm2 == 500.0
+    assert (
+        with_external.buckets[_T0].irradiance_poa_wm2
+        == baseline.buckets[_T0].irradiance_poa_wm2
+    )
+    assert with_external.provenance.indicators == baseline.provenance.indicators
+    assert with_external.provenance.status == baseline.provenance.status
+    assert with_external.provenance.historical is False
+
+
 # ---------------------------------------------------------------------------
 # Numeric invariance — the heart of the W1 contract
 # ---------------------------------------------------------------------------
