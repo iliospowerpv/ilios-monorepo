@@ -65,3 +65,25 @@ any physics use behind governance + transposition (Phase E).
   `is_modeled=True`, no poa/cell, `physics_usable_rows==0`; and
   `compute_site_expected_period_effective` + `WeatherResolver.resolve_window` are
   byte-identical before vs after the import (external source id never selected).
+
+**Phase D.5 operational-governance design (PLANNED, not built):** full plan in
+`docs/third_party_weather_provider_framework_phase_d5_operational_readiness_plan.md`.
+Durable gotchas for whoever builds it:
+- *Global `is_enabled` is a multi-company exposure trap.* The catalog is GLOBAL, so
+  enabling a KEYLESS provider (Open-Meteo needs only a licensing ack, no account)
+  exposes it to EVERY eligible company at once — a global flag can't scope a
+  single-company pilot. Needs a company entitlement allowlist (consulted in
+  `_resolve_provider_pull_context`) or a company-scoped account+ack even for keyless.
+- *Catalog lifecycle (enable/approve/retire) is GLOBAL → needs platform/super-admin,
+  NOT company `telemetry_admin`.* Using the company guard would be broken access
+  control. This is the biggest open authz decision.
+- *Track import attempts in a SEPARATE job table* (mirror `TelemetrySyncJob`:
+  status/trigger/retry-lineage); keep `weather_observation_batches` IMMUTABLE
+  provenance — never add queued/running/retry to batches.
+- *"Replay is idempotent on observations" ≠ "replay reproduces the original batch
+  lineage."* `dedupe_key` makes re-import a no-op for rows, but a replay creates new
+  batch/job rows with `rows_written=0`; integrity checks must report recovered
+  COVERAGE separately from any single batch's `row_count`.
+- *No scheduler stays a hard line even for ops:* failure notifications must be
+  emitted INLINE at operator-action time (Mailgun already configured), never by a
+  background poller — no `TelemetrySchedulerState` analog.

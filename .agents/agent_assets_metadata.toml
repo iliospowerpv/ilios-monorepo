@@ -143,3 +143,9 @@ id = "raj1TqdUpA1uG0AF1DvYS"
 uri = "file://docs/third_party_weather_provider_framework_phase_a_d_implementation_plan.md"
 type = "text"
 title = "Weather Provider Framework — Phases A–D Implementation Plan"
+
+[[outputs]]
+id = "pK0DQxVeGFjsLQzdKgPPQ"
+uri = "file://docs/third_party_weather_provider_framework_phase_d5_operational_readiness_plan.md"
+type = "text"
+title = "Phase D.5 — Operational Readiness & Governance Plan"
