@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.schema.assistant import (
+    AssistantActionCard,
     AssistantChatRequest,
     AssistantChatResponse,
     AssistantToolInvocation,
@@ -107,11 +108,37 @@ def _truncate(text: str) -> str:
     return text[:_MAX_TOOL_RESULT_CHARS] + '… [truncated]"}'
 
 
+def _collect_action_cards(result, sink: list[AssistantActionCard], seen: set) -> None:
+    """If a tool result carries a validated, permitted action card, add it (deduped) to the
+    response. Cards are propose-only deep links — recording one never executes anything."""
+    if not isinstance(result, dict):
+        return
+    card = result.get("action_card")
+    if not (isinstance(card, dict) and result.get("permitted")):
+        return
+    key = (
+        card.get("kind"),
+        card.get("workflow_id"),
+        card.get("sequence_id"),
+        card.get("run_id"),
+        card.get("route"),
+    )
+    if key in seen:
+        return
+    try:
+        sink.append(AssistantActionCard(**card))
+        seen.add(key)
+    except Exception:  # noqa: BLE001 - never let a malformed card break the chat
+        logger.warning("AI Assistant skipped a malformed action card: %r", card)
+
+
 def run_assistant_chat(
     db_session: Session, current_user, req: AssistantChatRequest
 ) -> AssistantChatResponse:
     messages = _build_messages(req)
     used: list[AssistantToolInvocation] = []
+    action_cards: list[AssistantActionCard] = []
+    seen_cards: set = set()
     reply = ""
 
     for _ in range(MAX_TOOL_ITERATIONS):
@@ -150,6 +177,7 @@ def run_assistant_chat(
             try:
                 result = tools.dispatch_tool(db_session, current_user, name or "", args)
                 used.append(AssistantToolInvocation(name=name or "", ok=True))
+                _collect_action_cards(result, action_cards, seen_cards)
                 content = _truncate(json.dumps(result, default=str))
             except AssistantGuardrailError as exc:
                 used.append(
@@ -189,4 +217,5 @@ def run_assistant_chat(
         model=llm_client.ASSISTANT_MODEL,
         reply=reply,
         used_tools=used,
+        action_cards=action_cards,
     )

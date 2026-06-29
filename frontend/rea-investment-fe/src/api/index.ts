@@ -27,6 +27,7 @@ import { buildReconciliationApi } from './reconciliation';
 import { buildAssumptionsApi } from './assumptions';
 import { buildWeatherApi } from './weather';
 import { buildWorkflowsApi } from './workflows';
+import { buildAssistantApi } from './assistant';
 
 export const ApiClient = Object.freeze({
   _tokenManager: tokenManager,
@@ -58,7 +59,8 @@ export const ApiClient = Object.freeze({
   reconciliation: buildReconciliationApi(httpClient),
   assumptions: buildAssumptionsApi(httpClient),
   weather: buildWeatherApi(httpClient),
-  workflows: buildWorkflowsApi(httpClient)
+  workflows: buildWorkflowsApi(httpClient),
+  assistant: buildAssistantApi(httpClient)
 });
 
 export type {
@@ -291,3 +293,21 @@ export type {
   WorkflowErrorPayload,
   WorkflowsApi
 } from './workflows';
+
+export type {
+  AssistantRole,
+  AssistantMode,
+  AssistantActionCardKind,
+  AssistantMessage,
+  AssistantContextHints,
+  AssistantToolInvocation,
+  AssistantActionCard,
+  AssistantChatRequest,
+  AssistantChatResponse,
+  AssistantPersistedMessage,
+  AssistantConversationSummary,
+  AssistantConversationListResponse,
+  AssistantConversationDetailResponse,
+  AssistantConfigResponse,
+  AssistantApi
+} from './assistant';

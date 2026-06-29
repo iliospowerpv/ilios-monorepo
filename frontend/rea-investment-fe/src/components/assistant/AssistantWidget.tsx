@@ -1,0 +1,215 @@
+import * as React from 'react';
+import Fab from '@mui/material/Fab';
+import Drawer from '@mui/material/Drawer';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import Stack from '@mui/material/Stack';
+import Divider from '@mui/material/Divider';
+import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
+import CloseIcon from '@mui/icons-material/Close';
+import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
+import HistoryIcon from '@mui/icons-material/History';
+import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+import { ApiClient } from '../../api';
+import { useAuth } from '../../contexts/auth/auth';
+import { useEntityContext } from '../../contexts/entityContext';
+import { AssistantChatPanel, ChatUiMessage } from './AssistantChatPanel';
+import { ConversationList } from './ConversationList';
+import type { AssistantChatRequest, AssistantContextHints } from '../../api/assistant';
+
+const DRAWER_WIDTH = 420;
+const CONFIG_KEY = ['assistant', 'config'];
+const CONVERSATIONS_KEY = ['assistant', 'conversations'];
+const HISTORY_LIMIT = 20;
+
+type PanelView = 'chat' | 'history';
+
+export const AssistantWidget: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { currentCompany, currentProject } = useEntityContext();
+  const queryClient = useQueryClient();
+
+  const [open, setOpen] = React.useState(false);
+  const [view, setView] = React.useState<PanelView>('chat');
+  const [conversationId, setConversationId] = React.useState<string | null>(null);
+  const [messages, setMessages] = React.useState<ChatUiMessage[]>([]);
+
+  // Probe: reachable ONLY when the backend flag is on (404 otherwise). A successful fetch means the
+  // assistant is available; any error keeps the FAB hidden. Never retried so a 404 fails fast.
+  const configQuery = useQuery({
+    queryKey: CONFIG_KEY,
+    queryFn: ApiClient.assistant.getConfig,
+    enabled: isAuthenticated,
+    retry: false,
+    staleTime: 5 * 60 * 1000
+  });
+
+  const conversationsQuery = useQuery({
+    queryKey: CONVERSATIONS_KEY,
+    queryFn: () => ApiClient.assistant.listConversations(),
+    enabled: isAuthenticated && configQuery.isSuccess && open && view === 'history'
+  });
+
+  const buildContext = React.useCallback((): AssistantContextHints => {
+    return {
+      route: location.pathname,
+      company_id: currentCompany?.id ?? null,
+      // Project == Site (UI label only); send the same id under both keys.
+      site_id: currentProject?.id ?? null,
+      project_id: currentProject?.id ?? null
+    };
+  }, [location.pathname, currentCompany?.id, currentProject?.id]);
+
+  const chatMutation = useMutation({
+    mutationFn: (request: AssistantChatRequest) => ApiClient.assistant.chat(request),
+    onSuccess: response => {
+      setConversationId(prev => response.conversation_id ?? prev);
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: response.reply,
+          action_cards: response.action_cards,
+          used_tools: response.used_tools
+        }
+      ]);
+      queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY });
+    }
+  });
+
+  const loadMutation = useMutation({
+    mutationFn: (id: number) => ApiClient.assistant.getConversation(id),
+    onSuccess: detail => {
+      setMessages(
+        detail.messages.map(message => ({
+          role: message.role,
+          content: message.content,
+          action_cards: message.action_cards,
+          used_tools: message.used_tools
+        }))
+      );
+      setConversationId(String(detail.id));
+      setView('chat');
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => ApiClient.assistant.deleteConversation(id),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY });
+      if (conversationId === String(id)) {
+        setMessages([]);
+        setConversationId(null);
+      }
+    }
+  });
+
+  const handleSend = (text: string) => {
+    const history = messages.slice(-HISTORY_LIMIT).map(message => ({ role: message.role, content: message.content }));
+    setMessages(prev => [...prev, { role: 'user', content: text }]);
+    chatMutation.mutate({
+      message: text,
+      history,
+      context: buildContext(),
+      conversation_id: conversationId,
+      persist: true
+    });
+  };
+
+  const handleNewConversation = () => {
+    setMessages([]);
+    setConversationId(null);
+    setView('chat');
+  };
+
+  const handleOpenCard = (route: string) => {
+    setOpen(false);
+    navigate(route);
+  };
+
+  if (!isAuthenticated || !configQuery.isSuccess) {
+    return null;
+  }
+
+  return (
+    <>
+      <Tooltip title="AI Assistant" placement="left">
+        <Fab
+          color="secondary"
+          aria-label="Open AI Assistant"
+          onClick={() => setOpen(true)}
+          sx={{ position: 'fixed', bottom: 24, right: 24, zIndex: theme => theme.zIndex.drawer + 2 }}
+        >
+          <SmartToyOutlinedIcon />
+        </Fab>
+      </Tooltip>
+
+      <Drawer
+        anchor="right"
+        open={open}
+        onClose={() => setOpen(false)}
+        PaperProps={{ sx: { width: { xs: '100%', sm: DRAWER_WIDTH }, display: 'flex', flexDirection: 'column' } }}
+      >
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <SmartToyOutlinedIcon color="secondary" />
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+              AI Assistant
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Read-only guidance — you take the actions
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={0.5}>
+            <Tooltip title="New conversation">
+              <IconButton size="small" onClick={handleNewConversation} aria-label="New conversation">
+                <AddCommentOutlinedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={view === 'history' ? 'Back to chat' : 'Conversation history'}>
+              <IconButton
+                size="small"
+                onClick={() => setView(view === 'history' ? 'chat' : 'history')}
+                aria-label="Toggle conversation history"
+              >
+                {view === 'history' ? <ChatOutlinedIcon fontSize="small" /> : <HistoryIcon fontSize="small" />}
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Close">
+              <IconButton size="small" onClick={() => setOpen(false)} aria-label="Close assistant">
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        </Box>
+        <Divider />
+
+        <Box sx={{ flex: 1, minHeight: 0 }}>
+          {view === 'history' ? (
+            <ConversationList
+              conversations={conversationsQuery.data?.items ?? []}
+              isLoading={conversationsQuery.isLoading || loadMutation.isPending}
+              onSelect={id => loadMutation.mutate(id)}
+              onDelete={id => deleteMutation.mutate(id)}
+            />
+          ) : (
+            <AssistantChatPanel
+              messages={messages}
+              isSending={chatMutation.isPending}
+              isError={chatMutation.isError}
+              onSend={handleSend}
+              onOpenCard={handleOpenCard}
+            />
+          )}
+        </Box>
+      </Drawer>
+    </>
+  );
+};

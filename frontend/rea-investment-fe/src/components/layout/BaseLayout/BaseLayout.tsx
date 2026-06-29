@@ -10,6 +10,7 @@ import { GlobalAdminBanner } from '../GlobalAdminBanner/GlobalAdminBanner';
 import { useAuth } from '../../../contexts/auth/auth';
 import { SidebarProvider } from '../../../contexts/sidebar';
 import { EntityContextProvider } from '../../../contexts/entityContext';
+import { AssistantWidget } from '../../assistant';
 
 export const BaseLayout: React.FC = () => {
   const { isAuthPending, isAuthenticated } = useAuth();
@@ -29,6 +30,7 @@ export const BaseLayout: React.FC = () => {
           <PageHeader />
           <PageSidebar />
           <Main />
+          <AssistantWidget />
         </Box>
       </SidebarProvider>
     </EntityContextProvider>

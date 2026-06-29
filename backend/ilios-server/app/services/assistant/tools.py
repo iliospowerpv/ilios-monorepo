@@ -17,6 +17,7 @@ from typing import Any, Callable
 from sqlalchemy.orm import Session
 
 from app.services.assistant import guardrails
+from app.services.assistant.action_cards import build_action_card
 from app.services.assistant.faq import search_faq
 from app.services.workflows.engine import (
     compute_metrics,
@@ -105,6 +106,24 @@ def _t_answer_help_faq(db: Session, user, args: dict) -> dict:
     return {"results": search_faq(str(args.get("query") or ""), limit=_clamp(args.get("limit"), 4))}
 
 
+def _t_propose_action_card(db: Session, user, args: dict) -> dict:
+    """Validate (read-only) that the caller MAY take a workflow/sequence/resume action and, if so,
+    return an inert deep-link card the USER can click. Never starts/executes anything — producing a
+    link is not a governed action, so this is genuinely read-only. Denied (no card) when not allowed.
+    """
+    return build_action_card(
+        db,
+        user,
+        kind=str(args.get("kind") or ""),
+        workflow_id=(args.get("workflow_id") or None),
+        sequence_id=(args.get("sequence_id") or None),
+        run_id=_opt_int(args.get("run_id")),
+        site_id=_opt_int(args.get("site_id")),
+        company_id=_opt_int(args.get("company_id")),
+        reason=(args.get("reason") or None),
+    )
+
+
 TOOL_HANDLERS: dict[str, Callable[[Session, Any, dict], dict]] = {
     "list_workflows": _t_list_workflows,
     "list_sequences": _t_list_sequences,
@@ -115,6 +134,7 @@ TOOL_HANDLERS: dict[str, Callable[[Session, Any, dict], dict]] = {
     "get_orchestration_context": _t_get_orchestration_context,
     "get_workflow_metrics": _t_get_workflow_metrics,
     "answer_help_faq": _t_answer_help_faq,
+    "propose_action_card": _t_propose_action_card,
 }
 
 # Single source of truth for the allowlist (guardrails screens names against this set + keywords).
@@ -199,6 +219,33 @@ TOOL_SPECS: list[dict] = [
         "what workflows are, what the assistant can/can't do). Returns grounding text to answer "
         "general 'how do I' / 'what is' questions.",
         {"query": {"type": "string", "description": "The user's help/FAQ question."}, "limit": _LIMIT_PROP},
+    ),
+    _spec(
+        "propose_action_card",
+        "Propose ONE inert deep-link 'action card' the USER can click to take the next step "
+        "themselves in the existing workflow UI. This is READ-ONLY: it only validates the user is "
+        "allowed to start/resume the target and returns a link — it NEVER starts, advances, or "
+        "executes anything. Use this when you recommend a concrete next step so the user gets a "
+        "clickable shortcut. If the user lacks permission, no card is returned (say so honestly). "
+        "kind='workflow' needs workflow_id (optionally site_id/company_id to scope); kind='sequence' "
+        "needs sequence_id; kind='resume' needs run_id (one of the user's own open runs). Always "
+        "make clear the user must click it — you cannot.",
+        {
+            "kind": {
+                "type": "string",
+                "enum": ["workflow", "sequence", "resume"],
+                "description": "What the card links to.",
+            },
+            "workflow_id": {"type": "string", "description": "Required when kind='workflow'."},
+            "sequence_id": {"type": "string", "description": "Required when kind='sequence'."},
+            "run_id": {"type": "integer", "description": "Required when kind='resume' (caller's own run)."},
+            "site_id": _SITE_PROP,
+            "company_id": _COMPANY_PROP,
+            "reason": {
+                "type": "string",
+                "description": "Short, honest one-line reason this step helps (shown on the card).",
+            },
+        },
     ),
 ]
 

@@ -60,3 +60,7 @@ from app.models.weather import (
 )
 from app.models.inventory_acknowledgement import InventoryMismatchAcknowledgement
 from app.models.workflow import WorkflowRun, WorkflowStepState
+from app.models.assistant import (
+    AssistantConversation,
+    AssistantConversationMessage,
+)

@@ -46,3 +46,34 @@ Pure unit style (no live DB): scripted fake OpenAI client (`SimpleNamespace` mim
 `choices[0].message.tool_calls[].function.{name,arguments}`); zero-write proof = `MagicMock` db with
 `add/commit/flush/delete/...` asserted not-called; patch the wrapped services as attributes of the
 `tools` module (they're imported at module load, so `monkeypatch.setattr(tools, "build_recommendations", ...)`).
+
+## Slice 2 — action cards + persistence + FE (built on Slice 1)
+- **Action cards are PROPOSE-ONLY deep links, never execution.** `services/assistant/action_cards.py`
+  validates eligibility through READ-ONLY engine calls (`get_definition`/`_can_start`, `list_sequences`,
+  owner-scoped `list_user_runs`) and emits a card `{permitted, reason, action_card|None}` whose `route`
+  points into the EXISTING workflow UI (`/workflows/start/{id}?site_id=&company_id=`, sequence
+  `/workflows/sequences/{id}`, resume `/workflows/runs/{id}`). The USER clicks it; the AI never starts/
+  previews/executes. `requires_user_action` is always true. The `propose_action_card` tool name was
+  chosen to pass the prohibited-keyword screen (no start/execute/run/advance verbs).
+  **Why:** the card is the handoff to the human handshake — putting an executable verb in the tool name
+  would trip the guardrail and, worse, imply the AI can act.
+- `assistant_service._collect_action_cards` aggregates cards across the tool loop and **dedupes** on
+  (kind, workflow_id, sequence_id, run_id, route); returned as `action_cards` on the chat response.
+- **Persistence writes ONLY the new `assistant_*` tables** (`conversation_store.py` over
+  `models/assistant.py`: `AssistantConversation` + `AssistantConversationMessage`, migration `ff41`,
+  down_revision `ff40`). Owner-scoped CRUD: cross-user GET = 404, list is owner-only, DELETE is
+  soft-archive (204). The tool layer stays zero-write — only the router's persist path writes. Legacy
+  DD `chatbot_conversations` is untouched and shares nothing.
+- Chat persist path: router `resolve_or_create` + `append_turn`, echoes `conversation_id` so the FE can
+  continue/resume a thread. `persist` flag (or a supplied `conversation_id`) opts a turn into storage.
+- **FE** (`src/components/assistant/*`, `src/api/assistant.ts`): a global FAB + right Drawer mounted in
+  `BaseLayout` INSIDE `EntityContextProvider`/`SidebarProvider` (so context hooks work), after `<Main/>`.
+  Render is gated on `GET /config` success via React Query `retry:false` — when the flag is off the
+  endpoint 404s and the FAB never mounts. Context hints are advisory only (route from `useLocation`,
+  company/site from `useEntityContext`; Project==Site so the same id is sent as both `site_id` and
+  `project_id`) and NEVER widen authz. Action-card "Open" buttons just `navigate(card.route)` — the FE
+  performs no execution either. Client supplies trailing `history` (last 20 turns).
+- **Verification note:** a live flag-on smoke is not feasible in dev (endpoints are auth-gated; the
+  app_preview screenshot is unauthenticated so the FAB never shows). Flag-on config/chat/persistence/
+  action-card/guardrail behavior is covered by `tests/test_assistant_slice2.py` (TestClient sets the
+  flag); unauth gates verified live (config & chat → 401).
