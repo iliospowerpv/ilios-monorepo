@@ -160,11 +160,21 @@ export interface WorkflowMetricsResponse {
 
 // --- Sequences (orchestrator catalog) ------------------------------------------------
 
+// A declarative, best-effort cross-step prefill hint applied by the FE sequence runner: copy the
+// entity id created by an earlier step (`from_step_index` -> its produced entity) into this step's
+// collect field `target_field`. Carries NO executable logic and grants NO access — the underlying
+// workflow still validates + authorizes its own inputs at execute time.
+export interface SequencePrefillSchema {
+  target_field: string;
+  from_step_index: number;
+}
+
 export interface SequenceStepSchema {
   workflow_id: string;
   title: string;
   description: string;
   can_start: boolean;
+  prefill: SequencePrefillSchema[];
 }
 
 export interface SequenceSchema {
@@ -179,6 +189,110 @@ export interface SequenceSchema {
 
 export interface SequenceListResponse {
   items: SequenceSchema[];
+}
+
+// --- Phase 3: Guided onboarding (READ-ONLY aggregation) ------------------------------
+//
+// Every shape below mirrors a backend read-only rollup that CALLS existing domain services and
+// reads their verdicts verbatim. Nothing here computes operational truth, and none of the getters
+// write, start, or advance anything — they are discovery/advice surfaces only.
+
+export interface OnboardingStageSchema {
+  key: string;
+  label: string;
+  done: boolean;
+  available: boolean;
+  detail?: string | null;
+}
+
+export interface SiteOnboardingProgressSchema {
+  site_id: number;
+  site_name?: string | null;
+  company_id?: number | null;
+  completed_stages: number;
+  total_stages: number;
+  completion_rate: number; // fraction in [0, 1] over EVALUABLE stages
+  stages: OnboardingStageSchema[];
+}
+
+export interface OnboardingProgressResponse {
+  generated_at: string;
+  scope: string; // "site" | "company" | "me"
+  total_sites: number;
+  items: SiteOnboardingProgressSchema[];
+}
+
+// One readiness dimension. `available` is false (with a `reason`) when the caller may not see it or
+// the underlying service could not be read — the section degrades, the summary never errors.
+export interface ReadinessSectionSchema {
+  available: boolean;
+  reason?: string | null;
+  status?: string | null;
+  summary?: string | null;
+  data?: Record<string, unknown> | null;
+}
+
+export interface SiteReadinessSchema {
+  site_id: number;
+  site_name?: string | null;
+  company_id?: number | null;
+  telemetry_health: ReadinessSectionSchema;
+  reconciliation: ReadinessSectionSchema;
+  device_eligibility: ReadinessSectionSchema;
+  expected_baseline: ReadinessSectionSchema;
+}
+
+export interface ReadinessSummaryResponse {
+  generated_at: string;
+  scope: string;
+  total_sites: number;
+  items: SiteReadinessSchema[];
+}
+
+// A single deterministic, READ-ONLY next-action hint. It is a link/suggestion only — never
+// auto-started, and it never promotes, approves, maps devices, or declares semantics.
+export interface RecommendationSchema {
+  kind: string; // "workflow" | "sequence"
+  workflow_id?: string | null;
+  sequence_id?: string | null;
+  title: string;
+  reason: string;
+  priority: number; // lower = more important
+  target_site_id?: number | null;
+  target_company_id?: number | null;
+  blocked: boolean;
+  blocked_reason?: string | null;
+  route?: string | null;
+}
+
+export interface RecommendationsResponse {
+  generated_at: string;
+  scope: string;
+  items: RecommendationSchema[];
+}
+
+// Versioned, READ-ONLY envelope bundling every authorized onboarding signal for a future AI
+// advisor to reason over WITHOUT being able to act. `mode` is always "read_only_advice" and
+// `prohibited_actions` is the explicit, machine-readable non-execution contract.
+export interface OrchestrationContextResponse {
+  schema_version: string;
+  mode: string;
+  generated_at: string;
+  actor_scope: string;
+  available_workflows: WorkflowDefinitionSchema[];
+  sequences: SequenceSchema[];
+  runs_summary: WorkflowRunSummarySchema[];
+  metrics: WorkflowMetricsResponse;
+  progress: OnboardingProgressResponse;
+  readiness: ReadinessSummaryResponse;
+  recommendations: RecommendationSchema[];
+  prohibited_actions: string[];
+}
+
+export interface OnboardingScopeParams {
+  companyId?: number;
+  siteId?: number;
+  limit?: number;
 }
 
 // --- Requests ------------------------------------------------------------------------
@@ -269,6 +383,46 @@ export const buildWorkflowsApi = (httpClient: AxiosInstance) => ({
 
   listSequences: async (): Promise<SequenceListResponse> => {
     const { data } = await httpClient.get<SequenceListResponse>(`${WF}/sequences`);
+    return data;
+  },
+
+  // --- Phase 3: read-only guided-onboarding aggregations -----------------------------
+  // All four are pure GETs (no writes, no audit, never start/advance a run). They are scoped
+  // owner/permission-side by the server; the optional params only narrow + cap the result set.
+
+  getOnboardingProgress: async (params: OnboardingScopeParams = {}): Promise<OnboardingProgressResponse> => {
+    const search = new URLSearchParams();
+    if (params.companyId != null) search.append('company_id', String(params.companyId));
+    if (params.siteId != null) search.append('site_id', String(params.siteId));
+    if (params.limit != null) search.append('limit', String(params.limit));
+    const qs = search.toString();
+    const { data } = await httpClient.get<OnboardingProgressResponse>(
+      `${WF}/onboarding/progress${qs ? `?${qs}` : ''}`
+    );
+    return data;
+  },
+
+  getReadiness: async (params: OnboardingScopeParams = {}): Promise<ReadinessSummaryResponse> => {
+    const search = new URLSearchParams();
+    if (params.companyId != null) search.append('company_id', String(params.companyId));
+    if (params.siteId != null) search.append('site_id', String(params.siteId));
+    if (params.limit != null) search.append('limit', String(params.limit));
+    const qs = search.toString();
+    const { data } = await httpClient.get<ReadinessSummaryResponse>(
+      `${WF}/onboarding/readiness${qs ? `?${qs}` : ''}`
+    );
+    return data;
+  },
+
+  getRecommendations: async (limit?: number): Promise<RecommendationsResponse> => {
+    const qs = limit != null ? `?limit=${limit}` : '';
+    const { data } = await httpClient.get<RecommendationsResponse>(`${WF}/recommendations${qs}`);
+    return data;
+  },
+
+  getOrchestrationContext: async (limit?: number): Promise<OrchestrationContextResponse> => {
+    const qs = limit != null ? `?limit=${limit}` : '';
+    const { data } = await httpClient.get<OrchestrationContextResponse>(`${WF}/orchestration/context${qs}`);
     return data;
   },
 

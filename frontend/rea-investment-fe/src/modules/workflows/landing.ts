@@ -39,8 +39,17 @@ export const WORKFLOW_START_ROUTES: Record<string, string> = {
 };
 
 /**
- * Known multi-step sequence entry routes for the dashboard "Suggested" cards.
+ * Bespoke entry routes for specific sequences. `onboarding` keeps its hand-built two-step
+ * orchestrator page; any sequence NOT listed here falls back to the generic SequenceRunnerPage.
  */
 export const SEQUENCE_START_ROUTES: Record<string, string> = {
   onboarding: '/workflows/onboarding'
 };
+
+/**
+ * Resolve where a "Suggested" sequence card navigates. Bespoke pages win when registered; all other
+ * sequences (e.g. site_diligence, portfolio_setup) run through the generic runner.
+ */
+export function resolveSequenceRoute(sequenceId: string): string {
+  return SEQUENCE_START_ROUTES[sequenceId] ?? `/workflows/sequences/${sequenceId}`;
+}

@@ -12,10 +12,20 @@ import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
+import LinearProgress from '@mui/material/LinearProgress';
+import Tooltip from '@mui/material/Tooltip';
 import { ApiClient } from '../../api';
 import { useNotify } from '../../contexts/notifications/notifications';
-import type { WorkflowDefinitionSchema, WorkflowRunSummarySchema, SequenceSchema } from '../../api/workflows';
-import { resolveLandingRoute, formatRunTimestamp, WORKFLOW_START_ROUTES, SEQUENCE_START_ROUTES } from './landing';
+import type {
+  WorkflowDefinitionSchema,
+  WorkflowRunSummarySchema,
+  SequenceSchema,
+  RecommendationSchema,
+  SiteOnboardingProgressSchema,
+  SiteReadinessSchema,
+  ReadinessSectionSchema
+} from '../../api/workflows';
+import { resolveLandingRoute, formatRunTimestamp, WORKFLOW_START_ROUTES, resolveSequenceRoute } from './landing';
 
 /**
  * Native Workflow Dashboard. A discovery + resume surface over the existing engine: it reads the
@@ -61,6 +71,86 @@ const StatTile: React.FC<{ label: string; value: string }> = ({ label, value }) 
 const formatPercent = (value: number | null | undefined): string =>
   value == null ? '—' : `${Math.round(value * 100)}%`;
 
+// Read-only next-action card. `route` is an internal path (it may carry a query string, e.g.
+// `?site_id=`); a null route or a blocked rec disables the button. Clicking only navigates — the
+// destination page still drives the engine's guarded preview -> confirm -> execute handshake.
+const RecommendationCard: React.FC<{ rec: RecommendationSchema; onGo: (route: string) => void }> = ({
+  rec,
+  onGo
+}) => (
+  <Card variant="outlined" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <CardContent sx={{ flexGrow: 1 }}>
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+        <Typography variant="subtitle1" fontWeight={600}>
+          {rec.title}
+        </Typography>
+        <Chip label={rec.kind === 'sequence' ? 'Setup' : 'Action'} size="small" color="primary" variant="outlined" />
+      </Stack>
+      <Typography variant="body2" color="text.secondary">
+        {rec.reason}
+      </Typography>
+      {rec.blocked && rec.blocked_reason && (
+        <Typography variant="caption" color="warning.main" sx={{ display: 'block', mt: 1 }}>
+          {rec.blocked_reason}
+        </Typography>
+      )}
+    </CardContent>
+    <CardActions sx={{ px: 2, pb: 2 }}>
+      <Button
+        variant="contained"
+        size="small"
+        disabled={rec.blocked || !rec.route}
+        onClick={() => rec.route && onGo(rec.route)}
+      >
+        Go
+      </Button>
+    </CardActions>
+  </Card>
+);
+
+// One onboarding-stage chip. A stage the caller can't evaluate (`available=false`) is rendered as a
+// neutral, disabled "locked" chip — never silently counted as done.
+const StageChip: React.FC<{ label: string; done: boolean; available: boolean; detail?: string | null }> = ({
+  label,
+  done,
+  available,
+  detail
+}) => {
+  const chip = (
+    <Chip
+      label={label}
+      size="small"
+      variant={done ? 'filled' : 'outlined'}
+      color={!available ? 'default' : done ? 'success' : 'warning'}
+      disabled={!available}
+    />
+  );
+  return detail ? <Tooltip title={detail}>{chip}</Tooltip> : chip;
+};
+
+// Map a readiness section's verdict to a chip color. Honest "unavailable" semantics: a denied or
+// unreadable section is a neutral chip, NEVER a failing/zero state.
+const readinessChipColor = (section: ReadinessSectionSchema): 'default' | 'success' | 'warning' | 'error' => {
+  if (!section.available) return 'default';
+  const status = (section.status ?? '').toLowerCase();
+  if (['ready', 'healthy', 'ok', 'good', 'complete', 'active'].includes(status)) return 'success';
+  if (['error', 'failed', 'critical', 'invalid'].includes(status)) return 'error';
+  return 'warning';
+};
+
+const ReadinessChip: React.FC<{ label: string; section: ReadinessSectionSchema }> = ({ label, section }) => {
+  const text = !section.available ? 'Unavailable' : section.status ?? section.summary ?? '—';
+  const tip = !section.available
+    ? section.reason === 'permission_denied'
+      ? "You don't have access to this dimension."
+      : section.reason ?? 'This dimension could not be read.'
+    : section.summary ?? undefined;
+  const chip = (
+    <Chip label={`${label}: ${text}`} size="small" variant="outlined" color={readinessChipColor(section)} />
+  );
+  return tip ? <Tooltip title={tip}>{chip}</Tooltip> : chip;
+};
+
 const formatDuration = (seconds: number | null | undefined): string => {
   if (seconds == null) return '—';
   const total = Math.round(seconds);
@@ -94,6 +184,20 @@ const WorkflowDashboardPage: React.FC = () => {
     queryKey: ['workflows', 'metrics', 'me'],
     queryFn: () => ApiClient.workflows.getMetrics('me')
   });
+  // Phase 3 read-only aggregations. Each is independently non-blocking: a failure hides its own
+  // panel but never breaks the rest of the dashboard.
+  const recommendationsQuery = useQuery({
+    queryKey: ['workflows', 'recommendations'],
+    queryFn: () => ApiClient.workflows.getRecommendations()
+  });
+  const progressQuery = useQuery({
+    queryKey: ['workflows', 'onboarding', 'progress'],
+    queryFn: () => ApiClient.workflows.getOnboardingProgress({ limit: 25 })
+  });
+  const readinessQuery = useQuery({
+    queryKey: ['workflows', 'onboarding', 'readiness'],
+    queryFn: () => ApiClient.workflows.getReadiness({ limit: 25 })
+  });
 
   const cancelMutation = useMutation({
     mutationFn: (runId: number) => ApiClient.workflows.abandon(runId),
@@ -114,10 +218,12 @@ const WorkflowDashboardPage: React.FC = () => {
   const inProgress = runs.filter(r => r.status === 'active' || r.status === 'paused');
   const completed = runs.filter(r => r.status === 'completed');
   const metrics = metricsQuery.data;
+  const recommendations: RecommendationSchema[] = recommendationsQuery.data?.items ?? [];
+  const progressItems: SiteOnboardingProgressSchema[] = progressQuery.data?.items ?? [];
+  const readinessItems: SiteReadinessSchema[] = readinessQuery.data?.items ?? [];
 
   const startSequence = (seq: SequenceSchema) => {
-    const route = SEQUENCE_START_ROUTES[seq.id];
-    if (route) navigate(route);
+    navigate(resolveSequenceRoute(seq.id));
   };
 
   const startWorkflow = (def: WorkflowDefinitionSchema) => {
@@ -146,6 +252,24 @@ const WorkflowDashboardPage: React.FC = () => {
         <Alert severity="error" sx={{ mt: 3 }}>
           Some workflow data could not be loaded. Please refresh to try again.
         </Alert>
+      )}
+
+      {/* Recommended next — deterministic, READ-ONLY next-action hints. Each card only navigates;
+          nothing is auto-started, promoted, approved, mapped, or declared. */}
+      {recommendations.length > 0 && (
+        <>
+          <SectionHeading
+            title="Recommended next"
+            caption="Read-only suggestions for what to do next. Nothing happens until you start it."
+          />
+          <Grid container spacing={2}>
+            {recommendations.map((rec, idx) => (
+              <Grid item xs={12} md={6} key={`${rec.kind}-${rec.workflow_id ?? rec.sequence_id ?? idx}-${idx}`}>
+                <RecommendationCard rec={rec} onGo={route => navigate(route)} />
+              </Grid>
+            ))}
+          </Grid>
+        </>
       )}
 
       {/* Your activity — read-only completion metrics over the caller's own runs. */}
@@ -209,12 +333,8 @@ const WorkflowDashboardPage: React.FC = () => {
                     </Stack>
                   </CardContent>
                   <CardActions sx={{ px: 2, pb: 2 }}>
-                    <Button
-                      variant="contained"
-                      disabled={!seq.can_start || !SEQUENCE_START_ROUTES[seq.id]}
-                      onClick={() => startSequence(seq)}
-                    >
-                      Start onboarding
+                    <Button variant="contained" disabled={!seq.can_start} onClick={() => startSequence(seq)}>
+                      Start
                     </Button>
                     {!seq.can_start && (
                       <Typography variant="caption" color="text.secondary">
@@ -222,6 +342,82 @@ const WorkflowDashboardPage: React.FC = () => {
                       </Typography>
                     )}
                   </CardActions>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </>
+      )}
+
+      {/* Onboarding progress — per-project stage checklist, derived only from existing service
+          verdicts. Stages the caller can't evaluate render locked, never counted as done. */}
+      {progressItems.length > 0 && (
+        <>
+          <SectionHeading
+            title="Onboarding progress"
+            caption="How far each project has come through setup. Read-only — based on your current data."
+          />
+          <Grid container spacing={2}>
+            {progressItems.map(item => (
+              <Grid item xs={12} md={6} key={item.site_id}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent>
+                    <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+                      <Typography variant="subtitle1" fontWeight={600}>
+                        {item.site_name ?? `Project ${item.site_id}`}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {item.completed_stages}/{item.total_stages}
+                      </Typography>
+                    </Stack>
+                    <LinearProgress
+                      variant="determinate"
+                      value={Math.round((item.completion_rate ?? 0) * 100)}
+                      sx={{ mb: 1.5, height: 8, borderRadius: 1 }}
+                    />
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                      {item.stages.map(stage => (
+                        <StageChip
+                          key={stage.key}
+                          label={stage.label}
+                          done={stage.done}
+                          available={stage.available}
+                          detail={stage.detail}
+                        />
+                      ))}
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </>
+      )}
+
+      {/* Readiness — per-project summary across telemetry health, reconciliation, device eligibility
+          and expected-baseline existence. A denied/unreadable dimension degrades to a neutral
+          "Unavailable" chip — never a failing/zero state. */}
+      {readinessItems.length > 0 && (
+        <>
+          <SectionHeading
+            title="Readiness"
+            caption="A read-only health snapshot per project. Dimensions you can't access show as unavailable."
+          />
+          <Grid container spacing={2}>
+            {readinessItems.map(item => (
+              <Grid item xs={12} md={6} key={item.site_id}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent>
+                    <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1.5 }}>
+                      {item.site_name ?? `Project ${item.site_id}`}
+                    </Typography>
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                      <ReadinessChip label="Telemetry" section={item.telemetry_health} />
+                      <ReadinessChip label="Reconciliation" section={item.reconciliation} />
+                      <ReadinessChip label="Devices" section={item.device_eligibility} />
+                      <ReadinessChip label="Baseline" section={item.expected_baseline} />
+                    </Stack>
+                  </CardContent>
                 </Card>
               </Grid>
             ))}

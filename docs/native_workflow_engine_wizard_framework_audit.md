@@ -956,3 +956,215 @@ new) via
   or surfaces the most common abandonment point — **advice only**, never auto-starting or
   auto-executing anything, preserving the standing AI boundary (§9): the engine never
   auto-executes, and a human still drives every preview → confirm → execute.
+
+## 18. Build log — Native Onboarding Experience, Phase 3 (Guided Setup & AI-Orchestration Readiness) `[BUILT]`
+
+Phases 1–2 gave the engine discovery, three reusable write-workflows, declarative prerequisites,
+and read-only metrics. **Phase 3 adds NO new write workflow.** It layers a guided, AI-ready
+**read-only aggregation** on top of the existing engine: it **chains** existing workflows into
+guided sequences, surfaces **deterministic next-action hints**, rolls up **per-project onboarding
+progress** and a **readiness summary**, and exposes a single **versioned orchestration-context
+envelope** that a future AI advisor can reason over *without being able to act*. Everything new
+**wraps an existing capability** — every `done`/`status`/recommendation is read verbatim from a
+service the manual UI already calls. No engine business logic, no writes, no AI execution, no authz
+bypass, no fact promotion, no baseline activation, no device mapping, no weather declaration.
+(Project == Site; "Project" is a UI label only — the backend `Site` entity is untouched.)
+
+### 18.1 Goal & what it proves
+
+1. **Workflows chain without new authority.** Two new `SequenceDef`s — `site_diligence`
+   (add_site → document_upload → parse_document) and `portfolio_setup` (add_company → add_site →
+   invite_user) — join the existing `onboarding` sequence. A sequence is **pure declarative
+   composition**: an ordered list of existing workflow ids plus **declarative prefill hints**. It
+   carries **no executable logic** and grants **no access** — each step still runs the unchanged
+   preview → confirm → execute handshake and authorizes its own inputs.
+2. **Cross-step prefill is a hint, never authority.** `PrefillHint(target_field, from_step_index)`
+   says only "seed this step's collect field with the entity id an *earlier* step produced." It is
+   validated at import to reference a **strictly earlier** step and a non-empty field, applied
+   best-effort by the FE runner, and the underlying workflow re-validates + re-authorizes the value
+   at execute time. No bytes, no permissions, no truth flow through it.
+3. **Progress/readiness are rollups, not new truth.** Every onboarding stage and readiness section
+   is produced by **calling an existing read-only service** (telemetry health, DD reconciliation,
+   device-eligibility diagnostics, the expected-baseline truth-store) and reading its verdict
+   **verbatim** — nothing is recomputed. A dimension the caller may not see, or that errors, becomes
+   `available=false` with a reason and is **excluded from the completion ratio** (never silently
+   counted as done, never rendered as a 0%/failing state).
+4. **Recommendations are deterministic, read-only links.** A rule-based ranking emits
+   `{kind, workflow_id|sequence_id, title, reason, priority, target, blocked, blocked_reason, route}`
+   from open runs + per-site gaps + each workflow's own start permission. Each card **only
+   navigates**; the governed actions (fact promotion, baseline activation, device mapping, weather
+   declaration) are **never** recommended as automatable.
+5. **There is a single AI-ready, non-executable context envelope.** `GET /orchestration/context`
+   returns one versioned envelope (`schema_version="workflow_orchestration_context.v1"`,
+   `mode="read_only_advice"`) bundling the catalog, sequences, the caller's runs, metrics, progress,
+   readiness, and recommendations, plus an explicit machine-readable `prohibited_actions[]` — the
+   non-execution contract a future advisor must honor.
+
+### 18.2 Files changed
+
+**Backend** (`backend/ilios-server`):
+
+- `app/services/workflows/definitions.py` — added `PrefillHint` (declarative
+  `target_field`/`from_step_index`) and `SequenceStepDef.prefill`; the two new `SequenceDef`s
+  (`site_diligence`, `portfolio_setup`) registered in `SEQUENCES`; `validate_sequence` extended so
+  every step references a real workflow and **every prefill hint references a strictly earlier step
+  and a non-empty field** (validated at import). The existing `onboarding` sequence is unchanged.
+- `app/services/workflows/onboarding_common.py` (new) — shared **read-only, authz-scoped** helpers:
+  `resolve_candidate_sites` (caller-visible, non-archived sites via `_user_accessible_site_ids`,
+  intersected with any explicit `site_id`/`company_id`, **capped** at `MAX_SITES=100`,
+  `DEFAULT_SITES=25`), `can_view_diligence` (mirrors the reconciliation endpoint's
+  `require_module_permission(Diligence, view)` guard, fail-closed), and `scope_label`.
+- `app/services/workflows/onboarding_progress_service.py` (new) — `build_onboarding_progress`
+  builds a per-site stage checklist (project_created, diligence_facts_ready,
+  expected_baseline_drafted, expected_baseline_active, telemetry_connected, telemetry_healthy) by
+  **calling** the reconciliation service, the expected-baseline CRUD, and the telemetry health
+  service and reading their verdicts. Diligence stages require `Diligence:view` (else
+  `available=false`); any wrapped-service error degrades that stage to `available=false`. The
+  completion ratio is over **evaluable** stages only.
+- `app/services/workflows/readiness_summary_service.py` (new) — `build_readiness_summary`
+  consolidates four **independently-degrading** sections per site: telemetry health, DD
+  reconciliation readiness (gated on `Diligence:view` → `permission_denied`), device-eligibility
+  diagnostics, and expected-baseline existence (active/draft/none). Each section is read verbatim;
+  any denial/error becomes `available=false` so one bad dimension never fails the summary.
+- `app/services/workflows/recommendations_service.py` (new) — `build_recommendations`: deterministic
+  ranking (resume open runs → per-site diligence gap → onboarding sequence when no projects →
+  invite teammate), each item scoped to a workflow the caller `_can_start`, sorted by
+  `(priority, target_site_id)`, capped at `MAX_RECOMMENDATIONS=10`. Read-only; emits routes only.
+- `app/services/workflows/orchestration_context_service.py` (new) — `build_orchestration_context`
+  composes the catalog, sequences, runs, metrics, progress, readiness, and recommendations into the
+  versioned envelope with `mode="read_only_advice"` and the `PROHIBITED_ACTIONS` contract.
+- `app/schema/workflow.py` — `SequencePrefillSchema` + `prefill[]` on `SequenceStepSchema`;
+  `OnboardingStageSchema`/`SiteOnboardingProgressSchema`/`OnboardingProgressResponse`;
+  `ReadinessSectionSchema`/`SiteReadinessSchema`/`ReadinessSummaryResponse`;
+  `RecommendationSchema`/`RecommendationsResponse`; `OrchestrationContextResponse`.
+- `app/routers/workflows.py` — four GETs (see §18.3), all registered **before** the dynamic
+  `/{workflow_id}` paths so their literal prefixes are never captured as a workflow id. The engine
+  serializer now emits each sequence step's `prefill[]`.
+- `tests/test_onboarding_phase3.py` (new) — Phase-3 suite (see §18.7).
+
+**Frontend** (`frontend/rea-investment-fe`):
+
+- `src/api/workflows.ts` — `SequencePrefillSchema` + `prefill[]` on `SequenceStepSchema`; the
+  Phase-3 response types; `OnboardingScopeParams`; and four getters
+  (`getOnboardingProgress`, `getReadiness`, `getRecommendations`, `getOrchestrationContext`).
+- `src/modules/workflows/SequenceRunnerPage.tsx` (new) — a **generic** N-step sequence runner
+  (`/workflows/sequences/:sequenceId`) that walks any `SequenceDef` through the existing
+  Wizard handshake (`onExecuteFile` + `onReloadRun` + lineage), applying each step's **declarative
+  prefill** from the produced entity id of an earlier step. The bespoke `OnboardingOrchestratorPage`
+  still works.
+- `src/modules/workflows/{index.ts,landing.ts}`, `src/App.tsx` — export + route the runner;
+  `resolveSequenceRoute(id)` maps any sequence id to its runner route; a plural
+  `/workflows/runs/:runId` alias resolves to `WorkflowRunPage`.
+- `src/modules/workflows/WorkflowDashboardPage.tsx` — three new **non-blocking** read-only panels:
+  **Recommended next** (link-only cards, disabled when blocked/null), **Onboarding progress**
+  (per-project `LinearProgress` + stage chips; locked chip for unavailable stages), and
+  **Readiness** (four chips per project; a denied/unreadable dimension shows a neutral
+  "Unavailable" chip, never 0%/failing). Each panel fails independently.
+
+No existing manual form, executor, write path, or governed-confirmation flow was modified.
+
+### 18.3 Routes
+
+| Method & path | Purpose | Added? |
+|---|---|---|
+| `GET /api/workflows/onboarding/progress?company_id&site_id&limit` | Per-project onboarding stage checklist (read-only rollup; capped `limit` ≤ 100). | **new** |
+| `GET /api/workflows/onboarding/readiness?company_id&site_id&limit` | Per-project four-dimension readiness summary (independently degrading). | **new** |
+| `GET /api/workflows/recommendations?limit` | Deterministic read-only next-action hints (`limit` ≤ 10). | **new** |
+| `GET /api/workflows/orchestration/context?limit` | Versioned, non-executable AI-orchestration envelope. | **new** |
+| `…/sequences` · `…/runs` · `…/{id}/runs` · execute/preview/execute-file · metrics | Unchanged Phase 1/2 discovery + handshake. | — |
+
+All four are registered **before** the dynamic `/{workflow_id}` routes. FE adds
+`/workflows/sequences/:sequenceId` (generic runner) and a `/workflows/runs/:runId` alias.
+
+### 18.4 Permission model
+
+- **No new authority is introduced anywhere.** Every rollup is scoped to the caller's **visible**
+  sites (`_user_accessible_site_ids`; `None` == platform-bypass), and an explicit
+  `site_id`/`company_id` is **intersected** with that visibility (an id the caller cannot see yields
+  empty — fail-closed, no disclosure).
+- **Per-section, per-module checks mirror the wrapped endpoints.** Diligence-derived stages and the
+  reconciliation readiness section require `Diligence:view` on the site via the canonical
+  `require_module_permission`; denial → `available=false` (`reason="permission_denied"`), never a
+  raise. This guarantees a rollup can never disclose more than the caller could read directly.
+- **Recommendations only suggest startable workflows.** Each candidate is filtered through the
+  engine's own `_can_start`; an unmet item is advisory and the server stays authoritative at
+  start/execute time.
+- **Sequences/prefill grant nothing.** A sequence is metadata; a prefill hint is a UI seed. The
+  per-step workflow re-validates and re-authorizes its inputs.
+
+### 18.5 Sequence chaining & declarative prefill
+
+A `SequenceDef` is an ordered tuple of `SequenceStepDef(workflow_id, …, prefill=(…))`. `validate_sequence`
+(run at import) asserts each `workflow_id` resolves to a registered workflow and each
+`PrefillHint.from_step_index` is **strictly less than** the current step index with a non-empty
+`target_field`. The FE `SequenceRunnerPage` executes step *i*, records the produced entity id, and
+when it reaches a later step seeds the named collect field from the referenced earlier step's
+result — purely declarative, best-effort, and overridable by the user. The underlying workflow's
+own preview → confirm → execute path remains the authoritative validator/authorizer. New sequences:
+`site_diligence` (site_id flows add_site → document_upload/parse_document) and `portfolio_setup`
+(company_id flows add_company → add_site/invite_user).
+
+### 18.6 Recommendation logic
+
+Deterministic, rule-based, read-only. Sources: the caller's open runs, the per-site onboarding
+progress rollup, and per-workflow start permission. Rules, by priority: **(10)** resume each open
+run; **(20)** if the caller has no projects, start the `onboarding` sequence; **(30)** for each
+project with `diligence_facts_ready` unmet — where `document_upload` is startable **and the caller
+holds Diligence `edit` on that specific target site** (via the same `_diligence_editable_site_ids`
+resolver the upload options use, so a view-only project never gets a dead-end card) — recommend
+uploading a document, deep-linked with `?site_id=`; **(50)** once a project exists (and `invite_user` startable),
+invite a teammate. Items are sorted by `(priority, target_site_id)` and capped at 10. Governed
+actions are intentionally **never** emitted as recommendations.
+
+### 18.7 Audit stance
+
+**No audit events are written for any Phase-3 endpoint.** All four GETs are strictly read-only —
+no run is started or advanced, no entity is created or mutated — so there is no state change to
+audit. (Audit remains exactly as Phase 1/2 defined it for the write handshake.)
+
+### 18.8 Tests
+
+`tests/test_onboarding_phase3.py` covers: the three sequences serialize with their declarative
+`prefill[]` and pass `validate_sequence`; per-module **denial degradation** (Diligence-less caller →
+`available=false`/`permission_denied`, summary never raises); progress completion ratio over
+evaluable stages only; recommendation **ordering** and startable-only filtering; that an upload
+recommendation requires the **target site's** Diligence `edit` (a viewable-but-not-editable site
+yields no dead-end card); the orchestration envelope's `schema_version`, `mode="read_only_advice"`,
+and full `prohibited_actions`; and that the new services perform **zero writes/commits**. Run:
+`test_db_name=test_heliumdb python -m pytest tests/test_onboarding_phase3.py tests/test_workflow_engine.py -o addopts="" -p no:cacheprovider -q` → **127 passed** (Phase 1/2 `test_workflow_engine.py` stays green).
+
+### 18.9 Validation
+
+- **Backend:** `tests/test_onboarding_phase3.py` + `tests/test_workflow_engine.py` → **127 passed**.
+- **FE compiles clean:** webpack `No issues found.` (fork-ts-checker — the TS-clean signal) after a
+  Frontend restart; no new ESLint errors (the now-unused `SEQUENCE_START_ROUTES` import was removed
+  to keep the production ESLint gate green).
+- **Reuse-only confirmed:** every rollup calls an existing service (telemetry health,
+  reconciliation, eligibility diagnostics, expected-baseline CRUD, engine run/metrics/sequence
+  listing); nothing is recomputed and no governed flow is touched.
+
+### 18.10 Legacy replace / wrap / retain matrix
+
+| Legacy / existing surface | Phase-3 disposition | Notes |
+|---|---|---|
+| Manual add-company / add-site / invite / upload / parse forms | **Retain** | Untouched; sequences merely chain the *workflow* equivalents that already wrap them. |
+| Phase-1/2 engine handshake (preview → confirm → execute, execute-file) | **Retain (unchanged)** | Sequences and the runner reuse it verbatim; no engine logic added. |
+| Phase-1 `OnboardingOrchestratorPage` (bespoke onboarding) | **Wrap / retain** | Still works; generalized by the new generic `SequenceRunnerPage` for all sequences. |
+| Telemetry health / DD reconciliation / eligibility diagnostics / expected-baseline CRUD | **Wrap (read-only)** | Called verbatim by the rollups; verdicts read, never recomputed. |
+| Per-module permission guards (`require_module_permission`, `_can_start`) | **Wrap (reuse)** | Reused for per-section degradation and startable-only recommendations; no new authority. |
+| Phase-2 read-only metrics endpoint | **Retain** | Reused inside the orchestration envelope; unchanged. |
+| Fact promotion / baseline activation / device mapping / weather declaration | **Retain (never automated)** | Explicitly listed in `prohibited_actions`; never recommended or executed by Phase 3. |
+| BigQuery / Firestore / legacy telemetry / SAFL baseline paths | **Not used** | Phase 3 adds no such dependency; all reads are native-Postgres services. |
+
+### 18.11 Remaining gaps & next
+
+- **Prefill is single-hop, parent-result only.** It copies an earlier step's produced entity id;
+  prefill that needs an *intermediate collected input* (not a produced entity) is deferred.
+- **Rollups are first-page, capped.** `limit ≤ 100` with no cursor pagination yet; deep
+  portfolio-wide fanout beyond the first page is deferred (intentional, to bound per-request cost).
+- **Orchestration context is exposed but unconsumed.** The envelope is the contract for a future
+  **read-only AI advisor**; no advisor is built in Phase 3 (the standing AI boundary from §9 holds:
+  the engine never auto-executes; a human drives every preview → confirm → execute).
+- **No live authenticated E2E captured here** (same rationale as §16.10/§17.9): coverage is the 126
+  unit tests plus reuse of the already-live-proven engine and domain services; the user's
+  authenticated session can verify the new dashboard panels and sequence runner visually.

@@ -682,9 +682,7 @@ class TestListSequences:
 
     def test_onboarding_serialized_with_steps_for_bypass_user(self):
         resp = engine.list_sequences(Mock(), _bypass_user(bypass=True))
-        assert len(resp.items) == 1
-        seq = resp.items[0]
-        assert seq.id == "onboarding"
+        seq = next(s for s in resp.items if s.id == "onboarding")
         assert [s.workflow_id for s in seq.steps] == ["add_company", "add_site"]
         assert all(s.can_start for s in seq.steps)
         assert seq.can_start is True
@@ -695,7 +693,7 @@ class TestListSequences:
             id=2, has_platform_bypass=False, get_limited_companies_ids=lambda: []
         )
         resp = engine.list_sequences(Mock(), user)
-        seq = resp.items[0]
+        seq = next(s for s in resp.items if s.id == "onboarding")
         assert seq.steps[0].can_start is False
         assert seq.can_start is False
 

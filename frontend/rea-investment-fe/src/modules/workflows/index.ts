@@ -4,3 +4,4 @@ export { default as WorkflowDashboardPage } from './WorkflowDashboardPage';
 export { default as WorkflowRunPage } from './WorkflowRunPage';
 export { default as GenericWorkflowStartPage } from './GenericWorkflowStartPage';
 export { default as OnboardingOrchestratorPage } from './OnboardingOrchestratorPage';
+export { default as SequenceRunnerPage } from './SequenceRunnerPage';

@@ -43,6 +43,7 @@ from app.schema.workflow import (
     PreviewResponse,
     SaveStepRequest,
     SequenceListResponse,
+    SequencePrefillSchema,
     SequenceSchema,
     SequenceStepSchema,
     StartRunRequest,
@@ -569,6 +570,13 @@ def list_sequences(db_session: Session, current_user) -> SequenceListResponse:
                     title=step.title,
                     description=step.description,
                     can_start=can_start,
+                    prefill=[
+                        SequencePrefillSchema(
+                            target_field=h.target_field,
+                            from_step_index=h.from_step_index,
+                        )
+                        for h in step.prefill
+                    ],
                 )
             )
         items.append(

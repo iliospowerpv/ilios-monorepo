@@ -595,10 +595,28 @@ for _wf in REGISTRY.values():
 
 
 @dataclass(frozen=True)
+class PrefillHint:
+    """A DECLARATIVE, best-effort cross-step prefill hint for the FE sequence runner.
+
+    It says: "when you reach this step, seed its collect field ``target_field`` with the entity
+    id that an EARLIER sequence step (``from_step_index``) created (that step's
+    ``result_entity_id``)." This carries NO executable logic and grants NO access — the FE runner
+    applies it best-effort (only when the value is a valid option for the target field) and every
+    underlying workflow still validates + authorizes its own inputs at execute time. It exists so
+    a guided sequence can chain (company -> its site, site -> its upload) without re-typing ids.
+    """
+
+    target_field: str
+    from_step_index: int
+
+
+@dataclass(frozen=True)
 class SequenceStepDef:
     workflow_id: str
     title: str
     description: str
+    # Declarative prefill hints applied by the FE runner (best-effort, never authoritative).
+    prefill: tuple[PrefillHint, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -612,10 +630,11 @@ class SequenceDef:
 
 
 def validate_sequence(seq: SequenceDef) -> None:
-    """Fail-closed: a sequence must have steps and every step must name a real workflow."""
+    """Fail-closed: a sequence must have steps, every step must name a real sequence-eligible
+    workflow, and every prefill hint must reference a strictly EARLIER step + a non-empty field."""
     if not seq.steps:
         raise WorkflowDefinitionError(f"sequence '{seq.id}' has no steps")
-    for step in seq.steps:
+    for idx, step in enumerate(seq.steps):
         wf = REGISTRY.get(step.workflow_id)
         if wf is None:
             raise WorkflowDefinitionError(
@@ -625,6 +644,16 @@ def validate_sequence(seq: SequenceDef) -> None:
             raise WorkflowDefinitionError(
                 f"sequence '{seq.id}' uses workflow '{step.workflow_id}' which is not sequence-eligible"
             )
+        for hint in step.prefill:
+            if not hint.target_field:
+                raise WorkflowDefinitionError(
+                    f"sequence '{seq.id}' step {idx} has a prefill hint with no target_field"
+                )
+            if not (0 <= hint.from_step_index < idx):
+                raise WorkflowDefinitionError(
+                    f"sequence '{seq.id}' step {idx} prefill references step "
+                    f"{hint.from_step_index}, which is not a strictly earlier step"
+                )
 
 
 ONBOARDING_SEQUENCE = SequenceDef(
@@ -643,11 +672,85 @@ ONBOARDING_SEQUENCE = SequenceDef(
             workflow_id="add_site",
             title="Add the first project",
             description="Create the company's first project (site).",
+            # Seed the new site's company from the company created in step 0.
+            prefill=(PrefillHint(target_field="company_id", from_step_index=0),),
         ),
     ),
 )
 
-SEQUENCES: dict[str, SequenceDef] = {ONBOARDING_SEQUENCE.id: ONBOARDING_SEQUENCE}
+# Site data onboarding: stand up a project, then upload a diligence document, then parse it.
+# Each step is an independent, separately-permissioned workflow run; the sequence only chains
+# them so a user can flow site -> first document -> AI parse end to end.
+SITE_DILIGENCE_SEQUENCE = SequenceDef(
+    id="site_diligence",
+    title="Set Up a Project's Data Room",
+    description=(
+        "Add a project, upload its first diligence document, then run AI extraction — guided "
+        "end to end."
+    ),
+    category="Onboarding",
+    icon="folder_open",
+    steps=(
+        SequenceStepDef(
+            workflow_id="add_site",
+            title="Add the project",
+            description="Create the project (site) whose Data Room you are setting up.",
+        ),
+        SequenceStepDef(
+            workflow_id="document_upload",
+            title="Upload the first document",
+            description="Upload a diligence document into the project's Data Room.",
+            # Seed the upload target with the project created in step 0.
+            prefill=(PrefillHint(target_field="site_id", from_step_index=0),),
+        ),
+        SequenceStepDef(
+            workflow_id="parse_document",
+            title="Run AI extraction",
+            description="Parse the uploaded document to extract its diligence terms.",
+            # Seed the parse target's project from step 0; the document/file are chosen via the
+            # project-scoped cascade (they are user selections, not created entities).
+            prefill=(PrefillHint(target_field="site_id", from_step_index=0),),
+        ),
+    ),
+)
+
+# Portfolio bootstrap: create a company, its first project, then invite a collaborator to it.
+PORTFOLIO_SETUP_SEQUENCE = SequenceDef(
+    id="portfolio_setup",
+    title="Bootstrap a Portfolio",
+    description=(
+        "Create a company, add its first project, then invite a teammate to collaborate — guided "
+        "end to end."
+    ),
+    category="Onboarding",
+    icon="groups",
+    steps=(
+        SequenceStepDef(
+            workflow_id="add_company",
+            title="Create the company",
+            description="Add the owning company.",
+        ),
+        SequenceStepDef(
+            workflow_id="add_site",
+            title="Add the first project",
+            description="Create the company's first project (site).",
+            prefill=(PrefillHint(target_field="company_id", from_step_index=0),),
+        ),
+        SequenceStepDef(
+            workflow_id="invite_user",
+            title="Invite a teammate",
+            description="Invite a collaborator to the new company.",
+            # Invite into the company created in step 0 (not the site created in step 1).
+            prefill=(PrefillHint(target_field="company_id", from_step_index=0),),
+        ),
+    ),
+)
+
+SEQUENCES: dict[str, SequenceDef] = {
+    ONBOARDING_SEQUENCE.id: ONBOARDING_SEQUENCE,
+    SITE_DILIGENCE_SEQUENCE.id: SITE_DILIGENCE_SEQUENCE,
+    PORTFOLIO_SETUP_SEQUENCE.id: PORTFOLIO_SETUP_SEQUENCE,
+}
 
 # Validate every registered sequence at import time (fail-closed).
 for _seq in SEQUENCES.values():

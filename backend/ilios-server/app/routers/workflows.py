@@ -29,7 +29,11 @@ from app.schema.workflow import (
     AbandonResponse,
     ExecuteRequest,
     ExecuteResponse,
+    OnboardingProgressResponse,
+    OrchestrationContextResponse,
     PreviewResponse,
+    ReadinessSummaryResponse,
+    RecommendationsResponse,
     SaveStepRequest,
     SequenceListResponse,
     StartRunRequest,
@@ -41,6 +45,14 @@ from app.schema.workflow import (
 )
 from app.services.workflows import engine
 from app.services.workflows.engine import WorkflowEngineError
+from app.services.workflows.onboarding_progress_service import (
+    build_onboarding_progress,
+)
+from app.services.workflows.orchestration_context_service import (
+    build_orchestration_context,
+)
+from app.services.workflows.readiness_summary_service import build_readiness_summary
+from app.services.workflows.recommendations_service import build_recommendations
 
 logger = logging.getLogger(__name__)
 workflows_router = APIRouter()
@@ -96,6 +108,82 @@ def list_sequences(
 ):
     """List declarative orchestrator sequences (with per-step start permission for the user)."""
     return engine.list_sequences(db_session, current_user)
+
+
+# --- Phase 3: guided onboarding (READ-ONLY aggregation) ------------------------------
+#
+# These GETs are pure, owner/permission-scoped read aggregations that CALL existing domain
+# services and read their verdicts verbatim. They perform NO writes, emit NO audit events
+# (no state change), and never start/advance a workflow. Each is registered ahead of the
+# dynamic ``/{workflow_id}/...`` paths so their literal prefixes are never captured as ids.
+
+
+@workflows_router.get(
+    "/onboarding/progress", response_model=OnboardingProgressResponse
+)
+def onboarding_progress(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+    company_id: Annotated[Optional[int], Query()] = None,
+    site_id: Annotated[Optional[int], Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 25,
+):
+    """Per-project onboarding stage checklist, derived only from existing service verdicts.
+
+    Scoped to the caller's visible sites (optionally narrowed to one ``site_id``/``company_id``)
+    and capped at ``limit``. A stage the caller lacks the module to evaluate is reported as
+    ``available=false`` and excluded from the completion ratio — never silently counted as done.
+    """
+    return build_onboarding_progress(
+        db_session, current_user, site_id=site_id, company_id=company_id, limit=limit
+    )
+
+
+@workflows_router.get(
+    "/onboarding/readiness", response_model=ReadinessSummaryResponse
+)
+def onboarding_readiness(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+    company_id: Annotated[Optional[int], Query()] = None,
+    site_id: Annotated[Optional[int], Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 25,
+):
+    """Per-project readiness summary consolidating telemetry health, reconciliation, device
+    eligibility and expected-baseline existence. Each dimension degrades independently
+    (``available=false`` with a reason) so a denied/failing section never fails the summary."""
+    return build_readiness_summary(
+        db_session, current_user, site_id=site_id, company_id=company_id, limit=limit
+    )
+
+
+@workflows_router.get("/recommendations", response_model=RecommendationsResponse)
+def workflow_recommendations(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+    limit: Annotated[int, Query(ge=1, le=10)] = 10,
+):
+    """Deterministic, READ-ONLY next-action hints (which existing workflow/sequence to run next).
+
+    Each item is a link/suggestion only — nothing is auto-started, and governed actions
+    (fact promotion, baseline activation, device mapping, weather declaration) are never
+    recommended as automatable. Scoped to workflows the caller is permitted to start."""
+    return build_recommendations(db_session, current_user, limit=limit)
+
+
+@workflows_router.get(
+    "/orchestration/context", response_model=OrchestrationContextResponse
+)
+def orchestration_context(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+    limit: Annotated[int, Query(ge=1, le=100)] = 25,
+):
+    """Versioned, READ-ONLY envelope bundling every authorized onboarding signal for a future
+    AI advisor to reason over WITHOUT being able to act. ``mode="read_only_advice"`` and the
+    ``prohibited_actions`` list are explicit non-execution markers: this endpoint starts
+    nothing, writes nothing, and grants nothing."""
+    return build_orchestration_context(db_session, current_user, limit=limit)
 
 
 @workflows_router.post(

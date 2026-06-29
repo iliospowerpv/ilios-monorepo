@@ -93,7 +93,8 @@ import {
   WorkflowDashboardPage,
   WorkflowRunPage,
   GenericWorkflowStartPage,
-  OnboardingOrchestratorPage
+  OnboardingOrchestratorPage,
+  SequenceRunnerPage
 } from './modules/workflows';
 
 const ProjectLandingRedirect: React.FC = () => {
@@ -158,7 +159,10 @@ const router = createBrowserRouter(
         {/* Native Workflow Engine — dashboard, onboarding orchestrator, and single workflows */}
         <Route path="/workflows" element={<WorkflowDashboardPage />} />
         <Route path="/workflows/onboarding" element={<OnboardingOrchestratorPage />} />
+        <Route path="/workflows/sequences/:sequenceId" element={<SequenceRunnerPage />} />
         <Route path="/workflows/run/:runId" element={<WorkflowRunPage />} />
+        {/* Plural alias — the read-only recommendations emit `/workflows/runs/{id}` resume links. */}
+        <Route path="/workflows/runs/:runId" element={<WorkflowRunPage />} />
         <Route path="/workflows/add-company" element={<AddCompanyWorkflowPage />} />
         <Route path="/workflows/add-site" element={<AddSiteWorkflowPage />} />
         <Route path="/workflows/start/:workflowId" element={<GenericWorkflowStartPage />} />
