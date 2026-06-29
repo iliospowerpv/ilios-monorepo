@@ -11,11 +11,9 @@ fronts a **permission-gated** domain (e.g. the Data Room: `accessible_projects`,
 `project_documents`, `document_files`, `has_accessible_project`, `has_uploaded_file`), scope by the
 **same module permission the underlying endpoint enforces** — NOT by mere entity/site visibility.
 
-Concretely: those resolvers scope to the caller's **Diligence `edit`** set per site through
-`_diligence_editable_site_ids` (loops candidate sites, calls the canonical per-context
-`require_module_permission(..., module_key=Diligence, action="edit", project_id=sid)` in
-try/except, returns a set or `None` for platform-bypass; fail-closed). Membership resolvers stay
-company-admin scoped.
+Concretely: scope the visible-candidate sites down to the caller's **Diligence `edit`** set by
+re-checking the canonical per-context module permission for each site (fail-closed; platform-bypass
+is unrestricted). Membership resolvers stay company-admin scoped.
 
 **Why:** A read that returns labels/ids is still a disclosure. Site visibility is broader than
 Data-Room management rights, so scoping a Data-Room dropdown by visibility leaks project/document/
