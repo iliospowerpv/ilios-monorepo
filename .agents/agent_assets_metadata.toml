@@ -149,3 +149,57 @@ id = "pK0DQxVeGFjsLQzdKgPPQ"
 uri = "file://docs/third_party_weather_provider_framework_phase_d5_operational_readiness_plan.md"
 type = "text"
 title = "Phase D.5 — Operational Readiness & Governance Plan"
+
+[[outputs]]
+id = "2evUzY05UDtLVJJnr71hL"
+uri = "file://docs/weather_provider_architecture_freeze/README.md"
+type = "text"
+title = "Architecture Freeze — Package Index"
+
+[[outputs]]
+id = "7H2eIn7Q-v1YTREsAOytf"
+uri = "file://docs/weather_provider_architecture_freeze/adrs.md"
+type = "text"
+title = "Architecture Decision Records (6)"
+
+[[outputs]]
+id = "XcX5TSNlrWA8ENLnc3hrZ"
+uri = "file://docs/weather_provider_architecture_freeze/system_diagrams.md"
+type = "text"
+title = "System Diagrams (5)"
+
+[[outputs]]
+id = "5GaBSBDAtuiktCV-Th8dX"
+uri = "file://docs/weather_provider_architecture_freeze/sequence_diagrams.md"
+type = "text"
+title = "Sequence Diagrams (6)"
+
+[[outputs]]
+id = "4y6GJclhBQ7GO0h3H616M"
+uri = "file://docs/weather_provider_architecture_freeze/admin_guide.md"
+type = "text"
+title = "Admin Guide"
+
+[[outputs]]
+id = "YcZkjLm9uzpX6S0YmjvnL"
+uri = "file://docs/weather_provider_architecture_freeze/runbooks.md"
+type = "text"
+title = "Runbooks"
+
+[[outputs]]
+id = "zLlT49pWC7WWnySmB6Xhb"
+uri = "file://docs/weather_provider_architecture_freeze/rollout_checklist.md"
+type = "text"
+title = "Production Rollout Checklist"
+
+[[outputs]]
+id = "jV21hEc7B8qq3j44jhxWb"
+uri = "file://docs/weather_provider_architecture_freeze/disaster_recovery_guide.md"
+type = "text"
+title = "Disaster Recovery Guide"
+
+[[outputs]]
+id = "7YInXZlTL9bpFmPULCE5U"
+uri = "file://docs/weather_provider_architecture_freeze/phase_e_readiness_assessment.md"
+type = "text"
+title = "Phase E Readiness Assessment"
