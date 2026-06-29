@@ -6,14 +6,15 @@ and never owns business truth. Structured engine errors (per-field validation, b
 re-confirm) are rendered as JSONResponse so the FE receives them unflattened.
 """
 import logging
-from typing import Annotated
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.db.session import get_session
 from app.helpers.authentication import get_current_user
+from app.models.workflow import WorkflowRunStatus
 from app.schema.user import CurrentUserSchema
 from app.schema.workflow import (
     AbandonResponse,
@@ -21,9 +22,11 @@ from app.schema.workflow import (
     ExecuteResponse,
     PreviewResponse,
     SaveStepRequest,
+    SequenceListResponse,
     StartRunRequest,
     WorkflowListResponse,
     WorkflowRunDetailResponse,
+    WorkflowRunListResponse,
     WorkflowStepStateSchema,
 )
 from app.services.workflows import engine
@@ -40,6 +43,49 @@ def list_workflows(
 ):
     """List the workflow definitions the current user is permitted to start."""
     return engine.list_workflow_definitions(db_session, current_user)
+
+
+@workflows_router.get("/runs", response_model=WorkflowRunListResponse)
+def list_runs(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+    status_filter: Annotated[Optional[list[str]], Query(alias="status")] = None,
+    workflow_id: Annotated[Optional[str], Query()] = None,
+    sequence_id: Annotated[Optional[str], Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=200)] = 100,
+):
+    """List the CURRENT user's runs (owner-scoped) for the Workflow Dashboard.
+
+    Registered BEFORE ``/runs/{run_id}`` so the literal ``/runs`` path is never captured as a
+    run id. ``status`` may be repeated (e.g. ``?status=active&status=completed``); unknown
+    values are ignored. Always scoped to the caller — one user can never list another's runs.
+    """
+    statuses: Optional[list[WorkflowRunStatus]] = None
+    if status_filter:
+        parsed: list[WorkflowRunStatus] = []
+        for raw in status_filter:
+            try:
+                parsed.append(WorkflowRunStatus(raw))
+            except ValueError:
+                continue
+        statuses = parsed or None
+    return engine.list_user_runs(
+        db_session,
+        current_user,
+        statuses=statuses,
+        workflow_id=workflow_id,
+        sequence_id=sequence_id,
+        limit=limit,
+    )
+
+
+@workflows_router.get("/sequences", response_model=SequenceListResponse)
+def list_sequences(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+):
+    """List declarative orchestrator sequences (with per-step start permission for the user)."""
+    return engine.list_sequences(db_session, current_user)
 
 
 @workflows_router.post(

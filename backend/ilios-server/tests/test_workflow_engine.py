@@ -40,7 +40,7 @@ from app.services.workflows.definitions import (
     WorkflowDefinitionError,
     validate_definition,
 )
-from app.schema.workflow import ExecuteRequest
+from app.schema.workflow import ExecuteRequest, StartRunRequest
 from app.services.workflows.engine import WorkflowEngineError
 from app.models.workflow import WorkflowRunStatus
 
@@ -208,6 +208,7 @@ class _EngineHarness:
         review_state=None,
         idempotency_lookup=None,
         collect_inputs=None,
+        run_sequence=(None, None),
     ):
         self.user = user if user is not None else _bypass_user()
         self.run = SimpleNamespace(
@@ -218,6 +219,9 @@ class _EngineHarness:
         )
         self.review_state = review_state
         self.idempotency_lookup = idempotency_lookup
+        # (sequence_id, sequence_step_index) the COMPLETED run carries; drives the additive
+        # orchestration-completion audit. Default (None, None) = standalone run (no seq audit).
+        self.run_sequence = run_sequence
         self.collect_inputs = collect_inputs if collect_inputs is not None else dict(COMPANY_INPUTS)
         self.executor = AsyncMock(return_value=("company", 777))
 
@@ -242,8 +246,12 @@ class _EngineHarness:
         step_crud.get_run_step.side_effect = self._get_run_step
         step_crud.get_by_idempotency_key.return_value = self.idempotency_lookup
         step_crud.db_session = Mock()
+        seq_id, seq_idx = self.run_sequence
         step_crud.db_session.get.return_value = SimpleNamespace(
-            status=None, current_step=None
+            status=None,
+            current_step=None,
+            sequence_id=seq_id,
+            sequence_step_index=seq_idx,
         )
         self.step_crud = step_crud
         return self
@@ -516,3 +524,271 @@ class TestAddSitePreviewWarning:
         db.query.return_value.filter.return_value.first.return_value = None
         warnings = engine._build_warnings(db, "add_site", {"name": "Apollo", "company_id": 5})
         assert warnings == []
+
+
+# =====================================================================================
+# Phase 1: Native Onboarding Experience. These prove the additive orchestration layer —
+# registry discovery metadata, owner-scoped run listing, declarative sequences, and
+# fail-closed lineage on start_run — without changing how any single run executes.
+# =====================================================================================
+
+
+class _StartHarness:
+    """Patches start_run's collaborators so the lineage/validation branch is exercised
+    in isolation (no live DB, no real run detail serialization)."""
+
+    def __init__(self, *, user=None, parent_lookup="__owned__"):
+        self.user = user if user is not None else _bypass_user()
+        self.created = SimpleNamespace(id=99)
+        self.parent_lookup = parent_lookup  # what get_for_user returns for the parent
+
+    def __enter__(self):
+        self._patches = [
+            patch("app.services.workflows.engine.WorkflowRunCRUD"),
+            patch("app.services.workflows.engine.create_workflow_audit_log", return_value=1),
+            patch("app.services.workflows.engine._run_detail", return_value="DETAIL"),
+        ]
+        self.run_crud_cls, self.audit, self.run_detail = (p.start() for p in self._patches)
+        crud = self.run_crud_cls.return_value
+        crud.create_item.return_value = self.created
+        if self.parent_lookup == "__owned__":
+            crud.get_for_user.return_value = SimpleNamespace(id=123)
+        else:
+            crud.get_for_user.return_value = self.parent_lookup
+        self.crud = crud
+        return self
+
+    def __exit__(self, *exc):
+        for p in self._patches:
+            p.stop()
+
+    def start(self, workflow_id, **req_kwargs):
+        req = StartRunRequest(**req_kwargs)
+        return engine.start_run(Mock(), self.user, workflow_id, req)
+
+    @property
+    def create_payload(self):
+        return self.crud.create_item.call_args.args[0]
+
+    @property
+    def audit_actions(self):
+        return [c.kwargs["action"] for c in self.audit.call_args_list]
+
+
+class TestSequenceDefinitions:
+    """The declarative onboarding sequence is registered and load-time validated."""
+
+    def test_onboarding_registered_with_company_then_site_steps(self):
+        seq = definitions.get_sequence("onboarding")
+        assert seq is not None
+        assert [s.workflow_id for s in seq.steps] == ["add_company", "add_site"]
+
+    def test_unknown_sequence_returns_none(self):
+        assert definitions.get_sequence("does_not_exist") is None
+
+    def test_validate_sequence_rejects_unknown_workflow(self):
+        bad = definitions.SequenceDef(
+            id="bad",
+            title="Bad",
+            description="d",
+            category="X",
+            steps=(definitions.SequenceStepDef("nope", "N", "d"),),
+        )
+        with pytest.raises(definitions.WorkflowDefinitionError, match="unknown workflow"):
+            definitions.validate_sequence(bad)
+
+    def test_validate_sequence_rejects_empty(self):
+        bad = definitions.SequenceDef(
+            id="bad", title="Bad", description="d", category="X", steps=()
+        )
+        with pytest.raises(definitions.WorkflowDefinitionError, match="no steps"):
+            definitions.validate_sequence(bad)
+
+
+class TestRegistryDiscoveryMetadata:
+    """serialize_definition exposes the additive discovery metadata for the dashboard."""
+
+    def test_add_company_metadata_serialized(self):
+        schema = engine.serialize_definition(ADD_COMPANY, True)
+        assert schema.category == "Onboarding"
+        assert schema.suggested_next == ["add_site"]
+        assert schema.landing_route_template == "/project-hub/companies/{entity_id}"
+        assert schema.sequence_eligible is True
+
+    def test_add_site_metadata_serialized(self):
+        schema = engine.serialize_definition(ADD_SITE, True)
+        assert schema.category == "Onboarding"
+        assert schema.landing_route_template == "/project-hub/projects/{entity_id}"
+        assert schema.suggested_next == []
+
+
+class TestListUserRuns:
+    """list_user_runs is owner-scoped and capped; summaries enrich from the registry."""
+
+    def test_owner_scoped_and_capped(self):
+        with patch("app.services.workflows.engine.WorkflowRunCRUD") as crud_cls:
+            crud = crud_cls.return_value
+            crud.list_for_user.return_value = []
+            engine.list_user_runs(
+                Mock(),
+                _bypass_user(user_id=7),
+                statuses=[WorkflowRunStatus.active],
+                workflow_id="add_company",
+                sequence_id="onboarding",
+                limit=9999,
+            )
+        crud.list_for_user.assert_called_once()
+        kwargs = crud.list_for_user.call_args.kwargs
+        args = crud.list_for_user.call_args.args
+        # The current user's id is always passed (owner scoping) and the limit is capped.
+        assert 7 in (list(args) + list(kwargs.values()))
+        assert kwargs.get("statuses") == [WorkflowRunStatus.active]
+        assert kwargs.get("workflow_id") == "add_company"
+        assert kwargs.get("sequence_id") == "onboarding"
+        assert kwargs.get("limit") <= 200
+
+    def test_summary_enriches_title_landing_and_result_entity(self):
+        executed = SimpleNamespace(
+            executed=True, result_entity_type="company", result_entity_id=42
+        )
+        pending = SimpleNamespace(
+            executed=False, result_entity_type=None, result_entity_id=None
+        )
+        run = SimpleNamespace(
+            id=3,
+            workflow_id="add_company",
+            workflow_version="1",
+            status=WorkflowRunStatus.completed,
+            current_step="review_and_create",
+            company_id=None,
+            site_id=None,
+            parent_run_id=None,
+            sequence_id="onboarding",
+            sequence_step_index=0,
+            step_states=[pending, executed],
+            created_at=None,
+            updated_at=None,
+        )
+        summary = engine._run_summary(run)
+        assert summary.workflow_title == "Add Company"
+        assert summary.landing_route_template == "/project-hub/companies/{entity_id}"
+        assert summary.result_entity_type == "company"
+        assert summary.result_entity_id == 42
+
+
+class TestListSequences:
+    """list_sequences serializes per-step start permission for the current user."""
+
+    def test_onboarding_serialized_with_steps_for_bypass_user(self):
+        resp = engine.list_sequences(Mock(), _bypass_user(bypass=True))
+        assert len(resp.items) == 1
+        seq = resp.items[0]
+        assert seq.id == "onboarding"
+        assert [s.workflow_id for s in seq.steps] == ["add_company", "add_site"]
+        assert all(s.can_start for s in seq.steps)
+        assert seq.can_start is True
+
+    def test_first_step_permission_drives_overall_for_non_admin(self):
+        # A non-bypass user with no company access can start neither step.
+        user = SimpleNamespace(
+            id=2, has_platform_bypass=False, get_limited_companies_ids=lambda: []
+        )
+        resp = engine.list_sequences(Mock(), user)
+        seq = resp.items[0]
+        assert seq.steps[0].can_start is False
+        assert seq.can_start is False
+
+
+class TestStartRunLineage:
+    """start_run persists validated lineage and emits orchestration audit events."""
+
+    def test_lineage_persisted_and_advance_audited(self):
+        with _StartHarness() as h:
+            result = h.start(
+                "add_site",
+                parent_run_id=5,
+                sequence_id="onboarding",
+                sequence_step_index=1,
+            )
+        assert result == "DETAIL"
+        payload = h.create_payload
+        assert payload["parent_run_id"] == 5
+        assert payload["sequence_id"] == "onboarding"
+        assert payload["sequence_step_index"] == 1
+        # parent present -> this is an ADVANCE within the sequence, not a fresh start.
+        assert "workflow.sequence.onboarding.advanced" in h.audit_actions
+
+    def test_first_step_emits_sequence_started_audit(self):
+        with _StartHarness() as h:
+            h.start("add_company", sequence_id="onboarding", sequence_step_index=0)
+        assert "workflow.sequence.onboarding.started" in h.audit_actions
+
+    def test_parent_ownership_rejected(self):
+        # A parent run not owned by this user -> 404, and nothing is created.
+        with _StartHarness(parent_lookup=None) as h:
+            with pytest.raises(HTTPException) as exc:
+                h.start("add_company", parent_run_id=5)
+            assert exc.value.status_code == 404
+            h.crud.create_item.assert_not_called()
+
+    def test_unknown_sequence_rejected(self):
+        with _StartHarness() as h:
+            with pytest.raises(HTTPException) as exc:
+                h.start("add_company", sequence_id="nope")
+            assert exc.value.status_code == 400
+            h.crud.create_item.assert_not_called()
+
+    def test_step_index_workflow_mismatch_rejected(self):
+        # onboarding step 1 is add_site, so starting add_company at index 1 is incoherent.
+        with _StartHarness() as h:
+            with pytest.raises(HTTPException) as exc:
+                h.start("add_company", sequence_id="onboarding", sequence_step_index=1)
+            assert exc.value.status_code == 400
+            h.crud.create_item.assert_not_called()
+
+    def test_step_index_out_of_range_rejected(self):
+        with _StartHarness() as h:
+            with pytest.raises(HTTPException) as exc:
+                h.start("add_company", sequence_id="onboarding", sequence_step_index=9)
+            assert exc.value.status_code == 400
+            h.crud.create_item.assert_not_called()
+
+    def test_step_index_without_sequence_rejected(self):
+        with _StartHarness() as h:
+            with pytest.raises(HTTPException) as exc:
+                h.start("add_company", sequence_step_index=0)
+            assert exc.value.status_code == 400
+            h.crud.create_item.assert_not_called()
+
+    def test_standalone_start_persists_null_lineage_and_no_sequence_audit(self):
+        with _StartHarness() as h:
+            h.start("add_company")
+        payload = h.create_payload
+        assert payload["parent_run_id"] is None
+        assert payload["sequence_id"] is None
+        assert payload["sequence_step_index"] is None
+        assert not any(".sequence." in a for a in h.audit_actions)
+
+
+class TestExecuteStepSequenceAudit:
+    """A run that belongs to a sequence emits the additive completion audit on execute."""
+
+    def test_last_step_emits_sequence_completed(self):
+        with _EngineHarness(run_sequence=("onboarding", 1)) as h:
+            resp = h.execute()
+        assert resp.executed is True
+        actions = [c.kwargs["action"] for c in h.audit.call_args_list]
+        assert "workflow.add_company.execute" in actions
+        assert "workflow.sequence.onboarding.completed" in actions
+
+    def test_non_last_step_emits_step_completed(self):
+        with _EngineHarness(run_sequence=("onboarding", 0)) as h:
+            h.execute()
+        actions = [c.kwargs["action"] for c in h.audit.call_args_list]
+        assert "workflow.sequence.onboarding.step_completed" in actions
+
+    def test_standalone_run_emits_no_sequence_audit(self):
+        with _EngineHarness() as h:
+            h.execute()
+        actions = [c.kwargs["action"] for c in h.audit.call_args_list]
+        assert not any(".sequence." in a for a in actions)

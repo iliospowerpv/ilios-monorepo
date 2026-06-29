@@ -76,6 +76,17 @@ class WorkflowDef:
     # User-facing copy returned by the engine on successful execution. Falls back to a generic
     # message when unset, so the engine never hardcodes per-workflow copy.
     success_message: Optional[str] = None
+    # --- Discovery / registry metadata (ADDITIVE; powers the dashboard + orchestrator) ---
+    # Purely presentational/declarative — none of these grant access or trigger execution.
+    category: str = "General"
+    icon: Optional[str] = None
+    # Workflow ids the dashboard MAY suggest running next. A suggestion is just a hint; the
+    # next workflow is always an independent, separately-permissioned run (never auto-started).
+    suggested_next: tuple[str, ...] = ()
+    # FE deep-link template to the entity a successful run creates ({entity_id} substituted).
+    landing_route_template: Optional[str] = None
+    # Whether this workflow may appear as a step inside a declarative SequenceDef.
+    sequence_eligible: bool = True
 
 
 class WorkflowDefinitionError(RuntimeError):
@@ -143,6 +154,10 @@ ADD_COMPANY = WorkflowDef(
     entry_permission="platform_admin",
     payload_schema_key="add_company",
     success_message="Company created successfully.",
+    category="Onboarding",
+    icon="business",
+    suggested_next=("add_site",),
+    landing_route_template="/project-hub/companies/{entity_id}",
     steps=(
         StepDef(
             id="company_details",
@@ -228,6 +243,9 @@ ADD_SITE = WorkflowDef(
     entry_permission="assets_management:create_site",
     payload_schema_key="add_site",
     success_message="Project created successfully.",
+    category="Onboarding",
+    icon="solar_power",
+    landing_route_template="/project-hub/projects/{entity_id}",
     steps=(
         StepDef(
             id="project_details",
@@ -322,11 +340,83 @@ for _wf in REGISTRY.values():
     validate_definition(_wf)
 
 
+# --- Declarative orchestrator sequences ----------------------------------------------
+# A SequenceDef chains otherwise-INDEPENDENT workflows into one guided multi-workflow journey
+# (e.g. onboarding: add a company, then its first project). The orchestrator NEVER executes
+# anything itself — each step is a normal, independently-permissioned workflow run. The
+# sequence only declares ordering so a user can flow through end to end and resume across
+# sessions (persisted via workflow_runs.sequence_id / sequence_step_index / parent_run_id).
+
+
+@dataclass(frozen=True)
+class SequenceStepDef:
+    workflow_id: str
+    title: str
+    description: str
+
+
+@dataclass(frozen=True)
+class SequenceDef:
+    id: str
+    title: str
+    description: str
+    category: str
+    steps: tuple[SequenceStepDef, ...]
+    icon: Optional[str] = None
+
+
+def validate_sequence(seq: SequenceDef) -> None:
+    """Fail-closed: a sequence must have steps and every step must name a real workflow."""
+    if not seq.steps:
+        raise WorkflowDefinitionError(f"sequence '{seq.id}' has no steps")
+    for step in seq.steps:
+        wf = REGISTRY.get(step.workflow_id)
+        if wf is None:
+            raise WorkflowDefinitionError(
+                f"sequence '{seq.id}' references unknown workflow '{step.workflow_id}'"
+            )
+        if not wf.sequence_eligible:
+            raise WorkflowDefinitionError(
+                f"sequence '{seq.id}' uses workflow '{step.workflow_id}' which is not sequence-eligible"
+            )
+
+
+ONBOARDING_SEQUENCE = SequenceDef(
+    id="onboarding",
+    title="Onboard a Company & First Project",
+    description="Create a company, then add its first project (site) — guided end to end.",
+    category="Onboarding",
+    icon="rocket_launch",
+    steps=(
+        SequenceStepDef(
+            workflow_id="add_company",
+            title="Create the company",
+            description="Add the owning company.",
+        ),
+        SequenceStepDef(
+            workflow_id="add_site",
+            title="Add the first project",
+            description="Create the company's first project (site).",
+        ),
+    ),
+)
+
+SEQUENCES: dict[str, SequenceDef] = {ONBOARDING_SEQUENCE.id: ONBOARDING_SEQUENCE}
+
+# Validate every registered sequence at import time (fail-closed).
+for _seq in SEQUENCES.values():
+    validate_sequence(_seq)
+
+
 # --- Lookups --------------------------------------------------------------------------
 
 
 def get_definition(workflow_id: str) -> Optional[WorkflowDef]:
     return REGISTRY.get(workflow_id)
+
+
+def get_sequence(sequence_id: str) -> Optional["SequenceDef"]:
+    return SEQUENCES.get(sequence_id)
 
 
 def get_step(wf: WorkflowDef, step_id: str) -> Optional[StepDef]:

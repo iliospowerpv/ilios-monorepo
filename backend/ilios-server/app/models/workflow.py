@@ -60,6 +60,8 @@ class WorkflowRun(Base):
         Index("ix_workflow_runs_user_id", "user_id"),
         Index("ix_workflow_runs_workflow_id", "workflow_id"),
         Index("ix_workflow_runs_status", "status"),
+        Index("ix_workflow_runs_parent_run_id", "parent_run_id"),
+        Index("ix_workflow_runs_user_sequence_status", "user_id", "sequence_id", "status"),
     )
 
     id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
@@ -75,6 +77,18 @@ class WorkflowRun(Base):
     # Optional scope; null when the run itself creates the scoping entity (e.g. add_company).
     company_id = Column(Integer, ForeignKey("companies.id", ondelete="SET NULL"), nullable=True)
     site_id = Column(Integer, ForeignKey("sites.id", ondelete="SET NULL"), nullable=True)
+
+    # --- Orchestration lineage (ADDITIVE, all nullable) -------------------------------
+    # A run is ALWAYS independently startable/executable; these columns only let an
+    # orchestrator (e.g. the onboarding sequence) chain otherwise-independent runs and
+    # durably resume the chain across sessions. They never alter how a single run executes.
+    # ``parent_run_id`` links a chained run to the one before it; ``sequence_id`` /
+    # ``sequence_step_index`` record which declarative SequenceDef step this run fulfils.
+    parent_run_id = Column(
+        Integer, ForeignKey("workflow_runs.id", ondelete="SET NULL"), nullable=True
+    )
+    sequence_id = Column(VARCHAR, nullable=True)
+    sequence_step_index = Column(Integer, nullable=True)
 
     status = Column(
         Enum(WorkflowRunStatus, name=WORKFLOW_RUN_STATUS_ENUM_NAME),

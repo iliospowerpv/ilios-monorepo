@@ -38,23 +38,30 @@ from app.schema.workflow import (
     PreviewItem,
     PreviewResponse,
     SaveStepRequest,
+    SequenceListResponse,
+    SequenceSchema,
+    SequenceStepSchema,
     StartRunRequest,
     WorkflowDefinitionSchema,
     WorkflowFieldOption,
     WorkflowFieldSchema,
     WorkflowListResponse,
     WorkflowRunDetailResponse,
+    WorkflowRunListResponse,
     WorkflowRunSchema,
+    WorkflowRunSummarySchema,
     WorkflowStepSchema,
     WorkflowStepStateSchema,
 )
 from app.services.workflows.definitions import (
     REGISTRY,
+    SEQUENCES,
     STEP_EXECUTE,
     WorkflowDef,
     first_step_id,
     get_definition,
     get_payload_schema,
+    get_sequence,
     get_step,
     get_step_input_schema,
     resolve_options,
@@ -273,6 +280,11 @@ def serialize_definition(
         title=wf.title,
         description=wf.description,
         can_start=can_start,
+        category=wf.category,
+        icon=wf.icon,
+        suggested_next=list(wf.suggested_next),
+        landing_route_template=wf.landing_route_template,
+        sequence_eligible=wf.sequence_eligible,
         steps=steps,
     )
 
@@ -321,6 +333,97 @@ def list_workflow_definitions(db_session: Session, current_user) -> WorkflowList
     return WorkflowListResponse(items=items)
 
 
+# Hard ceiling on a dashboard run listing so the response is always bounded.
+_MAX_RUN_LIST_LIMIT = 200
+
+
+def _run_summary(run: WorkflowRun) -> WorkflowRunSummarySchema:
+    """Build a compact dashboard row, enriching with registry title/landing + result entity.
+
+    The result entity (id/type) is read from the run's executed step state — the run row
+    itself never stores business truth.
+    """
+    wf = get_definition(run.workflow_id)
+    executed = next((s for s in run.step_states if s.executed), None)
+    return WorkflowRunSummarySchema(
+        id=run.id,
+        workflow_id=run.workflow_id,
+        workflow_version=run.workflow_version,
+        workflow_title=wf.title if wf is not None else None,
+        status=run.status,
+        current_step=run.current_step,
+        company_id=run.company_id,
+        site_id=run.site_id,
+        parent_run_id=run.parent_run_id,
+        sequence_id=run.sequence_id,
+        sequence_step_index=run.sequence_step_index,
+        result_entity_type=executed.result_entity_type if executed else None,
+        result_entity_id=executed.result_entity_id if executed else None,
+        landing_route_template=wf.landing_route_template if wf is not None else None,
+        created_at=run.created_at,
+        updated_at=run.updated_at,
+    )
+
+
+def list_user_runs(
+    db_session: Session,
+    current_user,
+    *,
+    statuses: list[WorkflowRunStatus] | None = None,
+    workflow_id: str | None = None,
+    sequence_id: str | None = None,
+    limit: int = 100,
+) -> WorkflowRunListResponse:
+    """Owner-scoped list of the CURRENT user's runs (never another user's) for the dashboard."""
+    capped = max(1, min(limit, _MAX_RUN_LIST_LIMIT))
+    runs = WorkflowRunCRUD(db_session).list_for_user(
+        _user_id(current_user),
+        statuses=statuses,
+        workflow_id=workflow_id,
+        sequence_id=sequence_id,
+        limit=capped,
+    )
+    return WorkflowRunListResponse(items=[_run_summary(r) for r in runs])
+
+
+def list_sequences(db_session: Session, current_user) -> SequenceListResponse:
+    """List declarative orchestrator sequences with per-step start permission for this user.
+
+    Read-only: a sequence is purely a chaining hint. ``can_start`` (overall) reflects whether
+    the user may start the FIRST step; per-step ``can_start`` reflects each underlying
+    workflow's own entry permission (resolved fail-closed, never raising).
+    """
+    items: list[SequenceSchema] = []
+    for seq in SEQUENCES.values():
+        steps: list[SequenceStepSchema] = []
+        first_can_start = False
+        for idx, step in enumerate(seq.steps):
+            wf = get_definition(step.workflow_id)
+            can_start = bool(wf is not None and _can_start(wf, current_user, db_session))
+            if idx == 0:
+                first_can_start = can_start
+            steps.append(
+                SequenceStepSchema(
+                    workflow_id=step.workflow_id,
+                    title=step.title,
+                    description=step.description,
+                    can_start=can_start,
+                )
+            )
+        items.append(
+            SequenceSchema(
+                id=seq.id,
+                title=seq.title,
+                description=seq.description,
+                category=seq.category,
+                icon=seq.icon,
+                can_start=first_can_start,
+                steps=steps,
+            )
+        )
+    return SequenceListResponse(items=items)
+
+
 def start_run(
     db_session: Session, current_user, workflow_id: str, req: StartRunRequest
 ) -> WorkflowRunDetailResponse:
@@ -329,6 +432,40 @@ def start_run(
         raise HTTPException(status_code=404, detail="Unknown workflow.")
     _ensure_permission(wf.entry_permission, current_user, db_session)
 
+    # --- Orchestration lineage (optional, fail-closed validation) ---------------------
+    # Lineage NEVER changes how this run executes — it only records the chain so the
+    # orchestrator/dashboard can resume and audit. All three fields are validated before
+    # they are persisted so a malformed/forged chain can't be stored.
+    parent_run_id = req.parent_run_id
+    sequence_id = req.sequence_id
+    sequence_step_index = req.sequence_step_index
+
+    if parent_run_id is not None:
+        # The parent MUST be a run owned by THIS user — no cross-user chaining.
+        parent = WorkflowRunCRUD(db_session).get_for_user(
+            parent_run_id, _user_id(current_user)
+        )
+        if parent is None:
+            raise HTTPException(status_code=404, detail="Parent workflow run not found.")
+
+    if sequence_id is not None:
+        seq = get_sequence(sequence_id)
+        if seq is None:
+            raise HTTPException(status_code=400, detail="Unknown workflow sequence.")
+        if sequence_step_index is not None:
+            if not (0 <= sequence_step_index < len(seq.steps)):
+                raise HTTPException(status_code=400, detail="Invalid sequence step index.")
+            if seq.steps[sequence_step_index].workflow_id != wf.id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="This workflow does not match that step of the sequence.",
+                )
+    elif sequence_step_index is not None:
+        # A step index without a sequence is meaningless — refuse rather than store junk.
+        raise HTTPException(
+            status_code=400, detail="sequence_step_index requires sequence_id."
+        )
+
     run = WorkflowRunCRUD(db_session).create_item(
         {
             "workflow_id": wf.id,
@@ -336,6 +473,9 @@ def start_run(
             "user_id": _user_id(current_user),
             "company_id": req.company_id,
             "site_id": req.site_id,
+            "parent_run_id": parent_run_id,
+            "sequence_id": sequence_id,
+            "sequence_step_index": sequence_step_index,
             "status": WorkflowRunStatus.active,
             "current_step": first_step_id(wf),
             "resume_token": uuid4().hex,
@@ -348,6 +488,24 @@ def start_run(
         details={"run_id": run.id, "workflow_id": wf.id, "version": wf.version, "outcome": "started"},
         is_success=True,
     )
+    # Orchestration-level audit (additive, best-effort): distinguish STARTING a sequence
+    # from ADVANCING within it. The per-workflow audit above stays authoritative.
+    if sequence_id is not None:
+        is_first = parent_run_id is None and (sequence_step_index in (None, 0))
+        create_workflow_audit_log(
+            db_session,
+            user_id=_user_id(current_user),
+            action=f"workflow.sequence.{sequence_id}.{'started' if is_first else 'advanced'}",
+            details={
+                "run_id": run.id,
+                "sequence_id": sequence_id,
+                "sequence_step_index": sequence_step_index,
+                "parent_run_id": parent_run_id,
+                "workflow_id": wf.id,
+                "outcome": "started" if is_first else "advanced",
+            },
+            is_success=True,
+        )
     return _run_detail(wf, run, db_session, current_user)
 
 
@@ -599,6 +757,31 @@ async def execute_step(
     run.status = WorkflowRunStatus.completed
     run.current_step = step_id
     db_session.commit()
+
+    # Orchestration-level audit (additive, best-effort): if this run belongs to a sequence,
+    # record whether it completed the WHOLE sequence (last step) or just this step. The
+    # per-workflow execute audit above remains the authoritative success record.
+    if run.sequence_id:
+        seq = get_sequence(run.sequence_id)
+        is_last = (
+            seq is not None
+            and run.sequence_step_index is not None
+            and run.sequence_step_index >= len(seq.steps) - 1
+        )
+        create_workflow_audit_log(
+            db_session,
+            user_id=_user_id(current_user),
+            action=f"workflow.sequence.{run.sequence_id}.{'completed' if is_last else 'step_completed'}",
+            details={
+                "run_id": run_id,
+                "sequence_id": run.sequence_id,
+                "sequence_step_index": run.sequence_step_index,
+                "entity_type": entity_type,
+                "entity_id": entity_id,
+                "outcome": "completed" if is_last else "step_completed",
+            },
+            is_success=True,
+        )
 
     return ExecuteResponse(
         step_id=step_id,

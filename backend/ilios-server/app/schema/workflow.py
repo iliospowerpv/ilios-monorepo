@@ -4,6 +4,7 @@ These describe ONLY run/step orchestration and the serialized (read-only) workfl
 definition the FE Wizard shell consumes. No business-truth payload schema lives here — write
 steps validate against, and dispatch to, the EXISTING domain schemas/endpoints.
 """
+from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -47,6 +48,12 @@ class WorkflowDefinitionSchema(BaseModel):
     title: str
     description: str
     can_start: bool
+    # Additive discovery metadata (powers the dashboard + orchestrator). Presentational only.
+    category: str = "General"
+    icon: Optional[str] = None
+    suggested_next: list[str] = Field(default_factory=list)
+    landing_route_template: Optional[str] = None
+    sequence_eligible: bool = True
     steps: list[WorkflowStepSchema]
 
 
@@ -79,6 +86,9 @@ class WorkflowRunSchema(BaseModel):
     current_step: Optional[str] = None
     company_id: Optional[int] = None
     site_id: Optional[int] = None
+    parent_run_id: Optional[int] = None
+    sequence_id: Optional[str] = None
+    sequence_step_index: Optional[int] = None
     step_states: list[WorkflowStepStateSchema] = Field(default_factory=list)
 
 
@@ -95,6 +105,11 @@ class StartRunRequest(BaseModel):
 
     company_id: Optional[int] = None
     site_id: Optional[int] = None
+    # Orchestration lineage (optional). Set by the onboarding orchestrator to chain this run
+    # to the prior one; the engine validates parent ownership + sequence/step integrity.
+    parent_run_id: Optional[int] = None
+    sequence_id: Optional[str] = None
+    sequence_step_index: Optional[int] = None
 
 
 class SaveStepRequest(BaseModel):
@@ -142,3 +157,55 @@ class AbandonResponse(BaseModel):
     run_id: int
     run_status: WorkflowRunStatus
     message: str
+
+
+# --- Run summaries (Workflow Dashboard list) -----------------------------------------
+
+
+class WorkflowRunSummarySchema(BaseModel):
+    """Compact, owner-scoped run row for the dashboard. Never carries another user's inputs."""
+
+    id: int
+    workflow_id: str
+    workflow_version: str
+    workflow_title: Optional[str] = None
+    status: WorkflowRunStatus
+    current_step: Optional[str] = None
+    company_id: Optional[int] = None
+    site_id: Optional[int] = None
+    parent_run_id: Optional[int] = None
+    sequence_id: Optional[str] = None
+    sequence_step_index: Optional[int] = None
+    result_entity_type: Optional[str] = None
+    result_entity_id: Optional[int] = None
+    landing_route_template: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+class WorkflowRunListResponse(BaseModel):
+    items: list[WorkflowRunSummarySchema] = Field(default_factory=list)
+
+
+# --- Sequences (orchestrator catalog) ------------------------------------------------
+
+
+class SequenceStepSchema(BaseModel):
+    workflow_id: str
+    title: str
+    description: str
+    can_start: bool
+
+
+class SequenceSchema(BaseModel):
+    id: str
+    title: str
+    description: str
+    category: str
+    icon: Optional[str] = None
+    can_start: bool
+    steps: list[SequenceStepSchema] = Field(default_factory=list)
+
+
+class SequenceListResponse(BaseModel):
+    items: list[SequenceSchema] = Field(default_factory=list)
