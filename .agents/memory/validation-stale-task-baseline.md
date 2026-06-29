@@ -28,3 +28,13 @@ with your code.
    your commit SHA, its exact file list, and the verification path that did pass.
    Do **not** start deleting/reverting the prior commits the reviewer complained
    about — they are someone else's already-merged work, not yours.
+4. **If `current_task` points at a wholly DIFFERENT, unrelated task** (not just an
+   old baseline of *your* feature — e.g. the gate keeps reviewing an inventory/
+   tracked-tasks contract while you built an onboarding feature), the gate is
+   **unpassable without building that other feature**. `request_fresh_code_review:
+   true` does **NOT** re-scope it — it still diffs the same `current_task` baseline
+   and rejects identically. After ~2 attempts, **stop** (don't loop
+   `mark_task_complete`) and hand back to the user: state the work is complete +
+   self-validated, and that the automated gate is locked onto an unrelated task you
+   were directed to ignore. Never implement the out-of-scope feature just to satisfy
+   the gate.
