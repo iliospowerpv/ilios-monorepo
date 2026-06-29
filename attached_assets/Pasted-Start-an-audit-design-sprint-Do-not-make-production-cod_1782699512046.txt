@@ -1,0 +1,91 @@
+Start an audit/design sprint.
+
+Do not make production code changes.
+
+Sprint:
+AI Agent Reintegration — Product Intent, Legacy Audit, and Native Architecture Design
+
+Objective:
+Audit all legacy AI-agent code and design a native Ilios AI assistant that supports navigation, education, and permission-aware workflow execution through chat.
+
+Important context:
+There may be legacy AI-agent code from prior developers. Audit it, but do not assume it should be reused. Prefer native, well-governed Ilios integration if it better satisfies product requirements.
+
+Intended AI assistant role:
+The AI assistant should act as a guided operating layer for Ilios.
+
+It must support:
+1. Navigation assistance across modules.
+2. Help / FAQ / product education.
+3. Permission-aware user actions through chat.
+4. Wizard-style workflows for long multi-step processes, including:
+   - adding a company
+   - adding a site
+   - onboarding telemetry
+   - uploading diligence documents
+   - reviewing extracted facts
+   - creating project facts
+   - creating draft baselines
+   - reconciling inventory
+   - assigning tasks
+   - generating reports
+
+Audit:
+Trace all existing or legacy AI-agent code:
+- frontend entry points
+- backend routes
+- agent services
+- prompts
+- tools/actions
+- database tables
+- auth/permissions
+- audit logs
+- task creation
+- document interaction
+- help/FAQ access
+- mutations
+- background jobs
+- third-party dependencies
+
+Design requirements:
+- Native Ilios integration preferred.
+- Use existing APIs and permission gates.
+- No bypassing backend authorization.
+- AI may guide, draft, prefill, validate, explain, and summarize.
+- AI must not silently mutate operational truth.
+
+Hard governance rules:
+The agent must never silently:
+- promote facts
+- approve baselines
+- activate baselines
+- supersede baselines
+- map devices
+- create weather declarations
+- alter expected output
+- alter operational truth
+
+Those actions require explicit user confirmation, normal authorization, and audit logging.
+
+Required deliverable:
+docs/ai_agent_reintegration_audit_design.md
+
+Return:
+1. legacy AI code inventory
+2. recommendation: reuse, isolate, or replace legacy code
+3. proposed native architecture
+4. permission model
+5. action/tool model
+6. confirmation rules
+7. wizard workflow model
+8. help/FAQ knowledge model
+9. audit logging model
+10. mutation boundaries
+11. frontend UX plan
+12. backend/API plan
+13. data model impact
+14. implementation phases
+15. risks
+16. test plan
+17. browser-validation plan
+18. confirmation no production code changed
