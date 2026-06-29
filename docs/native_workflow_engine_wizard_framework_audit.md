@@ -12,6 +12,13 @@
 | `[EXISTS]` | Already built (audited reference). |
 | `[GAP]` | Missing today; the design fills it. |
 | `[PROPOSED]` | Designed here; not built. |
+| `[BUILT]` | Designed here **and** since implemented in a later sprint (see §15 build log). |
+
+> **Update (build log).** Sections 1–14 are the original AUDIT/DESIGN sprint record and remain
+> accurate for that sprint. The framework has since been built **incrementally via small
+> pilots**; each pilot is documented in **§15**. Pilot 1 (Add Company) and Pilot 2
+> (Add Site / Project) are now `[BUILT]`. The §14 "no production code changed" statement
+> applies to the original design sprint only — not to the pilots in §15.
 
 ## Relationship to the prior sprint
 
@@ -422,3 +429,174 @@ or production changes).
   approval/activation, device mapping, weather declaration) was performed or automated.
 
 All items labeled `[PROPOSED]` are designs awaiting a separate, reviewed build sprint.
+
+---
+
+## 15. Build log — pilots `[BUILT]`
+
+The engine is being built **incrementally**, one real flow at a time, so each pilot proves a
+specific framework capability against a live endpoint before the next is attempted.
+
+- **Pilot 1 — Add Company** (`add_company`): first vertical slice; entry permission
+  `platform_admin`; static selects (`company_types`, `us_states`); reuses the existing
+  company-create endpoint + `CreateCompanySchema`; companies have DB uniqueness, so its
+  preview warning is a hard "creation will fail" and a unique-violation at execute is mapped
+  to a `409 conflict` with a `conflict_unique` audit outcome.
+- **Pilot 2 — Add Site / Project** (`add_site`): documented in full below.
+
+### 15.1 Pilot 2 goal & what it proves
+
+Pilot 2 proves the same engine generalizes to a **second** flow with two capabilities Pilot 1
+did not exercise:
+
+1. a **company-scoped** permission model (not the platform-wide `platform_admin`), and
+2. a **dynamic** select whose options are resolved per-user at serialize time (the company
+   picker), alongside a curated timezone picker and a new `number` field type.
+
+Per `replit.md`, the backend entity remains **Site**; the UI label is **Project**. The engine
+**never owns truth** — it wraps the existing site-create endpoint behind
+preview → confirm → execute and adds nothing to site-creation behavior.
+
+### 15.2 Files changed
+
+**Backend** (`backend/ilios-server`):
+
+- `app/services/workflows/engine.py` — added the `assets_management:create_site` permission
+  token (`PERMISSION_ASSETS_CREATE_SITE`) and `_has_company_scoped_edit`; threaded
+  `db_session` (+ `current_user`) through `list_workflow_definitions`, `serialize_definition`,
+  `_can_start`, and `_ensure_permission` so per-user dynamic options and company-scoped checks
+  can resolve; extended `_build_warnings` with the read-only `add_site` duplicate-name advisory.
+- `app/services/workflows/definitions.py` — the `ADD_SITE` `WorkflowDef` (collect step
+  `project_details`, execute step `review_and_create`); `_editable_company_options` +
+  `resolve_options` cases for `companies` and `us_timezones`; the `number` field type; and the
+  `add_site → CreateSiteSchema` entries in `STEP_INPUT_SCHEMAS` and `WORKFLOW_PAYLOAD_SCHEMAS`
+  (validated at import).
+- `app/services/workflows/executors.py` — `_execute_add_site` (lazy-imports the existing
+  site-create endpoint + `CreateSiteSchema`, returns `("site", id)`) and its `EXECUTORS` entry.
+- `tests/test_workflow_engine.py` — extended with the Pilot-2 suites (see §15.7).
+
+**Frontend** (`frontend/rea-investment-fe`):
+
+- `src/modules/workflows/AddSiteWorkflowPage.tsx` (new) + `src/modules/workflows/index.ts`
+  export — mirrors the merged Add Company page on the shared `Wizard` shell.
+- `src/App.tsx` — route `/workflows/add-site`.
+- Shared `Wizard` field renderer — `number` field type.
+- Navigation entry for "Add Project", permission-gated.
+
+The existing manual Site/Project creation form was **not** touched.
+
+### 15.3 Routes used
+
+All engine routes already existed (Pilot 1); Pilot 2 added **no** new routes. Mounted at
+`/api/workflows`:
+
+| Method & path | Purpose |
+|---|---|
+| `GET /api/workflows` | List startable workflows for the user. |
+| `POST /api/workflows/{workflow_id}/runs` | Start a run (`201`; entry permission enforced). |
+| `GET /api/workflows/runs/{run_id}` | Fetch a run + serialized definition (save/resume). |
+| `PATCH /api/workflows/runs/{run_id}/steps/{step_id}` | Persist + server-validate a step (no write). |
+| `POST /api/workflows/runs/{run_id}/steps/{step_id}/preview` | Read-only preview + confirm token. |
+| `POST /api/workflows/runs/{run_id}/steps/{step_id}/execute` | Execute the confirmed write. |
+| `POST /api/workflows/runs/{run_id}/abandon` | Cancel a run. |
+
+At execute, `_execute_add_site` invokes the **existing** domain endpoint **verbatim**:
+`POST /api/sites/` (`create` in `app/routers/assets_management/sites.py`, `CreateSiteSchema`) —
+the same call, guard, scaffolding (default sections/boards/documents), and commit as the manual
+"Add Project" path. No parallel mutation logic.
+
+### 15.4 Permission model
+
+- **Entry token:** `assets_management:create_site`. Resolved fail-closed as
+  **platform-bypass OR `_has_company_scoped_edit`**, where the latter calls
+  `require_module_permission_any_company(module=assets_management, action="edit")` over the
+  user's accessible company ids. It is deliberately **company-scope only**: a project/site-only
+  grant must not let a user start the wizard or enumerate companies.
+- **Coarse vs authoritative:** the engine gate is an **any-company** coarse check. The
+  **authoritative per-company** guard remains the existing site-create endpoint at execute time.
+  If the coarse gate passes but the user lacks edit on the *selected* company, the endpoint
+  raises `403`; the engine rolls back and records a distinct `endpoint_refused_permission`
+  audit outcome before re-raising.
+- **Fail-closed:** an unknown/mis-typed permission token is always refused (`403`), so a bad
+  definition can never silently grant access.
+- **Drift from the session plan:** the plan named the token `assets_management:edit`. The
+  implementation uses a dedicated, self-describing token `assets_management:create_site` whose
+  underlying *check* is exactly the company-scoped `assets_management` **edit** permission —
+  same semantics, clearer intent, and it leaves room for a future finer-grained create grant.
+  Pilot 1's `platform_admin` path is unchanged.
+
+### 15.5 Dynamic options
+
+`serialize_definition` resolves each select's `options_source` per request via `resolve_options`:
+
+- `companies` → `_editable_company_options`: active companies where the user holds
+  `assets_management` edit (resolved through `resolve_effective_access`); platform-bypass users
+  see all active companies. Best-effort and read-only; the endpoint stays authoritative.
+- `us_timezones` → curated IANA list **plus `UTC`** (feeds the per-site timezone column).
+- `company_types`, `us_states` → unchanged static enum sources.
+- New `number` field type for `system_size_ac` / `system_size_dc`.
+
+### 15.6 Audit, idempotency & uniqueness
+
+- **Audit:** every execute writes a `create_workflow_audit_log` row with action
+  `workflow.add_site.execute`. Outcomes: `executed` (success — records `entity_type=site`,
+  `entity_id`, and an input `summary`), `endpoint_refused_permission` (`403` from the endpoint),
+  and `endpoint_error` (other `HTTPException`). The success row's id is stored on the step state
+  (`audit_log_id`) alongside `result_entity_type`/`result_entity_id` for end-to-end traceability.
+- **Idempotency:** `execute_step` short-circuits when the step state is already `executed`
+  (returns the prior result — no second write), and also on a matching `idempotency_key`. After
+  a successful execute the run transitions to `completed`, so a **live replay** is additionally
+  caught by the non-active-run guard and returns `409` (defense-in-depth, still no double write).
+  The executed-flag / idempotency-key short-circuit itself is covered by unit tests.
+- **Uniqueness:** sites have **no** DB uniqueness constraint, so the duplicate check is a
+  read-only, **non-blocking preview advisory** only — *"A project named 'X' already exists in
+  this company."* — and creation still proceeds. (Contrast Pilot 1: companies are unique, so its
+  warning is hard and a collision becomes a `409 conflict_unique`.)
+
+### 15.7 Tests
+
+`tests/test_workflow_engine.py` was extended with `TestAddSiteDefinition`,
+`TestAddSitePermission`, `TestAddSiteExecutor`, `TestAddSiteOptionResolution`, and
+`TestAddSitePreviewWarning`, covering: definition loads/validates; `assets_management:create_site`
+fail-closed (no company context → `403`, edit-context → pass, platform-bypass → pass) and unknown
+token → `403`; executor calls the real `sites.create` and writes the success audit; idempotency
+(executed flag + idempotency key); confirm-token blast-radius; and dynamic company-option
+resolution. Full file: **43 passed** via
+`test_db_name=test_heliumdb python -m pytest tests/test_workflow_engine.py -o addopts="" -p no:cacheprovider -q`.
+
+### 15.8 Browser / API validation
+
+A throwaway live E2E (against the running `Backend` on :8000, then deleted) drove the real HTTP
+API end to end and asserted **21/21** checks:
+
+- list shows `add_site` and `can_start` is true for an authorized user;
+- start → `201`; the serialized definition resolves the **company picker** options, the
+  **timezone** options (UTC + IANA), and the **number** field type;
+- preview fires the **duplicate-name warning** and performs **no write** (row count unchanged),
+  and issues a **confirm token**; a unique name yields no warning;
+- execute → `200`, creating a **real site via the existing endpoint** with the chosen IANA
+  **timezone persisted**, and writing the **success audit** row;
+- **idempotency** replay creates no duplicate (`409`, count unchanged);
+- **blast-radius**: a tampered confirm token is rejected `409 reconfirm_required` and **no site
+  is created**;
+- teardown leaves **zero residue** (test sites, boards, runs, and audit rows all removed —
+  including an orphan from an earlier aborted run; the protected site 4 / 110 Shawmut was never
+  touched, and the warning probe used a non-protected company).
+
+The FE compiles clean (`No issues found.`) and the `/workflows/add-site` route is auth-gated.
+
+### 15.9 Remaining gaps & next pilot
+
+- **Live permission-denied not exercised:** the dev DB has no zero-access user, so the live
+  `403` path was skipped; it is covered by unit tests and by the endpoint's authoritative guard.
+- **Authenticated FE render not screenshot-verified:** the preview requires login; the page
+  mirrors the merged Add Company wizard and the backend serialization it consumes is proven live.
+- **Idempotent replay returns `409`, not a cached `200` echo:** on a completed run the
+  non-active-run guard fires first; the cached-result short-circuit is unit-tested rather than
+  observed live.
+- **Coarse gate is any-company by design:** per-company authority intentionally stays with the
+  existing endpoint.
+- **Next pilots:** a flow with **server row-level validation** (project-import-style errors that
+  block Next), then a **governed-surface** flow that builds a preview and routes to the existing
+  manual confirmation UI — proving the engine **never auto-executes** a governed terminal (fact
+  promotion, baseline activation, device mapping, weather declaration).

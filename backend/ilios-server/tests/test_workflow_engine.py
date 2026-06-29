@@ -23,9 +23,11 @@ import pytest
 from fastapi import HTTPException
 
 from app.schema.company import CreateCompanySchema
+from app.schema.site import CreateSiteSchema
 from app.services.workflows import definitions, engine, executors
 from app.services.workflows.definitions import (
     ADD_COMPANY,
+    ADD_SITE,
     CONFIRMATION_GOVERNED,
     CONFIRMATION_NONE,
     CONFIRMATION_STANDARD,
@@ -145,20 +147,20 @@ class TestDefinitionGuard:
 
 class TestPermissionGuard:
     def test_none_permission_is_allowed(self):
-        assert engine._ensure_permission(None, _bypass_user(bypass=False)) is None
+        assert engine._ensure_permission(None, _bypass_user(bypass=False), Mock()) is None
 
     def test_platform_admin_requires_bypass(self):
         with pytest.raises(HTTPException) as exc:
-            engine._ensure_permission("platform_admin", _bypass_user(bypass=False))
+            engine._ensure_permission("platform_admin", _bypass_user(bypass=False), Mock())
         assert exc.value.status_code == 403
 
     def test_platform_admin_allowed_with_bypass(self):
-        assert engine._ensure_permission("platform_admin", _bypass_user(bypass=True)) is None
+        assert engine._ensure_permission("platform_admin", _bypass_user(bypass=True), Mock()) is None
 
     def test_unknown_permission_token_is_refused_even_for_bypass_user(self):
         # Fail-closed: an unrecognized requirement is refused, never silently allowed.
         with pytest.raises(HTTPException) as exc:
-            engine._ensure_permission("frobnicate", _bypass_user(bypass=True))
+            engine._ensure_permission("frobnicate", _bypass_user(bypass=True), Mock())
         assert exc.value.status_code == 403
 
     def test_missing_attribute_defaults_to_no_bypass(self):
@@ -329,3 +331,188 @@ class TestExecuteStep:
 
         assert exc.value.status_code == 409
         h.executor.assert_not_awaited()
+
+
+# =====================================================================================
+# Pilot 2: Add Site / Project. These prove the engine generalizes to a SECOND flow that
+# uses a company-scoped permission model (not platform_admin) and a DYNAMIC select.
+# =====================================================================================
+
+# Valid inputs for the add_site collect step (satisfy CreateSiteSchema). company_id and the
+# numeric sizes arrive as STRINGS from the FE SearchableSelect/number inputs; the schema must
+# coerce them, which these inputs deliberately exercise.
+SITE_INPUTS = {
+    "company_id": "5",
+    "name": "Apollo",
+    "address": "719 Main Street",
+    "city": "Mullica Hill",
+    "state": "NJ",
+    "zip_code": "08062",
+    "county": "Gloucester",
+    "system_size_ac": "1000",
+    "system_size_dc": "1200",
+    "lon_lat_url": "41.9486, -72.6443",
+    "timezone": "America/New_York",
+}
+
+
+class TestAddSiteDefinition:
+    def test_real_add_site_definition_is_valid(self):
+        # The real pilot-2 definition imported cleanly (would have raised otherwise).
+        assert validate_definition(ADD_SITE) is None
+        assert "add_site" in REGISTRY
+
+    def test_add_site_has_collect_then_execute_steps(self):
+        kinds = [s.kind for s in ADD_SITE.steps]
+        assert kinds == [STEP_COLLECT, STEP_EXECUTE]
+        execute_step = ADD_SITE.steps[1]
+        assert execute_step.id == "review_and_create"
+        assert execute_step.confirmation == CONFIRMATION_STANDARD
+        assert execute_step.governed is False
+        assert execute_step.audit_action == "workflow.add_site.execute"
+
+    def test_add_site_entry_permission_is_company_scoped(self):
+        # Distinct permission model from add_company (platform_admin).
+        assert ADD_SITE.entry_permission == "assets_management:create_site"
+        for step in ADD_SITE.steps:
+            assert step.required_permission == "assets_management:create_site"
+
+    def test_add_site_has_success_message(self):
+        assert ADD_SITE.success_message == "Project created successfully."
+
+    def test_add_site_collects_company_picker_and_number_fields(self):
+        collect = ADD_SITE.steps[0]
+        by_name = {f.name: f for f in collect.inputs}
+        assert by_name["company_id"].type == "select"
+        assert by_name["company_id"].options_source == "companies"
+        assert by_name["timezone"].options_source == "us_timezones"
+        assert by_name["system_size_ac"].type == "number"
+        assert by_name["system_size_dc"].type == "number"
+
+    def test_add_site_schema_mappings(self):
+        assert definitions.get_payload_schema("add_site") is CreateSiteSchema
+        assert (
+            definitions.get_step_input_schema("add_site", "project_details") is CreateSiteSchema
+        )
+
+
+class TestAddSitePermission:
+    """The company-scoped token is fail-closed at the authoritative re-check."""
+
+    @staticmethod
+    def _edit_user(companies):
+        return SimpleNamespace(
+            id=2,
+            has_platform_bypass=False,
+            get_limited_companies_ids=lambda: list(companies),
+        )
+
+    def test_create_site_refused_without_company_access(self):
+        # No accessible company -> the coarse gate refuses before any per-company check.
+        user = self._edit_user([])
+        with pytest.raises(HTTPException) as exc:
+            engine._ensure_permission("assets_management:create_site", user, Mock())
+        assert exc.value.status_code == 403
+
+    def test_create_site_allowed_with_company_edit(self):
+        user = self._edit_user([5])
+        with patch(
+            "app.services.workflows.engine.require_module_permission_any_company",
+            return_value=True,
+        ) as guard:
+            assert (
+                engine._ensure_permission("assets_management:create_site", user, Mock()) is None
+            )
+        guard.assert_called_once()
+
+    def test_create_site_refused_when_company_guard_denies(self):
+        user = self._edit_user([5])
+        with patch(
+            "app.services.workflows.engine.require_module_permission_any_company",
+            side_effect=HTTPException(status_code=403, detail="no edit"),
+        ):
+            with pytest.raises(HTTPException) as exc:
+                engine._ensure_permission("assets_management:create_site", user, Mock())
+        assert exc.value.status_code == 403
+
+    def test_create_site_allowed_for_platform_bypass(self):
+        # Platform-bypass short-circuits before any company lookup.
+        assert (
+            engine._ensure_permission(
+                "assets_management:create_site", _bypass_user(bypass=True), Mock()
+            )
+            is None
+        )
+
+
+class TestAddSiteExecutor:
+    def test_add_site_uses_dedicated_executor(self):
+        assert executors.get_executor("add_site") is executors._execute_add_site
+
+    def test_execute_add_site_invokes_real_create_site_endpoint(self):
+        with patch(
+            "app.routers.assets_management.sites.create", new_callable=AsyncMock
+        ) as mock_endpoint:
+            mock_endpoint.return_value = {
+                "code": 201,
+                "message": "Site has been created",
+                "id": 555,
+            }
+            result = asyncio.run(
+                executors._execute_add_site(Mock(), _bypass_user(), dict(SITE_INPUTS))
+            )
+
+        assert result == ("site", 555)
+        mock_endpoint.assert_awaited_once()
+        payload = mock_endpoint.await_args.kwargs["site"]
+        assert isinstance(payload, CreateSiteSchema)
+        assert payload.name == "Apollo"
+        # The string company_id + numeric sizes from the FE must coerce via the EXISTING schema.
+        assert payload.company_id == 5
+        assert payload.system_size_ac == 1000
+
+
+class TestAddSiteOptionResolution:
+    def test_us_timezones_includes_utc_and_iana(self):
+        opts = definitions.resolve_options("us_timezones")
+        values = {o["value"] for o in opts}
+        assert "UTC" in values
+        assert "America/New_York" in values
+
+    def test_companies_requires_db_and_user(self):
+        assert definitions.resolve_options("companies") == []
+        assert definitions.resolve_options("companies", Mock(), None) == []
+
+    def test_companies_for_platform_bypass_lists_all_active(self):
+        db = Mock()
+        db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [
+            (1, "Acme"),
+            (2, "Beta"),
+        ]
+        opts = definitions.resolve_options("companies", db, _bypass_user(bypass=True))
+        assert opts == [
+            {"label": "Acme", "value": "1"},
+            {"label": "Beta", "value": "2"},
+        ]
+
+    def test_companies_empty_when_non_bypass_has_no_companies(self):
+        user = SimpleNamespace(
+            id=2, has_platform_bypass=False, get_limited_companies_ids=lambda: []
+        )
+        assert definitions.resolve_options("companies", Mock(), user) == []
+
+
+class TestAddSitePreviewWarning:
+    """The duplicate-name warning is read-only and NON-blocking (sites have no uniqueness)."""
+
+    def test_warns_when_same_name_site_exists_in_company(self):
+        db = Mock()
+        db.query.return_value.filter.return_value.first.return_value = SimpleNamespace(id=1)
+        warnings = engine._build_warnings(db, "add_site", {"name": "Apollo", "company_id": 5})
+        assert any("already exists" in w for w in warnings)
+
+    def test_no_warning_when_no_duplicate(self):
+        db = Mock()
+        db.query.return_value.filter.return_value.first.return_value = None
+        warnings = engine._build_warnings(db, "add_site", {"name": "Apollo", "company_id": 5})
+        assert warnings == []

@@ -39,7 +39,7 @@ def list_workflows(
     db_session: Session = Depends(get_session),
 ):
     """List the workflow definitions the current user is permitted to start."""
-    return engine.list_workflow_definitions(current_user)
+    return engine.list_workflow_definitions(db_session, current_user)
 
 
 @workflows_router.post(

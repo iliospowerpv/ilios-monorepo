@@ -22,7 +22,9 @@ from sqlalchemy.orm import Session
 
 from app.crud.errors import UniqueConstraintViolationError
 from app.crud.workflow import WorkflowRunCRUD, WorkflowStepStateCRUD
+from app.helpers.permission_guards import require_module_permission_any_company
 from app.helpers.workflow_audit import create_workflow_audit_log
+from app.static.permissions import PermissionsModules
 from app.models.workflow import (
     WorkflowRun,
     WorkflowRunStatus,
@@ -85,22 +87,62 @@ def _has_platform_bypass(current_user) -> bool:
     return bool(getattr(current_user, "has_platform_bypass", False))
 
 
-def _can_start(wf: WorkflowDef, current_user) -> bool:
-    """Best-effort entry-permission check (never raises)."""
-    if wf.entry_permission == "platform_admin":
+# Permission tokens understood by the engine. Each is resolved fail-closed; an unrecognized
+# token is always refused, so a mis-typed definition can never silently grant access.
+PERMISSION_PLATFORM_ADMIN = "platform_admin"
+# Company-scoped Asset Management edit. Deliberately COMPANY-scope only (no project/site
+# grants): creating a site requires edit on the TARGET company, so a project-only grant must
+# not let a user start the wizard or see companies. This is the COARSE gate; the existing
+# site-create endpoint stays the authoritative per-company guard at execute time.
+PERMISSION_ASSETS_CREATE_SITE = "assets_management:create_site"
+_KNOWN_PERMISSIONS = {PERMISSION_PLATFORM_ADMIN, PERMISSION_ASSETS_CREATE_SITE}
+
+
+def _has_company_scoped_edit(current_user, db_session: Session) -> bool:
+    """True if the user has Asset Management 'edit' on at least one accessible COMPANY."""
+    try:
+        company_ids = current_user.get_limited_companies_ids() or []
+    except Exception:
+        company_ids = []
+    if not company_ids:
+        return False
+    try:
+        require_module_permission_any_company(
+            user_id=_user_id(current_user),
+            company_ids=company_ids,
+            db_session=db_session,
+            module_key=PermissionsModules.assets_management.value,
+            action="edit",
+        )
+        return True
+    except HTTPException:
+        return False
+
+
+def _check_permission(perm: str | None, current_user, db_session: Session) -> bool:
+    """Soft, never-raising permission resolution. Unknown token -> False (fail-closed)."""
+    if perm is None:
+        return True
+    if perm == PERMISSION_PLATFORM_ADMIN:
         return _has_platform_bypass(current_user)
+    if perm == PERMISSION_ASSETS_CREATE_SITE:
+        return _has_platform_bypass(current_user) or _has_company_scoped_edit(current_user, db_session)
     return False
 
 
-def _ensure_permission(perm: str | None, current_user) -> None:
+def _can_start(wf: WorkflowDef, current_user, db_session: Session) -> bool:
+    """Best-effort entry-permission check (never raises)."""
+    return _check_permission(wf.entry_permission, current_user, db_session)
+
+
+def _ensure_permission(perm: str | None, current_user, db_session: Session) -> None:
     """Authoritative, fail-closed permission check; unknown tokens are refused."""
     if perm is None:
         return
-    if perm == "platform_admin":
-        if not _has_platform_bypass(current_user):
-            raise HTTPException(status_code=403, detail="You don't have permission to perform this action.")
-        return
-    raise HTTPException(status_code=403, detail=f"Unknown permission requirement: {perm}")
+    if perm not in _KNOWN_PERMISSIONS:
+        raise HTTPException(status_code=403, detail=f"Unknown permission requirement: {perm}")
+    if not _check_permission(perm, current_user, db_session):
+        raise HTTPException(status_code=403, detail="You don't have permission to perform this action.")
 
 
 def _format_errors(exc: ValidationError) -> dict:
@@ -170,15 +212,37 @@ def _build_warnings(db_session: Session, workflow_id: str, data: dict) -> list[s
                     )
             except Exception:  # warnings must never break preview
                 pass
+    elif workflow_id == "add_site":
+        # Sites have NO natural uniqueness, so this is an advisory (non-blocking) warning:
+        # a same-name project already exists in the chosen company. Creation still proceeds.
+        name = data.get("name")
+        company_id = data.get("company_id")
+        if name and company_id is not None:
+            try:
+                from app.models.site import Site
+
+                exists = (
+                    db_session.query(Site.id)
+                    .filter(Site.name == name, Site.company_id == company_id)
+                    .first()
+                )
+                if exists:
+                    warnings.append(
+                        f"A project named '{name}' already exists in this company."
+                    )
+            except Exception:  # warnings must never break preview
+                pass
     return warnings
 
 
-def serialize_definition(wf: WorkflowDef, can_start: bool) -> WorkflowDefinitionSchema:
+def serialize_definition(
+    wf: WorkflowDef, can_start: bool, db_session: Session | None = None, current_user=None
+) -> WorkflowDefinitionSchema:
     steps: list[WorkflowStepSchema] = []
     for step in wf.steps:
         fields: list[WorkflowFieldSchema] = []
         for fld in step.inputs:
-            opts = resolve_options(fld.options_source)
+            opts = resolve_options(fld.options_source, db_session, current_user)
             fields.append(
                 WorkflowFieldSchema(
                     name=fld.name,
@@ -213,10 +277,14 @@ def serialize_definition(wf: WorkflowDef, can_start: bool) -> WorkflowDefinition
     )
 
 
-def _run_detail(wf: WorkflowDef, run: WorkflowRun, current_user) -> WorkflowRunDetailResponse:
+def _run_detail(
+    wf: WorkflowDef, run: WorkflowRun, db_session: Session, current_user
+) -> WorkflowRunDetailResponse:
     return WorkflowRunDetailResponse(
         run=WorkflowRunSchema.model_validate(run),
-        definition=serialize_definition(wf, _can_start(wf, current_user)),
+        definition=serialize_definition(
+            wf, _can_start(wf, current_user, db_session), db_session, current_user
+        ),
     )
 
 
@@ -244,11 +312,11 @@ def _definition_for_run(run: WorkflowRun) -> WorkflowDef:
 # --- Public engine operations ---------------------------------------------------------
 
 
-def list_workflow_definitions(current_user) -> WorkflowListResponse:
+def list_workflow_definitions(db_session: Session, current_user) -> WorkflowListResponse:
     items = [
-        serialize_definition(wf, True)
+        serialize_definition(wf, True, db_session, current_user)
         for wf in REGISTRY.values()
-        if _can_start(wf, current_user)
+        if _can_start(wf, current_user, db_session)
     ]
     return WorkflowListResponse(items=items)
 
@@ -259,7 +327,7 @@ def start_run(
     wf = get_definition(workflow_id)
     if wf is None:
         raise HTTPException(status_code=404, detail="Unknown workflow.")
-    _ensure_permission(wf.entry_permission, current_user)
+    _ensure_permission(wf.entry_permission, current_user, db_session)
 
     run = WorkflowRunCRUD(db_session).create_item(
         {
@@ -280,13 +348,13 @@ def start_run(
         details={"run_id": run.id, "workflow_id": wf.id, "version": wf.version, "outcome": "started"},
         is_success=True,
     )
-    return _run_detail(wf, run, current_user)
+    return _run_detail(wf, run, db_session, current_user)
 
 
 def get_run(db_session: Session, current_user, run_id: int) -> WorkflowRunDetailResponse:
     run = _get_run_owned(db_session, current_user, run_id)
     wf = _definition_for_run(run)
-    return _run_detail(wf, run, current_user)
+    return _run_detail(wf, run, db_session, current_user)
 
 
 def save_step(
@@ -340,7 +408,7 @@ def preview_step(
         raise HTTPException(status_code=404, detail="Unknown step.")
     if step.kind != STEP_EXECUTE:
         raise HTTPException(status_code=400, detail="This step has nothing to preview.")
-    _ensure_permission(step.required_permission, current_user)
+    _ensure_permission(step.required_permission, current_user, db_session)
 
     step_crud = WorkflowStepStateCRUD(db_session)
     merged = _collect_inputs(wf, step_crud, run_id)
@@ -385,7 +453,7 @@ async def execute_step(
 
     # Authoritative permission re-check (fail-closed); audit the refusal for security review.
     try:
-        _ensure_permission(step.required_permission, current_user)
+        _ensure_permission(step.required_permission, current_user, db_session)
     except HTTPException:
         create_workflow_audit_log(
             db_session,
@@ -471,13 +539,19 @@ async def execute_step(
         raise WorkflowEngineError(
             409, {"code": "conflict", "message": "A company with these details already exists."}
         )
-    except HTTPException:
+    except HTTPException as http_exc:
         db_session.rollback()
+        # A 403 from the EXISTING endpoint is an authoritative per-entity permission refusal
+        # (e.g. the coarse engine gate passed but the user lacks edit on the SELECTED company).
+        # Record it distinctly for security traceability; re-raise unchanged.
+        outcome = (
+            "endpoint_refused_permission" if http_exc.status_code == 403 else "endpoint_error"
+        )
         create_workflow_audit_log(
             db_session,
             user_id=_user_id(current_user),
             action=audit_action,
-            details={**base_details, "outcome": "endpoint_error"},
+            details={**base_details, "outcome": outcome},
             is_success=False,
             governed=step.governed,
         )
@@ -532,7 +606,7 @@ async def execute_step(
         entity_type=entity_type,
         entity_id=entity_id,
         run_status=WorkflowRunStatus.completed,
-        message="Company created successfully.",
+        message=wf.success_message or "Created successfully.",
     )
 
 

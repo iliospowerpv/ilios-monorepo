@@ -113,7 +113,14 @@ export const WizardStepFields: React.FC<WizardStepFieldsProps> = ({
     }
 
     const multiline = field.type === 'textarea';
-    const inputType = field.type === 'email' ? 'email' : field.type === 'tel' ? 'tel' : 'text';
+    const inputType =
+      field.type === 'email'
+        ? 'email'
+        : field.type === 'tel'
+          ? 'tel'
+          : field.type === 'number'
+            ? 'number'
+            : 'text';
 
     return (
       <TextField
@@ -127,7 +134,10 @@ export const WizardStepFields: React.FC<WizardStepFieldsProps> = ({
         placeholder={field.placeholder ?? undefined}
         error={!!fieldError}
         helperText={helperText}
-        inputProps={{ maxLength: field.max_length ?? undefined }}
+        inputProps={{
+          maxLength: field.max_length ?? undefined,
+          ...(field.type === 'number' ? { inputMode: 'decimal', step: 'any' } : {})
+        }}
         {...register(field.name, rules)}
       />
     );

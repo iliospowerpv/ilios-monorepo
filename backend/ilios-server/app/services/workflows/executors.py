@@ -32,9 +32,29 @@ async def _execute_add_company(db_session: Session, current_user, inputs: dict) 
     return ("company", result.id)
 
 
+async def _execute_add_site(db_session: Session, current_user, inputs: dict) -> tuple[str, int]:
+    """Create a site/project by invoking the EXISTING site-create endpoint verbatim.
+
+    Reuses the same company-scoped ``assets_management:edit`` guard, the same
+    ``SiteCRUD.create_item`` + default section/board/document scaffolding, the same
+    user-project membership grant, and the same commit as the manual "Add Project" path — no
+    duplicated or parallel mutation logic. Imported lazily to avoid router import-order
+    coupling. The endpoint returns a dict (``{"code", "message", "id"}``).
+    """
+    from app.routers.assets_management.sites import create as create_site_endpoint
+    from app.schema.site import CreateSiteSchema
+
+    payload = CreateSiteSchema(**inputs)
+    result = await create_site_endpoint(
+        site=payload, current_user=current_user, db_session=db_session
+    )
+    return ("site", result["id"])
+
+
 # workflow_id -> executor. Only workflows that have a write (execute) step appear here.
 EXECUTORS: dict[str, Callable[[Session, object, dict], Awaitable[tuple[str, int]]]] = {
     "add_company": _execute_add_company,
+    "add_site": _execute_add_site,
 }
 
 
