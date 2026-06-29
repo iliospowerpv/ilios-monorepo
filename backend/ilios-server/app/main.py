@@ -75,6 +75,7 @@ from .routers import (
     weather_router,
     users_router,
     workflows_router,
+    assistant_router,
 )
 from .routers.project_assumptions import assumptions_router
 from .routers.debug import router as debug_router
@@ -483,6 +484,8 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
     app.include_router(weather_router, prefix="/api/weather", tags=["Weather"])
     # Native Workflow Engine & Wizard Framework (foundation + Add Company pilot)
     app.include_router(workflows_router, prefix="/api/workflows", tags=[tags.WORKFLOWS_TAG])
+    # Native AI Assistant (read-only orchestration advisor; gated by native_assistant_enabled)
+    app.include_router(assistant_router, prefix="/api/assistant", tags=[tags.ASSISTANT_TAG])
     # Admin APIs
     app.include_router(access_health_router, prefix="/api/admin/access-health", tags=[tags.ADMIN_ACCESS_HEALTH_TAG])
     app.include_router(extraction_registry_router, prefix="/api/admin/extraction", tags=["Admin - Extraction Registry"])

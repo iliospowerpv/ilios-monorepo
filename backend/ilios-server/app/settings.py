@@ -130,6 +130,12 @@ class Settings(BaseSettings):
     # effects are inert (no Firestore writes; honest N/A instead of BigQuery
     # fallbacks) while DB writes still persist. case_sensitive=True → lowercase key.
     legacy_telemetry_enabled: bool = False
+    # Native AI Assistant (read-only orchestration advisor). Default OFF. When False
+    # the /api/assistant/* surface returns 404 so the feature can be rolled out
+    # without disturbing the legacy Due-Diligence chatbot. The assistant is strictly
+    # read-only/propose-only: it NEVER starts, previews, executes, or mutates anything.
+    # case_sensitive=True → the env var key must be lowercase (`native_assistant_enabled`).
+    native_assistant_enabled: bool = False
     telemetry_token_function_url: str
     telemetry_sites_function_url: str
     telemetry_devices_function_url: str

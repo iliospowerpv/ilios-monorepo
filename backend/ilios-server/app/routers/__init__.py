@@ -58,3 +58,4 @@ from .entities import router as entities_router
 from .weather import weather_router
 from .users import users_router
 from .workflows import workflows_router
+from .assistant import assistant_router
