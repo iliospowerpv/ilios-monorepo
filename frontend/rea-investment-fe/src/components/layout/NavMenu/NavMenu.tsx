@@ -15,6 +15,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import FolderIcon from '@mui/icons-material/Folder';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
+import DomainAddIcon from '@mui/icons-material/DomainAdd';
 import { NavMenuButtonContainer } from './NavMenu.styles';
 import { useNavigate, useMatches, useParams } from 'react-router-dom';
 import { RouteHandle } from '../../../handles';
@@ -165,6 +166,14 @@ const menuItems: MenuItemConfig[] = [
     route: '/portfolio-admin',
     disabled: false,
     requiresProject: false
+  },
+  {
+    key: 'add-company',
+    icon: <DomainAddIcon key="add-company" />,
+    title: 'Add Company',
+    route: '/workflows/add-company',
+    disabled: false,
+    requiresProject: false
   }
 ];
 
@@ -270,6 +279,8 @@ export const NavMenu: React.FC<NavMenuProps> = ({ containerRef, isMenuOpen }) =>
     if (moduleKey === 'dashboard') return !hasPortfolioAccess;
     if (moduleKey === 'portfolio') return !!hasPortfolioAccess;
     if (moduleKey === 'health-checks') return !!user?.is_system_user;
+    // The Add Company workflow is a platform-admin action; the server is still the boundary.
+    if (moduleKey === 'add-company') return !!user?.is_system_user;
     return true;
   };
 

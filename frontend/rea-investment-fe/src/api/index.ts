@@ -26,6 +26,7 @@ import { buildTelemetryV2Api } from './telemetryV2';
 import { buildReconciliationApi } from './reconciliation';
 import { buildAssumptionsApi } from './assumptions';
 import { buildWeatherApi } from './weather';
+import { buildWorkflowsApi } from './workflows';
 
 export const ApiClient = Object.freeze({
   _tokenManager: tokenManager,
@@ -56,7 +57,8 @@ export const ApiClient = Object.freeze({
   telemetryV2: buildTelemetryV2Api(httpClient),
   reconciliation: buildReconciliationApi(httpClient),
   assumptions: buildAssumptionsApi(httpClient),
-  weather: buildWeatherApi(httpClient)
+  weather: buildWeatherApi(httpClient),
+  workflows: buildWorkflowsApi(httpClient)
 });
 
 export type {
@@ -259,3 +261,27 @@ export type {
   WeatherSemanticsReconciliationRow,
   WeatherSemanticsReconciliationResponse
 } from '../types/weather';
+
+export type {
+  WorkflowRunStatus,
+  WorkflowStepStatus,
+  WorkflowStepKind,
+  WorkflowConfirmation,
+  WorkflowFieldOption,
+  WorkflowFieldSchema,
+  WorkflowStepSchema,
+  WorkflowDefinitionSchema,
+  WorkflowListResponse,
+  WorkflowStepStateSchema,
+  WorkflowRunSchema,
+  WorkflowRunDetailResponse,
+  StartRunRequest,
+  SaveStepRequest,
+  ExecuteRequest,
+  PreviewItem,
+  PreviewResponse,
+  ExecuteResponse,
+  AbandonResponse,
+  WorkflowErrorPayload,
+  WorkflowsApi
+} from './workflows';

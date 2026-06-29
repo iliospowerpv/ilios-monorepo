@@ -87,6 +87,7 @@ import {
   ProjectLevelPage,
   createProjectLevelHandle
 } from './modules/portfolio-admin';
+import { AddCompanyWorkflowPage } from './modules/workflows';
 
 const ProjectLandingRedirect: React.FC = () => {
   const { projectId } = useParams();
@@ -146,6 +147,9 @@ const router = createBrowserRouter(
         <Route path="/onboarding" element={<OnboardingModuleContainer />}>
           <Route index handle={createOnboardingHandle()} element={<OnboardingPage />} />
         </Route>
+
+        {/* Native Workflow Engine — Add Company pilot */}
+        <Route path="/workflows/add-company" element={<AddCompanyWorkflowPage />} />
 
         {/* Legacy redirects to Home */}
         <Route path="/workspace" element={<Navigate to="/home" replace />} />
