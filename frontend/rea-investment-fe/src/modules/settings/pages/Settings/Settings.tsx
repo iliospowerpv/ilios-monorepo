@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import AuditLogs from './tabs/AuditLogs/AuditLogs';
 import HealthChecksPage from '../HealthChecks/HealthChecksPage';
 import ExtractionRegistry from './tabs/ExtractionRegistry';
+import { AssistantUsagePanel } from '../../../../components/assistant/admin/AssistantUsagePanel';
 import { ApiClient } from '../../../../api';
 import { auditLogQueryKeys, AUDIT_LOG_DEFAULT_PAGE_SIZE } from '../../../../api/audit-log';
 
@@ -20,7 +21,7 @@ interface TabInfo {
 }
 
 interface SettingsProps {
-  tabId?: 'health-checks' | 'audit-logs' | 'notification' | 'alerts' | 'extraction-registry';
+  tabId?: 'health-checks' | 'audit-logs' | 'notification' | 'alerts' | 'extraction-registry' | 'assistant-usage';
 }
 
 const tabData: TabInfo[] = [
@@ -38,6 +39,13 @@ const tabData: TabInfo[] = [
     label: 'Extraction Registry',
     disabled: false,
     content: <ExtractionRegistry />
+  },
+  {
+    id: 'assistant-usage',
+    link: '/settings/assistant-usage',
+    label: 'AI Assistant',
+    disabled: false,
+    content: <AssistantUsagePanel />
   },
   { id: 'notification', link: '/', label: 'Notification', disabled: true, content: <Box>Notification Tab</Box> },
   { id: 'alerts', link: '/', label: 'Alerts', disabled: true, content: <Box>Alerts</Box> }

@@ -15,6 +15,9 @@ async def http_exception_handler(request: Request, exception: HTTPException):  #
             "message": str(exception.detail),
             "code": exception.status_code,
         },
+        # Propagate any explicitly-set response headers (e.g. Retry-After on a 429,
+        # WWW-Authenticate on a 401). Mirrors FastAPI's default handler; None for most errors.
+        headers=getattr(exception, "headers", None),
     )
 
 

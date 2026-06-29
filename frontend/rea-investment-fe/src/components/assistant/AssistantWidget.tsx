@@ -14,13 +14,14 @@ import HistoryIcon from '@mui/icons-material/History';
 import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
 
 import { ApiClient } from '../../api';
 import { useAuth } from '../../contexts/auth/auth';
 import { useEntityContext } from '../../contexts/entityContext';
-import { AssistantChatPanel, ChatUiMessage } from './AssistantChatPanel';
+import { AssistantChatPanel, ChatUiMessage, AssistantChatError } from './AssistantChatPanel';
 import { ConversationList } from './ConversationList';
-import type { AssistantChatRequest, AssistantContextHints } from '../../api/assistant';
+import type { AssistantChatRequest, AssistantContextHints, AssistantFeedbackRating } from '../../api/assistant';
 
 const DRAWER_WIDTH = 420;
 const CONFIG_KEY = ['assistant', 'config'];
@@ -28,6 +29,17 @@ const CONVERSATIONS_KEY = ['assistant', 'conversations'];
 const HISTORY_LIMIT = 20;
 
 type PanelView = 'chat' | 'history';
+
+// Translate an axios failure on /chat into a friendly, classified error for the panel. 429 means the
+// assistant (or its model backend) is busy; we surface the server-provided Retry-After when present.
+const toChatError = (err: unknown): AssistantChatError => {
+  if (axios.isAxiosError(err) && err.response?.status === 429) {
+    const header = err.response.headers?.['retry-after'];
+    const seconds = header != null ? Number(header) : NaN;
+    return { kind: 'rate_limit', retryAfterSeconds: Number.isFinite(seconds) ? seconds : null };
+  }
+  return { kind: 'generic' };
+};
 
 export const AssistantWidget: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -40,6 +52,10 @@ export const AssistantWidget: React.FC = () => {
   const [view, setView] = React.useState<PanelView>('chat');
   const [conversationId, setConversationId] = React.useState<string | null>(null);
   const [messages, setMessages] = React.useState<ChatUiMessage[]>([]);
+  const [chatError, setChatError] = React.useState<AssistantChatError | null>(null);
+  // The exact request that was last attempted, so "Retry" can resend it verbatim (the user message is
+  // already in the transcript, so we never re-append it).
+  const [pendingRequest, setPendingRequest] = React.useState<AssistantChatRequest | null>(null);
 
   // Probe: reachable ONLY when the backend flag is on (404 otherwise). A successful fetch means the
   // assistant is available; any error keeps the FAB hidden. Never retried so a 404 fails fast.
@@ -55,6 +71,25 @@ export const AssistantWidget: React.FC = () => {
     queryKey: CONVERSATIONS_KEY,
     queryFn: () => ApiClient.assistant.listConversations(),
     enabled: isAuthenticated && configQuery.isSuccess && open && view === 'history'
+  });
+
+  // Static, page-aware example prompts for the empty chat state. No business data is fetched.
+  const suggestedPromptsQuery = useQuery({
+    queryKey: [
+      'assistant',
+      'suggested-prompts',
+      location.pathname,
+      currentCompany?.id ?? null,
+      currentProject?.id ?? null
+    ],
+    queryFn: () =>
+      ApiClient.assistant.getSuggestedPrompts({
+        route: location.pathname,
+        siteId: currentProject?.id ?? null,
+        companyId: currentCompany?.id ?? null
+      }),
+    enabled: isAuthenticated && configQuery.isSuccess && open && view === 'chat',
+    staleTime: 5 * 60 * 1000
   });
 
   const buildContext = React.useCallback((): AssistantContextHints => {
@@ -76,11 +111,19 @@ export const AssistantWidget: React.FC = () => {
         {
           role: 'assistant',
           content: response.reply,
+          id: response.message_id ?? null,
           action_cards: response.action_cards,
-          used_tools: response.used_tools
+          used_tools: response.used_tools,
+          sources: response.sources,
+          feedback: null
         }
       ]);
+      setChatError(null);
+      setPendingRequest(null);
       queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY });
+    },
+    onError: err => {
+      setChatError(toChatError(err));
     }
   });
 
@@ -91,11 +134,16 @@ export const AssistantWidget: React.FC = () => {
         detail.messages.map(message => ({
           role: message.role,
           content: message.content,
+          id: message.id,
           action_cards: message.action_cards,
-          used_tools: message.used_tools
+          used_tools: message.used_tools,
+          sources: message.sources,
+          feedback: message.feedback ?? null
         }))
       );
       setConversationId(String(detail.id));
+      setChatError(null);
+      setPendingRequest(null);
       setView('chat');
     }
   });
@@ -111,21 +159,55 @@ export const AssistantWidget: React.FC = () => {
     }
   });
 
+  // Owner-scoped thumbs feedback on a persisted assistant reply. Optimistic, with revert on failure.
+  const feedbackMutation = useMutation({
+    mutationFn: ({ messageId, rating }: { messageId: number; rating: AssistantFeedbackRating | null }) =>
+      ApiClient.assistant.setMessageFeedback(Number(conversationId), messageId, { rating }),
+    onMutate: ({ messageId, rating }) => {
+      const previous = messages.find(message => message.id === messageId)?.feedback ?? null;
+      setMessages(prev => prev.map(message => (message.id === messageId ? { ...message, feedback: rating } : message)));
+      return { previous, messageId };
+    },
+    onError: (_err, _vars, context) => {
+      if (context) {
+        setMessages(prev =>
+          prev.map(message => (message.id === context.messageId ? { ...message, feedback: context.previous } : message))
+        );
+      }
+    }
+  });
+
   const handleSend = (text: string) => {
     const history = messages.slice(-HISTORY_LIMIT).map(message => ({ role: message.role, content: message.content }));
-    setMessages(prev => [...prev, { role: 'user', content: text }]);
-    chatMutation.mutate({
+    const request: AssistantChatRequest = {
       message: text,
       history,
       context: buildContext(),
       conversation_id: conversationId,
       persist: true
-    });
+    };
+    setMessages(prev => [...prev, { role: 'user', content: text }]);
+    setChatError(null);
+    setPendingRequest(request);
+    chatMutation.mutate(request);
+  };
+
+  const handleRetry = () => {
+    if (!pendingRequest) return;
+    setChatError(null);
+    chatMutation.mutate(pendingRequest);
+  };
+
+  const handleFeedback = (message: ChatUiMessage, rating: AssistantFeedbackRating | null) => {
+    if (message.id == null || conversationId == null) return;
+    feedbackMutation.mutate({ messageId: message.id, rating });
   };
 
   const handleNewConversation = () => {
     setMessages([]);
     setConversationId(null);
+    setChatError(null);
+    setPendingRequest(null);
     setView('chat');
   };
 
@@ -196,6 +278,7 @@ export const AssistantWidget: React.FC = () => {
             <ConversationList
               conversations={conversationsQuery.data?.items ?? []}
               isLoading={conversationsQuery.isLoading || loadMutation.isPending}
+              activeId={conversationId ? Number(conversationId) : null}
               onSelect={id => loadMutation.mutate(id)}
               onDelete={id => deleteMutation.mutate(id)}
             />
@@ -203,9 +286,14 @@ export const AssistantWidget: React.FC = () => {
             <AssistantChatPanel
               messages={messages}
               isSending={chatMutation.isPending}
-              isError={chatMutation.isError}
+              error={chatError}
+              suggestedPrompts={suggestedPromptsQuery.data?.prompts ?? []}
+              suggestedContextLabel={suggestedPromptsQuery.data?.context_label ?? null}
+              feedbackPendingId={feedbackMutation.isPending ? (feedbackMutation.variables?.messageId ?? null) : null}
               onSend={handleSend}
+              onRetry={handleRetry}
               onOpenCard={handleOpenCard}
+              onFeedback={handleFeedback}
             />
           )}
         </Box>

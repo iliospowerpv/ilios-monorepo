@@ -690,6 +690,16 @@ const router = createBrowserRouter(
             element={<ProtectedSettingsRoute element={<HealthChecksPage />} permission={[AdminType.system]} />}
           />
           <Route path="access-health" element={<Navigate to="/settings/health-checks" replace />} />
+          <Route
+            path="assistant-usage"
+            element={
+              <ProtectedSettingsRoute
+                element={<SettingsPage.Component tabId="assistant-usage" />}
+                permission={[AdminType.system]}
+              />
+            }
+            handle={SettingsPage.createHandle()}
+          />
         </Route>
         <Route path="*" element={<Navigate to="/" />} />
       </Route>

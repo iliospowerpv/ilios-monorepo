@@ -6,7 +6,7 @@ runs the read-only assistant AS the authenticated caller; conversation persisten
 writes ONLY to the isolated ``assistant_conversations`` tables. Every conversation read/write is
 owner-scoped to the current user.
 """
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -20,11 +20,22 @@ from app.schema.assistant import (
     AssistantConversationDetailResponse,
     AssistantConversationListResponse,
     AssistantConversationSummary,
+    AssistantFeedbackRequest,
+    AssistantFeedbackResponse,
     AssistantPersistedMessage,
+    AssistantSuggestedPrompt,
+    AssistantSuggestedPromptsResponse,
+    AssistantUsageResponse,
 )
 from app.schema.user import CurrentUserSchema
-from app.services.assistant import conversation_store, llm_client
+from app.services.assistant import (
+    conversation_store,
+    llm_client,
+    suggested_prompts,
+    usage_service,
+)
 from app.services.assistant.assistant_service import run_assistant_chat
+from app.services.assistant.llm_client import AssistantLLMError, AssistantRateLimitError
 from app.services.assistant.tools import ALLOWED_TOOLS
 from app.services.workflows.orchestration_context_service import PROHIBITED_ACTIONS
 from app.settings import settings
@@ -36,6 +47,16 @@ def _require_enabled() -> None:
     if not settings.native_assistant_enabled:
         # Hidden, not 403: when the flag is off the feature simply does not exist.
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+
+def _require_admin(current_user) -> None:
+    """Admin gate for observability. Mirrors the existing global-admin pattern (system user OR
+    global admin). Runs AFTER the flag check, so flag-off still 404s and only real admins pass."""
+    if not getattr(current_user, "has_platform_bypass", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Global admin privilege required.",
+        )
 
 
 def _parse_conversation_id(raw: str) -> int:
@@ -87,7 +108,22 @@ def assistant_chat(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found"
             )
 
-    response = run_assistant_chat(db_session, current_user, payload)
+    try:
+        response = run_assistant_chat(db_session, current_user, payload)
+    except AssistantRateLimitError as exc:
+        # Surface a friendly 429 with Retry-After (already in CORS expose_headers) so the FE can show
+        # a calibrated "assistant is busy" message and offer a retry.
+        headers = {"Retry-After": str(exc.retry_after)} if exc.retry_after else None
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="The assistant is busy right now. Please try again in a moment.",
+            headers=headers,
+        )
+    except AssistantLLMError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="The assistant is temporarily unavailable. Please try again shortly.",
+        )
 
     if not (payload.persist or payload.conversation_id):
         return response
@@ -101,16 +137,18 @@ def assistant_chat(
             first_message=payload.message,
         )
 
-    conversation_store.append_turn(
+    assistant_message = conversation_store.append_turn(
         db_session,
         conv,
         user_message=payload.message,
         reply=response.reply,
         used_tools=[t.model_dump(mode="json") for t in response.used_tools],
         action_cards=[c.model_dump(mode="json") for c in response.action_cards],
+        sources=[s.model_dump(mode="json") for s in response.sources],
         model=response.model,
     )
     response.conversation_id = str(conv.id)
+    response.message_id = assistant_message.id
     return response
 
 
@@ -166,8 +204,11 @@ def get_conversation(
                 role=m.role.value,
                 content=m.content,
                 used_tools=m.used_tools or [],
+                sources=m.sources or [],
                 action_cards=m.action_cards or [],
                 model=m.model,
+                feedback=m.feedback.value if m.feedback else None,
+                feedback_note=m.feedback_note,
                 created_at=m.created_at,
             )
             for m in conv.messages
@@ -192,3 +233,70 @@ def delete_conversation(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found"
         )
+
+
+@assistant_router.post(
+    "/conversations/{conversation_id}/messages/{message_id}/feedback",
+    response_model=AssistantFeedbackResponse,
+)
+def set_message_feedback(
+    conversation_id: int,
+    message_id: int,
+    payload: AssistantFeedbackRequest,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+) -> AssistantFeedbackResponse:
+    """Set/clear thumbs feedback on one of the caller's ASSISTANT messages (owner-scoped).
+
+    Writes ONLY to the isolated assistant message row — never a governed/business action. A
+    cross-user or user-message/non-existent target resolves to 404 (never reveals another's data).
+    """
+    _require_enabled()
+    message = conversation_store.set_feedback(
+        db_session,
+        current_user,
+        conversation_id=conversation_id,
+        message_id=message_id,
+        rating=payload.rating,
+        note=payload.note,
+    )
+    if message is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Message not found"
+        )
+    return AssistantFeedbackResponse(
+        message_id=message.id,
+        feedback=message.feedback.value if message.feedback else None,
+        feedback_note=message.feedback_note,
+    )
+
+
+@assistant_router.get(
+    "/suggested-prompts", response_model=AssistantSuggestedPromptsResponse
+)
+def get_suggested_prompts(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    route: Optional[str] = None,
+    site_id: Optional[int] = None,
+    company_id: Optional[int] = None,
+) -> AssistantSuggestedPromptsResponse:
+    """Return static, page-aware example prompts. Pure UI affordance — no data fetch, no business
+    logic; ``site_id``/``company_id`` are accepted for forward-compat but never used to fetch data."""
+    _require_enabled()
+    context_label, prompts = suggested_prompts.get_suggested_prompts(route)
+    return AssistantSuggestedPromptsResponse(
+        context_label=context_label,
+        prompts=[AssistantSuggestedPrompt(**p) for p in prompts],
+    )
+
+
+@assistant_router.get("/admin/usage", response_model=AssistantUsageResponse)
+def admin_usage(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+) -> AssistantUsageResponse:
+    """Read-only aggregate usage over ONLY the isolated assistant tables. Admin-only (403 otherwise);
+    flag-gated (404 when off). Touches no operational/business data and performs no writes."""
+    _require_enabled()
+    _require_admin(current_user)
+    return usage_service.build_usage_summary(db_session)

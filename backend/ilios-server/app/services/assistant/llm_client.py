@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any
+from typing import Any, Optional
 
 from tenacity import retry, stop_after_attempt, wait_exponential
 
@@ -18,6 +18,26 @@ logger = logging.getLogger(__name__)
 ASSISTANT_MODEL = "gpt-5.2"
 
 _client: Any = None
+
+
+class AssistantLLMError(Exception):
+    """The assistant's language-model call failed for a non-rate-limit reason.
+
+    The router maps this to a friendly 503 so the FE can show a transient-failure message instead of
+    leaking a raw provider/SDK error.
+    """
+
+
+class AssistantRateLimitError(AssistantLLMError):
+    """The model is rate-limited/over capacity (HTTP 429 from the gateway, retries exhausted).
+
+    Carries an optional ``retry_after`` (seconds) so the router can echo a ``Retry-After`` header
+    (already in CORS ``expose_headers``) and the FE can show a calibrated "try again" hint.
+    """
+
+    def __init__(self, message: str = "rate_limited", retry_after: Optional[int] = None) -> None:
+        super().__init__(message)
+        self.retry_after = retry_after
 
 
 def get_client() -> Any:
@@ -44,6 +64,28 @@ def _is_rate_limit_error(exc: BaseException) -> bool:
     return "429" in str(exc) or "rate limit" in str(exc).lower()
 
 
+def _extract_retry_after(exc: BaseException) -> Optional[int]:
+    """Best-effort parse of a ``Retry-After`` (seconds) hint off a provider/SDK error. None if absent."""
+    response = getattr(exc, "response", None)
+    headers = getattr(response, "headers", None)
+    if headers:
+        for key in ("retry-after", "Retry-After", "x-ratelimit-reset", "retry-after-ms"):
+            try:
+                raw = headers.get(key)  # type: ignore[union-attr]
+            except Exception:  # noqa: BLE001 - headers may be a non-Mapping
+                raw = None
+            if raw:
+                try:
+                    value = int(float(raw))
+                except (TypeError, ValueError):
+                    continue
+                if key == "retry-after-ms":
+                    value = max(1, round(value / 1000))
+                if value > 0:
+                    return value
+    return None
+
+
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=2, max=20),
@@ -54,8 +96,10 @@ def _is_rate_limit_error(exc: BaseException) -> bool:
     ),
     reraise=True,
 )
-def create_chat_completion(*, messages: list[dict], tools: list[dict], model: str = ASSISTANT_MODEL):
-    """Single chat-completion call with tool schemas. Retries only on rate limits."""
+def _create_chat_completion_raw(
+    *, messages: list[dict], tools: list[dict], model: str = ASSISTANT_MODEL
+):
+    """Single chat-completion call with tool schemas. Retries only on rate limits (reraises raw)."""
     client = get_client()
     return client.chat.completions.create(
         model=model,
@@ -63,3 +107,23 @@ def create_chat_completion(*, messages: list[dict], tools: list[dict], model: st
         tools=tools,
         tool_choice="auto",
     )
+
+
+def create_chat_completion(*, messages: list[dict], tools: list[dict], model: str = ASSISTANT_MODEL):
+    """Public seam: run the retrying call and normalize any failure into a typed assistant error.
+
+    ``tenacity`` is configured with ``reraise=True``, so an exhausted retry surfaces the original
+    exception here (not a ``RetryError``); we convert a rate-limit to ``AssistantRateLimitError``
+    (with any ``Retry-After``) and every other failure to ``AssistantLLMError`` so the router can
+    map them to friendly 429/503 responses without leaking raw SDK errors.
+    """
+    try:
+        return _create_chat_completion_raw(messages=messages, tools=tools, model=model)
+    except (AssistantLLMError, AssistantRateLimitError):
+        raise
+    except Exception as exc:  # noqa: BLE001 - normalize provider/SDK failures into typed errors
+        if _is_rate_limit_error(exc):
+            logger.warning("AI Assistant LLM rate-limited after retries: %s", exc)
+            raise AssistantRateLimitError(retry_after=_extract_retry_after(exc)) from exc
+        logger.exception("AI Assistant LLM call failed")
+        raise AssistantLLMError(str(exc)) from exc

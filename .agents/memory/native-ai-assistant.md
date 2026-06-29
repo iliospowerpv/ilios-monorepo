@@ -77,3 +77,33 @@ Pure unit style (no live DB): scripted fake OpenAI client (`SimpleNamespace` mim
   app_preview screenshot is unauthenticated so the FAB never shows). Flag-on config/chat/persistence/
   action-card/guardrail behavior is covered by `tests/test_assistant_slice2.py` (TestClient sets the
   flag); unauth gates verified live (config & chat → 401).
+
+## Slice 3 — knowledge/UX/observability polish (additive, same contract)
+Everything below is additive, flag-gated, and keeps the read-only / zero-write-tool-layer contract
+(only `conversation_store` writes; only the new isolated `assistant_*` tables).
+- **Error envelope is `{message, code}`, NOT `{detail}`** — the app uses a custom
+  `app/utils.py::http_exception_handler` that serializes `{"message": str(detail), "code": status}`.
+  Any assistant test/FE error handling must read `.message`, not `.detail`.
+- **Latent header-drop fix (cross-cutting):** that handler previously discarded `HTTPException.headers`,
+  so `Retry-After` (and any custom header) never reached the browser. Fixed by passing
+  `headers=getattr(exception, "headers", None)` into the `JSONResponse`. **Why:** rate-limit UX (429 +
+  `Retry-After`, already in CORS `expose_headers`) is meaningless if the header is stripped server-side.
+  Any HTTPException that relies on response headers depends on this — don't regress it.
+- **Typed LLM errors → friendly HTTP:** `llm_client` raises `AssistantRateLimitError(retry_after=N)`
+  (router → 429 + `Retry-After`) and `AssistantLLMError` (router → 503); tenacity retry kept underneath.
+- **Sources disclosure:** `assistant_service._collect_sources` emits `AssistantSource` for `kind=faq`
+  (entry id/question/category from FAQ tool results) and `kind=tool` (friendly label per successful data
+  tool, excluding `answer_help_faq`/`propose_action_card`), deduped on `(kind, ref)` and capped. Pure
+  read; persisted alongside `used_tools`. `conversation_store.append_turn`'s `sources` param is
+  Optional (back-compat with Slice 2 callers/tests).
+- **Suggested prompts are STATIC + deterministic** — `suggested_prompts.py` is a route→prompts map with
+  a generic fallback; NO data fetch, NO business logic, NO authz widening. `GET
+  /api/assistant/suggested-prompts` is flag-gated + auth only.
+- **Feedback** (`feedback` enum up/down + `feedback_note`, migration `ff42` down_revision `ff41`) is
+  owner-scoped (`set_feedback`; cross-user = 404) and the only new write path is still
+  `conversation_store`. Router echoes `message_id` so the FE can attach thumbs to the live turn.
+- **Usage observability reads ONLY the isolated assistant tables** — `usage_service.py` aggregates
+  conversations/messages/feedback/top-tools with zero joins to business tables; `GET
+  /api/assistant/admin/usage` is flag-gated AND platform-admin-gated (`has_platform_bypass`; non-admin
+  403, flag-off 404). FE `AssistantUsagePanel` mounted under Settings → "AI Assistant" tab
+  (`/settings/assistant-usage`, `AdminType.system` gate).

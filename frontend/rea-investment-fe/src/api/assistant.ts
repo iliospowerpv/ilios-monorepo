@@ -33,6 +33,17 @@ export interface AssistantToolInvocation {
   error?: string | null;
 }
 
+// A LABELS-ONLY disclosure of a knowledge source backing a turn (curated FAQ entry / read-only data
+// tool). Never carries raw tool payloads — just a stable label/identifier for transparency.
+export interface AssistantSource {
+  kind: 'faq' | 'tool';
+  label: string;
+  ref?: string | null;
+  detail?: string | null;
+}
+
+export type AssistantFeedbackRating = 'up' | 'down';
+
 // A PROPOSE-ONLY next step. It is a validated deep link into the EXISTING workflow UI — the assistant
 // NEVER starts/executes it. The USER clicks it to navigate to the wizard/run where THEY perform the
 // governed handshake. `requires_user_action` is always true.
@@ -67,7 +78,11 @@ export interface AssistantChatResponse {
   model: string;
   reply: string;
   used_tools: AssistantToolInvocation[];
+  sources: AssistantSource[];
   action_cards: AssistantActionCard[];
+  // Persisted assistant-turn id (only when the turn was stored), so feedback can attach to the
+  // just-sent reply. Null for non-persisted chats.
+  message_id?: number | null;
 }
 
 // --- Conversation persistence (isolated assistant store) -----------------------------
@@ -77,9 +92,54 @@ export interface AssistantPersistedMessage {
   role: AssistantRole;
   content: string;
   used_tools: AssistantToolInvocation[];
+  sources: AssistantSource[];
   action_cards: AssistantActionCard[];
   model?: string | null;
+  feedback?: AssistantFeedbackRating | null;
+  feedback_note?: string | null;
   created_at: string;
+}
+
+// --- Suggested prompts / feedback / usage (Slice 3) ----------------------------------
+
+export interface AssistantSuggestedPrompt {
+  label: string;
+  prompt: string;
+}
+
+export interface AssistantSuggestedPromptsResponse {
+  context_label?: string | null;
+  prompts: AssistantSuggestedPrompt[];
+}
+
+export interface AssistantFeedbackRequest {
+  rating: AssistantFeedbackRating | null;
+  note?: string | null;
+}
+
+export interface AssistantFeedbackResponse {
+  message_id: number;
+  feedback?: AssistantFeedbackRating | null;
+  feedback_note?: string | null;
+}
+
+export interface AssistantToolUsageStat {
+  name: string;
+  count: number;
+}
+
+export interface AssistantUsageResponse {
+  conversations_total: number;
+  conversations_active: number;
+  conversations_archived: number;
+  messages_total: number;
+  user_messages: number;
+  assistant_messages: number;
+  distinct_users: number;
+  feedback_up: number;
+  feedback_down: number;
+  feedback_none: number;
+  top_tools: AssistantToolUsageStat[];
 }
 
 export interface AssistantConversationSummary {
@@ -141,6 +201,38 @@ export const buildAssistantApi = (httpClient: AxiosInstance) => ({
   // Soft-archive (owner-scoped). 204 on success; 404 when the thread isn't the caller's.
   deleteConversation: async (conversationId: number): Promise<void> => {
     await httpClient.delete(`${A}/conversations/${conversationId}`);
+  },
+
+  // Static, page-aware example prompts. Pure UI affordance — no business data is fetched.
+  getSuggestedPrompts: async (
+    params: { route?: string | null; siteId?: number | null; companyId?: number | null } = {}
+  ): Promise<AssistantSuggestedPromptsResponse> => {
+    const qs = new URLSearchParams();
+    if (params.route) qs.set('route', params.route);
+    if (params.siteId != null) qs.set('site_id', String(params.siteId));
+    if (params.companyId != null) qs.set('company_id', String(params.companyId));
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    const { data } = await httpClient.get<AssistantSuggestedPromptsResponse>(`${A}/suggested-prompts${suffix}`);
+    return data;
+  },
+
+  // Owner-scoped thumbs feedback on a persisted ASSISTANT message. `rating: null` clears it.
+  setMessageFeedback: async (
+    conversationId: number,
+    messageId: number,
+    body: AssistantFeedbackRequest
+  ): Promise<AssistantFeedbackResponse> => {
+    const { data } = await httpClient.post<AssistantFeedbackResponse>(
+      `${A}/conversations/${conversationId}/messages/${messageId}/feedback`,
+      body
+    );
+    return data;
+  },
+
+  // Admin-only read-only usage aggregate over the isolated assistant tables (403 for non-admins).
+  getAdminUsage: async (): Promise<AssistantUsageResponse> => {
+    const { data } = await httpClient.get<AssistantUsageResponse>(`${A}/admin/usage`);
+    return data;
   }
 });
 

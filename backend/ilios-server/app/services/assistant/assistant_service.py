@@ -18,6 +18,7 @@ from app.schema.assistant import (
     AssistantActionCard,
     AssistantChatRequest,
     AssistantChatResponse,
+    AssistantSource,
     AssistantToolInvocation,
 )
 from app.services.assistant import llm_client, tools
@@ -29,6 +30,22 @@ logger = logging.getLogger(__name__)
 MAX_TOOL_ITERATIONS = 5
 # Cap a single tool result fed back into the prompt so a large envelope can't blow the context.
 _MAX_TOOL_RESULT_CHARS = 14000
+# Defensive cap on disclosed sources so a runaway loop can't bloat the response/persisted row.
+_MAX_SOURCES = 12
+
+# Friendly, STATIC labels for the read-only DATA tools whose use we disclose as a "source". FAQ is
+# disclosed separately (per curated entry); ``propose_action_card`` is a navigation affordance, not a
+# knowledge source, so it is intentionally excluded here.
+_TOOL_SOURCE_LABELS: dict[str, str] = {
+    "list_workflows": "Available workflows",
+    "list_sequences": "Guided sequences",
+    "list_my_runs": "Your workflow runs",
+    "get_recommendations": "Recommended next actions",
+    "get_onboarding_progress": "Onboarding progress",
+    "get_onboarding_readiness": "Onboarding readiness",
+    "get_orchestration_context": "Workflow orchestration context",
+    "get_workflow_metrics": "Workflow metrics",
+}
 
 SYSTEM_PROMPT = """You are the iliOS Assistant, a READ-ONLY guide inside the iliOS real-estate \
 investment platform. iliOS manages the lifecycle of real-estate (often solar) assets: acquisition, \
@@ -132,13 +149,57 @@ def _collect_action_cards(result, sink: list[AssistantActionCard], seen: set) ->
         logger.warning("AI Assistant skipped a malformed action card: %r", card)
 
 
+def _collect_sources(
+    name: str, result, sink: list[AssistantSource], seen: set
+) -> None:
+    """Record LABELS-ONLY disclosures of which knowledge sources backed this turn.
+
+    For the FAQ tool, each curated entry returned becomes a ``faq`` source (id/question/category).
+    For a successful read-only DATA tool, a single ``tool`` source with a static friendly label is
+    added. Never includes raw tool payloads, and is deduped + capped so the disclosure stays small.
+    """
+    if len(sink) >= _MAX_SOURCES:
+        return
+    if name == "answer_help_faq":
+        entries = result.get("results") if isinstance(result, dict) else None
+        for entry in entries or []:
+            if not isinstance(entry, dict):
+                continue
+            ref = entry.get("id")
+            key = ("faq", ref)
+            if key in seen:
+                continue
+            sink.append(
+                AssistantSource(
+                    kind="faq",
+                    label=str(entry.get("question") or ref or "Help topic"),
+                    ref=str(ref) if ref is not None else None,
+                    detail=(str(entry["category"]) if entry.get("category") else None),
+                )
+            )
+            seen.add(key)
+            if len(sink) >= _MAX_SOURCES:
+                return
+        return
+    label = _TOOL_SOURCE_LABELS.get(name)
+    if not label:
+        return
+    key = ("tool", name)
+    if key in seen:
+        return
+    sink.append(AssistantSource(kind="tool", label=label, ref=name))
+    seen.add(key)
+
+
 def run_assistant_chat(
     db_session: Session, current_user, req: AssistantChatRequest
 ) -> AssistantChatResponse:
     messages = _build_messages(req)
     used: list[AssistantToolInvocation] = []
     action_cards: list[AssistantActionCard] = []
+    sources: list[AssistantSource] = []
     seen_cards: set = set()
+    seen_sources: set = set()
     reply = ""
 
     for _ in range(MAX_TOOL_ITERATIONS):
@@ -178,6 +239,7 @@ def run_assistant_chat(
                 result = tools.dispatch_tool(db_session, current_user, name or "", args)
                 used.append(AssistantToolInvocation(name=name or "", ok=True))
                 _collect_action_cards(result, action_cards, seen_cards)
+                _collect_sources(name or "", result, sources, seen_sources)
                 content = _truncate(json.dumps(result, default=str))
             except AssistantGuardrailError as exc:
                 used.append(
@@ -217,5 +279,6 @@ def run_assistant_chat(
         model=llm_client.ASSISTANT_MODEL,
         reply=reply,
         used_tools=used,
+        sources=sources,
         action_cards=action_cards,
     )

@@ -14,8 +14,10 @@ from sqlalchemy.orm import Session
 from app.models.assistant import (
     AssistantConversation,
     AssistantConversationMessage,
+    AssistantMessageFeedback,
     AssistantMessageRole,
 )
+from app.models.helpers import utcnow
 
 _TITLE_MAX = 80
 _LIST_CAP = 100
@@ -85,9 +87,14 @@ def append_turn(
     reply: str,
     used_tools: list[dict],
     action_cards: list[dict],
+    sources: Optional[list[dict]] = None,
     model: Optional[str],
-) -> AssistantConversation:
-    """Persist the user turn + the assistant reply (with its transparency record) and commit."""
+) -> AssistantConversationMessage:
+    """Persist the user turn + the assistant reply (with its transparency record) and commit.
+
+    Returns the persisted ASSISTANT message so the caller can echo its id back to the client (for
+    attaching feedback to the just-sent reply).
+    """
     db_session.add(
         AssistantConversationMessage(
             conversation_id=conversation.id,
@@ -95,19 +102,64 @@ def append_turn(
             content=user_message,
         )
     )
-    db_session.add(
-        AssistantConversationMessage(
-            conversation_id=conversation.id,
-            role=AssistantMessageRole.assistant,
-            content=reply,
-            used_tools=used_tools or None,
-            action_cards=action_cards or None,
-            model=model,
-        )
+    assistant_message = AssistantConversationMessage(
+        conversation_id=conversation.id,
+        role=AssistantMessageRole.assistant,
+        content=reply,
+        used_tools=used_tools or None,
+        action_cards=action_cards or None,
+        sources=sources or None,
+        model=model,
     )
+    db_session.add(assistant_message)
+    # Appending child messages does not otherwise touch the parent row, so the model's
+    # ``onupdate`` never fires; bump ``updated_at`` explicitly so the history list orders and
+    # timestamps by last activity rather than by thread creation.
+    conversation.updated_at = utcnow()
     db_session.commit()
     db_session.refresh(conversation)
-    return conversation
+    db_session.refresh(assistant_message)
+    return assistant_message
+
+
+def set_feedback(
+    db_session: Session,
+    current_user,
+    *,
+    conversation_id: int,
+    message_id: int,
+    rating: Optional[str],
+    note: Optional[str],
+) -> Optional[AssistantConversationMessage]:
+    """Owner-scoped thumbs feedback on an ASSISTANT message. Returns the message, or None when the
+    conversation/message isn't the caller's, doesn't exist, or isn't an assistant turn.
+
+    Writes ONLY to the isolated assistant message row — never a governed/business action. ``rating``
+    of None clears the rating (and any note); a non-None rating optionally stores a note too.
+    """
+    conv = get_conversation(db_session, current_user, conversation_id)
+    if conv is None:
+        return None
+    message = (
+        db_session.query(AssistantConversationMessage)
+        .filter(
+            AssistantConversationMessage.id == message_id,
+            AssistantConversationMessage.conversation_id == conv.id,
+            AssistantConversationMessage.role == AssistantMessageRole.assistant,
+        )
+        .one_or_none()
+    )
+    if message is None:
+        return None
+    if rating is None:
+        message.feedback = None
+        message.feedback_note = None
+    else:
+        message.feedback = AssistantMessageFeedback(rating)
+        message.feedback_note = (note or None)
+    db_session.commit()
+    db_session.refresh(message)
+    return message
 
 
 def archive_conversation(

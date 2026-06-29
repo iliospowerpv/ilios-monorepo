@@ -27,6 +27,7 @@ from app.db.base_class import Base
 from app.models.helpers import utcnow
 
 ASSISTANT_MESSAGE_ROLE_ENUM_NAME = "assistant_message_role_enum"
+ASSISTANT_MESSAGE_FEEDBACK_ENUM_NAME = "assistant_message_feedback_enum"
 
 
 class AssistantMessageRole(enum.Enum):
@@ -34,6 +35,13 @@ class AssistantMessageRole(enum.Enum):
 
     user = "user"
     assistant = "assistant"
+
+
+class AssistantMessageFeedback(enum.Enum):
+    """Optional owner-supplied thumbs rating on an assistant turn (Slice 3)."""
+
+    up = "up"
+    down = "down"
 
 
 class AssistantConversation(Base):
@@ -92,7 +100,15 @@ class AssistantConversationMessage(Base):
     content = Column(Text, nullable=False)
     used_tools = Column(JSONB, nullable=True)
     action_cards = Column(JSONB, nullable=True)
+    # Labels-only transparency record of which knowledge sources backed this turn (Slice 3).
+    sources = Column(JSONB, nullable=True)
     model = Column(VARCHAR, nullable=True)
+    # Optional owner-supplied thumbs rating + note on an assistant turn (Slice 3).
+    feedback = Column(
+        Enum(AssistantMessageFeedback, name=ASSISTANT_MESSAGE_FEEDBACK_ENUM_NAME),
+        nullable=True,
+    )
+    feedback_note = Column(Text, nullable=True)
 
     created_at = Column(DateTime, server_default=utcnow())
 

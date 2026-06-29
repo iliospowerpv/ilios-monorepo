@@ -61,6 +61,20 @@ class AssistantToolInvocation(BaseModel):
     error: Optional[str] = None
 
 
+class AssistantSource(BaseModel):
+    """A LABELS-ONLY disclosure of a knowledge source that backed an assistant turn (Slice 3).
+
+    Never carries raw tool payloads — only a stable identifier/label so the UI can transparently
+    show what the answer was grounded on. ``kind='faq'`` carries the curated entry id + question +
+    category; ``kind='tool'`` carries the read-only tool name + a friendly label.
+    """
+
+    kind: Literal["faq", "tool"]
+    label: str
+    ref: Optional[str] = Field(default=None, description="Stable id (faq entry id / tool name).")
+    detail: Optional[str] = Field(default=None, description="Extra context (faq question/category).")
+
+
 class AssistantActionCard(BaseModel):
     """A PROPOSE-ONLY next-step the user can take. It is a validated deep link into the EXISTING
     workflow UI — never an execution. The assistant produced it after a read-only permission check
@@ -87,10 +101,15 @@ class AssistantChatResponse(BaseModel):
     conversation_id: Optional[str] = None
     model: str
     reply: str
-    # Which read-only tools were used (for transparency / FE "sources" disclosure / audit).
+    # Which read-only tools were used (for transparency / audit).
     used_tools: list[AssistantToolInvocation] = Field(default_factory=list)
+    # Labels-only disclosure of the knowledge sources (FAQ entries / data tools) backing the reply.
+    sources: list[AssistantSource] = Field(default_factory=list)
     # Propose-only deep-link cards the user may click. Never auto-executed.
     action_cards: list[AssistantActionCard] = Field(default_factory=list)
+    # Persisted assistant-turn id (only when the turn was stored), so the FE can attach feedback to
+    # the just-sent reply. Null for non-persisted chats.
+    message_id: Optional[int] = None
 
 
 # --- Conversation persistence (isolated assistant store) ----------------------------------------
@@ -101,8 +120,11 @@ class AssistantPersistedMessage(BaseModel):
     role: Literal["user", "assistant"]
     content: str
     used_tools: list[AssistantToolInvocation] = Field(default_factory=list)
+    sources: list[AssistantSource] = Field(default_factory=list)
     action_cards: list[AssistantActionCard] = Field(default_factory=list)
     model: Optional[str] = None
+    feedback: Optional[Literal["up", "down"]] = None
+    feedback_note: Optional[str] = None
     created_at: datetime
 
 
@@ -137,3 +159,60 @@ class AssistantConfigResponse(BaseModel):
     mode: Literal["read_only_advice"] = "read_only_advice"
     available_tools: list[str] = Field(default_factory=list)
     prohibited_actions: list[str] = Field(default_factory=list)
+
+
+# --- Feedback (Slice 3) -------------------------------------------------------------------------
+
+
+class AssistantFeedbackRequest(BaseModel):
+    """Owner-supplied thumbs rating on a persisted assistant turn. Writes ONLY to the isolated
+    assistant message row (never a governed/business action). ``rating=None`` clears the rating."""
+
+    rating: Optional[Literal["up", "down"]] = None
+    note: Optional[str] = Field(default=None, max_length=2000)
+
+
+class AssistantFeedbackResponse(BaseModel):
+    message_id: int
+    feedback: Optional[Literal["up", "down"]] = None
+    feedback_note: Optional[str] = None
+
+
+# --- Suggested prompts (Slice 3) ----------------------------------------------------------------
+
+
+class AssistantSuggestedPrompt(BaseModel):
+    """A static, page-aware example question. Pure UI affordance — carries no live/business state."""
+
+    label: str
+    prompt: str
+
+
+class AssistantSuggestedPromptsResponse(BaseModel):
+    # Echoes the resolved route bucket used to pick prompts (advisory/debug only).
+    context_label: Optional[str] = None
+    prompts: list[AssistantSuggestedPrompt] = Field(default_factory=list)
+
+
+# --- Admin usage observability (Slice 3) --------------------------------------------------------
+
+
+class AssistantToolUsageStat(BaseModel):
+    name: str
+    count: int
+
+
+class AssistantUsageResponse(BaseModel):
+    """Read-only aggregate over ONLY the isolated assistant tables. No business/operational data."""
+
+    conversations_total: int = 0
+    conversations_active: int = 0
+    conversations_archived: int = 0
+    messages_total: int = 0
+    user_messages: int = 0
+    assistant_messages: int = 0
+    distinct_users: int = 0
+    feedback_up: int = 0
+    feedback_down: int = 0
+    feedback_none: int = 0
+    top_tools: list[AssistantToolUsageStat] = Field(default_factory=list)
