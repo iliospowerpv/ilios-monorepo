@@ -66,13 +66,20 @@ export const Wizard: React.FC<WizardProps> = ({
   onSaveStep,
   onPreview,
   onExecute,
+  onExecuteFile,
+  onReloadRun,
   onComplete,
   onExit,
   confirmLabel = 'Confirm',
   notify
 }) => {
+  // Hold a live copy of the definition so context-dependent (cascading) options can refresh after
+  // each save via onReloadRun. Seeded from the prop; re-synced only when the prop identity changes
+  // (the page mounts the wizard with a stable object, so this fires once and never clobbers reloads).
+  const [liveDefinition, setLiveDefinition] = useState<WorkflowDefinitionSchema>(definition);
   const [activeIndex, setActiveIndex] = useState<number>(() => initialIndex(definition, run));
   const [formValues, setFormValues] = useState<WizardFormValues>(() => seedFormValues(run));
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [stepServerErrors, setStepServerErrors] = useState<Record<string, string> | null>(null);
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
@@ -83,8 +90,14 @@ export const Wizard: React.FC<WizardProps> = ({
   const [exitOpen, setExitOpen] = useState(false);
   const idempotencyKeyRef = useRef<string>(makeIdempotencyKey(run.id));
 
-  const steps = definition.steps;
+  const steps = liveDefinition.steps;
   const activeStep = steps[activeIndex];
+
+  // Re-seed only when a fresh definition object is mounted (stable prop ⇒ runs once). Reloads from
+  // onReloadRun set liveDefinition directly and never change the prop, so they are preserved.
+  useEffect(() => {
+    setLiveDefinition(definition);
+  }, [definition]);
 
   const runPreview = useCallback(
     async (stepId: string) => {
@@ -104,8 +117,9 @@ export const Wizard: React.FC<WizardProps> = ({
     [onPreview]
   );
 
-  // Build the preview as soon as a write step becomes active.
+  // Build the preview as soon as a write step becomes active; reset any per-step file selection.
   useEffect(() => {
+    setSelectedFile(null);
     if (activeStep && activeStep.kind === 'execute') {
       setReconfirm(false);
       runPreview(activeStep.id);
@@ -132,6 +146,17 @@ export const Wizard: React.FC<WizardProps> = ({
         setStepServerErrors(state.validation_errors ?? { _: 'Some details are invalid.' });
         return;
       }
+      // Refresh the run so the next step's context-dependent options reflect this selection
+      // (e.g. project → documents → files). Best-effort: keep current options if the refresh fails.
+      if (onReloadRun) {
+        try {
+          const refreshed = await onReloadRun();
+          setLiveDefinition(refreshed.definition);
+          setFormValues(prev => ({ ...prev, ...seedFormValues(refreshed.run) }));
+        } catch {
+          /* keep existing options rather than blocking progress */
+        }
+      }
       setActiveIndex(index => Math.min(index + 1, steps.length - 1));
     } catch (err) {
       const { payload } = parseWorkflowError(err);
@@ -152,9 +177,17 @@ export const Wizard: React.FC<WizardProps> = ({
 
   const handleConfirm = async () => {
     if (!activeStep || !preview) return;
+    const multipartField = activeStep.multipart_file_field;
+    if (multipartField && (!onExecuteFile || !selectedFile)) {
+      notify?.('Please choose a file to upload before continuing.');
+      return;
+    }
     setExecuting(true);
     try {
-      const result = await onExecute(activeStep.id, preview.confirm_token, idempotencyKeyRef.current);
+      const result =
+        multipartField && onExecuteFile && selectedFile
+          ? await onExecuteFile(activeStep.id, preview.confirm_token, idempotencyKeyRef.current, selectedFile)
+          : await onExecute(activeStep.id, preview.confirm_token, idempotencyKeyRef.current);
       onComplete(result);
     } catch (err) {
       const { status, payload } = parseWorkflowError(err);
@@ -175,11 +208,11 @@ export const Wizard: React.FC<WizardProps> = ({
   return (
     <Paper elevation={0} sx={{ p: { xs: 2, sm: 4 }, border: 1, borderColor: 'divider', borderRadius: 2 }}>
       <Typography variant="h5" fontWeight={600} sx={{ mb: 0.5 }}>
-        {definition.title}
+        {liveDefinition.title}
       </Typography>
-      {definition.description && (
+      {liveDefinition.description && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          {definition.description}
+          {liveDefinition.description}
         </Typography>
       )}
 
@@ -210,6 +243,9 @@ export const Wizard: React.FC<WizardProps> = ({
           reconfirm={reconfirm}
           executing={executing}
           confirmLabel={confirmLabel}
+          multipartFileField={activeStep.multipart_file_field}
+          selectedFile={selectedFile}
+          onFileChange={setSelectedFile}
           onConfirm={handleConfirm}
           onBack={handleBack}
           onExit={() => setExitOpen(true)}

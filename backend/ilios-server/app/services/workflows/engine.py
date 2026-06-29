@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import statistics
 from uuid import uuid4
 
 from fastapi import HTTPException
@@ -22,7 +23,10 @@ from sqlalchemy.orm import Session
 
 from app.crud.errors import UniqueConstraintViolationError
 from app.crud.workflow import WorkflowRunCRUD, WorkflowStepStateCRUD
-from app.helpers.permission_guards import require_module_permission_any_company
+from app.helpers.permission_guards import (
+    require_module_permission_any_company,
+    require_module_permission_any_context,
+)
 from app.helpers.workflow_audit import create_workflow_audit_log
 from app.static.permissions import PermissionsModules
 from app.models.workflow import (
@@ -46,6 +50,9 @@ from app.schema.workflow import (
     WorkflowFieldOption,
     WorkflowFieldSchema,
     WorkflowListResponse,
+    WorkflowMetricsItemSchema,
+    WorkflowMetricsResponse,
+    WorkflowPrerequisiteSchema,
     WorkflowRunDetailResponse,
     WorkflowRunListResponse,
     WorkflowRunSchema,
@@ -58,6 +65,7 @@ from app.services.workflows.definitions import (
     SEQUENCES,
     STEP_EXECUTE,
     WorkflowDef,
+    WorkflowDefinitionError,
     first_step_id,
     get_definition,
     get_payload_schema,
@@ -66,7 +74,7 @@ from app.services.workflows.definitions import (
     get_step_input_schema,
     resolve_options,
 )
-from app.services.workflows.executors import get_executor
+from app.services.workflows.executors import get_executor, get_file_executor
 
 
 class WorkflowEngineError(Exception):
@@ -102,7 +110,16 @@ PERMISSION_PLATFORM_ADMIN = "platform_admin"
 # not let a user start the wizard or see companies. This is the COARSE gate; the existing
 # site-create endpoint stays the authoritative per-company guard at execute time.
 PERMISSION_ASSETS_CREATE_SITE = "assets_management:create_site"
-_KNOWN_PERMISSIONS = {PERMISSION_PLATFORM_ADMIN, PERMISSION_ASSETS_CREATE_SITE}
+# Diligence (Data Room) edit. This is the COARSE gate for the document-upload / parse
+# workflows; unlike create-site it accepts EITHER a company-level OR a project-level grant
+# (a project-only user may legitimately manage a single project's data room). The existing
+# upload/parse endpoints stay the authoritative per-document guard at execute time.
+PERMISSION_DILIGENCE_EDIT = "diligence:edit"
+_KNOWN_PERMISSIONS = {
+    PERMISSION_PLATFORM_ADMIN,
+    PERMISSION_ASSETS_CREATE_SITE,
+    PERMISSION_DILIGENCE_EDIT,
+}
 
 
 def _has_company_scoped_edit(current_user, db_session: Session) -> bool:
@@ -126,6 +143,36 @@ def _has_company_scoped_edit(current_user, db_session: Session) -> bool:
         return False
 
 
+def _has_diligence_edit_any(current_user, db_session: Session) -> bool:
+    """True if the user has Diligence 'edit' via ANY company-level OR project-level grant.
+
+    Uses the any-context guard so a project-only user (no company grant) can still start the
+    data-room workflows for a project they can edit. Read-only and never-raising.
+    """
+    try:
+        company_ids = current_user.get_limited_companies_ids() or []
+    except Exception:
+        company_ids = []
+    try:
+        site_ids = current_user.get_limited_sites_ids() or []
+    except Exception:
+        site_ids = []
+    if not company_ids and not site_ids:
+        return False
+    try:
+        require_module_permission_any_context(
+            user_id=_user_id(current_user),
+            company_ids=company_ids,
+            site_ids=site_ids,
+            db_session=db_session,
+            module_key=PermissionsModules.diligence.value,
+            action="edit",
+        )
+        return True
+    except HTTPException:
+        return False
+
+
 def _check_permission(perm: str | None, current_user, db_session: Session) -> bool:
     """Soft, never-raising permission resolution. Unknown token -> False (fail-closed)."""
     if perm is None:
@@ -134,7 +181,89 @@ def _check_permission(perm: str | None, current_user, db_session: Session) -> bo
         return _has_platform_bypass(current_user)
     if perm == PERMISSION_ASSETS_CREATE_SITE:
         return _has_platform_bypass(current_user) or _has_company_scoped_edit(current_user, db_session)
+    if perm == PERMISSION_DILIGENCE_EDIT:
+        return _has_platform_bypass(current_user) or _has_diligence_edit_any(current_user, db_session)
     return False
+
+
+# --- Prerequisite evaluators (read-only, user-scoped, NOT authorization) --------------
+#
+# A prerequisite is advisory guidance, NOT a gate: it tells the user what to do first. Each
+# evaluator is a pure read scoped to the CURRENT user's accessible entities. Unknown keys and
+# any error fail closed (treated as unmet) — never raising and never granting access.
+
+
+def _eval_has_accessible_project(current_user, db_session: Session) -> bool:
+    """True if the user has Diligence ``edit`` on at least one non-archived project (site).
+
+    Scoped to the Diligence-edit set (NOT mere site visibility) so the "blocked" affordance is
+    honest: a user who can merely see a project but cannot manage its Data Room must NOT be told
+    they have an accessible project for an upload/parse workflow. Mirrors the option resolvers.
+    """
+    from app.models.site import Site
+    from app.services.workflows.definitions import _diligence_editable_site_ids
+
+    editable = _diligence_editable_site_ids(db_session, current_user)
+    if editable is None:  # platform-bypass = all
+        return db_session.query(Site.id).filter(Site.is_archived.is_(False)).first() is not None
+    return len(editable) > 0
+
+
+def _eval_has_uploaded_file(current_user, db_session: Session) -> bool:
+    """True if at least one non-deleted file exists in a project the user has Diligence ``edit`` on.
+
+    Same Diligence-edit scoping as the project evaluator — a file in a merely-visible project the
+    user cannot manage must not satisfy the prerequisite.
+    """
+    from app.models.document import Document
+    from app.models.file import File
+    from app.models.site import Site
+    from app.services.workflows.definitions import _diligence_editable_site_ids
+
+    query = (
+        db_session.query(File.id)
+        .join(Document, File.document_id == Document.id)
+        .join(Site, Document.site_id == Site.id)
+        .filter(File.deleted.is_(False), Site.is_archived.is_(False))
+    )
+    editable = _diligence_editable_site_ids(db_session, current_user)
+    if editable is not None:  # non-bypass: restrict to Diligence-editable sites
+        if not editable:
+            return False
+        query = query.filter(Site.id.in_(list(editable)))
+    return query.first() is not None
+
+
+# evaluator_key -> pure-read evaluator. Keys are validated against every WorkflowDef's
+# prerequisites at import time (below) so a typo'd key fails loudly at startup.
+PREREQUISITE_EVALUATORS = {
+    "has_accessible_project": _eval_has_accessible_project,
+    "has_uploaded_file": _eval_has_uploaded_file,
+}
+
+
+def _evaluate_prerequisite(pr, current_user, db_session: Session | None) -> bool:
+    """Resolve a single prerequisite to met/unmet, fail-closed (unmet) on any problem."""
+    if db_session is None or current_user is None:
+        return False
+    evaluator = PREREQUISITE_EVALUATORS.get(pr.evaluator_key)
+    if evaluator is None:
+        return False
+    try:
+        return bool(evaluator(current_user, db_session))
+    except Exception:
+        return False
+
+
+# Fail loudly at import if any definition references an unknown evaluator_key — a typo must be a
+# startup error, not a silently-always-unmet prerequisite.
+for _wf in REGISTRY.values():
+    for _pr in _wf.prerequisites:
+        if _pr.evaluator_key not in PREREQUISITE_EVALUATORS:
+            raise WorkflowDefinitionError(
+                f"workflow '{_wf.id}' prerequisite '{_pr.key}' references unknown "
+                f"evaluator_key '{_pr.evaluator_key}'"
+            )
 
 
 def _can_start(wf: WorkflowDef, current_user, db_session: Session) -> bool:
@@ -243,13 +372,26 @@ def _build_warnings(db_session: Session, workflow_id: str, data: dict) -> list[s
 
 
 def serialize_definition(
-    wf: WorkflowDef, can_start: bool, db_session: Session | None = None, current_user=None
+    wf: WorkflowDef,
+    can_start: bool,
+    db_session: Session | None = None,
+    current_user=None,
+    context: dict | None = None,
 ) -> WorkflowDefinitionSchema:
+    """Serialize a definition for the FE.
+
+    ``context`` is the run's already-collected inputs; it lets cascading select fields
+    (``project_documents`` -> needs ``site_id``, ``document_files`` -> needs ``document_id``)
+    resolve their options against the user's earlier choices. It is None for the catalog/start
+    listing (no run yet), where cascading sources correctly resolve to empty until a parent is
+    chosen. Prerequisites are evaluated read-only here and surfaced as ``blocked_reason`` (the
+    first unmet message) without affecting ``can_start`` (authorization stays separate).
+    """
     steps: list[WorkflowStepSchema] = []
     for step in wf.steps:
         fields: list[WorkflowFieldSchema] = []
         for fld in step.inputs:
-            opts = resolve_options(fld.options_source, db_session, current_user)
+            opts = resolve_options(fld.options_source, db_session, current_user, context)
             fields.append(
                 WorkflowFieldSchema(
                     name=fld.name,
@@ -272,8 +414,22 @@ def serialize_definition(
                 governed=step.governed,
                 help=step.help,
                 inputs=fields,
+                multipart_file_field=step.multipart_file_field,
             )
         )
+
+    prerequisites: list[WorkflowPrerequisiteSchema] = []
+    blocked_reason: str | None = None
+    for pr in wf.prerequisites:
+        met = _evaluate_prerequisite(pr, current_user, db_session)
+        prerequisites.append(
+            WorkflowPrerequisiteSchema(
+                key=pr.key, label=pr.label, met=met, unmet_message=pr.unmet_message
+            )
+        )
+        if not met and blocked_reason is None:
+            blocked_reason = pr.unmet_message
+
     return WorkflowDefinitionSchema(
         id=wf.id,
         version=wf.version,
@@ -286,16 +442,21 @@ def serialize_definition(
         landing_route_template=wf.landing_route_template,
         sequence_eligible=wf.sequence_eligible,
         steps=steps,
+        prerequisites=prerequisites,
+        blocked_reason=blocked_reason,
     )
 
 
 def _run_detail(
     wf: WorkflowDef, run: WorkflowRun, db_session: Session, current_user
 ) -> WorkflowRunDetailResponse:
+    # Thread the run's already-collected inputs so cascading option sources resolve correctly.
+    step_crud = WorkflowStepStateCRUD(db_session)
+    context = _collect_inputs(wf, step_crud, run.id)
     return WorkflowRunDetailResponse(
         run=WorkflowRunSchema.model_validate(run),
         definition=serialize_definition(
-            wf, _can_start(wf, current_user, db_session), db_session, current_user
+            wf, _can_start(wf, current_user, db_session), db_session, current_user, context
         ),
     )
 
@@ -595,9 +756,24 @@ def preview_step(
     )
 
 
-async def execute_step(
-    db_session: Session, current_user, run_id: int, step_id: str, req: ExecuteRequest
+async def _execute_core(
+    db_session: Session,
+    current_user,
+    run_id: int,
+    step_id: str,
+    req: ExecuteRequest,
+    *,
+    file=None,
+    background_tasks=None,
 ) -> ExecuteResponse:
+    """Shared two-phase EXECUTE used by both the JSON and multipart routes.
+
+    The ONLY difference between the two entry points is how the executor is dispatched: a step
+    declaring ``multipart_file_field`` runs via a FILE_EXECUTOR (receiving the real UploadFile)
+    and must be reached through the multipart route; every other write step runs via the JSON
+    EXECUTOR. Permission re-check, idempotency, blast-radius re-confirm, payload validation,
+    audit, step-state recording, and sequence accounting are identical for both.
+    """
     run = _get_active_run(db_session, current_user, run_id)
     wf = _definition_for_run(run)
     step = get_step(wf, step_id)
@@ -605,6 +781,19 @@ async def execute_step(
         raise HTTPException(status_code=404, detail="Unknown step.")
     if step.kind != STEP_EXECUTE:
         raise HTTPException(status_code=400, detail="This step cannot be executed.")
+
+    # File-part contract: a multipart step requires a file and must use the file route; a
+    # non-multipart step never accepts one. Enforced up front so the two routes can't be misused.
+    needs_file = step.multipart_file_field is not None
+    if needs_file and file is None:
+        raise HTTPException(
+            status_code=400,
+            detail="This step requires a file upload; use the file-upload route.",
+        )
+    if not needs_file and file is not None:
+        raise HTTPException(
+            status_code=400, detail="This step does not accept a file upload."
+        )
 
     audit_action = step.audit_action or f"workflow.{run.workflow_id}.{step_id}.execute"
     base_details = {"run_id": run_id, "step_id": step_id, "workflow_id": run.workflow_id}
@@ -677,13 +866,34 @@ async def execute_step(
     else:
         exec_inputs = merged
 
-    executor = get_executor(run.workflow_id)
-    if executor is None:
-        raise HTTPException(status_code=500, detail="This workflow has no executor configured.")
+    # Resolve the right executor for the step kind. A multipart step uses a FILE_EXECUTOR
+    # (handed the real UploadFile); every other write step uses the JSON EXECUTOR. Both receive
+    # background_tasks so endpoints that schedule async follow-ups (parsing, ChatBot sync) work
+    # exactly as in the manual UI; when absent (e.g. unit tests) a throwaway one is created.
+    from fastapi import BackgroundTasks
+
+    bg = background_tasks if background_tasks is not None else BackgroundTasks()
 
     # Dispatch to the EXISTING endpoint/service.
     try:
-        entity_type, entity_id = await executor(db_session, current_user, exec_inputs)
+        if needs_file:
+            file_executor = get_file_executor(run.workflow_id)
+            if file_executor is None:
+                raise HTTPException(
+                    status_code=500, detail="This workflow has no file executor configured."
+                )
+            entity_type, entity_id = await file_executor(
+                db_session, current_user, exec_inputs, file=file, background_tasks=bg
+            )
+        else:
+            executor = get_executor(run.workflow_id)
+            if executor is None:
+                raise HTTPException(
+                    status_code=500, detail="This workflow has no executor configured."
+                )
+            entity_type, entity_id = await executor(
+                db_session, current_user, exec_inputs, background_tasks=bg
+            )
     except UniqueConstraintViolationError:
         db_session.rollback()
         create_workflow_audit_log(
@@ -695,7 +905,7 @@ async def execute_step(
             governed=step.governed,
         )
         raise WorkflowEngineError(
-            409, {"code": "conflict", "message": "A company with these details already exists."}
+            409, {"code": "conflict", "message": "A record with these details already exists."}
         )
     except HTTPException as http_exc:
         db_session.rollback()
@@ -790,6 +1000,164 @@ async def execute_step(
         entity_id=entity_id,
         run_status=WorkflowRunStatus.completed,
         message=wf.success_message or "Created successfully.",
+    )
+
+
+async def execute_step(
+    db_session: Session,
+    current_user,
+    run_id: int,
+    step_id: str,
+    req: ExecuteRequest,
+    *,
+    background_tasks=None,
+) -> ExecuteResponse:
+    """JSON execute entry point (unchanged signature). Rejects steps that require a file."""
+    return await _execute_core(
+        db_session,
+        current_user,
+        run_id,
+        step_id,
+        req,
+        file=None,
+        background_tasks=background_tasks,
+    )
+
+
+async def execute_file_step(
+    db_session: Session,
+    current_user,
+    run_id: int,
+    step_id: str,
+    req: ExecuteRequest,
+    file,
+    *,
+    background_tasks=None,
+) -> ExecuteResponse:
+    """Multipart execute entry point for steps declaring ``multipart_file_field``.
+
+    Shares the entire perm/idempotency/reconfirm/audit pipeline with ``execute_step``; the file is
+    passed straight to the FILE_EXECUTOR which hands it to the existing upload endpoint/service.
+    """
+    return await _execute_core(
+        db_session,
+        current_user,
+        run_id,
+        step_id,
+        req,
+        file=file,
+        background_tasks=background_tasks,
+    )
+
+
+def _has_metrics_all_access(current_user, db_session: Session) -> bool:
+    """Platform-bypass (super admin) may view org-wide metrics; everyone else is scope=me only."""
+    try:
+        return bool(_has_platform_bypass(current_user))
+    except Exception:
+        return False
+
+
+def compute_metrics(
+    db_session: Session, current_user, *, scope: str = "me"
+) -> WorkflowMetricsResponse:
+    """Read-only completion metrics aggregated from ``workflow_runs``.
+
+    ``scope="me"`` covers only the caller's own runs; ``scope="all"`` (platform-bypass only,
+    else 403) covers every run. Pure read: no writes, no run mutation. Durations are computed
+    for completed runs as ``updated_at - created_at`` (seconds); rates are fractions in [0, 1].
+    """
+    if scope not in ("me", "all"):
+        raise HTTPException(status_code=400, detail="Unknown metrics scope.")
+    if scope == "all" and not _has_metrics_all_access(current_user, db_session):
+        raise HTTPException(
+            status_code=403, detail="You do not have access to organization-wide metrics."
+        )
+
+    query = db_session.query(WorkflowRun)
+    if scope == "me":
+        query = query.filter(WorkflowRun.user_id == _user_id(current_user))
+    runs = query.all()
+
+    by_workflow: dict[str, dict] = {}
+
+    def _bucket(workflow_id: str) -> dict:
+        b = by_workflow.get(workflow_id)
+        if b is None:
+            b = {
+                "total": 0,
+                "completed": 0,
+                "abandoned": 0,
+                "in_progress": 0,
+                "durations": [],
+            }
+            by_workflow[workflow_id] = b
+        return b
+
+    total = completed = abandoned = in_progress = 0
+    all_durations: list[float] = []
+
+    for run in runs:
+        b = _bucket(run.workflow_id)
+        b["total"] += 1
+        total += 1
+        if run.status == WorkflowRunStatus.completed:
+            b["completed"] += 1
+            completed += 1
+            try:
+                if run.created_at is not None and run.updated_at is not None:
+                    secs = (run.updated_at - run.created_at).total_seconds()
+                    if secs >= 0:
+                        b["durations"].append(secs)
+                        all_durations.append(secs)
+            except Exception:
+                pass
+        elif run.status == WorkflowRunStatus.abandoned:
+            b["abandoned"] += 1
+            abandoned += 1
+        else:
+            b["in_progress"] += 1
+            in_progress += 1
+
+    def _rate(numer: int, denom: int) -> float:
+        return round(numer / denom, 4) if denom else 0.0
+
+    def _avg(values: list[float]) -> float | None:
+        return round(statistics.fmean(values), 2) if values else None
+
+    def _median(values: list[float]) -> float | None:
+        return round(statistics.median(values), 2) if values else None
+
+    def _item(workflow_id: str, b: dict) -> WorkflowMetricsItemSchema:
+        wf = REGISTRY.get(workflow_id)
+        closed = b["completed"] + b["abandoned"]
+        return WorkflowMetricsItemSchema(
+            workflow_id=workflow_id,
+            title=wf.title if wf is not None else workflow_id,
+            total=b["total"],
+            completed=b["completed"],
+            abandoned=b["abandoned"],
+            in_progress=b["in_progress"],
+            completion_rate=_rate(b["completed"], closed),
+            abandonment_rate=_rate(b["abandoned"], closed),
+            avg_duration_seconds=_avg(b["durations"]),
+            median_duration_seconds=_median(b["durations"]),
+        )
+
+    closed_total = completed + abandoned
+    items = [_item(wid, b) for wid, b in sorted(by_workflow.items())]
+
+    return WorkflowMetricsResponse(
+        scope=scope,
+        total_runs=total,
+        completed_runs=completed,
+        abandoned_runs=abandoned,
+        in_progress_runs=in_progress,
+        completion_rate=_rate(completed, closed_total),
+        abandonment_rate=_rate(abandoned, closed_total),
+        avg_duration_seconds=_avg(all_durations),
+        median_duration_seconds=_median(all_durations),
+        by_workflow=items,
     )
 
 

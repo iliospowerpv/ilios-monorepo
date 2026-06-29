@@ -44,6 +44,34 @@ const EmptyHint: React.FC<{ text: string }> = ({ text }) => (
   </Typography>
 );
 
+const StatTile: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <Card variant="outlined" sx={{ height: '100%' }}>
+    <CardContent>
+      <Typography variant="h5" fontWeight={700}>
+        {value}
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        {label}
+      </Typography>
+    </CardContent>
+  </Card>
+);
+
+// Rates arrive as fractions in [0, 1]; durations as seconds. Both may be null (no closed runs yet).
+const formatPercent = (value: number | null | undefined): string =>
+  value == null ? '—' : `${Math.round(value * 100)}%`;
+
+const formatDuration = (seconds: number | null | undefined): string => {
+  if (seconds == null) return '—';
+  const total = Math.round(seconds);
+  if (total < 60) return `${total}s`;
+  const minutes = Math.floor(total / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remMin = minutes % 60;
+  return remMin ? `${hours}h ${remMin}m` : `${hours}h`;
+};
+
 const WorkflowDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const notify = useNotify();
@@ -60,6 +88,11 @@ const WorkflowDashboardPage: React.FC = () => {
   const sequencesQuery = useQuery({
     queryKey: ['workflows', 'sequences'],
     queryFn: () => ApiClient.workflows.listSequences()
+  });
+  // Read-only, owner-scoped completion metrics. Failure is non-blocking — the dashboard still works.
+  const metricsQuery = useQuery({
+    queryKey: ['workflows', 'metrics', 'me'],
+    queryFn: () => ApiClient.workflows.getMetrics('me')
   });
 
   const cancelMutation = useMutation({
@@ -80,6 +113,7 @@ const WorkflowDashboardPage: React.FC = () => {
 
   const inProgress = runs.filter(r => r.status === 'active' || r.status === 'paused');
   const completed = runs.filter(r => r.status === 'completed');
+  const metrics = metricsQuery.data;
 
   const startSequence = (seq: SequenceSchema) => {
     const route = SEQUENCE_START_ROUTES[seq.id];
@@ -112,6 +146,36 @@ const WorkflowDashboardPage: React.FC = () => {
         <Alert severity="error" sx={{ mt: 3 }}>
           Some workflow data could not be loaded. Please refresh to try again.
         </Alert>
+      )}
+
+      {/* Your activity — read-only completion metrics over the caller's own runs. */}
+      {metrics && metrics.total_runs > 0 && (
+        <>
+          <SectionHeading title="Your activity" caption="A read-only summary of the workflows you've run." />
+          <Grid container spacing={2}>
+            <Grid item xs={6} md={3}>
+              <StatTile label="Total runs" value={String(metrics.total_runs)} />
+            </Grid>
+            <Grid item xs={6} md={3}>
+              <StatTile label="Completed" value={String(metrics.completed_runs)} />
+            </Grid>
+            <Grid item xs={6} md={3}>
+              <StatTile label="In progress" value={String(metrics.in_progress_runs)} />
+            </Grid>
+            <Grid item xs={6} md={3}>
+              <StatTile label="Completion rate" value={formatPercent(metrics.completion_rate)} />
+            </Grid>
+            <Grid item xs={6} md={3}>
+              <StatTile label="Abandonment rate" value={formatPercent(metrics.abandonment_rate)} />
+            </Grid>
+            <Grid item xs={6} md={3}>
+              <StatTile label="Avg duration" value={formatDuration(metrics.avg_duration_seconds)} />
+            </Grid>
+            <Grid item xs={6} md={3}>
+              <StatTile label="Median duration" value={formatDuration(metrics.median_duration_seconds)} />
+            </Grid>
+          </Grid>
+        </>
       )}
 
       {/* Suggested — declarative multi-step sequences (e.g. onboarding). */}
@@ -224,14 +288,19 @@ const WorkflowDashboardPage: React.FC = () => {
                     {def.description}
                   </Typography>
                 </CardContent>
-                <CardActions sx={{ px: 2, pb: 2 }}>
+                <CardActions sx={{ px: 2, pb: 2, flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
                   <Button
                     variant="outlined"
-                    disabled={!WORKFLOW_START_ROUTES[def.id]}
+                    disabled={!WORKFLOW_START_ROUTES[def.id] || !!def.blocked_reason}
                     onClick={() => startWorkflow(def)}
                   >
                     Start
                   </Button>
+                  {def.blocked_reason && (
+                    <Typography variant="caption" color="text.secondary">
+                      {def.blocked_reason}
+                    </Typography>
+                  )}
                 </CardActions>
               </Card>
             </Grid>

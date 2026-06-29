@@ -40,6 +40,23 @@ class WorkflowStepSchema(BaseModel):
     governed: bool
     help: Optional[str] = None
     inputs: list[WorkflowFieldSchema] = Field(default_factory=list)
+    # When set, this EXECUTE step expects a file part under this field name and must be run via
+    # the multipart execute-file route (the FE renders a file input for it). None = JSON step.
+    multipart_file_field: Optional[str] = None
+
+
+class WorkflowPrerequisiteSchema(BaseModel):
+    """A declarative, read-only dependency advertised by a workflow.
+
+    ``met`` is evaluated per-caller (user-scoped, fail-closed). It is purely informational —
+    it powers the dashboard's "blocked" affordance and does NOT replace authorization
+    (``can_start``), which stays a separate permission decision.
+    """
+
+    key: str
+    label: str
+    met: bool
+    unmet_message: str
 
 
 class WorkflowDefinitionSchema(BaseModel):
@@ -55,6 +72,9 @@ class WorkflowDefinitionSchema(BaseModel):
     landing_route_template: Optional[str] = None
     sequence_eligible: bool = True
     steps: list[WorkflowStepSchema]
+    # Declarative prerequisites + the first unmet message (None when all met / none declared).
+    prerequisites: list[WorkflowPrerequisiteSchema] = Field(default_factory=list)
+    blocked_reason: Optional[str] = None
 
 
 class WorkflowListResponse(BaseModel):
@@ -209,3 +229,36 @@ class SequenceSchema(BaseModel):
 
 class SequenceListResponse(BaseModel):
     items: list[SequenceSchema] = Field(default_factory=list)
+
+
+# --- Completion metrics (read-only aggregation) --------------------------------------
+
+
+class WorkflowMetricsItemSchema(BaseModel):
+    """Per-workflow rollup. Rates are fractions in [0, 1] over CLOSED runs (completed+abandoned)."""
+
+    workflow_id: str
+    title: str
+    total: int
+    completed: int
+    abandoned: int
+    in_progress: int
+    completion_rate: float
+    abandonment_rate: float
+    avg_duration_seconds: Optional[float] = None
+    median_duration_seconds: Optional[float] = None
+
+
+class WorkflowMetricsResponse(BaseModel):
+    """Read-only completion metrics. ``scope`` is 'me' (own runs) or 'all' (platform-bypass)."""
+
+    scope: str
+    total_runs: int
+    completed_runs: int
+    abandoned_runs: int
+    in_progress_runs: int
+    completion_rate: float
+    abandonment_rate: float
+    avg_duration_seconds: Optional[float] = None
+    median_duration_seconds: Optional[float] = None
+    by_workflow: list[WorkflowMetricsItemSchema] = Field(default_factory=list)

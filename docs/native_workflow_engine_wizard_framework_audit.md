@@ -771,3 +771,188 @@ Full file: **64 passed** via
 - **Next:** richer suggested-next surfacing (driven by `suggested_next`) and the deferred
   governed-surface pilot (preview → existing manual confirmation UI; engine never auto-executes a
   governed terminal).
+
+## 17. Build log — Native Onboarding Experience, Phase 2 `[BUILT]`
+
+Phase 1 added discovery/orchestration over the engine. Phase 2 adds **three new workflows** plus
+**two cross-cutting systems** (declarative prerequisites + read-only completion metrics), all by
+**reusing existing domain endpoints, permissions, and audit** — no new infrastructure, no AI
+execution, no manual-form replacement, no governed-flow change, and no authorization bypass. Every
+new workflow is **independently executable** and runs the unchanged preview → confirm → execute
+handshake. (Project == Site; "Project" is a UI label only — the backend `Site` entity is untouched.)
+
+### 17.1 Goal & what it proves
+
+1. **The engine generalizes beyond single-entity create:** the new workflows cover a **two-call
+   composite** (Invite User = create-or-get user + add company membership), a **multipart file
+   write** (Document Upload), and a **long-running async trigger** (Parse Document → an
+   `ai_parsing_run` the user tracks in the Data Room). Each delegates to the **same** domain
+   endpoint the manual UI already uses — zero endpoint logic is duplicated.
+2. **File uploads fit the JSON engine without storing bytes:** a step declares
+   `multipart_file_field` and runs via a sibling **`execute-file`** route that shares the engine's
+   perm / idempotency / reconfirm / audit pipeline. Targets (`site_id`, `document_id`) are still
+   collected as ordinary JSON; the file part is **never persisted in run JSONB**.
+3. **Dependencies become declarative, not authority:** a `PrerequisiteDef` advertises what a
+   workflow needs (e.g. "an accessible project", "an uploaded file") via **read-only, user-scoped**
+   evaluators. Prerequisites power a dashboard "blocked" affordance but **never replace
+   authorization** (`can_start` stays a separate permission decision).
+4. **Cascading options are context-aware:** collect-step options resolve against the run's
+   already-collected inputs (project → its documents → that document's files), all **authz-scoped
+   read-only** reads; the FE refreshes the run after each save to pull the next level.
+5. **Completion is measurable read-only:** a metrics endpoint aggregates the caller's own runs
+   (completion %, abandonment %, avg/median duration, per-workflow rollups) with an optional
+   platform-bypass org-wide scope — **no schema change, zero writes**.
+
+### 17.2 Files changed
+
+**Backend** (`backend/ilios-server`):
+
+- `app/services/workflows/definitions.py` — added `PrerequisiteDef` (+ `prerequisites` on
+  `WorkflowDef`) and `StepDef.multipart_file_field`; the three new `WorkflowDef`s (`invite_user`,
+  `document_upload`, `parse_document`) with their `STEP_INPUT_SCHEMAS` bindings; and the
+  **context-aware** `resolve_options(...)` dynamic resolvers (`accessible_projects`,
+  `project_documents` [reads `context.site_id`], `document_files` [reads `context.document_id`],
+  `membership_companies`, `membership_roles`) — all authz-scoped read-only. `validate_definition`
+  extended to cover the new fields and that every `evaluator_key` exists.
+- `app/services/workflows/executors.py` — split the executor maps into `EXECUTORS` (JSON) and
+  `FILE_EXECUTORS` (multipart, signature includes the `UploadFile` + `BackgroundTasks`). Added
+  `_execute_invite_user` (create-or-get user + add membership, **idempotent** — existing
+  email/membership read back rather than erroring → `("user", id)`), `_execute_parse_document`
+  (→ existing `trigger_file_parsing` → `("ai_parsing_run", run_id)`, honest 202/async), and
+  `_execute_document_upload` (→ existing `upload_file` endpoint under the **same** auth dependency
+  the manual UI uses → `("file", id)`). No domain endpoint logic is reimplemented.
+- `app/services/workflows/engine.py` — `execute_file_step` (mirrors `execute_step`'s
+  perm/idempotency/reconfirm/audit, then dispatches to the `FILE_EXECUTORS`); a read-only,
+  user-scoped `PREREQUISITE_EVALUATORS` registry (`has_accessible_project`, `has_uploaded_file`)
+  with prerequisites evaluated during serialization (populating `blocked_reason` = first unmet
+  message); run collected-inputs threaded as `context` into `serialize_definition` →
+  `resolve_options`; and `compute_metrics(scope="me"|"all")` (owner default; `"all"` gated to
+  platform-bypass, else 403; unknown scope → 400) computing totals, rates over **closed** runs,
+  and avg/median durations with a per-workflow rollup. **`execute_step` behavior is unchanged.**
+- `app/schema/workflow.py` — `multipart_file_field` on `WorkflowStepSchema`; `WorkflowPrerequisiteSchema`
+  + `prerequisites[]` / `blocked_reason` on `WorkflowDefinitionSchema`; `WorkflowMetricsItemSchema`
+  + `WorkflowMetricsResponse`.
+- `app/routers/workflows.py` — `POST /api/workflows/runs/{run_id}/steps/{step_id}/execute-file`
+  (multipart: `confirm_token` + optional `idempotency_key` as form fields + the `file` part) and
+  `GET /api/workflows/metrics?scope=me` (default; `scope=all` for platform-bypass). Engine errors
+  surface as the structured `JSONResponse` payload (consistent with the existing handler).
+- `tests/test_workflow_engine.py` — Phase-2 suites (see §17.7).
+
+**Frontend** (`frontend/rea-investment-fe`):
+
+- `src/api/workflows.ts` — `multipart_file_field` on `WorkflowStepSchema`;
+  `WorkflowPrerequisiteSchema` + `prerequisites[]` / `blocked_reason` on `WorkflowDefinitionSchema`;
+  `WorkflowMetricsItemSchema` / `WorkflowMetricsResponse` (+ `WorkflowMetricsScope`); `executeFile`
+  (FormData multipart) and `getMetrics(scope)` methods.
+- `src/components/common/Wizard/{types.ts,Wizard.tsx,WizardReviewStep.tsx}` — additive, **optional**
+  `onExecuteFile` + `onReloadRun` props. The wizard holds a **live copy** of the definition so
+  cascading options refresh after each save (via `onReloadRun`), renders a **file input on the
+  review step** when the active execute step declares `multipart_file_field` (confirm disabled until
+  a file is chosen), and dispatches that step through `onExecuteFile`. **Static flows
+  (add_company / add_site) pass neither prop and are completely unaffected.**
+- `src/modules/workflows/GenericWorkflowStartPage.tsx` (new) — generic start page
+  (`/workflows/start/:workflowId`) that starts a run for any registered workflow and wires
+  `onExecuteFile` + `onReloadRun` + landing redirect.
+- `src/modules/workflows/{index.ts,landing.ts}`, `src/App.tsx` — export + route the new page;
+  `WORKFLOW_START_ROUTES` gains the three Phase-2 ids → `/workflows/start/<id>`.
+- `src/modules/workflows/WorkflowDashboardPage.tsx` — a read-only **"Your activity"** metrics panel
+  (`getMetrics('me')`) and **prerequisite-blocked** Available cards (Start disabled + the
+  `blocked_reason` caption).
+
+No existing manual form, executor, or write path was modified.
+
+### 17.3 Routes
+
+| Method & path | Purpose | Added? |
+|---|---|---|
+| `POST /api/workflows/runs/{run_id}/steps/{step_id}/execute-file` | Multipart execute for steps declaring `multipart_file_field` (document upload). Shares the full engine pipeline; bytes never enter run state. | **new** |
+| `GET /api/workflows/metrics?scope=me` | Read-only completion metrics; `scope=all` (platform-bypass only) for org-wide. | **new** |
+| `POST …/steps/{id}/execute` · `…/preview` · `PATCH …/steps/{id}` · `GET /runs` · `…/sequences` | Unchanged engine handshake + discovery. | — |
+
+FE routes: adds `/workflows/start/:workflowId` (generic start) alongside the existing dashboard,
+orchestrator, resume, and bespoke add-company / add-site routes.
+
+### 17.4 Permission model
+
+- **Reuses existing entry permissions; adds none for execution.** `invite_user` →
+  `platform_admin` (creating a user needs global admin); `document_upload` / `parse_document` →
+  Diligence-edit, resolved by the engine's existing token map and ultimately by the **same domain
+  endpoint** the manual UI calls. The new surfaces add **zero** authority.
+- **Prerequisites are NOT authorization.** `PREREQUISITE_EVALUATORS` are pure reads scoped to the
+  caller's accessible entities; unknown evaluator keys fail closed. A met prerequisite never grants
+  start rights, and an unmet one is advisory (the server still gates the actual start/execute).
+- **Dynamic options are permission-scoped reads, not visibility-scoped.** The data-room resolvers
+  (`accessible_projects`, `project_documents`, `document_files`) and the upload/parse prerequisites
+  scope to the caller's **Diligence `edit`** set per site — NOT mere site visibility — via
+  `_diligence_editable_site_ids`, which calls the canonical per-context `require_module_permission`
+  for each candidate site (company- or project-level grant). This mirrors the per-document guard
+  the Data Room list/upload/parse endpoints already enforce, so a user who can *see* a project but
+  cannot manage its Data Room never has its project/document/file labels disclosed in a dropdown or
+  is falsely told a prerequisite is "met". The membership resolvers stay company-admin scoped; the
+  engine never widens visibility to populate a dropdown, and the underlying endpoints remain the
+  authoritative guard at execute time.
+- **Metrics are owner-scoped by default.** `scope=me` returns only the caller's runs; `scope=all`
+  is refused (403) for non-platform-bypass callers; an unknown scope is a 400.
+
+### 17.5 Multipart upload (no bytes in JSONB)
+
+The upload workflow collects its **targets** (`site_id`, `document_id`) as ordinary JSON save
+steps, then its terminal execute step declares `multipart_file_field="file"`. The FE renders a file
+picker on the review step and posts to `execute-file` with the confirm token + idempotency key as
+**form fields** and the file as the multipart part. The engine reconstructs the normal
+`ExecuteRequest`, runs the identical perm / idempotency / reconfirm / audit path, and hands the
+`UploadFile` (+ `BackgroundTasks`) to the existing `upload_file` endpoint. The file's bytes are
+**never** written to run state — only the resulting `("file", id)` entity ref is recorded.
+
+### 17.6 Prerequisites, cascading options & metrics
+
+- **Prerequisites:** serialized per-caller as `prerequisites[]` with `met` + `unmet_message`;
+  `blocked_reason` is the first unmet message (null when all met). The dashboard disables Start and
+  shows the message; the server remains authoritative.
+- **Cascading options:** `resolve_options` reads the run's collected inputs as `context`, so the
+  document picker lists only the chosen project's documents and the file picker only that
+  document's files. The FE calls `onReloadRun` after each save and re-binds the live definition so
+  the next step's options reflect the new context.
+- **Metrics:** rates are fractions in `[0, 1]` over **closed** runs (completed + abandoned);
+  durations are avg + median seconds; `by_workflow[]` carries the same shape per workflow id. All
+  derived read-only from `workflow_runs` — no schema change, no writes.
+
+### 17.7 Tests
+
+`tests/test_workflow_engine.py` gained Phase-2 suites covering: the three new definitions validate
+and serialize (including `multipart_file_field` and `prerequisites[]`); `invite_user` **idempotency**
+(existing email/membership read back, not re-created); the parse executor returns the
+`("ai_parsing_run", id)` entity ref; the multipart `execute-file` happy path plus token/permission
+guards; prerequisite-blocked serialization (`blocked_reason` populated); metrics aggregation
+(owner scope, rates, avg/median, per-workflow rollup, `scope=all` gating); and dynamic-option
+authz scoping (context-filtered, caller-visible only). Full file: **110 passed** (64 prior + 46
+new) via
+`test_db_name=test_heliumdb python -m pytest tests/test_workflow_engine.py -o addopts="" -p no:cacheprovider -q`.
+
+### 17.8 Validation
+
+- **Backend:** the full `test_workflow_engine.py` is green at **110 passed** (the 64 Phase-0/1
+  tests stay green).
+- **FE compiles clean:** webpack `No issues found.` (fork-ts-checker — the TS-clean signal); the
+  changed files also pass ESLint with no errors (only pre-existing `no-non-null-assertion` warnings
+  that match the add_company / add_site pages).
+- **Reuse-only confirmed:** the new executors call the existing `users` / `workspace members` /
+  `due-diligence upload` / `due-diligence parsing` endpoints; no endpoint logic is duplicated and
+  no governed-confirmation flow is touched.
+
+### 17.9 Remaining gaps & next
+
+- **Authenticated live E2E not captured here:** as in §16.10, real runs would create User /
+  membership / file / parse-run rows in the dev DB without a clean teardown path this session;
+  coverage is the 110 unit tests + the reuse of the already-live-proven engine and domain
+  endpoints. The user's own authenticated session can verify the UI visually.
+- **Parse completion is async/honest:** the parse executor returns the `ai_parsing_run` id at 202;
+  the workflow does **not** poll to "done" — the user tracks completion + candidate review in the
+  existing Data Room (no synthetic completion state is fabricated).
+- **Metrics are aggregate-only:** no time-series/trend or funnel breakdown yet; `by_workflow`
+  rollups are the finest grain. `scope=all` exists but has no dedicated admin UI panel.
+- **First AI read-only "workflow advisor" sprint (proposed, not built):** a strictly read-only
+  advisor that, given the caller's runs + prerequisites + metrics, **suggests** the next workflow
+  or surfaces the most common abandonment point — **advice only**, never auto-starting or
+  auto-executing anything, preserving the standing AI boundary (§9): the engine never
+  auto-executes, and a human still drives every preview → confirm → execute.

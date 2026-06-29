@@ -30,7 +30,12 @@ export function formatRunTimestamp(value?: string | null): string {
  */
 export const WORKFLOW_START_ROUTES: Record<string, string> = {
   add_company: '/workflows/add-company',
-  add_site: '/workflows/add-site'
+  add_site: '/workflows/add-site',
+  // Phase 2 workflows run through the generic start page, which wires multipart upload + cascading
+  // option refresh (project -> documents -> files) that the bespoke add_* pages don't need.
+  invite_user: '/workflows/start/invite_user',
+  document_upload: '/workflows/start/document_upload',
+  parse_document: '/workflows/start/parse_document'
 };
 
 /**

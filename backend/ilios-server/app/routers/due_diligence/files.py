@@ -415,7 +415,11 @@ async def upload_file(
     }
     background_tasks.add_task(ChatBotFilesSyncer().upload_file, ai_payload)
 
-    return {"code": status.HTTP_200_OK, "message": f"File successfully uploaded (version {version_number})"}
+    return {
+        "code": status.HTTP_200_OK,
+        "message": f"File successfully uploaded (version {version_number})",
+        "id": new_file.id,
+    }
 
 
 @files_router.get(

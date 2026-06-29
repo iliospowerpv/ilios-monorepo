@@ -19,6 +19,10 @@ interface WizardReviewStepProps {
   reconfirm: boolean;
   executing: boolean;
   confirmLabel: string;
+  // When set, this execute step uploads a file: render a file picker and require a selection.
+  multipartFileField?: string | null;
+  selectedFile?: File | null;
+  onFileChange?: (file: File | null) => void;
   onConfirm: () => void;
   onBack: () => void;
   onExit: () => void;
@@ -32,11 +36,15 @@ export const WizardReviewStep: React.FC<WizardReviewStepProps> = ({
   reconfirm,
   executing,
   confirmLabel,
+  multipartFileField,
+  selectedFile,
+  onFileChange,
   onConfirm,
   onBack,
   onExit
 }) => {
   const governed = step.confirmation === 'governed';
+  const requiresFile = !!multipartFileField;
   const [acknowledged, setAcknowledged] = useState(false);
 
   if (previewLoading && !preview) {
@@ -47,7 +55,8 @@ export const WizardReviewStep: React.FC<WizardReviewStepProps> = ({
     );
   }
 
-  const confirmDisabled = executing || !preview || !!previewError || (governed && !acknowledged);
+  const confirmDisabled =
+    executing || !preview || !!previewError || (governed && !acknowledged) || (requiresFile && !selectedFile);
 
   return (
     <Box>
@@ -106,6 +115,18 @@ export const WizardReviewStep: React.FC<WizardReviewStepProps> = ({
               </Stack>
             </Box>
           ))}
+        </Box>
+      )}
+
+      {requiresFile && (
+        <Box sx={{ my: 2 }}>
+          <Button variant="outlined" component="label" disabled={executing}>
+            {selectedFile ? 'Change file' : 'Choose file'}
+            <input type="file" hidden onChange={event => onFileChange?.(event.target.files?.[0] ?? null)} />
+          </Button>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            {selectedFile ? selectedFile.name : 'No file selected.'}
+          </Typography>
         </Box>
       )}
 

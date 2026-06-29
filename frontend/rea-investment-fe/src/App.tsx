@@ -92,6 +92,7 @@ import {
   AddSiteWorkflowPage,
   WorkflowDashboardPage,
   WorkflowRunPage,
+  GenericWorkflowStartPage,
   OnboardingOrchestratorPage
 } from './modules/workflows';
 
@@ -160,6 +161,7 @@ const router = createBrowserRouter(
         <Route path="/workflows/run/:runId" element={<WorkflowRunPage />} />
         <Route path="/workflows/add-company" element={<AddCompanyWorkflowPage />} />
         <Route path="/workflows/add-site" element={<AddSiteWorkflowPage />} />
+        <Route path="/workflows/start/:workflowId" element={<GenericWorkflowStartPage />} />
 
         {/* Legacy redirects to Home */}
         <Route path="/workspace" element={<Navigate to="/home" replace />} />

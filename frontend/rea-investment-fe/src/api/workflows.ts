@@ -35,6 +35,19 @@ export interface WorkflowStepSchema {
   governed: boolean;
   help?: string | null;
   inputs: WorkflowFieldSchema[];
+  // When set, this EXECUTE step expects a file part under this field name and must run via the
+  // multipart execute-file route (the wizard renders a file input on the review step). null = JSON.
+  multipart_file_field?: string | null;
+}
+
+// A declarative, read-only dependency advertised by a workflow. `met` is evaluated per-caller
+// (user-scoped, fail-closed) and is purely informational — it powers the dashboard's "blocked"
+// affordance and does NOT replace authorization (`can_start`).
+export interface WorkflowPrerequisiteSchema {
+  key: string;
+  label: string;
+  met: boolean;
+  unmet_message: string;
 }
 
 export interface WorkflowDefinitionSchema {
@@ -50,6 +63,9 @@ export interface WorkflowDefinitionSchema {
   landing_route_template?: string | null;
   sequence_eligible: boolean;
   steps: WorkflowStepSchema[];
+  // Declarative prerequisites + the first unmet message (null when all met / none declared).
+  prerequisites: WorkflowPrerequisiteSchema[];
+  blocked_reason?: string | null;
 }
 
 export interface WorkflowListResponse {
@@ -109,6 +125,37 @@ export interface WorkflowRunSummarySchema {
 
 export interface WorkflowRunListResponse {
   items: WorkflowRunSummarySchema[];
+}
+
+// --- Completion metrics (read-only) --------------------------------------------------
+
+export type WorkflowMetricsScope = 'me' | 'all';
+
+// Per-workflow rollup. Rates are fractions in [0, 1] over CLOSED runs (completed + abandoned).
+export interface WorkflowMetricsItemSchema {
+  workflow_id: string;
+  title: string;
+  total: number;
+  completed: number;
+  abandoned: number;
+  in_progress: number;
+  completion_rate: number;
+  abandonment_rate: number;
+  avg_duration_seconds?: number | null;
+  median_duration_seconds?: number | null;
+}
+
+export interface WorkflowMetricsResponse {
+  scope: string;
+  total_runs: number;
+  completed_runs: number;
+  abandoned_runs: number;
+  in_progress_runs: number;
+  completion_rate: number;
+  abandonment_rate: number;
+  avg_duration_seconds?: number | null;
+  median_duration_seconds?: number | null;
+  by_workflow: WorkflowMetricsItemSchema[];
 }
 
 // --- Sequences (orchestrator catalog) ------------------------------------------------
@@ -253,6 +300,28 @@ export const buildWorkflowsApi = (httpClient: AxiosInstance) => ({
 
   execute: async (runId: number, stepId: string, body: ExecuteRequest): Promise<ExecuteResponse> => {
     const { data } = await httpClient.post<ExecuteResponse>(`${WF}/runs/${runId}/steps/${stepId}/execute`, body);
+    return data;
+  },
+
+  // Multipart execute for steps declaring `multipart_file_field` (e.g. document upload). The
+  // confirm token + optional idempotency key travel as form fields (the body is multipart); the
+  // engine runs the identical perm/idempotency/reconfirm/audit pipeline before dispatching to the
+  // EXISTING upload endpoint. Bytes never enter the run's JSONB state.
+  executeFile: async (runId: number, stepId: string, body: ExecuteRequest, file: File): Promise<ExecuteResponse> => {
+    const form = new FormData();
+    form.append('confirm_token', body.confirm_token);
+    if (body.idempotency_key) form.append('idempotency_key', body.idempotency_key);
+    form.append('file', file);
+    const { data } = await httpClient.post<ExecuteResponse>(`${WF}/runs/${runId}/steps/${stepId}/execute-file`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return data;
+  },
+
+  // Read-only completion metrics. `scope=me` (default) is owner-scoped; `scope=all` requires a
+  // platform-bypass caller server-side (otherwise 403).
+  getMetrics: async (scope: WorkflowMetricsScope = 'me'): Promise<WorkflowMetricsResponse> => {
+    const { data } = await httpClient.get<WorkflowMetricsResponse>(`${WF}/metrics?scope=${scope}`);
     return data;
   },
 

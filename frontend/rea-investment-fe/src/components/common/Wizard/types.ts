@@ -1,6 +1,7 @@
 import type {
   WorkflowDefinitionSchema,
   WorkflowRunSchema,
+  WorkflowRunDetailResponse,
   WorkflowStepStateSchema,
   PreviewResponse,
   ExecuteResponse
@@ -11,7 +12,9 @@ export type {
   WorkflowStepSchema,
   WorkflowFieldSchema,
   WorkflowFieldOption,
+  WorkflowPrerequisiteSchema,
   WorkflowRunSchema,
+  WorkflowRunDetailResponse,
   WorkflowStepStateSchema,
   PreviewResponse,
   PreviewItem,
@@ -33,6 +36,18 @@ export interface WizardProps {
   onPreview: (stepId: string) => Promise<PreviewResponse>;
   // Execute a confirmed write step via the EXISTING endpoint behind the confirm token.
   onExecute: (stepId: string, confirmToken: string, idempotencyKey: string) => Promise<ExecuteResponse>;
+  // Optional multipart execute for an EXECUTE step declaring `multipart_file_field`. When present
+  // the shell renders a file input on the review step and dispatches via this instead of onExecute.
+  onExecuteFile?: (
+    stepId: string,
+    confirmToken: string,
+    idempotencyKey: string,
+    file: File
+  ) => Promise<ExecuteResponse>;
+  // Optional: re-fetch the run + (re-serialized) definition after each collect step saves so
+  // context-dependent (cascading) options refresh. Omitted by static flows (add_company / add_site),
+  // whose options never depend on prior selections — their behavior is unchanged.
+  onReloadRun?: () => Promise<WorkflowRunDetailResponse>;
   onComplete: (result: ExecuteResponse) => void;
   onExit: () => void;
   confirmLabel?: string;

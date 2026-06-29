@@ -14,6 +14,9 @@ from app.static import FileMessages
 
 class FileUploadSuccess(SuccessUpdateSchema):
     message: str = Field(description="Success message", examples=["File successfully uploaded"])
+    id: Optional[int] = Field(
+        default=None, description="ID of the newly created file record", examples=[1]
+    )
 
 
 class FileSchema(BaseModel):

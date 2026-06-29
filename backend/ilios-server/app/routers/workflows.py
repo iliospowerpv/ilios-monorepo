@@ -8,7 +8,16 @@ re-confirm) are rendered as JSONResponse so the FE receives them unflattened.
 import logging
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    Form,
+    Query,
+    UploadFile,
+    status,
+)
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
@@ -25,6 +34,7 @@ from app.schema.workflow import (
     SequenceListResponse,
     StartRunRequest,
     WorkflowListResponse,
+    WorkflowMetricsResponse,
     WorkflowRunDetailResponse,
     WorkflowRunListResponse,
     WorkflowStepStateSchema,
@@ -151,13 +161,72 @@ async def execute_step(
     step_id: str,
     payload: ExecuteRequest,
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    background_tasks: BackgroundTasks,
     db_session: Session = Depends(get_session),
 ):
-    """Execute a confirmed write step via the EXISTING endpoint (idempotent, audited)."""
+    """Execute a confirmed write step via the EXISTING endpoint (idempotent, audited).
+
+    ``background_tasks`` is the real FastAPI instance so executors that schedule async
+    follow-ups (e.g. ChatBot sync after add_site) behave exactly as the manual UI does.
+    """
     try:
-        return await engine.execute_step(db_session, current_user, run_id, step_id, payload)
+        return await engine.execute_step(
+            db_session,
+            current_user,
+            run_id,
+            step_id,
+            payload,
+            background_tasks=background_tasks,
+        )
     except WorkflowEngineError as exc:
         return JSONResponse(status_code=exc.status_code, content=exc.payload)
+
+
+@workflows_router.post(
+    "/runs/{run_id}/steps/{step_id}/execute-file", response_model=ExecuteResponse
+)
+async def execute_file_step(
+    run_id: int,
+    step_id: str,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    background_tasks: BackgroundTasks,
+    confirm_token: Annotated[str, Form()],
+    file: Annotated[UploadFile, File()],
+    idempotency_key: Annotated[Optional[str], Form()] = None,
+    db_session: Session = Depends(get_session),
+):
+    """Execute a confirmed multipart (file-upload) write step via the EXISTING upload endpoint.
+
+    Mirrors ``execute_step`` but accepts the file part for steps declaring
+    ``multipart_file_field``. The confirm token + optional idempotency key arrive as form fields
+    (not JSON) since the body is multipart; the engine reconstructs an ``ExecuteRequest`` and runs
+    the identical perm/idempotency/reconfirm/audit pipeline before handing the file to the
+    existing upload service. Bytes are NEVER persisted in run state.
+    """
+    payload = ExecuteRequest(confirm_token=confirm_token, idempotency_key=idempotency_key)
+    try:
+        return await engine.execute_file_step(
+            db_session,
+            current_user,
+            run_id,
+            step_id,
+            payload,
+            file,
+            background_tasks=background_tasks,
+        )
+    except WorkflowEngineError as exc:
+        return JSONResponse(status_code=exc.status_code, content=exc.payload)
+
+
+@workflows_router.get("/metrics", response_model=WorkflowMetricsResponse)
+def get_metrics(
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+    scope: Annotated[str, Query()] = "me",
+):
+    """Read-only workflow completion metrics. ``scope=me`` (default) is owner-scoped; ``scope=all``
+    requires platform-bypass (else 403). Pure aggregation over ``workflow_runs`` — no mutation."""
+    return engine.compute_metrics(db_session, current_user, scope=scope)
 
 
 @workflows_router.post("/runs/{run_id}/abandon", response_model=AbandonResponse)
