@@ -87,7 +87,13 @@ import {
   ProjectLevelPage,
   createProjectLevelHandle
 } from './modules/portfolio-admin';
-import { AddCompanyWorkflowPage, AddSiteWorkflowPage } from './modules/workflows';
+import {
+  AddCompanyWorkflowPage,
+  AddSiteWorkflowPage,
+  WorkflowDashboardPage,
+  WorkflowRunPage,
+  OnboardingOrchestratorPage
+} from './modules/workflows';
 
 const ProjectLandingRedirect: React.FC = () => {
   const { projectId } = useParams();
@@ -148,7 +154,10 @@ const router = createBrowserRouter(
           <Route index handle={createOnboardingHandle()} element={<OnboardingPage />} />
         </Route>
 
-        {/* Native Workflow Engine — Add Company pilot */}
+        {/* Native Workflow Engine — dashboard, onboarding orchestrator, and single workflows */}
+        <Route path="/workflows" element={<WorkflowDashboardPage />} />
+        <Route path="/workflows/onboarding" element={<OnboardingOrchestratorPage />} />
+        <Route path="/workflows/run/:runId" element={<WorkflowRunPage />} />
         <Route path="/workflows/add-company" element={<AddCompanyWorkflowPage />} />
         <Route path="/workflows/add-site" element={<AddSiteWorkflowPage />} />
 

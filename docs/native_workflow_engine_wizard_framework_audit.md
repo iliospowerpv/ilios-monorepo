@@ -600,3 +600,174 @@ The FE compiles clean (`No issues found.`) and the `/workflows/add-site` route i
   block Next), then a **governed-surface** flow that builds a preview and routes to the existing
   manual confirmation UI — proving the engine **never auto-executes** a governed terminal (fact
   promotion, baseline activation, device mapping, weather declaration).
+
+## 16. Build log — Native Onboarding Experience, Phase 1 `[BUILT]`
+
+Pilots 1–2 proved the engine on **single** flows. Phase 1 of the Native Onboarding Experience
+adds a **discovery + orchestration** layer **on top of** the same engine without touching its
+write semantics: richer registry metadata, a **Workflow Dashboard**, and an **Onboarding
+Orchestrator** that chains Add Company → Add Project (= Site). The workflows stay **independent
+but chainable** — each still runs the unchanged preview → confirm → execute handshake, each is
+individually permission-gated, and the orchestrator itself **writes nothing** (it only starts
+runs and reads their results).
+
+### 16.1 Goal & what it proves
+
+1. **Registry as a catalog, not just a launcher:** definitions carry presentational discovery
+   metadata (`category`, `icon`, `suggested_next`, `landing_route_template`, `sequence_eligible`)
+   so a dashboard can group/route them without hard-coding workflow knowledge in the FE.
+2. **Owner-scoped run history:** a user can see their own in-progress and completed runs and
+   **resume** or **cancel** them — proving the engine's persisted run state is a first-class,
+   listable resource, not just a per-page ephemeral handle.
+3. **Declarative sequences:** a `SequenceDef` describes an ordered chain of existing workflows
+   with **no executor of its own**; chaining is expressed as additive, nullable **lineage** on
+   `workflow_runs` (`parent_run_id`, `sequence_id`, `sequence_step_index`) so the chain is
+   auditable while each step remains a standalone, independently-runnable workflow.
+
+### 16.2 Files changed
+
+**Backend** (`backend/ilios-server`):
+
+- `app/models/...workflow run model` — additive nullable lineage columns `parent_run_id`
+  (self-FK, `ON DELETE SET NULL`), `sequence_id` (VARCHAR), `sequence_step_index` (Integer);
+  indexes on `parent_run_id` and `(user_id, sequence_id, status)`.
+- `alembic` migration `ff40` — additive, nullable; verified `upgrade`+`downgrade` clean on the
+  dev DB (dev DB left at head).
+- `app/services/workflows/definitions.py` — extended `WorkflowDef` with the discovery metadata;
+  added `SequenceDef` + the `SEQUENCES` registry (`onboarding = (add_company, add_site)`),
+  validated at import (every referenced workflow id must exist; no sequence executor).
+- `app/services/workflows/engine.py` — `list_user_runs` (owner-scoped summaries),
+  `list_sequences` (per-step `can_start` resolved for the user), `start_run` now accepts +
+  **validates** lineage (rejects a `parent_run_id` the caller does not own) and persists it; and
+  orchestrator audit helpers emitting `workflow.sequence.{id}.started` / `.advanced` on start and
+  `.completed` / `.step_completed` on execute.
+- `app/schemas/...workflow schemas` — `WorkflowDefinitionSchema` gained the metadata fields;
+  added `WorkflowRunSummary` + `WorkflowRunListResponse`, `SequenceStep`/`SequenceSchema` +
+  `SequenceListResponse`; `StartRunRequest` gained optional `parent_run_id` / `sequence_id` /
+  `sequence_step_index`.
+- `app/crud/...workflow run CRUD` — `list_for_user(user_id, statuses?, workflow_id?,
+  sequence_id?, limit?)`.
+- `app/routers/...workflows router` — `GET /api/workflows/runs` (owner-scoped, capped pagination)
+  registered **before** `GET /api/workflows/runs/{run_id}`; `GET /api/workflows/sequences`;
+  `start_run` threads the new optional lineage fields.
+- `tests/test_workflow_engine.py` — +~21 tests (see §16.7).
+
+**Frontend** (`frontend/rea-investment-fe`):
+
+- `src/api/workflows.ts` + `src/api/index.ts` — new types (`WorkflowRunSummarySchema`,
+  `WorkflowRunListResponse`, `SequenceStepSchema`, `SequenceSchema`, `SequenceListResponse`,
+  `ListRunsParams`); `WorkflowDefinitionSchema`/`StartRunRequest` extended; `listRuns`
+  (repeated `?status=` via `URLSearchParams`) + `listSequences` methods.
+- `src/modules/workflows/WorkflowDashboardPage.tsx` (new) — the dashboard.
+- `src/modules/workflows/OnboardingOrchestratorPage.tsx` (new) — the orchestrator.
+- `src/modules/workflows/WorkflowRunPage.tsx` (new) — generic resume page (`/workflows/run/:runId`).
+- `src/modules/workflows/landing.ts` (new) — landing-route resolution + naive-UTC timestamp
+  formatting + the FE-owned start-route maps.
+- `src/modules/workflows/index.ts`, `src/App.tsx` — exports + routes `/workflows`,
+  `/workflows/onboarding`, `/workflows/run/:runId`.
+- `src/components/layout/NavMenu/NavMenu.tsx` — a permission-gated **Workflows** nav entry.
+
+No existing manual form, executor, or write path was modified.
+
+### 16.3 Routes
+
+| Method & path | Purpose | Added? |
+|---|---|---|
+| `GET /api/workflows/runs` | Owner-scoped run summaries (`?status=` repeatable, capped `limit`). | **new** |
+| `GET /api/workflows/sequences` | Declarative sequence catalog with per-step `can_start`. | **new** |
+| `POST /api/workflows/{workflow_id}/runs` | Start a run; now also accepts optional lineage. | extended |
+| `GET /api/workflows` · `GET /runs/{run_id}` · `PATCH …/steps/{id}` · `POST …/preview` · `…/execute` · `…/abandon` | Unchanged engine handshake. | — |
+
+FE routes: `/workflows` (dashboard), `/workflows/onboarding` (orchestrator),
+`/workflows/run/:runId` (generic resume), plus the existing `/workflows/add-company` and
+`/workflows/add-site`.
+
+### 16.4 Permission model
+
+- **No new permission tokens.** Discovery endpoints are owner-scoped; every *start* still
+  resolves the underlying workflow's existing entry permission (`add_company` → `platform_admin`;
+  `add_site` → `assets_management:create_site`), and every *execute* is still authorized by the
+  underlying domain endpoint. The dashboard/orchestrator add **zero** authority.
+- `GET /runs` returns **only the caller's** runs; `start_run` **rejects a `parent_run_id` the
+  caller does not own** (fail-closed) so lineage can never be forged to read or chain another
+  user's run.
+- `list_sequences` reports per-step `can_start` for the user but never bypasses the start gate;
+  the FE merely disables Start when `can_start` is false (server stays authoritative).
+- **Nav gating is convenience only:** the Workflows entry shows for platform-bypass **or**
+  any-company `Asset Management:edit`; the server gates each action regardless.
+
+### 16.5 Dashboard UX
+
+`/workflows` reads three sources (`list`, `listRuns`, `listSequences`) and groups them:
+
+- **Suggested** — declarative sequences (Onboarding) as cards with per-step chips; Start is
+  disabled when the first step is not startable.
+- **In Progress** — `active`/`paused` owner runs with **Resume** (→ `/workflows/run/:runId`,
+  which loads the run and resumes the shared `Wizard` from its saved `current_step` + inputs) and
+  **Cancel** (the existing `abandon` call — the *only* mutation the dashboard performs).
+- **Available** — startable single definitions routed via an FE-owned id→route map.
+- **Completed** — finished runs with a **View result** deep link built from
+  `landing_route_template` + `result_entity_id` (hidden when either is absent — no dead links).
+
+Honest empty/loading/error states throughout; timestamps are parsed naive-UTC (append `Z`).
+
+### 16.6 Orchestrator behavior
+
+`/workflows/onboarding` hosts a 2-step progress (`Add Company` → `Add Project`) over the shared
+`Wizard`:
+
+1. Starts an `add_company` run tagged `sequence_id=onboarding, sequence_step_index=0`.
+2. On the company execute response it captures `entity_id` (the new company id) and the
+   company run id, then starts an `add_site` run tagged `…step_index=1, parent_run_id=<company
+   run>` and **prefills** the company picker by seeding the collect step's inputs **client-side**
+   — **no orchestrator server write**.
+3. On the project execute it navigates to the project landing route.
+
+The orchestrator never mutates operational truth; both writes happen inside the two underlying
+workflows' own execute calls. Exiting abandons the active underlying run (best-effort).
+
+### 16.7 Audit events
+
+On top of each step's existing `workflow.<id>.execute` audit row, `start_run` and `execute_step`
+emit additive **orchestrator** audit events when a run carries sequence lineage:
+`workflow.sequence.{sequence_id}.started` and `.advanced` at start, and `.completed` /
+`.step_completed` at execute. Both success and failure of the underlying executes remain audited
+by the unchanged per-workflow audit path; the sequence events are purely additive provenance for
+the chain and never gate or replace the per-step audit.
+
+### 16.8 Tests
+
+`tests/test_workflow_engine.py` gained `TestSequenceDefinitions`,
+`TestRegistryDiscoveryMetadata`, `TestListUserRuns`, `TestListSequences`,
+`TestStartRunLineage`, and `TestExecuteStepSequenceAudit` (~21 cases): sequence registry
+validates + serializes with per-step status; definitions expose the new metadata; `list_user_runs`
+is owner-scoped and filterable by status; `start_run` persists lineage and **rejects an
+unowned `parent_run_id`**; and the orchestrator audit events fire on start/advance/execute.
+Full file: **64 passed** via
+`test_db_name=test_heliumdb python -m pytest tests/test_workflow_engine.py -o addopts="" -p no:cacheprovider -q`.
+
+### 16.9 Validation
+
+- **FE compiles clean:** webpack `No issues found.` (fork-ts-checker — the TS-clean signal).
+- **Routes registered + auth-gated:** hitting the backend directly (`:8000`) returns the
+  structured `{"message":"Unauthorized","code":401}` for `GET /runs`, `GET /sequences`, and
+  `GET /runs/{id}`, confirming registration and that `GET /runs` resolves to the list route
+  (not shadowed by `/runs/{run_id}`).
+- **Engine logic:** the 64 unit tests cover the new discovery/lineage/audit surface.
+
+### 16.10 Remaining gaps & next
+
+- **Authenticated live E2E + browser render not captured here:** the screenshot tool's browser
+  context is unauthenticated (shows Sign In) and a curl chain would create real Company + Site
+  rows in the dev DB without a clean teardown path in this session. The dashboard/orchestrator
+  reuse the already-live-proven engine (§15.8) and are covered by unit tests + the route/auth
+  probe above; the user's own authenticated session can verify the UI visually.
+- **Sequence catalog is single-entry:** only `onboarding` exists; both the FE start-route maps
+  (`WORKFLOW_START_ROUTES` / `SEQUENCE_START_ROUTES`) and the registry are additive and ready for
+  more.
+- **Resume is engine-state-driven:** the generic run page trusts the persisted `current_step` +
+  step inputs; it does not re-validate completed steps client-side (the server re-validates on
+  save/execute regardless).
+- **Next:** richer suggested-next surfacing (driven by `suggested_next`) and the deferred
+  governed-surface pilot (preview → existing manual confirmation UI; engine never auto-executes a
+  governed terminal).
