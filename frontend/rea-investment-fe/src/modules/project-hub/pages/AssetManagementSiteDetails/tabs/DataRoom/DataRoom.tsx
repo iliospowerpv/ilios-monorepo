@@ -27,6 +27,7 @@ import { useNotify } from '../../../../../../contexts/notifications/notification
 import RecursiveAccordion from '../../../../../../modules/due-diligence/pages/Site/tabs/Diligence/components/RecursiveAccordion/RecursiveAccordion';
 import DocumentList from '../../../../../../modules/due-diligence/pages/DueDiligenceDocument/components/DocumentList';
 import ProjectSummaryPanel from './components/ProjectSummaryPanel';
+import ExpectedDocumentsPanel from './components/ExpectedDocumentsPanel';
 
 const siteDiligenceQuery = (siteId: number, enabled = true) => ({
   queryKey: ['site', 'diligence', { siteId }],
@@ -203,8 +204,15 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
             <DescriptionIcon color="primary" fontSize="large" />
             <Box>
               <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                {selectedDocument.display_name || selectedDocument.name}
+                {selectedDocument.identity?.canonical_name ||
+                  selectedDocument.display_name ||
+                  selectedDocument.name}
               </Typography>
+              {selectedDocument.identity?.aliases && selectedDocument.identity.aliases.length > 0 && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+                  Also known as: {selectedDocument.identity.aliases.join(', ')}
+                </Typography>
+              )}
               {selectedDocument.ai_supported && (
                 <Typography
                   variant="caption"
@@ -265,6 +273,8 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
       )}
 
       <ProjectSummaryPanel siteId={numericSiteId} onViewDocumentDetails={handleViewDocumentDetails} />
+
+      <ExpectedDocumentsPanel siteId={numericSiteId} />
 
       <Box display="flex" alignItems="center" gap={1} mb={3}>
         <FolderOpenIcon color="primary" />

@@ -3,7 +3,12 @@ from collections import defaultdict
 
 from app.helpers.configs.ai_parsing_helper import AIParsingHandler
 from app.helpers.roles_documents_mapping.base import RoleBasedDocumentConfig
-from app.schema.documents import DocumentSectionSchema, SiteDocumentDetailsSchema, SiteDocumentsSchema
+from app.schema.documents import (
+    DocumentIdentitySchema,
+    DocumentSectionSchema,
+    SiteDocumentDetailsSchema,
+    SiteDocumentsSchema,
+)
 from app.static import DocumentBoardDefaultStatuses
 
 logger = logging.getLogger(__name__)
@@ -60,7 +65,13 @@ class DocumentSectionsHandler:
                 status=document.status,
                 ai_supported=document.name.value in self.parsable_documents,
                 custom_name=document.custom_name,
-                display_name=document.custom_name if document.custom_name else document.name.value,
+                display_name=document.identity_name,
+                identity=DocumentIdentitySchema(
+                    document_id=document.id,
+                    kind=document.identity_kind,
+                    canonical_name=document.identity_name,
+                    aliases=document.identity_aliases,
+                ),
             )
             for document in documents
         ]

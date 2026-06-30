@@ -17,6 +17,19 @@ class BaseDocumentSchema(BaseModel):
     name: SiteDocumentsEnum = Field(examples=["O&M Agreement"])
 
 
+class DocumentIdentitySchema(BaseModel):
+    """Formalized logical Document Identity (Task #90).
+
+    The existing ``Document`` row is the canonical identity; this is the additive,
+    resolved view of its identity metadata used for display and later matching.
+    """
+
+    document_id: int = Field(examples=[1])
+    kind: Optional[str] = Field(default=None, examples=["site_lease"], description="Stable document-type enum key")
+    canonical_name: Optional[str] = Field(default=None, examples=["Site Lease"])
+    aliases: list[str] = Field(default_factory=list, examples=[["Ground Lease", "Lease Agreement"]])
+
+
 class DocumentSection(BaseModel):
     id: int = Field(examples=[1])
     name: str = Field(examples=["O&M Agreement"])
@@ -52,6 +65,7 @@ class DocumentDetailsSchema(BaseDocumentSchema):
     approver: Optional[DocumentUserSchema]
     task: DocumentTaskSchema
     display_working_zone: bool = Field(examples=[False])
+    identity: Optional[DocumentIdentitySchema] = Field(default=None)
 
 
 class SiteDocumentDetailsSchema(BaseDocumentSchema):
@@ -61,6 +75,7 @@ class SiteDocumentDetailsSchema(BaseDocumentSchema):
     ai_supported: bool = Field(examples=[False])
     custom_name: Optional[str] = Field(default=None, examples=["Custom Document Name"])
     display_name: Optional[str] = Field(default=None, examples=["Custom Document Name"])
+    identity: Optional[DocumentIdentitySchema] = Field(default=None)
 
 
 class SiteDocumentsSchema(BaseModel):
@@ -161,3 +176,29 @@ class CustomDocumentCreationSchema(BaseModel):
     section_id: int = Field(examples=[1])
     custom_name: str = Field(min_length=1, max_length=200, examples=["Custom Document Name"])
     description: Union[str, None] = Field(examples=["This is a custom document description"], default=None)
+
+
+class ExpectedDocumentSchema(BaseModel):
+    """A single expected document definition for a stage/section (Task #90).
+
+    Declarative only — never materializes a Document/File row.
+    """
+
+    kind: str = Field(examples=["site_lease"], description="Stable document-type enum key")
+    name: str = Field(examples=["Site Lease"], description="Human-readable document name")
+    description: Optional[str] = Field(default=None, examples=["Executed lease for the project site land."])
+    required: bool = Field(examples=[True])
+    position: int = Field(examples=[1], description="1-indexed ordering within the section")
+
+
+class ExpectedDocumentsSectionSchema(BaseModel):
+    """Expected documents grouped under one section of a site's Data Room."""
+
+    section_id: Optional[int] = Field(default=None, examples=[1], description="Site section row id when present")
+    section_key: str = Field(examples=["site_stage1"], description="Stable section enum key")
+    section_name: str = Field(examples=["Site Stage-1"])
+    expected_documents: list[ExpectedDocumentSchema]
+
+
+class SiteExpectedDocumentsSchema(BaseModel):
+    items: list[ExpectedDocumentsSectionSchema]

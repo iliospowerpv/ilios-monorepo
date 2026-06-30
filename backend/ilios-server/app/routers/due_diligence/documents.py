@@ -18,6 +18,7 @@ from app.helpers.configs.ai_parsing_helper import AIParsingHandler
 from app.helpers.configs.co_terminus_helper import CoTerminusHandler
 from app.helpers.due_diligence.document_sections_handler import DocumentSectionsHandler
 from app.helpers.due_diligence.due_diligence_helper import validate_document_section
+from app.helpers.due_diligence.expected_documents import get_expected_documents_for_section
 from app.helpers.due_diligence.override_guardrail import evaluate_baseline_override
 from app.helpers.roles_documents_mapping.handlers_factory import RoleDocumentsHandlerFactory
 from app.helpers.task_tracker import TaskTrackerHandlerFactory
@@ -37,16 +38,62 @@ from app.schema.documents import (
     DocumentRemovalSuccess,
     DocumentReorderSchema,
     DocumentUpdateSuccess,
+    ExpectedDocumentsSectionSchema,
+    SiteExpectedDocumentsSchema,
     UpdateDocumentDescriptionSchema,
     UpdateDocumentDetailsSchema,
 )
 from app.schema.user import CurrentUserSchema
 from app.static import HTTP_403_RESPONSE, HTTP_404_RESPONSE, DocumentMessages
 from app.static.baseline_driving_fields import is_baseline_driving_field
-from app.static.default_site_documents_enum import SiteDocumentsEnum
+from app.static.default_site_documents_enum import DocumentSections, SiteDocumentsEnum
 
 logger = logging.getLogger(__name__)
 documents_router = APIRouter()
+
+
+@documents_router.get(
+    "/expected-documents",
+    response_model=SiteExpectedDocumentsSchema,
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
+    description=(
+        "Read-only, per-stage Expected Documents definition for the site's Data Room (Task #90). "
+        "Declarative only — it never creates placeholder documents or files."
+    ),
+)
+async def get_expected_documents(
+    *,
+    site: Site = Depends(get_authorized_site),
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=site.company_id,
+        project_id=site.id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="view",
+    )
+    # Map each site section enum -> its row id so the FE can correlate expectations
+    # with the existing section tree. Expectations are static; section ids are per-site.
+    site_sections = DocumentSectionCRUD(db_session).get_site_sections(site.id)
+    section_id_by_key = {section.name.name: section.id for section in site_sections}
+
+    items = []
+    for section in DocumentSections:
+        expected = get_expected_documents_for_section(section)
+        if not expected:
+            continue
+        items.append(
+            ExpectedDocumentsSectionSchema(
+                section_id=section_id_by_key.get(section.name),
+                section_key=section.name,
+                section_name=section.value,
+                expected_documents=expected,
+            )
+        )
+    return {"items": items}
 
 
 @documents_router.get(
@@ -68,6 +115,13 @@ async def get_by_id(
         action="view",
     )
     document.display_working_zone = document.name.value in AIParsingHandler(db_session).get_parsable_documents_list()
+    # Surface the formalized Document Identity (Task #90) additively.
+    document.identity = {
+        "document_id": document.id,
+        "kind": document.identity_kind,
+        "canonical_name": document.identity_name,
+        "aliases": document.identity_aliases,
+    }
     return document
 
 

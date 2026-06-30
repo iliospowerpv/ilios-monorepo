@@ -23,6 +23,13 @@ interface DocumentTask {
   site_visit_added: boolean;
 }
 
+interface DocumentIdentity {
+  document_id: number;
+  kind: string | null;
+  canonical_name: string | null;
+  aliases: string[];
+}
+
 interface DocumentDetails {
   id: number;
   name: string;
@@ -41,6 +48,7 @@ interface DocumentDetails {
   approver: DocumentUser | null;
   task: DocumentTask;
   display_working_zone: boolean;
+  identity?: DocumentIdentity | null;
 }
 
 interface UpdateDocDescriptionResponse {
@@ -89,6 +97,7 @@ interface DiligenceDocument {
   ai_supported: boolean;
   custom_name?: string | null;
   display_name?: string | null;
+  identity?: DocumentIdentity | null;
 }
 interface DiligenceItem {
   name: string;
@@ -99,6 +108,23 @@ interface DiligenceItem {
 }
 interface DiligenceDetailsList {
   items: DiligenceItem[];
+}
+
+interface ExpectedDocument {
+  kind: string;
+  name: string;
+  description: string | null;
+  required: boolean;
+  position: number;
+}
+interface ExpectedDocumentsSection {
+  section_id: number | null;
+  section_key: string;
+  section_name: string;
+  expected_documents: ExpectedDocument[];
+}
+interface SiteExpectedDocuments {
+  items: ExpectedDocumentsSection[];
 }
 
 interface FileDataResponse {
@@ -550,6 +576,13 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     return response.data;
   };
 
+  const getExpectedDocuments = async (siteId: number): Promise<SiteExpectedDocuments> => {
+    const response = await httpClient.get<SiteExpectedDocuments>(
+      `/api/due-diligence/${siteId}/documents/expected-documents`
+    );
+    return response.data;
+  };
+
   const getFiles = async (siteId: number, documentId: number): Promise<FileList> => {
     const response = await httpClient.get<FileList>(`/api/due-diligence/${siteId}/documents/${documentId}/files/`);
     return response.data;
@@ -889,6 +922,7 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     postDocumentComment,
     documentComments,
     getDocuments,
+    getExpectedDocuments,
     getFiles,
     deleteFile,
     downloadFile,
@@ -938,6 +972,10 @@ export type {
   DiligenceDetailsList,
   DiligenceItem,
   DiligenceDocument,
+  DocumentIdentity,
+  ExpectedDocument,
+  ExpectedDocumentsSection,
+  SiteExpectedDocuments,
   ParseStateSummary,
   ParseState,
   ParseNextAction,

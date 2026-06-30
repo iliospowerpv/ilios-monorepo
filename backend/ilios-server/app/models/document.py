@@ -1,6 +1,7 @@
 import logging
 
 from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Identity, Index, Integer, String, UniqueConstraint, asc, cast
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import DefaultClause
 from sqlalchemy.sql import expression
@@ -29,6 +30,15 @@ class Document(HasComments, Base):
     position = Column(Integer, nullable=False, default=1, server_default=DefaultClause("1"))
     is_archived = Column(Boolean, nullable=False, default=False, server_default=expression.false())
 
+    # Document Identity (Task #90). Additive metadata that formalizes the existing
+    # Document slot as the single logical identity for a business document. These
+    # columns support later matching (templates, guided upload, AI awareness) and
+    # never change the version / promotion / archive / move-stage lifecycle.
+    # canonical_name overrides the resolved display name when set; aliases is an
+    # optional list of alternate names a document may be known by.
+    canonical_name = Column(String, nullable=True)
+    aliases = Column(JSONB, nullable=True)
+
     site = relationship("Site", back_populates="documents", foreign_keys=[site_id])
     files = relationship("File", back_populates="document", lazy="joined")
     keys = relationship("DocumentKey", back_populates="document")
@@ -55,6 +65,30 @@ class Document(HasComments, Base):
     @property
     def company_id(self):
         return self.site.company_id if self.site else None
+
+    @property
+    def identity_name(self):
+        """Resolved canonical/display name for this logical Document Identity.
+
+        Precedence: explicit canonical_name -> user custom_name -> enum value.
+        This is the single, formalized name a business document is known by and
+        does not alter any lifecycle behaviour.
+        """
+        if self.canonical_name:
+            return self.canonical_name
+        if self.custom_name:
+            return self.custom_name
+        return self.name.value if self.name else None
+
+    @property
+    def identity_aliases(self):
+        """Optional list of alternate names for matching. Empty when unset."""
+        return list(self.aliases) if self.aliases else []
+
+    @property
+    def identity_kind(self):
+        """Stable enum key (e.g. 'site_lease') for the document type, or None."""
+        return self.name.name if self.name else None
 
 
 class DocumentSection(Base):
