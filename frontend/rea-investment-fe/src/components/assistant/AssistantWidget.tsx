@@ -49,6 +49,7 @@ const CONVERSATIONS_KEY = ['assistant', 'conversations'];
 const HISTORY_LIMIT = 20;
 // Per-user localStorage key prefix for the one-time first-run coachmark (suffixed with the user id).
 const FIRST_RUN_KEY_PREFIX = 'ilios.assistant.firstRunSeen.';
+const PROACTIVE_HINT_KEY_PREFIX = 'ilios.assistant.proactiveHintDismissed.';
 
 type PanelView = 'chat' | 'history';
 
@@ -203,17 +204,37 @@ export const AssistantWidget: React.FC = () => {
 
   // Proactive per-step workflow nudge: shown ONLY while inside a guided run, once per run+step, and
   // dismissible. Like first-run it NEVER auto-opens — the assistant stays read-only / propose-only.
+  // Dismissal is persisted per-user in localStorage (keyed by user id + run + step) so a step the
+  // user dismissed stays dismissed across reloads and new sessions, mirroring the first-run pattern.
   const stepKey = companion?.runId != null ? `${companion.runId}:${companion.stepId ?? ''}` : null;
-  const [dismissedSteps, setDismissedSteps] = React.useState<Set<string>>(() => new Set());
-  const dismissProactiveStep = React.useCallback(() => {
-    if (stepKey) {
-      setDismissedSteps(prev => new Set(prev).add(stepKey));
+  const proactiveKey = userId != null && stepKey != null ? `${PROACTIVE_HINT_KEY_PREFIX}${userId}:${stepKey}` : null;
+  // Default to "dismissed" until the effect reads storage, so the hint never flashes before we know
+  // whether the user already dismissed this run+step.
+  const [proactiveDismissed, setProactiveDismissed] = React.useState(true);
+  React.useEffect(() => {
+    if (!proactiveKey) {
+      setProactiveDismissed(true);
+      return;
     }
-  }, [stepKey]);
+    try {
+      setProactiveDismissed(localStorage.getItem(proactiveKey) === '1');
+    } catch {
+      setProactiveDismissed(true);
+    }
+  }, [proactiveKey]);
+  const dismissProactiveStep = React.useCallback(() => {
+    setProactiveDismissed(true);
+    if (proactiveKey) {
+      try {
+        localStorage.setItem(proactiveKey, '1');
+      } catch {
+        // Best-effort: a storage failure just means the hint may appear again later.
+      }
+    }
+  }, [proactiveKey]);
 
   const showFirstRun = assistantAvailable && !open && userId != null && !firstRunSeen;
-  const showProactiveHint =
-    assistantAvailable && !open && !showFirstRun && stepKey != null && !dismissedSteps.has(stepKey);
+  const showProactiveHint = assistantAvailable && !open && !showFirstRun && stepKey != null && !proactiveDismissed;
 
   // Emit the "shown" impression once per surface, guarded by refs so toggling the drawer open/closed
   // does not re-count an impression for the same first-run / step.

@@ -124,9 +124,10 @@ exactly.
 - **Never auto-open.** Both callouts only *invite*; opening the drawer always requires a user click.
 - **One drawer, one path.** Every entry point routes through the shared `requestOpen`, which the
   single mounted widget consumes to open the existing drawer — no second instance, no second loop.
-- **Per-user / per-step idempotence.** First-run is keyed by user id in `localStorage`; the proactive
-  nudge is keyed by `runId:stepId` and is dismissible. Impression events fire once per surface
-  (ref-guarded) so toggling the drawer does not re-count.
+- **Per-user / per-step idempotence (persisted).** First-run is keyed by user id in `localStorage`;
+  the proactive nudge's **dismissal is persisted per user** in `localStorage` (keyed by user id +
+  `runId:stepId`), so a dismissed step stays dismissed across reloads and new sessions. Impression
+  events fire once per surface (ref-guarded) so toggling the drawer does not re-count.
 - **Fails silently.** `trackEvents` is fire-and-forget and swallows errors; a `localStorage` failure
   degrades to "may show again", never a crash.
 - **Inert availability.** Entries read `available` from the shared context and never render a
@@ -149,7 +150,6 @@ exactly.
   The mockup-sandbox preview server was not stood up for these components because they are deeply
   coupled to app contexts (auth, launcher, router, theme); validation relies on the unit tests, the
   typecheck, and the lint/compile checks. A logged-in manual pass is the way to eyeball them in situ.
-- **First-run is per-browser.** The "seen" flag lives in `localStorage`, so a new device/browser will
-  show the coachmark again. This is intentional (no server write for a cosmetic hint).
-- **Proactive nudge dismissal is per-session.** The dismissed-steps set is in-memory; a full reload
-  inside the same step can show the nudge again. Acceptable for a non-intrusive hint.
+- **Persistence is per-browser.** Both the first-run "seen" flag and the proactive-hint "dismissed"
+  flags live in `localStorage` (keyed by user id), so a brand-new device/browser will show them again.
+  This is intentional — no server write for cosmetic, non-intrusive hints.
