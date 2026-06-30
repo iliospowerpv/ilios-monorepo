@@ -47,7 +47,7 @@ import {
   CompanyTask as OMCompanyTask,
   ModuleContainer as OMModuleContainer
 } from './modules/operations-and-maintenance';
-import { SettingsPage, HealthChecksPage } from './modules/settings';
+import { SettingsPage } from './modules/settings';
 import {
   DueDiligencePage as DPDiligencePage,
   SitesPage as DPSitesPage,
@@ -109,28 +109,16 @@ const CompanyRedirect: React.FC = () => {
 
 const queryClient = new QueryClient();
 
-const AdminType = {
-  system: 'is_system_user',
-  full: 'company_admin_full',
-  view: 'company_view'
-};
-
 type ProtectedRouteProps = {
   element: React.ReactElement;
-  permission: string[];
 };
 
-const ProtectedSettingsRoute = ({ element, permission }: ProtectedRouteProps) => {
+// System Settings is superuser-only (platform bypass): is_system_user || is_global_admin.
+const ProtectedSettingsRoute = ({ element }: ProtectedRouteProps) => {
   const { isAuthenticated, user } = useAuth();
 
-  if (isAuthenticated) {
-    const isSystem = permission.some(perm => perm === 'is_system_user');
-    const isCompanyAdmin = permission.some(perm => perm === 'company_admin_full');
-    if (isSystem && user?.is_system_user) {
-      return element;
-    } else if (isCompanyAdmin && user?.role?.permissions?.['Settings Page']?.view) {
-      return element;
-    }
+  if (isAuthenticated && (user?.is_system_user || user?.is_global_admin)) {
+    return element;
   }
 
   return <Navigate to="/" replace />;
@@ -672,37 +660,28 @@ const router = createBrowserRouter(
         <Route path="/settings">
           <Route
             index
-            element={
-              <ProtectedSettingsRoute
-                element={<SettingsPage.Component tabId="audit-logs" />}
-                permission={[AdminType.system]}
-              />
-            }
+            element={<ProtectedSettingsRoute element={<SettingsPage.Component tabId="audit-logs" />} />}
             handle={SettingsPage.createHandle()}
           />
           <Route
             path="audit-logs"
-            element={
-              <ProtectedSettingsRoute
-                element={<SettingsPage.Component tabId="audit-logs" />}
-                permission={[AdminType.system]}
-              />
-            }
+            element={<ProtectedSettingsRoute element={<SettingsPage.Component tabId="audit-logs" />} />}
             handle={SettingsPage.createHandle()}
           />
           <Route
             path="health-checks"
-            element={<ProtectedSettingsRoute element={<HealthChecksPage />} permission={[AdminType.system]} />}
+            element={<ProtectedSettingsRoute element={<SettingsPage.Component tabId="health-checks" />} />}
+            handle={SettingsPage.createHandle()}
           />
           <Route path="access-health" element={<Navigate to="/settings/health-checks" replace />} />
           <Route
+            path="architecture"
+            element={<ProtectedSettingsRoute element={<SettingsPage.Component tabId="architecture" />} />}
+            handle={SettingsPage.createHandle()}
+          />
+          <Route
             path="assistant-usage"
-            element={
-              <ProtectedSettingsRoute
-                element={<SettingsPage.Component tabId="assistant-usage" />}
-                permission={[AdminType.system]}
-              />
-            }
+            element={<ProtectedSettingsRoute element={<SettingsPage.Component tabId="assistant-usage" />} />}
             handle={SettingsPage.createHandle()}
           />
         </Route>

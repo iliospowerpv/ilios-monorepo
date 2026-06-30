@@ -1,5 +1,5 @@
 ---
-name: Document Identity & Expected Documents (Task #90)
+name: Document Identity & Expected Documents
 description: Foundation that formalizes the Document row as logical identity and adds a static per-stage Expected Documents catalog.
 ---
 

@@ -65,9 +65,12 @@ from .routers import (
     tasks_router,
     workspace_router,
     access_health_router,
+    architecture_router,
+    audit_logs_router,
     auth_security_events_router,
     global_admin_router,
     role_profiles_router,
+    service_health_router,
     extraction_registry_router,
     reconciliation_router,
     summary_stats_router,
@@ -500,6 +503,16 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
         auth_security_events_router,
         prefix="/api/admin/auth-security-events",
         tags=["Admin - Auth Security"],
+    )
+    # System Settings APIs (superuser-only: audit trail read, third-party service
+    # status dashboard, architecture/database reference). All gated by
+    # get_current_admin_user; never return secret values.
+    app.include_router(audit_logs_router, prefix="/api/settings/audit-logs", tags=["Settings - Audit Logs"])
+    app.include_router(
+        service_health_router, prefix="/api/settings/service-health", tags=["Settings - Service Health"]
+    )
+    app.include_router(
+        architecture_router, prefix="/api/settings/architecture", tags=["Settings - Architecture"]
     )
     # Debug APIs (admin-only)
     app.include_router(debug_router, prefix="/api")

@@ -7,7 +7,7 @@ import Tab from '@mui/material/Tab';
 import { useQueryClient } from '@tanstack/react-query';
 import AuditLogs from './tabs/AuditLogs/AuditLogs';
 import HealthChecksPage from '../HealthChecks/HealthChecksPage';
-import ExtractionRegistry from './tabs/ExtractionRegistry';
+import ArchitecturePage from '../Architecture/ArchitecturePage';
 import { AssistantUsagePanel } from '../../../../components/assistant/admin/AssistantUsagePanel';
 import { ApiClient } from '../../../../api';
 import { auditLogQueryKeys, AUDIT_LOG_DEFAULT_PAGE_SIZE } from '../../../../api/audit-log';
@@ -21,7 +21,7 @@ interface TabInfo {
 }
 
 interface SettingsProps {
-  tabId?: 'health-checks' | 'audit-logs' | 'extraction-registry' | 'assistant-usage';
+  tabId?: 'health-checks' | 'audit-logs' | 'architecture' | 'assistant-usage';
 }
 
 const tabData: TabInfo[] = [
@@ -34,11 +34,11 @@ const tabData: TabInfo[] = [
   },
   { id: 'audit-logs', link: '/settings/audit-logs', label: 'Audit Logs', disabled: false, content: <AuditLogs /> },
   {
-    id: 'extraction-registry',
-    link: '/settings/extraction-registry',
-    label: 'Extraction Registry',
+    id: 'architecture',
+    link: '/settings/architecture',
+    label: 'Architecture',
     disabled: false,
-    content: <ExtractionRegistry />
+    content: <ArchitecturePage />
   },
   {
     id: 'assistant-usage',

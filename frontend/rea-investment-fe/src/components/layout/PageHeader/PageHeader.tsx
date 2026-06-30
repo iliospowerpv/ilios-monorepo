@@ -72,7 +72,8 @@ export const PageHeader: React.FC = () => {
     }
   };
 
-  const isDisabled = !user?.is_system_user && !user?.role?.permissions?.['Settings Page']?.view;
+  // System Settings is superuser-only. Non-superusers see no gear at all.
+  const isSuperuser = Boolean(user?.is_system_user || user?.is_global_admin);
 
   return (
     <Header position="fixed" sidebarOpen={sidebarOpen}>
@@ -99,15 +100,15 @@ export const PageHeader: React.FC = () => {
                 {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
               </IconButton>
             </Tooltip>
-            <Link to="/settings">
-              <Tooltip title={isDisabled ? "You don't have permission to view this page." : ''}>
-                <span>
-                  <IconButton disabled={isDisabled} sx={{ mr: t => t.spacing(2), color: 'text.secondary' }}>
+            {isSuperuser && (
+              <Link to="/settings">
+                <Tooltip title="System Settings">
+                  <IconButton sx={{ mr: t => t.spacing(2), color: 'text.secondary' }}>
                     <SettingsIcon />
                   </IconButton>
-                </span>
-              </Tooltip>
-            </Link>
+                </Tooltip>
+              </Link>
+            )}
             <IconButton sx={{ mr: t => t.spacing(2), color: 'text.secondary' }}>
               <Badge color="primary">
                 <NotificationsIcon />

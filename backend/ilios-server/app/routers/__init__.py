@@ -53,6 +53,11 @@ from .admin import (
     extraction_registry_router,
     global_admin_router,
 )
+from .settings import (
+    architecture_router,
+    audit_logs_router,
+    service_health_router,
+)
 from .role_profiles import role_profiles_router
 from .contacts import contacts_router
 from .entities import router as entities_router

@@ -28,6 +28,7 @@ import { buildAssumptionsApi } from './assumptions';
 import { buildWeatherApi } from './weather';
 import { buildWorkflowsApi } from './workflows';
 import { buildAssistantApi } from './assistant';
+import { buildSystemSettingsApi } from './system-settings';
 
 export const ApiClient = Object.freeze({
   _tokenManager: tokenManager,
@@ -60,7 +61,8 @@ export const ApiClient = Object.freeze({
   assumptions: buildAssumptionsApi(httpClient),
   weather: buildWeatherApi(httpClient),
   workflows: buildWorkflowsApi(httpClient),
-  assistant: buildAssistantApi(httpClient)
+  assistant: buildAssistantApi(httpClient),
+  systemSettings: buildSystemSettingsApi(httpClient)
 });
 
 export type {
@@ -323,3 +325,14 @@ export type {
   AssistantConfigResponse,
   AssistantApi
 } from './assistant';
+
+export type {
+  ServiceStatus,
+  ServiceHealthResponse,
+  ColumnInfo,
+  TableInfo,
+  DatabaseStructureResponse,
+  DocSummary,
+  DocListResponse,
+  DocContentResponse
+} from './system-settings';
