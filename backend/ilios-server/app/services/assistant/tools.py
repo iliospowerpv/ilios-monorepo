@@ -26,9 +26,14 @@ from typing import Any, Callable
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.crud.data_room_template import DataRoomTemplateCRUD
+from app.crud.document import DocumentCRUD
+from app.crud.document_section import DocumentSectionCRUD
+from app.helpers.due_diligence.expected_documents import get_expected_documents_for_section
 from app.services.assistant import guardrails
 from app.services.assistant.action_cards import build_action_card
 from app.services.assistant.faq import search_faq
+from app.services.due_diligence.data_room_guidance_service import DataRoomGuidanceService
 from app.services.due_diligence.reconciliation_service import build_site_reconciliation
 from app.services.project_facts_service import ProjectFactsService
 from app.services.telemetry.device_eligibility_diagnostics_service import (
@@ -55,6 +60,7 @@ from app.services.workflows.onboarding_progress_service import build_onboarding_
 from app.services.workflows.orchestration_context_service import build_orchestration_context
 from app.services.workflows.readiness_summary_service import build_readiness_summary
 from app.services.workflows.recommendations_service import build_recommendations
+from app.static.default_site_documents_enum import DocumentSections
 
 logger = logging.getLogger(__name__)
 
@@ -137,6 +143,23 @@ def _window_disclosure(start: datetime, end: datetime, bucket: str, days: int) -
         "start": start.isoformat(),
         "end": end.isoformat(),
     }
+
+
+def _latest_document_version(document) -> int:
+    """Highest non-deleted file version_number for a Document (0 when none). Pure read."""
+    versions = [f.version_number or 0 for f in document.files if not f.deleted]
+    return max(versions) if versions else 0
+
+
+def _count_template_structure(structure: dict) -> tuple[int, int]:
+    """Count (sections, documents) in a Data Room template structure snapshot. Pure read."""
+    sections = structure.get("sections", []) if isinstance(structure, dict) else []
+    document_count = 0
+    for section in sections:
+        document_count += len(section.get("documents", []) or [])
+        for sub in section.get("subsections", []) or []:
+            document_count += len(sub.get("documents", []) or [])
+    return len(sections), document_count
 
 
 # --- Handlers (db_session, current_user, args) -> JSON-serializable dict ----------------------
@@ -309,6 +332,129 @@ def _t_get_site_device_eligibility(db: Session, user, args: dict) -> dict:
     return compute_site_eligibility_diagnostics(db, site=site).model_dump(mode="json")
 
 
+# --- Phase 2: Data Room awareness tools (Task #93) -------------------------------------------
+#
+# These wrap the Task #90–92 read services so the assistant can EXPLAIN a project's Data Room —
+# expected vs missing documents, per-stage completeness, document identity & existing versions, and
+# the reusable structure templates available for the company. Each is strictly read-only and, like
+# the diligence reconciliation tool above, mirrors the router guard (site visibility + Diligence
+# view) BEFORE touching the wrapped service. They never upload, promote, archive, delete, or move
+# anything — at most the assistant proposes an inert ``open`` deep-link into the Data Room view.
+
+
+def _t_get_site_data_room_guidance(db: Session, user, args: dict) -> dict:
+    """Wrap ``DataRoomGuidanceService.build_guidance`` — per-stage Data Room completeness.
+
+    Returns, for each stage that defines expectations: expected/present/missing counts, the list of
+    missing documents, needs-update / optional / archived counts, total version count, and the
+    stage's promotion rollup. This grounds 'what's still missing?', 'why is this stage incomplete?',
+    and 'what belongs in [stage]?'. Requires Diligence view (mirrors the guidance endpoint)."""
+    site = _resolve_authorized_site(db, user, args)
+    if site is None:
+        return _unavailable("not_authorized_or_not_found", _opt_int(args.get("site_id")))
+    if not can_view_diligence(db, user, site):
+        return _unavailable("diligence_view_not_permitted", site.id)
+    result = DataRoomGuidanceService(db).build_guidance(site.id)
+    result["site_id"] = site.id
+    return result
+
+
+def _t_get_site_expected_documents(db: Session, user, args: dict) -> dict:
+    """Wrap the static Expected Documents catalog (``get_expected_documents_for_section``).
+
+    Mirrors the ``/expected-documents`` endpoint: the per-stage list of documents the catalog
+    expects (kind, name, description, required, position), correlated with the site's section ids.
+    Declarative only — it never materializes a Document/File row. Answers 'what belongs in [stage]?'
+    with full descriptions. Requires Diligence view."""
+    site = _resolve_authorized_site(db, user, args)
+    if site is None:
+        return _unavailable("not_authorized_or_not_found", _opt_int(args.get("site_id")))
+    if not can_view_diligence(db, user, site):
+        return _unavailable("diligence_view_not_permitted", site.id)
+    section_id_by_key = {
+        section.name.name: section.id
+        for section in DocumentSectionCRUD(db).get_site_sections(site.id)
+    }
+    items = []
+    for section in DocumentSections:
+        expected = get_expected_documents_for_section(section)
+        if not expected:
+            continue
+        items.append(
+            {
+                "section_id": section_id_by_key.get(section.name),
+                "section_key": section.name,
+                "section_name": section.value,
+                "expected_documents": expected,
+            }
+        )
+    return {"site_id": site.id, "items": items}
+
+
+def _t_get_site_data_room_documents(db: Session, user, args: dict) -> dict:
+    """List the site's live Document IDENTITIES with their existing version counts.
+
+    Wraps ``DocumentCRUD.get_site_documents_ordered_by_name``. For each document it returns the
+    resolved identity name, stable kind, aliases, section, archived flag, how many file versions
+    exist, and the latest version number. This grounds 'should this be a NEW document or a new
+    VERSION of an existing one?' (an identity already exists -> upload a new version to it) and
+    document-identity questions. Requires Diligence view. Read-only — never uploads/mutates."""
+    site = _resolve_authorized_site(db, user, args)
+    if site is None:
+        return _unavailable("not_authorized_or_not_found", _opt_int(args.get("site_id")))
+    if not can_view_diligence(db, user, site):
+        return _unavailable("diligence_view_not_permitted", site.id)
+    documents = DocumentCRUD(db).get_site_documents_ordered_by_name(site.id)
+    items = [
+        {
+            "document_id": document.id,
+            "display_name": document.identity_name,
+            "kind": document.identity_kind,
+            "aliases": document.identity_aliases,
+            "section_id": document.section_id,
+            "section_name": (
+                document.section.name.value
+                if document.section and document.section.name
+                else None
+            ),
+            "is_archived": document.is_archived,
+            "version_count": document.files_count,
+            "latest_version": _latest_document_version(document),
+        }
+        for document in documents
+    ]
+    return {"site_id": site.id, "items": items}
+
+
+def _t_get_site_data_room_templates(db: Session, user, args: dict) -> dict:
+    """List the reusable Data Room STRUCTURE templates available for the project's company.
+
+    Wraps ``DataRoomTemplateCRUD.get_by_company`` (mirroring the template list endpoint). Templates
+    are company-scoped structure-only snapshots (stages + expected documents); applying one scaffolds
+    a NEW Data Room at site creation — it never reconciles an existing one. Returns id/name/
+    description/archived plus section & document counts. Requires Diligence view. Read-only."""
+    site = _resolve_authorized_site(db, user, args)
+    if site is None:
+        return _unavailable("not_authorized_or_not_found", _opt_int(args.get("site_id")))
+    if not can_view_diligence(db, user, site):
+        return _unavailable("diligence_view_not_permitted", site.id)
+    templates = DataRoomTemplateCRUD(db).get_by_company(site.company_id, include_archived=False)
+    items = []
+    for template in templates:
+        section_count, document_count = _count_template_structure(template.structure or {})
+        items.append(
+            {
+                "id": template.id,
+                "name": template.name,
+                "description": template.description,
+                "is_archived": template.is_archived,
+                "section_count": section_count,
+                "document_count": document_count,
+            }
+        )
+    return {"site_id": site.id, "company_id": site.company_id, "items": items}
+
+
 TOOL_HANDLERS: dict[str, Callable[[Session, Any, dict], dict]] = {
     "list_workflows": _t_list_workflows,
     "list_sequences": _t_list_sequences,
@@ -328,6 +474,10 @@ TOOL_HANDLERS: dict[str, Callable[[Session, Any, dict], dict]] = {
     "get_site_expected_summary": _t_get_site_expected_summary,
     "get_site_inventory_reconciliation": _t_get_site_inventory_reconciliation,
     "get_site_device_eligibility": _t_get_site_device_eligibility,
+    "get_site_data_room_guidance": _t_get_site_data_room_guidance,
+    "get_site_expected_documents": _t_get_site_expected_documents,
+    "get_site_data_room_documents": _t_get_site_data_room_documents,
+    "get_site_data_room_templates": _t_get_site_data_room_templates,
 }
 
 # Single source of truth for the allowlist (guardrails screens names against this set + keywords).
@@ -554,6 +704,43 @@ TOOL_SPECS: list[dict] = [
         "get_site_device_eligibility",
         "Summarize ONE project's per-device telemetry eligibility diagnostics (which devices are "
         "mappable / drive expected, and the blocking reasons for those that don't). Read-only; "
+        "needs site_id.",
+        {"site_id": _REQ_SITE_PROP},
+        required=["site_id"],
+    ),
+    _spec(
+        "get_site_data_room_guidance",
+        "Summarize ONE project's Data Room completeness per stage: expected/present/missing counts, "
+        "the list of MISSING documents, needs-update/optional/archived counts, version totals, and "
+        "promotion status. Use to answer 'what documents are still missing?' or 'why is this stage "
+        "incomplete?'. Requires Diligence view — honest 'not permitted' otherwise. Read-only; needs "
+        "site_id.",
+        {"site_id": _REQ_SITE_PROP},
+        required=["site_id"],
+    ),
+    _spec(
+        "get_site_expected_documents",
+        "List the EXPECTED documents catalog for ONE project, grouped by stage (kind, name, "
+        "description, required flag), correlated with the project's section ids. Use to answer 'what "
+        "belongs in [stage]?'. Declarative catalog — never creates rows. Requires Diligence view. "
+        "Read-only; needs site_id.",
+        {"site_id": _REQ_SITE_PROP},
+        required=["site_id"],
+    ),
+    _spec(
+        "get_site_data_room_documents",
+        "List ONE project's existing Data Room document IDENTITIES: resolved name, kind, aliases, "
+        "section, archived flag, how many file versions exist, and the latest version number. Use to "
+        "answer 'should this be a new document or a new VERSION of an existing one?'. Requires "
+        "Diligence view. Read-only; needs site_id.",
+        {"site_id": _REQ_SITE_PROP},
+        required=["site_id"],
+    ),
+    _spec(
+        "get_site_data_room_templates",
+        "List the reusable Data Room STRUCTURE templates available for the project's company "
+        "(id, name, description, section & document counts). Templates scaffold a NEW Data Room at "
+        "project creation; they never reconcile an existing one. Requires Diligence view. Read-only; "
         "needs site_id.",
         {"site_id": _REQ_SITE_PROP},
         required=["site_id"],
