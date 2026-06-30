@@ -7,6 +7,7 @@ import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
+import { ThemeProvider } from '@mui/material/styles';
 import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
@@ -22,8 +23,14 @@ import { useEntityContext } from '../../contexts/entityContext';
 import { AssistantChatPanel, ChatUiMessage, AssistantChatError } from './AssistantChatPanel';
 import { ConversationList } from './ConversationList';
 import type { AssistantChatRequest, AssistantContextHints, AssistantFeedbackRating } from '../../api/assistant';
+import { getTheme } from '../../utils/styles/theme';
 
 const DRAWER_WIDTH = 420;
+// The shared MuiDrawer override paints the Drawer surface dark even in light mode (it is reused by the
+// dark left-nav sidebar). Render the assistant panel under the dark theme so all child text, inputs,
+// and chips resolve to light, high-contrast colors against that dark surface instead of the
+// light-mode defaults (black text) that were disappearing into the dark background.
+const ASSISTANT_THEME = getTheme('dark');
 const CONFIG_KEY = ['assistant', 'config'];
 const CONVERSATIONS_KEY = ['assistant', 'conversations'];
 const HISTORY_LIMIT = 20;
@@ -233,71 +240,80 @@ export const AssistantWidget: React.FC = () => {
         </Fab>
       </Tooltip>
 
-      <Drawer
-        anchor="right"
-        open={open}
-        onClose={() => setOpen(false)}
-        PaperProps={{ sx: { width: { xs: '100%', sm: DRAWER_WIDTH }, display: 'flex', flexDirection: 'column' } }}
-      >
-        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <SmartToyOutlinedIcon color="secondary" />
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-              AI Assistant
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Read-only guidance — you take the actions
-            </Typography>
+      <ThemeProvider theme={ASSISTANT_THEME}>
+        <Drawer
+          anchor="right"
+          open={open}
+          onClose={() => setOpen(false)}
+          PaperProps={{
+            sx: {
+              width: { xs: '100%', sm: DRAWER_WIDTH },
+              display: 'flex',
+              flexDirection: 'column',
+              color: 'text.primary'
+            }
+          }}
+        >
+          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <SmartToyOutlinedIcon color="secondary" />
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                AI Assistant
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Read-only guidance — you take the actions
+              </Typography>
+            </Box>
+            <Stack direction="row" spacing={0.5}>
+              <Tooltip title="New conversation">
+                <IconButton size="small" onClick={handleNewConversation} aria-label="New conversation">
+                  <AddCommentOutlinedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={view === 'history' ? 'Back to chat' : 'Conversation history'}>
+                <IconButton
+                  size="small"
+                  onClick={() => setView(view === 'history' ? 'chat' : 'history')}
+                  aria-label="Toggle conversation history"
+                >
+                  {view === 'history' ? <ChatOutlinedIcon fontSize="small" /> : <HistoryIcon fontSize="small" />}
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Close">
+                <IconButton size="small" onClick={() => setOpen(false)} aria-label="Close assistant">
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
           </Box>
-          <Stack direction="row" spacing={0.5}>
-            <Tooltip title="New conversation">
-              <IconButton size="small" onClick={handleNewConversation} aria-label="New conversation">
-                <AddCommentOutlinedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={view === 'history' ? 'Back to chat' : 'Conversation history'}>
-              <IconButton
-                size="small"
-                onClick={() => setView(view === 'history' ? 'chat' : 'history')}
-                aria-label="Toggle conversation history"
-              >
-                {view === 'history' ? <ChatOutlinedIcon fontSize="small" /> : <HistoryIcon fontSize="small" />}
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Close">
-              <IconButton size="small" onClick={() => setOpen(false)} aria-label="Close assistant">
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        </Box>
-        <Divider />
+          <Divider />
 
-        <Box sx={{ flex: 1, minHeight: 0 }}>
-          {view === 'history' ? (
-            <ConversationList
-              conversations={conversationsQuery.data?.items ?? []}
-              isLoading={conversationsQuery.isLoading || loadMutation.isPending}
-              activeId={conversationId ? Number(conversationId) : null}
-              onSelect={id => loadMutation.mutate(id)}
-              onDelete={id => deleteMutation.mutate(id)}
-            />
-          ) : (
-            <AssistantChatPanel
-              messages={messages}
-              isSending={chatMutation.isPending}
-              error={chatError}
-              suggestedPrompts={suggestedPromptsQuery.data?.prompts ?? []}
-              suggestedContextLabel={suggestedPromptsQuery.data?.context_label ?? null}
-              feedbackPendingId={feedbackMutation.isPending ? (feedbackMutation.variables?.messageId ?? null) : null}
-              onSend={handleSend}
-              onRetry={handleRetry}
-              onOpenCard={handleOpenCard}
-              onFeedback={handleFeedback}
-            />
-          )}
-        </Box>
-      </Drawer>
+          <Box sx={{ flex: 1, minHeight: 0 }}>
+            {view === 'history' ? (
+              <ConversationList
+                conversations={conversationsQuery.data?.items ?? []}
+                isLoading={conversationsQuery.isLoading || loadMutation.isPending}
+                activeId={conversationId ? Number(conversationId) : null}
+                onSelect={id => loadMutation.mutate(id)}
+                onDelete={id => deleteMutation.mutate(id)}
+              />
+            ) : (
+              <AssistantChatPanel
+                messages={messages}
+                isSending={chatMutation.isPending}
+                error={chatError}
+                suggestedPrompts={suggestedPromptsQuery.data?.prompts ?? []}
+                suggestedContextLabel={suggestedPromptsQuery.data?.context_label ?? null}
+                feedbackPendingId={feedbackMutation.isPending ? (feedbackMutation.variables?.messageId ?? null) : null}
+                onSend={handleSend}
+                onRetry={handleRetry}
+                onOpenCard={handleOpenCard}
+                onFeedback={handleFeedback}
+              />
+            )}
+          </Box>
+        </Drawer>
+      </ThemeProvider>
     </>
   );
 };
