@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import logging
 from typing import Optional
+from urllib.parse import urlencode
 
 from sqlalchemy.orm import Session
 
@@ -118,12 +119,21 @@ def _authorize_company(db_session: Session, current_user, company_id: int) -> bo
         return False
 
 
-def _open_route(target_view: str, site_id: Optional[int], company_id: Optional[int]) -> str:
+def _open_route(
+    target_view: str,
+    site_id: Optional[int],
+    company_id: Optional[int],
+    *,
+    data_room_query: Optional[dict] = None,
+) -> str:
     """Derive the EXISTING FE route for an ``open`` target_view + authorized scope. Never free-form."""
     if target_view == "project_overview":
         return f"/project-hub/projects/{site_id}"
     if target_view == "data_room":
-        return f"/project-hub/{site_id}/data-room"
+        base = f"/project-hub/projects/{site_id}/data-room"
+        # Optional, server-derived deep-link target (e.g. a specific missing expected document). The
+        # query is built from validated params only — never from caller-supplied raw text.
+        return f"{base}?{urlencode(data_room_query)}" if data_room_query else base
     if target_view == "reconciliation":
         return f"/reconciliation?site_id={site_id}"
     if target_view == "site_finance":
@@ -154,6 +164,44 @@ def _open_card_dict(target_view: str, reason: str, route: str, site_id, company_
     }
 
 
+def _resolve_data_room_focus(
+    db_session: Session,
+    site,
+    focus_document_kind: Optional[str],
+    focus_section_id: Optional[int],
+) -> Optional[dict]:
+    """Validate (read-only) a targeted missing-document focus for a ``data_room`` open card.
+
+    Returns the server-derived query params ``{"addDocKind", "addDocSection"}`` ONLY when BOTH
+    targeting inputs are supplied AND the requested ``kind`` is genuinely a MISSING expected document
+    for the requested stage, per the live read-only guidance service. Otherwise ``None`` — the card
+    falls back to a plain data-room link and never points at a fabricated or already-satisfied
+    target. The caller has already cleared the Diligence-view gate. Performs zero writes.
+    """
+    kind = (focus_document_kind or "").strip()
+    if not kind or focus_section_id is None:
+        return None
+    try:
+        from app.services.due_diligence.data_room_guidance_service import (
+            DataRoomGuidanceService,
+        )
+
+        guidance = DataRoomGuidanceService(db_session).build_guidance(site.id)
+    except Exception:  # noqa: BLE001 - fail closed: any guidance error -> no targeting
+        logger.exception("action card data-room focus lookup failed for site %r", site.id)
+        return None
+    item = next(
+        (it for it in (guidance.get("items") or []) if it.get("section_id") == focus_section_id),
+        None,
+    )
+    if item is None:
+        return None
+    missing_kinds = {(doc.get("kind") or "") for doc in (item.get("missing_documents") or [])}
+    if kind not in missing_kinds:
+        return None
+    return {"addDocKind": kind, "addDocSection": focus_section_id}
+
+
 def _build_open_card(
     db_session: Session,
     current_user,
@@ -162,6 +210,8 @@ def _build_open_card(
     site_id: Optional[int],
     company_id: Optional[int],
     reason: str,
+    focus_document_kind: Optional[str] = None,
+    focus_section_id: Optional[int] = None,
 ) -> dict:
     """Validate (read-only) an ``open`` card against the destination's OWN read permission.
 
@@ -213,7 +263,14 @@ def _build_open_card(
         ):
             return _deny("You don't have access to that company.")
 
-    route = _open_route(target_view, site.id, resolved_company_id)
+    data_room_query = None
+    if target_view == "data_room":
+        # Optional one-click deep link to a specific MISSING expected document (validated against the
+        # Diligence gate above + the live guidance). Falls back to a plain data-room link otherwise.
+        data_room_query = _resolve_data_room_focus(
+            db_session, site, focus_document_kind, focus_section_id
+        )
+    route = _open_route(target_view, site.id, resolved_company_id, data_room_query=data_room_query)
     return _open_card_dict(target_view, card_reason, route, site.id, resolved_company_id)
 
 
@@ -239,6 +296,8 @@ def build_action_card(
     company_id: Optional[int] = None,
     reason: Optional[str] = None,
     target_view: Optional[str] = None,
+    focus_document_kind: Optional[str] = None,
+    focus_section_id: Optional[int] = None,
     prompt: Optional[str] = None,
     current_route: Optional[str] = None,
     title: Optional[str] = None,
@@ -270,6 +329,8 @@ def build_action_card(
             site_id=site_id,
             company_id=company_id,
             reason=(reason or "").strip(),
+            focus_document_kind=focus_document_kind,
+            focus_section_id=focus_section_id,
         )
 
     if kind == "explain":

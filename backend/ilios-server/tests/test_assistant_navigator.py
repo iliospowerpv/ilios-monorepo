@@ -147,7 +147,7 @@ def test_open_data_room_route(visible_site, monkeypatch):
     _set_diligence(monkeypatch, True)
     res = ac.build_action_card(_no_write_db(), _user(), kind="open", target_view="data_room", site_id=7)
     assert res["permitted"] is True
-    assert res["action_card"]["route"] == "/project-hub/7/data-room"
+    assert res["action_card"]["route"] == "/project-hub/projects/7/data-room"
 
 
 def test_open_site_not_visible_denied(no_visible_site):
@@ -165,6 +165,75 @@ def test_open_data_room_requires_diligence(visible_site, monkeypatch):
     )
     assert denied["permitted"] is False
     assert denied["action_card"] is None
+
+
+class _FakeGuidance:
+    """Stand-in guidance service: stage 11 is missing the 'site_lease' expected document."""
+
+    def __init__(self, _db):
+        pass
+
+    def build_guidance(self, _site_id):
+        return {"items": [{"section_id": 11, "missing_documents": [{"kind": "site_lease"}]}]}
+
+
+_GUIDANCE_PATH = "app.services.due_diligence.data_room_guidance_service.DataRoomGuidanceService"
+
+
+def test_open_data_room_targets_missing_document(visible_site, monkeypatch):
+    """#107: a (kind, section_id) that IS missing appends the server-derived deep-link query."""
+    _set_diligence(monkeypatch, True)
+    monkeypatch.setattr(_GUIDANCE_PATH, _FakeGuidance)
+    db = _no_write_db()
+    res = ac.build_action_card(
+        db,
+        _user(),
+        kind="open",
+        target_view="data_room",
+        site_id=7,
+        focus_document_kind="site_lease",
+        focus_section_id=11,
+    )
+    assert res["permitted"] is True
+    route = res["action_card"]["route"]
+    assert route.startswith("/project-hub/projects/7/data-room?")
+    assert "addDocKind=site_lease" in route
+    assert "addDocSection=11" in route
+    AssistantActionCard(**res["action_card"])  # schema-valid
+    _assert_no_writes(db)
+
+
+def test_open_data_room_ignores_non_missing_focus(visible_site, monkeypatch):
+    """A kind that is NOT actually missing falls back to a plain data-room link (no query)."""
+    _set_diligence(monkeypatch, True)
+    monkeypatch.setattr(_GUIDANCE_PATH, _FakeGuidance)
+    res = ac.build_action_card(
+        _no_write_db(),
+        _user(),
+        kind="open",
+        target_view="data_room",
+        site_id=7,
+        focus_document_kind="not_a_missing_kind",
+        focus_section_id=11,
+    )
+    assert res["action_card"]["route"] == "/project-hub/projects/7/data-room"
+
+
+def test_open_data_room_partial_focus_skips_guidance(visible_site, monkeypatch):
+    """Incomplete targeting (kind without section_id) yields a plain link WITHOUT consulting guidance."""
+    _set_diligence(monkeypatch, True)
+    tripwire = MagicMock(name="DataRoomGuidanceService")
+    monkeypatch.setattr(_GUIDANCE_PATH, tripwire)
+    res = ac.build_action_card(
+        _no_write_db(),
+        _user(),
+        kind="open",
+        target_view="data_room",
+        site_id=7,
+        focus_document_kind="site_lease",  # no focus_section_id
+    )
+    assert res["action_card"]["route"] == "/project-hub/projects/7/data-room"
+    tripwire.assert_not_called()
 
 
 def test_open_reconciliation_requires_diligence(visible_site, monkeypatch):

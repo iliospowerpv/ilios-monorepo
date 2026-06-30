@@ -254,6 +254,8 @@ def _t_propose_action_card(db: Session, user, args: dict) -> dict:
         company_id=_opt_int(args.get("company_id")),
         reason=(args.get("reason") or None),
         target_view=(args.get("target_view") or None),
+        focus_document_kind=(args.get("focus_document_kind") or None),
+        focus_section_id=_opt_int(args.get("focus_section_id")),
         prompt=(args.get("prompt") or None),
         current_route=(args.get("current_route") or None),
     )
@@ -613,7 +615,10 @@ TOOL_SPECS: list[dict] = [
         "needs sequence_id; kind='resume' needs run_id (one of the user's own open runs); "
         "kind='open' deep-links an EXISTING read view chosen by target_view (project_overview / "
         "data_room / reconciliation / site_finance need site_id; company_finance needs company_id) "
-        "— the route is derived server-side, you NEVER supply a raw URL; kind='explain' re-asks the "
+        "— the route is derived server-side, you NEVER supply a raw URL. For a data_room open card "
+        "you MAY also pass focus_document_kind + focus_section_id (both taken from "
+        "get_site_data_room_guidance's missing_documents) to land the user directly on that "
+        "document's pre-filled Add step; kind='explain' re-asks the "
         "read-only chat a canned question (supply prompt). Always make clear the user must click it.",
         {
             "kind": {
@@ -635,6 +640,18 @@ TOOL_SPECS: list[dict] = [
                 ],
                 "description": "Required when kind='open': which EXISTING read view to deep-link to "
                 "(route derived server-side from this + scope; never a raw URL).",
+            },
+            "focus_document_kind": {
+                "type": "string",
+                "description": "Optional, ONLY with kind='open' & target_view='data_room': the 'kind' "
+                "of a MISSING expected document (from get_site_data_room_guidance.missing_documents) "
+                "to deep-link the user to its pre-filled Add Document step. Requires focus_section_id; "
+                "ignored unless that document is genuinely still missing.",
+            },
+            "focus_section_id": {
+                "type": "integer",
+                "description": "Optional, pairs with focus_document_kind: the stage's section_id "
+                "(from the same guidance item) the missing document belongs to.",
             },
             "prompt": {
                 "type": "string",

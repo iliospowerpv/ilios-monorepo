@@ -56,11 +56,33 @@ class _FakeGuidanceService:
         self.db = db
 
     def build_guidance(self, site_id):
+        # Mirror the REAL service shape: missing_documents is nested PER stage item, never at the
+        # top level (see tests/test_assistant_data_room_contract.py, which guards this contract).
         return {
             "items": [
-                {"stage": "Acquisition", "expected": 3, "present": 1, "missing": 2},
+                {
+                    "section_id": 11,
+                    "section_key": "site_stage1",
+                    "section_name": "Acquisition",
+                    "expected": 3,
+                    "present": 1,
+                    "missing": 2,
+                    "needs_update": 0,
+                    "optional": 0,
+                    "archived": 0,
+                    "version_count": 1,
+                    "promotion_status": "in_progress",
+                    "missing_documents": [
+                        {
+                            "kind": "title_report",
+                            "name": "Title Report",
+                            "description": None,
+                            "required": True,
+                            "position": 1,
+                        }
+                    ],
+                },
             ],
-            "missing_documents": [{"name": "Title Report", "stage": "Acquisition"}],
         }
 
 
@@ -222,7 +244,9 @@ def test_guidance_returns_site_scoped_envelope(monkeypatch):
 
     assert result["site_id"] == 42
     assert result["items"] and result["items"][0]["missing"] == 2
-    assert result["missing_documents"][0]["name"] == "Title Report"
+    # missing_documents is nested per stage (mirrors the real service), never a top-level key.
+    assert "missing_documents" not in result
+    assert result["items"][0]["missing_documents"][0]["name"] == "Title Report"
     _assert_no_writes(db)
 
 

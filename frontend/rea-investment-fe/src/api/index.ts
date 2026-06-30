@@ -116,6 +116,7 @@ export type {
   DiligenceDocument,
   DuplicateMatch,
   DuplicateCheckResult,
+  ExpectedDocument,
   GuidanceStage,
   GuidancePromotionStatus,
   SiteDataRoomGuidance,

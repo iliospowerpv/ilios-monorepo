@@ -1,5 +1,5 @@
-import React, { useCallback, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -72,6 +72,22 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
   const [templatesDialogOpen, setTemplatesDialogOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<DiligenceDocument | null>(null);
 
+  // #107: optional one-click deep link from the AI Assistant straight to a specific MISSING expected
+  // document. The assistant-proposed action card carries ?addDocKind=<kind>&addDocSection=<section_id>;
+  // we resolve those against the LIVE guidance and open the existing prefilled Add Document dialog.
+  // Nothing is created until the user confirms.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const addDocKind = searchParams.get('addDocKind');
+  const addDocSectionParam = searchParams.get('addDocSection');
+  const [missingDocNotice, setMissingDocNotice] = useState<string | null>(null);
+  const handledMissingDocRef = useRef<string | null>(null);
+
+  const { data: guidanceData } = useQuery({
+    queryKey: ['site', 'data-room-guidance', { siteId: numericSiteId }],
+    queryFn: () => ApiClient.dueDiligence.getDataRoomGuidance(numericSiteId),
+    enabled: isValidId && !!addDocKind && !!addDocSectionParam
+  });
+
   const { data: documentInfo, isLoading: isLoadingDocumentInfo } = useQuery({
     queryKey: ['documents', 'info', { siteId: numericSiteId, documentId: selectedDocument?.id }],
     queryFn: () => ApiClient.dueDiligence.docInfo(numericSiteId, selectedDocument!.id),
@@ -137,6 +153,43 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
     setAddDialogPrefill({ name: doc.name, sectionId: stage.section_id });
     setAddDialogOpen(true);
   }, []);
+
+  // Resolve a deep-linked missing document (#107) once the live guidance is available. Opens the
+  // SAME prefilled Add Document dialog used by the guidance panel; if the document is no longer
+  // missing (already added) we show an honest notice and open nothing. Each distinct target is
+  // handled at most once (keyed by section+kind), then the params are cleared so a refresh/back
+  // doesn't re-trigger it — while still re-arming for a later, different assistant deep link that
+  // arrives without the page remounting.
+  useEffect(() => {
+    const focusKey = addDocKind && addDocSectionParam ? `${addDocSectionParam}:${addDocKind}` : null;
+    if (!focusKey) {
+      handledMissingDocRef.current = null;
+      return;
+    }
+    if (!guidanceData) return;
+    if (handledMissingDocRef.current === focusKey) return;
+
+    handledMissingDocRef.current = focusKey;
+    const sectionId = Number(addDocSectionParam);
+    const stage = Number.isSafeInteger(sectionId)
+      ? guidanceData.items.find(item => item.section_id === sectionId)
+      : undefined;
+    const doc = stage?.missing_documents.find(item => item.kind === addDocKind);
+
+    if (stage && doc) {
+      setMissingDocNotice(null);
+      handleAddMissingDocument(doc, stage);
+    } else {
+      setMissingDocNotice(
+        'That document is no longer listed as missing for this project — it may already have been added.'
+      );
+    }
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('addDocKind');
+    nextParams.delete('addDocSection');
+    setSearchParams(nextParams, { replace: true });
+  }, [addDocKind, addDocSectionParam, guidanceData, handleAddMissingDocument, searchParams, setSearchParams]);
 
   const filterSections = useCallback((items: DiligenceItem[], search: string): DiligenceItem[] => {
     return items
@@ -250,6 +303,12 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
       {focusState.notFoundMessage && (
         <Alert severity="warning" sx={{ mb: 2 }}>
           {focusState.notFoundMessage}
+        </Alert>
+      )}
+
+      {missingDocNotice && (
+        <Alert severity="info" sx={{ mb: 2 }} onClose={() => setMissingDocNotice(null)}>
+          {missingDocNotice}
         </Alert>
       )}
 

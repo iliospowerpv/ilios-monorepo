@@ -214,7 +214,11 @@ export const AddDocumentDialog: React.FC<AddDocumentDialogProps> = ({
                     size="small"
                     checked={confirmSeparate}
                     onChange={e => setConfirmSeparate(e.target.checked)}
-                    inputProps={{ 'data-testid': 'add-document-confirm-separate' }}
+                    inputProps={
+                      {
+                        'data-testid': 'add-document-confirm-separate'
+                      } as React.InputHTMLAttributes<HTMLInputElement>
+                    }
                   />
                 }
                 label={<Typography variant="body2">Create a separate document anyway</Typography>}
