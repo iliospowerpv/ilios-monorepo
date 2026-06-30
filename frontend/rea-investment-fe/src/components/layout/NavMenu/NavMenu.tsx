@@ -15,8 +15,6 @@ import HomeIcon from '@mui/icons-material/Home';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import FolderIcon from '@mui/icons-material/Folder';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
-import DomainAddIcon from '@mui/icons-material/DomainAdd';
-import AddLocationAltIcon from '@mui/icons-material/AddLocationAlt';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import { NavMenuButtonContainer } from './NavMenu.styles';
 import { useNavigate, useMatches, useParams } from 'react-router-dom';
@@ -176,22 +174,6 @@ const menuItems: MenuItemConfig[] = [
     route: '/workflows',
     disabled: false,
     requiresProject: false
-  },
-  {
-    key: 'add-company',
-    icon: <DomainAddIcon key="add-company" />,
-    title: 'Add Company',
-    route: '/workflows/add-company',
-    disabled: false,
-    requiresProject: false
-  },
-  {
-    key: 'add-site',
-    icon: <AddLocationAltIcon key="add-site" />,
-    title: 'Add Project',
-    route: '/workflows/add-site',
-    disabled: false,
-    requiresProject: false
   }
 ];
 
@@ -301,12 +283,6 @@ export const NavMenu: React.FC<NavMenuProps> = ({ containerRef, isMenuOpen }) =>
     // workflow (platform admin for Add Company, or Asset Management edit for Add Project). The
     // server-side engine + per-workflow can_start remain the authoritative boundary.
     if (moduleKey === 'workflows')
-      return !!user?.is_system_user || !!user?.role?.permissions?.['Asset Management']?.edit;
-    // The Add Company workflow is a platform-admin action; the server is still the boundary.
-    if (moduleKey === 'add-company') return !!user?.is_system_user;
-    // Add Project is a company-scoped Asset Management action; nav gating is convenience only
-    // (the server-side engine + site-create endpoint remain the authoritative boundary).
-    if (moduleKey === 'add-site')
       return !!user?.is_system_user || !!user?.role?.permissions?.['Asset Management']?.edit;
     return true;
   };
