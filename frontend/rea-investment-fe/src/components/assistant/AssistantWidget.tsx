@@ -25,6 +25,10 @@ import { AssistantChatPanel, ChatUiMessage, AssistantChatError } from './Assista
 import { ConversationList } from './ConversationList';
 import type { AssistantChatRequest, AssistantContextHints, AssistantFeedbackRating } from '../../api/assistant';
 import { getTheme } from '../../utils/styles/theme';
+import { useAssistantLauncherPosition, LAUNCHER_MARGIN, type LauncherSide } from './useAssistantLauncherPosition';
+
+// Pointer travel (px) below which a press is treated as a click (open) rather than a drag (reposition).
+const DRAG_THRESHOLD = 5;
 
 const DRAWER_WIDTH = 420;
 // The shared MuiDrawer override paints the Drawer surface dark even in light mode (it is reused by the
@@ -246,6 +250,71 @@ export const AssistantWidget: React.FC = () => {
     navigate(route);
   };
 
+  // --- Draggable launcher ---------------------------------------------------
+  const { position, setPosition } = useAssistantLauncherPosition();
+  // Live coordinates while a drag is in progress; null when the launcher rests at its anchored spot.
+  const [dragPos, setDragPos] = React.useState<{ x: number; y: number } | null>(null);
+  const dragInfo = React.useRef<{
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+    moved: boolean;
+  } | null>(null);
+  // Set on a drag-release so the synthetic click that follows pointerup does not also open the drawer.
+  const suppressClick = React.useRef(false);
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+    // Only react to the primary (left/touch) button; let modified clicks behave normally.
+    if (event.button !== 0) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    dragInfo.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: rect.left,
+      originY: rect.top,
+      moved: false
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const info = dragInfo.current;
+    if (!info) return;
+    const dx = event.clientX - info.startX;
+    const dy = event.clientY - info.startY;
+    if (!info.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+    info.moved = true;
+    setDragPos({ x: info.originX + dx, y: info.originY + dy });
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const info = dragInfo.current;
+    dragInfo.current = null;
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // Pointer capture may already be released.
+    }
+    if (info?.moved && dragPos) {
+      // Snap horizontally to the nearest screen edge; keep the chosen vertical offset.
+      const centerX = dragPos.x + event.currentTarget.offsetWidth / 2;
+      const side: LauncherSide = centerX < window.innerWidth / 2 ? 'left' : 'right';
+      setPosition({ side, y: dragPos.y });
+      suppressClick.current = true;
+    }
+    setDragPos(null);
+  };
+
+  const handleLauncherClick = () => {
+    // A real drag just ended — swallow this click instead of opening the drawer.
+    if (suppressClick.current) {
+      suppressClick.current = false;
+      return;
+    }
+    setOpen(true);
+  };
+
   if (!isAuthenticated || !configQuery.isSuccess) {
     return null;
   }
@@ -254,12 +323,36 @@ export const AssistantWidget: React.FC = () => {
     <>
       <Tooltip title="AI Assistant" placement="left">
         <Fab
-          color="secondary"
+          variant="extended"
           aria-label="Open AI Assistant"
-          onClick={() => setOpen(true)}
-          sx={{ position: 'fixed', bottom: 24, right: 24, zIndex: theme => theme.zIndex.drawer + 2 }}
+          onClick={handleLauncherClick}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          sx={{
+            position: 'fixed',
+            top: dragPos ? dragPos.y : position.y,
+            left: dragPos ? dragPos.x : position.side === 'left' ? LAUNCHER_MARGIN : 'auto',
+            right: dragPos ? 'auto' : position.side === 'right' ? LAUNCHER_MARGIN : 'auto',
+            zIndex: theme => theme.zIndex.drawer + 2,
+            gap: 1,
+            px: 2.5,
+            color: '#FFFFFF',
+            background: theme => theme.custom.gradient.ctaDefault,
+            boxShadow: 4,
+            cursor: dragPos ? 'grabbing' : 'grab',
+            // Prevent the browser from scrolling/selecting while dragging on touch/pointer devices.
+            touchAction: 'none',
+            transition: dragPos ? 'none' : 'box-shadow 0.2s ease',
+            '&:hover': { background: theme => theme.custom.gradient.ctaHover },
+            '&:focus-visible': {
+              outline: theme => `3px solid ${theme.custom.interactive.highContrast}`,
+              outlineOffset: 2
+            }
+          }}
         >
-          <SmartToyOutlinedIcon />
+          <SmartToyOutlinedIcon sx={{ mr: 1 }} />
+          AI Assistant
         </Fab>
       </Tooltip>
 
