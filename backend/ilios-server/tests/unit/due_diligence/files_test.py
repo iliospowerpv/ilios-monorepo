@@ -1,9 +1,12 @@
+from datetime import datetime, timedelta, timezone
+
 import pytest
 
 import tests.unit.samples as samples
 from app.crud.file import FileCRUD
+from app.models.audit_log import AuditLog
 from app.settings import settings
-from app.static import FileMessages
+from app.static import DocumentMessages, FileMessages
 from tests.utils import set_user_site_access
 
 
@@ -149,9 +152,11 @@ class TestFile:
         ai_server = mocker.patch("app.helpers.chatbot.files_sync.AIServerClient")
         # store file removal status before the API call to validate it's changed
         file_deleted_before_api = file.deleted
-        response = client.delete(
+        response = client.request(
+            "DELETE",
             self._generate_file_endpoint(file.document.site.id, file.document.id, file.id),
             headers=company_member_user_auth_header,
+            json={"note": "Uploaded the wrong revision"},
         )
         db_session.refresh(file)
         file_deleted_after_api = file.deleted
@@ -161,6 +166,70 @@ class TestFile:
         assert file_deleted_before_api is False
         assert file_deleted_after_api is True
         ai_server().post.assert_called_once_with(params={"file_id": file.id}, use_api_key=True)
+
+    def test_delete_file_writes_audit_log(self, db_session, file, company_member_user_auth_header, client, mocker):
+        """A successful within-grace deletion records an audit-log entry carrying the reason note."""
+        mocker.patch("app.helpers.chatbot.files_sync.AIServerClient")
+        note = "Replaced by corrected appraisal"
+        response = client.request(
+            "DELETE",
+            self._generate_file_endpoint(file.document.site.id, file.document.id, file.id),
+            headers=company_member_user_auth_header,
+            json={"note": note},
+        )
+
+        assert response.status_code == 200
+        audit_entry = (
+            db_session.query(AuditLog)
+            .filter(AuditLog.source == "due_diligence_files")
+            .order_by(AuditLog.id.desc())
+            .first()
+        )
+        assert audit_entry is not None
+        assert audit_entry.is_success is True
+        assert audit_entry.details == note
+        assert str(file.id) in (audit_entry.action or "")
+
+    def test_delete_file_requires_note(self, file, company_member_user_auth_header, client):
+        """A delete request without a note is rejected by schema validation."""
+        response = client.request(
+            "DELETE",
+            self._generate_file_endpoint(file.document.site.id, file.document.id, file.id),
+            headers=company_member_user_auth_header,
+        )
+        assert response.status_code == 422
+
+    def test_delete_file_rejects_blank_note(self, file, company_member_user_auth_header, client):
+        """A delete request with a whitespace-only note is rejected by schema validation."""
+        response = client.request(
+            "DELETE",
+            self._generate_file_endpoint(file.document.site.id, file.document.id, file.id),
+            headers=company_member_user_auth_header,
+            json={"note": "   "},
+        )
+        assert response.status_code == 422
+
+    def test_delete_file_past_grace_period_blocked(
+        self, db_session, file, company_member_user_auth_header, client, mocker
+    ):
+        """Deletion is blocked once the file is older than the 24-hour grace window."""
+        ai_server = mocker.patch("app.helpers.chatbot.files_sync.AIServerClient")
+        file.created_at = datetime.now(timezone.utc) - timedelta(hours=25)
+        db_session.commit()
+
+        response = client.request(
+            "DELETE",
+            self._generate_file_endpoint(file.document.site.id, file.document.id, file.id),
+            headers=company_member_user_auth_header,
+            json={"note": "Too late to delete"},
+        )
+        db_session.refresh(file)
+
+        assert response.status_code == 400
+        assert response.json()["message"] == DocumentMessages.document_delete_grace_period_expired.value
+        # the file must remain (soft-delete not applied) and AI untrack not invoked
+        assert file.deleted is False
+        ai_server().post.assert_not_called()
 
     def test_get_download_url(self, site_id, document, mocker, client, file, system_user_auth_header):
         download_url = "https://storage.googleapis.com/"

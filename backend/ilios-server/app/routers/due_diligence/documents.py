@@ -7,6 +7,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.crud.audit_log import AuditLogCRUD
 from app.crud.document import DocumentCRUD
 from app.crud.document_key import DocumentKeyCRUD
 from app.crud.document_section import DocumentSectionCRUD
@@ -29,6 +30,7 @@ from app.models.document import Document
 from app.models.site import Site
 from app.schema.documents import (
     CustomDocumentCreationSchema,
+    DocumentArchiveSchema,
     DocumentArchiveSuccess,
     DocumentCreationSchema,
     DocumentCreationSuccess,
@@ -390,6 +392,7 @@ async def remove_document(
     description="Archive a document (soft delete). Use this for documents with uploaded files.",
 )
 async def archive_document(
+    payload: DocumentArchiveSchema,
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     db_session: Session = Depends(get_session),
     document: Document = Depends(get_authorized_document),
@@ -403,6 +406,15 @@ async def archive_document(
         action="edit",
     )
     DocumentCRUD(db_session).update_by_id(document.id, {"is_archived": True})
+
+    AuditLogCRUD(db_session).create_item({
+        "source": "due_diligence_documents",
+        "action": f"Archived document (ID: {document.id}) on project (ID: {document.site_id})",
+        "is_success": True,
+        "details": payload.note,
+        "user_id": current_user.id,
+    })
+
     return {"code": status.HTTP_200_OK, "message": DocumentMessages.document_archive_success}
 
 

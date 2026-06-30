@@ -675,9 +675,15 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     return response.data;
   };
 
-  const deleteFile = async (siteId: number, documentId: number, fileId: number): Promise<FileDataResponse> => {
+  const deleteFile = async (
+    siteId: number,
+    documentId: number,
+    fileId: number,
+    note: string
+  ): Promise<FileDataResponse> => {
     const response = await httpClient.delete<FileDataResponse>(
-      `/api/due-diligence/${siteId}/documents/${documentId}/files/${fileId}`
+      `/api/due-diligence/${siteId}/documents/${documentId}/files/${fileId}`,
+      { data: { note } }
     );
     return response.data;
   };
@@ -957,9 +963,14 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     return response.data;
   };
 
-  const archiveDocument = async (siteId: number, documentId: number): Promise<{ code: number; message: string }> => {
+  const archiveDocument = async (
+    siteId: number,
+    documentId: number,
+    note: string
+  ): Promise<{ code: number; message: string }> => {
     const response = await httpClient.post<{ code: number; message: string }>(
-      `/api/due-diligence/${siteId}/documents/${documentId}/archive`
+      `/api/due-diligence/${siteId}/documents/${documentId}/archive`,
+      { note }
     );
     return response.data;
   };

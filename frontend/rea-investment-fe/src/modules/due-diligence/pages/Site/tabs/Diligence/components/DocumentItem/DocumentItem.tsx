@@ -14,6 +14,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
 
 import Assignee from '../Assignee/Assignee';
 import { ApiClient, DiligenceDocument } from '../../../../../../../../api';
@@ -40,6 +41,7 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ document, onRefresh, onDocu
   const notify = useNotify();
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [actionType, setActionType] = useState<'delete' | 'archive'>('delete');
+  const [archiveReason, setArchiveReason] = useState('');
 
   const hasFiles = document.files_count > 0;
 
@@ -56,29 +58,32 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ document, onRefresh, onDocu
   });
 
   const archiveMutation = useMutation({
-    mutationFn: () => ApiClient.dueDiligence.archiveDocument(Number(siteId), document.id),
+    mutationFn: (reason: string) => ApiClient.dueDiligence.archiveDocument(Number(siteId), document.id, reason),
     onSuccess: () => {
       notify('Document archived successfully');
       queryClient.invalidateQueries({ queryKey: ['site', 'diligence', { siteId: Number(siteId) }] });
       onRefresh?.();
     },
     onError: (error: any) => {
-      notify(error?.response?.data?.detail || 'Failed to archive document');
+      notify(error?.response?.data?.detail || error?.response?.data?.message || 'Failed to archive document');
     }
   });
 
   const handleActionClick = (e: React.MouseEvent, action: 'delete' | 'archive') => {
     e.stopPropagation();
     setActionType(action);
+    setArchiveReason('');
     setConfirmDialogOpen(true);
   };
 
   const handleConfirmAction = () => {
-    setConfirmDialogOpen(false);
     if (actionType === 'delete') {
+      setConfirmDialogOpen(false);
       deleteMutation.mutate();
     } else {
-      archiveMutation.mutate();
+      if (!archiveReason.trim()) return;
+      setConfirmDialogOpen(false);
+      archiveMutation.mutate(archiveReason.trim());
     }
   };
 
@@ -101,12 +106,33 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ document, onRefresh, onDocu
           <DialogContentText>
             {actionType === 'delete'
               ? 'Are you sure you want to delete this document? This action cannot be undone.'
-              : 'Are you sure you want to archive this document? Archived documents will be hidden from the list.'}
+              : 'Archiving keeps every uploaded file and version — the document is hidden from the list and can be restored later. Enter a reason to continue.'}
           </DialogContentText>
+          {actionType === 'archive' && (
+            <TextField
+              autoFocus
+              required
+              fullWidth
+              multiline
+              minRows={2}
+              margin="dense"
+              label="Reason for archiving"
+              placeholder="Enter a reason for this action"
+              value={archiveReason}
+              onChange={e => setArchiveReason(e.target.value)}
+              inputProps={{ 'aria-label': 'Reason for archiving' }}
+              sx={{ mt: 2 }}
+            />
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleConfirmAction} color={actionType === 'delete' ? 'error' : 'primary'} autoFocus>
+          <Button
+            onClick={handleConfirmAction}
+            color={actionType === 'delete' ? 'error' : 'primary'}
+            disabled={actionType === 'archive' && !archiveReason.trim()}
+            autoFocus
+          >
             {actionType === 'delete' ? 'Delete' : 'Archive'}
           </Button>
         </DialogActions>

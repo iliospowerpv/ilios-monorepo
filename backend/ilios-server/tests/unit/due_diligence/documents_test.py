@@ -7,6 +7,7 @@ import tests.unit.samples as samples
 from app.crud.document_key import DocumentKeyCRUD
 from app.crud.file import FileCRUD
 from app.crud.role import RoleCRUD
+from app.models.audit_log import AuditLog
 from app.models.file import AIParsingResult, FileParsingStatuses
 from app.models.project_facts import CanonicalField, FactStatus, ProjectFact
 from tests.utils import remove_dynamic_fields, set_user_site_access
@@ -459,6 +460,62 @@ class TestDocuments:
 
         assert response.status_code == 412
         assert response.json()["message"] == "Cannot associate document with task"
+
+    @staticmethod
+    def _generate_archive_endpoint(site_id_, document_id_):
+        """/api/due-diligence/SITE_ID/documents/DOCUMENT_ID/archive"""
+        return f"/api/due-diligence/{site_id_}/documents/{document_id_}/archive"
+
+    def test_archive_document_403(self, client, site_id, document, non_system_user_auth_header):
+        """Through 403 if access to the site wasn't given"""
+        response = client.post(
+            self._generate_archive_endpoint(site_id, document.id),
+            json={"note": "Superseded by a newer agreement"},
+            headers=non_system_user_auth_header,
+        )
+        assert response.status_code == 403
+
+    def test_archive_document_requires_note(self, client, site, document, company_member_user_auth_header):
+        """A request without a note is rejected by schema validation."""
+        response = client.post(
+            self._generate_archive_endpoint(site.id, document.id),
+            headers=company_member_user_auth_header,
+        )
+        assert response.status_code == 422
+
+    def test_archive_document_rejects_blank_note(self, client, site, document, company_member_user_auth_header):
+        """A request with a whitespace-only note is rejected by schema validation."""
+        response = client.post(
+            self._generate_archive_endpoint(site.id, document.id),
+            json={"note": "   "},
+            headers=company_member_user_auth_header,
+        )
+        assert response.status_code == 422
+
+    def test_archive_document_success_writes_audit_log(
+        self, client, db_session, site, document, company_member_user_auth_header
+    ):
+        """Archiving soft-archives the document and records an audit-log entry carrying the reason note."""
+        note = "Superseded by the executed version"
+        response = client.post(
+            self._generate_archive_endpoint(site.id, document.id),
+            json={"note": note},
+            headers=company_member_user_auth_header,
+        )
+        db_session.refresh(document)
+
+        assert response.status_code == 200
+        assert document.is_archived is True
+        audit_entry = (
+            db_session.query(AuditLog)
+            .filter(AuditLog.source == "due_diligence_documents")
+            .order_by(AuditLog.id.desc())
+            .first()
+        )
+        assert audit_entry is not None
+        assert audit_entry.is_success is True
+        assert audit_entry.details == note
+        assert str(document.id) in (audit_entry.action or "")
 
 
 class TestSetKeyOverrideGuardrail:

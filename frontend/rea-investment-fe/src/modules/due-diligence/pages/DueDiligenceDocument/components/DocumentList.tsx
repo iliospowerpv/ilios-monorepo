@@ -9,6 +9,7 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ArchiveIcon from '@mui/icons-material/Archive';
 import DownloadIcon from '@mui/icons-material/Download';
 import BookmarkAddedIcon from '@mui/icons-material/BookmarkAdded';
 import BookmarkRemoveIcon from '@mui/icons-material/BookmarkRemove';
@@ -19,7 +20,7 @@ import DocumentModal from './DocumentModal';
 import UniversalDocumentModal from '../../../../../components/common/DocumentModal/DocumentModal';
 import { ApiClient, FileItem, FileDataResponse } from '../../../../../api';
 import { useNotify } from '../../../../../contexts/notifications/notifications';
-import { ConfirmationModal } from '../../../../../components/modals/ConfirmationModal/ConfirmationModal';
+import { ReasonConfirmationModal } from '../../../../../components/modals/ReasonConfirmationModal/ReasonConfirmationModal';
 import UploadButton from '../../../../../components/common/UploadButton/UploadButton';
 import Document from '../../../../../components/common/Document/Document';
 import { MAX_FILE_SIZE } from '../../../../../constants';
@@ -40,7 +41,9 @@ export const DocumentList: React.FC<DocumentListProps> = ({ siteId, documentId, 
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [openModal, setOpenModal] = useState(false);
-  const [confirmationModalOpen, setConfirmationModalOpen] = useState(false);
+  const [destructiveAction, setDestructiveAction] = useState<'delete' | 'archive' | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [isActualFiles, setIsActualFiles] = useState(true);
 
@@ -99,8 +102,15 @@ export const DocumentList: React.FC<DocumentListProps> = ({ siteId, documentId, 
     setAnchorEl(null);
   };
 
-  const handleDelete = () => {
-    setConfirmationModalOpen(true);
+  const handleDeleteVersion = () => {
+    setActionError(null);
+    setDestructiveAction('delete');
+    handleMenuClose();
+  };
+
+  const handleArchiveDocument = () => {
+    setActionError(null);
+    setDestructiveAction('archive');
     handleMenuClose();
   };
 
@@ -143,24 +153,48 @@ export const DocumentList: React.FC<DocumentListProps> = ({ siteId, documentId, 
     setSelectedFile(null);
   };
 
-  const handleConfirmModalClose = (): void => {
-    setConfirmationModalOpen(false);
+  const handleDestructiveModalClose = (): void => {
+    setDestructiveAction(null);
+    setActionError(null);
   };
 
-  const handleModalConfirm = async (): Promise<void> => {
-    if (selectedFile) {
-      ApiClient.dueDiligence
-        .deleteFile(siteId, documentId, selectedFile.id)
-        .then((response: FileDataResponse) => {
-          queryClient.invalidateQueries({ queryKey: ['files'] });
-          queryClient.removeQueries({ queryKey: ['file-preview-url'] });
-          notify(response.message || 'File successfully deleted');
-          setConfirmationModalOpen(false);
-        })
-        .catch(e => {
-          setConfirmationModalOpen(false);
-          notify(e?.response?.data?.message || 'Cannot delete file');
-        });
+  const handleDeleteVersionConfirm = async (reason: string): Promise<void> => {
+    if (!selectedFile) return;
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      const response: FileDataResponse = await ApiClient.dueDiligence.deleteFile(
+        siteId,
+        documentId,
+        selectedFile.id,
+        reason
+      );
+      queryClient.invalidateQueries({ queryKey: ['files'] });
+      queryClient.removeQueries({ queryKey: ['file-preview-url'] });
+      notify(response.message || 'File version successfully deleted');
+      setDestructiveAction(null);
+    } catch (e: any) {
+      // Past the 24-hour grace window the backend blocks deletion and steers the
+      // user to Archive; surface that message in the modal rather than closing.
+      setActionError(e?.response?.data?.message || 'Cannot delete this file version');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleArchiveDocumentConfirm = async (reason: string): Promise<void> => {
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      const response = await ApiClient.dueDiligence.archiveDocument(siteId, documentId, reason);
+      queryClient.invalidateQueries({ queryKey: ['files'] });
+      queryClient.invalidateQueries({ queryKey: ['site', 'diligence'] });
+      notify(response.message || 'Document has been archived');
+      setDestructiveAction(null);
+    } catch (e: any) {
+      setActionError(e?.response?.data?.message || e?.response?.data?.detail || 'Cannot archive this document');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -267,11 +301,17 @@ export const DocumentList: React.FC<DocumentListProps> = ({ siteId, documentId, 
                   </ListItemIcon>
                   Download
                 </MenuItem>
-                <MenuItem onClick={handleDelete}>
+                <MenuItem onClick={handleDeleteVersion}>
                   <ListItemIcon>
                     <DeleteIcon fontSize="small" />
                   </ListItemIcon>
-                  Delete
+                  Delete this version
+                </MenuItem>
+                <MenuItem onClick={handleArchiveDocument}>
+                  <ListItemIcon>
+                    <ArchiveIcon fontSize="small" />
+                  </ListItemIcon>
+                  Archive document
                 </MenuItem>
                 {!selectedFile?.is_actual && (
                   <MenuItem onClick={handleMarkAsActual}>
@@ -313,12 +353,29 @@ export const DocumentList: React.FC<DocumentListProps> = ({ siteId, documentId, 
           onClose={handleModalClose}
         />
       )}
-      <ConfirmationModal
-        open={confirmationModalOpen}
-        confirmationMessage="Are you sure you want to delete this file?"
-        confirmationDisabled={false}
-        onClose={handleConfirmModalClose}
-        onConfirm={handleModalConfirm}
+      <ReasonConfirmationModal
+        open={destructiveAction === 'delete'}
+        title="Delete this version"
+        message="This permanently removes this uploaded file version. Deletion is only allowed within 24 hours of upload — afterwards, archive the document instead. Enter a reason to continue."
+        reasonLabel="Reason for deletion"
+        confirmLabel="Delete version"
+        confirmColor="error"
+        isLoading={actionLoading}
+        errorMessage={actionError}
+        onClose={handleDestructiveModalClose}
+        onConfirm={handleDeleteVersionConfirm}
+      />
+      <ReasonConfirmationModal
+        open={destructiveAction === 'archive'}
+        title="Archive document"
+        message="Archiving keeps every uploaded file and version — the document is hidden from active views and can be restored later. Enter a reason to continue."
+        reasonLabel="Reason for archiving"
+        confirmLabel="Archive document"
+        confirmColor="warning"
+        isLoading={actionLoading}
+        errorMessage={actionError}
+        onClose={handleDestructiveModalClose}
+        onConfirm={handleArchiveDocumentConfirm}
       />
     </>
   );

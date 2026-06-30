@@ -1,10 +1,12 @@
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
+from app.crud.audit_log import AuditLogCRUD
 from app.crud.file import FileCRUD
 from app.db.session import get_session
 from app.helpers.authentication import get_current_user
@@ -21,6 +23,7 @@ from app.schema.file import (
     FileIsActual,
     FileNameSchema,
     FilePreviewURLSchema,
+    FileRemovalSchema,
     FileRemovalSuccess,
     FilesList,
     FileUpdateIsActualSuccess,
@@ -29,7 +32,7 @@ from app.schema.file import (
 )
 from app.schema.user import CurrentUserSchema
 from app.settings import settings
-from app.static import HTTP_403_RESPONSE, HTTP_404_RESPONSE, FileMessages
+from app.static import HTTP_403_RESPONSE, HTTP_404_RESPONSE, DocumentMessages, FileMessages
 from app.static.files import FILE_PREVIEW_CONTENT_TYPE_MAPPING, FILE_UPLOAD_CONTENT_TYPE_MAPPING
 
 logger = logging.getLogger(__name__)
@@ -68,6 +71,7 @@ async def get_files_list(
 )
 async def remove_file(
     background_tasks: BackgroundTasks,
+    payload: FileRemovalSchema,
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
     file: FileModel = Depends(get_authorized_file),
     db_session: Session = Depends(get_session),
@@ -80,7 +84,33 @@ async def remove_file(
         module_key="Diligence",
         action="edit",
     )
+
+    # Enforce the same 24-hour grace rule the document delete uses, based on this
+    # file version's own upload time. Past the window, deletion is blocked and the
+    # user is steered to Archive (same message the document delete endpoint returns).
+    most_recent_upload = file.created_at
+    if most_recent_upload.tzinfo is None:
+        most_recent_upload = most_recent_upload.replace(tzinfo=timezone.utc)
+    grace_period_end = most_recent_upload + timedelta(hours=24)
+    if datetime.now(timezone.utc) > grace_period_end:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=DocumentMessages.document_delete_grace_period_expired,
+        )
+
     FileCRUD(db_session).update_by_id(file.id, {"deleted": True})
+
+    AuditLogCRUD(db_session).create_item({
+        "source": "due_diligence_files",
+        "action": (
+            f"Deleted file version '{file.filename}' (ID: {file.id}) "
+            f"from document (ID: {file.document_id})"
+        ),
+        "is_success": True,
+        "details": payload.note,
+        "user_id": current_user.id,
+    })
+
     # send AI trigger to untrack the file from the ChatBot storage
     ai_params = {"file_id": file.id}
     background_tasks.add_task(ChatBotFilesSyncer().delete_file, ai_params)

@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.models.document import SiteDocumentsEnum
 from app.models.task import TaskPriorityEnum
@@ -170,6 +170,22 @@ class DocumentReorderSchema(BaseModel):
 
 class DocumentArchiveSuccess(Success):
     message: str = Field(description="Success message", examples=["Document has been archived"])
+
+
+class DocumentArchiveSchema(BaseModel):
+    note: str = Field(
+        min_length=1,
+        description="Required reason/note explaining why this document is being archived.",
+        examples=["Superseded by the executed version."],
+    )
+
+    @field_validator("note")
+    @classmethod
+    def note_not_blank(cls, note):
+        stripped = note.strip()
+        if not stripped:
+            raise ValueError("A non-empty reason is required.")
+        return stripped
 
 
 class CustomDocumentCreationSchema(BaseModel):

@@ -41,6 +41,22 @@ class FileRemovalSuccess(SuccessUpdateSchema):
     message: str = Field(description="Success message", examples=["File has been successfully deleted"])
 
 
+class FileRemovalSchema(BaseModel):
+    note: str = Field(
+        min_length=1,
+        description="Required reason/note explaining why this file version is being deleted.",
+        examples=["Uploaded the wrong revision of the lease."],
+    )
+
+    @field_validator("note")
+    @classmethod
+    def note_not_blank(cls, note):
+        stripped = note.strip()
+        if not stripped:
+            raise ValueError("A non-empty reason is required.")
+        return stripped
+
+
 class FileDownloadURLSchema(BaseModel):
     download_url: HttpUrl = Field(examples=["http://example.com"])
 
