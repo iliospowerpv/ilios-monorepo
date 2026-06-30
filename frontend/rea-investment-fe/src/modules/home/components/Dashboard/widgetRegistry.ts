@@ -16,27 +16,27 @@ export const WIDGET_DEFINITIONS: Record<string, WidgetDefinition> = {
     title: 'Tasks',
     description: 'View and manage your pending tasks',
     defaultWidth: 8,
-    defaultHeight: 4,
-    minWidth: 4,
-    minHeight: 3
+    defaultHeight: 6,
+    minWidth: 5,
+    minHeight: 4
   },
   notifications: {
     id: 'notifications',
     title: 'Notifications',
     description: 'Recent notifications and alerts',
     defaultWidth: 4,
-    defaultHeight: 3,
+    defaultHeight: 6,
     minWidth: 3,
-    minHeight: 2
+    minHeight: 3
   },
   quickActions: {
     id: 'quickActions',
     title: 'Quick Actions',
     description: 'Shortcuts to common actions',
     defaultWidth: 4,
-    defaultHeight: 3,
+    defaultHeight: 5,
     minWidth: 3,
-    minHeight: 2
+    minHeight: 3
   },
   companies: {
     id: 'companies',
@@ -44,7 +44,7 @@ export const WIDGET_DEFINITIONS: Record<string, WidgetDefinition> = {
     description: 'Companies you have access to',
     defaultWidth: 12,
     defaultHeight: 4,
-    minWidth: 6,
+    minWidth: 4,
     minHeight: 3
   },
   projects: {
@@ -53,7 +53,7 @@ export const WIDGET_DEFINITIONS: Record<string, WidgetDefinition> = {
     description: 'Projects you have access to',
     defaultWidth: 12,
     defaultHeight: 4,
-    minWidth: 6,
+    minWidth: 4,
     minHeight: 3
   }
 };
@@ -91,7 +91,7 @@ export const getDefaultLayout = (visibleWidgets: string[]) => {
       layout.push({
         i: widgetId,
         x: 8,
-        y: 3,
+        y: 6,
         w: widget.defaultWidth,
         h: widget.defaultHeight,
         minW: widget.minWidth,
@@ -101,7 +101,7 @@ export const getDefaultLayout = (visibleWidgets: string[]) => {
       layout.push({
         i: widgetId,
         x: 0,
-        y: 6,
+        y: 11,
         w: widget.defaultWidth,
         h: widget.defaultHeight,
         minW: widget.minWidth,
@@ -111,7 +111,7 @@ export const getDefaultLayout = (visibleWidgets: string[]) => {
       layout.push({
         i: widgetId,
         x: 0,
-        y: 10,
+        y: 15,
         w: widget.defaultWidth,
         h: widget.defaultHeight,
         minW: widget.minWidth,

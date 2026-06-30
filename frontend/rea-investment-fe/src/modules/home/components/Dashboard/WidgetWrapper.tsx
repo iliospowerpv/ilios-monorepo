@@ -55,7 +55,19 @@ export const WidgetWrapper: React.FC<WidgetWrapperProps> = ({ widgetId, onRemove
           <CloseIcon fontSize="small" />
         </IconButton>
       </Box>
-      <CardContent sx={{ flex: 1, overflow: 'auto', p: 0, '&:last-child': { pb: 0 } }}>{children}</CardContent>
+      <CardContent
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          p: 0,
+          '&:last-child': { pb: 0 }
+        }}
+      >
+        {children}
+      </CardContent>
     </Card>
   );
 };

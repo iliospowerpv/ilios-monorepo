@@ -4,12 +4,9 @@ import dayjs from 'dayjs';
 
 import { GridApi, RowClickedEvent } from 'ag-grid-community';
 import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
 import FlagIcon from '@mui/icons-material/Flag';
 import { useTheme } from '@mui/material';
 import Avatar from '@mui/material/Avatar';
-import Typography from '@mui/material/Typography';
 
 import BaseTable from '../../../../components/common/tables/BaseTable/BaseTable';
 import { ApiClient } from '../../../../api';
@@ -183,28 +180,15 @@ export const HomeTasks: React.FC = () => {
   );
 
   return (
-    <Card>
-      <CardContent sx={{ p: 0 }}>
-        <Box
-          sx={{
-            borderBottom: theme => `1px solid ${theme.palette.divider}`,
-            px: 2,
-            py: 1.5
-          }}
-        >
-          <Typography variant="h6">Tasks</Typography>
-        </Box>
-        <Box sx={{ height: 400 }}>
-          <BaseTable
-            ref={basicTableRef}
-            rowModelType="serverSide"
-            columnDefs={columns}
-            serverSideDatasource={serverSideDatasource}
-            onRowClicked={onRowClicked}
-          />
-        </Box>
-      </CardContent>
-    </Card>
+    <Box sx={{ height: '100%', minHeight: 0, flex: 1, overflow: 'auto' }}>
+      <BaseTable
+        ref={basicTableRef}
+        rowModelType="serverSide"
+        columnDefs={columns}
+        serverSideDatasource={serverSideDatasource}
+        onRowClicked={onRowClicked}
+      />
+    </Box>
   );
 };
 

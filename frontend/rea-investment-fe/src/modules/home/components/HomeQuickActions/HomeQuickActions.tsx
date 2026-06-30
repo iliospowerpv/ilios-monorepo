@@ -1,8 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
@@ -36,80 +34,75 @@ export const HomeQuickActions: React.FC<HomeQuickActionsProps> = ({
   const hasCompanyContext = !!currentCompany;
 
   return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Quick Actions
-        </Typography>
-        <Stack spacing={1.5}>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<RocketLaunchIcon />}
-            onClick={() => navigate('/onboarding')}
-            fullWidth
-            size="large"
-            sx={{ mb: 1 }}
-          >
-            Set Up a New Project
-          </Button>
+    <Box sx={{ height: '100%', minHeight: 0, overflow: 'auto', p: 2 }}>
+      <Stack spacing={1.5}>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<RocketLaunchIcon />}
+          onClick={() => navigate('/onboarding')}
+          fullWidth
+          size="large"
+          sx={{ mb: 1 }}
+        >
+          Set Up a New Project
+        </Button>
 
-          <Divider sx={{ my: 0.5 }} />
+        <Divider sx={{ my: 0.5 }} />
 
-          {canCreateCompany && (
-            <Button
-              variant="outlined"
-              startIcon={<AddBusinessIcon />}
-              onClick={onCreateCompany}
-              fullWidth
-              sx={{ justifyContent: 'flex-start' }}
-            >
-              Create Company
-            </Button>
-          )}
-
+        {canCreateCompany && (
           <Button
             variant="outlined"
-            startIcon={<CreateNewFolderIcon />}
-            onClick={onCreateProject}
+            startIcon={<AddBusinessIcon />}
+            onClick={onCreateCompany}
             fullWidth
             sx={{ justifyContent: 'flex-start' }}
           >
-            Create Project
+            Create Company
           </Button>
+        )}
 
-          <Button
-            variant="outlined"
-            startIcon={<PersonAddIcon />}
-            onClick={onInviteUser}
-            fullWidth
-            sx={{ justifyContent: 'flex-start' }}
-          >
-            Invite User
-          </Button>
+        <Button
+          variant="outlined"
+          startIcon={<CreateNewFolderIcon />}
+          onClick={onCreateProject}
+          fullWidth
+          sx={{ justifyContent: 'flex-start' }}
+        >
+          Create Project
+        </Button>
 
-          {hasCompanyContext && (
-            <>
-              <Divider sx={{ my: 1 }} />
-              <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                  Current Company
-                </Typography>
-                <Button
-                  variant="text"
-                  startIcon={<AdminPanelSettingsIcon />}
-                  onClick={() => navigate('/portfolio-admin')}
-                  fullWidth
-                  sx={{ justifyContent: 'flex-start' }}
-                >
-                  Manage Members
-                </Button>
-              </Box>
-            </>
-          )}
-        </Stack>
-      </CardContent>
-    </Card>
+        <Button
+          variant="outlined"
+          startIcon={<PersonAddIcon />}
+          onClick={onInviteUser}
+          fullWidth
+          sx={{ justifyContent: 'flex-start' }}
+        >
+          Invite User
+        </Button>
+
+        {hasCompanyContext && (
+          <>
+            <Divider sx={{ my: 1 }} />
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                Current Company
+              </Typography>
+              <Button
+                variant="text"
+                startIcon={<AdminPanelSettingsIcon />}
+                onClick={() => navigate('/portfolio-admin')}
+                fullWidth
+                sx={{ justifyContent: 'flex-start' }}
+              >
+                Manage Members
+              </Button>
+            </Box>
+          </>
+        )}
+      </Stack>
+    </Box>
   );
 };
 
