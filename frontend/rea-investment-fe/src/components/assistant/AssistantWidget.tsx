@@ -13,6 +13,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
 import HistoryIcon from '@mui/icons-material/History';
 import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
+import OpenInFullIcon from '@mui/icons-material/OpenInFull';
+import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
@@ -39,6 +41,9 @@ import { useAssistantLauncher } from '../../contexts/assistantLauncher';
 const DRAG_THRESHOLD = 5;
 
 const DRAWER_WIDTH = 420;
+// Expanded width gives long chats / action cards more room. Capped at 90vw so it never overflows on
+// narrower desktops; the panel stays full-width on phones (xs) regardless of the expanded state.
+const DRAWER_WIDTH_EXPANDED = 'min(760px, 90vw)';
 // The shared MuiDrawer override paints the Drawer surface dark even in light mode (it is reused by the
 // dark left-nav sidebar). Render the assistant panel under the dark theme so all child text, inputs,
 // and chips resolve to light, high-contrast colors against that dark surface instead of the
@@ -75,6 +80,9 @@ export const AssistantWidget: React.FC = () => {
   const queryClient = useQueryClient();
 
   const [open, setOpen] = React.useState(false);
+  // Whether the panel is widened. Persists across open/close within the session so the user's chosen
+  // size sticks; it only affects width (xs/phone stays full-width regardless).
+  const [expanded, setExpanded] = React.useState(false);
   const [view, setView] = React.useState<PanelView>('chat');
   const [conversationId, setConversationId] = React.useState<string | null>(null);
   const [messages, setMessages] = React.useState<ChatUiMessage[]>([]);
@@ -553,10 +561,17 @@ export const AssistantWidget: React.FC = () => {
           onClose={handleCloseDrawer}
           PaperProps={{
             sx: {
-              width: { xs: '100%', sm: DRAWER_WIDTH },
+              width: { xs: '100%', sm: expanded ? DRAWER_WIDTH_EXPANDED : DRAWER_WIDTH },
+              maxWidth: '100vw',
               display: 'flex',
               flexDirection: 'column',
-              color: 'text.primary'
+              color: 'text.primary',
+              // Animate width changes so expand/collapse feels smooth (the open/close slide is separate).
+              transition: theme =>
+                theme.transitions.create('width', {
+                  easing: theme.transitions.easing.easeInOut,
+                  duration: theme.transitions.duration.shorter
+                })
             }
           }}
         >
@@ -571,6 +586,17 @@ export const AssistantWidget: React.FC = () => {
               </Typography>
             </Box>
             <Stack direction="row" spacing={0.5}>
+              <Tooltip title={expanded ? 'Collapse panel' : 'Expand panel'}>
+                <IconButton
+                  size="small"
+                  onClick={() => setExpanded(prev => !prev)}
+                  aria-label={expanded ? 'Collapse assistant panel' : 'Expand assistant panel'}
+                  aria-pressed={expanded}
+                  sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+                >
+                  {expanded ? <CloseFullscreenIcon fontSize="small" /> : <OpenInFullIcon fontSize="small" />}
+                </IconButton>
+              </Tooltip>
               <Tooltip title="New conversation">
                 <IconButton size="small" onClick={handleNewConversation} aria-label="New conversation">
                   <AddCommentOutlinedIcon fontSize="small" />
