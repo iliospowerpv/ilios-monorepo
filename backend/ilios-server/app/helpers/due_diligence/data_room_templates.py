@@ -23,6 +23,8 @@ The canonical ``Site`` entity is untouched (Project == Site is a UI label only).
 """
 from __future__ import annotations
 
+import csv
+import io
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -342,3 +344,126 @@ def parse_imported_template(payload: Any) -> dict[str, Any]:
 
     structure = validate_template_structure(structure)
     return {"name": name.strip(), "description": description, "structure": structure}
+
+
+# --- CSV import -------------------------------------------------------------
+# A flat, spreadsheet-friendly alternative to the JSON envelope: one row per
+# expected document. Sections/subsections are created in first-appearance order
+# and the assembled structure is validated fail-closed exactly like JSON import.
+CSV_COLUMNS = ("section_key", "subsection_key", "kind", "description", "guidance", "required")
+CSV_REQUIRED_COLUMNS = ("section_key", "kind")
+_CSV_TRUE_VALUES = {"true", "t", "1", "yes", "y", "required"}
+_CSV_FALSE_VALUES = {"false", "f", "0", "no", "n", "optional"}
+
+
+def _parse_csv_required(raw: str | None, *, kind: str, row_num: int) -> bool:
+    if raw is None or not raw.strip():
+        return True
+    value = raw.strip().lower()
+    if value in _CSV_TRUE_VALUES:
+        return True
+    if value in _CSV_FALSE_VALUES:
+        return False
+    raise TemplateStructureError(
+        f"Row {row_num}: 'required' for '{kind}' must be true/false (got '{raw.strip()}')."
+    )
+
+
+def parse_csv_template(csv_text: Any) -> dict[str, Any]:
+    """Parse a flat CSV (one row per expected document) into a validated structure.
+
+    Header row required (case-insensitive). Recognized columns:
+      * ``section_key``    (required) — stable DocumentSections member key
+      * ``subsection_key`` (optional) — nests the document under a subsection
+      * ``kind``           (required to add a document) — stable SiteDocumentsEnum key
+      * ``description``    (optional)
+      * ``guidance``       (optional)
+      * ``required``       (optional, true/false, defaults to true)
+
+    Sections and subsections are created in first-appearance order. A row with a
+    blank ``kind`` registers an (empty) section/subsection without a document.
+    Unknown keys/kinds and duplicates are rejected fail-closed by
+    ``validate_template_structure`` — identical guarantees to JSON import.
+    """
+    if not isinstance(csv_text, str):
+        raise TemplateStructureError("CSV import is empty.")
+    # Strip a leading UTF-8 BOM (Excel/Sheets exports commonly prefix one).
+    if csv_text.startswith("\ufeff"):
+        csv_text = csv_text[1:]
+    if not csv_text.strip():
+        raise TemplateStructureError("CSV import is empty.")
+
+    reader = csv.DictReader(io.StringIO(csv_text))
+    if not reader.fieldnames:
+        raise TemplateStructureError("CSV import is missing a header row.")
+
+    header = {(name or "").strip().lower() for name in reader.fieldnames}
+    missing = [column for column in CSV_REQUIRED_COLUMNS if column not in header]
+    if missing:
+        raise TemplateStructureError(
+            "CSV header must include the column(s): " + ", ".join(missing) + "."
+        )
+
+    def _cell(row: dict[str, Any], column: str) -> str | None:
+        for key, value in row.items():
+            if isinstance(key, str) and key.strip().lower() == column:
+                return value if isinstance(value, str) else None
+        return None
+
+    sections: dict[str, dict[str, Any]] = {}
+    has_data_row = False
+
+    for row_num, row in enumerate(reader, start=2):  # row 1 is the header
+        cells = {column: _cell(row, column) for column in CSV_COLUMNS}
+        if not any((value or "").strip() for value in cells.values()):
+            continue  # skip fully blank lines
+        has_data_row = True
+
+        section_key = (cells["section_key"] or "").strip()
+        if not section_key:
+            raise TemplateStructureError(f"Row {row_num}: 'section_key' is required.")
+
+        subsection_key = (cells["subsection_key"] or "").strip() or None
+        kind = (cells["kind"] or "").strip() or None
+        description = (cells["description"] or "").strip() or None
+        guidance = (cells["guidance"] or "").strip() or None
+
+        section = sections.setdefault(
+            section_key, {"key": section_key, "documents": [], "subsections": {}}
+        )
+        if subsection_key:
+            subsection = section["subsections"].setdefault(
+                subsection_key, {"key": subsection_key, "documents": []}
+            )
+            target_documents = subsection["documents"]
+        else:
+            target_documents = section["documents"]
+
+        if kind:
+            target_documents.append(
+                {
+                    "kind": kind,
+                    "description": description,
+                    "guidance": guidance,
+                    "required": _parse_csv_required(cells["required"], kind=kind, row_num=row_num),
+                }
+            )
+
+    if not has_data_row:
+        raise TemplateStructureError("CSV import has no data rows.")
+
+    structure = {
+        "version": STRUCTURE_VERSION,
+        "sections": [
+            {
+                "key": section["key"],
+                "documents": section["documents"],
+                "subsections": [
+                    {"key": sub["key"], "documents": sub["documents"]}
+                    for sub in section["subsections"].values()
+                ],
+            }
+            for section in sections.values()
+        ],
+    }
+    return validate_template_structure(structure)

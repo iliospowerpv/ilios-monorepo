@@ -25,6 +25,7 @@ from app.helpers.authentication import get_current_user
 from app.helpers.authorization.project_access import get_authorized_site
 from app.helpers.due_diligence.data_room_templates import (
     TemplateStructureError,
+    parse_csv_template,
     parse_imported_template,
     serialize_template,
     snapshot_default_structure,
@@ -236,18 +237,25 @@ async def import_template(
 ) -> dict:
     _require_edit(current_user, site, db_session)
     try:
-        parsed = parse_imported_template(payload.payload)
+        if payload.csv is not None:
+            structure = parse_csv_template(payload.csv)
+            name = (payload.name or "Imported Template").strip()
+            description = None
+        else:
+            parsed = parse_imported_template(payload.payload)
+            name = (payload.name or parsed["name"]).strip()
+            description = parsed["description"]
+            structure = parsed["structure"]
     except TemplateStructureError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc))
 
-    name = (payload.name or parsed["name"]).strip()
     template = DataRoomTemplateCRUD(db_session).create_item(
         {
             "company_id": site.company_id,
             "created_by_id": current_user.id,
             "name": name,
-            "description": parsed["description"],
-            "structure": parsed["structure"],
+            "description": description,
+            "structure": structure,
         }
     )
     return {"code": 201, "id": template.id, "message": "Template has been imported"}

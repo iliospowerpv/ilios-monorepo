@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Any, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schema.message import Success
 
@@ -77,9 +77,22 @@ class DuplicateTemplateSchema(BaseModel):
 
 
 class ImportTemplateSchema(BaseModel):
-    payload: dict[str, Any] = Field(description="Exported template envelope or a bare structure object")
+    payload: Optional[dict[str, Any]] = Field(
+        default=None,
+        description="Exported template envelope or a bare structure object (JSON import)",
+    )
+    csv: Optional[str] = Field(
+        default=None,
+        description="Template CSV text (one row per expected document) for CSV import",
+    )
     name: Optional[str] = Field(default=None, min_length=1, max_length=200)
     model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def _exactly_one_source(self) -> "ImportTemplateSchema":
+        if (self.payload is None) == (self.csv is None):
+            raise ValueError("Provide exactly one of 'payload' (JSON) or 'csv'.")
+        return self
 
 
 class TemplateExportSchema(BaseModel):

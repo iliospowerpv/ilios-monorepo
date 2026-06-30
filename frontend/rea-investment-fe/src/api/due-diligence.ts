@@ -1073,6 +1073,14 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     return response.data;
   };
 
+  const importTemplateCsv = async (siteId: number, csv: string, name?: string): Promise<TemplateMutationResponse> => {
+    const response = await httpClient.post<TemplateMutationResponse>(
+      `/api/due-diligence/${siteId}/document-templates/import`,
+      { csv, name }
+    );
+    return response.data;
+  };
+
   const duplicateTemplate = async (
     siteId: number,
     templateId: number,
@@ -1166,6 +1174,7 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     createTemplateFromDataRoom,
     createTemplate,
     importTemplate,
+    importTemplateCsv,
     duplicateTemplate,
     updateTemplate,
     archiveTemplate,

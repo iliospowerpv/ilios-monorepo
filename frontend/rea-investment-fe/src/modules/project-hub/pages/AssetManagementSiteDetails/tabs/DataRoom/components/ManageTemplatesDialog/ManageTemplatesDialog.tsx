@@ -17,6 +17,8 @@ import Tooltip from '@mui/material/Tooltip';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import Stack from '@mui/material/Stack';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import AddIcon from '@mui/icons-material/Add';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import UploadIcon from '@mui/icons-material/Upload';
@@ -53,6 +55,7 @@ export const ManageTemplatesDialog: React.FC<ManageTemplatesDialogProps> = ({ op
   const [formName, setFormName] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [importText, setImportText] = useState('');
+  const [importFormat, setImportFormat] = useState<'json' | 'csv'>('json');
   const [renameTarget, setRenameTarget] = useState<DataRoomTemplateSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,6 +74,7 @@ export const ManageTemplatesDialog: React.FC<ManageTemplatesDialogProps> = ({ op
     setFormName('');
     setFormDescription('');
     setImportText('');
+    setImportFormat('json');
     setRenameTarget(null);
     setError(null);
   };
@@ -102,6 +106,9 @@ export const ManageTemplatesDialog: React.FC<ManageTemplatesDialogProps> = ({ op
 
   const importMutation = useMutation({
     mutationFn: () => {
+      if (importFormat === 'csv') {
+        return ApiClient.dueDiligence.importTemplateCsv(siteId, importText, formName.trim() || undefined);
+      }
       let parsed: Record<string, unknown>;
       try {
         parsed = JSON.parse(importText);
@@ -202,6 +209,16 @@ export const ManageTemplatesDialog: React.FC<ManageTemplatesDialogProps> = ({ op
       setError('Name is required');
       return;
     }
+    if (formMode === 'import') {
+      if (!importText.trim()) {
+        setError(importFormat === 'csv' ? 'Paste the template CSV to import' : 'Paste the template JSON to import');
+        return;
+      }
+      if (importFormat === 'csv' && !formName.trim()) {
+        setError('Name is required for CSV import');
+        return;
+      }
+    }
     if (formMode === 'capture') captureMutation.mutate();
     else if (formMode === 'blank') blankMutation.mutate();
     else if (formMode === 'import') importMutation.mutate();
@@ -268,22 +285,59 @@ export const ManageTemplatesDialog: React.FC<ManageTemplatesDialogProps> = ({ op
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {formMode === 'import' && (
-                <TextField
-                  label="Exported template JSON"
-                  value={importText}
-                  onChange={e => setImportText(e.target.value)}
-                  fullWidth
-                  multiline
-                  minRows={4}
-                  required
-                />
+                <>
+                  <ToggleButtonGroup
+                    size="small"
+                    exclusive
+                    color="primary"
+                    value={importFormat}
+                    onChange={(_e, value) => {
+                      if (value) setImportFormat(value);
+                    }}
+                    aria-label="Import format"
+                  >
+                    <ToggleButton value="json">JSON</ToggleButton>
+                    <ToggleButton value="csv">CSV</ToggleButton>
+                  </ToggleButtonGroup>
+                  <TextField
+                    label={importFormat === 'csv' ? 'Template CSV' : 'Exported template JSON'}
+                    value={importText}
+                    onChange={e => setImportText(e.target.value)}
+                    fullWidth
+                    multiline
+                    minRows={4}
+                    required
+                    placeholder={
+                      importFormat === 'csv'
+                        ? 'section_key,subsection_key,kind,description,guidance,required'
+                        : undefined
+                    }
+                  />
+                  {importFormat === 'csv' && (
+                    <Alert severity="info" icon={false} sx={{ py: 0.5 }}>
+                      <Typography variant="caption" component="div">
+                        One row per expected document. Columns: <code>section_key</code>, <code>subsection_key</code>{' '}
+                        (optional), <code>kind</code>, <code>description</code> (optional), <code>guidance</code>{' '}
+                        (optional), <code>required</code> (true/false, defaults to true). The first row must be the
+                        header. <code>section_key</code> and <code>kind</code> use the same stable keys shown in an
+                        exported JSON template.
+                      </Typography>
+                    </Alert>
+                  )}
+                </>
               )}
               <TextField
-                label={formMode === 'import' ? 'Name (optional override)' : 'Template name'}
+                label={
+                  formMode === 'import'
+                    ? importFormat === 'csv'
+                      ? 'Template name'
+                      : 'Name (optional override)'
+                    : 'Template name'
+                }
                 value={formName}
                 onChange={e => setFormName(e.target.value)}
                 fullWidth
-                required={formMode !== 'import'}
+                required={formMode !== 'import' || importFormat === 'csv'}
               />
               {formMode !== 'import' && (
                 <TextField

@@ -19,6 +19,7 @@ from app.helpers.due_diligence.data_room_templates import (
     TemplateStructureError,
     apply_template_to_site,
     build_section_mappers_from_template,
+    parse_csv_template,
     parse_imported_template,
     serialize_template,
     snapshot_default_structure,
@@ -194,6 +195,116 @@ class TestImportExport:
     def test_parse_rejects_non_dict(self):
         with pytest.raises(TemplateStructureError):
             parse_imported_template("nope")
+
+
+class TestCsvImport:
+    def test_parse_minimal_csv(self):
+        csv_text = (
+            "section_key,subsection_key,kind,description,guidance,required\n"
+            f"{DocumentSections.executive_summary.name},,{SiteDocumentsEnum.executive_summary.name},Thesis,,true\n"
+            f"{DocumentSections.preview.name},,{SiteDocumentsEnum.site_lease.name},Lease,,false\n"
+        )
+        structure = parse_csv_template(csv_text)
+        keys = [s["key"] for s in structure["sections"]]
+        # Sections are created in first-appearance order.
+        assert keys == [DocumentSections.executive_summary.name, DocumentSections.preview.name]
+        lease = structure["sections"][1]["documents"][0]
+        assert lease["kind"] == SiteDocumentsEnum.site_lease.name
+        assert lease["description"] == "Lease"
+        assert lease["required"] is False
+
+    def test_groups_documents_under_subsection(self):
+        secs = list(DocumentSections)
+        docs = list(SiteDocumentsEnum)
+        section_key, sub_key, doc_kind = secs[0].name, secs[1].name, docs[0].name
+        csv_text = (
+            "section_key,subsection_key,kind,description,guidance,required\n"
+            f"{section_key},{sub_key},{doc_kind},Sub doc,Upload it,true\n"
+        )
+        structure = parse_csv_template(csv_text)
+        section = structure["sections"][0]
+        assert section["documents"] == []
+        assert section["subsections"][0]["key"] == sub_key
+        assert section["subsections"][0]["documents"][0]["kind"] == doc_kind
+
+    def test_required_defaults_true_and_accepts_variants(self):
+        csv_text = (
+            "section_key,kind,required\n"
+            f"{DocumentSections.preview.name},{SiteDocumentsEnum.site_lease.name},\n"
+            f"{DocumentSections.preview.name},{SiteDocumentsEnum.ppa_and_amendments.name},no\n"
+        )
+        docs = parse_csv_template(csv_text)["sections"][0]["documents"]
+        assert docs[0]["required"] is True  # blank -> default true
+        assert docs[1]["required"] is False  # "no" -> false
+
+    def test_header_is_case_insensitive_and_skips_blank_rows(self):
+        csv_text = (
+            "Section_Key, Kind ,Required\n"
+            "\n"
+            f"{DocumentSections.preview.name},{SiteDocumentsEnum.site_lease.name},yes\n"
+        )
+        structure = parse_csv_template(csv_text)
+        assert structure["sections"][0]["documents"][0]["kind"] == SiteDocumentsEnum.site_lease.name
+
+    def test_strips_utf8_bom_header(self):
+        csv_text = (
+            "\ufeffsection_key,kind,required\n"
+            f"{DocumentSections.preview.name},{SiteDocumentsEnum.site_lease.name},true\n"
+        )
+        structure = parse_csv_template(csv_text)
+        assert structure["sections"][0]["documents"][0]["kind"] == SiteDocumentsEnum.site_lease.name
+
+    def test_rejects_missing_required_column(self):
+        with pytest.raises(TemplateStructureError):
+            parse_csv_template("section_key,description\nstage1,foo\n")
+
+    def test_rejects_unknown_section_key(self):
+        with pytest.raises(TemplateStructureError):
+            parse_csv_template(f"section_key,kind\n__nope__,{SiteDocumentsEnum.site_lease.name}\n")
+
+    def test_rejects_unknown_document_kind(self):
+        with pytest.raises(TemplateStructureError):
+            parse_csv_template(f"section_key,kind\n{DocumentSections.preview.name},__nope__\n")
+
+    def test_rejects_invalid_required_value(self):
+        csv_text = (
+            "section_key,kind,required\n"
+            f"{DocumentSections.preview.name},{SiteDocumentsEnum.site_lease.name},maybe\n"
+        )
+        with pytest.raises(TemplateStructureError):
+            parse_csv_template(csv_text)
+
+    def test_rejects_empty_csv(self):
+        with pytest.raises(TemplateStructureError):
+            parse_csv_template("   ")
+
+    def test_rejects_header_only_csv(self):
+        with pytest.raises(TemplateStructureError):
+            parse_csv_template("section_key,kind\n")
+
+    def test_rejects_duplicate_kind_in_same_section(self):
+        csv_text = (
+            "section_key,kind\n"
+            f"{DocumentSections.preview.name},{SiteDocumentsEnum.site_lease.name}\n"
+            f"{DocumentSections.preview.name},{SiteDocumentsEnum.site_lease.name}\n"
+        )
+        with pytest.raises(TemplateStructureError):
+            parse_csv_template(csv_text)
+
+
+class TestImportSchemaValidation:
+    def test_requires_exactly_one_source(self):
+        from pydantic import ValidationError
+
+        from app.schema.data_room_templates import ImportTemplateSchema
+
+        with pytest.raises(ValidationError):
+            ImportTemplateSchema()  # neither payload nor csv
+        with pytest.raises(ValidationError):
+            ImportTemplateSchema(payload={"sections": []}, csv="x")  # both
+        # Exactly one source is accepted (structure validity is checked later).
+        assert ImportTemplateSchema(csv="x").csv == "x"
+        assert ImportTemplateSchema(payload={"sections": []}).payload == {"sections": []}
 
 
 class TestApplyAndSnapshotRoundTrip:
@@ -407,6 +518,32 @@ class TestRouterEndpoints:
             row = DataRoomTemplateCRUD(db_session).get_by_id(template_id)
             assert row.name == "Imported Router Template"
             assert row.description == "from-import"
+        finally:
+            DataRoomTemplateCRUD(db_session).delete_by_id(template_id)
+            db_session.commit()
+
+    def test_import_csv_creates_template(self, db_session, site, current_user, patched_authz):
+        from app.schema.data_room_templates import ImportTemplateSchema
+
+        csv_text = (
+            "section_key,subsection_key,kind,description,guidance,required\n"
+            f"{DocumentSections.preview.name},,{SiteDocumentsEnum.site_lease.name},Executed lease,,false\n"
+        )
+        created = asyncio.run(
+            router_mod.import_template(
+                payload=ImportTemplateSchema(csv=csv_text, name="CSV Imported Template"),
+                current_user=current_user,
+                site=site,
+                db_session=db_session,
+            )
+        )
+        db_session.commit()
+        template_id = created["id"]
+        try:
+            row = DataRoomTemplateCRUD(db_session).get_by_id(template_id)
+            assert row.name == "CSV Imported Template"
+            kinds = {d["kind"] for s in row.structure["sections"] for d in s["documents"]}
+            assert SiteDocumentsEnum.site_lease.name in kinds
         finally:
             DataRoomTemplateCRUD(db_session).delete_by_id(template_id)
             db_session.commit()
