@@ -107,3 +107,23 @@ Everything below is additive, flag-gated, and keeps the read-only / zero-write-t
   /api/assistant/admin/usage` is flag-gated AND platform-admin-gated (`has_platform_bypass`; non-admin
   403, flag-off 404). FE `AssistantUsagePanel` mounted under Settings → "AI Assistant" tab
   (`/settings/assistant-usage`, `AdminType.system` gate).
+
+## Phase 1 (Workspace Intelligence) — per-site summary tools authorize AT THE TOOL LAYER
+The original tools wrap services that self-authorize from `current_user`. The per-domain "summary"
+tools (telemetry health, DD reconciliation, weather readiness, active facts, expected summary,
+inventory reconciliation, device eligibility) wrap read services that take a bare `site_id`/`site`
+and do **NOT** self-authorize — they normally rely on the ROUTER's `Depends(get_authorized_site)`
+(+ `Diligence:view` for DD/facts). So when wrapping them as tools you MUST reproduce the
+router-equivalent guard in the handler **before** calling the service:
+- resolve via `resolve_candidate_sites(db, user, site_id=, limit=1)` (fail-closed: id not visible
+  → `[]` → honest `{available:false, reason, site_id}` envelope, service NEVER called);
+- DD-derived tools additionally require `can_view_diligence(db, user, site)` before calling.
+
+**Why:** these services have no internal permission check; calling one with an unauthorized site_id
+would silently widen scope. The "runs as caller" guarantee only holds because the tool layer applies
+the same guard the router would. **How to apply:** any future tool wrapping a router-authorized read
+service must add the matching tool-layer guard — don't assume the service self-authorizes; check its
+router. Keep tools one-service / no added calc; window scoping (naive-UTC, buckets {15m,30m,1h,1d},
+disclosed back in the result) is parameter plumbing, not business logic. Deferred by design: no
+site-level parse rollup and no company/site "summary" service exist to wrap (only per-file parse +
+company-scoped onboarding readiness/progress/recommendations).

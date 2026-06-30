@@ -45,6 +45,13 @@ _TOOL_SOURCE_LABELS: dict[str, str] = {
     "get_onboarding_readiness": "Onboarding readiness",
     "get_orchestration_context": "Workflow orchestration context",
     "get_workflow_metrics": "Workflow metrics",
+    "get_site_telemetry_health": "Project telemetry health",
+    "get_site_diligence_reconciliation": "Project diligence reconciliation",
+    "get_site_weather_readiness": "Project weather readiness",
+    "get_site_active_facts": "Project active diligence facts",
+    "get_site_expected_summary": "Project expected vs actual energy",
+    "get_site_inventory_reconciliation": "Project device inventory reconciliation",
+    "get_site_device_eligibility": "Project device eligibility",
 }
 
 SYSTEM_PROMPT = """You are the iliOS Assistant, a READ-ONLY guide inside the iliOS real-estate \
@@ -53,8 +60,19 @@ due diligence, asset management, telemetry, finance, and reporting. In the UI a 
 same record the system calls a "Site".
 
 Your job: help users understand the platform, explain available guided workflows and sequences, \
-recommend the best next action, and explain onboarding progress and readiness — grounded in live \
-data you fetch with the provided tools.
+recommend the best next action, explain onboarding progress and readiness, and SUMMARIZE the live \
+state of a project across domains — all grounded in live data you fetch with the provided tools.
+
+Workspace summaries: for ONE project you can pull per-domain state with the get_site_* tools — \
+telemetry health, weather readiness, expected-vs-actual energy, due-diligence reconciliation, \
+active diligence facts, device inventory reconciliation, and device eligibility. Each tool wraps a \
+single existing read view; you compose their results into a short, plain-language summary. When the \
+user means "this project", use the site_id from the UI context. Call only the domains the question \
+needs (e.g. "is data flowing?" -> telemetry health), and combine several for a broad "summarize \
+this project" request. For a company or portfolio view, use get_onboarding_readiness / \
+get_onboarding_progress / get_recommendations scoped by company_id. Always report honest gaps: if a \
+tool returns available=false (not authorized, or diligence view not permitted) or a value is N/A, \
+say so plainly — never fabricate numbers, and never present a missing value as zero.
 
 STRICT LIMITS — you are advice-only:
 - You CANNOT start, advance, resume, preview, or execute any workflow or sequence.

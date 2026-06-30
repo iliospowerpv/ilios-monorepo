@@ -12,6 +12,7 @@ from __future__ import annotations
 _GENERAL: list[tuple[str, str]] = [
     ("What should I do next?", "What should I do next?"),
     ("Explain my readiness", "Explain my onboarding readiness."),
+    ("Summarize a project", "Summarize a project's status across telemetry, diligence, weather, and devices."),
     ("What can you do?", "What can you do, and what can't you do?"),
     ("What is iliOS?", "Give me a quick overview of what iliOS does."),
 ]
@@ -36,6 +37,7 @@ _ROUTE_BUCKETS: list[tuple[str, str, list[tuple[str, str]]]] = [
             ("How do I add terms?", "How do I add due-diligence terms to this project?"),
             ("Promote vs activate", "What's the difference between promoting a term and activating a baseline?"),
             ("What needs review?", "What due-diligence items still need my review?"),
+            ("Summarize diligence", "Summarize this project's due-diligence reconciliation and active facts."),
         ],
     ),
     (
@@ -46,6 +48,7 @@ _ROUTE_BUCKETS: list[tuple[str, str, list[tuple[str, str]]]] = [
             ("How do I refresh telemetry?", "How do I refresh telemetry for this project?"),
             ("What is the expected baseline?", "What is the expected baseline and is one active here?"),
             ("Why is expected unavailable?", "Why might expected production show as unavailable?"),
+            ("Summarize telemetry", "Summarize this project's telemetry health, weather readiness, and expected vs actual energy."),
         ],
     ),
     (
@@ -65,6 +68,7 @@ _ROUTE_BUCKETS: list[tuple[str, str, list[tuple[str, str]]]] = [
             ("What should I do next?", "What should I do next on this project?"),
             ("How do devices map?", "Which devices can be mapped and which drive expected math?"),
             ("How do I refresh telemetry?", "How do I refresh telemetry for this project?"),
+            ("Summarize this project", "Give me a full summary of this project across telemetry, diligence, weather, and devices."),
         ],
     ),
     (
