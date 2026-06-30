@@ -72,6 +72,16 @@ def test_event_literal_matches_model_enum():
     assert literal_values == enum_values
 
 
+def test_entry_sources_match_frontend_allowlist():
+    # Canonical entry-source vocabulary for the `discoverability_entry_clicked` event. This pinned set
+    # MUST stay in sync with the FE `ASSISTANT_ENTRY_SOURCES` tuple in
+    # frontend/rea-investment-fe/src/contexts/assistantLauncher/assistantLauncher.tsx (which has its
+    # own mirror test). Changing one side without the other fails this test — the cross-language drift
+    # guard so the closed analytics vocabulary can never silently diverge.
+    canonical = {"topbar", "help_menu", "sidebar", "empty_state", "module_header"}
+    assert ui_events_service._ENTRY_SOURCES == canonical
+
+
 # --- 2. ingest normalization ---------------------------------------------------------------------
 
 

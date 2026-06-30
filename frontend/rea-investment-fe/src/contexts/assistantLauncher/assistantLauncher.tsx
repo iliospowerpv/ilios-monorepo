@@ -1,8 +1,12 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
-// Bounded set of places that can open the assistant. Mirrors the server-side `_ENTRY_SOURCES`
-// allowlist for the `discoverability_entry_clicked` event so analytics stays a closed vocabulary.
-export type AssistantEntrySource = 'topbar' | 'help_menu' | 'sidebar' | 'empty_state' | 'module_header';
+// Bounded set of places that can open the assistant. This runtime tuple is the SINGLE source of
+// truth for the entry-source vocabulary; the `AssistantEntrySource` union below is derived from it so
+// the type and the runtime list can never drift apart. It MUST stay in sync with the server-side
+// `_ENTRY_SOURCES` allowlist (backend `app/services/assistant/ui_events_service.py`) for the
+// `discoverability_entry_clicked` event — a drift test on each side pins this exact list.
+export const ASSISTANT_ENTRY_SOURCES = ['topbar', 'help_menu', 'sidebar', 'empty_state', 'module_header'] as const;
+export type AssistantEntrySource = (typeof ASSISTANT_ENTRY_SOURCES)[number];
 
 // A monotonic open request. The id lets the widget react to repeated requests from the same source
 // (each click bumps the id) without needing a callback registration.

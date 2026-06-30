@@ -89,7 +89,24 @@ capture or server-side profiling), which bounded impressions satisfy.
 
 The FE `AssistantEntrySource` union and `_HINT_KINDS`/`_ENTRY_SOURCES`/`_CARD_KINDS` server sets are
 kept as a closed vocabulary; a drift-guard test asserts the schema `Literal` and the model enum match
-exactly.
+exactly. The FE `AssistantEntrySource` union is **derived from a runtime tuple**
+(`ASSISTANT_ENTRY_SOURCES`) so the type and the runtime list can't diverge, and a **cross-language
+drift guard** pins the entry-source vocabulary on both sides (a Jest test on
+`ASSISTANT_ENTRY_SOURCES` and a pytest test on `_ENTRY_SOURCES`), so changing one side without the
+other fails CI.
+
+### Design decision — feedback metrics are sourced from conversation truth, not a UI event
+
+There is deliberately **no `feedback_up` / `feedback_down` UI-interaction event** in the vocabulary
+above. Thumbs feedback is already persisted as authoritative state on the assistant message itself
+(`assistant_conversation_messages.feedback`), and the admin usage summary aggregates `feedback_up` /
+`feedback_down` / `feedback_none` directly from that column (`usage_service.build_usage_summary`).
+Emitting a parallel fire-and-forget UI event would create a **second, less-reliable source** (the UI
+events are best-effort/batched and can be dropped on failure) that could silently diverge from the
+persisted source of truth, and it would add no reporting capability we don't already have. Feedback
+reporting therefore stays sourced from the conversation store; the UI-event stream covers only
+interactions that have **no** persisted record of their own (opens, dismissals, card clicks, hint and
+first-run lifecycle, discoverability entries).
 
 ## 3. Files changed
 
