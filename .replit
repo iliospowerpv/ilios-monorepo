@@ -59,6 +59,10 @@ externalPort = 3000
 localPort = 8000
 externalPort = 8000
 
+[[ports]]
+localPort = 23636
+externalPort = 3001
+
 [deployment]
 deploymentTarget = "vm"
 build = ["bash", "-c", "(cd frontend/rea-investment-fe && npm install && rm -rf node_modules/.cache build && CI=false npm run build) && (cd backend/ilios-server && pip install -r requirements.txt)"]
@@ -105,6 +109,7 @@ telemetry_device_static_info_func_url = "https://placeholder-function.com/teleme
 gcp_project_id = "ilios-production-telemetry"
 pbi_tenant_id = "904fc939-8148-4b54-b032-1bc4f81966a9"
 pbi_client_id = "96aec30d-0ebe-416c-9f26-a09f42278916"
+native_assistant_enabled = "true"
 
 [userenv.production]
 pbi_workspace_id = "EF47351C-2E0B-4891-843C-BC091B232E41"

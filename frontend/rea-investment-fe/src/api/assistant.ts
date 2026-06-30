@@ -1,9 +1,10 @@
 import type { AxiosInstance } from 'axios';
 
-// Base path (httpClient baseURL already includes `/api`). The whole surface is gated behind the
-// backend `native_assistant_enabled` flag — every endpoint 404s when the assistant is off, which is
-// how the FE decides whether to mount the assistant at all (see `getConfig`).
-const A = '/assistant';
+// Base path. The shared httpClient baseURL is the backend origin only (no `/api`), so — like every
+// other API module in this codebase — the `/api` prefix is part of the path here. The whole surface
+// is gated behind the backend `native_assistant_enabled` flag — every endpoint 404s when the
+// assistant is off, which is how the FE decides whether to mount the assistant at all (see `getConfig`).
+const A = '/api/assistant';
 
 // --- Read-only chat ------------------------------------------------------------------
 
