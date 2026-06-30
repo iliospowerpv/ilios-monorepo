@@ -20,6 +20,7 @@ import axios from 'axios';
 import { ApiClient } from '../../api';
 import { useAuth } from '../../contexts/auth/auth';
 import { useEntityContext } from '../../contexts/entityContext';
+import { useWorkflowCompanion } from '../../contexts/workflowCompanion';
 import { AssistantChatPanel, ChatUiMessage, AssistantChatError } from './AssistantChatPanel';
 import { ConversationList } from './ConversationList';
 import type { AssistantChatRequest, AssistantContextHints, AssistantFeedbackRating } from '../../api/assistant';
@@ -53,6 +54,9 @@ export const AssistantWidget: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentCompany, currentProject } = useEntityContext();
+  // Advisory snapshot of the workflow run the user is currently inside (published by <Wizard>). When
+  // present, the assistant switches into read-only "Workflow Companion Mode". Identifiers only.
+  const { companion } = useWorkflowCompanion();
   const queryClient = useQueryClient();
 
   const [open, setOpen] = React.useState(false);
@@ -87,13 +91,20 @@ export const AssistantWidget: React.FC = () => {
       'suggested-prompts',
       location.pathname,
       currentCompany?.id ?? null,
-      currentProject?.id ?? null
+      currentProject?.id ?? null,
+      // Companion run/step so the prompts + cards refresh as the user advances through a wizard.
+      companion?.runId ?? null,
+      companion?.workflowId ?? null,
+      companion?.stepId ?? null
     ],
     queryFn: () =>
       ApiClient.assistant.getSuggestedPrompts({
         route: location.pathname,
         siteId: currentProject?.id ?? null,
-        companyId: currentCompany?.id ?? null
+        companyId: currentCompany?.id ?? null,
+        runId: companion?.runId ?? null,
+        workflowId: companion?.workflowId ?? null,
+        stepId: companion?.stepId ?? null
       }),
     enabled: isAuthenticated && configQuery.isSuccess && open && view === 'chat',
     staleTime: 5 * 60 * 1000
@@ -105,9 +116,21 @@ export const AssistantWidget: React.FC = () => {
       company_id: currentCompany?.id ?? null,
       // Project == Site (UI label only); send the same id under both keys.
       site_id: currentProject?.id ?? null,
-      project_id: currentProject?.id ?? null
+      project_id: currentProject?.id ?? null,
+      // Advisory workflow run/step (when inside a wizard). Identifiers only — the assistant reads the
+      // run server-side via its owner-scoped tool; NEVER form values, files, or confirm tokens.
+      run_id: companion?.runId ?? null,
+      workflow_id: companion?.workflowId ?? null,
+      step_id: companion?.stepId ?? null
     };
-  }, [location.pathname, currentCompany?.id, currentProject?.id]);
+  }, [
+    location.pathname,
+    currentCompany?.id,
+    currentProject?.id,
+    companion?.runId,
+    companion?.workflowId,
+    companion?.stepId
+  ]);
 
   const chatMutation = useMutation({
     mutationFn: (request: AssistantChatRequest) => ApiClient.assistant.chat(request),

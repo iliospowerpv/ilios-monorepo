@@ -35,6 +35,27 @@ class AssistantContextHints(BaseModel):
         description="Alias of site_id in UI terminology (Project == Site).",
         examples=[1],
     )
+    # --- Workflow Companion hints (advisory only) ----------------------------------------------
+    # Set by the FE when the user is inside a guided workflow wizard, so the assistant can switch
+    # into Workflow Companion Mode and ground its guidance in the active run. These are advisory
+    # ONLY: the assistant still re-fetches authoritative, owner-scoped run state via the read tool,
+    # and these hints never widen authorization, fabricate data, or trigger any action.
+    workflow_id: Optional[str] = Field(
+        default=None,
+        description="Advisory: the workflow definition id of the wizard the user is in.",
+        examples=["add_company"],
+    )
+    run_id: Optional[int] = Field(
+        default=None,
+        description="Advisory: the active workflow run id the user is viewing. Presence of this "
+        "hint switches the assistant into read-only Workflow Companion Mode.",
+        examples=[42],
+    )
+    step_id: Optional[str] = Field(
+        default=None,
+        description="Advisory: the wizard step the user is currently viewing.",
+        examples=["collect_company"],
+    )
 
 
 class AssistantMessage(BaseModel):

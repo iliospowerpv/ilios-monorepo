@@ -17,6 +17,19 @@ _GENERAL: list[tuple[str, str]] = [
     ("What is iliOS?", "Give me a quick overview of what iliOS does."),
 ]
 
+# Workflow Companion bucket — surfaced ONLY when the user is inside a guided workflow run (the FE
+# context carries an active run_id). These are step-aware example questions the assistant answers by
+# grounding in the run via the read-only get_workflow_run tool. Like every other bucket they are pure
+# UI affordances: no data fetch, no account assertions, and the assistant never executes anything.
+_COMPANION: list[tuple[str, str]] = [
+    ("Explain this step", "Explain the step I'm on in this workflow — what it's for and what each field means."),
+    ("What does each field mean?", "What does each field on this step mean, and which ones are required?"),
+    ("Why did my entry fail?", "Why did my last entry fail validation, and how do I fix it?"),
+    ("What happens when I confirm?", "What will the final confirm step of this workflow do when I run it?"),
+    ("How do I resume later?", "If I stop now, how do I resume this workflow later?"),
+    ("Is anything blocking me?", "Is anything blocking me from completing this workflow?"),
+]
+
 # Ordered route-prefix → prompts. First matching prefix wins, so list more specific prefixes first.
 _ROUTE_BUCKETS: list[tuple[str, str, list[tuple[str, str]]]] = [
     (
@@ -87,11 +100,19 @@ def _normalize(route: str | None) -> str:
     return (route or "").strip().lower()
 
 
-def get_suggested_prompts(route: str | None) -> tuple[str | None, list[dict]]:
+def get_suggested_prompts(
+    route: str | None, *, in_workflow: bool = False
+) -> tuple[str | None, list[dict]]:
     """Return ``(context_label, prompts)`` for a route. Falls back to general prompts.
 
-    Deterministic and side-effect free. ``prompts`` are JSON-serializable dicts.
+    When ``in_workflow`` is true (the FE context carries an active workflow run_id), returns the
+    step-aware Workflow Companion prompts regardless of route. Deterministic and side-effect free;
+    ``prompts`` are JSON-serializable dicts.
     """
+    if in_workflow:
+        return "Workflow Companion", [
+            {"label": p_label, "prompt": p_prompt} for p_label, p_prompt in _COMPANION
+        ]
     normalized = _normalize(route)
     for prefix, label, prompts in _ROUTE_BUCKETS:
         if normalized.startswith(prefix):

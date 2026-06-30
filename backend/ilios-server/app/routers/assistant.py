@@ -282,6 +282,9 @@ def get_suggested_prompts(
     route: Optional[str] = None,
     site_id: Optional[int] = None,
     company_id: Optional[int] = None,
+    run_id: Optional[int] = None,
+    workflow_id: Optional[str] = None,
+    step_id: Optional[str] = None,
 ) -> AssistantSuggestedPromptsResponse:
     """Return static, page-aware example prompts PLUS proactive, route-aware navigator cards.
 
@@ -289,10 +292,23 @@ def get_suggested_prompts(
     "global navigator" affordance: deterministic, permission-gated ``explain``/``open``/``resume``
     deep links derived from the current route + scope. Every card is validated read-only and
     fail-closed by ``build_navigator_cards`` (a denied/under-scoped card is simply absent), so this
-    endpoint stays zero-mutation and never widens authorization."""
+    endpoint stays zero-mutation and never widens authorization.
+
+    When ``run_id`` is supplied (the user is inside a guided workflow wizard), both surfaces switch
+    to Workflow Companion Mode: step-aware companion prompts + companion explain/resume cards. The
+    workflow hints are advisory only and never widen authorization."""
     _require_enabled()
-    context_label, prompts = suggested_prompts.get_suggested_prompts(route)
-    hints = AssistantContextHints(route=route, site_id=site_id, company_id=company_id)
+    context_label, prompts = suggested_prompts.get_suggested_prompts(
+        route, in_workflow=run_id is not None
+    )
+    hints = AssistantContextHints(
+        route=route,
+        site_id=site_id,
+        company_id=company_id,
+        run_id=run_id,
+        workflow_id=workflow_id,
+        step_id=step_id,
+    )
     action_cards = build_navigator_cards(db_session, current_user, hints)
     return AssistantSuggestedPromptsResponse(
         context_label=context_label,

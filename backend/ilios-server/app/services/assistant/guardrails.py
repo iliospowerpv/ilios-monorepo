@@ -40,6 +40,7 @@ PROHIBITED_KEYWORDS: tuple[str, ...] = (
     "declare",
     "bypass",
     "write",
+    "save",
     "mutate",
     "create",
     "update",

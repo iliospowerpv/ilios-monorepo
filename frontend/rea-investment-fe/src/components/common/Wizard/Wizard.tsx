@@ -6,6 +6,7 @@ import Stepper from '@mui/material/Stepper';
 import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import { ConfirmationModal } from '../../modals/ConfirmationModal/ConfirmationModal';
+import { usePublishWorkflowCompanion } from '../../../contexts/workflowCompanion';
 import { WizardStepFields } from './WizardStepFields';
 import { WizardReviewStep } from './WizardReviewStep';
 import type {
@@ -92,6 +93,18 @@ export const Wizard: React.FC<WizardProps> = ({
 
   const steps = liveDefinition.steps;
   const activeStep = steps[activeIndex];
+
+  // Publish an advisory snapshot of THIS run/step so the read-only assistant can enter Workflow
+  // Companion Mode while the wizard is mounted (cleared on unmount). Identifiers only — never the
+  // collected form values, the selected file, or the confirm token. The assistant reads run truth
+  // server-side via its owner-scoped read-only tool; it never executes anything here.
+  usePublishWorkflowCompanion({
+    runId: run.id,
+    workflowId: run.workflow_id ?? null,
+    stepId: activeStep?.id ?? null,
+    stepIndex: activeIndex,
+    totalSteps: steps.length
+  });
 
   // Re-seed only when a fresh definition object is mounted (stable prop ⇒ runs once). Reloads from
   // onReloadRun set liveDefinition directly and never change the prop, so they are preserved.

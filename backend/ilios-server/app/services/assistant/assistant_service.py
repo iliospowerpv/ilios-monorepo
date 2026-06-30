@@ -45,6 +45,7 @@ _TOOL_SOURCE_LABELS: dict[str, str] = {
     "get_onboarding_readiness": "Onboarding readiness",
     "get_orchestration_context": "Workflow orchestration context",
     "get_workflow_metrics": "Workflow metrics",
+    "get_workflow_run": "Workflow run detail",
     "get_site_telemetry_health": "Project telemetry health",
     "get_site_diligence_reconciliation": "Project diligence reconciliation",
     "get_site_weather_readiness": "Project weather readiness",
@@ -90,6 +91,33 @@ use. If something is unavailable or permission-denied, say so honestly — do no
 - Never claim to have performed an action. You only inform and recommend."""
 
 
+# Appended as an extra system turn ONLY when the UI context carries a workflow ``run_id`` — i.e. the
+# user is actively inside a guided workflow wizard. It narrows the assistant into a step-aware guide
+# grounded in the real run via ``get_workflow_run`` and RE-ASSERTS the zero-execution contract: the
+# Workflow Engine is the only mutator and every wizard click belongs to the user.
+COMPANION_MODE_ADDENDUM = """WORKFLOW COMPANION MODE — the user is currently inside a guided \
+workflow wizard (a multi-step form run by the iliOS Workflow Engine). The UI context carries the \
+active run_id (and usually the workflow_id and the step the user is viewing).
+
+Ground every answer in that run's REAL state: call get_workflow_run with that run_id FIRST, then \
+answer from what it returns. It gives you the run status and current step, each step's saved inputs \
+and any validation_errors the user already hit, and the workflow definition (each step's fields with \
+their label/type/required/help, the confirmation text shown before the final action, the governed \
+flag, prerequisites, and blocked_reason). If get_workflow_run returns available=false, the run is \
+not yours to read — say so plainly and do not guess its contents.
+
+In this mode, help the user with: what this step is for and what each field means; why a value they \
+entered failed validation (read it straight from validation_errors — never re-submit the form to \
+find out); what the final confirm/execute step will do (explain it from that step's confirmation \
+text — do NOT request a preview); how to resume the run later; and why the workflow is blocked \
+(prerequisites / blocked_reason).
+
+ZERO-EXECUTION CONTRACT (unconditional): you do NOT fill in fields, save or submit a step, generate \
+or request a preview, confirm, or execute/complete the workflow — the Workflow Engine is the ONLY \
+system that changes anything, and every click is the USER'S. Never say or imply that you did, will, \
+or can take any of those actions. You explain and guide; the user acts in the wizard."""
+
+
 def _context_preamble(req: AssistantChatRequest) -> str | None:
     ctx = req.context
     if not ctx:
@@ -102,6 +130,12 @@ def _context_preamble(req: AssistantChatRequest) -> str | None:
     site_id = ctx.site_id if ctx.site_id is not None else ctx.project_id
     if site_id is not None:
         parts.append(f"site_id(project_id)={site_id}")
+    if ctx.workflow_id:
+        parts.append(f"workflow_id={ctx.workflow_id}")
+    if ctx.run_id is not None:
+        parts.append(f"run_id={ctx.run_id}")
+    if ctx.step_id:
+        parts.append(f"step_id={ctx.step_id}")
     if not parts:
         return None
     return (
@@ -110,11 +144,22 @@ def _context_preamble(req: AssistantChatRequest) -> str | None:
     )
 
 
+def _companion_addendum(req: AssistantChatRequest) -> str | None:
+    """Return the Companion Mode system addendum when the user is inside a workflow run, else None."""
+    ctx = req.context
+    if ctx and ctx.run_id is not None:
+        return COMPANION_MODE_ADDENDUM
+    return None
+
+
 def _build_messages(req: AssistantChatRequest) -> list[dict]:
     messages: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
     preamble = _context_preamble(req)
     if preamble:
         messages.append({"role": "system", "content": preamble})
+    companion = _companion_addendum(req)
+    if companion:
+        messages.append({"role": "system", "content": companion})
     for turn in req.history:
         messages.append({"role": turn.role, "content": turn.content})
     messages.append({"role": "user", "content": req.message})

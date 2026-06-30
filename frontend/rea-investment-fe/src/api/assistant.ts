@@ -22,11 +22,16 @@ export interface AssistantMessage {
 
 // Optional, advisory UI context. NEVER widens authorization — the server still resolves all data
 // through its authz-scoped read-only tools. `project_id` is the UI alias of `site_id` (Project == Site).
+// The workflow fields (set only while inside a guided wizard) let the assistant enter read-only
+// "Workflow Companion Mode" by reading the run server-side — they carry NO form values/files/tokens.
 export interface AssistantContextHints {
   route?: string | null;
   company_id?: number | null;
   site_id?: number | null;
   project_id?: number | null;
+  run_id?: number | null;
+  workflow_id?: string | null;
+  step_id?: string | null;
 }
 
 // Transparency record of a single read-only tool the assistant invoked for a turn.
@@ -213,14 +218,26 @@ export const buildAssistantApi = (httpClient: AxiosInstance) => ({
     await httpClient.delete(`${A}/conversations/${conversationId}`);
   },
 
-  // Static, page-aware example prompts. Pure UI affordance — no business data is fetched.
+  // Static, page-aware example prompts (+ proactive navigator cards). Pure UI affordance — no
+  // business data is fetched. When a workflow run is supplied (the user is inside a wizard) the
+  // server returns step-aware Workflow Companion prompts/cards instead. Identifiers only.
   getSuggestedPrompts: async (
-    params: { route?: string | null; siteId?: number | null; companyId?: number | null } = {}
+    params: {
+      route?: string | null;
+      siteId?: number | null;
+      companyId?: number | null;
+      runId?: number | null;
+      workflowId?: string | null;
+      stepId?: string | null;
+    } = {}
   ): Promise<AssistantSuggestedPromptsResponse> => {
     const qs = new URLSearchParams();
     if (params.route) qs.set('route', params.route);
     if (params.siteId != null) qs.set('site_id', String(params.siteId));
     if (params.companyId != null) qs.set('company_id', String(params.companyId));
+    if (params.runId != null) qs.set('run_id', String(params.runId));
+    if (params.workflowId) qs.set('workflow_id', params.workflowId);
+    if (params.stepId) qs.set('step_id', params.stepId);
     const suffix = qs.toString() ? `?${qs.toString()}` : '';
     const { data } = await httpClient.get<AssistantSuggestedPromptsResponse>(`${A}/suggested-prompts${suffix}`);
     return data;

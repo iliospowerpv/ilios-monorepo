@@ -10,6 +10,7 @@ import { GlobalAdminBanner } from '../GlobalAdminBanner/GlobalAdminBanner';
 import { useAuth } from '../../../contexts/auth/auth';
 import { SidebarProvider } from '../../../contexts/sidebar';
 import { EntityContextProvider } from '../../../contexts/entityContext';
+import { WorkflowCompanionProvider } from '../../../contexts/workflowCompanion';
 import { AssistantWidget } from '../../assistant';
 
 export const BaseLayout: React.FC = () => {
@@ -24,14 +25,16 @@ export const BaseLayout: React.FC = () => {
   return (
     <EntityContextProvider>
       <SidebarProvider>
-        <Box sx={{ display: 'flex' }}>
-          <CssBaseline />
-          <GlobalAdminBanner />
-          <PageHeader />
-          <PageSidebar />
-          <Main />
-          <AssistantWidget />
-        </Box>
+        <WorkflowCompanionProvider>
+          <Box sx={{ display: 'flex' }}>
+            <CssBaseline />
+            <GlobalAdminBanner />
+            <PageHeader />
+            <PageSidebar />
+            <Main />
+            <AssistantWidget />
+          </Box>
+        </WorkflowCompanionProvider>
       </SidebarProvider>
     </EntityContextProvider>
   );

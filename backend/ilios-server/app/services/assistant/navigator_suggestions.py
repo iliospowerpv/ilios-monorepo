@@ -74,6 +74,29 @@ _EXPLAIN_BY_BUCKET: dict[str, tuple[str, str]] = {
     ),
 }
 
+# Workflow Companion explain cards — surfaced ONLY when the user is inside a guided workflow run
+# (``hints.run_id`` present). Each re-prompts the read-only chat with a step-aware question the
+# assistant answers by grounding in the run via get_workflow_run. Inert: clicking re-asks the chat,
+# it never navigates and never executes the workflow.
+_COMPANION_EXPLAINS: tuple[tuple[str, str], ...] = (
+    (
+        "Explain this step",
+        "Explain the step I'm currently on in this workflow — what it's for and what each field means.",
+    ),
+    (
+        "What does a field mean?",
+        "What does each field on the current step mean, and which ones are required?",
+    ),
+    (
+        "Why did my entry fail?",
+        "Why did my last entry on this step fail validation, and how do I fix it?",
+    ),
+    (
+        "What happens on confirm?",
+        "What will the final confirm step of this workflow do when I run it?",
+    ),
+)
+
 # Bucket -> ordered ``open`` target_views to offer (each still permission-gated + scope-checked).
 _OPEN_BY_BUCKET: dict[str, tuple[str, ...]] = {
     "project_overview": ("data_room", "reconciliation", "site_finance"),
@@ -179,6 +202,52 @@ def _collect(result: dict, sink: list[AssistantActionCard], seen: set) -> None:
         logger.warning("navigator skipped a malformed action card: %r", card)
 
 
+def _build_companion_cards(
+    db_session: Session,
+    current_user,
+    hints: AssistantContextHints,
+    *,
+    max_cards: int,
+) -> list[AssistantActionCard]:
+    """Step-aware companion cards for a user inside a guided workflow run (``hints.run_id`` set).
+
+    Produces inert ``explain`` re-prompts (always available — they only re-ask the read-only chat)
+    plus a ``resume`` card for THIS run (owner-validated + fail-closed by ``build_action_card``).
+    Read-only end-to-end; nothing here starts, advances, previews, or executes the workflow.
+    """
+    route = hints.route
+    site_id = _resolve_site_id(hints)
+    cards: list[AssistantActionCard] = []
+    seen: set = set()
+
+    for title, prompt in _COMPANION_EXPLAINS:
+        if len(cards) >= max_cards:
+            break
+        _collect(
+            build_action_card(
+                db_session,
+                current_user,
+                kind="explain",
+                prompt=prompt,
+                title=title,
+                current_route=route,
+                site_id=site_id,
+                company_id=hints.company_id,
+            ),
+            cards,
+            seen,
+        )
+
+    # Resume THIS run (owner-scoped + re-validated; simply absent if it isn't resumable).
+    if len(cards) < max_cards and hints.run_id is not None:
+        _collect(
+            build_action_card(db_session, current_user, kind="resume", run_id=hints.run_id),
+            cards,
+            seen,
+        )
+    return cards[:max_cards]
+
+
 def build_navigator_cards(
     db_session: Session,
     current_user,
@@ -188,10 +257,15 @@ def build_navigator_cards(
 ) -> list[AssistantActionCard]:
     """Deterministic, permission-gated navigator cards for the caller's current page.
 
-    Order: an ``explain`` card for the page, then page-relevant ``open`` deep links, then the
-    caller's own resumable runs — each validated by ``build_action_card`` and fail-closed, then
-    deduped and capped. Read-only end-to-end.
+    When the caller is inside a guided workflow run (``hints.run_id`` present) the assistant is in
+    Workflow Companion Mode, so step-aware companion cards are surfaced instead of the generic page
+    navigator. Otherwise: an ``explain`` card for the page, then page-relevant ``open`` deep links,
+    then the caller's own resumable runs — each validated by ``build_action_card`` and fail-closed,
+    then deduped and capped. Read-only end-to-end.
     """
+    if hints and hints.run_id is not None:
+        return _build_companion_cards(db_session, current_user, hints, max_cards=max_cards)
+
     route = hints.route if hints else None
     company_id = hints.company_id if hints else None
     site_id = _resolve_site_id(hints)

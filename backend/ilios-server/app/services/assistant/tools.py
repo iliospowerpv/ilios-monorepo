@@ -23,6 +23,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Callable
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.services.assistant import guardrails
@@ -41,6 +42,7 @@ from app.services.telemetry.health_service import compute_site_telemetry_health
 from app.services.weather.weather_readiness_service import compute_weather_readiness
 from app.services.workflows.engine import (
     compute_metrics,
+    get_run,
     list_sequences,
     list_user_runs,
     list_workflow_definitions,
@@ -188,6 +190,27 @@ def _t_get_workflow_metrics(db: Session, user, args: dict) -> dict:
     return compute_metrics(db, user, scope="me").model_dump(mode="json")
 
 
+def _t_get_workflow_run(db: Session, user, args: dict) -> dict:
+    """Wrap ``engine.get_run`` — owner-scoped detail for ONE of the caller's OWN workflow runs.
+
+    This is the Workflow Companion's grounding read. ``get_run`` self-authorizes via
+    ``_get_run_owned`` (``WorkflowRunCRUD.get_for_user``), so a run the caller does not own raises
+    404 and we return an honest 'unavailable' envelope without disclosing anything. The result is
+    the serialized run state (status, current_step, each step's persisted inputs + validation_errors)
+    plus the workflow definition (step/field schemas, confirmation text, prerequisites,
+    blocked_reason) — everything needed to EXPLAIN the wizard. STRICTLY read-only: it never starts,
+    saves, previews, or executes a step.
+    """
+    run_id = _opt_int(args.get("run_id"))
+    if run_id is None:
+        return {"available": False, "reason": "missing_run_id", "run_id": None}
+    try:
+        return get_run(db, user, run_id).model_dump(mode="json")
+    except HTTPException:
+        # Owner-scoped fetch denied / not found (cross-user or unknown run) — disclose nothing.
+        return {"available": False, "reason": "not_authorized_or_not_found", "run_id": run_id}
+
+
 def _t_answer_help_faq(db: Session, user, args: dict) -> dict:
     return {"results": search_faq(str(args.get("query") or ""), limit=_clamp(args.get("limit"), 4))}
 
@@ -295,6 +318,7 @@ TOOL_HANDLERS: dict[str, Callable[[Session, Any, dict], dict]] = {
     "get_onboarding_readiness": _t_get_onboarding_readiness,
     "get_orchestration_context": _t_get_orchestration_context,
     "get_workflow_metrics": _t_get_workflow_metrics,
+    "get_workflow_run": _t_get_workflow_run,
     "answer_help_faq": _t_answer_help_faq,
     "propose_action_card": _t_propose_action_card,
     "get_site_telemetry_health": _t_get_site_telemetry_health,
@@ -405,6 +429,21 @@ TOOL_SPECS: list[dict] = [
     _spec(
         "get_workflow_metrics",
         "Get summary counts/metrics about the current user's workflow activity. Read-only.",
+    ),
+    _spec(
+        "get_workflow_run",
+        "Get the full read-only detail of ONE of the CURRENT USER'S OWN workflow runs (the guided "
+        "wizard they are in). Returns the run status and current step, every step's saved inputs and "
+        "any validation errors the user already hit, plus the workflow definition: each step's fields "
+        "(name/label/type/required/help/placeholder), the confirmation text shown before the final "
+        "action, the governed flag, prerequisites, and blocked_reason. Use this in Workflow Companion "
+        "Mode to explain the current step, what a field means, why an entry failed validation, what "
+        "the confirm/execute step will do, how to resume, or why the workflow is blocked. STRICTLY "
+        "read-only — it does NOT start, save, preview, or execute any step; the user performs every "
+        "action themselves in the wizard. Provide run_id (use the run_id from the UI context when the "
+        "user means 'this wizard'). A run the user does not own returns available=false.",
+        {"run_id": {"type": "integer", "description": "The caller's OWN workflow run id to describe."}},
+        required=["run_id"],
     ),
     _spec(
         "answer_help_faq",
