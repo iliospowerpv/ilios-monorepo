@@ -1,17 +1,11 @@
 import React, { useCallback, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import TextField from '@mui/material/TextField';
-import { SearchableSelect } from '../../../../../../components/common/SearchableSelect/SearchableSelect';
 import AddIcon from '@mui/icons-material/Add';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
@@ -22,14 +16,16 @@ import Paper from '@mui/material/Paper';
 
 import type { AssetManagementSiteDetailsTabProps } from '../types';
 import { useFocusHighlight } from '../../../../../../hooks/useFocusHighlight';
-import { ApiClient, DiligenceDocument, DiligenceItem } from '../../../../../../api';
+import { ApiClient, DiligenceDocument, DiligenceItem, ExpectedDocument, GuidanceStage } from '../../../../../../api';
+import type { AddDocumentPrefill } from './components/AddDocumentDialog/AddDocumentDialog';
 import SearchAndActions from '../../../../../../components/common/tables/components/SearchAndActions/SearchAndActions';
-import { useNotify } from '../../../../../../contexts/notifications/notifications';
 import RecursiveAccordion from '../../../../../../modules/due-diligence/pages/Site/tabs/Diligence/components/RecursiveAccordion/RecursiveAccordion';
 import DocumentList from '../../../../../../modules/due-diligence/pages/DueDiligenceDocument/components/DocumentList';
 import ProjectSummaryPanel from './components/ProjectSummaryPanel';
 import ExpectedDocumentsPanel from './components/ExpectedDocumentsPanel';
+import GuidanceDashboardPanel from './components/GuidanceDashboardPanel';
 import ManageTemplatesDialog from './components/ManageTemplatesDialog';
+import AddDocumentDialog from './components/AddDocumentDialog';
 import { useAuth } from '../../../../../../contexts/auth/auth';
 
 const siteDiligenceQuery = (siteId: number, enabled = true) => ({
@@ -58,8 +54,6 @@ const findDocumentById = (items: DiligenceItem[], id: number): DiligenceDocument
 export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDetails }) => {
   const { siteId } = useParams<{ siteId: string }>();
   const { focusState } = useFocusHighlight();
-  const queryClient = useQueryClient();
-  const notify = useNotify();
   const { user } = useAuth();
 
   const canViewTemplates = !!user?.is_system_user || !!user?.role?.permissions?.['Diligence']?.view;
@@ -74,10 +68,8 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
 
   const [searchTerm, setSearchTerm] = useState('');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [addDialogPrefill, setAddDialogPrefill] = useState<AddDocumentPrefill | null>(null);
   const [templatesDialogOpen, setTemplatesDialogOpen] = useState(false);
-  const [newDocName, setNewDocName] = useState('');
-  const [newDocDescription, setNewDocDescription] = useState('');
-  const [selectedSectionId, setSelectedSectionId] = useState<number | ''>('');
   const [selectedDocument, setSelectedDocument] = useState<DiligenceDocument | null>(null);
 
   const { data: documentInfo, isLoading: isLoadingDocumentInfo } = useQuery({
@@ -125,36 +117,6 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
 
   const sections = data?.items ? extractSections(data.items) : [];
 
-  const createDocMutation = useMutation({
-    mutationFn: () =>
-      ApiClient.dueDiligence.createCustomDocument(
-        numericSiteId,
-        selectedSectionId as number,
-        newDocName,
-        newDocDescription || undefined
-      ),
-    onSuccess: () => {
-      notify('Document created successfully');
-      queryClient.invalidateQueries({ queryKey: ['site', 'diligence', { siteId: numericSiteId }] });
-      setAddDialogOpen(false);
-      setNewDocName('');
-      setNewDocDescription('');
-      setSelectedSectionId('');
-      refetch();
-    },
-    onError: (error: any) => {
-      notify(error?.response?.data?.detail || 'Failed to create document');
-    }
-  });
-
-  const handleAddDocument = () => {
-    if (!newDocName.trim() || !selectedSectionId) {
-      notify('Please fill in all required fields');
-      return;
-    }
-    createDocMutation.mutate();
-  };
-
   const handleSearch = (value: string) => {
     setSearchTerm(value);
   };
@@ -162,6 +124,19 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
   const handleRefresh = () => {
     refetch();
   };
+
+  const handleOpenAddDialog = useCallback(() => {
+    setAddDialogPrefill(null);
+    setAddDialogOpen(true);
+  }, []);
+
+  // Route a "missing" expected document into the existing Add Document dialog,
+  // prefilled with the expected identity name and its stage section. No new
+  // upload path and no document is created until the user confirms.
+  const handleAddMissingDocument = useCallback((doc: ExpectedDocument, stage: GuidanceStage) => {
+    setAddDialogPrefill({ name: doc.name, sectionId: stage.section_id });
+    setAddDialogOpen(true);
+  }, []);
 
   const filterSections = useCallback((items: DiligenceItem[], search: string): DiligenceItem[] => {
     return items
@@ -282,6 +257,8 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
 
       <ExpectedDocumentsPanel siteId={numericSiteId} />
 
+      <GuidanceDashboardPanel siteId={numericSiteId} onAddMissingDocument={handleAddMissingDocument} />
+
       <Box display="flex" alignItems="center" gap={1} mb={3}>
         <FolderOpenIcon color="primary" />
         <Typography variant="h5" sx={{ fontWeight: 500 }}>
@@ -306,7 +283,7 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
               Manage Templates
             </Button>
           )}
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setAddDialogOpen(true)}>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenAddDialog}>
             Add Document
           </Button>
         </Box>
@@ -321,44 +298,16 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
         />
       )}
 
-      <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add New Document</DialogTitle>
-        <DialogContent>
-          <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              label="Document Name"
-              value={newDocName}
-              onChange={e => setNewDocName(e.target.value)}
-              fullWidth
-              required
-            />
-            <TextField
-              label="Description (optional)"
-              value={newDocDescription}
-              onChange={e => setNewDocDescription(e.target.value)}
-              fullWidth
-              multiline
-              rows={2}
-            />
-            <SearchableSelect
-              options={sections.map(section => ({
-                label: section.name,
-                value: section.id
-              }))}
-              value={selectedSectionId || null}
-              onChange={val => setSelectedSectionId(val as number)}
-              label="Section"
-              required
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAddDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleAddDocument} variant="contained" disabled={createDocMutation.isPending}>
-            {createDocMutation.isPending ? 'Creating...' : 'Create'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {isValidId && (
+        <AddDocumentDialog
+          open={addDialogOpen}
+          onClose={() => setAddDialogOpen(false)}
+          siteId={numericSiteId}
+          sections={sections}
+          onNavigateToDocument={handleViewDocumentDetails}
+          prefill={addDialogPrefill}
+        />
+      )}
 
       {isLoading || isFetching ? (
         <Box display="flex" alignItems="center" justifyContent="center" mt="40px">

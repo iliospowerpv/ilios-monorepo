@@ -202,3 +202,50 @@ class ExpectedDocumentsSectionSchema(BaseModel):
 
 class SiteExpectedDocumentsSchema(BaseModel):
     items: list[ExpectedDocumentsSectionSchema]
+
+
+class DuplicateMatchSchema(BaseModel):
+    """An existing Document Identity that resembles a proposed name (Task #92).
+
+    Advisory only — surfaced so the user can choose to upload a new version to the
+    existing identity instead of accidentally creating a second one.
+    """
+
+    document_id: int = Field(examples=[101])
+    name: str = Field(examples=["PVsyst Final"], description="Resolved identity/display name")
+    kind: Optional[str] = Field(default=None, examples=["seller_initial_pv_syst_full_data_package_for_model"])
+    section_id: Optional[int] = Field(default=None, examples=[5])
+    section_name: Optional[str] = Field(default=None, examples=["Preview"])
+    files_count: int = Field(examples=[2], description="Uploaded file versions on the existing identity")
+    is_archived: bool = Field(examples=[False])
+    match_type: str = Field(examples=["near"], description='"exact" or "near"')
+    score: float = Field(examples=[0.92], description="0..1 similarity, higher is closer")
+
+
+class DuplicateCheckResultSchema(BaseModel):
+    """Read-only result of checking a proposed document name against a site."""
+
+    proposed_name: str = Field(examples=["PVsyst"])
+    has_match: bool = Field(examples=[True])
+    candidates: list[DuplicateMatchSchema]
+
+
+class GuidanceStageSchema(BaseModel):
+    """Per-stage completeness/guidance row for the Data Room dashboard (Task #92)."""
+
+    section_id: Optional[int] = Field(default=None, examples=[1])
+    section_key: str = Field(examples=["site_stage1"])
+    section_name: str = Field(examples=["Site Stage-1"])
+    expected: int = Field(examples=[8], description="Expected documents from the static catalog")
+    present: int = Field(examples=[5], description="Expected documents with a live, file-bearing identity")
+    missing: int = Field(examples=[3])
+    needs_update: int = Field(examples=[1], description="Promoted documents that received a newer version since")
+    optional: int = Field(examples=[2], description="Expected documents flagged optional")
+    archived: int = Field(examples=[1], description="Archived documents in the stage")
+    version_count: int = Field(examples=[9], description="Total file versions across live documents")
+    promotion_status: str = Field(examples=["in_progress"], description="none|not_started|in_progress|complete")
+    missing_documents: list[ExpectedDocumentSchema]
+
+
+class SiteDataRoomGuidanceSchema(BaseModel):
+    items: list[GuidanceStageSchema]

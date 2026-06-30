@@ -17,6 +17,7 @@ from app.helpers.permission_guards import require_module_permission
 from app.helpers.configs.ai_parsing_helper import AIParsingHandler
 from app.helpers.configs.co_terminus_helper import CoTerminusHandler
 from app.helpers.due_diligence.document_sections_handler import DocumentSectionsHandler
+from app.helpers.due_diligence.document_matching import IdentityCandidate, find_duplicate_candidates
 from app.helpers.due_diligence.due_diligence_helper import validate_document_section
 from app.helpers.due_diligence.expected_documents import get_expected_documents_for_section
 from app.helpers.due_diligence.override_guardrail import evaluate_baseline_override
@@ -38,11 +39,14 @@ from app.schema.documents import (
     DocumentRemovalSuccess,
     DocumentReorderSchema,
     DocumentUpdateSuccess,
+    DuplicateCheckResultSchema,
     ExpectedDocumentsSectionSchema,
+    SiteDataRoomGuidanceSchema,
     SiteExpectedDocumentsSchema,
     UpdateDocumentDescriptionSchema,
     UpdateDocumentDetailsSchema,
 )
+from app.services.due_diligence.data_room_guidance_service import DataRoomGuidanceService
 from app.schema.user import CurrentUserSchema
 from app.static import HTTP_403_RESPONSE, HTTP_404_RESPONSE, DocumentMessages
 from app.static.baseline_driving_fields import is_baseline_driving_field
@@ -94,6 +98,90 @@ async def get_expected_documents(
             )
         )
     return {"items": items}
+
+
+@documents_router.get(
+    "/duplicate-check",
+    response_model=DuplicateCheckResultSchema,
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
+    description=(
+        "Read-only, advisory duplicate detection for guided upload (Task #92). Compares a proposed "
+        "document name against existing Document Identities for the site (exact + fuzzy near-match) so "
+        "the caller can choose to upload a new version to an existing identity instead of creating a "
+        "second one. It NEVER blocks, mutates, or creates anything."
+    ),
+)
+async def check_duplicate_document(
+    *,
+    name: str,
+    site: Site = Depends(get_authorized_site),
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=site.company_id,
+        project_id=site.id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="view",
+    )
+
+    documents = DocumentCRUD(db_session).get_site_documents_ordered_by_name(site.id)
+    candidates = []
+    for document in documents:
+        names = [n for n in [document.identity_name, *document.identity_aliases] if n]
+        # Include the raw enum value so an aliased/custom-named identity still
+        # matches on its underlying canonical document type.
+        if document.name and document.name.value not in names:
+            names.append(document.name.value)
+        candidates.append(
+            IdentityCandidate(
+                document_id=document.id,
+                display_name=document.identity_name or "",
+                names=names,
+                kind=document.identity_kind,
+                section_id=document.section_id,
+                section_name=document.section.name.value if document.section and document.section.name else None,
+                files_count=document.files_count,
+                is_archived=document.is_archived,
+            )
+        )
+
+    matches = find_duplicate_candidates(name, candidates)
+    return {
+        "proposed_name": name,
+        "has_match": bool(matches),
+        "candidates": [vars(match) for match in matches],
+    }
+
+
+@documents_router.get(
+    "/guidance",
+    response_model=SiteDataRoomGuidanceSchema,
+    responses={**HTTP_403_RESPONSE, **HTTP_404_RESPONSE},
+    description=(
+        "Read-only per-stage Data Room guidance dashboard (Task #92). Surfaces Expected / Present / "
+        "Missing / Needs Update / Optional / Archived / Version Count / Promotion Status derived ONLY "
+        "from the static Expected Documents catalog and existing document/version/promotion state. "
+        "It introduces no new status storage and never writes anything."
+    ),
+)
+async def get_data_room_guidance(
+    *,
+    site: Site = Depends(get_authorized_site),
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+):
+    require_module_permission(
+        user_id=current_user.id,
+        company_id=site.company_id,
+        project_id=site.id,
+        db_session=db_session,
+        module_key="Diligence",
+        action="view",
+    )
+    return DataRoomGuidanceService(db_session).build_guidance(site.id)
 
 
 @documents_router.get(

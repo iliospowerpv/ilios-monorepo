@@ -127,6 +127,42 @@ interface SiteExpectedDocuments {
   items: ExpectedDocumentsSection[];
 }
 
+interface DuplicateMatch {
+  document_id: number;
+  name: string;
+  kind: string | null;
+  section_id: number | null;
+  section_name: string | null;
+  files_count: number;
+  is_archived: boolean;
+  match_type: 'exact' | 'near';
+  score: number;
+}
+interface DuplicateCheckResult {
+  proposed_name: string;
+  has_match: boolean;
+  candidates: DuplicateMatch[];
+}
+
+type GuidancePromotionStatus = 'none' | 'not_started' | 'in_progress' | 'complete';
+interface GuidanceStage {
+  section_id: number | null;
+  section_key: string;
+  section_name: string;
+  expected: number;
+  present: number;
+  missing: number;
+  needs_update: number;
+  optional: number;
+  archived: number;
+  version_count: number;
+  promotion_status: GuidancePromotionStatus;
+  missing_documents: ExpectedDocument[];
+}
+interface SiteDataRoomGuidance {
+  items: GuidanceStage[];
+}
+
 interface FileDataResponse {
   message: string;
   code: number;
@@ -621,6 +657,19 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     return response.data;
   };
 
+  const checkDuplicateDocument = async (siteId: number, name: string): Promise<DuplicateCheckResult> => {
+    const response = await httpClient.get<DuplicateCheckResult>(
+      `/api/due-diligence/${siteId}/documents/duplicate-check`,
+      { params: { name } }
+    );
+    return response.data;
+  };
+
+  const getDataRoomGuidance = async (siteId: number): Promise<SiteDataRoomGuidance> => {
+    const response = await httpClient.get<SiteDataRoomGuidance>(`/api/due-diligence/${siteId}/documents/guidance`);
+    return response.data;
+  };
+
   const getFiles = async (siteId: number, documentId: number): Promise<FileList> => {
     const response = await httpClient.get<FileList>(`/api/due-diligence/${siteId}/documents/${documentId}/files/`);
     return response.data;
@@ -1065,6 +1114,8 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     documentComments,
     getDocuments,
     getExpectedDocuments,
+    checkDuplicateDocument,
+    getDataRoomGuidance,
     getFiles,
     deleteFile,
     downloadFile,
@@ -1129,6 +1180,11 @@ export type {
   ExpectedDocument,
   ExpectedDocumentsSection,
   SiteExpectedDocuments,
+  DuplicateMatch,
+  DuplicateCheckResult,
+  GuidanceStage,
+  GuidancePromotionStatus,
+  SiteDataRoomGuidance,
   ParseStateSummary,
   ParseState,
   ParseNextAction,
