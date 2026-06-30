@@ -207,6 +207,9 @@ def _t_propose_action_card(db: Session, user, args: dict) -> dict:
         site_id=_opt_int(args.get("site_id")),
         company_id=_opt_int(args.get("company_id")),
         reason=(args.get("reason") or None),
+        target_view=(args.get("target_view") or None),
+        prompt=(args.get("prompt") or None),
+        current_route=(args.get("current_route") or None),
     )
 
 
@@ -413,22 +416,46 @@ TOOL_SPECS: list[dict] = [
     _spec(
         "propose_action_card",
         "Propose ONE inert deep-link 'action card' the USER can click to take the next step "
-        "themselves in the existing workflow UI. This is READ-ONLY: it only validates the user is "
-        "allowed to start/resume the target and returns a link — it NEVER starts, advances, or "
-        "executes anything. Use this when you recommend a concrete next step so the user gets a "
-        "clickable shortcut. If the user lacks permission, no card is returned (say so honestly). "
+        "themselves in the existing UI. This is READ-ONLY: it only validates the user is allowed to "
+        "reach/start/resume the target and returns a link — it NEVER starts, advances, or executes "
+        "anything. Use this when you recommend a concrete next step so the user gets a clickable "
+        "shortcut. If the user lacks permission, no card is returned (say so honestly). "
         "kind='workflow' needs workflow_id (optionally site_id/company_id to scope); kind='sequence' "
-        "needs sequence_id; kind='resume' needs run_id (one of the user's own open runs). Always "
-        "make clear the user must click it — you cannot.",
+        "needs sequence_id; kind='resume' needs run_id (one of the user's own open runs); "
+        "kind='open' deep-links an EXISTING read view chosen by target_view (project_overview / "
+        "data_room / reconciliation / site_finance need site_id; company_finance needs company_id) "
+        "— the route is derived server-side, you NEVER supply a raw URL; kind='explain' re-asks the "
+        "read-only chat a canned question (supply prompt). Always make clear the user must click it.",
         {
             "kind": {
                 "type": "string",
-                "enum": ["workflow", "sequence", "resume"],
+                "enum": ["workflow", "sequence", "resume", "open", "explain"],
                 "description": "What the card links to.",
             },
             "workflow_id": {"type": "string", "description": "Required when kind='workflow'."},
             "sequence_id": {"type": "string", "description": "Required when kind='sequence'."},
             "run_id": {"type": "integer", "description": "Required when kind='resume' (caller's own run)."},
+            "target_view": {
+                "type": "string",
+                "enum": [
+                    "project_overview",
+                    "data_room",
+                    "reconciliation",
+                    "site_finance",
+                    "company_finance",
+                ],
+                "description": "Required when kind='open': which EXISTING read view to deep-link to "
+                "(route derived server-side from this + scope; never a raw URL).",
+            },
+            "prompt": {
+                "type": "string",
+                "description": "Required when kind='explain': the canned read-only question to "
+                "re-submit into the chat.",
+            },
+            "current_route": {
+                "type": "string",
+                "description": "Optional for kind='explain': the page being explained (for context).",
+            },
             "site_id": _SITE_PROP,
             "company_id": _COMPANY_PROP,
             "reason": {

@@ -76,12 +76,22 @@ class AssistantSource(BaseModel):
 
 
 class AssistantActionCard(BaseModel):
-    """A PROPOSE-ONLY next-step the user can take. It is a validated deep link into the EXISTING
-    workflow UI — never an execution. The assistant produced it after a read-only permission check
-    (the user can start/resume the target); clicking it navigates the user's browser to the wizard
-    where THEY perform the governed handshake. ``requires_user_action`` is always true."""
+    """A PROPOSE-ONLY next-step the user can take. It is a validated deep link into an EXISTING
+    read view / workflow UI — never an execution. The assistant produced it after a read-only
+    permission check (the user can open/start/resume the target); clicking it navigates the user's
+    browser to the page/wizard where THEY perform any governed handshake. ``requires_user_action``
+    is always true.
 
-    kind: Literal["workflow", "sequence", "resume"]
+    Navigator kinds (all ADDITIVE, still propose-only / zero-mutation):
+    - ``open``: a validated deep link to an EXISTING native read view, identified by an ENUM
+      ``target_view`` (never a raw/free-form route — the route is derived server-side). Gated by the
+      SAME read permission the destination enforces, fail-closed.
+    - ``explain``: an in-chat re-prompt. Carries ``prompt`` (a canned, read-only question) and
+      ``route`` (the page being explained, for context). Clicking submits ``prompt`` back into the
+      read-only chat — it never navigates or mutates anything.
+    """
+
+    kind: Literal["workflow", "sequence", "resume", "open", "explain"]
     title: str
     reason: str
     route: str
@@ -90,6 +100,10 @@ class AssistantActionCard(BaseModel):
     run_id: Optional[int] = None
     target_site_id: Optional[int] = None
     target_company_id: Optional[int] = None
+    # ``open`` cards only: the ENUM read view this card deep-links to (route derived server-side).
+    target_view: Optional[str] = None
+    # ``explain`` cards only: the canned read-only question the FE re-submits into the chat.
+    prompt: Optional[str] = None
     requires_user_action: bool = True
 
 
@@ -192,6 +206,10 @@ class AssistantSuggestedPromptsResponse(BaseModel):
     # Echoes the resolved route bucket used to pick prompts (advisory/debug only).
     context_label: Optional[str] = None
     prompts: list[AssistantSuggestedPrompt] = Field(default_factory=list)
+    # Proactive, route-aware navigator cards (propose-only deep links / in-chat explains). Each is
+    # permission-checked + fail-closed by the SAME read guard the destination enforces, so a denied
+    # card is simply absent. The FE renders these as the "global navigator" affordance.
+    action_cards: list[AssistantActionCard] = Field(default_factory=list)
 
 
 # --- Admin usage observability (Slice 3) --------------------------------------------------------

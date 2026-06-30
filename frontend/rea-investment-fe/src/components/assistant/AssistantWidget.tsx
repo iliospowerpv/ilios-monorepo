@@ -304,10 +304,12 @@ export const AssistantWidget: React.FC = () => {
                 error={chatError}
                 suggestedPrompts={suggestedPromptsQuery.data?.prompts ?? []}
                 suggestedContextLabel={suggestedPromptsQuery.data?.context_label ?? null}
+                navigatorCards={suggestedPromptsQuery.data?.action_cards ?? []}
                 feedbackPendingId={feedbackMutation.isPending ? (feedbackMutation.variables?.messageId ?? null) : null}
                 onSend={handleSend}
                 onRetry={handleRetry}
                 onOpenCard={handleOpenCard}
+                onPromptCard={handleSend}
                 onFeedback={handleFeedback}
               />
             )}

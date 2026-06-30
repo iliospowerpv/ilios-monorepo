@@ -17,6 +17,7 @@ from app.schema.assistant import (
     AssistantChatRequest,
     AssistantChatResponse,
     AssistantConfigResponse,
+    AssistantContextHints,
     AssistantConversationDetailResponse,
     AssistantConversationListResponse,
     AssistantConversationSummary,
@@ -36,6 +37,7 @@ from app.services.assistant import (
 )
 from app.services.assistant.assistant_service import run_assistant_chat
 from app.services.assistant.llm_client import AssistantLLMError, AssistantRateLimitError
+from app.services.assistant.navigator_suggestions import build_navigator_cards
 from app.services.assistant.tools import ALLOWED_TOOLS
 from app.services.workflows.orchestration_context_service import PROHIBITED_ACTIONS
 from app.settings import settings
@@ -276,17 +278,26 @@ def set_message_feedback(
 )
 def get_suggested_prompts(
     current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
     route: Optional[str] = None,
     site_id: Optional[int] = None,
     company_id: Optional[int] = None,
 ) -> AssistantSuggestedPromptsResponse:
-    """Return static, page-aware example prompts. Pure UI affordance — no data fetch, no business
-    logic; ``site_id``/``company_id`` are accepted for forward-compat but never used to fetch data."""
+    """Return static, page-aware example prompts PLUS proactive, route-aware navigator cards.
+
+    The ``prompts`` are pure static UI affordances (no data fetch). The ``action_cards`` are the
+    "global navigator" affordance: deterministic, permission-gated ``explain``/``open``/``resume``
+    deep links derived from the current route + scope. Every card is validated read-only and
+    fail-closed by ``build_navigator_cards`` (a denied/under-scoped card is simply absent), so this
+    endpoint stays zero-mutation and never widens authorization."""
     _require_enabled()
     context_label, prompts = suggested_prompts.get_suggested_prompts(route)
+    hints = AssistantContextHints(route=route, site_id=site_id, company_id=company_id)
+    action_cards = build_navigator_cards(db_session, current_user, hints)
     return AssistantSuggestedPromptsResponse(
         context_label=context_label,
         prompts=[AssistantSuggestedPrompt(**p) for p in prompts],
+        action_cards=action_cards,
     )
 
 

@@ -46,10 +46,15 @@ interface AssistantChatPanelProps {
   error: AssistantChatError | null;
   suggestedPrompts: AssistantSuggestedPrompt[];
   suggestedContextLabel?: string | null;
+  // Proactive, route-aware navigator cards shown in the empty state (Open existing read views /
+  // Explain this page). Permission-gated server-side; rendered only when the chat has no messages yet.
+  navigatorCards?: AssistantActionCard[];
   feedbackPendingId?: number | null;
   onSend: (text: string) => void;
   onRetry: () => void;
   onOpenCard: (route: string) => void;
+  // Re-submit an `explain` card's prompt through the normal read-only chat path.
+  onPromptCard: (prompt: string) => void;
   onFeedback: (message: ChatUiMessage, rating: AssistantFeedbackRating | null) => void;
 }
 
@@ -59,9 +64,11 @@ const EMPTY_HINT =
 const MessageBubble: React.FC<{
   message: ChatUiMessage;
   feedbackPending: boolean;
+  isSending: boolean;
   onOpenCard: (route: string) => void;
+  onPromptCard: (prompt: string) => void;
   onFeedback: (message: ChatUiMessage, rating: AssistantFeedbackRating | null) => void;
-}> = ({ message, feedbackPending, onOpenCard, onFeedback }) => {
+}> = ({ message, feedbackPending, isSending, onOpenCard, onPromptCard, onFeedback }) => {
   const isUser = message.role === 'user';
   const canFeedback = !isUser && message.id != null;
   return (
@@ -87,7 +94,13 @@ const MessageBubble: React.FC<{
       {message.action_cards && message.action_cards.length > 0 ? (
         <Stack spacing={1} sx={{ width: '85%' }}>
           {message.action_cards.map((card, idx) => (
-            <ActionCardItem key={`${card.route}-${idx}`} card={card} onOpen={onOpenCard} />
+            <ActionCardItem
+              key={`${card.route}-${idx}`}
+              card={card}
+              onOpen={onOpenCard}
+              onPrompt={onPromptCard}
+              disabled={isSending}
+            />
           ))}
         </Stack>
       ) : null}
@@ -108,10 +121,12 @@ export const AssistantChatPanel: React.FC<AssistantChatPanelProps> = ({
   error,
   suggestedPrompts,
   suggestedContextLabel,
+  navigatorCards,
   feedbackPendingId,
   onSend,
   onRetry,
   onOpenCard,
+  onPromptCard,
   onFeedback
 }) => {
   const [draft, setDraft] = React.useState('');
@@ -156,6 +171,26 @@ export const AssistantChatPanel: React.FC<AssistantChatPanelProps> = ({
               disabled={isSending}
               onPick={text => onSend(text)}
             />
+            {navigatorCards && navigatorCards.length > 0 ? (
+              <Stack spacing={1} sx={{ mt: 2 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}
+                >
+                  Jump to / Explain
+                </Typography>
+                {navigatorCards.map((card, idx) => (
+                  <ActionCardItem
+                    key={`nav-${card.kind}-${card.target_view ?? card.route}-${idx}`}
+                    card={card}
+                    onOpen={onOpenCard}
+                    onPrompt={onPromptCard}
+                    disabled={isSending}
+                  />
+                ))}
+              </Stack>
+            ) : null}
           </Box>
         ) : (
           <Stack spacing={2}>
@@ -164,7 +199,9 @@ export const AssistantChatPanel: React.FC<AssistantChatPanelProps> = ({
                 key={idx}
                 message={message}
                 feedbackPending={feedbackPendingId != null && feedbackPendingId === message.id}
+                isSending={isSending}
                 onOpenCard={onOpenCard}
+                onPromptCard={onPromptCard}
                 onFeedback={onFeedback}
               />
             ))}

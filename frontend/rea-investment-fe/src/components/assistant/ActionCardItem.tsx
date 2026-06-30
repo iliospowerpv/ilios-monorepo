@@ -7,22 +7,41 @@ import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import LaunchIcon from '@mui/icons-material/Launch';
+import QuestionAnswerOutlinedIcon from '@mui/icons-material/QuestionAnswerOutlined';
 
 import type { AssistantActionCard } from '../../api/assistant';
 
 const KIND_LABEL: Record<AssistantActionCard['kind'], string> = {
   workflow: 'Start workflow',
   sequence: 'Start sequence',
-  resume: 'Resume run'
+  resume: 'Resume run',
+  open: 'Open view',
+  explain: 'Explain'
 };
 
 interface ActionCardItemProps {
   card: AssistantActionCard;
   // Navigate the USER to the deep link. The assistant never executes — clicking is the human action.
   onOpen: (route: string) => void;
+  // Re-submit an `explain` card's prompt into the read-only chat (no navigation). Required for
+  // `explain` cards; ignored for every other kind.
+  onPrompt?: (prompt: string) => void;
+  disabled?: boolean;
 }
 
-export const ActionCardItem: React.FC<ActionCardItemProps> = ({ card, onOpen }) => {
+export const ActionCardItem: React.FC<ActionCardItemProps> = ({ card, onOpen, onPrompt, disabled }) => {
+  // `explain` re-prompts the read-only chat in place; every other kind is an inert deep link the user
+  // clicks to navigate. Both remain propose-only — the assistant never acts on the user's behalf.
+  const isExplain = card.kind === 'explain';
+  const canExplain = isExplain && Boolean(card.prompt);
+  const handleClick = () => {
+    if (isExplain) {
+      if (card.prompt) onPrompt?.(card.prompt);
+    } else {
+      onOpen(card.route);
+    }
+  };
+
   return (
     <Card variant="outlined" sx={{ borderColor: 'secondary.main', bgcolor: 'background.paper' }}>
       <CardContent sx={{ pb: 1 }}>
@@ -43,13 +62,14 @@ export const ActionCardItem: React.FC<ActionCardItemProps> = ({ card, onOpen }) 
           size="small"
           variant="contained"
           color="secondary"
-          endIcon={<LaunchIcon />}
-          onClick={() => onOpen(card.route)}
+          endIcon={isExplain ? <QuestionAnswerOutlinedIcon /> : <LaunchIcon />}
+          onClick={handleClick}
+          disabled={disabled || (isExplain && !canExplain)}
         >
-          Open
+          {isExplain ? 'Ask' : 'Open'}
         </Button>
         <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-          You take this step — the assistant can&apos;t.
+          {isExplain ? 'The assistant explains — read-only.' : 'You take this step — the assistant can\u2019t.'}
         </Typography>
       </CardActions>
     </Card>

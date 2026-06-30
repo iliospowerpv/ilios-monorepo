@@ -10,7 +10,9 @@ const A = '/api/assistant';
 
 export type AssistantRole = 'user' | 'assistant';
 export type AssistantMode = 'read_only_advice';
-export type AssistantActionCardKind = 'workflow' | 'sequence' | 'resume';
+// `open` deep-links an EXISTING read view (route derived server-side from `target_view`); `explain`
+// re-submits its `prompt` into the read-only chat (it never navigates). Both stay propose-only.
+export type AssistantActionCardKind = 'workflow' | 'sequence' | 'resume' | 'open' | 'explain';
 
 // One prior turn supplied by the client (stateless reasoning path on the server).
 export interface AssistantMessage {
@@ -56,6 +58,10 @@ export interface AssistantActionCard {
   workflow_id?: string | null;
   sequence_id?: string | null;
   run_id?: number | null;
+  // `open` cards carry the server-resolved destination enum (route is derived from it server-side).
+  target_view?: string | null;
+  // `explain` cards carry the read-only chat prompt the USER submits — they never navigate.
+  prompt?: string | null;
   target_site_id?: number | null;
   target_company_id?: number | null;
   requires_user_action: boolean;
@@ -111,6 +117,9 @@ export interface AssistantSuggestedPrompt {
 export interface AssistantSuggestedPromptsResponse {
   context_label?: string | null;
   prompts: AssistantSuggestedPrompt[];
+  // Proactive, route-aware navigator cards (Open existing read views / Explain this page). Always
+  // permission-gated server-side; empty when nothing is offered for the caller's scope.
+  action_cards: AssistantActionCard[];
 }
 
 export interface AssistantFeedbackRequest {
