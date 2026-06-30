@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -16,9 +16,18 @@ import type {
   WorkflowRunDetailResponse,
   ExecuteResponse,
   PreviewResponse,
-  WorkflowStepStateSchema
+  WorkflowStepStateSchema,
+  StartRunRequest
 } from '../../api/workflows';
 import { resolveLandingRoute } from './landing';
+
+// Coerce a query-string id into a positive integer, or undefined for missing/blank/invalid values
+// (e.g. "", " ", "abc", "0", "-1", "1.5") so a malformed deep link never forwards a bogus run scope.
+const toPositiveId = (raw: string | null): number | undefined => {
+  if (raw == null || raw.trim() === '') return undefined;
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : undefined;
+};
 
 /**
  * Generic start page for the native Workflow Engine, keyed off the route `:workflowId`. It starts a
@@ -34,10 +43,17 @@ const GenericWorkflowStartPage: React.FC = () => {
   const navigate = useNavigate();
   const notify = useNotify();
   const { workflowId } = useParams<{ workflowId: string }>();
+  const [searchParams] = useSearchParams();
   const [detail, setDetail] = useState<WorkflowRunDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const startedRef = useRef(false);
+
+  // Context hints carried by an assistant action card (or any deep link), e.g.
+  // /workflows/start/add_site?company_id=12&site_id=34. They scope the new run server-side via
+  // StartRunRequest. Read as raw strings here so they are stable effect deps; the run is started once.
+  const companyIdParam = searchParams.get('company_id');
+  const siteIdParam = searchParams.get('site_id');
 
   useEffect(() => {
     if (startedRef.current) return;
@@ -49,7 +65,12 @@ const GenericWorkflowStartPage: React.FC = () => {
     }
     (async () => {
       try {
-        const result = await ApiClient.workflows.startRun(workflowId);
+        const body: StartRunRequest = {};
+        const companyId = toPositiveId(companyIdParam);
+        const siteId = toPositiveId(siteIdParam);
+        if (companyId != null) body.company_id = companyId;
+        if (siteId != null) body.site_id = siteId;
+        const result = await ApiClient.workflows.startRun(workflowId, body);
         setDetail(result);
       } catch (err) {
         if (axios.isAxiosError(err)) {
@@ -68,7 +89,7 @@ const GenericWorkflowStartPage: React.FC = () => {
         setLoading(false);
       }
     })();
-  }, [workflowId]);
+  }, [workflowId, companyIdParam, siteIdParam]);
 
   const handleSaveStep = (stepId: string, inputs: Record<string, unknown>): Promise<WorkflowStepStateSchema> =>
     ApiClient.workflows.saveStep(detail!.run.id, stepId, inputs);
