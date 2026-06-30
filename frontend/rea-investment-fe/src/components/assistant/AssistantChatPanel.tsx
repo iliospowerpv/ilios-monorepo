@@ -19,7 +19,8 @@ import type {
   AssistantFeedbackRating,
   AssistantSource,
   AssistantSuggestedPrompt,
-  AssistantToolInvocation
+  AssistantToolInvocation,
+  AssistantUiEventName
 } from '../../api/assistant';
 
 export interface ChatUiMessage {
@@ -49,6 +50,9 @@ interface AssistantChatPanelProps {
   // Proactive, route-aware navigator cards shown in the empty state (Open existing read views /
   // Explain this page). Permission-gated server-side; rendered only when the chat has no messages yet.
   navigatorCards?: AssistantActionCard[];
+  // True when the assistant is in read-only Workflow Companion Mode (the user is inside a guided run).
+  // Only adjusts the empty-state copy + navigator heading; behaviour stays identical and read-only.
+  companionMode?: boolean;
   feedbackPendingId?: number | null;
   onSend: (text: string) => void;
   onRetry: () => void;
@@ -56,10 +60,16 @@ interface AssistantChatPanelProps {
   // Re-submit an `explain` card's prompt through the normal read-only chat path.
   onPromptCard: (prompt: string) => void;
   onFeedback: (message: ChatUiMessage, rating: AssistantFeedbackRating | null) => void;
+  // Bounded UI-interaction analytics. Optional so the panel renders/tests stand-alone without it.
+  onTrack?: (event: AssistantUiEventName, detail?: string | null) => void;
 }
 
 const EMPTY_HINT =
   'Ask about your projects, workflows, or what to do next. I can point you to the right place — but you always take the action.';
+// Companion-mode empty state: the user is inside a guided run, so frame help around the current step.
+// The assistant stays read-only — it explains; it never fills, advances, or confirms the workflow.
+const COMPANION_HINT =
+  "You're inside a guided workflow. Ask me to explain this step, what a field means, or what's blocking you — you still take every action yourself.";
 
 const MessageBubble: React.FC<{
   message: ChatUiMessage;
@@ -68,7 +78,8 @@ const MessageBubble: React.FC<{
   onOpenCard: (route: string) => void;
   onPromptCard: (prompt: string) => void;
   onFeedback: (message: ChatUiMessage, rating: AssistantFeedbackRating | null) => void;
-}> = ({ message, feedbackPending, isSending, onOpenCard, onPromptCard, onFeedback }) => {
+  onTrack?: (event: AssistantUiEventName, detail?: string | null) => void;
+}> = ({ message, feedbackPending, isSending, onOpenCard, onPromptCard, onFeedback, onTrack }) => {
   const isUser = message.role === 'user';
   const canFeedback = !isUser && message.id != null;
   return (
@@ -89,7 +100,7 @@ const MessageBubble: React.FC<{
         </Typography>
       </Paper>
       {!isUser && message.sources && message.sources.length > 0 ? (
-        <SourcesDisclosure sources={message.sources} />
+        <SourcesDisclosure sources={message.sources} onOpen={() => onTrack?.('sources_disclosure_opened')} />
       ) : null}
       {message.action_cards && message.action_cards.length > 0 ? (
         <Stack spacing={1} sx={{ width: '85%' }}>
@@ -99,6 +110,7 @@ const MessageBubble: React.FC<{
               card={card}
               onOpen={onOpenCard}
               onPrompt={onPromptCard}
+              onTrackClick={clicked => onTrack?.('action_card_clicked', clicked.kind)}
               disabled={isSending}
             />
           ))}
@@ -122,12 +134,14 @@ export const AssistantChatPanel: React.FC<AssistantChatPanelProps> = ({
   suggestedPrompts,
   suggestedContextLabel,
   navigatorCards,
+  companionMode = false,
   feedbackPendingId,
   onSend,
   onRetry,
   onOpenCard,
   onPromptCard,
-  onFeedback
+  onFeedback,
+  onTrack
 }) => {
   const [draft, setDraft] = React.useState('');
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
@@ -139,6 +153,8 @@ export const AssistantChatPanel: React.FC<AssistantChatPanelProps> = ({
   const submit = () => {
     const text = draft.trim();
     if (!text || isSending) return;
+    // Free-text submission from the composer (distinct from picking a suggested-prompt chip).
+    onTrack?.('prompt_submitted');
     onSend(text);
     setDraft('');
   };
@@ -163,13 +179,16 @@ export const AssistantChatPanel: React.FC<AssistantChatPanelProps> = ({
         {messages.length === 0 ? (
           <Box sx={{ mt: 2 }}>
             <Typography variant="body2" color="text.secondary">
-              {EMPTY_HINT}
+              {companionMode ? COMPANION_HINT : EMPTY_HINT}
             </Typography>
             <SuggestedPrompts
               prompts={suggestedPrompts}
               contextLabel={suggestedContextLabel}
               disabled={isSending}
-              onPick={text => onSend(text)}
+              onPick={text => {
+                onTrack?.('suggested_prompt_clicked');
+                onSend(text);
+              }}
             />
             {navigatorCards && navigatorCards.length > 0 ? (
               <Stack spacing={1} sx={{ mt: 2 }}>
@@ -178,7 +197,7 @@ export const AssistantChatPanel: React.FC<AssistantChatPanelProps> = ({
                   color="text.secondary"
                   sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}
                 >
-                  Jump to / Explain
+                  {companionMode ? 'Continue this workflow' : 'Jump to / Explain'}
                 </Typography>
                 {navigatorCards.map((card, idx) => (
                   <ActionCardItem
@@ -186,6 +205,7 @@ export const AssistantChatPanel: React.FC<AssistantChatPanelProps> = ({
                     card={card}
                     onOpen={onOpenCard}
                     onPrompt={onPromptCard}
+                    onTrackClick={clicked => onTrack?.('action_card_clicked', clicked.kind)}
                     disabled={isSending}
                   />
                 ))}
@@ -203,6 +223,7 @@ export const AssistantChatPanel: React.FC<AssistantChatPanelProps> = ({
                 onOpenCard={onOpenCard}
                 onPromptCard={onPromptCard}
                 onFeedback={onFeedback}
+                onTrack={onTrack}
               />
             ))}
           </Stack>

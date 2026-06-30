@@ -26,15 +26,18 @@ interface ActionCardItemProps {
   // Re-submit an `explain` card's prompt into the read-only chat (no navigation). Required for
   // `explain` cards; ignored for every other kind.
   onPrompt?: (prompt: string) => void;
+  // Bounded UI-interaction analytics for a card click (records the card kind only, never its target).
+  onTrackClick?: (card: AssistantActionCard) => void;
   disabled?: boolean;
 }
 
-export const ActionCardItem: React.FC<ActionCardItemProps> = ({ card, onOpen, onPrompt, disabled }) => {
+export const ActionCardItem: React.FC<ActionCardItemProps> = ({ card, onOpen, onPrompt, onTrackClick, disabled }) => {
   // `explain` re-prompts the read-only chat in place; every other kind is an inert deep link the user
   // clicks to navigate. Both remain propose-only — the assistant never acts on the user's behalf.
   const isExplain = card.kind === 'explain';
   const canExplain = isExplain && Boolean(card.prompt);
   const handleClick = () => {
+    onTrackClick?.(card);
     if (isExplain) {
       if (card.prompt) onPrompt?.(card.prompt);
     } else {

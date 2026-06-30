@@ -220,8 +220,21 @@ def _build_companion_cards(
     cards: list[AssistantActionCard] = []
     seen: set = set()
 
+    # Reserve the run's resume card FIRST so it can never be crowded out by explain cards — the whole
+    # point of companion mode is keeping the active run one click away. It is built (and owner-
+    # re-validated) up front, then appended last so explains read top-to-bottom; simply absent if the
+    # run isn't resumable. Read-only: a resume card is an inert deep link, never an execution.
+    resume_cards: list[AssistantActionCard] = []
+    if hints.run_id is not None:
+        _collect(
+            build_action_card(db_session, current_user, kind="resume", run_id=hints.run_id),
+            resume_cards,
+            seen,
+        )
+    explain_budget = max(0, max_cards - len(resume_cards))
+
     for title, prompt in _COMPANION_EXPLAINS:
-        if len(cards) >= max_cards:
+        if len(cards) >= explain_budget:
             break
         _collect(
             build_action_card(
@@ -238,13 +251,7 @@ def _build_companion_cards(
             seen,
         )
 
-    # Resume THIS run (owner-scoped + re-validated; simply absent if it isn't resumable).
-    if len(cards) < max_cards and hints.run_id is not None:
-        _collect(
-            build_action_card(db_session, current_user, kind="resume", run_id=hints.run_id),
-            cards,
-            seen,
-        )
+    cards.extend(resume_cards)
     return cards[:max_cards]
 
 

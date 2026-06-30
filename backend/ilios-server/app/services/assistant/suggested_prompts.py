@@ -93,6 +93,86 @@ _ROUTE_BUCKETS: list[tuple[str, str, list[tuple[str, str]]]] = [
             ("Invite a teammate", "How do I invite a teammate to this company?"),
         ],
     ),
+    (
+        "/due-diligence",
+        "Due Diligence",
+        [
+            ("What is due diligence?", "What is the due-diligence process and how does it work here?"),
+            ("What needs review?", "What due-diligence items still need my review?"),
+            ("Promote vs activate", "What's the difference between promoting a term and activating a baseline?"),
+            ("Summarize diligence", "Summarize this project's due-diligence reconciliation and active facts."),
+        ],
+    ),
+    # `/operations-and-maintenance` must precede no other prefix here, but keep it ahead of any future
+    # shorter `/operations` token; it is its own coarse module.
+    (
+        "/operations-and-maintenance",
+        "Operations & Maintenance",
+        [
+            ("What is O&M?", "What does the Operations & Maintenance module cover?"),
+            ("Explain device health", "How do I read device health and alerts for this project?"),
+            ("Summarize this project", "Summarize this project's telemetry health, weather readiness, and devices."),
+            ("What should I do next?", "What should I do next in Operations & Maintenance?"),
+        ],
+    ),
+    (
+        "/finance",
+        "Finance",
+        [
+            ("What does Finance cover?", "What can I do in the Finance module?"),
+            ("Explain budgeting", "How does budgeting and capital governance work here?"),
+            ("How do vendors work?", "How does vendor management work in Finance?"),
+            ("What should I do next?", "What should I do next in Finance?"),
+        ],
+    ),
+    (
+        "/reports",
+        "Reporting",
+        [
+            ("What reports are available?", "Which reports can I view here?"),
+            ("Explain performance reporting", "What does the performance report show and where does its data come from?"),
+            ("What should I do next?", "What should I do next with reporting?"),
+        ],
+    ),
+    # `/portfolio-admin` is a settings surface; list it BEFORE `/portfolio` so the broader portfolio
+    # prefix never swallows the admin route.
+    (
+        "/portfolio-admin",
+        "Settings & Admin",
+        [
+            ("What can admins do here?", "What can I manage from the admin and settings area?"),
+            ("Explain access & roles", "How do roles and access control work in iliOS?"),
+            ("What should I do next?", "What should I do next as an administrator?"),
+        ],
+    ),
+    (
+        "/portfolio",
+        "Portfolio",
+        [
+            ("Summarize my portfolio", "Summarize my portfolio's status across telemetry, diligence, weather, and devices."),
+            ("Which projects need attention?", "Which of my projects need attention right now?"),
+            ("What should I do next?", "What should I do next across my portfolio?"),
+        ],
+    ),
+    (
+        "/settings",
+        "Settings & Admin",
+        [
+            ("What can I change here?", "What can I manage from settings?"),
+            ("Explain access & roles", "How do roles and access control work in iliOS?"),
+            ("What should I do next?", "What should I do next in settings?"),
+        ],
+    ),
+    (
+        "/home",
+        "Workspace",
+        [
+            ("What should I do next?", "What should I do next across my projects?"),
+            ("Explain my readiness", "Explain my onboarding readiness."),
+            ("Summarize my work", "Summarize the status of my projects across telemetry, diligence, weather, and devices."),
+            ("What can you do?", "What can you do, and what can't you do?"),
+        ],
+    ),
 ]
 
 

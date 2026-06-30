@@ -198,6 +198,25 @@ def test_suggested_prompts_route_match():
     assert prompts and all({"label", "prompt"} <= set(p.keys()) for p in prompts)
 
 
+@pytest.mark.parametrize(
+    "route, expected_label",
+    [
+        ("/finance/budgeting", "Finance"),
+        ("/reports/performance", "Reporting"),
+        ("/operations-and-maintenance/site/4", "Operations & Maintenance"),
+        ("/due-diligence/companies/1/sites/2", "Due Diligence"),
+        ("/portfolio/overview", "Portfolio"),
+        # The admin surface must NOT be swallowed by the broader /portfolio prefix.
+        ("/portfolio-admin/telemetry", "Settings & Admin"),
+        ("/home", "Workspace"),
+    ],
+)
+def test_suggested_prompts_module_buckets(route, expected_label):
+    label, prompts = suggested_prompts.get_suggested_prompts(route)
+    assert label == expected_label
+    assert prompts and all({"label", "prompt"} <= set(p.keys()) for p in prompts)
+
+
 def test_suggested_prompts_general_fallback():
     label, prompts = suggested_prompts.get_suggested_prompts("/totally/unknown")
     assert label is None

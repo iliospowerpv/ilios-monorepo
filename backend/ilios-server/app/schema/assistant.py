@@ -17,7 +17,7 @@ Slice 2 additions (all ADDITIVE, backward compatible with Slice 1):
 from datetime import datetime
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 SCHEMA_VERSION = "assistant_chat.v2"
 
@@ -241,6 +241,37 @@ class AssistantToolUsageStat(BaseModel):
     count: int
 
 
+class AssistantActionCardClickStat(BaseModel):
+    """How many times a propose-only card of a given kind was clicked (kind is a bounded token)."""
+
+    kind: str
+    count: int
+
+
+class AssistantInteractionStats(BaseModel):
+    """Aggregate counts over ONLY the isolated ``assistant_ui_events`` table (Task #89).
+
+    Pure UI-adoption telemetry — no message/reply content, no business value, and no per-user data.
+    Every field defaults to zero so the surrounding response stays backward compatible when the
+    analytics table is empty (or the feature predates a given client)."""
+
+    opens: int = 0
+    dismissals: int = 0
+    prompt_submissions: int = 0
+    companion_prompt_submissions: int = 0
+    suggested_prompt_clicks: int = 0
+    sources_disclosures_opened: int = 0
+    first_run_shown: int = 0
+    first_run_dismissed: int = 0
+    first_run_opened: int = 0
+    proactive_hint_shown: int = 0
+    proactive_hint_dismissed: int = 0
+    proactive_hint_opened: int = 0
+    discoverability_entry_clicks: int = 0
+    action_card_clicks: list[AssistantActionCardClickStat] = Field(default_factory=list)
+    events_total: int = 0
+
+
 class AssistantUsageResponse(BaseModel):
     """Read-only aggregate over ONLY the isolated assistant tables. No business/operational data."""
 
@@ -255,3 +286,57 @@ class AssistantUsageResponse(BaseModel):
     feedback_down: int = 0
     feedback_none: int = 0
     top_tools: list[AssistantToolUsageStat] = Field(default_factory=list)
+    # First-party UI-interaction analytics (additive; default-empty for back-compat).
+    interactions: AssistantInteractionStats = Field(default_factory=AssistantInteractionStats)
+
+
+# --- UI-interaction analytics ingest (Task #89) -------------------------------------------------
+
+# Closed allowlist of first-party UI events, kept in lockstep with
+# ``app.models.assistant.AssistantUiEventName`` (a drift-guard test asserts they match exactly). The
+# Pydantic ``Literal`` rejects any unknown name with a 422 before the ingest service ever runs.
+AssistantUiEventNameLiteral = Literal[
+    "assistant_opened",
+    "assistant_dismissed",
+    "prompt_submitted",
+    "suggested_prompt_clicked",
+    "action_card_clicked",
+    "sources_disclosure_opened",
+    "first_run_shown",
+    "first_run_dismissed",
+    "first_run_opened",
+    "proactive_hint_shown",
+    "proactive_hint_dismissed",
+    "proactive_hint_opened",
+    "discoverability_entry_clicked",
+]
+
+
+class AssistantUiEventIn(BaseModel):
+    """A single first-party UI-interaction event reported by the FE.
+
+    ``extra='forbid'`` so a client can NEVER smuggle extra keys (e.g. message text or entity ids)
+    into the telemetry sink. ``route`` is a raw client path the SERVER normalizes to a coarse bucket
+    (entity ids discarded) — it is never stored verbatim. ``detail`` is reduced server-side to a
+    small per-event allowlisted token. Nothing here carries message/reply content or business data.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    event: AssistantUiEventNameLiteral
+    route: Optional[str] = Field(default=None, max_length=512)
+    detail: Optional[str] = Field(default=None, max_length=64)
+    in_companion: bool = False
+
+
+class AssistantUiEventBatchRequest(BaseModel):
+    """A bounded batch of UI events (the FE buffers + flushes them). Capped so a client can never
+    fan out the telemetry sink."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    events: list[AssistantUiEventIn] = Field(min_length=1, max_length=50)
+
+
+class AssistantUiEventBatchResponse(BaseModel):
+    accepted: int = 0

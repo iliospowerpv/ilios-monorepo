@@ -56,6 +56,12 @@ export const AssistantUsagePanel: React.FC = () => {
   }
 
   const maxToolCount = data.top_tools.reduce((max, tool) => Math.max(max, tool.count), 0);
+  // Additive UI-interaction analytics (Task #89). Defensive against an older cached payload that
+  // predates the `interactions` field.
+  const interactions = data.interactions;
+  const maxCardClick = interactions
+    ? interactions.action_card_clicks.reduce((max, card) => Math.max(max, card.count), 0)
+    : 0;
 
   return (
     <Stack spacing={3}>
@@ -125,6 +131,73 @@ export const AssistantUsagePanel: React.FC = () => {
           </Paper>
         )}
       </Box>
+
+      {interactions ? (
+        <>
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+              Native adoption
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(4, 1fr)' }, gap: 1.5 }}>
+              <StatCard label="Opens" value={interactions.opens} />
+              <StatCard label="Dismissals" value={interactions.dismissals} />
+              <StatCard label="Prompts sent" value={interactions.prompt_submissions} />
+              <StatCard label="In-wizard prompts" value={interactions.companion_prompt_submissions} />
+              <StatCard label="Suggested-prompt picks" value={interactions.suggested_prompt_clicks} />
+              <StatCard label="Sources opened" value={interactions.sources_disclosures_opened} />
+              <StatCard label="Discoverability clicks" value={interactions.discoverability_entry_clicks} />
+              <StatCard label="Total events" value={interactions.events_total} />
+            </Box>
+          </Box>
+
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+              Guidance &amp; hints
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(3, 1fr)' }, gap: 1.5 }}>
+              <StatCard label="First-run shown" value={interactions.first_run_shown} />
+              <StatCard label="First-run opened" value={interactions.first_run_opened} />
+              <StatCard label="First-run dismissed" value={interactions.first_run_dismissed} />
+              <StatCard label="Hints shown" value={interactions.proactive_hint_shown} />
+              <StatCard label="Hints opened" value={interactions.proactive_hint_opened} />
+              <StatCard label="Hints dismissed" value={interactions.proactive_hint_dismissed} />
+            </Box>
+          </Box>
+
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+              Action cards clicked
+            </Typography>
+            {interactions.action_card_clicks.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                No action-card clicks recorded yet.
+              </Typography>
+            ) : (
+              <Paper variant="outlined" sx={{ p: 2 }}>
+                <Stack spacing={1.5} divider={<Divider flexItem />}>
+                  {interactions.action_card_clicks.map(card => (
+                    <Box key={card.kind}>
+                      <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                        <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                          {card.kind}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {card.count}
+                        </Typography>
+                      </Stack>
+                      <LinearProgress
+                        variant="determinate"
+                        value={maxCardClick > 0 ? Math.round((card.count / maxCardClick) * 100) : 0}
+                        color="secondary"
+                      />
+                    </Box>
+                  ))}
+                </Stack>
+              </Paper>
+            )}
+          </Box>
+        </>
+      ) : null}
     </Stack>
   );
 };

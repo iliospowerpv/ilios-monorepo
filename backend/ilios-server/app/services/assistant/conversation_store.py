@@ -1,9 +1,13 @@
 """Owner-scoped persistence for AI Assistant conversations.
 
-This is the ONLY module in the assistant package that writes, and it writes EXCLUSIVELY to the two
+This is the only writer in the assistant REASONING/TOOL path, and it writes EXCLUSIVELY to the two
 isolated ``assistant_conversations`` tables — never to operational/business truth and never to the
 legacy chatbot tables. Every read/write is scoped to ``current_user.id`` so one user can never see
 or mutate another's threads.
+
+(The sibling ``ui_events_service`` also writes, but it is a deliberate NON-assistant telemetry sink:
+it is driven only by an explicit, authenticated UI-event ingest endpoint, never by the
+assistant/tool/LLM loop, and writes only bounded UI-interaction analytics.)
 """
 from __future__ import annotations
 

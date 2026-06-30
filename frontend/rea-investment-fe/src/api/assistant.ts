@@ -143,6 +143,31 @@ export interface AssistantToolUsageStat {
   count: number;
 }
 
+export interface AssistantActionCardClickStat {
+  kind: string;
+  count: number;
+}
+
+// Aggregate UI-interaction counts over ONLY the isolated assistant_ui_events table. Pure adoption
+// telemetry — no message/reply content, no business value, and no per-user data.
+export interface AssistantInteractionStats {
+  opens: number;
+  dismissals: number;
+  prompt_submissions: number;
+  companion_prompt_submissions: number;
+  suggested_prompt_clicks: number;
+  sources_disclosures_opened: number;
+  first_run_shown: number;
+  first_run_dismissed: number;
+  first_run_opened: number;
+  proactive_hint_shown: number;
+  proactive_hint_dismissed: number;
+  proactive_hint_opened: number;
+  discoverability_entry_clicks: number;
+  action_card_clicks: AssistantActionCardClickStat[];
+  events_total: number;
+}
+
 export interface AssistantUsageResponse {
   conversations_total: number;
   conversations_active: number;
@@ -155,6 +180,43 @@ export interface AssistantUsageResponse {
   feedback_down: number;
   feedback_none: number;
   top_tools: AssistantToolUsageStat[];
+  // First-party UI-interaction analytics (additive; default-empty for back-compat).
+  interactions: AssistantInteractionStats;
+}
+
+// --- First-party UI-interaction analytics ingest (Task #89) --------------------------
+// Privacy-bounded product telemetry the FE emits on user interactions. The payload carries ONLY a
+// bounded event name + a coarse route (the SERVER normalizes it to a non-identifying bucket, with
+// entity ids discarded) + a small allowlisted detail token + an in-companion flag. It NEVER includes
+// prompt/reply content or any business/operational value. The assistant never writes it — only
+// explicit human UI actions do. Kept in lockstep with the backend AssistantUiEventName enum.
+export type AssistantUiEventName =
+  | 'assistant_opened'
+  | 'assistant_dismissed'
+  | 'prompt_submitted'
+  | 'suggested_prompt_clicked'
+  | 'action_card_clicked'
+  | 'sources_disclosure_opened'
+  | 'first_run_shown'
+  | 'first_run_dismissed'
+  | 'first_run_opened'
+  | 'proactive_hint_shown'
+  | 'proactive_hint_dismissed'
+  | 'proactive_hint_opened'
+  | 'discoverability_entry_clicked';
+
+export interface AssistantUiEventIn {
+  event: AssistantUiEventName;
+  // Raw client route; the server reduces it to a coarse bucket (entity ids discarded).
+  route?: string | null;
+  // Small, per-event allowlisted qualifier (e.g. an action card's kind); ignored otherwise.
+  detail?: string | null;
+  // Whether the interaction happened inside a guided workflow wizard (companion mode).
+  in_companion?: boolean;
+}
+
+export interface AssistantUiEventBatchResponse {
+  accepted: number;
 }
 
 export interface AssistantConversationSummary {
@@ -260,6 +322,19 @@ export const buildAssistantApi = (httpClient: AxiosInstance) => ({
   getAdminUsage: async (): Promise<AssistantUsageResponse> => {
     const { data } = await httpClient.get<AssistantUsageResponse>(`${A}/admin/usage`);
     return data;
+  },
+
+  // Fire-and-forget, best-effort UI-interaction telemetry. Bounded enum payloads ONLY — never
+  // message/reply content or business data (the server re-validates the allowlist and 404s when the
+  // flag is off). Swallows every error so analytics can never disrupt the user. The 202 response
+  // body ({ accepted }) is intentionally ignored by callers.
+  trackEvents: async (events: AssistantUiEventIn[]): Promise<void> => {
+    if (!events || events.length === 0) return;
+    try {
+      await httpClient.post(`${A}/events`, { events: events.slice(0, 50) });
+    } catch {
+      // best-effort: ignore network/HTTP failures (e.g. flag off → 404, offline, rate limit)
+    }
   }
 });
 

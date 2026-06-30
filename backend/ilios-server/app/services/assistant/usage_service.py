@@ -20,6 +20,7 @@ from app.models.assistant import (
     AssistantMessageRole,
 )
 from app.schema.assistant import AssistantToolUsageStat, AssistantUsageResponse
+from app.services.assistant import ui_events_service
 
 # Bound how many recent assistant messages we scan for tool usage so the tally can never fan out.
 _TOOL_SCAN_CAP = 5000
@@ -56,6 +57,8 @@ def build_usage_summary(db_session: Session) -> AssistantUsageResponse:
     feedback_none = assistant_messages - feedback_up - feedback_down
 
     top_tools = _top_tools(db_session)
+    # First-party UI-interaction analytics over the isolated assistant_ui_events table (Task #89).
+    interactions = ui_events_service.build_interaction_stats(db_session)
 
     return AssistantUsageResponse(
         conversations_total=conversations_total,
@@ -69,6 +72,7 @@ def build_usage_summary(db_session: Session) -> AssistantUsageResponse:
         feedback_down=feedback_down,
         feedback_none=max(0, feedback_none),
         top_tools=top_tools,
+        interactions=interactions,
     )
 
 

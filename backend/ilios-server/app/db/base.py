@@ -63,4 +63,5 @@ from app.models.workflow import WorkflowRun, WorkflowStepState
 from app.models.assistant import (
     AssistantConversation,
     AssistantConversationMessage,
+    AssistantUiEvent,
 )

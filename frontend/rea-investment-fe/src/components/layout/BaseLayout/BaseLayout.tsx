@@ -11,6 +11,7 @@ import { useAuth } from '../../../contexts/auth/auth';
 import { SidebarProvider } from '../../../contexts/sidebar';
 import { EntityContextProvider } from '../../../contexts/entityContext';
 import { WorkflowCompanionProvider } from '../../../contexts/workflowCompanion';
+import { AssistantLauncherProvider } from '../../../contexts/assistantLauncher';
 import { AssistantWidget } from '../../assistant';
 
 export const BaseLayout: React.FC = () => {
@@ -26,14 +27,16 @@ export const BaseLayout: React.FC = () => {
     <EntityContextProvider>
       <SidebarProvider>
         <WorkflowCompanionProvider>
-          <Box sx={{ display: 'flex' }}>
-            <CssBaseline />
-            <GlobalAdminBanner />
-            <PageHeader />
-            <PageSidebar />
-            <Main />
-            <AssistantWidget />
-          </Box>
+          <AssistantLauncherProvider>
+            <Box sx={{ display: 'flex' }}>
+              <CssBaseline />
+              <GlobalAdminBanner />
+              <PageHeader />
+              <PageSidebar />
+              <Main />
+              <AssistantWidget />
+            </Box>
+          </AssistantLauncherProvider>
         </WorkflowCompanionProvider>
       </SidebarProvider>
     </EntityContextProvider>

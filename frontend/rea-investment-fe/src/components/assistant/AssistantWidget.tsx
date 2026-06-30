@@ -23,9 +23,17 @@ import { useEntityContext } from '../../contexts/entityContext';
 import { useWorkflowCompanion } from '../../contexts/workflowCompanion';
 import { AssistantChatPanel, ChatUiMessage, AssistantChatError } from './AssistantChatPanel';
 import { ConversationList } from './ConversationList';
-import type { AssistantChatRequest, AssistantContextHints, AssistantFeedbackRating } from '../../api/assistant';
+import type {
+  AssistantChatRequest,
+  AssistantContextHints,
+  AssistantFeedbackRating,
+  AssistantUiEventName
+} from '../../api/assistant';
 import { getTheme } from '../../utils/styles/theme';
 import { useAssistantLauncherPosition, LAUNCHER_MARGIN, type LauncherSide } from './useAssistantLauncherPosition';
+import { useAssistantAnalytics } from './useAssistantAnalytics';
+import { AssistantLauncherCallout } from './AssistantLauncherCallout';
+import { useAssistantLauncher } from '../../contexts/assistantLauncher';
 
 // Pointer travel (px) below which a press is treated as a click (open) rather than a drag (reposition).
 const DRAG_THRESHOLD = 5;
@@ -39,6 +47,8 @@ const ASSISTANT_THEME = getTheme('dark');
 const CONFIG_KEY = ['assistant', 'config'];
 const CONVERSATIONS_KEY = ['assistant', 'conversations'];
 const HISTORY_LIMIT = 20;
+// Per-user localStorage key prefix for the one-time first-run coachmark (suffixed with the user id).
+const FIRST_RUN_KEY_PREFIX = 'ilios.assistant.firstRunSeen.';
 
 type PanelView = 'chat' | 'history';
 
@@ -54,7 +64,7 @@ const toChatError = (err: unknown): AssistantChatError => {
 };
 
 export const AssistantWidget: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { currentCompany, currentProject } = useEntityContext();
@@ -135,6 +145,119 @@ export const AssistantWidget: React.FC = () => {
     companion?.workflowId,
     companion?.stepId
   ]);
+
+  // First-party, privacy-bounded UI-interaction analytics. Inert unless the assistant is actually
+  // available (flag on + authenticated). Records ONLY bounded event metadata — never message text.
+  const analytics = useAssistantAnalytics(isAuthenticated && configQuery.isSuccess);
+  // Stamp every event with the current route + companion mode so the server can bucket adoption by
+  // module and split in-wizard usage. `detail` is an optional small allowlisted qualifier.
+  const trackUi = React.useCallback(
+    (event: AssistantUiEventName, detail?: string | null) =>
+      analytics.track(event, {
+        detail: detail ?? null,
+        route: location.pathname,
+        inCompanion: Boolean(companion?.runId)
+      }),
+    [analytics, location.pathname, companion?.runId]
+  );
+
+  // --- Shared launcher + native discoverability ----------------------------------------------
+  // A shared context lets discoverability entry points elsewhere in the app (top bar, help menu)
+  // open THIS existing drawer. Opening the drawer is the ONLY effect — purely navigational, never an
+  // action, preview, or execution. The widget also publishes its availability so those entries only
+  // render when the assistant is actually reachable (flag on + authenticated).
+  const { openRequest, setAvailable } = useAssistantLauncher();
+  const assistantAvailable = isAuthenticated && configQuery.isSuccess;
+
+  React.useEffect(() => {
+    setAvailable(assistantAvailable);
+    return () => setAvailable(false);
+  }, [assistantAvailable, setAvailable]);
+
+  // First-run guidance: a one-time, per-user, dismissible coachmark beside the launcher. It NEVER
+  // auto-opens the drawer; it only invites. Persisted in localStorage keyed by the user id.
+  const userId = user?.id ?? null;
+  const firstRunKey = userId != null ? `${FIRST_RUN_KEY_PREFIX}${userId}` : null;
+  const [firstRunSeen, setFirstRunSeen] = React.useState(true);
+  React.useEffect(() => {
+    if (!firstRunKey) {
+      setFirstRunSeen(true);
+      return;
+    }
+    try {
+      setFirstRunSeen(localStorage.getItem(firstRunKey) === '1');
+    } catch {
+      setFirstRunSeen(true);
+    }
+  }, [firstRunKey]);
+  const markFirstRunSeen = React.useCallback(() => {
+    setFirstRunSeen(true);
+    if (firstRunKey) {
+      try {
+        localStorage.setItem(firstRunKey, '1');
+      } catch {
+        // Best-effort: a storage failure just means the hint may appear again later.
+      }
+    }
+  }, [firstRunKey]);
+
+  // Proactive per-step workflow nudge: shown ONLY while inside a guided run, once per run+step, and
+  // dismissible. Like first-run it NEVER auto-opens — the assistant stays read-only / propose-only.
+  const stepKey = companion?.runId != null ? `${companion.runId}:${companion.stepId ?? ''}` : null;
+  const [dismissedSteps, setDismissedSteps] = React.useState<Set<string>>(() => new Set());
+  const dismissProactiveStep = React.useCallback(() => {
+    if (stepKey) {
+      setDismissedSteps(prev => new Set(prev).add(stepKey));
+    }
+  }, [stepKey]);
+
+  const showFirstRun = assistantAvailable && !open && userId != null && !firstRunSeen;
+  const showProactiveHint =
+    assistantAvailable && !open && !showFirstRun && stepKey != null && !dismissedSteps.has(stepKey);
+
+  // Emit the "shown" impression once per surface, guarded by refs so toggling the drawer open/closed
+  // does not re-count an impression for the same first-run / step.
+  const firstRunShownRef = React.useRef(false);
+  React.useEffect(() => {
+    if (showFirstRun && !firstRunShownRef.current) {
+      firstRunShownRef.current = true;
+      trackUi('first_run_shown');
+    }
+  }, [showFirstRun, trackUi]);
+  const proactiveShownRef = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (showProactiveHint && stepKey && proactiveShownRef.current !== stepKey) {
+      proactiveShownRef.current = stepKey;
+      trackUi('proactive_hint_shown', 'step_help');
+    }
+  }, [showProactiveHint, stepKey, trackUi]);
+
+  // External open requests from discoverability entry points. Each carries only a bounded source
+  // token; the widget opens the drawer and records the discoverability event from the single
+  // analytics instance.
+  const handledOpenRef = React.useRef(0);
+  React.useEffect(() => {
+    if (!openRequest || openRequest.id === handledOpenRef.current) return;
+    handledOpenRef.current = openRequest.id;
+    setOpen(true);
+    markFirstRunSeen();
+    if (openRequest.source) {
+      trackUi('discoverability_entry_clicked', openRequest.source);
+    }
+  }, [openRequest, markFirstRunSeen, trackUi]);
+
+  // `assistant_opened` is recorded once per closed->open transition, regardless of which entry point
+  // opened the drawer (FAB, top-bar, help menu, first-run / proactive CTA). The source-specific
+  // events above provide attribution; this gives a single, never-double-counted "opened" total.
+  const wasOpenRef = React.useRef(false);
+  React.useEffect(() => {
+    if (open && !wasOpenRef.current) {
+      wasOpenRef.current = true;
+      trackUi('assistant_opened');
+    } else if (!open) {
+      wasOpenRef.current = false;
+    }
+  }, [open, trackUi]);
 
   const chatMutation = useMutation({
     mutationFn: (request: AssistantChatRequest) => ApiClient.assistant.chat(request),
@@ -245,6 +368,13 @@ export const AssistantWidget: React.FC = () => {
     setView('chat');
   };
 
+  // User-initiated close (Drawer backdrop/Esc or the Close button). Distinct from a card navigation,
+  // which closes the drawer as a side effect of navigating, not as a dismiss.
+  const handleCloseDrawer = () => {
+    trackUi('assistant_dismissed');
+    setOpen(false);
+  };
+
   const handleOpenCard = (route: string) => {
     setOpen(false);
     navigate(route);
@@ -313,6 +443,7 @@ export const AssistantWidget: React.FC = () => {
       return;
     }
     setOpen(true);
+    markFirstRunSeen();
   };
 
   if (!isAuthenticated || !configQuery.isSuccess) {
@@ -356,11 +487,49 @@ export const AssistantWidget: React.FC = () => {
         </Fab>
       </Tooltip>
 
+      {showFirstRun ? (
+        <AssistantLauncherCallout
+          side={position.side}
+          y={position.y}
+          title="Meet your AI Assistant"
+          body="Read-only guidance on your projects, workflows, and what to do next — you always take the actions."
+          ctaLabel="Show me"
+          onOpen={() => {
+            markFirstRunSeen();
+            trackUi('first_run_opened');
+            setOpen(true);
+          }}
+          onDismiss={() => {
+            markFirstRunSeen();
+            trackUi('first_run_dismissed');
+          }}
+        />
+      ) : null}
+
+      {showProactiveHint ? (
+        <AssistantLauncherCallout
+          side={position.side}
+          y={position.y}
+          title="Need a hand with this step?"
+          body="Ask the assistant to explain this workflow step, its fields, or what's blocking you."
+          ctaLabel="Ask"
+          onOpen={() => {
+            dismissProactiveStep();
+            trackUi('proactive_hint_opened', 'step_help');
+            setOpen(true);
+          }}
+          onDismiss={() => {
+            dismissProactiveStep();
+            trackUi('proactive_hint_dismissed', 'step_help');
+          }}
+        />
+      ) : null}
+
       <ThemeProvider theme={ASSISTANT_THEME}>
         <Drawer
           anchor="right"
           open={open}
-          onClose={() => setOpen(false)}
+          onClose={handleCloseDrawer}
           PaperProps={{
             sx: {
               width: { xs: '100%', sm: DRAWER_WIDTH },
@@ -396,7 +565,7 @@ export const AssistantWidget: React.FC = () => {
                 </IconButton>
               </Tooltip>
               <Tooltip title="Close">
-                <IconButton size="small" onClick={() => setOpen(false)} aria-label="Close assistant">
+                <IconButton size="small" onClick={handleCloseDrawer} aria-label="Close assistant">
                   <CloseIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
@@ -421,12 +590,14 @@ export const AssistantWidget: React.FC = () => {
                 suggestedPrompts={suggestedPromptsQuery.data?.prompts ?? []}
                 suggestedContextLabel={suggestedPromptsQuery.data?.context_label ?? null}
                 navigatorCards={suggestedPromptsQuery.data?.action_cards ?? []}
+                companionMode={Boolean(companion?.runId)}
                 feedbackPendingId={feedbackMutation.isPending ? (feedbackMutation.variables?.messageId ?? null) : null}
                 onSend={handleSend}
                 onRetry={handleRetry}
                 onOpenCard={handleOpenCard}
                 onPromptCard={handleSend}
                 onFeedback={handleFeedback}
+                onTrack={trackUi}
               />
             )}
           </Box>

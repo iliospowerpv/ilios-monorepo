@@ -26,6 +26,8 @@ from app.schema.assistant import (
     AssistantPersistedMessage,
     AssistantSuggestedPrompt,
     AssistantSuggestedPromptsResponse,
+    AssistantUiEventBatchRequest,
+    AssistantUiEventBatchResponse,
     AssistantUsageResponse,
 )
 from app.schema.user import CurrentUserSchema
@@ -33,6 +35,7 @@ from app.services.assistant import (
     conversation_store,
     llm_client,
     suggested_prompts,
+    ui_events_service,
     usage_service,
 )
 from app.services.assistant.assistant_service import run_assistant_chat
@@ -315,6 +318,30 @@ def get_suggested_prompts(
         prompts=[AssistantSuggestedPrompt(**p) for p in prompts],
         action_cards=action_cards,
     )
+
+
+@assistant_router.post(
+    "/events",
+    response_model=AssistantUiEventBatchResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def ingest_ui_events(
+    payload: AssistantUiEventBatchRequest,
+    current_user: Annotated[CurrentUserSchema, Depends(get_current_user)],
+    db_session: Session = Depends(get_session),
+) -> AssistantUiEventBatchResponse:
+    """Ingest a bounded batch of first-party assistant UI-interaction events for the caller.
+
+    This is a deliberate NON-assistant write path: it records ONLY privacy-bounded UI telemetry (a
+    closed event name + coarse route bucket + small allowlisted detail token + in-companion flag)
+    into the isolated ``assistant_ui_events`` table. It NEVER touches operational/business data,
+    never runs the assistant/tool/LLM loop, and is not exposed as a tool — so the Workflow Engine
+    remains the sole mutator of business state. ``user_id`` is taken from the authenticated caller,
+    never the payload. Flag-gated (404 when off); the FE fires it best-effort and ignores failures.
+    """
+    _require_enabled()
+    accepted = ui_events_service.record_events(db_session, current_user, payload.events)
+    return AssistantUiEventBatchResponse(accepted=accepted)
 
 
 @assistant_router.get("/admin/usage", response_model=AssistantUsageResponse)

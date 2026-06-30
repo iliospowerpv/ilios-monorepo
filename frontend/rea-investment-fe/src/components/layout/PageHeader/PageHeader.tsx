@@ -17,6 +17,7 @@ import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
+import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
 import { Link, useNavigate } from 'react-router-dom';
 import Tooltip from '@mui/material/Tooltip';
 
@@ -28,6 +29,7 @@ import { useAuth } from '../../../contexts/auth/auth';
 import { useNotify } from '../../../contexts/notifications/notifications';
 import { useThemeMode } from '../../../contexts/theme/theme';
 import { useSidebar } from '../../../contexts/sidebar';
+import { useAssistantLauncher } from '../../../contexts/assistantLauncher';
 
 export const PageHeader: React.FC = () => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -38,6 +40,9 @@ export const PageHeader: React.FC = () => {
   const { user } = useAuth();
   const { mode, toggleTheme } = useThemeMode();
   const { isOpen: sidebarOpen } = useSidebar();
+  // Navigational entry to the single, already-mounted read-only AI Assistant drawer. Only shown when
+  // the assistant is actually reachable; clicking only opens the drawer (never an action).
+  const { available: assistantAvailable, requestOpen: openAssistant } = useAssistantLauncher();
 
   if (!user) {
     throw new Error('PageHeader component requires user authentication');
@@ -78,6 +83,17 @@ export const PageHeader: React.FC = () => {
             <Breadcrumbs />
           </Stack>
           <Stack direction="row" alignItems="center">
+            {assistantAvailable && (
+              <Tooltip title="Ask the AI Assistant">
+                <IconButton
+                  onClick={() => openAssistant('topbar')}
+                  aria-label="Open AI Assistant"
+                  sx={{ mr: t => t.spacing(2), color: 'text.secondary' }}
+                >
+                  <SmartToyOutlinedIcon />
+                </IconButton>
+              </Tooltip>
+            )}
             <Tooltip title={mode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}>
               <IconButton onClick={toggleTheme} sx={{ mr: t => t.spacing(2), color: 'text.secondary' }}>
                 {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
@@ -126,6 +142,19 @@ export const PageHeader: React.FC = () => {
                 </ListItemIcon>
                 Security
               </MenuItem>
+              {assistantAvailable && (
+                <MenuItem
+                  onClick={() => {
+                    handleClose();
+                    openAssistant('help_menu');
+                  }}
+                >
+                  <ListItemIcon>
+                    <SmartToyOutlinedIcon fontSize="small" />
+                  </ListItemIcon>
+                  Ask the AI Assistant
+                </MenuItem>
+              )}
               <MenuItem
                 onClick={() => {
                   handleClose();
