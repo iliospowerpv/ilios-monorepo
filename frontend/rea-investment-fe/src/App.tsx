@@ -672,7 +672,12 @@ const router = createBrowserRouter(
         <Route path="/settings">
           <Route
             index
-            element={<ProtectedSettingsRoute element={<SettingsPage.Component />} permission={[AdminType.system]} />}
+            element={
+              <ProtectedSettingsRoute
+                element={<SettingsPage.Component tabId="audit-logs" />}
+                permission={[AdminType.system]}
+              />
+            }
             handle={SettingsPage.createHandle()}
           />
           <Route

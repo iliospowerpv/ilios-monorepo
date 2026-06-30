@@ -17,7 +17,7 @@ jest.mock('../../../../../contexts/notifications/notifications', () => ({
 }));
 
 describe('Settings page', () => {
-  test('renders without crashing', () => {
+  const renderSettings = () =>
     render(
       <BrowserRouter>
         <QueryClientProvider client={queryClient}>
@@ -26,6 +26,22 @@ describe('Settings page', () => {
       </BrowserRouter>
     );
 
+  test('renders without crashing', () => {
+    renderSettings();
+
     expect(screen.getByText(/Settings/i)).toBeInTheDocument();
+  });
+
+  test('does not render the dead Notification and Alerts tabs', () => {
+    renderSettings();
+
+    expect(screen.queryByTestId('tab__notification')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('tab__alerts')).not.toBeInTheDocument();
+  });
+
+  test('defaults to the Audit Logs tab', () => {
+    renderSettings();
+
+    expect(screen.getByTestId('tab__audit-logs')).toHaveAttribute('aria-selected', 'true');
   });
 });

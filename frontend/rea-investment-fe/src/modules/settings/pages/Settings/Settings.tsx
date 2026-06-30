@@ -21,7 +21,7 @@ interface TabInfo {
 }
 
 interface SettingsProps {
-  tabId?: 'health-checks' | 'audit-logs' | 'notification' | 'alerts' | 'extraction-registry' | 'assistant-usage';
+  tabId?: 'health-checks' | 'audit-logs' | 'extraction-registry' | 'assistant-usage';
 }
 
 const tabData: TabInfo[] = [
@@ -46,13 +46,11 @@ const tabData: TabInfo[] = [
     label: 'AI Assistant',
     disabled: false,
     content: <AssistantUsagePanel />
-  },
-  { id: 'notification', link: '/', label: 'Notification', disabled: true, content: <Box>Notification Tab</Box> },
-  { id: 'alerts', link: '/', label: 'Alerts', disabled: true, content: <Box>Alerts</Box> }
+  }
 ];
 
 const Settings: React.FC<SettingsProps> = ({ tabId }) => {
-  const activeTab = tabId || 'health-checks';
+  const activeTab = tabId || 'audit-logs';
   const queryClient = useQueryClient();
 
   React.useEffect(() => {
