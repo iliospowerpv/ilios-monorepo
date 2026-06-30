@@ -1,6 +1,7 @@
 from .agreements import *
 from .chatbot import chatbot_router
 from .co_terminus import *
+from .document_templates import document_templates_router
 from .documents import *
 from .files import *
 from .files_parsing import files_parsing_router

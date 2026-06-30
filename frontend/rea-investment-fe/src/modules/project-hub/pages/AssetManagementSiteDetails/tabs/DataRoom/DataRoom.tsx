@@ -13,6 +13,7 @@ import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
 import { SearchableSelect } from '../../../../../../components/common/SearchableSelect/SearchableSelect';
 import AddIcon from '@mui/icons-material/Add';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DescriptionIcon from '@mui/icons-material/Description';
@@ -28,6 +29,8 @@ import RecursiveAccordion from '../../../../../../modules/due-diligence/pages/Si
 import DocumentList from '../../../../../../modules/due-diligence/pages/DueDiligenceDocument/components/DocumentList';
 import ProjectSummaryPanel from './components/ProjectSummaryPanel';
 import ExpectedDocumentsPanel from './components/ExpectedDocumentsPanel';
+import ManageTemplatesDialog from './components/ManageTemplatesDialog';
+import { useAuth } from '../../../../../../contexts/auth/auth';
 
 const siteDiligenceQuery = (siteId: number, enabled = true) => ({
   queryKey: ['site', 'diligence', { siteId }],
@@ -57,6 +60,10 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
   const { focusState } = useFocusHighlight();
   const queryClient = useQueryClient();
   const notify = useNotify();
+  const { user } = useAuth();
+
+  const canViewTemplates = !!user?.is_system_user || !!user?.role?.permissions?.['Diligence']?.view;
+  const canEditTemplates = !!user?.is_system_user || !!user?.role?.permissions?.['Diligence']?.edit;
 
   const numericSiteId = siteId ? Number(siteId) : siteDetails.id;
   const isValidId = !!numericSiteId && Number.isSafeInteger(numericSiteId);
@@ -67,6 +74,7 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
 
   const [searchTerm, setSearchTerm] = useState('');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [templatesDialogOpen, setTemplatesDialogOpen] = useState(false);
   const [newDocName, setNewDocName] = useState('');
   const [newDocDescription, setNewDocDescription] = useState('');
   const [selectedSectionId, setSelectedSectionId] = useState<number | ''>('');
@@ -204,9 +212,7 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
             <DescriptionIcon color="primary" fontSize="large" />
             <Box>
               <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                {selectedDocument.identity?.canonical_name ||
-                  selectedDocument.display_name ||
-                  selectedDocument.name}
+                {selectedDocument.identity?.canonical_name || selectedDocument.display_name || selectedDocument.name}
               </Typography>
               {selectedDocument.identity?.aliases && selectedDocument.identity.aliases.length > 0 && (
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
@@ -294,10 +300,26 @@ export const DataRoom: React.FC<AssetManagementSiteDetailsTabProps> = ({ siteDet
           searchPlaceholder="Search documents..."
           onSearch={handleSearch}
         />
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setAddDialogOpen(true)}>
-          Add Document
-        </Button>
+        <Box display="flex" gap={1}>
+          {canViewTemplates && (
+            <Button variant="outlined" startIcon={<LibraryBooksIcon />} onClick={() => setTemplatesDialogOpen(true)}>
+              Manage Templates
+            </Button>
+          )}
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setAddDialogOpen(true)}>
+            Add Document
+          </Button>
+        </Box>
       </Box>
+
+      {canViewTemplates && isValidId && (
+        <ManageTemplatesDialog
+          open={templatesDialogOpen}
+          onClose={() => setTemplatesDialogOpen(false)}
+          siteId={numericSiteId}
+          canEdit={canEditTemplates}
+        />
+      )}
 
       <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Add New Document</DialogTitle>

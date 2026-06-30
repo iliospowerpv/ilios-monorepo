@@ -512,6 +512,44 @@ interface GetParseStateArgs {
   fileId: number;
 }
 
+interface DataRoomTemplateSummary {
+  id: number;
+  name: string;
+  description: string | null;
+  is_archived: boolean;
+  section_count: number;
+  document_count: number;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+interface DataRoomTemplateListResponse {
+  items: DataRoomTemplateSummary[];
+}
+
+interface DataRoomTemplateStructure {
+  version: number;
+  sections: unknown[];
+}
+
+interface DataRoomTemplateDetail extends DataRoomTemplateSummary {
+  structure: DataRoomTemplateStructure;
+}
+
+interface DataRoomTemplateExport {
+  format: string;
+  export_version: number;
+  name: string;
+  description: string | null;
+  structure: Record<string, unknown>;
+}
+
+interface TemplateMutationResponse {
+  code: number;
+  id: number;
+  message: string;
+}
+
 export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
   const docInfo = async (siteId: number, documentId: number): Promise<DocumentDetails> => {
     const response = await httpClient.get<DocumentDetails>(`/api/due-diligence/${siteId}/documents/${documentId}`);
@@ -916,6 +954,110 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     return response.data;
   };
 
+  const listTemplates = async (siteId: number, includeArchived = false): Promise<DataRoomTemplateListResponse> => {
+    const response = await httpClient.get<DataRoomTemplateListResponse>(
+      `/api/due-diligence/${siteId}/document-templates/`,
+      { params: { include_archived: includeArchived } }
+    );
+    return response.data;
+  };
+
+  const getTemplate = async (siteId: number, templateId: number): Promise<DataRoomTemplateDetail> => {
+    const response = await httpClient.get<DataRoomTemplateDetail>(
+      `/api/due-diligence/${siteId}/document-templates/${templateId}`
+    );
+    return response.data;
+  };
+
+  const exportTemplate = async (siteId: number, templateId: number): Promise<DataRoomTemplateExport> => {
+    const response = await httpClient.get<DataRoomTemplateExport>(
+      `/api/due-diligence/${siteId}/document-templates/${templateId}/export`
+    );
+    return response.data;
+  };
+
+  const createTemplateFromDataRoom = async (
+    siteId: number,
+    name: string,
+    description?: string
+  ): Promise<TemplateMutationResponse> => {
+    const response = await httpClient.post<TemplateMutationResponse>(
+      `/api/due-diligence/${siteId}/document-templates/from-data-room`,
+      { name, description }
+    );
+    return response.data;
+  };
+
+  const createTemplate = async (
+    siteId: number,
+    name: string,
+    description?: string,
+    structure?: Record<string, unknown>
+  ): Promise<TemplateMutationResponse> => {
+    const response = await httpClient.post<TemplateMutationResponse>(
+      `/api/due-diligence/${siteId}/document-templates/`,
+      { name, description, structure }
+    );
+    return response.data;
+  };
+
+  const importTemplate = async (
+    siteId: number,
+    payload: Record<string, unknown>,
+    name?: string
+  ): Promise<TemplateMutationResponse> => {
+    const response = await httpClient.post<TemplateMutationResponse>(
+      `/api/due-diligence/${siteId}/document-templates/import`,
+      { payload, name }
+    );
+    return response.data;
+  };
+
+  const duplicateTemplate = async (
+    siteId: number,
+    templateId: number,
+    name?: string
+  ): Promise<TemplateMutationResponse> => {
+    const response = await httpClient.post<TemplateMutationResponse>(
+      `/api/due-diligence/${siteId}/document-templates/${templateId}/duplicate`,
+      { name }
+    );
+    return response.data;
+  };
+
+  const updateTemplate = async (
+    siteId: number,
+    templateId: number,
+    updates: { name?: string; description?: string }
+  ): Promise<TemplateMutationResponse> => {
+    const response = await httpClient.put<TemplateMutationResponse>(
+      `/api/due-diligence/${siteId}/document-templates/${templateId}`,
+      updates
+    );
+    return response.data;
+  };
+
+  const archiveTemplate = async (siteId: number, templateId: number): Promise<TemplateMutationResponse> => {
+    const response = await httpClient.post<TemplateMutationResponse>(
+      `/api/due-diligence/${siteId}/document-templates/${templateId}/archive`
+    );
+    return response.data;
+  };
+
+  const restoreTemplate = async (siteId: number, templateId: number): Promise<TemplateMutationResponse> => {
+    const response = await httpClient.post<TemplateMutationResponse>(
+      `/api/due-diligence/${siteId}/document-templates/${templateId}/restore`
+    );
+    return response.data;
+  };
+
+  const deleteTemplate = async (siteId: number, templateId: number): Promise<TemplateMutationResponse> => {
+    const response = await httpClient.delete<TemplateMutationResponse>(
+      `/api/due-diligence/${siteId}/document-templates/${templateId}`
+    );
+    return response.data;
+  };
+
   return Object.freeze({
     docInfo,
     updateDocDescription,
@@ -955,7 +1097,18 @@ export const buildDueDiligenceApi = (httpClient: AxiosInstance) => {
     reorderDocument,
     deleteDocument,
     createCustomDocument,
-    getSummaryStats
+    getSummaryStats,
+    listTemplates,
+    getTemplate,
+    exportTemplate,
+    createTemplateFromDataRoom,
+    createTemplate,
+    importTemplate,
+    duplicateTemplate,
+    updateTemplate,
+    archiveTemplate,
+    restoreTemplate,
+    deleteTemplate
   });
 };
 
@@ -979,5 +1132,11 @@ export type {
   ParseStateSummary,
   ParseState,
   ParseNextAction,
-  NoUsableFieldsReason
+  NoUsableFieldsReason,
+  DataRoomTemplateSummary,
+  DataRoomTemplateListResponse,
+  DataRoomTemplateStructure,
+  DataRoomTemplateDetail,
+  DataRoomTemplateExport,
+  TemplateMutationResponse
 };

@@ -51,3 +51,4 @@
 - [Assistant tool-layer authz](native-ai-assistant.md) — per-site summary tools wrap router-authorized (not self-authz) read services; the tool must mirror the router guard or it widens scope.
 - [AI Assistant Workflow Companion](ai-assistant-workflow-companion.md) — in-wizard read-only guide; zero-mutation held by 4 layers (catalog/source-scan/guardrail-keyword/prompt); gated on run_id; FE sends IDs only; grounding is prompt-enforced (quality, not safety).
 - [Document Identity & Expected Documents](document-identity-expected-docs.md) — Document row IS the identity (no table); name = canonical→custom→enum; Expected Docs = static catalog, never materializes rows; new static GETs must precede /{document_id} or 422.
+- [Data Room Templates](data-room-templates.md) — company-scoped STRUCTURE-only snapshots (no files/versions/approvals); routes site-nested under /{site_id}/document-templates; apply reuses default scaffolding; optional template_id on site create.

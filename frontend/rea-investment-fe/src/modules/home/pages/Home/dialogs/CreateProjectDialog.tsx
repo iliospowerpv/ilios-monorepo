@@ -33,6 +33,7 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, 
   const [systemSizeAc, setSystemSizeAc] = useState<number | ''>('');
   const [systemSizeDc, setSystemSizeDc] = useState<number | ''>('');
   const [lonLatUrl, setLonLatUrl] = useState('');
+  const [templateId, setTemplateId] = useState<number | ''>('');
   const [error, setError] = useState<string | null>(null);
 
   const { data: companiesData } = useQuery({
@@ -40,6 +41,23 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, 
     queryFn: () => ApiClient.workspace.getWorkspace(),
     enabled: open
   });
+
+  const { data: companySites } = useQuery({
+    queryKey: ['company-sites-for-templates', companyId],
+    queryFn: () => {
+      const params: { company_id: number; limit: number } = { company_id: companyId as number, limit: 1 };
+      return ApiClient.assetManagement.sites(params);
+    },
+    enabled: open && !!companyId
+  });
+  const representativeSiteId = companySites?.items?.[0]?.id;
+
+  const { data: templatesData } = useQuery({
+    queryKey: ['data-room-templates', { siteId: representativeSiteId, includeArchived: false }],
+    queryFn: () => ApiClient.dueDiligence.listTemplates(representativeSiteId as number, false),
+    enabled: open && !!representativeSiteId
+  });
+  const templates = templatesData?.items ?? [];
 
   useEffect(() => {
     if (open && currentCompany) {
@@ -59,7 +77,8 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, 
         zip_code: zipCode,
         system_size_ac: (systemSizeAc as number) || 0,
         system_size_dc: (systemSizeDc as number) || 0,
-        lon_lat_url: lonLatUrl
+        lon_lat_url: lonLatUrl,
+        template_id: templateId || undefined
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workspace'] });
@@ -84,6 +103,7 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, 
     setSystemSizeAc('');
     setSystemSizeDc('');
     setLonLatUrl('');
+    setTemplateId('');
     setError(null);
   };
 
@@ -180,6 +200,19 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, 
               fullWidth
               helperText="e.g. 41° 56' 54.3732&quot;"
             />
+
+            {templates.length > 0 && (
+              <SearchableSelect
+                options={[
+                  { label: 'Default structure (no template)', value: 0 },
+                  ...templates.map(t => ({ label: t.name, value: t.id }))
+                ]}
+                value={templateId || 0}
+                onChange={val => setTemplateId(val ? (val as number) : '')}
+                label="Data Room Template (optional)"
+                helperText="Scaffold this project's Data Room from a saved template."
+              />
+            )}
           </Box>
         </DialogContent>
         <DialogActions>

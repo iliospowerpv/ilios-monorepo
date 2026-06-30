@@ -8,6 +8,7 @@ from .due_diligence import (
     agreements_router,
     chatbot_router,
     co_terminus_router,
+    document_templates_router,
     documents_router,
     files_parsing_router,
     files_router,

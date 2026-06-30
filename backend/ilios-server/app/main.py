@@ -33,6 +33,7 @@ from .routers import (
     dashboard_tasks_router,
     device_documents_router,
     devices_router,
+    document_templates_router,
     documents_router,
     files_parsing_router,
     files_router,
@@ -382,6 +383,11 @@ def ilios_api() -> FastAPI:  # noqa: CFQ001
     app.include_router(contacts_router, prefix="/api/contacts", tags=["Contacts"])
     # due diligence related APIs
     app.include_router(documents_router, prefix="/api/due-diligence/{site_id}/documents", tags=[tags.DOCUMENTS_TAG])
+    app.include_router(
+        document_templates_router,
+        prefix="/api/due-diligence/{site_id}/document-templates",
+        tags=[tags.DOCUMENTS_TAG],
+    )
     app.include_router(agreements_router, prefix="/api/due-diligence/{site_id}/agreements", tags=[tags.DOCUMENTS_TAG])
     app.include_router(co_terminus_router, prefix="/api/due-diligence/{site_id}/co-terminus", tags=[tags.DOCUMENTS_TAG])
     app.include_router(summary_stats_router, prefix="/api/due-diligence/sites/{site_id}", tags=[tags.DOCUMENTS_TAG])

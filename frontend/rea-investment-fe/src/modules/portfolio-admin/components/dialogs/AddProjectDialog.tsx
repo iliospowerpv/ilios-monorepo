@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -45,6 +45,24 @@ export const AddProjectDialog: React.FC<AddProjectDialogProps> = ({
   const queryClient = useQueryClient();
   const notify = useNotify();
   const [error, setError] = useState<string | null>(null);
+  const [templateId, setTemplateId] = useState<number | ''>('');
+
+  const { data: companySites } = useQuery({
+    queryKey: ['company-sites-for-templates', companyId],
+    queryFn: () => {
+      const params: { company_id: number; limit: number } = { company_id: companyId, limit: 1 };
+      return ApiClient.assetManagement.sites(params);
+    },
+    enabled: open && !!companyId
+  });
+  const representativeSiteId = companySites?.items?.[0]?.id;
+
+  const { data: templatesData } = useQuery({
+    queryKey: ['data-room-templates', { siteId: representativeSiteId, includeArchived: false }],
+    queryFn: () => ApiClient.dueDiligence.listTemplates(representativeSiteId as number, false),
+    enabled: open && !!representativeSiteId
+  });
+  const templates = templatesData?.items ?? [];
 
   const {
     register,
@@ -92,12 +110,14 @@ export const AddProjectDialog: React.FC<AddProjectDialogProps> = ({
       zip_code: data.zip_code,
       system_size_ac: data.system_size_ac ? parseFloat(data.system_size_ac) : 0,
       system_size_dc: data.system_size_dc ? parseFloat(data.system_size_dc) : 0,
-      lon_lat_url: ''
+      lon_lat_url: '',
+      template_id: templateId || undefined
     });
   };
 
   const handleClose = () => {
     reset();
+    setTemplateId('');
     setError(null);
     onClose();
   };
@@ -221,6 +241,19 @@ export const AddProjectDialog: React.FC<AddProjectDialogProps> = ({
                 })}
               />
             </Box>
+
+            {templates.length > 0 && (
+              <SearchableSelect
+                options={[
+                  { label: 'Default structure (no template)', value: 0 },
+                  ...templates.map(t => ({ label: t.name, value: t.id }))
+                ]}
+                value={templateId || 0}
+                onChange={val => setTemplateId(val ? (val as number) : '')}
+                label="Data Room Template (optional)"
+                helperText="Scaffold this project's Data Room from a saved template."
+              />
+            )}
           </Box>
         </DialogContent>
         <DialogActions>

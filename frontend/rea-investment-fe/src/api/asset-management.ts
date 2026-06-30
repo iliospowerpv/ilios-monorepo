@@ -52,6 +52,7 @@ interface CreateSiteAttributes {
   lon_lat_url: string;
   cameras_uuids?: string[];
   timezone?: string;
+  template_id?: number | null;
 }
 
 interface CreateSiteResponse {

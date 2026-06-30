@@ -117,7 +117,13 @@ export type {
   ParseStateSummary,
   ParseState,
   ParseNextAction,
-  NoUsableFieldsReason
+  NoUsableFieldsReason,
+  DataRoomTemplateSummary,
+  DataRoomTemplateListResponse,
+  DataRoomTemplateStructure,
+  DataRoomTemplateDetail,
+  DataRoomTemplateExport,
+  TemplateMutationResponse
 } from './due-diligence';
 
 export type { CompanySite, CompanySites, CompanyAttributes, ContractorCompany } from './companies';

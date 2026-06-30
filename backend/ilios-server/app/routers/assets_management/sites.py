@@ -18,6 +18,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.crud.audit_log import AuditLogCRUD
+from app.crud.data_room_template import DataRoomTemplateCRUD
 from app.crud.device import DeviceCRUD
 from app.crud.document import DocumentCRUD
 from app.crud.site import SiteCRUD
@@ -33,6 +34,7 @@ from app.helpers.authentication import get_current_user
 from app.helpers.authorization.module_based.base import get_current_admin_user
 from app.helpers.authorization.project_access import get_authorized_site
 from app.helpers.bq_data_sync_helper import SiteCharacteristicsHandler
+from app.helpers.due_diligence.data_room_templates import apply_template_to_site
 from app.helpers.due_diligence.due_diligence_helper import (
     create_default_site_document_sections,
     generate_default_site_documents,
@@ -90,6 +92,26 @@ async def create(
     )
 
     site_data = site.model_dump()
+    template_id = site_data.pop("template_id", None)
+
+    # Resolve an optional Data Room Template before creating the site so a bad
+    # template_id fails fast (and is scoped to the same company). Task #91.
+    template = None
+    if template_id is not None:
+        # Applying a Data Room Template is a Diligence action, so it must be
+        # gated by Diligence permissions in addition to assets_management:edit
+        # above (Task #91 - "all template actions use existing Diligence perms").
+        require_module_permission(
+            user_id=current_user.id,
+            company_id=site.company_id,
+            db_session=db_session,
+            module_key=PermissionsModules.diligence.value,
+            action="edit",
+        )
+        template = DataRoomTemplateCRUD(db_session).get_for_company(template_id, site.company_id)
+        if not template:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Data Room Template not found")
+
     try:
         new_site = SiteCRUD(db_session).create_item(site_data)
         logger.info(f"Created site with id {new_site.id}")
@@ -97,8 +119,12 @@ async def create(
         logger.exception(message := f"Company with ID: {site.company_id} not found.")
         raise HTTPException(status.HTTP_404_NOT_FOUND, message)
 
-    create_default_site_document_sections([new_site.id], db_session)
-    DocumentCRUD(db_session).create_items(generate_default_site_documents([new_site.id], db_session))
+    if template is not None:
+        # Scaffold the Data Room from the template via the existing creation path.
+        apply_template_to_site(new_site.id, template.structure, db_session)
+    else:
+        create_default_site_document_sections([new_site.id], db_session)
+        DocumentCRUD(db_session).create_items(generate_default_site_documents([new_site.id], db_session))
 
     create_default_board(new_site.id, BoardRelatedEntityTypeEnum.site, db_session)
     create_default_board(new_site.id, BoardRelatedEntityTypeEnum.site, db_session, module=BoardModuleEnum.om)

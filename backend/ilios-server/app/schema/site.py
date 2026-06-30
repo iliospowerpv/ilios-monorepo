@@ -54,6 +54,12 @@ class BaseSiteSchema(BaseModel):
 
 class CreateSiteSchema(BaseSiteSchema):
     company_id: int = Field(examples=[1])
+    # Optional Data Room Template (Task #91). When provided, the new site's Data
+    # Room is scaffolded from the template's structure instead of the canonical
+    # default blueprint. The template must belong to the same company.
+    template_id: Optional[int] = Field(
+        default=None, examples=[1], description="Data Room Template to scaffold the new project's Data Room from"
+    )
     model_config = ConfigDict(extra="forbid")
 
 
